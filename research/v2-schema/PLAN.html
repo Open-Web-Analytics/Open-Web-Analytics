@@ -683,6 +683,13 @@ the same event name. At second resolution that is reachable; at microsecond reso
 <code>owa_request.msec</code> is broken in 1.x and deferred to v2 for sub-second ordering
 (<a href="#nA111">A.1.11</a>) &mdash; this is the second reason to fix it, and it sets the unit.</p>
 
+<p class="note"><strong>Signed <code>BIGINT</code>, not <code>BIGINT UNSIGNED</code> &mdash; changed
+when the table was built.</strong> OWA runs with a permissive <code>sql_mode</code>, under which a
+negative value written to an UNSIGNED column is silently clamped to 0 rather than refused. v1 has
+negative visitor ids &mdash; PR&nbsp;#1118 exists because of them &mdash; so migrating those in
+would merge strangers into visitor&nbsp;0, with no error anywhere. The headroom was never needed:
+<code>wideStringGuid()</code> tops out at 63 bits by construction and a microsecond timestamp is
+nowhere near it.</p>
 <p><strong>The hash is 1.x&rsquo;s, unchanged.</strong> <code>Lib::wideStringGuid()</code>: sha1 of
 the lowercased string, first 16 hex characters, split into two 32-bit halves with the top bit of
 the high half masked off, giving 63 bits and always positive. The two halves keep every
@@ -779,6 +786,67 @@ session-scoped and user-scoped respectively &mdash; and neither is ever counted 
 <p class="note">A custom event is an arbitrary name plus params and needs no registration, which is
 what removes 1.x's five fixed custom-variable slots (<a href="#s21">&sect;2.1</a>). Author-named
 goal events are the same mechanism &mdash; see <a href="#s220">goals became goal events</a>.</p>
+<h4 id="s224"><span class="num">2.2.4</span>The tracker&rsquo;s method surface, against GA&rsquo;s <span class="chip c-meas">Measured</span></h4>
+<p>Read from the live <code>gtag.js</code> bundle &mdash; 429,770 bytes, fetched 21&nbsp;Sep&nbsp;2026
+&mdash; rather than from its documentation, because the two disagree about what is code and what is
+convention.</p>
+
+<p><strong>GA has ONE method for custom events.</strong> <code>gtag('event', name, params)</code>,
+and the name is passed straight through. The &ldquo;recommended events&rdquo; are a naming
+convention with no code behind them: <code>login</code>, <code>sign_up</code>,
+<code>select_content</code>, <code>search</code>, <code>share</code>, <code>file_download</code>,
+<code>form_start</code>, <code>video_start</code> and <code>view_search_results</code> have
+<strong>zero occurrences anywhere in the bundle</strong>. So v2 needs no method per event, and
+<code>trackCustomEvent( name, properties )</code> &mdash; which already exists &mdash; is the right
+and only shape. <code>trackAction( group, name, label, value )</code> is the GA-Classic four-slot
+form and is what gets retired; the migrator turns its four slots into params on a
+<code>custom_event</code>.</p>
+
+<p>What <em>is</em> compiled into the bundle is the set gtag itself raises or has to reshape:
+<code>page_view</code>, <code>session_start</code>, <code>first_visit</code>,
+<code>user_engagement</code>, <code>conversion</code>, <code>consent_update</code>,
+<code>exception</code>, <code>screen_view</code>, and the commerce set &mdash; the last because
+gtag rewrites the <code>items</code> array for those events and nothing else.</p>
+
+<h5>The six command verbs</h5>
+<div class="scroll"><table>
+<thead><tr><th>gtag</th><th>what it is</th><th>OWA</th></tr></thead>
+<tbody>
+<tr><td><code>js</code></td><td>boot</td><td>the snippet</td></tr>
+<tr><td><code>config</code></td><td>per-destination configuration</td><td><code>setSiteId</code>, <code>setOption</code></td></tr>
+<tr><td><code>event</code></td><td><strong>every event, custom or not</strong></td><td><code>trackCustomEvent</code> &mdash; already the same shape</td></tr>
+<tr><td><code>set</code></td><td>params applied to later events</td><td><code>setGlobalEventProperty</code></td></tr>
+<tr><td><code>get</code></td><td>read a value back, asynchronously</td><td><strong>missing</strong></td></tr>
+<tr><td><code>consent</code></td><td>declare and update consent</td><td><code>setConsentState</code> &mdash; <strong>added</strong></td></tr>
+</tbody></table></div>
+
+<h5>The auto-event surface</h5>
+<p>Enumerated from the <code>internal.enableAutoEventOn*</code> API names the bundle exposes, which
+is the runtime&rsquo;s own list rather than a guess at it.</p>
+<div class="scroll"><table>
+<thead><tr><th>gtag trigger</th><th>v2</th></tr></thead>
+<tbody>
+<tr><td><code>OnClick</code> / <code>OnLinkClick</code></td><td>had clicks; gains outbound and download classification</td></tr>
+<tr><td><code>OnScroll</code></td><td><strong>added.</strong> 1.x&rsquo;s <code>dom.scroll</code> is a recording sample with no server handler</td></tr>
+<tr><td><code>OnFormSubmit</code> / <code>OnFormInteraction</code></td><td><strong>added</strong></td></tr>
+<tr><td><code>OnHistoryChange</code></td><td><strong>added.</strong> The largest gap: an SPA tracked by 1.x records one page view per <em>session</em></td></tr>
+<tr><td><code>OnBfcacheRestore</code></td><td><strong>added.</strong> Resumes the engagement clock; does not count a page view</td></tr>
+<tr><td><code>OnError</code></td><td><strong>added</strong> as <code>exception</code></td></tr>
+<tr><td><code>addFormAbandonmentListener</code></td><td>not built</td></tr>
+<tr><td><code>OnElementVisibility</code></td><td>not built</td></tr>
+<tr><td><code>OnYouTubeActivity</code></td><td>deferred with the rest of video (<a href="#s110">&sect;1.10</a>)</td></tr>
+<tr><td><code>OnTimer</code></td><td>not built &mdash; engagement deltas answer the question it exists for</td></tr>
+</tbody></table></div>
+
+<p class="note"><strong>What the audit changed.</strong> Three of these were in no phase before it:
+SPA route changes, bfcache restore, and <code>exception</code>. The first is the one worth calling
+out &mdash; it is not an enhancement but a correctness hole, since the only page view an SPA
+produces today is the one the snippet fires on load.</p>
+
+<p class="note"><strong>Still missing, and deliberately left:</strong> GA&rsquo;s <code>get</code>,
+which reads a value back asynchronously. Nothing in v2 needs it yet; the consent platforms that do
+are the reason it exists, and none of them integrate with OWA.</p>
+
 <h3 id="s23"><span class="num">2.3</span>Metrics <span class="chip c-dec">Decided</span></h3>
 <p>A metric definition names a column, a scope, and a <strong>kind</strong>. The kind is an
 aggregate shape the query builder already knows how to render &mdash; <code>sum</code>,
@@ -1613,9 +1681,9 @@ on the denormalised table or the pass.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>1</td><td><strong><code>owa_event_raw</code></strong> (<a href="#s21">&sect;2.1.1</a>), partitioned on <code>yyyymmdd</code> from creation, with the ingest path that writes it: one insert per beacon, the tagged values transcribed, the markers raised (<a href="#s26">&sect;2.6</a>).</td><td>Not started</td></tr>
-<tr><td>2</td><td><strong>The visitor store</strong> (<a href="#s29">&sect;2.9</a>), which ingest writes once per visitor&rsquo;s first session. Small, and needed before ingest is complete rather than after.</td><td>Not started</td></tr>
-<tr><td>3</td><td><strong>Sub-second time</strong> &mdash; <code>ts</code> at microsecond resolution, stamped once at edge receipt. No longer only an ordering fix: <a href="#s21">&sect;2.1.2</a> makes that resolution the thing that keeps an event id unique, so it now gates the id scheme as well. In v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep, widened 21&nbsp;Sep. <a href="#nA111">A.1.11</a> for why a 1.x fix would be worse than leaving it</td></tr>
+<tr><td>1</td><td><strong><code>owa_event_raw</code></strong> (<a href="#s21">&sect;2.1.1</a>), partitioned on <code>yyyymmdd</code> from creation, with the ingest path that writes it: one insert per beacon, the tagged values transcribed, the markers raised (<a href="#s26">&sect;2.6</a>).</td><td><strong>Done</strong> 21&nbsp;Sep. Update&nbsp;034 creates it already partitioned; <code>Handler\EventRawHandlers</code> writes it, gated per site on <code>v2_raw_collection</code>. Found three defects in shared storage code &mdash; <a href="#nA133">A.1.33</a></td></tr>
+<tr><td>2</td><td><strong>The visitor store</strong> (<a href="#s29">&sect;2.9</a>), which ingest writes once per visitor&rsquo;s first session. Small, and needed before ingest is complete rather than after.</td><td><strong>Done</strong> 21&nbsp;Sep. <code>owa_visitor_acquisition</code>, insert-if-absent, unpartitioned</td></tr>
+<tr><td>3</td><td><strong>Sub-second time</strong> &mdash; <code>ts</code> at microsecond resolution, stamped once at edge receipt. No longer only an ordering fix: <a href="#s21">&sect;2.1.2</a> makes that resolution the thing that keeps an event id unique, so it now gates the id scheme as well. In v2 and deliberately not in 1.x.</td><td><strong>Done</strong> 21&nbsp;Sep. Stamped in <code>RequestContainer</code>, from the same <code>microtime()</code> reading as the second-resolution one so the two cannot straddle a boundary</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.3</span>Phase 6 &mdash; the v2 tracker, end to end</h4>
@@ -1626,12 +1694,12 @@ One site collecting into v2 and coming out the far side as a report is the accep
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>4</td><td><strong>Engagement deltas and the <code>user_engagement</code> event</strong> &mdash; the per-event accumulator that rides every beacon as <code>engagement_msec</code>, and the hide-time event carrying the residue. <strong>Delivered once, at hide</strong> (<a href="#s12">&sect;1.2.1</a>), not also piggybacked onto the next request &mdash; which removed the second arrival and with it the derived id and counter it would have needed. Fires on any hide at any size; the engaged threshold gates read-time classification, never the send.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code></td></tr>
-<tr><td>5</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
+<tr><td>4</td><td><strong>Engagement deltas and the <code>user_engagement</code> event</strong> &mdash; the per-event accumulator that rides every beacon as <code>engagement_msec</code>, and the hide-time event carrying the residue. <strong>Delivered once, at hide</strong> (<a href="#s12">&sect;1.2.1</a>), not also piggybacked onto the next request &mdash; which removed the second arrival and with it the derived id and counter it would have needed. Fires on any hide at any size; the engaged threshold gates read-time classification, never the send.</td><td><strong>Done</strong> 21&nbsp;Sep. Delivered on <code>visibilitychange</code> and <code>pagehide</code></td></tr>
+<tr><td>5</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td><strong>Done</strong> 21&nbsp;Sep</td></tr>
 <tr><td>6</td><td><strong>Chunk <code>seq</code></strong>, shipping with the domstream re-encode (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td>Not started</td></tr>
-<tr><td>7</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td>Not started</td></tr>
-<tr><td>8</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td>Not started</td></tr>
-<tr><td>9</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops collecting at Phase&nbsp;8. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td>Not started. The three deletions are additive; the other two wait for cutover</td></tr>
+<tr><td>7</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td><strong>Done</strong> 21&nbsp;Sep. Scroll is now one event per depth threshold, not one per scroll tick</td></tr>
+<tr><td>8</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td><strong>Done</strong> 21&nbsp;Sep. <code>setUserId</code>, <code>setContentGroup</code>, <code>setConsentState</code>, <code>setCurrency</code></td></tr>
+<tr><td>9</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops collecting at Phase&nbsp;8. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td><strong>Partly done</strong> 21&nbsp;Sep. <code>logMovement</code>, <code>thirdParty</code> and <code>campaignAttributionWindow</code> are gone; <code>attribs</code> and <code>trafficAttributionMode</code> wait for cutover, as this row already said</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.4</span>Phase 7 &mdash; the denormalised table and the pass</h4>
@@ -2594,6 +2662,33 @@ is five years old. True in principle. <strong>Measured, it is almost entirely fa
 <p><strong>Superseded.</strong> The store is kept — &sect;2.12 gives the reasons, of which the
 decisive one is that GA has to hold acquisition on a user record to support a long-lived
 identity at all, and that the 0.172% is the loyal returning cohort rather than a random slice.</p>
+
+<h4 id="nA133"><span class="num">A.1.33</span>Three storage defects the first v2 table found</h4>
+<p>All three are in code v1 shares, all three were invisible to v1, and all three are the same
+shape: a rule written when absence had one storage form, applied to a table whose premise is that
+it has another.</p>
+<ul>
+<li><strong><code>Entity::applyStorageDefault()</code> looks the <code>(not set)</code> label up by
+PROPERTY NAME</strong> across every registered map, with no notion of which entity is being
+written. A v2 column merely <em>sharing</em> a name with a v1 tracking property inherited v1&rsquo;s
+sentinel: <code>language</code>, <code>host</code> and <code>page_title</code> all landed in
+<code>owa_event_raw</code> holding the literal string. Nullable columns are now exempt, which is
+what <code>setNullable()</code> was supposed to mean.</li>
+<li><strong><code>Entity::writeValue()</code> coerced an absent NUMERIC value to 0
+unconditionally</strong>, where the text branch already honoured nullability. 0 is a real number,
+so such a column has no way to say <em>absent</em> at all &mdash; a beacon carrying no client clock
+is not one reporting zero skew.</li>
+<li><strong><code>setDataType('integer')</code> turned absence into 0 before any handler saw
+it</strong>, because <code>Event::get()</code> answers <code>false</code> for a property the event
+does not carry and <code>false</code> is not numeric. Every registered integer property arrived on
+every event holding 0, mentioned or not. Absence now stays absent; garbage still becomes 0, which
+is the half that guard exists for.</li>
+</ul>
+<p>v1 is unaffected by any of them, which is why they survived: its numeric columns are
+<code>NOT NULL</code> and store 0 either way, and its text columns already hold the label on every
+historical row. The general lesson is narrower than &ldquo;shared code is risky&rdquo; &mdash; it
+is that <strong>a compatibility rule needs a scope</strong>, and each of these had none, so it
+applied to rows that had nothing to be compatible with.</p>
 
 <h4 id="nA22"><span class="num">A.2.2</span>The landing URL was going to ride every beacon in v2 as well</h4>
 <p><strong>Correction.</strong> This section previously argued that carrying the URL on
