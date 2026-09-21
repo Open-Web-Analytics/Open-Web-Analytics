@@ -1368,6 +1368,38 @@ started rather than over budget.</li>
 stalled rotation erodes the lead until rows reach <code>pmax</code>. It wants an alarm rather than
 a log line; there have been two scheduler-adjacent stalls already.</li>
 </ul>
+<h4><span class="num">2.8.1</span>Three tiers, and one of them is nobody&rsquo;s choice <span class="chip c-dec">Decided</span></h4>
+
+<div class="scroll"><table>
+<thead><tr><th>Tier</th><th>Granularity</th><th>Who decides it</th></tr></thead>
+<tbody>
+<tr><td><strong>Front</strong> &mdash; the rebuild window</td><td><strong>Daily, always</strong></td><td><strong>Nobody.</strong> Fixed</td></tr>
+<tr><td>Middle &mdash; the detail tier</td><td>as now: inferred per table from the existing layout</td><td>an operator, through <code>partition-reorganize</code></td></tr>
+<tr><td>Back &mdash; the tail</td><td>as now: whole-year blocks</td><td><code>partition_max_years_per_block</code>, as today</td></tr>
+</tbody></table></div>
+
+<p><strong>The front tier is not a setting, and that is the decision.</strong>
+<a href="#s25">&sect;2.5.1</a> says the interval and the granularity are one
+decision rather than two &mdash; so exposing the front granularity beside the
+cadence lets an install pick a monthly front tier and a quarter-hourly run,
+which is 96 rebuilds a day each rewriting up to a month. Nothing would report
+that; it would simply get slower through the month and stall near the end of
+it. Fixing the tier at daily makes the incoherent pair unrepresentable instead
+of merely discouraged, and removes a question an operator has no way to answer
+well.</p>
+
+<p><strong>Only the cube has a front tier.</strong> Raw never needs one
+(<a href="#nA18">A.1.8</a>): its retention is a <code>DROP PARTITION</code> and
+it is never rebuilt, so it pays no merge and gains nothing from being finer at
+the front. v1&rsquo;s fact tables keep the two tiers they have. Carving every
+fact table would spend the open-file budget for nothing.</p>
+
+<p class="note">What stays configurable is unchanged, which is the point of
+writing this down: the middle tier is still inferred per table and still changed
+only by <code>partition-reorganize</code>, and the tail still takes its block
+size from <code>partition_max_years_per_block</code>. One new tier, no new
+knobs.</p>
+
 <p class="note">Three month-counts govern partitioning in 1.x and only one is about granularity:
 <code>PARTITION_CUTS</code> is the granularity itself and is not a month count;
 <code>PARTITION_DETAIL_MONTHS</code> (36) is how long a period keeps it before compaction;
@@ -2185,7 +2217,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tbody>
 <tr><td><strong>Client-side lateness</strong></td><td>How late a beacon can arrive — unload beacons behind a later hit, browser retries, bfcache restores, a device that was offline.</td><td>Measurement. It is not visible server-side, and it is the number the late-arrival window is derived from.</td></tr>
 <tr><td><strong>Late-arrival window</strong></td><td>How far back each pass reaches, and what becomes of an event landing outside it.</td><td>Falls out of the above, plus the file queue's drain cadence, which is configured rather than measured.</td></tr>
-<tr><td><strong>Rebuild granularity</strong></td><td>Whether the front partition tier is daily or quarter-month. Daily gives the smallest rebuild and the most partitions; quarter-month is week-sized and needs no new granularity.</td><td>A rebuild-cost measurement, which nobody has taken.</td></tr>
+<tr><td><strong>Rebuild granularity</strong> <span class="chip c-dec">Decided</span></td><td><strong>Daily, fixed, and not a setting.</strong> The measurement was taken (<a href="#s27">&sect;2.7.2</a>) and it argues for the finest tier available: the build cost tracks the partition's row count, mildly superlinearly, so a month-end rebuild under monthly granularity is the case that stalls.</td><td>Settled. The reason it is not configurable is <a href="#s28">&sect;2.8</a>: the interval and the granularity are one decision, so a free knob beside the cadence lets an install configure a stall that nothing reports.</td></tr>
 <tr><td><strong>Rebuild set</strong></td><td>Whether each pass rebuilds the whole late-arrival window or something narrower.</td><td>The whole window is the only provably correct option given a late flagged event; narrower needs a way to know which partitions changed.</td></tr>
 <tr><td><strong>Raw retention</strong></td><td>How long raw is kept.</td><td>A trade: storage against how far back the model can be re-derived.</td></tr>
 <tr><td><strong>Cost on a small install</strong></td><td>What a pass costs in practice. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, so the row count is not the problem.</td><td>Measuring against the shared RDS instance, which is the real constraint — eight WordPress sites are on it.</td></tr>
