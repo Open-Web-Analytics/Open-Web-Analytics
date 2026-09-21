@@ -1236,7 +1236,15 @@ namespace OWA\Module\Base\Classes;
                 'max_prior_campaigns'                => 5, //sdk
                 'default_reporting_period'            => 'last_seven_days',
                 'trafficAttributionMode'            => 'direct', //sdk
-                'campaignAttributionWindow'            => 60, //sdk
+                /*
+                 * campaignAttributionWindow stood here, 60 days, and was inert
+                 * for its whole life: StateManager::set() overwrote its own
+                 * expiration argument, so the campaign cookie was a browser-
+                 * session cookie whatever this said. Removed rather than
+                 * repaired -- v2 resolves attribution from stored evidence at
+                 * read time, where a window is a reporting choice and not a
+                 * cookie lifetime frozen at collection.
+                 */
                  //list of capabilities that require access to the site
                  'capabilitiesThatRequireSiteAccess' => array(
                      'view_reports',
@@ -1316,6 +1324,37 @@ namespace OWA\Module\Base\Classes;
                 'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
                 'instance_mode'                     => '',
+                /*
+                 * v2 collection, per site. OFF, and the default is the
+                 * important half: turning it on makes a site write every
+                 * beacon to owa_event_raw as well as to v1's tables, which is
+                 * a development instrument for exercising the v2 schema and
+                 * NOT the architecture -- v2 collects and v1 does not run
+                 * beside it. Profile-scoped so one site can be switched on
+                 * without touching the installation.
+                 */
+                'v2_raw_collection'                 => false,
+                /*
+                 * v2's event names. Kept as their own list rather than merged
+                 * into tracking_event_types, so that what v1 collects and what
+                 * v2 collects stay legible as two sets -- the whole of v1's
+                 * side is retired at cutover, and a merged list would have to
+                 * be untangled then.
+                 *
+                 * page_view, click and purchase are NOT here: they arrive under
+                 * their v1 names and Classes\V2Event maps them. Only the names
+                 * that have no v1 spelling need admitting.
+                 */
+                'v2_event_types'                    => [
+                    'user_engagement',
+                    'scroll',
+                    'file_download',
+                    'form_start',
+                    'form_submit',
+                    'view_search_results',
+                    'exception',
+                    'custom_event',
+                ],
                 'tracking_event_types'              => [
                     'dom.click', 
                     'ecommerce.transaction', 

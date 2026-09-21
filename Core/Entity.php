@@ -290,6 +290,27 @@ class Entity {
             return $value;
         }
         
+        /*
+         * A NULLABLE COLUMN IS OPTED OUT, and this is the load-bearing half of
+         * what setNullable() means.
+         *
+         * The label is looked up by PROPERTY NAME across every registered map,
+         * with no notion of which entity is being written -- so a v2 column
+         * that merely SHARES a name with a v1 tracking property inherits v1's
+         * sentinel. owa_event_raw.language, .host and .page_title all did, and
+         * landed holding the literal '(not set)' in a table whose whole
+         * premise is that absence is NULL.
+         *
+         * The rule this protects is about columns that ALREADY hold the label
+         * on historical rows, where writing NULL to half a column would be
+         * worse than either spelling. A nullable column has no such history by
+         * construction.
+         */
+        if ( ! empty( $this->properties[ $column ]->nullable ) ) {
+            
+            return $value;
+        }
+        
         $type = (string) $this->properties[ $column ]->get( 'data_type' );
         
         if ( in_array( $type, $this->numericColumnTypes(), true ) ) {
@@ -746,9 +767,17 @@ class Entity {
         $type = (string) $this->properties[ $col ]->get( 'data_type' );
 
         // Numeric: '' coerced to 0 under the old driver.
+        //
+        // Same exemption as the text branch below, and for the same reason: a
+        // column that declares itself nullable was added after that driver and
+        // has no rows from then to keep the shape of. It matters more here than
+        // it reads -- 0 is a REAL number, so a numeric column that cannot store
+        // NULL has no way to say "absent" at all. owa_event_raw.clock_offset_usec
+        // is the case that found this: a beacon carrying no client clock is not
+        // a beacon reporting zero skew.
         if ( in_array( $type, $this->numericColumnTypes(), true ) ) {
 
-            return 0;
+            return ! empty( $this->properties[ $col ]->nullable ) ? null : 0;
         }
 
         // Character and binary: '' stayed '' under the old driver.

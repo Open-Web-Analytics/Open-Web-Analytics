@@ -199,6 +199,36 @@ class OWATracker  {
 	    this.last_event  =  '';
 	    this.last_movement  =  '';
 	    /**
+	     * The last scroll depth REPORTED, as a percentage.
+	     *
+	     * 0 means nothing has been sent for this page. Reset on an SPA route
+	     * change, because the new route is a new page and its depth starts
+	     * again -- `last_scroll` used to be assigned by the scroll handler and
+	     * never read by anything, which is how every scroll event queued.
+	     */
+	    this.last_scroll = 0;
+	    /**
+	     * ENGAGEMENT. Two values, and the distinction is the whole design.
+	     *
+	     * `engagementSince` is when the current visible stretch began, and it is
+	     * null while the page is hidden -- time spent on a background tab is not
+	     * time spent reading. `engagementReported` is how much of this page's
+	     * time has already ridden out on a beacon.
+	     *
+	     * What goes on the wire is the DELTA between them, on every event, so
+	     * losing a beacon costs one increment rather than one page. A cumulative
+	     * total would make the last beacon of the page the only one that
+	     * mattered, and that is the one most likely to be lost.
+	     */
+	    this.engagementSince = null;
+	    this.engagementAccrued = 0;
+	    this.engagementReported = 0;
+	    /**
+	     * Whether SPA route changes are being watched. Opt-in, and patching
+	     * history.pushState twice would double every route change.
+	     */
+	    this.routeTrackingEnabled = false;
+	    /**
 	     * DOM Stream Event Queue
 	     */
 	    this.event_queue  =  [];
@@ -295,7 +325,6 @@ class OWATracker  {
 	    this.options = OWA.applyFilters('tracker.default_options', {
 	        logClicks: true,
 	        logPage: true,
-	        logMovement: false,
 	        encodeProperties: false,
 	        movementInterval: 100,
 	        logDomStreamPercentage: 100,
@@ -304,6 +333,28 @@ class OWATracker  {
 	        maxPriorCampaigns: 5,
 	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
+	        /*
+	         * Scroll depths, as percentages, that each raise ONE scroll event.
+	         * A single 90% mark by default: one event, at the depth where "read
+	         * to the end" becomes true. Set [25,50,75,100] for quartiles.
+	         */
+	        scrollThresholds: [ 90 ],
+	        /*
+	         * Extensions a click is treated as downloading. A list rather than
+	         * "anything with a dot", which reads every /v1.2/ path and every
+	         * .html as a download.
+	         */
+	        downloadExtensions: [
+	            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt',
+	            'rtf', 'zip', 'gz', 'tar', 'rar', '7z', 'dmg', 'pkg', 'exe',
+	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi'
+	        ],
+	        /*
+	         * Query parameters that carry a site-search term. No convention
+	         * exists -- q, s, search, query and keywords are all common -- so
+	         * the site says which one it uses.
+	         */
+	        siteSearchParams: [],
 	        cookie_domain: false,
 	        /*
 	         * How long each state store's cookie lives, by LOGICAL store name,
@@ -761,6 +812,91 @@ class OWATracker  {
     setUserName( value ) {
 
         OWA.setState( 'v', 'user_name', String( value ).trim() );
+    }
+
+    /**
+     * The site's OWN id for a logged-in person.
+     *
+     * NOT setUserName, which is a display name and a visitor-store value.
+     * user_id is the one field that outlives a cookie, which is what makes it
+     * the only honest basis for joining a person's devices -- the alternative
+     * is a probabilistic join producing numbers nobody can check, and v2 does
+     * not do that.
+     *
+     * FORWARD-ONLY. Events collected before someone identified themselves stay
+     * anonymous forever. Relabelling a visitor's earlier events would mean
+     * rewriting rows in partitions the routine pass does not touch, and a fact
+     * row that can change after it is written is the property this whole design
+     * gives up.
+     *
+     * Visitor-scoped so it survives the page, and cleared by passing nothing --
+     * which is what a logout should call.
+     */
+    setUserId( value ) {
+
+        if ( value === undefined || value === null || value === '' ) {
+
+            Util.clearState( 'v', 'user_id' );
+            this.deleteGlobalEventProperty( 'user_id' );
+
+            return;
+        }
+
+        OWA.setState( 'v', 'user_id', String( value ).trim() );
+    }
+
+    /**
+     * An author-assigned grouping of pages -- section, template, topic.
+     *
+     * PAGE-SCOPED, because that is what it describes: a value set on one page
+     * must not leak onto the next, and an SPA route change is a new page. A
+     * site that wants one group for a whole section sets it on each page of
+     * that section, which is also what makes it correct when someone lands
+     * mid-section.
+     */
+    setContentGroup( value ) {
+
+        this.setGlobalEventProperty( 'content_group', String( value ).trim() );
+    }
+
+    /**
+     * The currency revenue is denominated in, as an ISO 4217 code.
+     *
+     * Stored beside the amount rather than assumed, because without it a
+     * multi-currency store sums minor units of different things and the total
+     * is meaningless in a way no report can show.
+     */
+    setCurrency( value ) {
+
+        this.setGlobalEventProperty( 'currency', String( value ).trim().toUpperCase() );
+    }
+
+    /**
+     * Record what the page's consent state is at this moment.
+     *
+     * RECORDED PER EVENT, not once per session, because it can change
+     * mid-session -- a visitor accepts a banner on the third page -- and a row
+     * collected before that is not retrospectively consented. A row with no
+     * consent recorded is also not the same as one with consent denied, which
+     * is why absent stays absent rather than defaulting to either.
+     *
+     * OWA RECORDS, IT DOES NOT ENFORCE. Whether to send at all is the site's
+     * decision and its consent platform's; what this does is make the decision
+     * visible in the data afterwards, so a question about a period can be
+     * answered rather than assumed.
+     */
+    setConsentState( value ) {
+
+        var state = String( value ).trim().toLowerCase();
+
+        if ( [ 'granted', 'denied' ].indexOf( state ) === -1 ) {
+
+            OWA.debug( 'Ignoring consent state "%s": expected granted or denied.', state );
+
+            return;
+        }
+
+        this.setGlobalEventProperty( 'consent_state', state );
     }
 
     /**
@@ -1590,6 +1726,130 @@ class OWATracker  {
         return properties;
     }
 
+    /**
+     * A stable CSS-ish path to one element.
+     *
+     * WHAT IT IS FOR: `dom_element_id` is real on 0.09% of clicks and populated
+     * on 94% of them, because 1.x writes '(not set)' when there is no id -- so
+     * the one column that could identify what was clicked identifies nothing.
+     * A path is derivable for every element, whether or not the page author
+     * gave it an id.
+     *
+     * PREFERS AN ID and stops there, because an id is unique by definition and
+     * a path through it is both shorter and more stable than one through the
+     * tree. Otherwise it walks up, recording tag plus nth-of-type, and stops at
+     * the body.
+     *
+     * DEPTH-CAPPED at eight. Deeply nested component frameworks produce paths
+     * longer than the column and longer than anything a human reads, and a
+     * truncated path is worse than a shallow one: it looks complete and
+     * matches the wrong element.
+     *
+     * @param {Element} el
+     * @return {string}
+     */
+    getElementPath( el ) {
+
+        var parts = [];
+        var depth = 0;
+
+        while ( el && el.nodeType === 1 && depth < 8 ) {
+
+            if ( el.id ) {
+
+                parts.unshift( '#' + el.id );
+                break;
+            }
+
+            var tag = String( el.tagName || '' ).toLowerCase();
+
+            if ( ! tag || tag === 'body' || tag === 'html' ) {
+
+                break;
+            }
+
+            var index = 1;
+            var sib   = el;
+
+            while ( ( sib = sib.previousElementSibling ) ) {
+
+                if ( sib.tagName === el.tagName ) {
+
+                    index++;
+                }
+            }
+
+            parts.unshift( index > 1 ? tag + ':nth-of-type(' + index + ')' : tag );
+
+            el = el.parentElement;
+            depth++;
+        }
+
+        return parts.join( ' > ' );
+    }
+
+    /**
+     * Whether a URL leaves this site.
+     *
+     * Compared on HOST, not on the full URL, and against the page's own host
+     * rather than a configured domain -- a site reached at both apex and www
+     * would otherwise report half its internal links as outbound.
+     *
+     * @param {string} url
+     * @return {boolean}
+     */
+    isOutboundUrl( url ) {
+
+        if ( ! url || typeof window === 'undefined' ) {
+
+            return false;
+        }
+
+        var host = '';
+
+        try {
+
+            host = new URL( url, window.location.href ).hostname;
+
+        } catch ( e ) {
+
+            return false;
+        }
+
+        return !! host && host !== window.location.hostname;
+    }
+
+    /**
+     * The file extension a URL downloads, or '' if it is not a download.
+     *
+     * A LIST rather than "anything with a dot in the last path segment",
+     * because that reads every /v1.2/docs path and every .html as a download.
+     * The list is an option so a site can add its own.
+     *
+     * @param {string} url
+     * @return {string}
+     */
+    getDownloadExtension( url ) {
+
+        if ( ! url ) {
+
+            return '';
+        }
+
+        var path = String( url ).split( '#' )[0].split( '?' )[0];
+        var last = path.substring( path.lastIndexOf( '/' ) + 1 );
+        var dot  = last.lastIndexOf( '.' );
+
+        if ( dot < 1 ) {
+
+            return '';
+        }
+
+        var ext = last.substring( dot + 1 ).toLowerCase();
+
+        return this.getOption( 'downloadExtensions' ).indexOf( ext ) > -1 ? ext : '';
+    }
+
     clickEventHandler(e) {
 
         // hack for IE
@@ -1636,6 +1896,9 @@ class OWATracker  {
         click.set("page_height", viewport.height);
         var properties = this.getDomElementProperties(targ);
         click.merge(this.filterDomProperties(properties));
+
+        // The stored selector. See getElementPath().
+        click.set( 'element_path', this.getElementPath( targ ) );
         // set coordinates
         click.set("dom_element_x", this.findPosX(targ) + '');
         click.set("dom_element_y", this.findPosY(targ) + '');
@@ -1653,6 +1916,8 @@ class OWATracker  {
             //this.trackEvent(full_click);
             this.trackEvent(click);
         }
+
+        this.classifyClickTarget( click.get( 'target_url' ) );
 
 
         //this.click = full_click;
@@ -1709,18 +1974,375 @@ class OWATracker  {
     scrollEventHandler(e) {
 
         // hack for IE
-        var e = e || window.event;
+        e = e || window.event;
 
-        var now = this.getTimestamp();
+        /*
+         * The RECORDING sample. Queued for the domstream and never sent on its
+         * own -- 1.x has no server handler for dom.scroll, so this has always
+         * been playback data rather than an event.
+         */
+        if ( this.getOption( 'trackDomStream' ) ) {
 
-        var event = new OwaEvent();
-        event.setEventType('dom.scroll');
-        var coords = this.getScrollingPosition();
-        event.set('x', coords.x);
-        event.set('y', coords.y);
-        this.addToEventQueue(event);
-        this.last_scroll = now;
+            var sample = new OwaEvent();
+            sample.setEventType( 'dom.scroll' );
+            var coords = this.getScrollingPosition();
+            sample.set( 'x', coords.x );
+            sample.set( 'y', coords.y );
+            this.addToEventQueue( sample );
+        }
 
+        this.checkScrollDepth();
+    }
+
+    /**
+     * Raise a `scroll` event the first time the page passes a depth threshold.
+     *
+     * ONE EVENT PER PAGE PER THRESHOLD, not one per scroll tick. The handler
+     * fired on every scroll event and queued one each time -- `last_scroll` was
+     * assigned and never read, so nothing throttled it and nothing could: a
+     * timestamp throttle would still send a stream of them.
+     *
+     * Depth is the right unit rather than time or pixels. It is comparable
+     * across page lengths and viewport sizes, and it answers the question
+     * anyone actually asks of it: did they reach the bottom.
+     *
+     * The threshold list is an option so a site can ask for quartiles. The
+     * default is a single 90% mark, which is the shape GA settled on -- one
+     * event, at the depth where "read to the end" becomes true.
+     */
+    checkScrollDepth() {
+
+        var depth = this.getScrollDepth();
+
+        if ( ! depth ) {
+
+            return;
+        }
+
+        var thresholds = this.getOption( 'scrollThresholds' ) || [ 90 ];
+
+        for ( var i = 0; i < thresholds.length; i++ ) {
+
+            var mark = thresholds[ i ];
+
+            if ( depth >= mark && this.last_scroll < mark ) {
+
+                this.last_scroll = mark;
+
+                var event = this.makeEvent();
+                event.setEventType( 'scroll' );
+                event.set( 'scroll_depth', mark );
+
+                this.trackEvent( event );
+            }
+        }
+    }
+
+    /**
+     * How far down the page the visitor has reached, as a percentage.
+     *
+     * The bottom of the VIEWPORT against the height of the document, so a page
+     * that fits on one screen is 100 from the start -- which is true, and the
+     * alternative (measuring the top of the viewport) says 0 for a page that
+     * has been read in full.
+     *
+     * @return {number} 0 when the document has no measurable height
+     */
+    getScrollDepth() {
+
+        if ( typeof document === 'undefined' || ! document.documentElement ) {
+
+            return 0;
+        }
+
+        var body = document.body || {};
+        var el   = document.documentElement;
+
+        var height = Math.max(
+            body.scrollHeight || 0, el.scrollHeight || 0,
+            body.offsetHeight || 0, el.offsetHeight || 0 );
+
+        if ( ! height ) {
+
+            return 0;
+        }
+
+        var viewport = this.getViewportDimensions();
+        var bottom   = this.getScrollingPosition().y + ( viewport.height || 0 );
+
+        return Math.min( 100, Math.round( ( bottom / height ) * 100 ) );
+    }
+
+    /*
+     * ---------------------------------------------------------------
+     * ENGAGEMENT
+     * ---------------------------------------------------------------
+     */
+
+    /**
+     * Start counting engaged time, if it is not already running.
+     *
+     * Called when the page becomes visible: on load, on a tab switch back, and
+     * on a bfcache restore. Idempotent, because all three can fire together.
+     */
+    startEngagement() {
+
+        if ( this.engagementSince === null ) {
+
+            this.engagementSince = this.getTime();
+        }
+    }
+
+    /**
+     * Stop counting, banking whatever has accrued.
+     *
+     * Called when the page is hidden. The banked time is not SENT here -- the
+     * hide-time event does that -- it just stops the clock, so a tab left open
+     * in the background for an hour does not report an hour of reading.
+     */
+    pauseEngagement() {
+
+        if ( this.engagementSince === null ) {
+
+            return;
+        }
+
+        this.engagementAccrued += this.getTime() - this.engagementSince;
+        this.engagementSince = null;
+    }
+
+    /**
+     * Time accrued on this page and not yet sent, in milliseconds.
+     *
+     * CONSUMED by the caller: reading it marks the time as reported, so the
+     * same milliseconds cannot ride two beacons. That is what makes the value
+     * a delta rather than a running total, and what makes losing one beacon
+     * cost one increment.
+     *
+     * @return {number}
+     */
+    consumeEngagementDelta() {
+
+        var now = this.getTime();
+
+        if ( this.engagementSince !== null ) {
+
+            this.engagementAccrued += now - this.engagementSince;
+            this.engagementSince = now;
+        }
+
+        var delta = this.engagementAccrued - this.engagementReported;
+
+        if ( delta <= 0 ) {
+
+            return 0;
+        }
+
+        this.engagementReported = this.engagementAccrued;
+
+        return Math.round( delta );
+    }
+
+    /**
+     * Reset the engagement clock for a new page.
+     *
+     * An SPA route change is a new page: its time starts at zero, and the
+     * previous route's residue has already been delivered by the page_view
+     * that ends it.
+     */
+    resetEngagement() {
+
+        this.engagementAccrued  = 0;
+        this.engagementReported = 0;
+        this.engagementSince    = null;
+        this.startEngagement();
+    }
+
+    /**
+     * Deliver the engagement residue, once, at hide.
+     *
+     * FIRES ON ANY HIDE AT ANY SIZE. The engaged threshold is a READ-TIME
+     * classification -- a session is engaged if its total crosses it -- and
+     * gating the send on it would bake the threshold into collection, so it
+     * could never be retuned afterwards.
+     *
+     * DELIVERED ONCE. An earlier design also piggybacked the residue onto the
+     * next request, which meant one stretch of time arriving twice and needing
+     * a derived id and a counter to collapse. Sending it here and nowhere else
+     * removes the second arrival and everything it would have needed.
+     *
+     * Two tabs of one session each send their own residue and BOTH are real --
+     * not a duplicate to collapse, because they differ in the instant they
+     * arrive, which is what the event id is derived from.
+     *
+     * Final-page dwell is the one irreducible lossy attempt: a browser torn
+     * down without firing pagehide reports nothing, and no transport fixes it.
+     */
+    trackEngagement() {
+
+        this.pauseEngagement();
+
+        var delta = this.consumeEngagementDelta();
+
+        if ( delta <= 0 ) {
+
+            return;
+        }
+
+        var event = this.makeEvent();
+        event.setEventType( 'user_engagement' );
+        event.set( 'engagement_msec', delta );
+
+        return this.trackEvent( event );
+    }
+
+    /*
+     * ---------------------------------------------------------------
+     * PAGE LIFECYCLE
+     * ---------------------------------------------------------------
+     */
+
+    /**
+     * Bind the events that tell us the page is being read, left, or replaced.
+     *
+     * OWA bound NONE of these. visibilitychange, pagehide, pageshow, popstate
+     * and hashchange had zero occurrences in this file, which is why there was
+     * no engagement measurement, no SPA page view and no bfcache handling.
+     *
+     * visibilitychange AND pagehide, not either alone: visibilitychange is the
+     * only one a mobile browser reliably fires when the user switches app, and
+     * pagehide is the one that fires on a real navigation away. Both are
+     * idempotent here -- trackEngagement() sends nothing when the delta is
+     * zero -- so the overlap costs a no-op rather than a duplicate.
+     *
+     * beforeunload is deliberately NOT used: it is unreliable on mobile, and
+     * registering it opts the page out of the bfcache in some browsers, which
+     * would break the restore path below to measure it.
+     */
+    bindPageLifecycleEvents() {
+
+        if ( typeof document === 'undefined' || typeof document.addEventListener !== 'function' ) {
+
+            return;
+        }
+
+        var that = this;
+
+        document.addEventListener( 'visibilitychange', function () {
+
+            if ( document.visibilityState === 'hidden' ) {
+
+                that.trackEngagement();
+
+            } else {
+
+                that.startEngagement();
+            }
+
+        }, false );
+
+        window.addEventListener( 'pagehide', function () { that.trackEngagement(); }, false );
+
+        /*
+         * A bfcache restore is a page that was never torn down coming back.
+         * event.persisted says so. Without this the visitor reads the page
+         * again and OWA records nothing at all -- no page view, and an
+         * engagement clock that has been stopped since they left.
+         *
+         * NOT a new page view: the URL has not changed and the session has not
+         * restarted, so counting one would inflate pageviews on every back
+         * button. Resuming the clock is the whole of it.
+         */
+        window.addEventListener( 'pageshow', function ( e ) {
+
+            if ( e && e.persisted ) {
+
+                that.startEngagement();
+            }
+
+        }, false );
+
+        this.startEngagement();
+    }
+
+    /**
+     * Track route changes in a single-page application as page views.
+     *
+     * The gap this closes is large and easy to miss: an SPA tracked by OWA
+     * today records ONE page view per session, because the only page view is
+     * the one the snippet fires on load and nothing notices the route change
+     * afterwards. Every subsequent screen is invisible.
+     *
+     * pushState and replaceState are patched rather than polled, and popstate
+     * and hashchange are listened for, because those four are the complete set
+     * of ways a route changes without a document load. Patching is how every
+     * analytics tracker does this -- there is no event for pushState.
+     *
+     * OPT-IN. A site that routes on the hash for in-page anchors would
+     * otherwise get a page view per anchor click, so this is a call the site
+     * makes rather than a default.
+     */
+    trackRouteChanges() {
+
+        if ( this.routeTrackingEnabled || typeof window === 'undefined' ) {
+
+            return;
+        }
+
+        this.routeTrackingEnabled = true;
+
+        var that = this;
+        var last = this.getCurrentUrl();
+
+        var changed = function () {
+
+            var url = that.getCurrentUrl();
+
+            // A route change that does not change the URL is not one. Guarded
+            // because replaceState is used for things other than navigation --
+            // storing filter state, for instance -- and each of those would
+            // otherwise be a page view.
+            if ( url === last ) {
+
+                return;
+            }
+
+            last = url;
+
+            // The residue of the route being LEFT, delivered before the new
+            // page view, so the time lands against the page it was spent on.
+            that.trackEngagement();
+            that.resetEngagement();
+            that.last_scroll = 0;
+
+            that.trackPageView( url );
+        };
+
+        if ( typeof window.history === 'object' && window.history ) {
+
+            ['pushState', 'replaceState'].forEach( function ( method ) {
+
+                var original = window.history[ method ];
+
+                if ( typeof original !== 'function' ) {
+
+                    return;
+                }
+
+                window.history[ method ] = function () {
+
+                    var result = original.apply( window.history, arguments );
+
+                    // After the call, so getCurrentUrl() reads the new URL.
+                    changed();
+
+                    return result;
+                };
+            } );
+        }
+
+        window.addEventListener( 'popstate', changed, false );
+        window.addEventListener( 'hashchange', changed, false );
     }
 
     getScrollingPosition() {
@@ -2677,6 +3299,10 @@ class OWATracker  {
         var collected = {};
         var map = [
             { store: 'v', key: 'vid',  name: 'visitor_id' },
+            // The site's own id for the person, when they have identified
+            // themselves. Visitor-scoped, so it rides every beacon from the
+            // moment setUserId() is called and not before.
+            { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
             { store: 's', key: 'referer', name: 'session_referer' },
@@ -2973,6 +3599,62 @@ class OWATracker  {
             event.set('timestamp', this.getTimestamp() );
         }
 
+        /*
+         * The COMPLETE URL, query and all.
+         *
+         * page_url is the one the server canonicalises -- it strips the
+         * campaign parameters and whatever the site put in query_string_filters
+         * -- which is right for v1, where page_url IS the page's identity.
+         * page_location is the evidence the campaign tags are parsed back out
+         * of, and a URL whose query has already been removed cannot answer that
+         * a second time. Sent rather than reconstructed, because by the time a
+         * handler runs the only copy left is the filtered one.
+         */
+        if ( ! event.get( 'page_location' ) ) {
+
+            event.set( 'page_location', event.get( 'page_url' ) || this.getCurrentUrl() );
+        }
+
+        /*
+         * The client's own clock at send, in microseconds.
+         *
+         * The server stamps its receipt time and stores the DIFFERENCE, so
+         * skew becomes a number instead of a silent error. 1.x subtracts a
+         * client clock from a server one and records no provenance for either,
+         * so a device an hour out produces a session length nobody can identify
+         * as wrong.
+         *
+         * Date.now() is milliseconds; the extra three digits are zeros and not
+         * a claim of precision the browser does not have. What matters is the
+         * UNIT matching the column, so the subtraction is meaningful.
+         */
+        if ( ! event.get( 'client_ts_usec' ) ) {
+
+            event.set( 'client_ts_usec', Date.now() * 1000 );
+        }
+
+        /*
+         * ENGAGEMENT RIDES EVERY EVENT, as a delta.
+         *
+         * Time accrued on this page since the last report, consumed as it is
+         * read so the same milliseconds cannot ride two beacons. Losing a
+         * beacon therefore costs one increment rather than one page -- where a
+         * cumulative total would make the last beacon of the page the only one
+         * that mattered, and that is the one most likely to be lost.
+         *
+         * Not set on user_engagement, which carries its own residue and has
+         * already consumed it.
+         */
+        if ( ! event.isSet( 'engagement_msec' ) ) {
+
+            var delta = this.consumeEngagementDelta();
+
+            if ( delta > 0 ) {
+
+                event.set( 'engagement_msec', delta );
+            }
+        }
+
 
            if (callback && ( typeof( callback ) == 'function' ) ) {
 
@@ -3233,6 +3915,201 @@ class OWATracker  {
         event.set('numeric_value', numeric_value);
         this.trackEvent(event);
         OWA.debug("Action logged");
+    }
+
+    /**
+     * Raise file_download for a click that fetches a file.
+     *
+     * A SEPARATE EVENT beside the click, not a flag on it. The click is what
+     * happened in the DOM; the download is what it MEANT, and the two are
+     * counted differently -- a downloads report counts the second and would
+     * have to filter the first. It is also how the vocabulary already works:
+     * every other tracker names these as events.
+     *
+     * Outbound is the opposite call: it IS a property of the click, because
+     * "clicks that left the site" is the same count as "clicks", narrowed. So
+     * it rides as a param rather than becoming an event of its own.
+     *
+     * @param {string} url
+     */
+    classifyClickTarget( url ) {
+
+        if ( ! url ) {
+
+            return;
+        }
+
+        var extension = this.getDownloadExtension( url );
+
+        if ( extension ) {
+
+            var event = this.makeEvent();
+            event.setEventType( 'file_download' );
+            event.set( 'target_url', url );
+            event.set( 'file_extension', extension );
+            event.set( 'file_name', String( url ).split( '#' )[0].split( '?' )[0]
+                .substring( String( url ).split( '#' )[0].split( '?' )[0].lastIndexOf( '/' ) + 1 ) );
+
+            this.trackEvent( event );
+        }
+    }
+
+    /**
+     * Track form interaction: one form_start per form, and form_submit on send.
+     *
+     * form_start fires on the FIRST interaction with a given form and not
+     * again, which is what makes start/submit a funnel rather than two counts
+     * of the same thing. Tracked per form element, so two forms on one page
+     * each get their own start.
+     *
+     * Bound at the document with capture rather than per form, so forms added
+     * to the page after load are covered without re-binding -- which is the
+     * normal case on anything component-rendered.
+     */
+    trackForms() {
+
+        if ( this.formTrackingEnabled || typeof document === 'undefined' ) {
+
+            return;
+        }
+
+        this.formTrackingEnabled = true;
+
+        var that    = this;
+        var started = [];
+
+        var formOf = function ( node ) {
+
+            while ( node && node.nodeType === 1 ) {
+
+                if ( String( node.tagName ).toLowerCase() === 'form' ) {
+
+                    return node;
+                }
+
+                node = node.parentElement;
+            }
+
+            return null;
+        };
+
+        document.addEventListener( 'focusin', function ( e ) {
+
+            var form = formOf( e.target );
+
+            if ( ! form || started.indexOf( form ) > -1 ) {
+
+                return;
+            }
+
+            started.push( form );
+
+            that.trackCustomEvent( 'form_start', that.formProperties( form ) );
+
+        }, true );
+
+        document.addEventListener( 'submit', function ( e ) {
+
+            var form = formOf( e.target );
+
+            if ( form ) {
+
+                that.trackCustomEvent( 'form_submit', that.formProperties( form ) );
+            }
+
+        }, true );
+    }
+
+    /**
+     * How a form identifies itself. Both, because either may be absent and a
+     * report keyed on a missing one has nothing to group by.
+     *
+     * @param {Element} form
+     * @return {Object}
+     */
+    formProperties( form ) {
+
+        return {
+            form_id:   form.id || '',
+            form_name: form.getAttribute( 'name' ) || ''
+        };
+    }
+
+    /**
+     * Raise view_search_results when the page is a site-search results page.
+     *
+     * 1.x has the search-term DIMENSIONS and never emits an event, so the
+     * dimensions have nothing to describe. The query parameters are a setting
+     * because there is no convention -- q, s, search, query and keywords are
+     * all common, and a site knows which one it uses.
+     *
+     * @param {Array} params  query parameter names, defaults to the option
+     */
+    trackSiteSearch( params ) {
+
+        params = params || this.getOption( 'siteSearchParams' );
+
+        if ( ! params || ! params.length ) {
+
+            return;
+        }
+
+        for ( var i = 0; i < params.length; i++ ) {
+
+            var term = this.getUrlParam( params[ i ] );
+
+            if ( term ) {
+
+                return this.trackCustomEvent( 'view_search_results', { search_term: term } );
+            }
+        }
+    }
+
+    /**
+     * Report an uncaught script error as an `exception` event.
+     *
+     * The name is GA's, because the question it answers is the same one and
+     * nothing is gained by inventing a different word for it.
+     *
+     * NO STACK TRACE ON THE WIRE. A stack from a minified bundle is noise to
+     * anyone reading a report, and it is the field most likely to carry a URL
+     * with a token in it. Message, file and line answer "is my site broken"
+     * without that risk.
+     */
+    trackExceptions() {
+
+        if ( this.exceptionTrackingEnabled || typeof window === 'undefined' ) {
+
+            return;
+        }
+
+        this.exceptionTrackingEnabled = true;
+
+        var that     = this;
+        var previous = window.onerror;
+
+        window.onerror = function ( message, source, line ) {
+
+            try {
+
+                that.trackCustomEvent( 'exception', {
+                    description: String( message ).substring( 0, 255 ),
+                    source:      String( source || '' ).substring( 0, 255 ),
+                    line:        line || 0
+                } );
+
+            } catch ( e ) {
+                // An error raised while reporting an error must not become a
+                // loop, and must not replace the page's own handler.
+            }
+
+            if ( typeof previous === 'function' ) {
+
+                return previous.apply( window, arguments );
+            }
+
+            return false;
+        };
     }
 
     trackClicks(handler) {

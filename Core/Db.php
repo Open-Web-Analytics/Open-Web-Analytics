@@ -3429,6 +3429,21 @@ class Db extends \OWA\Core\Base {
         return $this->query(OWA_SQL_END_TRANSACTION);
     }
 
+    /**
+     * Abandons the open transaction.
+     *
+     * The missing third of the pair. Until v2's ingest there was nothing to
+     * roll back -- the only callers of begin/end are the schema-update CLI, and
+     * on the tracking path each create() stood alone -- so a failure part way
+     * through several related writes had no way to undo the ones that had
+     * already landed. One beacon becoming several rows is the first thing here
+     * that needs all of them or none.
+     */
+    function rollbackTransaction() {
+
+        return $this->query(OWA_SQL_ROLLBACK_TRANSACTION);
+    }
+
     function count($column_name) {
 
         return sprintf(OWA_SQL_COUNT, $column_name);

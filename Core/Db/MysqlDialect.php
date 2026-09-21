@@ -94,6 +94,7 @@ if ( ! defined( 'OWA_SQL_DROP_INDEX' ) ) { define('OWA_SQL_DROP_INDEX', 'DROP IN
 if ( ! defined( 'OWA_SQL_INDEX' ) ) { define('OWA_SQL_INDEX', 'INDEX (%s)'); }
 if ( ! defined( 'OWA_SQL_BEGIN_TRANSACTION' ) ) { define('OWA_SQL_BEGIN_TRANSACTION', 'BEGIN'); }
 if ( ! defined( 'OWA_SQL_END_TRANSACTION' ) ) { define('OWA_SQL_END_TRANSACTION', 'COMMIT'); }
+if ( ! defined( 'OWA_SQL_ROLLBACK_TRANSACTION' ) ) { define('OWA_SQL_ROLLBACK_TRANSACTION', 'ROLLBACK'); }
 if ( ! defined( 'OWA_DTD_TABLE_TYPE' ) ) { define('OWA_DTD_TABLE_TYPE', 'ENGINE = %s'); }
 if ( ! defined( 'OWA_DTD_TABLE_TYPE_DEFAULT' ) ) { define('OWA_DTD_TABLE_TYPE_DEFAULT', 'INNODB'); }
 if ( ! defined( 'OWA_DTD_TABLE_TYPE_DISK' ) ) { define('OWA_DTD_TABLE_TYPE_DISK', 'INNODB'); }
