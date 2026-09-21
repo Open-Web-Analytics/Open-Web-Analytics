@@ -1600,27 +1600,35 @@ the most is known.</p>
 
 <tr><td>2</td><td>Fan-out dispatcher, defaulting to v1-only until switched on.</td><td>Not started</td></tr>
 <tr><td>3</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>).</td><td>Not started</td></tr>
-<tr><td>4</td><td><strong><code>msec</code> carries a real fraction of a second</strong> &mdash; in v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep. <a href="#nA111">A.1</a> for why a 1.x fix would be worse than leaving it.</td></tr>
-<tr><td>5</td><td><strong>Engagement deltas</strong> &mdash; accumulation, piggybacking, terminal beacon.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code>.</td></tr>
+<tr><td>4</td><td><strong>Sub-second time</strong> &mdash; <code>ts</code> at microsecond resolution, stamped once at edge receipt. No longer only an ordering fix: <a href="#s21">&sect;2.1.2</a> makes that resolution the thing that keeps an event id unique, so it now gates the id scheme as well. In v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep, widened 21&nbsp;Sep. <a href="#nA111">A.1.11</a> for why a 1.x fix would be worse than leaving it</td></tr>
+<tr><td>5</td><td><strong>Engagement deltas and the <code>user_engagement</code> event</strong> &mdash; the per-event accumulator that rides every beacon as <code>engagement_msec</code>, and the hide-time event carrying the residue. <strong>Delivered once, at hide</strong> (<a href="#s12">&sect;1.2.1</a>), not also piggybacked onto the next request &mdash; which removed the second arrival and with it the derived id and counter it would have needed. Fires on any hide at any size; the engaged threshold gates read-time classification, never the send.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code></td></tr>
 <tr><td>6</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
 <tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td>Not started</td></tr>
+<tr><td>8</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td>Not started</td></tr>
+<tr><td>9</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td>Not started</td></tr>
+<tr><td>10</td><td><strong>Removals</strong> &mdash; stop sending <code>attribs</code> (<a href="#s15">&sect;1.5.3</a>), and delete four options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code>, <code>trafficAttributionMode</code> (<a href="#s225">&sect;2.24.4</a>).</td><td>Not started</td></tr>
+<tr><td>11</td><td><strong>The published tracker</strong> (<a href="#s225">&sect;2.24</a>) &mdash; per-site build, site config read from the bundle instead of <code>owa_cmds</code>, and the tracker URL split from the beacon URL.</td><td>Not started</td></tr>
 </tbody></table></div>
-<div class="flag">
-  <p class="h">Status &mdash; 2026-09-20</p>
-  <p><strong>All eight items are unstarted</strong>, checked against the code rather than against
-  this list: no <code>owa_event</code> entity exists, <code>msec</code> is still
-  <code>OWA_DTD_INT</code>, and the remaining six have no references at all.</p>
-  <p>Four PRs of v2 groundwork did ship into 1.x on 19&nbsp;Sep without appearing here:
-  <strong>#1114</strong> (acquisition columns written once onto <code>owa_visitor</code>, the v1
-  shape of v2's visitor store), <strong>#1117</strong> (the tracker carries
-  <code>landing_url</code> and the server parses the campaign tags out of it),
-  <strong>#1113</strong> (<code>daily</code> added to <code>PARTITION_CUTS</code>) and
-  <strong>#1116</strong> (six dead columns dropped from <code>owa_visitor</code>). All four are
-  deployed to demo and peteradamsphoto.</p>
-  <p><a href="#s15">&sect;1.5</a> was marked Decided on 20&nbsp;Sep, which unblocks item&nbsp;1:
-  what is left there is sizing rather than architecture. <strong>The next thing is code, not
-  another decision.</strong></p>
-</div>
+<div class="flag"><strong>Status &mdash; 2026-09-21</strong>
+<p><strong>All eleven items are unstarted</strong>, checked against the code rather than against
+this list: no <code>owa_event</code> entity exists, <code>msec</code> is still
+<code>OWA_DTD_INT</code>, and of the tracker items <code>setUserId</code>,
+<code>setContentGroup</code>, <code>scrollInterval</code> and any consent API return no matches in
+<code>Tracker.js</code>.</p>
+<p>Items&nbsp;8&ndash;11 were added on 21&nbsp;Sep, from decisions taken the same day: the column
+set closing the GA gap (<a href="#s24">&sect;2.4.2</a>), the metric vocabulary
+(<a href="#s23">&sect;2.3.2</a>) and publishing the tracker per site
+(<a href="#s225">&sect;2.24</a>). Item&nbsp;5 lost its piggyback half the same day.</p>
+<p>Four PRs of v2 groundwork shipped into 1.x on 19&nbsp;Sep without appearing here:
+<strong>#1114</strong> (acquisition columns written once onto <code>owa_visitor</code>, the v1
+shape of v2&rsquo;s visitor store), <strong>#1117</strong> (the tracker carries
+<code>landing_url</code> and the server parses the campaign tags out of it),
+<strong>#1113</strong> (<code>daily</code> added to <code>PARTITION_CUTS</code>) and
+<strong>#1116</strong> (six dead columns dropped from <code>owa_visitor</code>). All four are
+deployed to demo and peteradamsphoto.</p>
+<p><a href="#s15">&sect;1.5</a> was marked Decided on 20&nbsp;Sep, which unblocks item&nbsp;1: what
+is left there is sizing rather than architecture. <strong>The next thing is code, not another
+decision.</strong></p></div>
 
 <h3 id="s220"><span class="num">2.20</span>Goals became goal events <span class="chip c-done">Shipped</span></h3>
 <p>3&nbsp;Sep&nbsp;2026, PR&nbsp;#1064. <a href="#s13">&sect;1.3</a> says v2 has no numbered goal
