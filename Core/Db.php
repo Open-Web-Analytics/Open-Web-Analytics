@@ -1948,6 +1948,28 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Rewrite a table in place, keeping its rows.
+     *
+     * Costs a full rebuild, so it belongs in a deliberate operation. Its one
+     * use is clearing the row-format metadata an instant ADD COLUMN leaves
+     * behind, which EXCHANGE PARTITION refuses against a staging table built by
+     * CREATE TABLE LIKE. REBUILD PARTITION does not clear it.
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function rebuildTable( $table_name ) {
+
+        if ( ! defined( 'OWA_SQL_REBUILD_TABLE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_REBUILD_TABLE, $table_name ) );
+    }
+
+    /**
      * Swap a partition's contents with an unpartitioned table's, atomically.
      *
      * The two tablespaces change places: afterwards the staging table holds

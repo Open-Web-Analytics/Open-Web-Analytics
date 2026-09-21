@@ -128,6 +128,15 @@ if ( ! defined( 'OWA_SQL_REORGANIZE_PARTITION' ) ) { define('OWA_SQL_REORGANIZE_
 if ( ! defined( 'OWA_SQL_EXCHANGE_PARTITION' ) ) { define('OWA_SQL_EXCHANGE_PARTITION', 'ALTER TABLE %s EXCHANGE PARTITION %s WITH TABLE %s'); }
 if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' ) ) { define('OWA_SQL_REMOVE_PARTITIONING', 'ALTER TABLE %s REMOVE PARTITIONING'); }
 if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' ) ) { define('OWA_SQL_CREATE_TABLE_LIKE', 'CREATE TABLE %s LIKE %s'); }
+/*
+ * Rebuild a table in place, keeping every row.
+ *
+ * The remedy for instant-added columns. MySQL 8 adds a column without touching
+ * the rows, leaving row-format metadata that EXCHANGE PARTITION then refuses
+ * against a freshly created staging table. FORCE rewrites the table and clears
+ * it. REBUILD PARTITION does not -- measured.
+ */
+if ( ! defined( 'OWA_SQL_REBUILD_TABLE' ) ) { define('OWA_SQL_REBUILD_TABLE', 'ALTER TABLE %s FORCE'); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }

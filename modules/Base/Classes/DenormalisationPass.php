@@ -170,9 +170,18 @@ class DenormalisationPass {
         if ( ! $this->db->exchangePartition(
                 $this->tables['target'], $span['name'], $this->tables['staging'] ) ) {
 
+            /*
+             * The likely cause is worth naming, because the message is all
+             * anyone gets: a column added to this table instantly -- MySQL 8's
+             * default -- leaves row-format metadata that the staging table,
+             * built by CREATE TABLE LIKE, does not have, and the server refuses
+             * the pair with error 1731. REBUILD PARTITION does not clear it.
+             */
             \OWA\Core\CoreAPI::error( sprintf(
-                'Denormalisation pass: exchanging %s failed; %s is unchanged.',
-                $span['name'], $this->tables['target'] ) );
+                'Denormalisation pass: exchanging %s failed; %s is unchanged. '
+              . 'If the server reported 1731, run ALTER TABLE %s FORCE -- a column '
+              . 'was added to it instantly and staging cannot match that.',
+                $span['name'], $this->tables['target'], $this->tables['target'] ) );
 
             $this->dropStaging();
 

@@ -10,30 +10,27 @@ namespace OWA\Module\Base\Update;
  * expensive -- SUBSTRING_INDEX cannot tell a URL from a string that is not one,
  * and the expression was inlined once per classifier branch.
  *
- * owa_event_raw and the visitor store are ALTERed. owa_event is DROPPED AND
- * RECREATED, and the difference is not stylistic.
+ * All three tables are ALTERed. owa_event is then REBUILT, and that second
+ * step is not optional.
  *
  * MySQL 8 adds a column instantly by default, which leaves the table carrying
- * instant-column metadata in its row format. A staging table built by CREATE
- * TABLE ... LIKE has none, so the two stop being byte-compatible and
- * EXCHANGE PARTITION refuses them:
+ * row-format metadata a freshly created staging table does not have. The two
+ * stop being byte-compatible and EXCHANGE PARTITION refuses them:
  *
  *   1731 Non matching attribute 'INSTANT COLUMN(s)' between partition and table
  *
- * The pass would then fail on every run, having published nothing, until
- * someone rebuilt the table. owa_event holds no record of its own -- every row
- * is derived from owa_event_raw -- so recreating it is cheap and leaves no
- * history behind to diverge from the entity.
+ * The pass then fails every run, having published nothing. ALTER TABLE ... FORCE
+ * rewrites the table and clears it; REBUILD PARTITION does not, measured.
  *
- * THE LIMIT OF THAT: it holds only while raw is retained. Once raw is pruned,
- * owa_event is the only copy of those periods and this has to become an ALTER
- * followed by a rebuild of the table (ALTER TABLE ... FORCE) to flatten the
- * instant columns out again.
+ * The rebuild keeps every row. Dropping and recreating owa_event would also
+ * work and would be cheaper to write, but it throws away every partition and
+ * makes the next upgrade re-derive the whole history from raw -- which grows
+ * with the table and is impossible at all once raw has been pruned.
  *
  * Rows written before this hold NULL in referer_host, which resolves to
  * `direct` in the pass -- the same answer those rows already gave, since
  * nothing could read a host out of them either. The migrator fills it for
- * history.
+ * history, and a rebuild fills it for anything still in raw.
  */
 class Update036 extends \OWA\Core\Update {
 
@@ -51,6 +48,9 @@ class Update036 extends \OWA\Core\Update {
         return array(
             'base.event_raw'           => 'referer_host',
             'base.visitor_acquisition' => 'acq_referer_host',
+            // owa_event carries every column owa_event_raw does, in the same
+            // order, because EXCHANGE PARTITION compares the two tables.
+            'base.event'               => 'referer_host',
         );
     }
 
@@ -69,43 +69,34 @@ class Update036 extends \OWA\Core\Update {
             }
         }
 
-        return $this->recreateEventTable();
+        return $this->clearInstantColumns();
     }
 
     /**
-     * Drop owa_event and build it again from the entity.
+     * Rewrite owa_event so it carries no instant-column metadata.
      *
-     * See the note above: an ALTER here leaves instant-column metadata that
-     * EXCHANGE PARTITION refuses. Recreating also restores the partitioning,
-     * which Db::createTable() reads from the entity.
+     * See the note above. Idempotent: a table with nothing to clear is rebuilt
+     * anyway and comes out the same, which is what makes this safe to re-run.
      *
      * @return bool
      */
-    private function recreateEventTable() {
+    private function clearInstantColumns() {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getTableName();
 
-        if ( $entity->dropTable() === false || $entity->createTable() === false ) {
+        if ( \OWA\Core\CoreAPI::dbSingleton()->rebuildTable( $table ) === false ) {
 
             $this->e->notice( sprintf(
-                'Recreating %s failed', $entity->getTableName() ) );
+                'Rebuilding %s failed. The denormalisation pass cannot swap a partition '
+              . 'into it until ALTER TABLE %s FORCE succeeds.', $table, $table ) );
 
             return false;
         }
-
-        \OWA\Core\CoreAPI::notice( sprintf(
-            '%s was recreated and is empty. Run cmd=events-rebuild to refill it.',
-            $entity->getTableName() ) );
 
         return true;
     }
 
     function down() {
-
-        if ( $this->recreateEventTable() === false ) {
-
-            return false;
-        }
 
         foreach ( array_reverse( $this->columns(), true ) as $name => $column ) {
 
@@ -120,7 +111,9 @@ class Update036 extends \OWA\Core\Update {
             }
         }
 
-        return true;
+        // Dropping a column is never instant, but the rebuild is cheap
+        // insurance that the table is swappable whichever way it got here.
+        return $this->clearInstantColumns();
     }
 }
 
