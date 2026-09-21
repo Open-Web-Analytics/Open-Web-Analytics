@@ -207,6 +207,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $page = \OWA\Module\Base\Classes\V2Event::parseUrl( $location );
         $target = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'target_url' ) );
+        $referer = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'HTTP_REFERER' ) );
 
         $row = array(
 
@@ -232,6 +233,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'page_title'    => $this->text( $event->get( 'page_title' ) ),
             'content_group' => $this->text( $event->get( 'content_group' ) ),
             'referer_url'   => $this->text( $event->get( 'HTTP_REFERER' ) ),
+            'referer_host'  => $referer['host'],
 
             'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
@@ -671,6 +673,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'acq_ad'           => $row['tagged_ad'],
             'acq_search_terms' => $row['tagged_search_terms'],
             'acq_referer_url'  => $row['referer_url'],
+            'acq_referer_host' => $row['referer_host'],
         );
 
         // Nothing to stamp, so no row. See above.

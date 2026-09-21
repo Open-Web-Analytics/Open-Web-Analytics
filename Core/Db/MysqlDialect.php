@@ -128,17 +128,6 @@ if ( ! defined( 'OWA_SQL_REORGANIZE_PARTITION' ) ) { define('OWA_SQL_REORGANIZE_
 if ( ! defined( 'OWA_SQL_EXCHANGE_PARTITION' ) ) { define('OWA_SQL_EXCHANGE_PARTITION', 'ALTER TABLE %s EXCHANGE PARTITION %s WITH TABLE %s'); }
 if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' ) ) { define('OWA_SQL_REMOVE_PARTITIONING', 'ALTER TABLE %s REMOVE PARTITIONING'); }
 if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' ) ) { define('OWA_SQL_CREATE_TABLE_LIKE', 'CREATE TABLE %s LIKE %s'); }
-/*
- * The host of a URL held in a column: everything after the scheme, up to the
- * first delimiter, without a port. Takes the column expression once, repeated
- * with positional arguments.
- *
- * Whole-expression, not a function name, because no two dialects spell this the
- * same way. Used by the denormalisation pass to classify a referrer, where the
- * value is read once per session and stored as `source`; nothing parses a URL
- * at read time.
- */
-if ( ! defined( 'OWA_SQL_URL_HOST' ) ) { define('OWA_SQL_URL_HOST', "SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(%1\$s, '://', -1), '/', 1), '?', 1), '#', 1), ':', 1)"); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }

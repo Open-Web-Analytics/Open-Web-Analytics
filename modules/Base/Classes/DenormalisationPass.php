@@ -52,14 +52,6 @@ class DenormalisationPass {
     /** Suffix of the staging table, built and dropped around each swap. */
     const STAGING_SUFFIX = '_rebuild';
 
-    /**
-     * The longest a domain name can be, per RFC 1035.
-     *
-     * Shorter than the source column, so a host that passes cannot overflow it
-     * and nothing needs truncating. EventEntityTest pins that relationship.
-     */
-    const MAX_HOSTNAME = 253;
-
     /** @var \OWA\Core\Db */
     protected $db;
 
@@ -282,8 +274,23 @@ class DenormalisationPass {
             $select[] = 'e.' . $column;
         }
 
-        $session_host = $this->hostExpression( 'e.s_referer_url' );
-        $acq_host     = $this->hostExpression( 'v.acq_referer_url' );
+        /*
+         * The host is a COLUMN, parsed at ingest by V2Event::parseUrl() beside
+         * host and target_host. It was parsed here in SQL until the cost was
+         * measured: hostExpression() was inlined at every reference, including
+         * once per classifier branch, giving a 167KB statement with 4,680
+         * SUBSTRING_INDEX calls. SQL is also not a URL parser -- a chain of
+         * SUBSTRING_INDEX cannot tell a URL from a string that is not one, so a
+         * referrer that was never a URL became a source hundreds of characters
+         * long.
+         *
+         * The CLASSIFICATION stays here. That list grows and gets corrected --
+         * duckduckgo was missing from it until 2023, so every OWA install
+         * recorded those arrivals as `referral` -- and a reading the pass makes
+         * is re-applied by rebuilding, where one written at ingest is not.
+         */
+        $session_host = 'e.s_referer_host';
+        $acq_host     = 'v.acq_referer_host';
         $unresolved   = $this->literal( V2Event::UNRESOLVED );
 
         $select[] = $this->sourceExpression( 'e.s_tagged_source', $session_host );
@@ -365,7 +372,7 @@ class DenormalisationPass {
             's_tagged_campaign'     => 'tagged_campaign',
             's_tagged_ad'           => 'tagged_ad',
             's_tagged_search_terms' => 'tagged_search_terms',
-            's_referer_url'         => 'referer_url',
+            's_referer_host'        => 'referer_host',
         );
 
         $columns = array( 'r.*' );
@@ -464,43 +471,6 @@ class DenormalisationPass {
 
         return sprintf( "COALESCE(NULLIF(TRIM(LOWER(%s)), ''), CASE %s ELSE 'referral' END)",
             $tag, implode( ' ', $branches ) );
-    }
-
-    /**
-     * The host of a URL held in a column, lowercased and without a leading www,
-     * or NULL where the column does not hold a URL.
-     *
-     * Two things are refused rather than parsed, so source only ever holds
-     * something that could be a domain:
-     *
-     *   NO SCHEME. parse_url() finds no host without `://` -- a bare string,
-     *   and even `example.com/foo`, resolve to nothing, and v1 answers `direct`
-     *   there. SUBSTRING_INDEX has no such opinion: with nothing to cut on it
-     *   returns the whole string, so a referrer that is not a URL would become
-     *   a source hundreds of characters long.
-     *
-     *   OVER 253 CHARACTERS, which is the longest a domain name can be.
-     *
-     * Both answer NULL, and the COALESCE around this turns that into `direct`
-     * -- v1's answer for a referrer it cannot read a host out of. referer_url
-     * still holds what arrived.
-     *
-     * Nothing is truncated. A clamp would make a fake domain out of a string
-     * that was never one.
-     *
-     * @param string $column
-     * @return string
-     */
-    protected function hostExpression( $column ) {
-
-        $host = sprintf( OWA_SQL_URL_HOST, $column );
-
-        $stripped = sprintf( "LOWER(CASE WHEN %s LIKE 'www.%%' THEN SUBSTRING(%s, 5) ELSE %s END)",
-            $host, $host, $host );
-
-        return sprintf( "CASE WHEN %s OR %s = '' OR CHAR_LENGTH(%s) > %d THEN NULL ELSE %s END",
-            sprintf( OWA_SQL_NOT_CONTAINS, "'://'", $column ),
-            $stripped, $stripped, self::MAX_HOSTNAME, $stripped );
     }
 
     /**

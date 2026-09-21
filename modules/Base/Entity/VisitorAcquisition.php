@@ -77,6 +77,11 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         // classifier re-reads when there were no tags to transcribe.
         $this->setProperty( $this->column( 'acq_referer_url', OWA_DTD_VARCHAR1024 ) );
 
+        // Its host, parsed at ingest like owa_event_raw.referer_host, so the
+        // pass classifies an acquisition the same way it classifies a session
+        // and neither one parses a URL in SQL.
+        $this->setProperty( $this->column( 'acq_referer_host', OWA_DTD_VARCHAR255 ) );
+
         // Microseconds, matching owa_event_raw.ts. Not the TTL input -- that is
         // last_seen -- but the tie-break a full rebuild from raw orders by.
         $this->setProperty( $this->column( 'acq_ts', OWA_DTD_BIGINT ) );

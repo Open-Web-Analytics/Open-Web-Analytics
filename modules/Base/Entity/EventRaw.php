@@ -103,6 +103,12 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'content_group', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'referer_url', OWA_DTD_VARCHAR1024 ) );
 
+        // Parsed at ingest beside host and target_host, by the same parser.
+        // The pass classifies it -- which search engine, which social network
+        // -- but does not parse it: SQL has no URL parser, and a chain of
+        // SUBSTRING_INDEX cannot tell a URL from a string that is not one.
+        $this->setProperty( $this->column( 'referer_host', OWA_DTD_VARCHAR255 ) );
+
         /*
          * Attribution EVIDENCE, never a verdict. The landing URL rides the
          * landing beacon and no other, so these are populated on the session's

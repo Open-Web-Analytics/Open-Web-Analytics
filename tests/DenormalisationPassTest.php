@@ -125,6 +125,7 @@ final class DenormalisationPassTest extends TestCase
             'page_path'     => '/from-search',
             'page_title'    => 'From search',
             'referer_url'   => 'https://www.google.com/search?q=web+analytics',
+            'referer_host'  => 'google.com',
         ]);
 
         // Nothing at all: no tags, no referrer.
@@ -140,6 +141,8 @@ final class DenormalisationPassTest extends TestCase
             'page_location' => 'https://example.test/long-referrer',
             'page_path'     => '/long-referrer',
             'page_title'    => 'Long referrer',
+            // No scheme, so V2Event::parseUrl() finds no host and ingest
+            // stores NULL. The pass must answer direct, not invent a source.
             'referer_url'   => str_repeat('a', 900),
         ]);
 
@@ -148,6 +151,8 @@ final class DenormalisationPassTest extends TestCase
             'page_location' => 'https://example.test/long-host',
             'page_path'     => '/long-host',
             'page_title'    => 'Long host',
+            // parse_url() calls this a host; it is longer than a domain name
+            // may be, so parseUrl() refuses it and ingest stores NULL.
             'referer_url'   => 'https://' . str_repeat('b', 300) . '/x',
         ]);
 
@@ -199,6 +204,7 @@ final class DenormalisationPassTest extends TestCase
             'acq_medium'   => 'referral',
             'acq_campaign' => 'launch',
             'acq_ad'       => 'tile-b',
+            'acq_referer_host' => null,
             'acq_ts'       => $this->t0,
             'last_seen'    => (int) substr((string) $this->yyyymmdd, 0, 6),
         ]);
@@ -233,6 +239,54 @@ final class DenormalisationPassTest extends TestCase
         $this->assertNotEmpty($row, "no denormalised row for $type/$visitor");
 
         return $row;
+    }
+
+    public function testOwaEventCarriesNoInstantColumnHistory(): void
+    {
+        // MySQL 8 adds a column instantly by default, and the row-format
+        // metadata that leaves behind makes EXCHANGE PARTITION refuse the
+        // table against a CREATE TABLE ... LIKE copy of it:
+        //
+        //   1731 Non matching attribute 'INSTANT COLUMN(s)'
+        //
+        // The pass then fails every run having published nothing. Any update
+        // touching owa_event has to recreate it rather than ALTER it.
+        //
+        // Only an UPGRADED install can fail this -- a fresh one never has an
+        // ALTER in its history -- which is why CI alone would not have caught
+        // the change that introduced it.
+        $db = owa_coreAPI::dbSingleton();
+
+        $columns = $db->get_results(
+            "SELECT COLUMN_NAME c FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = 'information_schema'
+                AND TABLE_NAME = 'INNODB_TABLES'
+                AND COLUMN_NAME IN ('INSTANT_COLS', 'TOTAL_ROW_VERSIONS')");
+
+        $available = array_map(function ($r) { return $r['c']; }, (array) $columns);
+
+        if (!$available) {
+            $this->markTestSkipped('This server does not report instant-column history.');
+        }
+
+        $table = $this->table('base.event');
+        $tests = [];
+
+        foreach ($available as $column) {
+            $tests[] = $column . ' > 0';
+        }
+
+        // Exactly this table and its partitions -- `owa_event%` would also
+        // match owa_event_raw, which is never a swap target and may carry all
+        // the instant history it likes.
+        $rows = $db->get_results(sprintf(
+            "SELECT NAME FROM information_schema.INNODB_TABLES
+              WHERE (NAME LIKE '%%/%s' OR NAME LIKE '%%/%s#p#%%') AND (%s)",
+            $table, $table, implode(' OR ', $tests)));
+
+        $this->assertEmpty((array) $rows, sprintf(
+            '%s carries instant-column history, so the partition swap will be refused. '
+          . 'An update that adds a column to it must drop and recreate it.', $table));
     }
 
     public function testEveryRawRowBecomesExactlyOneEventRow(): void

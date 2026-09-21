@@ -171,6 +171,15 @@ class V2Event {
     }
 
     /**
+     * The longest a domain name can be, per RFC 1035.
+     *
+     * A parse that yields something longer has not found a host, whatever else
+     * it looks like. Checked here so `(not a host)` is one answer -- NULL --
+     * rather than a value that overflows the column it is headed for.
+     */
+    const MAX_HOSTNAME = 253;
+
+    /**
      * Split a URL into the three readings owa_event_raw stores beside it.
      *
      * Stored as columns rather than parsed in SQL at read time, because a GROUP
@@ -207,9 +216,16 @@ class V2Event {
             return $empty;
         }
 
+        $host = isset( $parts['host'] ) && $parts['host'] !== ''
+            ? strtolower( $parts['host'] ) : null;
+
+        if ( $host !== null && strlen( $host ) > self::MAX_HOSTNAME ) {
+
+            $host = null;
+        }
+
         return array(
-            'host'  => isset( $parts['host'] ) && $parts['host'] !== ''
-                ? strtolower( $parts['host'] ) : null,
+            'host'  => $host,
             // A URL with no path is the site root, which IS a path -- '/' --
             // and grouping it under NULL would hide the home page from the
             // landing-page report.
