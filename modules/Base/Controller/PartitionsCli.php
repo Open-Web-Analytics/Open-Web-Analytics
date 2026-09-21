@@ -478,6 +478,308 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /** Is the driver able to partition at all? Report once, clearly. */
+    /**
+     * Whether this table is the reporting cube.
+     *
+     * Only the cube has a front tier. Raw is never rebuilt and its retention is
+     * a DROP PARTITION, so it would pay the merge for nothing, and v1's fact
+     * tables keep the two tiers they have. Carving every fact table would spend
+     * the open-file budget to no purpose.
+     *
+     * @param string $table
+     * @return bool
+     */
+    protected function isCube( $table ) {
+
+        return $table === \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getTableName();
+    }
+
+    /**
+     * How long a day stays daily before its month may merge back.
+     *
+     * This IS the late-arrival window: the point at which a day's partition
+     * stops being cheap to rebuild is the point at which an event arriving for
+     * it stops being folded in by an ordinary run. 3.1 has it open pending a
+     * measurement of client-side lateness, so the default is a guess with the
+     * right shape rather than a number anyone has earned.
+     *
+     * @return int
+     */
+    protected function windowDays() {
+
+        $window = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'cube_rebuild_window_days' );
+
+        return $window > 0 ? $window : 7;
+    }
+
+    /**
+     * Merge each month's daily partitions back once the window has passed it.
+     *
+     * A month cannot merge the moment it ends: its last days are still inside
+     * the window, and merging would make settling them cost a month. So the
+     * trigger is the window no longer reaching the month's final day, which is
+     * why two months are daily for the first few days of each month.
+     *
+     * @param string $table
+     * @param array  $spans
+     * @param int    $window
+     * @param bool   $dry_run
+     * @return bool whether anything was merged
+     */
+    protected function mergeExpiredCubeDays( $table, $dry_run ) {
+
+        if ( ! $this->isCube( $table ) ) {
+
+            return false;
+        }
+
+        $window = $this->windowDays();
+        $spans  = \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans( $table );
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $cutoff  = date( 'Ymd', strtotime( '-' . (int) $window . ' days' ) );
+        $months  = $this->dailyByMonth( $spans );
+        $touched = false;
+
+        foreach ( $months as $month => $group ) {
+
+            $month_end = date( 'Ymd', strtotime( $month . '01 +1 month -1 day' ) );
+
+            // Still inside the window, or it is this month.
+            if ( $month_end >= $cutoff ) {
+
+                continue;
+            }
+
+            if ( count( $group['names'] ) < 2 ) {
+
+                continue;
+            }
+
+            $touched = true;
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '  merge %d daily partitions of %s back into one (window passed %s).',
+                count( $group['names'] ), $month, $month_end ) );
+
+            if ( $dry_run ) {
+
+                continue;
+            }
+
+            if ( ! $db->mergePartitions( $table, $group['names'], $group['start'], $group['less_than'] ) ) {
+
+                $this->fail( sprintf( '%s: merging %s failed.', $table, $month ) );
+
+                return $touched;
+            }
+        }
+
+        return $touched;
+    }
+
+    /**
+     * Carve an empty monthly partition into days.
+     *
+     * Only empty ones, and only the current month or later: reorganizing a
+     * partition that holds rows rewrites all of them, which is the cost this
+     * scheme exists to avoid paying repeatedly.
+     *
+     * @param string $table
+     * @param array  $spans
+     * @param bool   $dry_run
+     * @return bool whether anything was carved
+     */
+    protected function carveCubeMonths( $table, $budget, $dry_run ) {
+
+        if ( ! $this->isCube( $table ) ) {
+
+            return false;
+        }
+
+        $spans = \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans( $table );
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $touched = false;
+
+        /*
+         * ONLY THE CURRENT MONTH AND THE NEXT ONE.
+         *
+         * extendPartitions() fills PARTITION_MONTHS_AHEAD (12) of lead, and
+         * carving all of it would put ~390 daily partitions on the table --
+         * spending the whole budget on empty future months, which is exactly
+         * what 2.8 says the two-stage scheme exists to avoid. The daily lead
+         * only has to cover the rebuild window plus margin, and one month of
+         * margin is ample for a job that runs at least monthly.
+         */
+        /*
+         * Projected cumulatively: each carve adds to what the last one left, so
+         * checking a single carve against the budget in isolation would wave
+         * through a run that breaches it three carves later.
+         *
+         * Not directly covered by a test -- it only diverges from the naive
+         * version within a carve or two of the limit, and carveCandidates()
+         * caps a run at two. It is defence for the day the horizon widens.
+         */
+        $projected = count( $spans );
+
+        foreach ( $this->carveCandidates( $spans ) as $span ) {
+
+            $contents = $db->getPartitionContents( $table, $span['name'] );
+            $rows     = $contents ? (int) $contents['rows'] : 0;
+
+            if ( $rows > 0 && ! $this->getParam( 'force' ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '  %s holds %s rows, so carving it would rewrite them. Left alone; the '
+                  . 'next month is carved while still empty. Use force=1 to carve it anyway.',
+                    $span['name'], number_format( $rows ) ) );
+
+                continue;
+            }
+
+            $ranges = \OWA\Core\Db::makePartitionRangesForSpan(
+                $span['start'], $span['less_than'], 'daily' );
+
+            if ( ! $ranges ) {
+
+                continue;
+            }
+
+            $projected = $projected - 1 + count( $ranges );
+
+            if ( ! $this->withinPartitionBudget( $table, $projected, $budget ) ) {
+
+                return $touched;
+            }
+
+            $touched = true;
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '  carve %s (%s to %s, %s rows) into %d daily partitions.',
+                $span['name'], $span['start'], $span['less_than'],
+                number_format( $rows ), count( $ranges ) ) );
+
+            if ( $dry_run ) {
+
+                continue;
+            }
+
+            if ( ! $db->reorganizePartitions( $table, array( $span['name'] ), $ranges ) ) {
+
+                $this->fail( sprintf( '%s: carving %s failed.', $table, $span['name'] ) );
+
+                return $touched;
+            }
+        }
+
+        return $touched;
+    }
+
+    /**
+     * The spans a run may carve, by shape alone.
+     *
+     * ONLY THE CURRENT MONTH AND THE NEXT ONE. extendPartitions() fills
+     * PARTITION_MONTHS_AHEAD (12) of lead, and carving all of it would put
+     * ~390 daily partitions on the table -- spending the whole budget on empty
+     * future months, which is exactly what the two-stage scheme exists to
+     * avoid. The daily lead only has to cover the rebuild window plus margin,
+     * and one month of margin is ample for a job that runs at least monthly.
+     *
+     * THE HORIZON ALSO KEEPS partition-rotate CORRECT, which is less obvious
+     * and more dangerous. Granularity is never stored: inferPartitionGranularity()
+     * reads the LAST span's month and matches its day boundaries against
+     * PARTITION_CUTS. The furthest-future partitions are monthly lead precisely
+     * because this horizon stops short of them, so the cube infers `monthly`
+     * and partition-rotate extends its lead a month at a time. Carve to the end
+     * of the lead and the inference flips to `daily` -- at which point
+     * partition-rotate would extend twelve months of lead AT DAILY, ~365
+     * partitions, with no warning. CubeRotateTest pins that the last span is
+     * never a candidate.
+     *
+     * @param array $spans
+     * @return array
+     */
+    protected function carveCandidates( array $spans ) {
+
+        $this_month = date( 'Ym' ) . '01';
+        $horizon    = date( 'Ymd', strtotime( 'first day of next month' ) );
+
+        $candidates = array();
+
+        foreach ( $spans as $span ) {
+
+            // Already fine-grained, older than this month, or beyond the margin.
+            if ( $this->spanDays( $span ) <= 1
+              || $span['less_than'] <= $this_month
+              || $span['start'] > $horizon ) {
+
+                continue;
+            }
+
+            $candidates[] = $span;
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * The daily partitions, grouped by the calendar month they belong to.
+     *
+     * @param array $spans
+     * @return array yyyymm => ['names','start','less_than']
+     */
+    protected function dailyByMonth( array $spans ) {
+
+        $months = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( $this->spanDays( $span ) > 1 ) {
+
+                continue;
+            }
+
+            $month = substr( $span['start'], 0, 6 );
+
+            if ( ! isset( $months[ $month ] ) ) {
+
+                $months[ $month ] = array(
+                    'names'     => array(),
+                    'start'     => date( 'Ymd', strtotime( $month . '01' ) ),
+                    'less_than' => date( 'Ymd', strtotime( $month . '01 +1 month' ) ),
+                );
+            }
+
+            $months[ $month ]['names'][] = $span['name'];
+        }
+
+        return $months;
+    }
+
+    /**
+     * How many days a span covers.
+     *
+     * Read from the bounds rather than from the name: a monthly partition and
+     * the first daily one of the same month are both called p2026MM01, so the
+     * name cannot tell them apart.
+     *
+     * @param array $span
+     * @return int
+     */
+    protected function spanDays( array $span ) {
+
+        $start = strtotime( $span['start'] );
+        $end   = strtotime( $span['less_than'] );
+
+        if ( ! $start || ! $end || $end <= $start ) {
+
+            return 0;
+        }
+
+        return (int) round( ( $end - $start ) / 86400 );
+    }
+
     protected function assertPartitioningSupported() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();

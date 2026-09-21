@@ -253,6 +253,14 @@ class PartitionRotateCli extends PartitionsCli {
 
             $rotated++;
 
+            /*
+             * The cube's front tier, before the lead work. Merging frees a
+             * month of partitions before anything consumes one, so a run peaks
+             * near its starting count and a run that dies part way leaves the
+             * table below where it started rather than over budget.
+             */
+            $this->mergeExpiredCubeDays( $table, $dry_run );
+
             $table_granularity = $granularity ?: ( $db->inferPartitionGranularity( $table ) ?: 'monthly' );
 
             // Ahead first: see the class comment.
@@ -279,6 +287,13 @@ class PartitionRotateCli extends PartitionsCli {
 
                 $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
             }
+
+            /*
+             * Carve last, because it is the only step that adds partitions
+             * without freeing any -- and after the lead exists, so the month it
+             * carves is one that extendTableLead() has already created.
+             */
+            $this->carveCubeMonths( $table, $budget, $dry_run );
         }
 
         // Skipping every table is not success. Left as 'ok', a scheduled rotate

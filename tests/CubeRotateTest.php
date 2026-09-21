@@ -4,10 +4,11 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
-use OWA\Module\Base\Controller\CubeRotateCli;
+use OWA\Module\Base\Controller\PartitionRotateCli;
 
 /**
- * The front tier's carve-and-merge arithmetic.
+ * The cube front tier's carve-and-merge arithmetic, which cmd=partition-rotate
+ * runs alongside the lead.
  *
  * Two of these pin bugs that were in the first working version and that the
  * dry-run did not make obvious: it carved the entire twelve-month lead, and it
@@ -19,9 +20,9 @@ use OWA\Module\Base\Controller\CubeRotateCli;
  */
 final class CubeRotateTest extends TestCase
 {
-    private function cli(): CubeRotateCli
+    private function cli(): PartitionRotateCli
     {
-        $class = new ReflectionClass(CubeRotateCli::class);
+        $class = new ReflectionClass(PartitionRotateCli::class);
         $cli   = $class->newInstanceWithoutConstructor();
 
         $params = $class->getProperty('params');
@@ -33,7 +34,7 @@ final class CubeRotateTest extends TestCase
 
     private function call(string $method, array $args)
     {
-        $m = new ReflectionMethod(CubeRotateCli::class, $method);
+        $m = new ReflectionMethod(PartitionRotateCli::class, $method);
         $m->setAccessible(true);
 
         return $m->invokeArgs($this->cli(), $args);
@@ -79,6 +80,25 @@ final class CubeRotateTest extends TestCase
 
         $this->assertSame(date('Ym01'), $candidates[0]['start']);
         $this->assertSame(date('Ym01', strtotime('first day of +1 month')), $candidates[1]['start']);
+    }
+
+    public function testItNeverCarvesTheFurthestFutureMonth(): void
+    {
+        /*
+         * Not about the budget -- about partition-rotate staying correct.
+         * Granularity is never stored: inferPartitionGranularity() reads the
+         * LAST span's month. The cube infers `monthly` only because the
+         * furthest-future partitions are still monthly lead. Carve those and
+         * the inference flips to `daily`, and partition-rotate would then
+         * extend twelve months of lead at daily -- ~365 partitions, silently.
+         */
+        $lead = $this->monthlyLead(12);
+        $last = $lead[count($lead) - 1];
+
+        foreach ($this->call('carveCandidates', [$lead]) as $candidate) {
+            $this->assertNotSame($last['start'], $candidate['start'],
+                'the last span must stay monthly or granularity inference flips to daily');
+        }
     }
 
     public function testItDoesNotCarveWhatIsAlreadyDaily(): void
