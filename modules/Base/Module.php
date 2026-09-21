@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 33;
+        $this->required_schema_version = 34;
         return parent::__construct();
     }
 
@@ -2441,6 +2441,46 @@ class Module extends \OWA\Core\Module {
             $this->registerEventHandler( 'base.new_session', 'notifyHandlers' );
         }
 
+        /*
+         * v2 ingest, beside v1's handlers on the same events.
+         *
+         * Registered unconditionally and gated inside the handler, on the
+         * site: the registration runs once per process with no event and no
+         * site_id in hand, so there is nothing to ask here. It returns
+         * immediately for a site that has not turned v2_raw_collection on,
+         * which is every site by default.
+         *
+         * The list is tracking_event_types minus the two that are not events:
+         * dom.stream is an ATTACHMENT to a page view and base.feed_request is
+         * retired. Handler\EventRawHandlers refuses both as well, so this list
+         * and that one have to agree -- the guard there is what holds if a
+         * module registers a new tracking event type.
+         */
+        $this->registerEventHandler(
+            array_merge(
+                array(
+                    'base.page_request',
+                    'base.first_page_request',
+                    'dom.click',
+                    'track.action',
+                    'ecommerce.transaction',
+                ),
+                (array) \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' )
+            ),
+            /*
+             * Passed as an OBJECT, where every handler above is passed by name.
+             *
+             * A name goes through moduleGenericFactory(), which builds the
+             * legacy `owa_<name>` spelling and resolves it through
+             * owa_compat_aliases.php -- so registering this one by name would
+             * mean adding a bridge entry for a class that never had a legacy
+             * name, to a file whose stated purpose is holding the ones that
+             * did. registerEventHandler() already accepts an object; this costs
+             * the same instantiation the factory would have done.
+             */
+            new \OWA\Module\Base\Handler\EventRawHandlers()
+        );
+
         // install complete handler
         $this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
         // User management
@@ -2451,6 +2491,22 @@ class Module extends \OWA\Core\Module {
         
         
         $this->addEventProcessor( \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_event_types' ) , 'base.processRequest');
+        
+        /*
+         * v2's event names, processed the same way.
+         *
+         * An event type with no processor is inert -- EventDispatch::notify()
+         * logs "no listeners registered" and returns EVENT_HANDLED -- so the
+         * new tracker's events would have been accepted and silently discarded
+         * rather than refused, which is the worse of the two failures.
+         *
+         * They reach the SAME controller as v1's, because nothing about
+         * processing differs: the expansion into raw rows happens in
+         * Handler\EventRawHandlers, which is gated per site. On a site that has
+         * not opted in these are still dropped -- by logEvent()'s
+         * tracking_event_types check, below.
+         */
+        $this->addEventProcessor( \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' ), 'base.processRequest');
         
         // @todo still needed?
         $this->addEventProcessor('base.first_page_request', 'base.processFirstRequest');
@@ -2494,7 +2550,18 @@ class Module extends \OWA\Core\Module {
                 'custom_report',
                 'custom_report_favorite',
                 'job_lock',
-                'site_user')
+                'site_user',
+                /*
+                 * v2. Registered unconditionally so cmd=update creates them
+                 * and the partition commands find owa_event_raw -- neither is
+                 * conditional on anything, and a table nothing writes to costs
+                 * an empty tablespace.
+                 *
+                 * Whether anything WRITES to them is the v2_raw_collection
+                 * setting, per site. See Handler\EventRawHandlers.
+                 */
+                'event_raw',
+                'visitor_acquisition')
             );
 
     }

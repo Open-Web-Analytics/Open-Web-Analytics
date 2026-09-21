@@ -62,6 +62,15 @@
             "required": true,
             "data_type": "string",
             "filter": false
+        },
+        "ts": {
+            "callbacks": [
+                "owa_trackingEventHelpers::edgeTimestampMicroseconds"
+            ],
+            "required": true,
+            "data_type": "integer",
+            "filter": false,
+            "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
         }
     },
     "client": {
@@ -81,8 +90,15 @@
             "required": true,
             "data_type": "url",
             "callbacks": [
+                "owa_trackingEventHelpers::keepCompleteUrl",
                 "owa_trackingEventHelpers::makeUrlCanonical"
             ]
+        },
+        "page_location": {
+            "required": false,
+            "data_type": "url",
+            "callbacks": [],
+            "note": "The complete page URL, query included, with nothing stripped. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks on purpose: a filter here would defeat the column. Falls back to keepCompleteUrl() for beacons from a tracker cached before this shipped."
         },
         "page_title": {
             "required": true,
@@ -465,6 +481,84 @@
             "data_type": "string",
             "callbacks": [],
             "note": "Custom variable slot 5, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
+        },
+        "client_ts_usec": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "The client's own clock at send, microseconds. Subtracted from the server's receipt time into owa_event_raw.clock_offset_usec, so skew is a stored number rather than a silent error. NOT used as the event time: the server assigns that."
+        },
+        "engagement_msec": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection."
+        },
+        "content_group": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Author-assigned grouping of pages. Page-scoped: set per page, so it cannot leak onto the next one."
+        },
+        "consent_state": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "granted or denied, as the page declared it at send. Per event because it can change mid-session; absent stays absent, because no consent recorded is not the same as consent denied."
+        },
+        "user_id": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "The site's OWN id for a logged-in person -- not user_name, which is a display name. The one field that outlives a cookie, and forward-only: events collected before someone identified themselves stay anonymous."
+        },
+        "currency": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "ISO 4217, stored beside revenue. Without it a multi-currency store sums minor units of different things."
+        },
+        "scroll_depth": {
+            "required": false,
+            "data_type": "integer",
+            "callbacks": [],
+            "note": "Percentage of the document reached, on a scroll event. One event per threshold per page."
+        },
+        "element_path": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "A CSS-ish path to the clicked element. dom_element_id is real on 0.09% of clicks and populated on 94%, so a path is what actually identifies what was clicked."
+        },
+        "search_term": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "Site-search term, on a view_search_results event. Reaches reporting as the params.search_term path."
+        },
+        "file_name": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "On a file_download event."
+        },
+        "file_extension": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "On a file_download event."
+        },
+        "form_id": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
+        },
+        "form_name": {
+            "required": false,
+            "data_type": "string",
+            "callbacks": [],
+            "note": "On form_start / form_submit."
         }
     },
     "server": {

@@ -366,6 +366,40 @@ class Browscap extends \OWA\Core\Base {
 
         return $this->browser->os->toVersion();
     }
+
+    /*
+     * DEVICE. The parser has carried this the whole time -- 633 device rules in
+     * the same regexes file the UA and OS rules come from -- and 1.x asks it
+     * exactly one question, whether the family is 'Spider'. v2's raw store has
+     * columns for the rest, so these three expose what is already parsed rather
+     * than adding a parse.
+     *
+     * 'Other' is the parser's own word for "no rule matched", which is an
+     * ANSWER about a desktop browser and an ABSENCE about a phone. It is
+     * returned here unchanged; deciding what it means is deviceType()'s job,
+     * and storing it is not -- absence is NULL in owa_event_raw.
+     */
+
+    function getDeviceFamily() {
+
+        return isset( $this->browser->device->family )
+            ? (string) $this->browser->device->family
+            : '';
+    }
+
+    function getDeviceBrand() {
+
+        return isset( $this->browser->device->brand )
+            ? (string) $this->browser->device->brand
+            : '';
+    }
+
+    function getDeviceModel() {
+
+        return isset( $this->browser->device->model )
+            ? (string) $this->browser->device->model
+            : '';
+    }
 }
 
 ?>

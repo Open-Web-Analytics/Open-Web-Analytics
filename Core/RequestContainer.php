@@ -46,6 +46,19 @@ class RequestContainer {
     var $state;
     var $request_type = '';
     var $timestamp;
+
+    /**
+     * The same instant as $timestamp, in microseconds.
+     *
+     * Stamped from one microtime() reading alongside it so the two cannot
+     * disagree -- calling time() and microtime() separately can straddle a
+     * second boundary, which would put an event in one second and its
+     * microsecond stamp in the next.
+     *
+     * @var int
+     */
+    var $timestamp_usec;
+
     var $current_url;
 
     /**
@@ -54,7 +67,26 @@ class RequestContainer {
      */
     function __construct() {
 
-        $this->timestamp = time();
+        /*
+         * EDGE RECEIPT. One reading, taken once, for the life of this request.
+         *
+         * v2 derives an event id from (site, visitor, session, ts, name) and
+         * has no counter to fall back on, so two events of one session collide
+         * exactly when they share a ts. At second resolution that is reachable
+         * -- a page view and the click that follows it inside the same second.
+         * At microsecond resolution it is not. So the RESOLUTION here is not a
+         * nicety about ordering; it is what makes the id unique.
+         *
+         * Taken here rather than at write time on purpose: an event queued to
+         * disk and drained minutes later must keep the instant it ARRIVED, or
+         * the drain would restamp it and a redelivery would derive a different
+         * id and fail to collapse.
+         */
+        $now = microtime( true );
+
+        $this->timestamp      = (int) $now;
+        $this->timestamp_usec = (int) round( $now * 1000000 );
+
         $this->guid = \OWA\Core\Lib::generateRandomUid();
 
         // php's server variables
@@ -386,6 +418,16 @@ class RequestContainer {
     public function getTimestamp() {
 
         return $this->timestamp;
+    }
+
+    /**
+     * Edge receipt in microseconds. See the constructor.
+     *
+     * @return int
+     */
+    public function getTimestampMicroseconds() {
+
+        return $this->timestamp_usec;
     }
 
     public function getCurrentUrl() {

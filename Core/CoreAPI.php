@@ -1802,12 +1802,30 @@ class CoreAPI {
      * @param object|string $message
      * @return boolean
      */
+    /**
+     * Every event type this installation accepts from a tracker.
+     *
+     * The union of v1's list and v2's. Two lists rather than one because they
+     * have different lifetimes -- v1's whole side is retired at cutover, and a
+     * merged list would have to be untangled then -- but every check that asks
+     * "is this a tracking event" has to ask about both, or a v2 event is
+     * refused at the door.
+     *
+     * @return array
+     */
+    public static function trackingEventTypes() {
+
+        return array_merge(
+            (array) \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_event_types' ),
+            (array) \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' ) );
+    }
+
     public static function logEvent( $event_type, $message = '') {
 
         \OWA\Core\CoreAPI::debug("Logging new event $event_type");
 		
         // Check to ensure that the event is in fact a tracking event
-        if ( ! in_array( $event_type, \OWA\Core\CoreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
+        if ( ! in_array( $event_type, \OWA\Core\CoreAPI::trackingEventTypes() ) ) {
             
             \OWA\Core\CoreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
             return false;
@@ -2833,6 +2851,18 @@ class CoreAPI {
 
         $r = \OWA\Core\CoreAPI::requestContainerSingleton();
         return $r->getTimestamp();
+    }
+
+    /**
+     * Edge receipt in microseconds -- the same instant getRequestTimestamp()
+     * answers in seconds, taken from one reading.
+     *
+     * @return int
+     */
+    public static function getRequestTimestampMicroseconds() {
+
+        $r = \OWA\Core\CoreAPI::requestContainerSingleton();
+        return $r->getTimestampMicroseconds();
     }
 
     public static function isEveryoneCapable( $capability ) {

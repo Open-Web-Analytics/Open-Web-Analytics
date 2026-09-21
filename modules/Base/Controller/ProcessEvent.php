@@ -165,7 +165,7 @@ class ProcessEvent extends \OWA\Core\Controller {
     
     function isTrackingEvent() {
         
-        if ( in_array( $this->event->getEventType(), \OWA\Core\CoreAPI::getSetting('base', 'tracking_event_types' ) ) ) {
+        if ( in_array( $this->event->getEventType(), \OWA\Core\CoreAPI::trackingEventTypes() ) ) {
             
             return true;
         }

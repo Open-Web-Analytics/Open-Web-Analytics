@@ -3336,6 +3336,18 @@ class Db extends \OWA\Core\Base {
 
         }
 
+        // Multi-column indexes are declared on the ENTITY, not on a column --
+        // see Entity::addCompositeIndex(). Named, so that an update removing
+        // one has something to pass to dropIndex().
+        if ( method_exists( $entity, 'getCompositeIndexes' ) ) {
+
+            foreach ( $entity->getCompositeIndexes() as $index_name => $index_columns ) {
+
+                $indexes[] = sprintf(
+                    'INDEX %s (%s)', $index_name, implode( ', ', $index_columns ) );
+            }
+        }
+
         if ( $indexes ) {
 
             $columns .= ', ' . implode( ', ', $indexes );
@@ -3415,6 +3427,21 @@ class Db extends \OWA\Core\Base {
     function endTransaction() {
 
         return $this->query(OWA_SQL_END_TRANSACTION);
+    }
+
+    /**
+     * Abandons the open transaction.
+     *
+     * The missing third of the pair. Until v2's ingest there was nothing to
+     * roll back -- the only callers of begin/end are the schema-update CLI, and
+     * on the tracking path each create() stood alone -- so a failure part way
+     * through several related writes had no way to undo the ones that had
+     * already landed. One beacon becoming several rows is the first thing here
+     * that needs all of them or none.
+     */
+    function rollbackTransaction() {
+
+        return $this->query(OWA_SQL_ROLLBACK_TRANSACTION);
     }
 
     function count($column_name) {

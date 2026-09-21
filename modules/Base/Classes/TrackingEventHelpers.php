@@ -480,8 +480,33 @@ class TrackingEventHelpers {
                  * is_numeric() rather than a cast, so valid input keeps exactly
                  * the value it had before: (int) would truncate "1.9" to 1,
                  * where + 0 yields 1.9.
+                 *
+                 * ABSENT IS NOT ZERO, and the two used to be the same answer.
+                 * Event::get() returns false for a property the event does not
+                 * carry, which is not numeric, so every registered integer
+                 * property arrived on every event holding 0 whether or not the
+                 * beacon mentioned it. For v1 that is invisible -- its numeric
+                 * columns are NOT NULL and store 0 either way -- but v2 has
+                 * columns where 0 is a real reading: a beacon carrying no
+                 * scroll_depth is not a beacon reporting a scroll to the top,
+                 * and one carrying no engagement_msec is not reporting zero
+                 * engagement.
+                 *
+                 * So absence stays absent and GARBAGE still becomes 0, which is
+                 * the half the guard above exists for. Nothing downstream
+                 * changes for v1: a null reaching a non-nullable numeric column
+                 * is written as 0 by Entity::writeValue(), which is where that
+                 * coercion belongs and where a nullable column can opt out.
                  */
-                $var = is_numeric( $var ) ? $var + 0 : 0;
+                if ( $var === null || $var === false || $var === '' ) {
+
+                    $var = null;
+
+                } else {
+
+                    $var = is_numeric( $var ) ? $var + 0 : 0;
+                }
+
                 break;
             case "string":
 
@@ -683,6 +708,24 @@ class TrackingEventHelpers {
     static function microtimeDefault() {
 
         return microtime();
+    }
+
+    /**
+     * Edge receipt in microseconds, for owa_event_raw.ts.
+     *
+     * An ENVIRONMENTAL property, so it is stamped in CoreAPI::logEvent() before
+     * the event is queued and a request naming `ts` cannot replace it. That
+     * placement is the whole point: the value has to be the instant the beacon
+     * ARRIVED, not the instant a queue drain got round to it, or a redelivered
+     * beacon would derive a different event id and fail to collapse.
+     *
+     * Separate from `microtime`, which is the historical string form of the
+     * same clock and feeds owa_request.msec -- a column that holds 0 or 1 and
+     * nothing else, and is deliberately not being repaired in 1.x.
+     */
+    static function edgeTimestampMicroseconds() {
+
+        return \OWA\Core\CoreAPI::getRequestTimestampMicroseconds();
     }
 
     /*
@@ -1061,6 +1104,46 @@ class TrackingEventHelpers {
     static function getSocialNetworkList() {
 	    
 	    return \OWA\Core\CoreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
+    }
+
+    /**
+     * Keep the page URL that arrived, before anything is stripped from it.
+     *
+     * Registered on page_url AHEAD of makeUrlCanonical, and returns its input
+     * untouched -- it exists for the side effect.
+     *
+     * makeUrlCanonical removes the campaign parameters along with whatever a
+     * site put in query_string_filters, which is right for v1: page_url IS the
+     * page's identity there, and two spellings of one page must not become two
+     * documents. v2's raw store needs the other thing. page_location is the
+     * EVIDENCE the campaign tags are parsed out of, so that a parser fix, or a
+     * site changing its campaign keys, can be re-applied to history -- and a
+     * URL whose query has already been removed cannot answer that question a
+     * second time.
+     *
+     * A SEPARATE CALLBACK rather than a line inside makeUrlCanonical, because
+     * that one is registered on three properties -- page_url, target_url and
+     * prior_page -- and is handed no name, so it cannot tell which one it is
+     * filtering. It would have had to guess, and guessing wrong stores the
+     * previous page's URL as this page's location.
+     *
+     * The TRACKER also sends page_location directly, which is the path that
+     * survives every filter by construction. This is the fallback for beacons
+     * from a tracker cached before that shipped, and the guard is what gives
+     * the transmitted value precedence.
+     *
+     * @param string $url
+     * @param object $event
+     * @return string the url, unchanged
+     */
+    static function keepCompleteUrl( $url, $event ) {
+
+        if ( $url && ! $event->get( 'page_location' ) ) {
+
+            $event->set( 'page_location', $url );
+        }
+
+        return $url;
     }
 
     /**
