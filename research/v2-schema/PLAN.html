@@ -522,7 +522,7 @@ down.</p>
 
 
 
-<h5>Raw — <code>owa_event_raw</code>, 51 columns</h5>
+<h5>Raw — <code>owa_event_raw</code>, 54 columns</h5>
 
 <p>Append-only, written one beacon at a time, never updated. It is the record of what was
 observed and the surface realtime queries.</p>
@@ -545,42 +545,45 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">13</td><td><code>page_path</code></td><td>VARCHAR(1024)</td><td>path only &mdash; no scheme, host or query. Parsed at ingest beside <code>host</code>: a GROUP BY over a parsing expression cannot use an index, and the expression would have to be written once per dialect</td></tr>
 <tr><td class="n">14</td><td><code>page_query</code></td><td>VARCHAR(1024) NULL</td><td>the query string without its leading <code>?</code>. NULL where there was none</td></tr>
 <tr><td class="n">15</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td>varies for one URL over time, so it is per event</td></tr>
-<tr><td class="n">16</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td>the previous page. Also the attribution fallback when no tags are present</td></tr>
-<tr><td class="n">17</td><td><code>tagged_source</code></td><td>VARCHAR(255) NULL</td><td>as collected from the URL. NULL when the visit carried no tags. Ingest transcribes, it does not classify (<a href="#s26">&sect;2.6.2</a>)</td></tr>
-<tr><td class="n">18</td><td><code>tagged_medium</code></td><td>VARCHAR(64) NULL</td><td>as collected</td></tr>
-<tr><td class="n">19</td><td><code>tagged_campaign</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
-<tr><td class="n">20</td><td><code>tagged_ad</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
-<tr><td class="n">21</td><td><code>tagged_search_terms</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
-<tr><td class="n">22</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>parsed from <code>raw_ua</code> at ingest, so realtime has it</td></tr>
-<tr><td class="n">23</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
-<tr><td class="n">24</td><td><code>browser_version</code></td><td>VARCHAR(32) NULL</td><td>split out of the same <code>raw_ua</code> parse, so <code>browser</code> is a name rather than a name-and-version string</td></tr>
-<tr><td class="n">25</td><td><code>os</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
-<tr><td class="n">26</td><td><code>os_version</code></td><td>VARCHAR(32) NULL</td><td>same parse. &ldquo;How much traffic is still on iOS&nbsp;16&rdquo; is the question it answers</td></tr>
-<tr><td class="n">27</td><td><code>device_type</code></td><td>VARCHAR(32)</td><td>desktop, mobile or tablet, from <code>raw_ua</code> at ingest. <a href="#s24">&sect;2.4</a> advertised <code>deviceType</code> with no column behind it</td></tr>
-<tr><td class="n">28</td><td><code>device_brand</code></td><td>VARCHAR(64) NULL</td><td>from <code>raw_ua</code> at ingest. Apple against Samsung is a group-by people ask for</td></tr>
-<tr><td class="n">29</td><td><code>device_model</code></td><td>VARCHAR(64) NULL</td><td>same parse, one level finer</td></tr>
-<tr><td class="n">30</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
-<tr><td class="n">31</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
-<tr><td class="n">32</td><td><code>country_code</code></td><td>CHAR(2) NULL</td><td>ISO 3166-1 alpha-2, from the same lookup as <code>country</code></td></tr>
-<tr><td class="n">33</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">34</td><td><code>region</code></td><td>VARCHAR(128) NULL</td><td>the reader&rsquo;s <code>state</code> field, same lookup</td></tr>
-<tr><td class="n">35</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
-<tr><td class="n">36</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
-<tr><td class="n">37</td><td><code>consent_state</code></td><td>VARCHAR(32) NULL</td><td>what the page declared at send &mdash; granted, denied or absent. Recorded per event because it can change mid-session, and a row with no consent recorded is not the same as one with consent denied</td></tr>
-<tr><td class="n">38</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
-<tr><td class="n">39</td><td><code>click_y</code></td><td>INT NULL</td><td></td></tr>
-<tr><td class="n">40</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, without which a click coordinate cannot be placed</td></tr>
-<tr><td class="n">41</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
-<tr><td class="n">42</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
-<tr><td class="n">43</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s219">&sect;2.19</a>, Phase 5</td></tr>
-<tr><td class="n">44</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
-<tr><td class="n">45</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s211">&sect;2.11</a></td></tr>
-<tr><td class="n">46</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
-<tr><td class="n">47</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the per-event delta, not a session total</td></tr>
-<tr><td class="n">48</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>set on the materialised goal-event row, not on its trigger</td></tr>
-<tr><td class="n">49</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>minor units</td></tr>
-<tr><td class="n">50</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>kept so a parser fix can be reapplied to history</td></tr>
-<tr><td class="n">51</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: custom variables, event params, nested commerce items</td></tr>
+<tr><td class="n">16</td><td><code>content_group</code></td><td>VARCHAR(255) NULL</td><td>author-assigned grouping of pages, set from the snippet. A release-known name, so a column rather than a param</td></tr>
+<tr><td class="n">17</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td>the previous page. Also the attribution fallback when no tags are present</td></tr>
+<tr><td class="n">18</td><td><code>tagged_source</code></td><td>VARCHAR(255) NULL</td><td>as collected from the URL. NULL when the visit carried no tags. Ingest transcribes, it does not classify (<a href="#s26">&sect;2.6.2</a>)</td></tr>
+<tr><td class="n">19</td><td><code>tagged_medium</code></td><td>VARCHAR(64) NULL</td><td>as collected</td></tr>
+<tr><td class="n">20</td><td><code>tagged_campaign</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
+<tr><td class="n">21</td><td><code>tagged_ad</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
+<tr><td class="n">22</td><td><code>tagged_search_terms</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
+<tr><td class="n">23</td><td><code>browser</code></td><td>VARCHAR(128)</td><td>parsed from <code>raw_ua</code> at ingest, so realtime has it</td></tr>
+<tr><td class="n">24</td><td><code>browser_type</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
+<tr><td class="n">25</td><td><code>browser_version</code></td><td>VARCHAR(32) NULL</td><td>split out of the same <code>raw_ua</code> parse, so <code>browser</code> is a name rather than a name-and-version string</td></tr>
+<tr><td class="n">26</td><td><code>os</code></td><td>VARCHAR(64)</td><td>same parse</td></tr>
+<tr><td class="n">27</td><td><code>os_version</code></td><td>VARCHAR(32) NULL</td><td>same parse. &ldquo;How much traffic is still on iOS&nbsp;16&rdquo; is the question it answers</td></tr>
+<tr><td class="n">28</td><td><code>device_type</code></td><td>VARCHAR(32)</td><td>desktop, mobile or tablet, from <code>raw_ua</code> at ingest. <a href="#s24">&sect;2.4</a> advertised <code>deviceType</code> with no column behind it</td></tr>
+<tr><td class="n">29</td><td><code>device_brand</code></td><td>VARCHAR(64) NULL</td><td>from <code>raw_ua</code> at ingest. Apple against Samsung is a group-by people ask for</td></tr>
+<tr><td class="n">30</td><td><code>device_model</code></td><td>VARCHAR(64) NULL</td><td>same parse, one level finer</td></tr>
+<tr><td class="n">31</td><td><code>language</code></td><td>VARCHAR(16)</td><td>as declared. Grouping to a base language is a dimension</td></tr>
+<tr><td class="n">32</td><td><code>country</code></td><td>VARCHAR(64)</td><td>from <code>ip_address</code> at ingest</td></tr>
+<tr><td class="n">33</td><td><code>country_code</code></td><td>CHAR(2) NULL</td><td>ISO 3166-1 alpha-2, from the same lookup as <code>country</code></td></tr>
+<tr><td class="n">34</td><td><code>city</code></td><td>VARCHAR(128)</td><td>same lookup. Absent is NULL, never a sentinel — <a href="#s211">&sect;2.11</a></td></tr>
+<tr><td class="n">35</td><td><code>region</code></td><td>VARCHAR(128) NULL</td><td>the reader&rsquo;s <code>state</code> field, same lookup</td></tr>
+<tr><td class="n">36</td><td><code>host</code></td><td>VARCHAR(255)</td><td>its own column, so <code>pagePath</code> can collapse host variants</td></tr>
+<tr><td class="n">37</td><td><code>ip_address</code></td><td>VARCHAR(45) NULL</td><td>nullable: anonymise-on-write is a setting, and geo is resolved by then</td></tr>
+<tr><td class="n">38</td><td><code>consent_state</code></td><td>VARCHAR(32) NULL</td><td>what the page declared at send &mdash; granted, denied or absent. Recorded per event because it can change mid-session, and a row with no consent recorded is not the same as one with consent denied</td></tr>
+<tr><td class="n">39</td><td><code>click_x</code></td><td>INT NULL</td><td>NULL on any event that is not a click</td></tr>
+<tr><td class="n">40</td><td><code>click_y</code></td><td>INT NULL</td><td></td></tr>
+<tr><td class="n">41</td><td><code>page_width</code></td><td>INT NULL</td><td>viewport at the event, without which a click coordinate cannot be placed</td></tr>
+<tr><td class="n">42</td><td><code>page_height</code></td><td>INT NULL</td><td></td></tr>
+<tr><td class="n">43</td><td><code>target_url</code></td><td>VARCHAR(1024) NULL</td><td>destination of a click, download or outbound link</td></tr>
+<tr><td class="n">44</td><td><code>target_host</code></td><td>VARCHAR(255) NULL</td><td>the host of <code>target_url</code>, parsed at ingest beside <code>host</code>. Makes &ldquo;which domains do people leave to&rdquo; a group-by instead of a parse</td></tr>
+<tr><td class="n">45</td><td><code>element_path</code></td><td>VARCHAR(512) NULL</td><td>the stored selector — <a href="#s219">&sect;2.19</a>, Phase 5</td></tr>
+<tr><td class="n">46</td><td><code>element_tag</code></td><td>VARCHAR(64) NULL</td><td></td></tr>
+<tr><td class="n">47</td><td><code>element_id</code></td><td>VARCHAR(255) NULL</td><td>real on 0.09% of 1.x clicks, populated on 94% — the measurement behind <a href="#s211">&sect;2.11</a></td></tr>
+<tr><td class="n">48</td><td><code>scroll_depth</code></td><td>TINYINT NULL</td><td>percentage</td></tr>
+<tr><td class="n">49</td><td><code>engagement_msec</code></td><td>INT UNSIGNED NULL</td><td>the per-event delta, not a session total</td></tr>
+<tr><td class="n">50</td><td><code>is_goal_event</code></td><td>TINYINT NOT NULL DEFAULT 0</td><td>set on the materialised goal-event row, not on its trigger</td></tr>
+<tr><td class="n">51</td><td><code>revenue</code></td><td>BIGINT NULL</td><td>minor units</td></tr>
+<tr><td class="n">52</td><td><code>currency</code></td><td>CHAR(3) NULL</td><td>ISO 4217, beside <code>revenue</code>. Without it a multi-currency store sums minor units of different things</td></tr>
+<tr><td class="n">53</td><td><code>raw_ua</code></td><td>VARCHAR(1024)</td><td>kept so a parser fix can be reapplied to history</td></tr>
+<tr><td class="n">54</td><td><code>params</code></td><td>JSON</td><td>what cannot be a column: custom variables, event params, nested commerce items</td></tr>
 </tbody></table></div>
 
 <p><strong>Raw holds the evidence; the denormalised table holds the reading.</strong> The
@@ -616,9 +619,9 @@ at read time (<a href="#s24">&sect;2.4</a>).</p>
 <p class="note">Why a page carries no identity hash, and what giving it one would have cost, is
 <a href="#nA118">A.1.18</a>.</p>
 
-<h5>Denormalised &mdash; <code>owa_event</code>: raw&rsquo;s 51 columns, plus these 17</h5>
+<h5>Denormalised &mdash; <code>owa_event</code>: raw&rsquo;s 54 columns, plus these 17</h5>
 
-<p>Every column of raw, unchanged and in the same order, then the seventeen below. Only these seventeen are listed: the first 51 are <a href="#s21">the raw table</a> verbatim. Queries hit this table; nothing else does.</p>
+<p>Every column of raw, unchanged and in the same order, then the seventeen below. Only these seventeen are listed: the first 54 are <a href="#s21">the raw table</a> verbatim. Queries hit this table; nothing else does.</p>
 
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Column</th><th>Type</th><th>Scope</th><th>Note</th></tr></thead>
@@ -833,6 +836,9 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>pageTitle</code></td><td>column</td><td><code>page_title</code></td><td></td></tr>
 <tr><td></td><td><code>hostName</code></td><td>column</td><td><code>host</code></td><td></td></tr>
 <tr><td></td><td><code>pageReferrer</code></td><td>column</td><td><code>referer_url</code></td><td>renamed from <code>referralPageUrl</code></td></tr>
+<tr><td></td><td><code>fullPageUrl</code></td><td>concat</td><td><code>host</code> + <code>page_path</code> + <code>page_query</code></td><td>GA&rsquo;s form: the URL without its scheme</td></tr>
+<tr><td></td><td><code>contentGroup</code></td><td>column</td><td><code>content_group</code></td><td>new &mdash; author-assigned grouping of pages</td></tr>
+<tr><td></td><td><code>contentId / contentType</code></td><td>param path</td><td><code>params</code> path</td><td>set beside the group, from the snippet</td></tr>
 <tr><td></td><td><code>landingPage</code></td><td>column</td><td><code>landing_page_path</code></td><td>renamed from <code>entryPagePath</code></td></tr>
 <tr><td></td><td><code>landingPagePlusQuery</code></td><td>concat</td><td><code>landing_page_path</code> + <code>landing_page_query</code></td><td>new</td></tr>
 <tr><td></td><td><code>landingPageLocation</code></td><td>column</td><td><code>landing_page_location</code></td><td>renamed from <code>entryPageUrl</code></td></tr>
@@ -843,24 +849,34 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>exitPageTitle</code></td><td>filtered</td><td><code>page_title</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td>needs no column of its own</td></tr>
 <tr><td></td><td><code>pageType / entryPageType / exitPageType / priorPageType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.x&rsquo;s document type, which sorted pages from feed requests. <code>event_type</code> carries that distinction and nothing else was in it</td></tr>
 <tr><td></td><td><code>priorPageTitle / priorPageUrl</code></td><td>&mdash;</td><td>&mdash;</td><td>open for the same reason as <code>priorPagePath</code> &mdash; all three need the session chain walked</td></tr>
-<tr><td>Traffic source</td><td><code>source</code></td><td>column</td><td><code>source</code></td><td>the reading, written by the pass</td></tr>
-<tr><td></td><td><code>medium</code></td><td>column</td><td><code>medium</code></td><td></td></tr>
-<tr><td></td><td><code>sourceMedium</code></td><td>concat</td><td><code>source</code> + <code>medium</code></td><td></td></tr>
-<tr><td></td><td><code>campaign</code></td><td>column</td><td><code>campaign</code></td><td></td></tr>
-<tr><td></td><td><code>ad</code></td><td>column</td><td><code>ad</code></td><td></td></tr>
-<tr><td></td><td><code>referralSearchTerms</code></td><td>column</td><td><code>search_terms</code></td><td></td></tr>
-<tr><td></td><td><code>channel</code></td><td>map</td><td><code>medium</code> through a lookup</td><td>new &mdash; the grouping 1.x had no name for</td></tr>
-<tr><td></td><td><code>isSearchEngine</code></td><td>map</td><td><code>medium</code> = <code>organic-search</code></td><td>was an enriched referer column; now a test on the reading</td></tr>
-<tr><td></td><td><code>firstSource / firstMedium / firstCampaign / firstAd</code></td><td>column</td><td><code>acq_*</code></td><td>new &mdash; acquisition, which 1.x could not report at all</td></tr>
-<tr><td></td><td><code>taggedSource / taggedMedium / taggedCampaign</code></td><td>column</td><td><code>tagged_*</code></td><td>new &mdash; lets a report separate tagged arrivals from inferred ones</td></tr>
+<tr><td>Traffic source</td><td><code>sessionSource</code></td><td>column</td><td><code>source</code></td><td>the reading on this event&rsquo;s session</td></tr>
+<tr><td></td><td><code>firstSource</code></td><td>column</td><td><code>acq_source</code></td><td>the same reading from the visit that acquired them</td></tr>
+<tr><td></td><td><code>sessionMedium</code></td><td>column</td><td><code>medium</code></td><td></td></tr>
+<tr><td></td><td><code>firstMedium</code></td><td>column</td><td><code>acq_medium</code></td><td></td></tr>
+<tr><td></td><td><code>sessionCampaign</code></td><td>column</td><td><code>campaign</code></td><td></td></tr>
+<tr><td></td><td><code>firstCampaign</code></td><td>column</td><td><code>acq_campaign</code></td><td></td></tr>
+<tr><td></td><td><code>sessionAd</code></td><td>column</td><td><code>ad</code></td><td></td></tr>
+<tr><td></td><td><code>firstAd</code></td><td>column</td><td><code>acq_ad</code></td><td></td></tr>
+<tr><td></td><td><code>sessionSearchTerms</code></td><td>column</td><td><code>search_terms</code></td><td></td></tr>
+<tr><td></td><td><code>firstSearchTerms</code></td><td>column</td><td><code>acq_search_terms</code></td><td></td></tr>
+<tr><td></td><td><code>sessionSourceMedium</code></td><td>concat</td><td><code>source</code> + <code>medium</code></td><td></td></tr>
+<tr><td></td><td><code>firstSourceMedium</code></td><td>concat</td><td><code>acq_source</code> + <code>acq_medium</code></td><td></td></tr>
+<tr><td></td><td><code>sessionChannel</code></td><td>map</td><td><code>medium</code> through a lookup</td><td>organic search, social, referral, direct</td></tr>
+<tr><td></td><td><code>firstChannel</code></td><td>map</td><td><code>acq_medium</code> through a lookup</td><td></td></tr>
+<tr><td></td><td><code>taggedSource / taggedMedium / taggedCampaign</code></td><td>column</td><td><code>tagged_*</code></td><td>separates a tagged arrival from an inferred one</td></tr>
+<tr><td></td><td><code>isSearchEngine</code></td><td>map</td><td><code>medium</code> = <code>organic-search</code></td><td>was an enriched referer column in 1.x</td></tr>
 <tr><td></td><td><code>latestAttributions</code></td><td>&mdash;</td><td>&mdash;</td><td>the <code>attribs</code> stack. 1.5.3 refuses to carry a verdict</td></tr>
 <tr><td></td><td><code>referralPageTitle / referralLinkText / referralWebSite</code></td><td>&mdash;</td><td>&mdash;</td><td>the referral enrichment 2.4.3 records as the one knowing capability loss</td></tr>
+<tr><td></td><td><code>campaignId</code></td><td>&mdash;</td><td>&mdash;</td><td>the tag carries one value per key; there is no separate id to read</td></tr>
 <tr><td>Visitor</td><td><code>visitorId</code></td><td>column</td><td><code>visitor_id</code></td><td></td></tr>
 <tr><td></td><td><code>userId</code></td><td>column</td><td><code>user_id</code></td><td>new &mdash; site-declared</td></tr>
 <tr><td></td><td><code>isNewVisitor</code></td><td>test</td><td><code>prior_sessions&nbsp;=&nbsp;0</code></td><td>a flag in 1.x, a test in v2 (1.4)</td></tr>
 <tr><td></td><td><code>isRepeatVisitor</code></td><td>test</td><td><code>prior_sessions&nbsp;&gt;&nbsp;0</code></td><td></td></tr>
 <tr><td></td><td><code>newVsReturning</code></td><td>map</td><td><code>prior_sessions</code> through a lookup</td><td>the labelled pair, 2.4.1&rsquo;s <code>map</code> example</td></tr>
 <tr><td></td><td><code>priorVisitCount</code></td><td>column</td><td><code>prior_sessions</code></td><td></td></tr>
+<tr><td></td><td><code>firstSessionDate</code></td><td>datePart</td><td><code>visitor_fsts</code></td><td>the anchor rides every event</td></tr>
+<tr><td></td><td><code>signedInWithUserId</code></td><td>test</td><td><code>user_id</code> IS NOT NULL</td><td></td></tr>
+<tr><td></td><td><code>userAgeBracket / userGender</code></td><td>&mdash;</td><td>&mdash;</td><td><strong>refused.</strong> Demographics reach GA through Google Signals; there is no way to collect them that fits this product</td></tr>
 <tr><td></td><td><code>daysSinceFirstVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>visitor_fsts</code></td><td>both anchors ride every event, so no lookup</td></tr>
 <tr><td></td><td><code>daysSinceLastVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>prev_event_ts</code></td><td>the anchor GA carries as <code>event_previous_timestamp</code></td></tr>
 <tr><td></td><td><code>userEmail</code></td><td>&mdash;</td><td>&mdash;</td><td>PII on a fact row</td></tr>
@@ -875,6 +891,7 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>city</code></td><td>column</td><td><code>city</code></td><td></td></tr>
 <tr><td></td><td><code>countryCode</code></td><td>column</td><td><code>country_code</code></td><td></td></tr>
 <tr><td></td><td><code>stateRegion</code></td><td>column</td><td><code>region</code></td><td></td></tr>
+<tr><td></td><td><code>continentId / cityId / countryId</code></td><td>&mdash;</td><td>&mdash;</td><td>id forms of names already carried. The names are what reports group by</td></tr>
 <tr><td></td><td><code>continent</code></td><td>map</td><td><code>country_code</code> through a lookup</td><td>new. A pure function of the code, so it needs no column</td></tr>
 <tr><td></td><td><code>subContinent</code></td><td>map</td><td><code>country_code</code> through a lookup</td><td>new</td></tr>
 <tr><td></td><td><code>metro</code></td><td>&mdash;</td><td>&mdash;</td><td>the group-by is meaningful, but <code>Geolocation::getGeolocationFromIp()</code> returns city, country, state, country code, latitude and longitude &mdash; there is no metro to read</td></tr>
@@ -883,6 +900,9 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>browserVersion</code></td><td>column</td><td><code>browser_version</code></td><td>split out of the <code>raw_ua</code> parse</td></tr>
 <tr><td></td><td><code>osType</code></td><td>column</td><td><code>os</code></td><td></td></tr>
 <tr><td></td><td><code>osVersion</code></td><td>column</td><td><code>os_version</code></td><td>new</td></tr>
+<tr><td></td><td><code>operatingSystemWithVersion</code></td><td>concat</td><td><code>os</code> + <code>os_version</code></td><td></td></tr>
+<tr><td></td><td><code>languageCode</code></td><td>map</td><td><code>language</code> through a lookup</td><td>the base language 2.1 anticipates</td></tr>
+<tr><td></td><td><code>mobileDeviceMarketingName</code></td><td>&mdash;</td><td>&mdash;</td><td>brand and model already carry the distinction</td></tr>
 <tr><td></td><td><code>deviceType</code></td><td>column</td><td><code>device_type</code></td><td>new &mdash; desktop, mobile or tablet</td></tr>
 <tr><td></td><td><code>deviceBrand</code></td><td>column</td><td><code>device_brand</code></td><td>new</td></tr>
 <tr><td></td><td><code>deviceModel</code></td><td>column</td><td><code>device_model</code></td><td>new</td></tr>
@@ -896,6 +916,13 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>elementPath</code></td><td>column</td><td><code>element_path</code></td><td>new &mdash; Phase 5</td></tr>
 <tr><td></td><td><code>clickTarget</code></td><td>column</td><td><code>target_url</code></td><td>new</td></tr>
 <tr><td></td><td><code>scrollDepth</code></td><td>map</td><td><code>scroll_depth</code> bucketed</td><td>new</td></tr>
+<tr><td></td><td><code>linkDomain</code></td><td>column</td><td><code>target_host</code></td><td>new</td></tr>
+<tr><td></td><td><code>outbound</code></td><td>test</td><td><code>target_host</code> &ne; <code>host</code></td><td>new</td></tr>
+<tr><td></td><td><code>fileName / fileExtension</code></td><td>param path</td><td><code>params</code> path</td><td>on a download event, as GA&rsquo;s <code>__ccd_em_download</code> does it</td></tr>
+<tr><td></td><td><code>searchTerm</code></td><td>param path</td><td><code>params</code> path</td><td>site search. Needs the query-param list as a profile setting, the way GA ships <code>vtp_searchQueryParams</code></td></tr>
+<tr><td>Commerce</td><td><code>currencyCode</code></td><td>column</td><td><code>currency</code></td><td>new &mdash; revenue is minor units and needs a unit</td></tr>
+<tr><td></td><td><code>visible</code></td><td>&mdash;</td><td>&mdash;</td><td>an impression-visibility flag. v2 raises no impression event for it to sit on</td></tr>
+<tr><td></td><td><code>groupId</code></td><td>&mdash;</td><td>&mdash;</td><td>a gaming/app grouping with no web counterpart</td></tr>
 <tr><td></td><td><code>domElementClass / Name / Text / Value</code></td><td>param path</td><td><code>params</code> path</td><td>no column; available as an unregistered param path</td></tr>
 <tr><td></td><td><code>actionGroup / actionName / actionLabel</code></td><td>param path</td><td><code>params</code> path</td><td>1.x action_fact columns become event params</td></tr>
 <tr><td></td><td><code>customVarName / customVarValue</code></td><td>param path</td><td><code>params</code> path</td><td>the five fixed slots become unlimited keys</td></tr>
@@ -906,7 +933,7 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>siteDomain / siteName</code></td><td>column</td><td>the site table</td><td>an admin lookup, not an event column</td></tr>
 <tr><td>Feed</td><td><code>feedType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.10 &mdash; nothing has written a feed request since 2021</td></tr>
 </tbody></table></div>
-<p class="note">Counts: 42 resolve to a column, 11 are computed (3 <code>concat</code>, 6 <code>map</code>, 2 <code>datePart</code>), 5 a <code>test</code> on a column, 3 <code>filtered</code> on <code>is_exit</code>, 5 a <code>params</code> path. 10 fall out. <strong>Two rows remain open</strong> &mdash; the <code>priorPage*</code> set and the pair that counts backwards from a purchase &mdash; and both need a rule rather than a renderer (<a href="#s31">&sect;3.1</a>).</p>
+<p class="note">Counts: 49 resolve to a column, 17 are computed (6 <code>concat</code>, 8 <code>map</code>, 3 <code>datePart</code>), 7 a <code>test</code> on a column, 3 <code>filtered</code> on <code>is_exit</code>, 8 a <code>params</code> path. 16 are refused or fall out, and 2 remain open (<a href="#s31">&sect;3.1</a>). <strong>Attribution is exposed at both scopes</strong> &mdash; every <code>session*</code> dimension has a <code>first*</code> twin reading the <code>acq_*</code> column, and the reporting layer picks. GA materialises that cross product as 159 separate dimensions; here it is ten columns and a choice.</p>
 
 <h4><span class="num">2.4.3</span>What changes in v2</h4>
 <div class="scroll"><table>
