@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * The pass, end to end: raw rows in, denormalised rows out of owa_event.
+ * A build, end to end: raw rows in, cube rows out of owa_event.
  *
  * Runs the real statement and the real swap against the configured database,
  * because every interesting part of this is SQL -- the window frames, the
@@ -20,7 +20,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * It rebuilds a whole partition, which is the unit the swap works in, so the
  * fixture rows are removed and the partition rebuilt again in tearDown.
  */
-final class DenormalisationPassTest extends TestCase
+final class CubeBuildTest extends TestCase
 {
     /** Visitors, sessions and events of the fixture, all numeric ids. */
     const SITE = 'owa-denorm-test-site';
@@ -31,6 +31,8 @@ final class DenormalisationPassTest extends TestCase
     const VISITOR_OPEN    = 7771000000000004;
     const VISITOR_LONG_REF = 7771000000000005;
     const VISITOR_LONG_HOST = 7771000000000006;
+    const VISITOR_SEARCHER  = 7771000000000007;
+    const VISITOR_TAGGED_SEARCH = 7771000000000008;
 
     /** @var array id => row, as seeded */
     private $seeded = [];
@@ -55,7 +57,7 @@ final class DenormalisationPassTest extends TestCase
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
-            $this->markTestSkipped('OWA database not reachable; skipping pass test.');
+            $this->markTestSkipped('OWA database not reachable; skipping cube build test.');
         }
 
         $this->yyyymmdd = (int) date('Ymd');
@@ -95,7 +97,7 @@ final class DenormalisationPassTest extends TestCase
         $t = $this->t0;
 
         // A tagged arrival, three events, one session. Only the landing event
-        // carries tags -- which is the whole reason the pass exists.
+        // carries tags -- which is the whole reason a build exists.
         $this->seed('page_view', self::VISITOR_TAGGED, 8881000000000001, $t, [
             'page_location'   => 'https://example.test/landing?utm_source=newsletter',
             'page_path'       => '/landing',
@@ -127,6 +129,8 @@ final class DenormalisationPassTest extends TestCase
             'page_title'    => 'From search',
             'referer_url'   => 'https://www.google.com/search?q=web+analytics',
             'referer_host'  => 'google.com',
+            // No referer_query: modern engines send the host and nothing else,
+            // which is the case the fallback has to answer NULL for.
         ]);
 
         // Nothing at all: no tags, no referrer.
@@ -143,7 +147,7 @@ final class DenormalisationPassTest extends TestCase
             'page_path'     => '/long-referrer',
             'page_title'    => 'Long referrer',
             // No scheme, so V2Event::parseUrl() finds no host and ingest
-            // stores NULL. The pass must answer direct, not invent a source.
+            // stores NULL. A build must answer direct, not invent a source.
             'referer_url'   => str_repeat('a', 900),
         ]);
 
@@ -157,6 +161,30 @@ final class DenormalisationPassTest extends TestCase
             'referer_url'   => 'https://' . str_repeat('b', 300) . '/x',
         ]);
 
+        // An engine that still puts the term in its referrer. Yandex is the
+        // only one measured doing it since 2022 -- 8 sessions -- which is why
+        // the compute step exists for the mechanism rather than the volume.
+        $this->seed('page_view', self::VISITOR_SEARCHER, 8881000000000007, $t, [
+            'page_location' => 'https://example.test/found',
+            'page_path'     => '/found',
+            'page_title'    => 'Found',
+            'referer_url'   => 'https://yandex.ru/search/?text=open+web+analytics',
+            'referer_host'  => 'yandex.ru',
+            'referer_query' => 'text=open+web+analytics',
+        ]);
+
+        // A tagged arrival that ALSO has an engine query. The tag wins: a
+        // compute step fills, it never overwrites.
+        $this->seed('page_view', self::VISITOR_TAGGED_SEARCH, 8881000000000008, $t, [
+            'page_location'       => 'https://example.test/both',
+            'page_path'           => '/both',
+            'page_title'          => 'Both',
+            'referer_url'         => 'https://yandex.ru/search/?text=from+the+referrer',
+            'referer_host'        => 'yandex.ru',
+            'referer_query'       => 'text=from+the+referrer',
+            'tagged_search_terms' => 'from the tag',
+        ]);
+
         // Still inside the idle timeout, so its last event is not an exit yet.
         $this->seed('page_view', self::VISITOR_OPEN, 8881000000000004, $this->t_open, [
             'page_location' => 'https://example.test/open',
@@ -166,7 +194,7 @@ final class DenormalisationPassTest extends TestCase
     }
 
     /**
-     * One raw row, with the id the pass will find it under.
+     * One raw row, with the id a build will find it under.
      */
     private function seed(string $type, int $visitor, int $session, int $ts, array $row): void
     {
@@ -215,19 +243,19 @@ final class DenormalisationPassTest extends TestCase
 
     private function rebuild(): void
     {
-        $pass  = new \OWA\Module\Base\Classes\DenormalisationPass();
-        $spans = $pass->partitions($this->yyyymmdd, $this->yyyymmdd);
+        $builder = new \OWA\Module\Base\Classes\Cube\Builder();
+        $spans = $builder->partitions($this->yyyymmdd, $this->yyyymmdd);
 
         $this->assertNotEmpty($spans, 'owa_event has no dated partition covering today');
 
         foreach ($spans as $span) {
-            $result = $pass->rebuild($span);
+            $result = $builder->rebuild($span);
             $this->assertTrue($result['ok'], 'rebuild of ' . $span['name'] . ' failed');
         }
     }
 
     /**
-     * One denormalised row, by the id its raw row was seeded under.
+     * One cube row, by the id its raw row was seeded under.
      */
     private function built(string $type, int $visitor, int $session, int $ts): array
     {
@@ -237,7 +265,7 @@ final class DenormalisationPassTest extends TestCase
             'SELECT * FROM %s WHERE id = %d AND yyyymmdd = %d',
             $this->table('base.event'), $id, $this->yyyymmdd));
 
-        $this->assertNotEmpty($row, "no denormalised row for $type/$visitor");
+        $this->assertNotEmpty($row, "no cube row for $type/$visitor");
 
         return $row;
     }
@@ -250,7 +278,7 @@ final class DenormalisationPassTest extends TestCase
         //
         //   1731 Non matching attribute 'INSTANT COLUMN(s)'
         //
-        // The pass then fails every run having published nothing. Any update
+        // A build then fails every run having published nothing. Any update
         // touching owa_event has to recreate it rather than ALTER it.
         //
         // Only an UPGRADED install can fail this -- a fresh one never has an
@@ -290,6 +318,33 @@ final class DenormalisationPassTest extends TestCase
           . 'An update that adds a column to it must drop and recreate it.', $table));
     }
 
+    public function testTheCubeCarriesEveryRawColumnPhysically(): void
+    {
+        // The cube is raw's columns verbatim plus the derived ones, and the
+        // ENTITY says so -- but an update that adds a column to raw and forgets
+        // the cube leaves the two tables disagreeing, and the next build dies
+        // on "Unknown column in field list". That has happened twice.
+        $db = owa_coreAPI::dbSingleton();
+
+        $columns = function (string $table) use ($db): array {
+            $names = [];
+            foreach ((array) $db->get_results(
+                "SELECT COLUMN_NAME c FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$table'") as $row) {
+                $names[] = $row['c'];
+            }
+            sort($names);
+            return $names;
+        };
+
+        $missing = array_diff($columns($this->table('base.event_raw')),
+                              $columns($this->table('base.event')));
+
+        $this->assertSame([], array_values($missing), sprintf(
+            '%s is missing columns %s has. An update added them to raw only.',
+            $this->table('base.event'), $this->table('base.event_raw')));
+    }
+
     public function testEveryRawRowBecomesExactlyOneEventRow(): void
     {
         $db = owa_coreAPI::dbSingleton();
@@ -300,9 +355,9 @@ final class DenormalisationPassTest extends TestCase
         $out = $db->get_row(sprintf("SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
             $this->table('base.event'), $db->prepare(self::SITE), $this->yyyymmdd));
 
-        $this->assertSame(8, (int) $in['n']);
+        $this->assertSame(10, (int) $in['n']);
         $this->assertSame((int) $in['n'], (int) $out['n'],
-            'The pass enriches. It creates nothing and drops nothing.');
+            'A build enriches. It creates nothing and drops nothing.');
     }
 
     public function testTheSessionsTagsAreStampedOnEveryRowOfIt(): void
@@ -409,6 +464,43 @@ final class DenormalisationPassTest extends TestCase
         $this->assertSame('direct', $row['source']);
     }
 
+    public function testAComputeStepFillsWhatSqlCannot(): void
+    {
+        // Pulling a named parameter out of a referring URL and percent-decoding
+        // it is PHP -- MySQL has no URL decode -- so before compute steps this
+        // reading had nowhere to go but ingest, the one layer a corrected
+        // engine list never reaches.
+        $row = $this->built('page_view', self::VISITOR_SEARCHER, 8881000000000007, $this->t0);
+
+        $this->assertSame('open web analytics', $row['search_terms'],
+            'the + separators decode to spaces, which is the half SQL cannot do');
+    }
+
+    public function testTheCandidateQueryExcludesRowsSqlAlreadyAnswers(): void
+    {
+        // A tagged arrival that also carries an engine query. It is not a
+        // candidate at all -- `when` says tagged_search_terms IS NULL -- so PHP
+        // never sees it and the tag stands.
+        //
+        // This does NOT test the COALESCE: with the row excluded there is no
+        // computed value, so the fallback wins whichever way round the two are.
+        // CubeStepTest asserts the expression shape directly.
+        $row = $this->built('page_view', self::VISITOR_TAGGED_SEARCH, 8881000000000008, $this->t0);
+
+        $this->assertSame('from the tag', $row['search_terms']);
+    }
+
+    public function testAnEngineThatWithheldTheTermGetsNullNotASentinel(): void
+    {
+        // v1 writes '(not provided)' here, and it is the most common "search
+        // term" on the demo install -- 10,773 of them against 1,530 for the
+        // top real one. A sentinel that looks like an observation is what 2.11
+        // refuses.
+        $row = $this->built('page_view', self::VISITOR_REFERRED, 8881000000000002, $this->t0);
+
+        $this->assertNull($row['search_terms']);
+    }
+
     public function testIsExitMarksTheLastEventOfAClosedSession(): void
     {
         $t = $this->t0;
@@ -430,7 +522,7 @@ final class DenormalisationPassTest extends TestCase
     public function testPrevEventTsIsCopiedFromRawRatherThanDerived(): void
     {
         // It is an observation now, carried on the beacon and corrected to
-        // server time at ingest -- the pass copies it like any raw column. The
+        // server time at ingest -- a build copies it like any raw column. The
         // second window function it used to need cost 128 of 195 seconds at a
         // million rows, for this one value.
         $t = $this->t0;

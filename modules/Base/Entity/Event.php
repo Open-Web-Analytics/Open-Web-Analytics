@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Entity;
  * owa_event -- v2's denormalised event table. The one queries hit.
  *
  * Every column of owa_event_raw, unchanged and in the same order, then the
- * sixteen the denormalisation pass derives.
+ * sixteen the cube build derives.
  *
  * IT EXTENDS EventRaw RATHER THAN RESTATING IT
  * "The same columns in the same order" is a requirement, not a description: the
@@ -95,12 +95,12 @@ class Event extends EventRaw {
         $this->setProperty( $is_exit );
 
         /*
-         * The visitor's acquisition, from the visitor store -- the pass's only
+         * The visitor's acquisition, from the visitor store -- the build's only
          * read outside the partition it is building, and the reason that store
          * exists.
          *
          * Write-once at first_visit: a later campaign moves `source`, never
-         * these. Where the store has no row the pass writes the sentinel.
+         * these. Where the store has no row a build writes the sentinel.
          *
          * acq_search_terms is nullable: an acquisition with no search terms is
          * an ordinary absence, and past the store's retention it stays NULL
@@ -112,7 +112,7 @@ class Event extends EventRaw {
         $this->setProperty( $this->resolved( 'acq_ad', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'acq_search_terms', OWA_DTD_VARCHAR255 ) );
 
-        // When the pass last wrote this partition, in microseconds. Carries the
+        // When a build last wrote this partition, in microseconds. Carries the
         // as-of a report envelope reports, and the provenance of a bad rebuild.
         $built_at = $this->column( 'built_at', OWA_DTD_BIGINT, false );
         $built_at->setNotNull();
@@ -120,10 +120,10 @@ class Event extends EventRaw {
     }
 
     /**
-     * A column the pass always fills: NOT NULL, and no default.
+     * A column a build always fills: NOT NULL, and no default.
      *
      * A default would let a row be written without the value. Nothing writes
-     * these rows but the pass, so an insert missing one should fail.
+     * these rows but a build, so an insert missing one should fail.
      *
      * @param string $name
      * @param string $type an OWA_DTD_* value

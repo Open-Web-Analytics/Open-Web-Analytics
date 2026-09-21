@@ -12,7 +12,7 @@ namespace OWA\Module\Base\Entity;
  *
  * One row per tracked interaction, as received. Append-only: written a beacon
  * at a time, never updated, and the record realtime queries read. Everything a
- * pass has to derive belongs in the denormalised table instead -- the cut is
+ * pass has to derive belongs in the cube instead -- the cut is
  * that a column lives here if it is an OBSERVATION or a MECHANICAL RESOLUTION
  * (geo from the address, device from the user agent), and there if deriving it
  * needs other rows.
@@ -95,7 +95,7 @@ class EventRaw extends \OWA\Core\Entity {
          * the tracker keeps last_req for its own session decision, so 1.5.3's
          * rule applies -- an anchor the client already maintains is sent.
          *
-         * It was a window function in the pass until that was measured. The
+         * It was a window function in a build until that was measured. The
          * window partitions by visitor where the other partitions by session,
          * so it cannot share a sort, and it cost 128 of 195 seconds at a
          * million rows.
@@ -121,17 +121,24 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'referer_url', OWA_DTD_VARCHAR1024 ) );
 
         // Parsed at ingest beside host and target_host, by the same parser.
-        // The pass classifies it -- which search engine, which social network
+        // A build classifies it -- which search engine, which social network
         // -- but does not parse it: SQL has no URL parser, and a chain of
         // SUBSTRING_INDEX cannot tell a URL from a string that is not one.
         $this->setProperty( $this->column( 'referer_host', OWA_DTD_VARCHAR255 ) );
 
+        // The referrer's query string, kept for the same reason page_query is:
+        // it is the evidence a reading is taken from. A search engine that
+        // still sends the term puts it here, and the cube's compute step reads
+        // it -- pulling a named parameter out and percent-decoding it is PHP,
+        // because SQL has no decode.
+        $this->setProperty( $this->column( 'referer_query', OWA_DTD_VARCHAR1024 ) );
+
         /*
          * Attribution EVIDENCE, never a verdict. The landing URL rides the
          * landing beacon and no other, so these are populated on the session's
-         * landing event and NULL on every later row of it. The pass reads that
+         * landing event and NULL on every later row of it. A build reads that
          * first event anyway, for the landing page, and turns the pair of
-         * (tags, referer) into source and medium on the denormalised row --
+         * (tags, referer) into source and medium on the cube row --
          * where a classifier fix can be re-applied, which is the whole reason
          * the reading is not stored here.
          */

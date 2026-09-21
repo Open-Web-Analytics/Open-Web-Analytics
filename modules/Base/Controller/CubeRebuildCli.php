@@ -8,16 +8,26 @@ namespace OWA\Module\Base\Controller;
 //
 
 /**
- * Rebuild owa_event from owa_event_raw, a partition at a time.
+ * Rebuild the reporting cube from owa_event_raw, a partition at a time.
  *
- *   cmd=events-rebuild                     today's partition
- *   cmd=events-rebuild date=20260901       the partition holding that date
- *   cmd=events-rebuild days=3              today and the two days before
- *   cmd=events-rebuild from=20260901 to=20260930
- *   cmd=events-rebuild days=3 --dry-run    print the statements, run nothing
+ *   cmd=cube-rebuild                     the partition holding today
+ *   cmd=cube-rebuild date=20260901       the partition holding that date
+ *   cmd=cube-rebuild days=3              the partitions covering the last 3 days
+ *   cmd=cube-rebuild from=20260901 to=20260930
+ *   cmd=cube-rebuild days=3 --dry-run    print the statements, run nothing
  *
  * Convergent: a partition rebuilt twice comes out the same, so a missed run
  * costs freshness and nothing else.
+ *
+ * THE DATES SELECT PARTITIONS, NOT DAYS. A build rebuilds a whole partition,
+ * because the swap is the unit of work -- so `date=20260915` against monthly
+ * partitioning rebuilds every row of September, and `days=3` usually resolves
+ * to the one current partition rather than to three days of work. The command
+ * prints what each date range resolved to for exactly that reason.
+ *
+ * It is also why partition granularity and the run interval are one decision
+ * rather than two (2.5.1): at a quarter-hourly cadence on a monthly partition,
+ * the last run of the month rewrites a month.
  *
  * TWO CADENCES ARE INTENDED, one job each, because they answer different
  * questions. A frequent run over the current partition sets how stale a report
@@ -28,16 +38,16 @@ namespace OWA\Module\Base\Controller;
  * installation's busiest. In owa-config.php:
  *
  *   define( 'OWA_SCHEDULED_JOBS', serialize( array(
- *       'rebuild-events-current' => array( 'command' => 'events-rebuild',
+ *       'rebuild-cube-current' => array( 'command' => 'cube-rebuild',
  *           'schedule' => '*\/15 * * * *' ),
- *       'rebuild-events-window'  => array( 'command' => 'events-rebuild',
+ *       'rebuild-cube-window'  => array( 'command' => 'cube-rebuild',
  *           'schedule' => '@hourly', 'params' => array( 'days' => 3 ) ),
  *   ) ) );
  *
  * The lock is keyed on the job NAME, so those two serialise separately and a
  * long window rebuild does not hold up the current one.
  */
-class EventsRebuildCli extends \OWA\Core\Controller\Cli {
+class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
     function __construct( $params ) {
 
@@ -54,11 +64,11 @@ class EventsRebuildCli extends \OWA\Core\Controller\Cli {
         if ( ! $db->supportsPartitioning() ) {
 
             return $this->refuse(
-                'This database driver does not support partitioning, and the pass swaps '
+                'This database driver does not support partitioning, and a build swaps '
               . 'a partition to publish a rebuild. Nothing to do.' );
         }
 
-        $pass  = new \OWA\Module\Base\Classes\DenormalisationPass();
+        $builder = new \OWA\Module\Base\Classes\Cube\Builder();
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getTableName();
 
         if ( ! $db->isPartitioned( $table ) ) {
@@ -72,11 +82,12 @@ class EventsRebuildCli extends \OWA\Core\Controller\Cli {
         if ( ! $range ) {
 
             return $this->refuse(
-                'Could not read that range. Use date=yyyymmdd, days=N, or from=yyyymmdd to=yyyymmdd.' );
+                'Could not read that range. Use from=yyyymmdd for that date through to now, '
+              . 'days=N for the same relatively, or from=yyyymmdd to=yyyymmdd for a closed window.' );
         }
 
         $dry_run    = (bool) $this->getParam( 'dry-run' );
-        $partitions = $pass->partitions( $range['from'], $range['to'] );
+        $partitions = $builder->partitions( $range['from'], $range['to'] );
 
         if ( ! $partitions ) {
 
@@ -91,15 +102,27 @@ class EventsRebuildCli extends \OWA\Core\Controller\Cli {
                 $table, $range['from'], $range['to'] ) );
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf( 'Rebuilding %d partition(s) of %s for %d to %d.%s',
-            count( $partitions ), $table, $range['from'], $range['to'],
+        /*
+         * Say what the dates RESOLVED TO, not what was asked for. A build
+         * rebuilds whole partitions -- the swap is the unit of work -- so
+         * date=20260915 against monthly partitioning rebuilds all of September,
+         * and reporting the requested day back would hide that entirely.
+         */
+        \OWA\Core\CoreAPI::notice( sprintf( '%d to %d covers %d partition(s) of %s.%s',
+            $range['from'], $range['to'], count( $partitions ), $table,
             $dry_run ? ' Dry run.' : '' ) );
+
+        foreach ( $partitions as $span ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '  %s spans %s to %s, and all of it is rebuilt.',
+                $span['name'], $span['start'], $span['less_than'] ) );
+        }
 
         $failed = 0;
 
         foreach ( $partitions as $span ) {
 
-            $result = $pass->rebuild( $span, $dry_run );
+            $result = $builder->rebuild( $span, $dry_run );
 
             if ( $dry_run ) {
 
@@ -116,7 +139,11 @@ class EventsRebuildCli extends \OWA\Core\Controller\Cli {
             }
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s rebuilt: %d rows.', $span['name'], $result['rows'] ) );
+                '%s rebuilt: %s rows, %d steps, %d values computed.',
+                $span['name'], number_format( $result['rows'] ),
+                $result['steps'], $result['computed'] ) );
+
+            $this->reportSteps( $builder );
         }
 
         if ( $failed ) {
@@ -128,22 +155,44 @@ class EventsRebuildCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * What each step did, when asked for it.
+     *
+     * Compute steps are the one place a build spends time outside SQL, so
+     * their timings are the ones worth having -- a slow callback would
+     * otherwise just look like the build getting slower.
+     *
+     * @param \OWA\Module\Base\Classes\Cube\Builder $builder
+     * @return void
+     */
+    protected function reportSteps( $builder ) {
+
+        if ( ! $this->getParam( 'steps' ) ) {
+
+            return;
+        }
+
+        foreach ( $builder->accounting() as $entry ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '  %-34s %-7s %8s %9s  %s',
+                $entry['step'], $entry['kind'],
+                $entry['kind'] === 'compute' ? number_format( $entry['computed'] ) : '-',
+                $entry['msec'] . 'ms',
+                $entry['ok'] ? 'ok' : ( 'FAILED: ' . $entry['error'] ) ) );
+        }
+    }
+
+    /**
      * The dates to rebuild, from whichever parameters were given.
+     *
+     * `from` with no `to` runs through to today rather than covering one day,
+     * which is the whole point of it: a rebuild re-applies a correction or
+     * picks up late arrivals, and both reach forward from a point in the past.
      *
      * @return array|null ['from','to'] as yyyymmdd
      */
     protected function resolveRange() {
 
         $today = (int) date( 'Ymd' );
-
-        $date = $this->getParam( 'date' );
-
-        if ( $date ) {
-
-            $date = $this->asDate( $date );
-
-            return $date ? array( 'from' => $date, 'to' => $date ) : null;
-        }
 
         $from = $this->getParam( 'from' );
         $to   = $this->getParam( 'to' );

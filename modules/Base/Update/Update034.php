@@ -8,8 +8,8 @@ namespace OWA\Module\Base\Update;
  * Both are empty and nothing writes to them until a site turns on
  * v2_raw_collection, so this update adds storage and changes no behaviour. It
  * is the first schema change of the v2 work and deliberately the whole of it:
- * the denormalised table and the pass are a later phase, and neither is
- * specified well enough yet to be created and then altered.
+ * the cube and its build are a later phase, and neither is specified well
+ * enough yet to be created and then altered.
  *
  * createTable() emits CREATE TABLE IF NOT EXISTS and builds the statement from
  * the entity, so up() is idempotent and converges with a fresh install, which

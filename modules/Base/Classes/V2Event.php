@@ -43,11 +43,11 @@ class V2Event {
     const MARKER_FIRST_VISIT   = 'first_visit';
 
     /**
-     * What the pass writes where it could not resolve a value at all.
+     * What a build writes where it could not resolve a value at all.
      *
      * NULL keeps one meaning -- the beacon carried nothing -- and this carries
      * the other, the pipeline could not work it out. Not a contradiction of
-     * "absence is NULL": the pass generates this and no visitor can.
+     * "absence is NULL": a build generates this and no visitor can.
      *
      * It is a control byte because it has to be un-typeable. A tagged visit
      * puts the URL's own text straight into source and medium, so a readable

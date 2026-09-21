@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Entity;
  * would break the write rule above: insert-if-absent would find it present when
  * the real first_visit arrived late on a queue drain, and block the real value
  * permanently and silently. Keeping the row absent leaves that path open, and
- * the pass writes its sentinel from the row being missing.
+ * a build writes its sentinel from the row being missing.
  *
  * NOT PARTITIONED, DELIBERATELY
  * Partitioning on last_seen is refused by MySQL rather than merely expensive:
@@ -64,7 +64,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         /*
          * Acquisition, as collected. Write-once: these are the tagged values
          * from the first session, transcribed, never a classification -- the
-         * reading over them is the pass's, the same as for an event.
+         * reading over them is the build's, the same as for an event.
          */
         $this->setProperty( $this->column( 'acq_source', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'acq_medium', OWA_DTD_VARCHAR64 ) );
@@ -78,7 +78,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'acq_referer_url', OWA_DTD_VARCHAR1024 ) );
 
         // Its host, parsed at ingest like owa_event_raw.referer_host, so the
-        // pass classifies an acquisition the same way it classifies a session
+        // build classifies an acquisition the same way it classifies a session
         // and neither one parses a URL in SQL.
         $this->setProperty( $this->column( 'acq_referer_host', OWA_DTD_VARCHAR255 ) );
 
@@ -90,7 +90,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
          * A PERIOD, not a timestamp: yyyymm. Three things follow, and they are
          * why maintaining it does not add a second keyed write per event.
          *
-         *   - the pass advances it, not ingest -- one set-based UPDATE over the
+         *   - a build advances it, not ingest -- one set-based UPDATE over the
          *     visitors seen in the partition being rebuilt;
          *   - a period changes at most once per visitor per month, so the
          *     common case is a write that changes nothing;

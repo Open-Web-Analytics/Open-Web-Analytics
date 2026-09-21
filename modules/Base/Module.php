@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 37;
+        $this->required_schema_version = 38;
         return parent::__construct();
     }
 
@@ -149,7 +149,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.crawlDocumentCli',              'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',             'Controller/CrawlDocumentCli.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
-        $this->registerAction( 'base.eventsRebuildCli',              'OWA\\Module\\Base\\Controller\\EventsRebuildCli',           'Controller/EventsRebuildCli.php' );
+        $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli',             'Controller/CubeRebuildCli.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
         $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
         $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
@@ -283,7 +283,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
-        $this->registerCliCommand('events-rebuild', 'base.eventsRebuildCli');
+        $this->registerCliCommand('cube-rebuild', 'base.cubeRebuildCli');
     }
 
     /**

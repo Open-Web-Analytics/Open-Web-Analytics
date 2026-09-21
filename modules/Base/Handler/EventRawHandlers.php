@@ -28,11 +28,11 @@ namespace OWA\Module\Base\Handler;
  *     server raises session_start and first_visit from them, here, into raw.
  *     The test for which side a derivation falls on is whether it is a pure
  *     function of ONE beacon: these are, so they happen at ingest. Acquisition
- *     and session finalisation need other events, so they are the pass's.
+ *     and session finalisation need other events, so they are the build's.
  *   - Records EVIDENCE and stops. The tagged values are transcribed; whether a
  *     referring host counts as organic search, a social network or a plain
  *     referral is a table that grows and gets corrected, so the reading is
- *     written by the pass onto the denormalised row where a fix can be
+ *     written by a build onto the cube row where a fix can be
  *     re-applied. A verdict is never written where it cannot be corrected.
  */
 class EventRawHandlers extends \OWA\Core\Observer {
@@ -135,7 +135,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * The markers. Raised from flags that are already on this beacon, in
          * the same write, so a marker cannot be lost while its own page view
          * survives -- the beacon carrying the flag can be lost, and then the
-         * session simply has no marker row, which a later pass cannot repair
+         * session simply has no marker row, which a later build cannot repair
          * either way because re-reading raw reproduces the same partial state.
          *
          * is_new_session_start and is_new_visitor_created are REQUEST scoped:
@@ -235,6 +235,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'content_group' => $this->text( $event->get( 'content_group' ) ),
             'referer_url'   => $this->text( $event->get( 'HTTP_REFERER' ) ),
             'referer_host'  => $referer['host'],
+            'referer_query' => $referer['query'],
 
             'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
@@ -427,7 +428,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * Transcription, never classification: what the URL CLAIMED. The answer
      * over it -- tag if there was one, else the referrer classified -- is the
-     * pass's, on the denormalised row, where correcting the classifier is a
+     * pass's, on the cube row, where correcting the classifier is a
      * reprocess rather than an edit.
      *
      * @param object $event
@@ -448,7 +449,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * Which event is the landing one. session_start is materialised from
          * the session's first page_view and first_visit from the visitor's, so
          * all three of these are the same beacon -- the landing beacon -- and
-         * each keeps its own copy, since the pass reads whichever of them it
+         * each keeps its own copy, since a build reads whichever of them it
          * finds first.
          */
         $is_landing = $event->get( 'is_new_session_start' )
@@ -629,7 +630,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * Write the rows, and the visitor store row if this is a first session.
      *
      * ONE ATOMIC WRITE OF EVERYTHING THE BEACON BECOMES. A page_view that
-     * landed without its session_start is not something a later pass can
+     * landed without its session_start is not something a later build can
      * repair: the flag was on the beacon that half-wrote, so re-reading raw
      * reproduces the same partial state. The guarantee has to be made where the
      * rows are created.
@@ -690,7 +691,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * A VISITOR WITH NO KNOWN ACQUISITION GETS NO ROW. A placeholder would be
      * found present when the real first_visit arrived late on a queue drain and
-     * would block the real value permanently and silently; the pass writes its
+     * would block the real value permanently and silently; a build writes its
      * sentinel from the row being missing instead.
      *
      * @param object $event
@@ -736,7 +737,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'visitor_id' => $row['visitor_id'],
             'site_id'    => $row['site_id'],
             'acq_ts'     => $row['ts'],
-            // A PERIOD, yyyymm. The pass advances it from there; ingest writes
+            // A PERIOD, yyyymm. A build advances it from there; ingest writes
             // the one it is creating the row in so the TTL has something to
             // read before a pass has ever run.
             'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),

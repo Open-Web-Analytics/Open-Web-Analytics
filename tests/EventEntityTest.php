@@ -9,7 +9,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * The first assertion is the load-bearing one: EXCHANGE PARTITION refuses two
  * tables that differ anywhere, and the staging table is built from owa_event,
- * so owa_event drifting from owa_event_raw is what stops the pass publishing
+ * so owa_event drifting from owa_event_raw is what stops a build publishing
  * anything. Inheritance makes that hard to do by accident; this makes it
  * impossible to do silently.
  */
@@ -68,15 +68,15 @@ final class EventEntityTest extends TestCase
     {
         $entity = $this->event();
 
-        // The pass always produces one of these, so a NULL arriving in one is a
+        // A build always produces one of these, so a NULL arriving in one is a
         // bug to fail on rather than to store.
         foreach (['source', 'medium', 'acq_source', 'acq_medium', 'acq_campaign', 'acq_ad'] as $name) {
             $this->assertNotEmpty($entity->getColumn($name)->is_not_null,
-                "$name is resolved by the pass and always has a value");
+                "$name is resolved by a build and always has a value");
             $this->assertEmpty($entity->getColumn($name)->nullable, "$name must not be nullable");
         }
 
-        // Raw declares every one of these sources nullable, so the pass copies
+        // Raw declares every one of these sources nullable, so a build copies
         // NULLs. Under STRICT_ALL_TABLES a NULL into a NOT NULL column aborts
         // the statement: one page with no title, and the partition rebuild
         // fails.
@@ -92,7 +92,7 @@ final class EventEntityTest extends TestCase
 
     public function testEveryCopiedColumnIsAtLeastAsWideAsItsSource(): void
     {
-        // The pass copies these straight across, so they need no clamp -- which
+        // A build copies these straight across, so they need no clamp -- which
         // holds only while the destination is as wide as the source. Widening
         // page_title alone would make a long title abort the rebuild under
         // STRICT_ALL_TABLES.
@@ -140,7 +140,7 @@ final class EventEntityTest extends TestCase
     public function testBuiltAtIsAlwaysWritten(): void
     {
         $this->assertNotEmpty($this->event()->getColumn('built_at')->is_not_null,
-            'The pass is the only writer and always knows when it ran.');
+            'A build is the only writer and always knows when it ran.');
     }
 
     public function testTheUnresolvedSentinelCannotBeTyped(): void
