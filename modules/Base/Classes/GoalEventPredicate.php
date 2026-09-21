@@ -262,10 +262,10 @@ class GoalEventPredicate {
                  * this.
                  *
                  * The target is checked here; the COLUMN is checked in SQL,
-                 * because sql_mode is empty on every connection this makes and
-                 * a non-numeric string would otherwise CAST to 0 with only a
-                 * warning. That would make "value > -1" true of every page on
-                 * the site.
+                 * because a CAST of a non-numeric string is a read, not a write:
+                 * sql_mode governs what may be STORED, so strict mode does not
+                 * stop it yielding 0 with a warning. That would make
+                 * "value > -1" true of every page on the site.
                  *
                  * In practice this arm is only reachable on a text column --
                  * the four properties above are all text -- so it matches
