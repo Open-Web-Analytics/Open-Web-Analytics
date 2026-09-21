@@ -953,7 +953,7 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>daysSinceFirstVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>visitor_fsts</code></td><td>both anchors ride every event, so no lookup</td></tr>
 <tr><td></td><td><code>daysSinceLastVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>prev_event_ts</code></td><td>the anchor GA carries as <code>event_previous_timestamp</code></td></tr>
 <tr><td></td><td><code>userEmail</code></td><td>&mdash;</td><td>&mdash;</td><td>PII on a fact row</td></tr>
-<tr><td></td><td><code>userName</code></td><td>&mdash;</td><td>&mdash;</td><td>the <code>(not set)</code> column A.1.16 measured</td></tr>
+<tr><td></td><td><code>userName</code></td><td>&mdash;</td><td>&mdash;</td><td>the <code>(not set)</code> column A.1.16 measures</td></tr>
 <tr><td>Session</td><td><code>sessionId</code></td><td>column</td><td><code>session_id</code></td><td>counted as the pair with <code>visitor_id</code> (1.2)</td></tr>
 <tr><td></td><td><code>timeSinceLastVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>prev_event_ts</code></td><td>same anchor, finer unit</td></tr>
 <tr><td></td><td><code>the 11 <code>*InVisit</code> dimensions</code></td><td>&mdash;</td><td>&mdash;</td><td>zero references anywhere outside their own registration</td></tr>
@@ -2245,16 +2245,21 @@ parser is the prerequisite for a <em>user-authored</em> metric builder, and a pl
 grammar would not cover today's set, since <code>round(actions / visits, 1)</code> needs function
 application. Separately: the <code>@</code> means a malformed formula falls through to
 <code>0</code>, so a broken metric reads as a real zero.</p>
-<h4 id="nA116"><span class="num">A.1.16</span>What the <code>(not set)</code> sentinel cost 1.x</h4>
-<p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
-<code>modules/Base/Module.php</code> declared <code>'default_value' =&gt; '(not set)'</code>. Because
-those properties were <code>required</code>, the string was written to the fact row on every event
-that did not carry a real value &mdash; <code>user_name</code> among them, so on a default install
-every row carried the literal text.</p>
-<p><strong>Fixed in 1.14.0</strong> (<code>f84f0a51</code>, Update&nbsp;031): none of the 16 declare
-a sentinel default now, absence is stored as NULL, and <code>(not set)</code> is a label the
-formatter applies at render time. v2 inherits the decision rather than making it
-(<a href="#s211">&sect;2.11</a>).</p>
+<h4 id="nA116"><span class="num">A.1.16</span>What the <code>(not set)</code> sentinel costs 1.x</h4>
+<p><span class="chip c-meas">Measured</span> <strong>26</strong> tracking properties declare
+<code>"default_value": "(not set)"</code> &mdash; 7 request, 5 client, 14 server &mdash; in
+<code>modules/Base/config/tracking_properties.json</code>, where the property definitions now live.
+Because those properties are <code>required</code>, the string is written to the fact row on every
+event that does not carry a real value &mdash; <code>user_name</code> among them, so on a default
+install every row carries the literal text.</p>
+<p><strong>1.14.0 fixed the reading, not the writing.</strong> <code>f84f0a51</code> and
+Update&nbsp;031 made the formatter render NULL as <code>(not set)</code>, stopped the geo filter and
+<code>page_title</code> writing the literal, and migrated stored sentinels to NULL. The 26
+declarations are untouched, and <code>Entity::applyStorageDefault()</code> still applies them
+deliberately: the columns they feed already hold the label on every historical row, and writing
+NULL to half a column is worse than either spelling alone.</p>
+<p><strong>v2 does not inherit it.</strong> Raw is a new table with no history to keep the shape of,
+so absence is NULL from its first row (<a href="#s211">&sect;2.11</a>).</p>
 <h4 id="nA117"><span class="num">A.1.17</span>What shipping both schemas costs a fresh install</h4>
 <p><span class="chip c-meas">Measured</span> A fresh install creates both shapes: 19 empty tables
 cost <strong>27.0 MB</strong>, nearly all per-partition tablespace overhead on 15 partitioned fact
