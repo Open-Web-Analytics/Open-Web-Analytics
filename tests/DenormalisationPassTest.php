@@ -30,6 +30,7 @@ final class DenormalisationPassTest extends TestCase
     const VISITOR_DIRECT  = 7771000000000003;
     const VISITOR_OPEN    = 7771000000000004;
     const VISITOR_LONG_REF = 7771000000000005;
+    const VISITOR_LONG_HOST = 7771000000000006;
 
     /** @var array id => row, as seeded */
     private $seeded = [];
@@ -133,13 +134,21 @@ final class DenormalisationPassTest extends TestCase
             'page_title'    => 'Direct',
         ]);
 
-        // A referrer that parses to a host far wider than `source` holds. No
-        // scheme and no path, so the whole 900-character string is the host.
+        // A referrer that is not a URL at all: no scheme, so there is no host
+        // in it to read.
         $this->seed('page_view', self::VISITOR_LONG_REF, 8881000000000005, $t, [
             'page_location' => 'https://example.test/long-referrer',
             'page_path'     => '/long-referrer',
             'page_title'    => 'Long referrer',
             'referer_url'   => str_repeat('a', 900),
+        ]);
+
+        // A syntactically plausible host, longer than a domain name may be.
+        $this->seed('page_view', self::VISITOR_LONG_HOST, 8881000000000006, $t, [
+            'page_location' => 'https://example.test/long-host',
+            'page_path'     => '/long-host',
+            'page_title'    => 'Long host',
+            'referer_url'   => 'https://' . str_repeat('b', 300) . '/x',
         ]);
 
         // Still inside the idle timeout, so its last event is not an exit yet.
@@ -236,7 +245,7 @@ final class DenormalisationPassTest extends TestCase
         $out = $db->get_row(sprintf("SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
             $this->table('base.event'), $db->prepare(self::SITE), $this->yyyymmdd));
 
-        $this->assertSame(7, (int) $in['n']);
+        $this->assertSame(8, (int) $in['n']);
         $this->assertSame((int) $in['n'], (int) $out['n'],
             'The pass enriches. It creates nothing and drops nothing.');
     }
@@ -323,14 +332,26 @@ final class DenormalisationPassTest extends TestCase
         $this->assertNull($row['acq_search_terms']);
     }
 
-    public function testAnOverlongParsedHostIsClampedRatherThanFailingTheRun(): void
+    public function testAReferrerThatIsNotAUrlResolvesToDirect(): void
     {
-        // Without the clamp this row aborts the INSERT under STRICT_ALL_TABLES
-        // and nothing is rebuilt, so setUp() fails before reaching this.
+        // parse_url() finds no host without `://`, and v1 answers direct.
+        // SUBSTRING_INDEX would hand back the whole 900-character string, which
+        // is both a fake domain and too wide for the column -- and under
+        // STRICT_ALL_TABLES too wide aborts the INSERT, so setUp()'s rebuild
+        // would fail before reaching this.
         $row = $this->built('page_view', self::VISITOR_LONG_REF, 8881000000000005, $this->t0);
 
-        $this->assertSame(255, strlen($row['source']));
-        $this->assertSame(str_repeat('a', 255), $row['source']);
+        $this->assertSame('direct', $row['source']);
+        $this->assertSame('direct', $row['medium']);
+    }
+
+    public function testAHostLongerThanADomainNameCanBeIsRefused(): void
+    {
+        // Well-formed enough for parse_url to call it a host, but longer than
+        // RFC 1035 allows a domain name to be, so it is not one.
+        $row = $this->built('page_view', self::VISITOR_LONG_HOST, 8881000000000006, $this->t0);
+
+        $this->assertSame('direct', $row['source']);
     }
 
     public function testIsExitMarksTheLastEventOfAClosedSession(): void

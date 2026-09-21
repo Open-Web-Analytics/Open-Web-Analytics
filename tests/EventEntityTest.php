@@ -115,6 +115,19 @@ final class EventEntityTest extends TestCase
         }
     }
 
+    public function testSourceHoldsAnyLegalDomainName(): void
+    {
+        // The pass refuses a parsed host longer than this rather than
+        // truncating it, so the column has to be able to hold one that passes.
+        $this->assertGreaterThanOrEqual(
+            \OWA\Module\Base\Classes\DenormalisationPass::MAX_HOSTNAME,
+            $this->event()->getColumn('source')->maxLength());
+
+        $this->assertGreaterThanOrEqual(
+            \OWA\Module\Base\Classes\DenormalisationPass::MAX_HOSTNAME,
+            $this->event()->getColumn('acq_source')->maxLength());
+    }
+
     public function testIsExitIsATwoValuedBoolean(): void
     {
         $column = $this->event()->getColumn('is_exit');

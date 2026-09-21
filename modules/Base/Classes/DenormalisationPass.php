@@ -52,6 +52,14 @@ class DenormalisationPass {
     /** Suffix of the staging table, built and dropped around each swap. */
     const STAGING_SUFFIX = '_rebuild';
 
+    /**
+     * The longest a domain name can be, per RFC 1035.
+     *
+     * Shorter than the source column, so a host that passes cannot overflow it
+     * and nothing needs truncating. EventEntityTest pins that relationship.
+     */
+    const MAX_HOSTNAME = 253;
+
     /** @var \OWA\Core\Db */
     protected $db;
 
@@ -274,8 +282,8 @@ class DenormalisationPass {
             $select[] = 'e.' . $column;
         }
 
-        $session_host = $this->hostExpression( 'e.s_referer_url', $this->columnLength( 'source' ) );
-        $acq_host     = $this->hostExpression( 'v.acq_referer_url', $this->columnLength( 'acq_source' ) );
+        $session_host = $this->hostExpression( 'e.s_referer_url' );
+        $acq_host     = $this->hostExpression( 'v.acq_referer_url' );
         $unresolved   = $this->literal( V2Event::UNRESOLVED );
 
         $select[] = $this->sourceExpression( 'e.s_tagged_source', $session_host );
@@ -459,46 +467,40 @@ class DenormalisationPass {
     }
 
     /**
-     * The host of a URL held in a column, lowercased, without a leading www,
-     * and clamped to what the destination column holds.
+     * The host of a URL held in a column, lowercased and without a leading www,
+     * or NULL where the column does not hold a URL.
      *
-     * Parsed here rather than stored: it is read once per session, by this
-     * statement.
+     * Two things are refused rather than parsed, so source only ever holds
+     * something that could be a domain:
      *
-     * The clamp is required. referer_url is VARCHAR(1024) and source is
-     * VARCHAR(255), and a URL with no scheme and no path parses to itself, so a
-     * malformed referrer yields a host wider than the column it goes into.
-     * Under STRICT_ALL_TABLES that aborts the statement rather than truncating,
-     * failing the whole partition rebuild. DbColumn's healing does not cover
-     * it: the pass writes SQL, not entities.
+     *   NO SCHEME. parse_url() finds no host without `://` -- a bare string,
+     *   and even `example.com/foo`, resolve to nothing, and v1 answers `direct`
+     *   there. SUBSTRING_INDEX has no such opinion: with nothing to cut on it
+     *   returns the whole string, so a referrer that is not a URL would become
+     *   a source hundreds of characters long.
+     *
+     *   OVER 253 CHARACTERS, which is the longest a domain name can be.
+     *
+     * Both answer NULL, and the COALESCE around this turns that into `direct`
+     * -- v1's answer for a referrer it cannot read a host out of. referer_url
+     * still holds what arrived.
+     *
+     * Nothing is truncated. A clamp would make a fake domain out of a string
+     * that was never one.
      *
      * @param string $column
-     * @param int    $width  the destination column's length
      * @return string
      */
-    protected function hostExpression( $column, $width ) {
+    protected function hostExpression( $column ) {
 
         $host = sprintf( OWA_SQL_URL_HOST, $column );
 
         $stripped = sprintf( "LOWER(CASE WHEN %s LIKE 'www.%%' THEN SUBSTRING(%s, 5) ELSE %s END)",
             $host, $host, $host );
 
-        return sprintf( 'LEFT(%s, %d)', $stripped, (int) $width );
-    }
-
-    /**
-     * How many characters a column of owa_event holds.
-     *
-     * Read from the entity rather than written here, so widening a column does
-     * not silently leave the clamp behind at the old number.
-     *
-     * @param string $name
-     * @return int
-     */
-    protected function columnLength( $name ) {
-
-        return (int) \OWA\Core\CoreAPI::entityFactory( 'base.event' )
-            ->getColumn( $name )->maxLength();
+        return sprintf( "CASE WHEN %s OR %s = '' OR CHAR_LENGTH(%s) > %d THEN NULL ELSE %s END",
+            sprintf( OWA_SQL_NOT_CONTAINS, "'://'", $column ),
+            $stripped, $stripped, self::MAX_HOSTNAME, $stripped );
     }
 
     /**
