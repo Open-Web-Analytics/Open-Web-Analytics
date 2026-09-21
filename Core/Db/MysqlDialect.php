@@ -111,6 +111,34 @@ if ( ! defined( 'OWA_DTD_PARTITION_MAXVALUE' ) ) { define('OWA_DTD_PARTITION_MAX
 if ( ! defined( 'OWA_SQL_PARTITION_TABLE' ) ) { define('OWA_SQL_PARTITION_TABLE', 'ALTER TABLE %s' . OWA_DTD_PARTITION_BY_RANGE); }
 if ( ! defined( 'OWA_SQL_DROP_PARTITION' ) ) { define('OWA_SQL_DROP_PARTITION', 'ALTER TABLE %s DROP PARTITION %s'); }
 if ( ! defined( 'OWA_SQL_REORGANIZE_PARTITION' ) ) { define('OWA_SQL_REORGANIZE_PARTITION', 'ALTER TABLE %s REORGANIZE PARTITION %s INTO (%s)'); }
+/*
+ * The partition swap. A metadata operation: the two tablespaces change places,
+ * so the cost does not grow with the row count.
+ *
+ * WITH VALIDATION is the default and is left on: it refuses rows that do not
+ * belong in the partition's range, which is the one way a build can be wrong
+ * without anything downstream noticing.
+ *
+ * MySQL requires the incoming table to be unpartitioned and otherwise identical
+ * -- same columns in the same order, same indexes, same engine. CREATE TABLE
+ * LIKE plus REMOVE PARTITIONING produces that from the target itself.
+ *
+ * ClickHouse spells the same operation REPLACE PARTITION.
+ */
+if ( ! defined( 'OWA_SQL_EXCHANGE_PARTITION' ) ) { define('OWA_SQL_EXCHANGE_PARTITION', 'ALTER TABLE %s EXCHANGE PARTITION %s WITH TABLE %s'); }
+if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' ) ) { define('OWA_SQL_REMOVE_PARTITIONING', 'ALTER TABLE %s REMOVE PARTITIONING'); }
+if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' ) ) { define('OWA_SQL_CREATE_TABLE_LIKE', 'CREATE TABLE %s LIKE %s'); }
+/*
+ * The host of a URL held in a column: everything after the scheme, up to the
+ * first delimiter, without a port. Takes the column expression once, repeated
+ * with positional arguments.
+ *
+ * Whole-expression, not a function name, because no two dialects spell this the
+ * same way. Used by the denormalisation pass to classify a referrer, where the
+ * value is read once per session and stored as `source`; nothing parses a URL
+ * at read time.
+ */
+if ( ! defined( 'OWA_SQL_URL_HOST' ) ) { define('OWA_SQL_URL_HOST', "SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(%1\$s, '://', -1), '/', 1), '?', 1), '#', 1), ':', 1)"); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }

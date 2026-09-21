@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 34;
+        $this->required_schema_version = 35;
         return parent::__construct();
     }
 
@@ -149,6 +149,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.crawlDocumentCli',              'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',             'Controller/CrawlDocumentCli.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
+        $this->registerAction( 'base.eventsRebuildCli',              'OWA\\Module\\Base\\Controller\\EventsRebuildCli',           'Controller/EventsRebuildCli.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
         $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
         $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
@@ -282,6 +283,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
+        $this->registerCliCommand('events-rebuild', 'base.eventsRebuildCli');
     }
 
     /**
@@ -2553,15 +2555,17 @@ class Module extends \OWA\Core\Module {
                 'site_user',
                 /*
                  * v2. Registered unconditionally so cmd=update creates them
-                 * and the partition commands find owa_event_raw -- neither is
-                 * conditional on anything, and a table nothing writes to costs
-                 * an empty tablespace.
+                 * and the partition commands find owa_event_raw and owa_event
+                 * -- neither is conditional on anything, and a table nothing
+                 * writes to costs an empty tablespace.
                  *
-                 * Whether anything WRITES to them is the v2_raw_collection
-                 * setting, per site. See Handler\EventRawHandlers.
+                 * Whether anything writes to the first two is the
+                 * v2_raw_collection setting, per site (Handler\EventRawHandlers).
+                 * owa_event has one writer, cmd=events-rebuild.
                  */
                 'event_raw',
-                'visitor_acquisition')
+                'visitor_acquisition',
+                'event')
             );
 
     }

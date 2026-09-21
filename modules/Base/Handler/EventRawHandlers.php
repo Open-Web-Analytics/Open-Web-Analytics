@@ -731,6 +731,15 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * applied when a value is RENDERED, so a null groups with the other nulls
      * and is labelled once, at the edge.
      *
+     * Control bytes are removed on the way in. The pass's unresolved sentinel
+     * is one (Classes\V2Event::UNRESOLVED), and it only means anything if a
+     * visitor cannot write it: a campaign tag carrying \x1A would otherwise
+     * produce a row claiming OUR pipeline had failed to resolve it. Stripping
+     * here keeps the two alphabets disjoint, and a VARCHAR wants it anyway.
+     *
+     * The strip happens BEFORE the emptiness tests below, so a value that was
+     * nothing but control bytes lands as NULL rather than as ''.
+     *
      * @param mixed $value
      * @return string|null
      */
@@ -741,7 +750,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return null;
         }
 
-        $value = (string) $value;
+        $value = \OWA\Module\Base\Classes\V2Event::strip( (string) $value );
 
         if ( trim( $value ) === ''
              || $value === \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL

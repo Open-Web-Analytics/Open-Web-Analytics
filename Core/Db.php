@@ -1905,6 +1905,82 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Build an empty table with another table's exact structure.
+     *
+     * The copy inherits the target's partitioning, which EXCHANGE PARTITION
+     * then refuses, so removePartitioning() is a required second step.
+     *
+     * @param string $table_name  the table to create
+     * @param string $like        the table to copy the structure of
+     * @return bool
+     */
+    function createTableLike( $table_name, $like ) {
+
+        if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $like ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_CREATE_TABLE_LIKE, $table_name, $like ) );
+    }
+
+    /**
+     * Flatten a partitioned table into an ordinary one.
+     *
+     * Keeps every row: the partitions are merged, not dropped. Against a table
+     * holding data this rewrites all of it, so it belongs on an empty staging
+     * table and nowhere else.
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function removePartitioning( $table_name ) {
+
+        if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_REMOVE_PARTITIONING, $table_name ) );
+    }
+
+    /**
+     * Swap a partition's contents with an unpartitioned table's, atomically.
+     *
+     * The two tablespaces change places: afterwards the staging table holds
+     * what the partition held, so the old contents survive to drop or inspect.
+     *
+     * This is the commit. A build that dies before it leaves the live table as
+     * it was, and the next run rebuilds.
+     *
+     * @param string $table_name  the partitioned table
+     * @param string $partition   the partition to exchange
+     * @param string $with_table  an unpartitioned table of identical structure
+     * @return bool
+     */
+    function exchangePartition( $table_name, $partition, $with_table ) {
+
+        if ( ! $this->supportsPartitioning() || ! defined( 'OWA_SQL_EXCHANGE_PARTITION' ) ) {
+
+            return false;
+        }
+
+        foreach ( array( $table_name, $partition, $with_table ) as $identifier ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $identifier ) ) {
+
+                return false;
+            }
+        }
+
+        return (bool) $this->query( sprintf(
+            OWA_SQL_EXCHANGE_PARTITION, $table_name, $partition, $with_table ) );
+    }
+
+    /**
      * Indexes that duplicate another index on the same table, exactly.
      *
      * Same columns in the same order, same uniqueness, same type. The first by
