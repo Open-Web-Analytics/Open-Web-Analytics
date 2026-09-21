@@ -90,6 +90,31 @@ final class EventEntityTest extends TestCase
         }
     }
 
+    public function testEveryCopiedColumnIsAtLeastAsWideAsItsSource(): void
+    {
+        // The pass copies these straight across, so they need no clamp -- which
+        // holds only while the destination is as wide as the source. Widening
+        // page_title alone would make a long title abort the rebuild under
+        // STRICT_ALL_TABLES.
+        $entity = $this->event();
+
+        foreach ([
+            'campaign'              => 'tagged_campaign',
+            'ad'                    => 'tagged_ad',
+            'search_terms'          => 'tagged_search_terms',
+            'landing_page_location' => 'page_location',
+            'landing_page_path'     => 'page_path',
+            'landing_page_query'    => 'page_query',
+            'landing_page_title'    => 'page_title',
+        ] as $destination => $source) {
+
+            $this->assertGreaterThanOrEqual(
+                $entity->getColumn($source)->maxLength(),
+                $entity->getColumn($destination)->maxLength(),
+                "$destination is copied from $source and must be at least as wide");
+        }
+    }
+
     public function testIsExitIsATwoValuedBoolean(): void
     {
         $column = $this->event()->getColumn('is_exit');
