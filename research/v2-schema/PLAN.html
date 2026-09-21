@@ -1607,18 +1607,17 @@ the most is known.</p>
 <tr><td>8</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td>Not started</td></tr>
 <tr><td>9</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td>Not started</td></tr>
 <tr><td>10</td><td><strong>Removals</strong> &mdash; stop sending <code>attribs</code> (<a href="#s15">&sect;1.5.3</a>), and delete four options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code>, <code>trafficAttributionMode</code> (<a href="#s225">&sect;2.24.4</a>).</td><td>Not started</td></tr>
-<tr><td>11</td><td><strong>The published tracker</strong> (<a href="#s225">&sect;2.24</a>) &mdash; per-site build, site config read from the bundle instead of <code>owa_cmds</code>, and the tracker URL split from the beacon URL.</td><td>Not started</td></tr>
 </tbody></table></div>
 <div class="flag"><strong>Status &mdash; 2026-09-21</strong>
-<p><strong>All eleven items are unstarted</strong>, checked against the code rather than against
+<p><strong>All ten items are unstarted</strong>, checked against the code rather than against
 this list: no <code>owa_event</code> entity exists, <code>msec</code> is still
 <code>OWA_DTD_INT</code>, and of the tracker items <code>setUserId</code>,
 <code>setContentGroup</code>, <code>scrollInterval</code> and any consent API return no matches in
 <code>Tracker.js</code>.</p>
-<p>Items&nbsp;8&ndash;11 were added on 21&nbsp;Sep, from decisions taken the same day: the column
+<p>Items&nbsp;8&ndash;10 were added on 21&nbsp;Sep, from decisions taken the same day: the column
 set closing the GA gap (<a href="#s24">&sect;2.4.2</a>), the metric vocabulary
 (<a href="#s23">&sect;2.3.2</a>) and publishing the tracker per site
-(<a href="#s225">&sect;2.24</a>). Item&nbsp;5 lost its piggyback half the same day.</p>
+(<a href="#s225">&sect;2.24</a>). Item&nbsp;5 lost its piggyback half the same day. Publishing the tracker per site is deferred and sits outside this list (<a href="#s225">&sect;2.24</a>).</p>
 <p>Four PRs of v2 groundwork shipped into 1.x on 19&nbsp;Sep without appearing here:
 <strong>#1114</strong> (acquisition columns written once onto <code>owa_visitor</code>, the v1
 shape of v2&rsquo;s visitor store), <strong>#1117</strong> (the tracker carries
@@ -1764,7 +1763,12 @@ collapsing <code>www.mydomain.com</code> and <code>mydomain.com</code>; a genera
 much larger thing to reason about than the help text implies.</li>
 </ul>
 
-<h3 id="s225"><span class="num">2.24</span>Publishing the tracker <span class="chip c-dec">Decided</span></h3>
+<h3 id="s225"><span class="num">2.24</span>Publishing the tracker <span class="chip c-open">Deferred</span></h3>
+<p class="note"><strong>Deferred, and not tracker work.</strong> Nothing in v2&rsquo;s schema waits
+on it: the tracker keeps taking its site config from <code>owa_cmds</code> until this lands, and
+the only thing that changes when it does is where that config travels. It is build, serving and
+admin work, which is why it is not in Phase&nbsp;5 (<a href="#s219">&sect;2.19.2</a>) with the
+collection changes.</p>
 <p><strong>The tracker stops being one file for every site.</strong> Publish writes one static
 JavaScript file per site with that site&rsquo;s configuration baked in. Apache serves it, or a CDN
 does. No PHP runs on that request.</p>
