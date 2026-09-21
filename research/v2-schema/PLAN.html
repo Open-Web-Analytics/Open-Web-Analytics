@@ -1288,8 +1288,21 @@ outright: <strong>412s to 67s, 6.1&times;</strong>, and the superlinearity with 
 5&ndash;10%, inside the noise &mdash; and it would cost 14.7s to build plus write amplification on
 every insert into raw, which is the one table taking a write per beacon.</p>
 
-<p>At a minute per million the freshness tier in &sect;2.5.1 holds: a quarter-hourly run over the
-current daily partition is a few percent duty cycle rather than a third of it.</p>
+<p><strong>Built, and measured end to end</strong> &mdash; the figures above are the window
+alone, and a run also joins back to raw and inserts a million wide rows into staging, which is work
+either way:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Full <code>rebuild()</code></th><th>Before</th><th>After</th></tr></thead>
+<tbody>
+<tr><td>100k rows</td><td>26.4s</td><td><strong>13.1s</strong></td></tr>
+<tr><td>1M rows</td><td>412s</td><td><strong>162s</strong></td></tr>
+<tr><td>disk temp tables</td><td>8</td><td>2</td></tr>
+</tbody></table></div>
+
+<p>2.5&times;, and the superlinearity is gone &mdash; 12.4&times; the time for 10&times; the rows,
+against 15.6&times; before. The freshness tier in &sect;2.5.1 holds at that rate: a quarter-hourly
+run over a daily partition is a fraction of its interval rather than most of it.</p>
 
 <h4><span class="num">2.7.3</span>The swap forbids an instant column <span class="chip c-meas">Measured</span></h4>
 
