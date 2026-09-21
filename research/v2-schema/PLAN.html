@@ -144,7 +144,8 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s221">2.21 Early cutover, per feature</a>
   <a href="#s222">2.22 The parity harness</a>
   <a href="#s223">2.23 The v2 reporting UI is a separate path</a>
-  <a href="#s224">2.24 Cutover sequence</a>
+  <a href="#s225">2.24 Publishing the tracker</a>
+  <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
   <div class="navsec">Appendix</div>
@@ -1636,7 +1637,7 @@ one it wants.</p>
 <tbody>
 <tr><td>Which version does a query use?</td><td>The one in its own URL. Never inferred, timed, or defaulted</td></tr>
 <tr><td>A result set spanning the boundary</td><td>Cannot be constructed &mdash; a request reaches one UI and one store</td></tr>
-<tr><td>History, with nothing migrated</td><td>v1 keeps its data and its reports at the old path (<a href="#s224">&sect;2.24</a>)</td></tr>
+<tr><td>History, with nothing migrated</td><td>v1 keeps its data and its reports at the old path (<a href="#s226">&sect;2.25</a>)</td></tr>
 <tr><td>Report configs carrying no version field</td><td>Each UI registers its own set</td></tr>
 <tr><td>Rollback</td><td>A URL. There is no flip to undo</td></tr>
 </tbody></table></div>
@@ -1666,7 +1667,119 @@ collapsing <code>www.mydomain.com</code> and <code>mydomain.com</code>; a genera
 much larger thing to reason about than the help text implies.</li>
 </ul>
 
-<h3 id="s224"><span class="num">2.24</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
+<h3 id="s225"><span class="num">2.24</span>Publishing the tracker <span class="chip c-dec">Decided</span></h3>
+<p><strong>The tracker stops being one file for every site.</strong> Publish writes one static
+JavaScript file per site with that site&rsquo;s configuration baked in. Apache serves it, or a CDN
+does. No PHP runs on that request.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Piece</th><th>Where it is decided</th><th>What serves it</th></tr></thead>
+<tbody>
+<tr><td>tracker file</td><td>publish, from the resolved settings</td><td>Apache, or a CDN the site owner names</td></tr>
+<tr><td>beacon</td><td><code>public_url</code>, overridable per page by <code>setApiEndpoint()</code></td><td>the install, or a logging node running <code>OWA_USE_STATIC_CONFIG_ONLY</code></td></tr>
+<tr><td>reporting</td><td>the install</td><td>the install</td></tr>
+</tbody></table></div>
+<p class="note">Three endpoints that move independently. The beacon cannot follow the tracker to a
+CDN &mdash; beacons are writes &mdash; which is why the tracker URL becomes a setting of its own
+rather than another use of <code>owa_baseUrl</code>.</p>
+
+<h4><span class="num">2.24.1</span>One file, at a URL that never changes</h4>
+<p><strong>The bundle and the config ship as one file, not two.</strong> And its URL is fixed for
+the life of the site, because the snippet cannot be updated &mdash; a pasted tag outlives every
+setting it was pasted beside. That rules out versioned filenames, which in turn rules out
+invalidation-by-renaming.</p>
+<p><strong>What makes that affordable is conditional requests.</strong> Apache already sends
+<code>ETag</code> and <code>Last-Modified</code> on the tracker, so a client re-checking after its
+freshness expires gets a 304 with no body unless a publish actually changed the file. The payload
+moves when there is something to move.</p>
+
+<h4><span class="num">2.24.2</span>Cache lifetime, and what happens without one</h4>
+<p><strong>The header goes in the <code>.htaccess</code> OWA already ships</strong>, guarded like
+everything else in it:</p>
+<pre><code>&lt;IfModule mod_headers.c&gt;
+    &lt;If "%{REQUEST_URI} =~ m#/public/base/t/#"&gt;
+        Header set Cache-Control "public, max-age=900"
+    &lt;/If&gt;
+&lt;/IfModule&gt;</code></pre>
+<p>Root <code>.htaccess</code> rather than one beside the files, because <code>public/</code> is
+gitignored and would not ship. Today the tracker is served with <strong>no</strong>
+<code>Cache-Control</code> at all, so caching is whatever each client decides heuristically &mdash;
+worth fixing whether or not per-site trackers happen.</p>
+<p><strong>That header cannot be relied on.</strong> OWA installs onto nginx, LiteSpeed and IIS
+where <code>.htaccess</code> is inert, onto Apache without <code>mod_headers</code> where the guard
+silently skips it, and behind proxies that rewrite it. The failure is invisible: publish succeeds,
+the file on disk is right, and nothing reaches visitors. <strong>So publish fetches the URL it just
+wrote and reads the header back.</strong> Detection of the web server is the remedy, not the test
+&mdash; it decides which snippet to show once verification has already failed, so a server OWA has
+never heard of gets a clear message instead of a wrong one.</p>
+<p class="note">Absent a header, heuristic freshness scales with the age of
+<code>Last-Modified</code>: short right after a publish, longer as the file sits unchanged. Crude,
+client-dependent, and it fails in the useful direction.</p>
+
+<h4><span class="num">2.24.3</span>Moving it to a CDN</h4>
+<p><strong>A site owner can name an alternate domain for the tracker</strong>, publish the file
+there, and control expiry with the CDN&rsquo;s own tools. OWA then owns none of it, which is the
+point: cache headers depend on a web server OWA does not run.</p>
+<p>Deploying to a particular CDN is a module&rsquo;s job, and the hooks exist &mdash;
+<code>registerEventHandler</code> and <code>registerFilter</code>, the latter already used next
+door as <code>tracker_tag_cmds</code>. The module uploads and expires the object; OWA passes it the
+file and the site id. Config changes are rare enough that this needs no reconciliation machinery
+beyond that.</p>
+<p class="note">Two consequences to state where the domain is entered, not in documentation: OWA
+can no longer say when a change reaches visitors, and an unpublished or un-uploaded site 404s its
+tracker on every page with nothing to fall back to. Publish on site creation, and have setup fetch
+the URL once before calling the site configured.</p>
+
+<h4><span class="num">2.24.4</span>What the snippet keeps</h4>
+<p><strong>Only what the server cannot know when it publishes.</strong> Page title, page type, user
+id, custom variables, and the <code>trackPageView</code> call. Everything else &mdash;
+<code>logClicks</code>, <code>logPage</code>, <code>movementInterval</code>, the three
+<code>domstream*</code> options, <code>sessionLength</code>, <code>cookie_domain</code>,
+<code>campaignKeys</code>, <code>maxCustomVars</code>, <code>getRequestCharacterLimit</code>,
+<code>encodeProperties</code>, the site id and the endpoints &mdash; bakes in.</p>
+<p>Today&rsquo;s tag pushes six commands, of which two are site config that lives in the page only
+because there was nowhere else to put it.</p>
+<p class="note"><strong>Four options would be publishing a control that does nothing.</strong>
+<code>logMovement</code> appears once in <code>Tracker.js</code> &mdash; its own declaration;
+<code>bindMovementEvents()</code> never reads it. <code>thirdParty</code> sets a flag no server
+code consumes. <code>campaignAttributionWindow</code> is inert because <code>StateManager</code>
+drops its expiration argument, and <code>trafficAttributionMode</code> is inert server-side. Decide
+what these are before giving any of them a screen.</p>
+
+<h4><span class="num">2.24.5</span>Which tier a setting comes from</h4>
+<p><strong>Both, with the site winning.</strong> The two tiers already exist:</p>
+<div class="scroll"><table>
+<thead><tr><th>Tier</th><th>Storage</th><th>Read by</th><th>Screen</th></tr></thead>
+<tbody>
+<tr><td>instance</td><td><code>owa_configuration</code></td><td><code>CoreAPI::getSetting()</code></td><td>Main Configuration</td></tr>
+<tr><td>profile</td><td><code>owa_site.settings</code></td><td><code>Site::getSiteSetting()</code></td><td><code>base.sitesProfile</code></td></tr>
+</tbody></table></div>
+<p>Five keys use the profile tier today &mdash; <code>default_page</code>,
+<code>domain_aliases</code>, <code>goal_groups</code>, <code>goals</code>,
+<code>query_string_filters</code>. <strong>Publish resolves the walk once and bakes the winner</strong>,
+so the tracker never learns there were tiers and the walk stops running per request.</p>
+
+<h4><span class="num">2.24.6</span>What this does to the snippet-command route</h4>
+<p>PR&nbsp;#1098 answered the same question the other way: reach the tracker by adding snippet
+commands. Its own rationale is the argument against doing more of it &mdash; the snippet is
+rendered server-side and changes the moment PHP is upgraded, while the tracker is a long-cached
+static file a returning visitor may hold for days, so a new command can arrive at a tracker too old
+to understand it. That was found on a live install: the queue died before
+<code>trackPageView</code> and no visitor cookie was written at all.</p>
+<p><strong>Publishing config into the file collapses that skew</strong>, because the config and the
+code that reads it become one artifact with one lifetime. The command-queue fix that shipped stays
+worth having &mdash; an unknown command should never take the queue down &mdash; but the
+contortion it was protecting, emitting a command only when a value differs from its default so
+pasted snippets stay byte-identical, stops being necessary.</p>
+
+<h4><span class="num">2.24.7</span>What it costs the deploy</h4>
+<p><code>public/</code> is gitignored, so published trackers do not arrive with a pull &mdash; the
+same reason the runbook already requires a build. <strong>A republish becomes a deploy step</strong>,
+and because the bundle lives inside every per-site file, an OWA upgrade republishes all of them.
+<code>webpack.config.js</code> sets no <code>clean</code>, so published files under
+<code>public/</code> survive a rebuild.</p>
+
+<h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 <ol>
 <li>Ship the additive work in 1.x releases, each standing on its own</li>
 <li>v2 creates its tables alongside; the single tracker's events fan out to both pipelines,
