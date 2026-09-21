@@ -788,13 +788,63 @@ holds no SQL. Six kinds cover every metric in 1.x but one.</p>
 </tbody></table></div>
 
 
-<h4><span class="num">2.3.2</span>What changes in v2</h4>
+<h4><span class="num">2.3.2</span>The vocabulary</h4>
+<p>Every metric 1.x registers, reviewed against the denormalised table, plus the ones a reader
+expects that 1.x never had. <em>Scope</em> is what the combination guard in
+<a href="#s213">&sect;2.13</a> computes against.</p>
 <div class="scroll"><table>
-<thead><tr><th></th><th>Metrics</th><th>Note</th></tr></thead>
+<thead><tr><th>Group</th><th>Metric</th><th>Scope</th><th>Kind</th><th>Computed from</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td><strong>Falls out</strong></td><td>The 45 numbered <code>goal{N}Completions/Starts/Value</code> identifiers; 9 duplicate commerce definitions</td><td>The numbered slots become named goal events parameterised by <code>name</code>, so the count is unlimited rather than 20. The duplicates collapse to one each</td></tr>
-<tr><td><strong>New</strong></td><td><code>engagementTime</code>, <code>engagementRate</code>, a new <code>bounceRate</code>, scroll / download / outbound / form / site-search counts, the commerce funnel (<code>addsToCart</code>, <code>checkoutsBegun</code>, <code>refunds</code>, abandonment rates), unlimited named goal events</td><td><code>engagementTime</code> includes final-page dwell, which 1.x structurally cannot measure. <code>bounceRate</code> is redefined as <em>not engaged</em> rather than single-request (<a href="#s12">&sect;1.2</a>). 1.x has only the completed transaction, so no commerce funnel can be built at all</td></tr>
+<tr><td>Audience</td><td><code>visits</code></td><td>session</td><td>distinct_count</td><td><code>(visitor_id, session_id)</code></td><td>not <code>session_id</code> alone (<a href="#s12">&sect;1.2</a>)</td></tr>
+<tr><td></td><td><code>uniqueVisitors</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code></td><td>does not sum across rows, which is why no rollup can serve it</td></tr>
+<tr><td></td><td><code>newVisitors</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code> where <code>prior_sessions&nbsp;=&nbsp;0</code></td><td></td></tr>
+<tr><td></td><td><code>returningVisitors</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code> where <code>prior_sessions&nbsp;&gt;&nbsp;0</code></td><td>replaces <code>repeatVisitors</code>, 1.x&rsquo;s one bespoke expression</td></tr>
+<tr><td></td><td><code>sessionsPerUser</code></td><td>user</td><td>calculated</td><td><code>visits / uniqueVisitors</code></td><td>new</td></tr>
+<tr><td></td><td><code>activeUsers</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code> over a rolling window</td><td>new &mdash; 1, 7 and 28 day. A distinct count over a moving window, so it is the expensive shape <a href="#s31">&sect;3.1</a> already flags</td></tr>
+<tr><td></td><td><code>dauPerMau / dauPerWau</code></td><td>user</td><td>calculated</td><td>ratios of the above</td><td>new</td></tr>
+<tr><td>Engagement</td><td><code>pageViews</code></td><td>event</td><td>count</td><td>rows where <code>event_type&nbsp;=&nbsp;page_view</code></td><td></td></tr>
+<tr><td></td><td><code>uniquePageViews</code></td><td>session</td><td>distinct_count</td><td><code>(visitor_id, session_id, page_path)</code></td><td></td></tr>
+<tr><td></td><td><code>pagesPerVisit</code></td><td>session</td><td>calculated</td><td><code>pageViews / visits</code></td><td></td></tr>
+<tr><td></td><td><code>engagementTime</code></td><td>session</td><td>sum</td><td><code>engagement_msec</code></td><td>new. Includes final-page dwell, which 1.x cannot measure</td></tr>
+<tr><td></td><td><code>engagedSessions</code></td><td>session</td><td>distinct_count</td><td>sessions meeting any of <a href="#s12">&sect;1.2.2</a>&rsquo;s three disjuncts</td><td>new</td></tr>
+<tr><td></td><td><code>engagementRate</code></td><td>session</td><td>calculated</td><td><code>engagedSessions / visits</code></td><td>new</td></tr>
+<tr><td></td><td><code>bounces</code></td><td>session</td><td>distinct_count</td><td>sessions meeting none of them</td><td>redefined: not engaged, rather than one request (<a href="#s12">&sect;1.2</a>)</td></tr>
+<tr><td></td><td><code>bounceRate</code></td><td>session</td><td>calculated</td><td><code>bounces / visits</code></td><td>same redefinition. Parity expectation: v2 &le; v1</td></tr>
+<tr><td></td><td><code>visitDuration</code></td><td>session</td><td>avg_difference</td><td>last <code>ts</code> &minus; first <code>ts</code></td><td></td></tr>
+<tr><td></td><td><code>eventCount</code></td><td>event</td><td>count</td><td>every row</td><td>replaces <code>actions</code>, which counted one 1.x fact table</td></tr>
+<tr><td></td><td><code>eventsPerSession / eventCountPerUser</code></td><td>event</td><td>calculated</td><td><code>eventCount</code> over the two denominators</td><td>new</td></tr>
+<tr><td>Interaction</td><td><code>domClicks</code></td><td>event</td><td>count</td><td><code>event_type&nbsp;=&nbsp;dom.click</code></td><td></td></tr>
+<tr><td></td><td><code>outboundClicks</code></td><td>event</td><td>count</td><td>clicks where <code>target_host&nbsp;&ne;&nbsp;host</code></td><td>new</td></tr>
+<tr><td></td><td><code>downloads</code></td><td>event</td><td>count</td><td>download events</td><td>new</td></tr>
+<tr><td></td><td><code>scrolledUsers</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code> on a scroll event</td><td>new</td></tr>
+<tr><td></td><td><code>formSubmissions / siteSearches</code></td><td>event</td><td>count</td><td>their event types</td><td>new</td></tr>
+<tr><td>Key events</td><td><code>keyEvents</code></td><td>event</td><td>count</td><td><code>is_goal_event&nbsp;=&nbsp;1</code></td><td>replaces <code>goalCompletionsAll</code> and the 45 numbered identifiers, parameterised by name</td></tr>
+<tr><td></td><td><code>keyEventValue</code></td><td>event</td><td>sum</td><td><code>revenue</code> on a key event</td><td>replaces <code>goalValueAll</code></td></tr>
+<tr><td></td><td><code>sessionKeyEventRate / userKeyEventRate</code></td><td>session, user</td><td>calculated</td><td><code>keyEvents</code> over each denominator</td><td>new</td></tr>
+<tr><td></td><td><code>goalStarts / goalAbandonRate</code></td><td>session</td><td>&mdash;</td><td>&mdash;</td><td><strong>open.</strong> Both need a funnel definition to count against, which is a reporting artifact v2 has not specified</td></tr>
+<tr><td>Commerce</td><td><code>transactions</code></td><td>event</td><td>count</td><td>purchase events</td><td></td></tr>
+<tr><td></td><td><code>transactionRevenue / taxRevenue / shippingRevenue</code></td><td>event</td><td>sum</td><td><code>revenue</code> and its <code>params</code> siblings</td><td>one definition each; 1.x carried nine duplicates</td></tr>
+<tr><td></td><td><code>revenuePerTransaction / revenuePerVisit</code></td><td>event, session</td><td>calculated</td><td>revenue over each denominator</td><td></td></tr>
+<tr><td></td><td><code>ecommerceConversionRate</code></td><td>session</td><td>calculated</td><td><code>transactions / visits</code></td><td></td></tr>
+<tr><td></td><td><code>lineItemQuantity / lineItemRevenue / uniqueLineItems</code></td><td>item</td><td>sum, distinct_count</td><td>the nested items in <code>params</code></td><td>item scope, without 1.x&rsquo;s separate fact table and join</td></tr>
+<tr><td></td><td><code>addsToCart / checkoutsBegun / refunds</code></td><td>event</td><td>count</td><td>their event types</td><td>new &mdash; 1.x has only the completed transaction, so no funnel can be built</td></tr>
+<tr><td></td><td><code>cartAbandonmentRate</code></td><td>session</td><td>calculated</td><td>over the funnel above</td><td>new</td></tr>
+<tr><td>Falls out</td><td><code>feedRequests / feedReaders / feedSubscriptions</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><code>base.feed_request</code> is removed (<a href="#s110">&sect;1.10</a>)</td></tr>
+<tr><td></td><td>the 45 numbered <code>goal{N}*</code> metrics</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>named goal events parameterised by name, so the count is unlimited rather than 20</td></tr>
+<tr><td></td><td><code>visitors</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>a second registration of <code>uniqueVisitors</code></td></tr>
+<tr><td></td><td><code>repeatVisitors</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>becomes the <code>newVsReturning</code> dimension</td></tr>
+<tr><td></td><td><code>actions / uniqueActions / actionsValue</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><code>eventCount</code> filtered by an action param path</td></tr>
+<tr><td>Refused</td><td>the 11 ad metrics</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>cost, clicks, impressions and ROAS come from ad-platform integrations OWA does not have</td></tr>
+<tr><td></td><td>the 4 organic Google Search metrics</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>Search Console data, same reason</td></tr>
+<tr><td></td><td><code>crashAffectedUsers / crashFreeUsersRate</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>app telemetry</td></tr>
+<tr><td></td><td>the cohort metrics</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><strong>deferred.</strong> Retention analysis needs cohort machinery in the reporting layer, not a metric definition</td></tr>
+<tr><td></td><td><code>*PerPayingUser</code>, <code>firstTimePurchasers*</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>need a purchaser identity carried across sessions, which is the visitor store doing a job <a href="#s29">&sect;2.9</a> refuses it</td></tr>
 </tbody></table></div>
+<p class="note">Of 1.x&rsquo;s 33 registered names, 45 generated goal identifiers and 9 duplicate
+commerce definitions: 17 carry over, 5 are superseded by a parameterised or filtered form, and the
+feed three go with their table. 19 are new, most of them engagement and funnel counts 1.x could
+not build because it stored only the completed outcome. Two rows are open and two deferred.</p>
+
 <p class="note">Every metric declares a <strong>scope</strong> &mdash; event, session, user or item
 &mdash; at registration. That declaration is what the combination guard in
 <a href="#s213">the API delta</a> computes against; it replaces 1.x's hand-written
