@@ -840,10 +840,22 @@ expects that 1.x never had. <em>Scope</em> is what the combination guard in
 <tr><td></td><td>the cohort metrics</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td><strong>deferred.</strong> Retention analysis needs cohort machinery in the reporting layer, not a metric definition</td></tr>
 <tr><td></td><td><code>*PerPayingUser</code>, <code>firstTimePurchasers*</code></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>need a purchaser identity carried across sessions, which is the visitor store doing a job <a href="#s29">&sect;2.9</a> refuses it</td></tr>
 </tbody></table></div>
-<p class="note">Of 1.x&rsquo;s 33 registered names, 45 generated goal identifiers and 9 duplicate
-commerce definitions: 17 carry over, 5 are superseded by a parameterised or filtered form, and the
-feed three go with their table. 19 are new, most of them engagement and funnel counts 1.x could
-not build because it stored only the completed outcome. Two rows are open and two deferred.</p>
+<p class="note">Of 1.x&rsquo;s 33 registered names: <strong>20 keep their name</strong> &mdash;
+<code>visits</code>, <code>uniqueVisitors</code>, <code>newVisitors</code>, <code>pageViews</code>,
+<code>uniquePageViews</code>, <code>pagesPerVisit</code>, <code>bounces</code>,
+<code>bounceRate</code>, <code>visitDuration</code>, <code>domClicks</code>,
+<code>transactions</code>, <code>transactionRevenue</code>, <code>taxRevenue</code>,
+<code>shippingRevenue</code>, <code>revenuePerTransaction</code>, <code>revenuePerVisit</code>,
+<code>ecommerceConversionRate</code>, <code>lineItemQuantity</code>, <code>lineItemRevenue</code>,
+<code>uniqueLineItems</code> &mdash; though <code>bounces</code> and <code>bounceRate</code> keep
+the name and change the definition. <strong>Ten are superseded</strong>: the five
+<code>goal*All</code> identifiers plus the 45 numbered ones become key-event metrics
+parameterised by name, <code>actions</code>/<code>uniqueActions</code>/<code>actionsValue</code>
+become <code>eventCount</code> filtered by a param path, <code>repeatVisitors</code> becomes a
+dimension, and <code>visitors</code> was a second registration of <code>uniqueVisitors</code>.
+<strong>Three go with <code>base.feed_request</code></strong>. <strong>Twenty-five are new</strong>,
+most of them engagement and funnel counts 1.x could not build because it stored only the completed
+outcome. Two rows are open and two deferred.</p>
 
 <p class="note">Every metric declares a <strong>scope</strong> &mdash; event, session, user or item
 &mdash; at registration. That declaration is what the combination guard in
