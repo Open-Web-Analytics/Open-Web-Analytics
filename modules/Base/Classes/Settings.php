@@ -809,6 +809,23 @@ namespace OWA\Module\Base\Classes;
                  'schema_version'   => true,
                  'install_complete' => true,
                  'is_active'        => true,
+                 /*
+                  * DEVELOPMENT SCAFFOLDING, and the only reason it is a stored
+                  * setting at all is that the v2 work needs to exercise ingest
+                  * on one site at a time.
+                  *
+                  * Denylisted because it must not be reachable from the options
+                  * form. No template renders a field for it, but the form
+                  * persists whatever it is posted minus this list, so "no field
+                  * exists" is not a guarantee -- and an install-wide value is
+                  * what every Profile inherits, so one crafted POST would turn
+                  * the second pipeline on for every site.
+                  *
+                  * REMOVED AT CUTOVER (2.25 step 4), together with v1's handler
+                  * registrations. At that point v2 collection is not optional
+                  * and Handler\EventRawHandlers registers unconditionally.
+                  */
+                 'v2_raw_collection' => true,
              ),
          );
      }

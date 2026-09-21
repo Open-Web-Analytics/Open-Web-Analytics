@@ -170,6 +170,40 @@ final class EventRawEntityTest extends TestCase
     }
 
     /**
+     * The parallel pipeline is development scaffolding and must not be
+     * reachable as a product feature.
+     *
+     * v2 does not ship alongside v1: it is built, v1's history is migrated into
+     * it, collection switches over, and v1's tables are dropped as a separate
+     * decision. The setting exists only so the v2 work can exercise ingest
+     * against one real site before the switch, rather than making the switch
+     * itself the first time it ever runs.
+     *
+     * No template renders a field for it, but that is not the guarantee -- the
+     * options form persists whatever it is posted minus a denylist, and an
+     * install-wide value is what every Profile inherits.
+     */
+    public function testTheDevelopmentPipelineIsOffAndNotWebSettable(): void
+    {
+        $this->assertFalse(
+            (bool) owa_coreAPI::getSetting('base', 'v2_raw_collection'),
+            'Every site is off by default, and the default is the important half.');
+
+        $denylist = array_merge(
+            \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'],
+            \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']);
+
+        $this->assertArrayHasKey('v2_raw_collection', $denylist,
+            'The options form must not be able to turn the second pipeline on install-wide.');
+
+        foreach (glob(OWA_BASE_DIR . '/modules/Base/templates/*.php') as $template) {
+
+            $this->assertStringNotContainsString('v2_raw_collection', file_get_contents($template),
+                basename($template) . ' renders the development flag as a setting.');
+        }
+    }
+
+    /**
      * The partition commands select on the entity declaring a partition column,
      * not on the base class -- which is what lets owa_event_raw join the
      * rotation without extending FactTable.
