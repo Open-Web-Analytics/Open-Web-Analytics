@@ -1561,7 +1561,7 @@ without it. For the other three it is <strong>the storage the feature needs to m
 <tbody>
 <tr><td>Engagement deltas</td><td>accumulation, piggybacking, terminal beacon</td><td><code>owa_event.engagement_msec</code></td><td>Phase&nbsp;5</td></tr>
 <tr><td>Element path capture</td><td>the selector / ancestor-chain logic</td><td><code>owa_event.element_path</code></td><td>Phase&nbsp;5</td></tr>
-<tr><td>Chunk <code>seq</code></td><td>the per-recording counter, hashed with <code>domstream_guid</code></td><td>the chunk id, via early cutover (<a href="#s221">&sect;2.21</a>)</td><td>Phase&nbsp;5</td></tr>
+<tr><td>Chunk <code>seq</code></td><td>the per-recording counter, hashed with <code>domstream_guid</code></td><td>the chunk id, with the domstream re-encode (<a href="#s221">&sect;2.21</a>)</td><td>Phase&nbsp;7</td></tr>
 <tr><td><code>sendBeacon</code> with a body</td><td>the client transport</td><td>nothing &mdash; complete in 1.x</td><td><span class="chip c-done">Shipped</span></td></tr>
 </tbody></table></div>
 <p class="note">A 1.x engagement column would also carry a number with nothing to check it against
@@ -1596,41 +1596,72 @@ the most is known.</p>
 <tr><td><strong>3</strong> Tracker evolution</td><td><code>Util.js</code>; <code>sendBeacon</code> with a body; cookie and state consolidation; namespace strip; store format marker; <code>preconnect</code> and snippet placement.</td><td>23&nbsp;Aug. Engagement deltas, element path and chunk <code>seq</code> moved to Phase&nbsp;5 &mdash; each needs v2 storage to be a finished feature.</td></tr>
 <tr><td><strong>4</strong> Interface debt v2 inherits</td><td>Site-access UI; report config as JSON; retention as a scheduled job.</td><td>28&nbsp;Aug. See <a href="#nA110">A.1</a> for the two constraints the report work leaves on v2.</td></tr>
 </tbody></table></div>
-<h4><span class="num">2.19.2</span>Phase 5 &mdash; v2 groundwork</h4>
-<p>First code that is v2-shaped while still landing in a 1.x release. <strong>Item&nbsp;1 gates the two below it</strong>: there is nothing to migrate into, or compare against, until the tables exist. The tracker-side items are independent of it.</p>
+<h4><span class="num">2.19.2</span>Phase 5 &mdash; the tables and the pass</h4>
+<p>Nothing else can start. There is nowhere to migrate into, nothing to compare against, and no
+column for a tracker change to land in until this exists.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
 <tr><td>1</td><td><strong>The three storage layers</strong>, created by one CLI-mode update (<a href="#s214">&sect;2.14</a>), with the denormalisation pass, visitor store, partition cycle and scheduling model that <a href="#s15">&sect;1.5</a> brought with them.</td><td>Not started. The largest piece of work in this document, and everything below that touches storage waits on it.</td></tr>
+<tr><td>2</td><td><strong>Sub-second time</strong> &mdash; <code>ts</code> at microsecond resolution, stamped once at edge receipt. No longer only an ordering fix: <a href="#s21">&sect;2.1.2</a> makes that resolution the thing that keeps an event id unique, so it now gates the id scheme as well. In v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep, widened 21&nbsp;Sep. <a href="#nA111">A.1.11</a> for why a 1.x fix would be worse than leaving it</td></tr>
+</tbody></table></div>
 
-<tr><td>2</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows, non-destructive and re-runnable. Gated on the acquisition backfill having run.</td><td>Not started. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two</td></tr>
-<tr><td>3</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>), comparing v1&rsquo;s reports against v2&rsquo;s over the migrated rows.</td><td>Not started</td></tr>
-<tr><td>4</td><td><strong>Sub-second time</strong> &mdash; <code>ts</code> at microsecond resolution, stamped once at edge receipt. No longer only an ordering fix: <a href="#s21">&sect;2.1.2</a> makes that resolution the thing that keeps an event id unique, so it now gates the id scheme as well. In v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep, widened 21&nbsp;Sep. <a href="#nA111">A.1.11</a> for why a 1.x fix would be worse than leaving it</td></tr>
+<h4><span class="num">2.19.3</span>Phase 6 &mdash; migrate, and prove it</h4>
+<p>Before any collection changes, so the pass and the reporting layer are tested against this
+installation&rsquo;s own history while v1 is still intact to disagree with.</p>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
+<tbody>
+<tr><td>3</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows, non-destructive and re-runnable. Gated on the acquisition backfill having run.</td><td>Not started. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two</td></tr>
+<tr><td>4</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>), comparing v1&rsquo;s reports against v2&rsquo;s over the migrated rows.</td><td>Not started</td></tr>
+</tbody></table></div>
+
+<h4><span class="num">2.19.4</span>Phase 7 &mdash; the v2 tracker</h4>
+<p>Every collection change lands here rather than earlier. Each one needs a column that Phase&nbsp;5
+created, and none of them can be checked against v1 &mdash; v1 is an oracle for the pass, never for
+the client (<a href="#s19">&sect;1.9</a>).</p>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
+<tbody>
 <tr><td>5</td><td><strong>Engagement deltas and the <code>user_engagement</code> event</strong> &mdash; the per-event accumulator that rides every beacon as <code>engagement_msec</code>, and the hide-time event carrying the residue. <strong>Delivered once, at hide</strong> (<a href="#s12">&sect;1.2.1</a>), not also piggybacked onto the next request &mdash; which removed the second arrival and with it the derived id and counter it would have needed. Fires on any hide at any size; the engaged threshold gates read-time classification, never the send.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code></td></tr>
 <tr><td>6</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
-<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td>Not started</td></tr>
+<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with the domstream re-encode (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td>Not started</td></tr>
 <tr><td>8</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td>Not started</td></tr>
 <tr><td>9</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td>Not started</td></tr>
-<tr><td>10</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops being fanned to. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td>Not started. The three deletions are additive; the other two wait for cutover</td></tr>
+<tr><td>10</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops collecting at Phase&nbsp;8. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td>Not started. The three deletions are additive; the other two wait for cutover</td></tr>
 </tbody></table></div>
+
+<h4><span class="num">2.19.5</span>Phase 8 &mdash; cutover</h4>
+<p>The expensive irreversible work, last, when the most is known
+(<a href="#s226">&sect;2.25</a>).</p>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
+<tbody>
+<tr><td>11</td><td><strong>Switch collection to v2.</strong> v1 stops receiving; its reports stay up, reading history. The one step with no rehearsal.</td><td>Not started</td></tr>
+<tr><td>12</td><td><strong>Drop v1</strong> &mdash; a command removing the 20 parallel tables, refusing while any visitor still holds NULL acquisition (<a href="#s221">&sect;2.21</a>). The shared admin tables are untouched.</td><td>Not started</td></tr>
+</tbody></table></div>
+
 <div class="flag"><strong>Status &mdash; 2026-09-21</strong>
-<p><strong>All ten items are unstarted</strong>, checked against the code rather than against
+<p><strong>All twelve items are unstarted</strong>, checked against the code rather than against
 this list: no <code>owa_event</code> entity exists, <code>msec</code> is still
 <code>OWA_DTD_INT</code>, and of the tracker items <code>setUserId</code>,
 <code>setContentGroup</code>, <code>scrollInterval</code> and any consent API return no matches in
 <code>Tracker.js</code>.</p>
-<p>Items&nbsp;8&ndash;10 were added on 21&nbsp;Sep, from decisions taken the same day: the column
-set closing the GA gap (<a href="#s24">&sect;2.4.2</a>), the metric vocabulary
-(<a href="#s23">&sect;2.3.2</a>) and publishing the tracker per site
-(<a href="#s225">&sect;2.24</a>). Item&nbsp;5 lost its piggyback half the same day. Publishing the tracker per site is deferred and sits outside this list (<a href="#s225">&sect;2.24</a>).</p>
+<p><strong>The phases were resequenced on 21&nbsp;Sep</strong>, when the pipeline stopped being two
+(<a href="#s19">&sect;1.9</a>). What was one Phase&nbsp;5 is now four, following the cutover
+sequence: tables, then migrate and prove, then the tracker, then the switch. The tracker work moved
+<em>after</em> the migration rather than before it &mdash; each change needs a column Phase&nbsp;5
+creates, and none of it can be checked against v1, so there is nothing to gain by shipping it
+early. The fan-out dispatcher and the per-feature early cutover are gone; the migrator took the
+former&rsquo;s slot.</p>
 <p>Four PRs of v2 groundwork shipped into 1.x on 19&nbsp;Sep without appearing here:
-<strong>#1114</strong> (acquisition columns written once onto <code>owa_visitor</code>, the v1
-shape of v2&rsquo;s visitor store), <strong>#1117</strong> (the tracker carries
+<strong>#1114</strong> (acquisition columns written once onto <code>owa_visitor</code>, which the
+migrator now reads for <code>acq_*</code>), <strong>#1117</strong> (the tracker carries
 <code>landing_url</code> and the server parses the campaign tags out of it),
 <strong>#1113</strong> (<code>daily</code> added to <code>PARTITION_CUTS</code>) and
 <strong>#1116</strong> (six dead columns dropped from <code>owa_visitor</code>). All four are
 deployed to demo and peteradamsphoto.</p>
-<p><a href="#s15">&sect;1.5</a> was marked Decided on 20&nbsp;Sep, which unblocks item&nbsp;1: what
+<p><a href="#s15">&sect;1.5</a> was marked Decided on 20&nbsp;Sep, which unblocks Phase&nbsp;5: what
 is left there is sizing rather than architecture. <strong>The next thing is code, not another
 decision.</strong></p></div>
 
@@ -2130,8 +2161,8 @@ is parallel &mdash; v1 keeps its own facts and dimensions, and the shared admin 
 <p><span class="chip c-meas">Measured</span> Effectively all volume is parallel and the shared set
 is trivial, so coexistence costs little. Cost of the overlap, composed from the two
 write paths: roughly <strong>57 events/s against v1's 79</strong> — about 28% down, and
-pessimistic since the writes share request overhead. That is an argument for the queue carrying
-the fan-out rather than the request doing it inline.</p>
+pessimistic since the writes share request overhead. <strong>That cost is avoided rather than managed</strong>:
+<a href="#s19">&sect;1.9</a> migrates instead of running both.</p>
 <h4 id="nA115"><span class="num">A.1.15</span>Metrics are configuration: the 1.x conversion, measured</h4>
 <p><span class="chip c-meas">Measured</span> An earlier draft of this section said there were 22
 class references, that <strong>no metric class contains SQL</strong>, and that the conversion was
