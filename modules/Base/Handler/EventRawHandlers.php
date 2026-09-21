@@ -614,7 +614,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
                 $db->rollbackTransaction();
 
-                \OWA\Core\CoreAPI::err( sprintf(
+                \OWA\Core\CoreAPI::error( sprintf(
                     'v2 ingest: writing %s failed; the whole beacon was rolled back.',
                     $row['event_type'] ) );
 
@@ -715,7 +715,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
                 return true;
             }
 
-            \OWA\Core\CoreAPI::err(
+            \OWA\Core\CoreAPI::error(
                 'v2 ingest: writing the visitor acquisition row failed.' );
 
             return false;
