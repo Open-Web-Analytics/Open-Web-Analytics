@@ -161,7 +161,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   what can ship in 1.x first, and the order to build it in.</p>
 </header>
 <div class="meta">
-  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep</span>
+  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep · pass measured 21 Sep</span>
   <span>Branch <code>research/v2-single-fact-table</code></span>
   <span>Detail: <code>research/v2-schema/README.md</code></span>
 </div>
@@ -652,7 +652,7 @@ at read time (<a href="#s24">&sect;2.4</a>).</p>
 <tr><td class="n">13</td><td><code>acq_campaign</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
 <tr><td class="n">14</td><td><code>acq_ad</code></td><td>VARCHAR(255)</td><td>user</td><td></td></tr>
 <tr><td class="n">15</td><td><code>acq_search_terms</code></td><td>VARCHAR(255)</td><td>user</td><td>NULL past the store's retention, never a fallback to a later event</td></tr>
-<tr><td class="n">16</td><td><code>prev_event_ts</code></td><td>BIGINT UNSIGNED NULL</td><td>user</td><td>the visitor&rsquo;s previous event timestamp, from a window function over the partition. NULL on their first. Serves <code>daysSinceLastVisit</code> and <code>timeSinceLastVisit</code>, which had no anchor without it</td></tr>
+<tr><td class="n">16</td><td><code>prev_event_ts</code></td><td>BIGINT NULL</td><td>user</td><td><span class="chip c-meas">Measured</span> the visitor&rsquo;s previous event timestamp. NULL on their first. Serves <code>daysSinceLastVisit</code> and <code>timeSinceLastVisit</code>, which had no anchor without it. <strong>Carried on the beacon, not derived in the pass</strong> &mdash; it was a window function until the pass was measured, and that one window cost <strong>128 of 195 seconds</strong> at a million rows, because it partitions by visitor where the other partitions by session and so forces a second sort. The tracker already sends <code>last_req</code> and already maintains it for its own session decision, so &sect;1.5.3&rsquo;s rule applies: an anchor the client keeps is carried. The objection that killed it before was clock provenance, and <code>clock_offset_usec</code> answers it &mdash; a client-clock <code>last_req</code> corrects to server time by adding the offset</td></tr>
 <tr><td class="n">17</td><td><code>built_at</code></td><td>BIGINT UNSIGNED</td><td>partition</td><td>when the pass last wrote this partition. Constant within one, so it compresses to nothing on a columnar store. Three jobs: the freshness <em>as-of</em> the envelope reports (<a href="#s213">&sect;2.13</a>), the consistency check below, and provenance when a rebuild goes wrong</td></tr>
 </tbody></table></div>
 
@@ -1236,13 +1236,92 @@ and &ldquo;no value&rdquo; the same NULL.</p>
 <li><strong>The swap is the commit.</strong> Staging is built whole and is invisible until the
 exchange, so a run that dies during the build leaves the live table as it was and the next run
 simply rebuilds.</li>
-<li><strong>It runs entirely in the database.</strong> One <code>INSERT &hellip; SELECT</code>
-against tables in one schema; no row passes through PHP, and the same shape works on a columnar
-engine. The terminal values use window functions, so <strong>v2 requires MySQL 8.0</strong> &mdash;
-the repo declares no minimum server version today.</li>
+<li><strong>It runs entirely in the database.</strong> No row passes through PHP, and the same
+shape works on a columnar engine. The terminal values use window functions, so <strong>v2 requires
+MySQL 8.0</strong> &mdash; the repo declares no minimum server version today.</li>
+<li><strong>One statement is not what makes it atomic</strong> &mdash; the swap is. Staging is
+invisible until the exchange however many statements filled it, so the build may be split where
+splitting is faster, and the guarantee is unchanged.</li>
 <li><strong>Nothing outlives a failed run</strong> except the visitor store, which ingest wrote and
 the pass only reads.</li>
 </ul>
+
+<h4><span class="num">2.7.2</span>What a run costs <span class="chip c-meas">Measured</span></h4>
+
+<p>Measured on the dev install (MySQL 8.4.10, <code>db.t4g.small</code>), one partition, rows of
+realistic width &mdash; a 1024-character <code>page_location</code>, a JSON <code>params</code>,
+five events per session:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Step</th><th>100k rows</th><th>1M rows</th></tr></thead>
+<tbody>
+<tr><td>Build &mdash; <code>INSERT &hellip; SELECT</code></td><td>26.4s</td><td><strong>412.0s</strong></td></tr>
+<tr><td>Rows in equals rows out</td><td>0.05s</td><td>0.50s</td></tr>
+<tr><td><code>EXCHANGE PARTITION</code></td><td>0.52s</td><td>12.6s</td></tr>
+</tbody></table></div>
+
+<p><strong>The build was superlinear</strong> &mdash; 15.6&times; the time for 10&times; the rows,
+spilling to disk &mdash; and the swap this design is built around is a rounding error beside it.
+Two causes, both answered by changing the build rather than the design:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Build variant, 1M rows</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>As first written: <code>SELECT r.*</code> through both windows</td><td>412s</td></tr>
+<tr><td>Windowed subquery carries only keys and its own outputs</td><td>195s</td></tr>
+<tr><td>&hellip; and the visitor window ordered by <code>session_id</code></td><td>120s</td></tr>
+<tr><td><strong>&hellip; and no visitor window at all</strong></td><td><strong>67s</strong></td></tr>
+<tr><td>Covering index on <code>(site_id, visitor_id, session_id, ts, id)</code></td><td>178s &mdash; no help</td></tr>
+</tbody></table></div>
+
+<p><strong>Carrying fifty-five columns through the sort was half of it.</strong> The windowed
+subquery selected every raw column, including the JSON and the long URLs, and sorted all of it
+twice. Selecting the keys and the window outputs, then joining back to raw, halves the time and is
+otherwise invisible.</p>
+
+<p><strong>The second window was the rest.</strong> It exists for one column,
+<code>prev_event_ts</code>, and it partitions by visitor where the other partitions by session, so
+it cannot share the sort. Moving that column onto the beacon (&sect;2.1, column 16) removes it
+outright: <strong>412s to 67s, 6.1&times;</strong>, and the superlinearity with it.</p>
+
+<p><strong>The index is a dead end.</strong> MySQL does not use it to avoid the sort &mdash;
+5&ndash;10%, inside the noise &mdash; and it would cost 14.7s to build plus write amplification on
+every insert into raw, which is the one table taking a write per beacon.</p>
+
+<p>At a minute per million the freshness tier in &sect;2.5.1 holds: a quarter-hourly run over the
+current daily partition is a few percent duty cycle rather than a third of it.</p>
+
+<h4><span class="num">2.7.3</span>The swap forbids an instant column <span class="chip c-meas">Measured</span></h4>
+
+<p><code>EXCHANGE PARTITION</code> compares the two tables&rsquo; physical row format, not their
+column list. MySQL 8 adds a column instantly by default &mdash; the rows are not touched and the
+table records that they predate it &mdash; and a staging table built by <code>CREATE TABLE &hellip;
+LIKE</code> is always flat, because it is created empty and has no old rows to version. The two
+stop matching and the server refuses the pair:</p>
+
+<p><code>1731 Non matching attribute 'INSTANT COLUMN(s)' between partition and table</code></p>
+
+<p>The pass then fails every run having published nothing. <strong>So any column added to the
+denormalised table has to be written into every existing row</strong>, which is a full rebuild of
+it:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>On the denormalised table</th><th>Row versions</th><th>Swap</th><th>1M rows</th></tr></thead>
+<tbody>
+<tr><td><code>ADD COLUMN</code> (instant, the default)</td><td>every partition to 1</td><td>refused</td><td>0.21s</td></tr>
+<tr><td><code>ALTER &hellip; REBUILD PARTITION</code></td><td>still 1</td><td>still refused</td><td>&mdash;</td></tr>
+<tr><td><code>ALTER &hellip; FORCE</code></td><td>back to 0</td><td>accepted</td><td>75.6s</td></tr>
+<tr><td><code>ADD COLUMN, ALGORITHM=INPLACE</code></td><td>never leaves 0</td><td>accepted</td><td>81.4s</td></tr>
+</tbody></table></div>
+
+<p><code>REBUILD PARTITION</code> is the one that looks like it should work and does not &mdash; the
+version history belongs to the table, not the partition, so rebuilding one partition clears
+nothing. Dropping a column creates the same history.</p>
+
+<p>The cost is <strong>~82 seconds per million rows, once per release that adds a column</strong>,
+and it is online: the server accepts both the add and the rebuild with <code>LOCK=NONE</code>, so
+reads and writes continue throughout. It is not a per-run cost, and it does not touch raw, which is
+never exchanged and takes its columns instantly for nothing.</p>
 
 <h3 id="s28"><span class="num">2.8</span>The partition cycle <span class="chip c-dec">Decided</span></h3>
 <p>A rebuild replaces a whole partition, so the partition scheme sets the unit of work: <strong>the
@@ -1709,7 +1788,7 @@ report off.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>10</td><td><strong><code>owa_event</code> and the denormalisation pass</strong> &mdash; one <code>INSERT &hellip; SELECT</code> into staging and a partition swap (<a href="#s27">&sect;2.7</a>), with the partition cycle and scheduling model <a href="#s15">&sect;1.5</a> brought with it.</td><td>Not started. The largest piece of work in this document</td></tr>
+<tr><td>10</td><td><strong><code>owa_event</code> and the denormalisation pass</strong> &mdash; the build into staging and a partition swap (<a href="#s27">&sect;2.7</a>), with the partition cycle and scheduling model <a href="#s15">&sect;1.5</a> brought with it.</td><td>Table, pass and <code>cmd=events-rebuild</code> built 21&nbsp;Sep. The partition cycle (<a href="#s28">&sect;2.8</a>) is not, so every run still rewrites a month. Measured and costed in <a href="#s27">&sect;2.7.2</a>&ndash;3</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.5</span>Phase 8 &mdash; migrate, and prove it</h4>
