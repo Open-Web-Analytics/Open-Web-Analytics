@@ -137,6 +137,19 @@ if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' ) ) { define('OWA_SQL_CREATE_TABLE_L
  * it. REBUILD PARTITION does not -- measured.
  */
 if ( ! defined( 'OWA_SQL_REBUILD_TABLE' ) ) { define('OWA_SQL_REBUILD_TABLE', 'ALTER TABLE %s FORCE'); }
+/*
+ * Add a column WITHOUT the instant algorithm, so the table stays exchangeable.
+ *
+ * INPLACE means "rebuild in place", which is what makes the column real in
+ * every existing row instead of recording it as metadata. Online: concurrent
+ * reads and writes are allowed throughout, verified with LOCK=NONE on 8.4.
+ *
+ * The cost is a full table rebuild, and it is unavoidable for a table that
+ * EXCHANGE PARTITION compares byte for byte. Spending it here beats letting the
+ * add be instant and paying for FORCE afterwards, which is the same rebuild
+ * plus a window in which the pass cannot publish.
+ */
+if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_REBUILD', 'ALTER TABLE %s ADD %s %s, ALGORITHM=INPLACE'); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }
@@ -337,6 +350,59 @@ trait MysqlDialect
      *
      * @return int|null
      */
+    /**
+     * Whether a table carries instant-column history.
+     *
+     * Zero means it can be exchanged with a freshly built staging table; more
+     * than zero means EXCHANGE PARTITION will refuse the pair with error 1731.
+     *
+     * 8.0.29 replaced INSTANT_COLS with per-row versioning, so whichever the
+     * server reports is used and one reporting neither answers null rather than
+     * a wrong zero.
+     *
+     * @param string $table_name
+     * @return bool|null
+     */
+    function hasInstantColumns( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return null;
+        }
+
+        $reported = (array) $this->get_results(
+            "SELECT COLUMN_NAME AS c FROM information_schema.COLUMNS "
+          . "WHERE TABLE_SCHEMA = 'information_schema' AND TABLE_NAME = 'INNODB_TABLES' "
+          . "AND COLUMN_NAME IN ( 'INSTANT_COLS', 'TOTAL_ROW_VERSIONS' )" );
+
+        $tests = array();
+
+        foreach ( $reported as $row ) {
+
+            $row = (array) $row;
+            $tests[] = $row['c'] . ' > 0';
+        }
+
+        if ( ! $tests ) {
+
+            return null;
+        }
+
+        /*
+         * The table and its partitions, which InnoDB names table#p#partition.
+         *
+         * SINGLE QUOTED. In a double-quoted string PHP reads sprintf's
+         * positional `%1$s` as the variable $s and interpolates it away,
+         * leaving `%1` in the SQL and no error anywhere.
+         */
+        $row = $this->get_row( sprintf(
+            'SELECT COUNT(*) AS n FROM information_schema.INNODB_TABLES '
+          . 'WHERE ( NAME LIKE \'%%/%1$s\' OR NAME LIKE \'%%/%1$s#p#%%\' ) AND ( %2$s )',
+            $table_name, implode( ' OR ', $tests ) ) );
+
+        return $row ? (int) $row['n'] > 0 : null;
+    }
+
     function getPartitionBudget() {
 
         $row = $this->get_row(

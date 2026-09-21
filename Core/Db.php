@@ -1948,6 +1948,47 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Add a column without the instant algorithm, rebuilding the table.
+     *
+     * For a table that EXCHANGE PARTITION compares byte for byte. An instantly
+     * added column leaves row-format metadata that a freshly built staging
+     * table cannot have -- staging is always empty, so it has no old rows to
+     * version -- and the swap is then refused with error 1731.
+     *
+     * Online: reads and writes continue during the rebuild.
+     *
+     * @param string $table_name
+     * @param string $column_name
+     * @param string $column_definition
+     * @return bool false where the server will not do it this way
+     */
+    function addColumnRebuilding( $table_name, $column_name, $column_definition ) {
+
+        if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_ADD_COLUMN_REBUILD,
+            $table_name, $column_name, $column_definition ) );
+    }
+
+    /**
+     * Whether a table carries instant-column history.
+     *
+     * A driver that can answer overrides this; the dialect is where the
+     * introspection lives, as it does for partitions. Unknown is null, not
+     * false -- "no history" and "cannot tell" lead to different decisions.
+     *
+     * @param string $table_name
+     * @return bool|null
+     */
+    function hasInstantColumns( $table_name ) {
+
+        return null;
+    }
+
+    /**
      * Rewrite a table in place, keeping its rows.
      *
      * Costs a full rebuild, so it belongs in a deliberate operation. Its one
