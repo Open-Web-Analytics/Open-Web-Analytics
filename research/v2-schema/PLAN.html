@@ -1606,29 +1606,30 @@ column for a tracker change to land in until this exists.</p>
 <tr><td>2</td><td><strong>Sub-second time</strong> &mdash; <code>ts</code> at microsecond resolution, stamped once at edge receipt. No longer only an ordering fix: <a href="#s21">&sect;2.1.2</a> makes that resolution the thing that keeps an event id unique, so it now gates the id scheme as well. In v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep, widened 21&nbsp;Sep. <a href="#nA111">A.1.11</a> for why a 1.x fix would be worse than leaving it</td></tr>
 </tbody></table></div>
 
-<h4><span class="num">2.19.3</span>Phase 6 &mdash; migrate, and prove it</h4>
-<p>Before any collection changes, so the pass and the reporting layer are tested against this
-installation&rsquo;s own history while v1 is still intact to disagree with.</p>
+<h4><span class="num">2.19.3</span>Phase 6 &mdash; the v2 tracker, end to end</h4>
+<p><strong>The schema is not right until something writes to all of it.</strong> These are the
+changes that fill the columns no migration can produce, so until they run there is no way to know
+whether the design works &mdash; evidence against reading, the id formula, engagement, consent.
+One site collecting into v2 and coming out the far side as a report is the acceptance test.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>3</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows, non-destructive and re-runnable. Gated on the acquisition backfill having run.</td><td>Not started. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two</td></tr>
-<tr><td>4</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>), comparing v1&rsquo;s reports against v2&rsquo;s over the migrated rows.</td><td>Not started</td></tr>
+<tr><td>3</td><td><strong>Engagement deltas and the <code>user_engagement</code> event</strong> &mdash; the per-event accumulator that rides every beacon as <code>engagement_msec</code>, and the hide-time event carrying the residue. <strong>Delivered once, at hide</strong> (<a href="#s12">&sect;1.2.1</a>), not also piggybacked onto the next request &mdash; which removed the second arrival and with it the derived id and counter it would have needed. Fires on any hide at any size; the engaged threshold gates read-time classification, never the send.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code></td></tr>
+<tr><td>4</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
+<tr><td>5</td><td><strong>Chunk <code>seq</code></strong>, shipping with the domstream re-encode (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td>Not started</td></tr>
+<tr><td>6</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td>Not started</td></tr>
+<tr><td>7</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td>Not started</td></tr>
+<tr><td>8</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops collecting at Phase&nbsp;8. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td>Not started. The three deletions are additive; the other two wait for cutover</td></tr>
 </tbody></table></div>
 
-<h4><span class="num">2.19.4</span>Phase 7 &mdash; the v2 tracker</h4>
-<p>Every collection change lands here rather than earlier. Each one needs a column that Phase&nbsp;5
-created, and none of them can be checked against v1 &mdash; v1 is an oracle for the pass, never for
-the client (<a href="#s19">&sect;1.9</a>).</p>
+<h4><span class="num">2.19.4</span>Phase 7 &mdash; migrate, and prove it</h4>
+<p>Only once the schema has been exercised by collection is it worth committing history to it.
+v1 is still intact here, which is what makes the comparison possible.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>5</td><td><strong>Engagement deltas and the <code>user_engagement</code> event</strong> &mdash; the per-event accumulator that rides every beacon as <code>engagement_msec</code>, and the hide-time event carrying the residue. <strong>Delivered once, at hide</strong> (<a href="#s12">&sect;1.2.1</a>), not also piggybacked onto the next request &mdash; which removed the second arrival and with it the derived id and counter it would have needed. Fires on any hide at any size; the engaged threshold gates read-time classification, never the send.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code></td></tr>
-<tr><td>6</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
-<tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with the domstream re-encode (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td>Not started</td></tr>
-<tr><td>8</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td>Not started</td></tr>
-<tr><td>9</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td>Not started</td></tr>
-<tr><td>10</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops collecting at Phase&nbsp;8. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td>Not started. The three deletions are additive; the other two wait for cutover</td></tr>
+<tr><td>9</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows, non-destructive and re-runnable. Gated on the acquisition backfill having run.</td><td>Not started. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two</td></tr>
+<tr><td>10</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>), comparing v1&rsquo;s reports against v2&rsquo;s over the migrated rows.</td><td>Not started</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.5</span>Phase 8 &mdash; cutover</h4>
@@ -1648,12 +1649,13 @@ this list: no <code>owa_event</code> entity exists, <code>msec</code> is still
 <code>setContentGroup</code>, <code>scrollInterval</code> and any consent API return no matches in
 <code>Tracker.js</code>.</p>
 <p><strong>The phases were resequenced on 21&nbsp;Sep</strong>, when the pipeline stopped being two
-(<a href="#s19">&sect;1.9</a>). What was one Phase&nbsp;5 is now four, following the cutover
-sequence: tables, then migrate and prove, then the tracker, then the switch. The tracker work moved
-<em>after</em> the migration rather than before it &mdash; each change needs a column Phase&nbsp;5
-creates, and none of it can be checked against v1, so there is nothing to gain by shipping it
-early. The fan-out dispatcher and the per-feature early cutover are gone; the migrator took the
-former&rsquo;s slot.</p>
+(<a href="#s19">&sect;1.9</a>). What was one Phase&nbsp;5 is now four: tables, then the tracker end
+to end, then migrate, then switch. The tracker comes <em>before</em> the migration because migrated
+rows cannot exercise the half of the schema that is new &mdash; <code>tagged_*</code> is empty
+where v1 stored a verdict, twelve columns were never collected, and the id formula never runs
+because the migrator assigns ids itself. Committing history to a schema is worth doing after
+collection has shown the schema works, not before. The fan-out dispatcher and the per-feature early
+cutover are gone; the migrator took the former&rsquo;s slot.</p>
 <p>Four PRs of v2 groundwork shipped into 1.x on 19&nbsp;Sep without appearing here:
 <strong>#1114</strong> (acquisition columns written once onto <code>owa_visitor</code>, which the
 migrator now reads for <code>acq_*</code>), <strong>#1117</strong> (the tracker carries
