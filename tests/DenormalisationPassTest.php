@@ -111,6 +111,7 @@ final class DenormalisationPassTest extends TestCase
             'page_location' => 'https://example.test/two',
             'page_path'     => '/two',
             'page_title'    => 'Two',
+            'prev_event_ts' => $t,
         ]);
 
         $this->seed('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000, [
@@ -426,17 +427,19 @@ final class DenormalisationPassTest extends TestCase
         $this->assertSame(0, (int) $row['is_exit']);
     }
 
-    public function testPrevEventTsWalksTheVisitorsOwnEvents(): void
+    public function testPrevEventTsIsCopiedFromRawRatherThanDerived(): void
     {
+        // It is an observation now, carried on the beacon and corrected to
+        // server time at ingest -- the pass copies it like any raw column. The
+        // second window function it used to need cost 128 of 195 seconds at a
+        // million rows, for this one value.
         $t = $this->t0;
 
         $first  = $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t);
         $second = $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t + 60000000);
-        $third  = $this->built('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000);
 
-        $this->assertNull($first['prev_event_ts']);
+        $this->assertNull($first['prev_event_ts'], 'nothing was carried on the first event');
         $this->assertSame($t, (int) $second['prev_event_ts']);
-        $this->assertSame($t + 60000000, (int) $third['prev_event_ts']);
     }
 
     public function testBuiltAtIsStampedAndConstantWithinThePartition(): void

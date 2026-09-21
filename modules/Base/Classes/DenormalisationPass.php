@@ -280,7 +280,7 @@ class DenormalisationPass {
 
         foreach ( $raw_columns as $column ) {
 
-            $select[] = 'e.' . $column;
+            $select[] = 'r.' . $column;
         }
 
         /*
@@ -298,14 +298,14 @@ class DenormalisationPass {
          * recorded those arrivals as `referral` -- and a reading the pass makes
          * is re-applied by rebuilding, where one written at ingest is not.
          */
-        $session_host = 'e.s_referer_host';
+        $session_host = 's.s_referer_host';
         $acq_host     = 'v.acq_referer_host';
         $unresolved   = $this->literal( V2Event::UNRESOLVED );
 
-        $select[] = $this->sourceExpression( 'e.s_tagged_source', $session_host );
-        $select[] = $this->mediumExpression( 'e.s_tagged_medium', $session_host );
-        $select[] = $this->textExpression( 'e.s_tagged_campaign' );
-        $select[] = $this->textExpression( 'e.s_tagged_ad' );
+        $select[] = $this->sourceExpression( 's.s_tagged_source', $session_host );
+        $select[] = $this->mediumExpression( 's.s_tagged_medium', $session_host );
+        $select[] = $this->textExpression( 's.s_tagged_campaign' );
+        $select[] = $this->textExpression( 's.s_tagged_ad' );
 
         /*
          * search_terms is the tag only. §2.1 also gives it the search engine's
@@ -316,15 +316,15 @@ class DenormalisationPass {
          * is the alternative, and it moves a list-driven reading into the layer
          * that is never rebuilt.
          */
-        $select[] = $this->textExpression( 'e.s_tagged_search_terms' );
+        $select[] = $this->textExpression( 's.s_tagged_search_terms' );
 
-        $select[] = 'e.lp_location';
-        $select[] = 'e.lp_path';
-        $select[] = 'e.lp_query';
-        $select[] = 'e.lp_title';
+        $select[] = 's.lp_location';
+        $select[] = 's.lp_path';
+        $select[] = 's.lp_query';
+        $select[] = 's.lp_title';
 
         $select[] = sprintf(
-            'CASE WHEN e.id = e.session_last_id AND e.session_last_ts < %d THEN 1 ELSE 0 END',
+            'CASE WHEN r.id = s.session_last_id AND s.session_last_ts < %d THEN 1 ELSE 0 END',
             (int) $closed_before );
 
         // The sentinel is written where the visitor has no row at all. A row
@@ -339,16 +339,27 @@ class DenormalisationPass {
             $unresolved, $this->textExpression( 'v.acq_ad' ) );
         $select[] = $this->textExpression( 'v.acq_search_terms' );
 
-        $select[] = 'e.prev_event_ts';
         $select[] = (string) (int) $built_at;
 
+        /*
+         * The windowed subquery carries ONLY the keys and its own outputs, and
+         * the raw columns are read by joining back on the primary key.
+         *
+         * Measured: selecting every raw column through the window sorted all
+         * fifty-six of them -- the JSON and the 1024-character URLs included --
+         * and cost 412s at a million rows against 195s this way. The sort is
+         * the whole expense, so what matters is how wide the rows going into it
+         * are.
+         */
         return sprintf(
-            'INSERT INTO %s (%s) SELECT %s FROM (%s) e '
-          . 'LEFT OUTER JOIN %s v ON v.visitor_id = e.visitor_id '
-          . 'WHERE e.yyyymmdd >= %d AND e.yyyymmdd < %d',
+            'INSERT INTO %s (%s) SELECT %s FROM %s r '
+          . 'JOIN (%s) s ON s.w_id = r.id AND s.w_yyyymmdd = r.yyyymmdd '
+          . 'LEFT OUTER JOIN %s v ON v.visitor_id = r.visitor_id '
+          . 'WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d',
             $this->tables['staging'],
             implode( ', ', array_merge( $raw_columns, $this->derivedColumns() ) ),
             implode( ', ', $select ),
+            $this->tables['raw'],
             $this->windowedRaw( $lookback, $end ),
             $this->tables['visitors'],
             $start,
@@ -357,13 +368,20 @@ class DenormalisationPass {
     }
 
     /**
-     * Raw, with the session and visitor context each row needs on it.
+     * The session context each row needs, keyed back to the row it belongs to.
      *
-     * One window over the session serves the landing page, the tags and the
-     * last event: the frame is the whole session, so FIRST_VALUE and LAST_VALUE
-     * read its ends. A second window over the visitor gives the previous event.
+     * One window over the session, framed across the whole of it, so
+     * FIRST_VALUE reads the landing event and LAST_VALUE the final one. Window
+     * functions are why v2 requires MySQL 8.0.
      *
-     * Window functions are why v2 requires MySQL 8.0.
+     * It selects the primary key and its own outputs and nothing else. The sort
+     * is the cost of this statement, so the width of the rows entering it is
+     * what the cost is made of.
+     *
+     * THERE IS NO SECOND WINDOW. prev_event_ts used to need one, partitioned by
+     * visitor rather than by session, which cannot share this sort -- 128 of
+     * 195 seconds at a million rows for one column. It is carried on the beacon
+     * now and read off raw like any other observation.
      *
      * @param int $from yyyymmdd, inclusive
      * @param int $to   yyyymmdd, exclusive
@@ -384,22 +402,20 @@ class DenormalisationPass {
             's_referer_host'        => 'referer_host',
         );
 
-        $columns = array( 'r.*' );
+        $columns = array( 'w.id AS w_id', 'w.yyyymmdd AS w_yyyymmdd' );
 
         foreach ( $first as $alias => $column ) {
 
-            $columns[] = sprintf( 'FIRST_VALUE(r.%s) OVER session_w AS %s', $column, $alias );
+            $columns[] = sprintf( 'FIRST_VALUE(w.%s) OVER session_w AS %s', $column, $alias );
         }
 
-        $columns[] = 'LAST_VALUE(r.id) OVER session_w AS session_last_id';
-        $columns[] = 'LAST_VALUE(r.ts) OVER session_w AS session_last_ts';
-        $columns[] = 'LAG(r.ts) OVER visitor_w AS prev_event_ts';
+        $columns[] = 'LAST_VALUE(w.id) OVER session_w AS session_last_id';
+        $columns[] = 'LAST_VALUE(w.ts) OVER session_w AS session_last_ts';
 
         return sprintf(
-            'SELECT %s FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d '
-          . 'WINDOW session_w AS (PARTITION BY r.site_id, r.visitor_id, r.session_id '
-          . 'ORDER BY r.ts, r.id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING), '
-          . 'visitor_w AS (PARTITION BY r.site_id, r.visitor_id ORDER BY r.ts, r.id)',
+            'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d '
+          . 'WINDOW session_w AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
+          . 'ORDER BY w.ts, w.id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)',
             implode( ', ', $columns ),
             $this->tables['raw'],
             (int) $from,

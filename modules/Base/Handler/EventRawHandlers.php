@@ -226,6 +226,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             'visitor_fsts'   => $this->number( $event->get( 'fsts' ) ),
             'prior_sessions' => $this->number( $event->get( 'num_prior_sessions' ) ),
+            'prev_event_ts'  => $this->previousEventTs( $event, $ts ),
 
             'page_location' => $this->text( $location ),
             'page_path'     => $page['path'],
@@ -313,6 +314,46 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return (int) $ts - (int) $client;
+    }
+
+    /**
+     * The visitor's previous event, in server time.
+     *
+     * The tracker sends last_req -- the prior request's time, read from the
+     * session store BEFORE the session decision discards it, so the first event
+     * of a new session carries the last event of the PREVIOUS one. That is
+     * exactly what "time since last visit" means.
+     *
+     * Client-clock, so it is corrected by the same offset this row already
+     * records. Without a client clock there is nothing to correct against and
+     * the answer is NULL, which is the honest reading -- not zero, and not a
+     * value silently mixing two clocks the way 1.x does.
+     *
+     * NULL is also right when the state store is gone: nothing knows when the
+     * visitor was last here, and inventing an anchor would be worse.
+     *
+     * @param object $event
+     * @param int    $ts  server receipt, microseconds
+     * @return int|null microseconds
+     */
+    protected function previousEventTs( $event, $ts ) {
+
+        $last_req = $event->get( 'last_req' );
+
+        if ( ! $last_req || ! is_numeric( $last_req ) ) {
+
+            return null;
+        }
+
+        $offset = $this->clockOffset( $event, $ts );
+
+        if ( $offset === null ) {
+
+            return null;
+        }
+
+        // last_req is seconds on the client's clock.
+        return (int) ( $last_req * 1000000 ) + $offset;
     }
 
     /**

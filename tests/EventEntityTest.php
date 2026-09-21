@@ -35,7 +35,7 @@ final class EventEntityTest extends TestCase
           . 'EXCHANGE PARTITION compares the two tables column by column.');
     }
 
-    public function testTheSeventeenDerivedColumns(): void
+    public function testTheSixteenDerivedColumns(): void
     {
         $derived = array_slice($this->event()->getColumns(), count($this->raw()->getColumns()));
 
@@ -44,7 +44,7 @@ final class EventEntityTest extends TestCase
             'landing_page_location', 'landing_page_path', 'landing_page_query',
             'landing_page_title', 'is_exit',
             'acq_source', 'acq_medium', 'acq_campaign', 'acq_ad', 'acq_search_terms',
-            'prev_event_ts', 'built_at',
+            'built_at',
         ], $derived);
     }
 
@@ -83,7 +83,7 @@ final class EventEntityTest extends TestCase
         foreach ([
             'campaign', 'ad', 'search_terms', 'landing_page_location',
             'landing_page_path', 'landing_page_query', 'landing_page_title',
-            'acq_search_terms', 'prev_event_ts',
+            'acq_search_terms',
         ] as $name) {
             $this->assertNotEmpty($entity->getColumn($name)->nullable,
                 "$name is copied from a nullable column and must be nullable");

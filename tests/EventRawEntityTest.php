@@ -42,7 +42,7 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(55, $columns);
+        $this->assertCount(56, $columns);
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
@@ -52,7 +52,7 @@ final class EventRawEntityTest extends TestCase
             'engagement_msec', 'scroll_depth', 'element_path', 'consent_state',
             'user_id', 'content_group', 'currency', 'clock_offset_usec',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
-            'referer_host',
+            'referer_host', 'prev_event_ts',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }

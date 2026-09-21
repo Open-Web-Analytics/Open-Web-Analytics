@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Entity;
  * owa_event -- v2's denormalised event table. The one queries hit.
  *
  * Every column of owa_event_raw, unchanged and in the same order, then the
- * seventeen the denormalisation pass derives.
+ * sixteen the denormalisation pass derives.
  *
  * IT EXTENDS EventRaw RATHER THAN RESTATING IT
  * "The same columns in the same order" is a requirement, not a description: the
@@ -20,8 +20,8 @@ namespace OWA\Module\Base\Entity;
  * drift the first time raw gained a column.
  *
  * NULLABILITY FOLLOWS WHAT THE PASS CAN PRODUCE
- * Copies -- landing_page_*, prev_event_ts -- are nullable because raw declares
- * their sources nullable. Under STRICT_ALL_TABLES a NULL into a NOT NULL column
+ * Copies -- the landing_page_* set -- are nullable because raw declares their
+ * sources nullable. Under STRICT_ALL_TABLES a NULL into a NOT NULL column
  * aborts the statement, so one page with no title would fail the whole
  * partition rebuild.
  *
@@ -111,12 +111,6 @@ class Event extends EventRaw {
         $this->setProperty( $this->resolved( 'acq_campaign', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->resolved( 'acq_ad', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'acq_search_terms', OWA_DTD_VARCHAR255 ) );
-
-        // The visitor's previous event, from a window function. NULL on their
-        // first in the window. Serves daysSinceLastVisit and
-        // timeSinceLastVisit, which had no anchor; both sides of the
-        // subtraction are the same server clock.
-        $this->setProperty( $this->column( 'prev_event_ts', OWA_DTD_BIGINT ) );
 
         // When the pass last wrote this partition, in microseconds. Carries the
         // as-of a report envelope reports, and the provenance of a bad rebuild.

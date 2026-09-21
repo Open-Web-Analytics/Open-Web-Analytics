@@ -91,6 +91,23 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'prior_sessions', OWA_DTD_INT ) );
 
         /*
+         * The visitor's previous event, in server time. Carried, not derived:
+         * the tracker keeps last_req for its own session decision, so 1.5.3's
+         * rule applies -- an anchor the client already maintains is sent.
+         *
+         * It was a window function in the pass until that was measured. The
+         * window partitions by visitor where the other partitions by session,
+         * so it cannot share a sort, and it cost 128 of 195 seconds at a
+         * million rows.
+         *
+         * Corrected to server time at ingest with clock_offset_usec, which is
+         * what makes carrying it acceptable -- the objection to the client's
+         * value was provenance, and that column did not exist when the window
+         * was chosen.
+         */
+        $this->setProperty( $this->column( 'prev_event_ts', OWA_DTD_BIGINT ) );
+
+        /*
          * The page. page_location is the evidence; every reading of it is its
          * own column, parsed at ingest. A GROUP BY over a parsing expression
          * cannot use an index, and the expression would have to be written once
