@@ -118,7 +118,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s16">1.6 Freshness and the API</a>
   <a href="#s17">1.7 The UI layer</a>
   <a href="#s18">1.8 Privacy and retention</a>
-  <a href="#s19">1.9 One tracker, two pipelines</a>
+  <a href="#s19">1.9 One pipeline, and v1&rsquo;s data migrated in</a>
   <a href="#s110">1.10 What v2 deliberately does not do</a>
   <div class="navsec">Implementation</div>
   <a href="#s21">2.1 Table layouts</a>
@@ -197,7 +197,7 @@ also writes the visitor store (<a href="#s29">&sect;2.9</a>).</p>
 <tr><td><a href="#s16">&sect;1.6</a> Freshness</td><td>Two tiers; every answer carries an as-of time</td></tr>
 <tr><td><a href="#s17">&sect;1.7</a> The UI layer</td><td>Reports as configuration over a fixed renderer</td></tr>
 <tr><td><a href="#s18">&sect;1.8</a> Privacy and retention</td><td>Erasure as a command, and why it must not share a path with retention</td></tr>
-<tr><td><a href="#s19">&sect;1.9</a> One tracker, two pipelines</td><td>How v1 and v2 coexist from one stream</td></tr>
+<tr><td><a href="#s19">&sect;1.9</a> One pipeline</td><td>v2 collects, v1&rsquo;s history is migrated in, v1 is then removed</td></tr>
 <tr><td><a href="#s110">&sect;1.10</a> What v2 will not do</td><td>The deliberate non-goals</td></tr>
 </tbody></table></div>
 <p>How each piece is built is <a href="#s21">Implementation</a>. What is undecided is
@@ -464,20 +464,26 @@ sweep (<a href="#s217">&sect;2.17</a>). No erasure tooling is specified here.</p
 delete in one place, but denormalisation means an email in a URL query string now sits on every
 event that saw it, so erasure has to scan rather than look up.</p>
 
-<h3 id="s19"><span class="num">1.9</span>One tracker, two pipelines <span class="chip c-dec">Decided</span></h3>
-<p>A single tracker describes each event richly enough that <em>both</em> pipelines can consume it.
-<strong>The server fans one received event out to both</strong> &mdash; v1's handlers write the
-star, v2's write the event table &mdash; and at parity the fan-out to v1 is switched off. Nothing
-about the page changes on that day. Two trackers would have split each site's data by which snippet
-happened to be deployed, so v1's history would step the moment a site upgraded.</p>
-<p><strong>v2 collection is opt-in per website</strong>, by a setting rather than by a tag
-change. The session model is not: it ships with the tracker and reaches every install at upgrade.</p>
-
-<h4><span class="num">1.9.1</span>One session model, adopted by both pipelines</h4>
-<p>v1 and v2 disagree about when a session <em>begins</em>, and one cookie cannot hold two models.
-<strong>The tracker gets one session model, v2's, and v1 adopts it.</strong> One tracker, one
-cookie, one beacon, one stream. The integrity check of <a href="#s222">&sect;2.22</a> can therefore
-be a diff rather than a tolerance.</p>
+<h3 id="s19"><span class="num">1.9</span>One pipeline, and v1&rsquo;s data migrated into it <span class="chip c-dec">Decided</span></h3>
+<p><strong>v2 collects; v1 does not run beside it.</strong> There is no fan-out, no dual write and
+no overlap period. v2&rsquo;s tables are built, v1&rsquo;s history is migrated into them, collection
+switches over, and v1&rsquo;s tables are dropped when nobody wants them any more
+(<a href="#s226">&sect;2.25</a>).</p>
+<p><strong>This is available because v1 is already an event log.</strong>
+<code>owa_request</code> is one row per tracked interaction with foreign keys into ten dimension
+tables, so denormalising it is a join &mdash; the same shape the pass performs, reading a star
+instead of a flat table. The migrator is <a href="#s221">&sect;2.21</a>.</p>
+<p><strong>What running both would have bought was an oracle</strong>, and migration buys a better
+one. Two live pipelines are compared across nondeterministic timing and cost throughput to do it
+(<a href="#nA113">A.1.13</a>). Re-deriving migrated rows and comparing against v1&rsquo;s own
+reports is the same comparison over fixed input, with no production cost
+(<a href="#s222">&sect;2.22</a>).</p>
+<p class="note"><strong>What it does not buy is an oracle for collection.</strong> Every migrated
+row was collected by v1&rsquo;s tracker, so the pass and the reporting layer get tested and the new
+tracker does not &mdash; engagement deltas, the session model, consent and the new event types ship
+against e2e coverage and nothing else. The alternative is to run v2 collection on one site for a
+window purely as a test and discard the data, which is the fan-out as an instrument rather than as
+an architecture.</p>
 
 <h3 id="s110"><span class="num">1.10</span>What v2 deliberately does not do <span class="chip c-dec">Decided</span></h3>
 <div class="scroll"><table>
@@ -1526,9 +1532,8 @@ instant, and already implemented. The single table makes the simpler policy the 
 across two installations took five pull requests, a storage upgrade and most of a day, with
 tracking dropped in the window where the flag and the data disagreed; a total schema change is a
 larger version of the same failure, so v2 should arrive with most of its pieces already running.</p>
-<p>Much of this list is unlocked by one decision: because the server fans a single tracker's events
-out to both pipelines (<a href="#s19">&sect;1.9</a>), <strong>compatibility becomes a server-side
-translation</strong> and the wire format no longer has to satisfy v1. Namespace stripping and
+<p>Much of this list was unlocked by one decision: once the wire format no longer had to satisfy
+v1, <strong>compatibility became a server-side translation</strong>. Namespace stripping and
 cookie consolidation became additive that way.</p>
 
 <h4><span class="num">2.18.1</span>Fully additive</h4>
@@ -1592,14 +1597,14 @@ the most is known.</p>
 <tr><td><strong>4</strong> Interface debt v2 inherits</td><td>Site-access UI; report config as JSON; retention as a scheduled job.</td><td>28&nbsp;Aug. See <a href="#nA110">A.1</a> for the two constraints the report work leaves on v2.</td></tr>
 </tbody></table></div>
 <h4><span class="num">2.19.2</span>Phase 5 &mdash; v2 groundwork</h4>
-<p>First code that is v2-shaped while still landing in a 1.x release. <strong>Item&nbsp;1 gates the two below it</strong>: there is nothing to fan out to, or compare against, until the tables exist. The tracker-side items are independent of it.</p>
+<p>First code that is v2-shaped while still landing in a 1.x release. <strong>Item&nbsp;1 gates the two below it</strong>: there is nothing to migrate into, or compare against, until the tables exist. The tracker-side items are independent of it.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
 <tr><td>1</td><td><strong>The three storage layers</strong>, created by one CLI-mode update (<a href="#s214">&sect;2.14</a>), with the denormalisation pass, visitor store, partition cycle and scheduling model that <a href="#s15">&sect;1.5</a> brought with them.</td><td>Not started. The largest piece of work in this document, and everything below that touches storage waits on it.</td></tr>
 
-<tr><td>2</td><td>Fan-out dispatcher, defaulting to v1-only until switched on.</td><td>Not started</td></tr>
-<tr><td>3</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>).</td><td>Not started</td></tr>
+<tr><td>2</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows, non-destructive and re-runnable. Gated on the acquisition backfill having run.</td><td>Not started. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two</td></tr>
+<tr><td>3</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>), comparing v1&rsquo;s reports against v2&rsquo;s over the migrated rows.</td><td>Not started</td></tr>
 <tr><td>4</td><td><strong>Sub-second time</strong> &mdash; <code>ts</code> at microsecond resolution, stamped once at edge receipt. No longer only an ordering fix: <a href="#s21">&sect;2.1.2</a> makes that resolution the thing that keeps an event id unique, so it now gates the id scheme as well. In v2 and deliberately not in 1.x.</td><td>Decided 3&nbsp;Sep, widened 21&nbsp;Sep. <a href="#nA111">A.1.11</a> for why a 1.x fix would be worse than leaving it</td></tr>
 <tr><td>5</td><td><strong>Engagement deltas and the <code>user_engagement</code> event</strong> &mdash; the per-event accumulator that rides every beacon as <code>engagement_msec</code>, and the hide-time event carrying the residue. <strong>Delivered once, at hide</strong> (<a href="#s12">&sect;1.2.1</a>), not also piggybacked onto the next request &mdash; which removed the second arrival and with it the derived id and counter it would have needed. Fires on any hide at any size; the engaged threshold gates read-time classification, never the send.</td><td>Not started. A finished feature only once <code>owa_event</code> carries <code>engagement_msec</code></td></tr>
 <tr><td>6</td><td><strong>Element path capture</strong>, landing directly in <code>owa_event.element_path</code>.</td><td>Not started. Deliberately blocked on <code>owa_event</code> rather than paying for a throwaway column on a 53-partition <code>owa_click</code>.</td></tr>
@@ -1667,61 +1672,80 @@ on the counts. Every SQL formulation reads the fact table once per step; the sca
 The memory problem that suggested SQL was <code>get_results()</code> materialising the scan, not
 the scan itself.</p>
 
-<h3 id="s221"><span class="num">2.21</span>Early cutover, per feature <span class="chip c-dec">Decided</span></h3>
-<p>Fan-out is per event type, not global. A feature skips the dual-write period entirely when both
-hold:</p>
-<ol>
-<li>v1 has no history worth preserving for it — nothing to strand, no oracle to compare against</li>
-<li>keeping it dual-written would mean <em>renovating v1 storage</em> to carry data only v2 can use</li>
-</ol>
-<p><strong>Domstreams qualify on both.</strong> Everything v2 changes about them is storage-shaped:
-a recording becomes an attachment rather than a parallel fact row, the payload moves outside the
-row, the encoding becomes delta tuples plus gzip (~30× measured). Dual-writing leaves only bad
-options — either the new capture has nowhere to land, or <code>owa_domstream</code> is renovated
-to accept a format v1 will never report on. Heatmaps follow, being built on the same capture.</p>
+<h3 id="s221"><span class="num">2.21</span>Migrating v1 <span class="chip c-dec">Decided</span></h3>
+<p><strong>One job: read v1&rsquo;s star, write v2&rsquo;s denormalised rows.</strong>
+<code>owa_request</code> is 58 columns and one row per tracked interaction, with foreign keys into
+ten dimension tables, so the migration is the join the pass would have done anyway. On the measured
+installs that is 401,675 rows on peteradamsphoto and 640,949 on demo.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>v2 column</th><th>Comes from</th></tr></thead>
+<tbody>
+<tr><td>identity, time, <code>prior_sessions</code>, <code>language</code>, <code>ip_address</code>, <code>os</code></td><td><code>owa_request</code> directly</td></tr>
+<tr><td><code>page_location</code>, <code>page_title</code>, <code>referer_url</code>, <code>host</code>, geo</td><td>the <code>document</code>, <code>referer</code>, <code>host</code> and <code>location_dim</code> joins</td></tr>
+<tr><td><code>page_path</code>, <code>page_query</code></td><td>parsed from the migrated URL, once, by the migrator rather than in SQL</td></tr>
+<tr><td><code>landing_page_*</code></td><td><code>is_entry_page</code> plus the same document join</td></tr>
+<tr><td><code>acq_*</code></td><td><code>owa_visitor.first_session_source/medium/campaign/ad/search_terms</code>, which PR&nbsp;#1114 added</td></tr>
+<tr><td><code>params</code></td><td>the five <code>cv{N}_name</code>/<code>cv{N}_value</code> pairs</td></tr>
+<tr><td><code>is_exit</code>, <code>yyyymmdd</code></td><td>derived over the migrated rows, as the pass derives them</td></tr>
+</tbody></table></div>
+
+<p><strong>What no migration can produce.</strong> <code>engagement_msec</code>,
+<code>scroll_depth</code>, <code>element_*</code>, <code>target_host</code>,
+<code>consent_state</code>, <code>content_group</code>, <code>currency</code>,
+<code>device_brand</code>, <code>device_model</code>, <code>os_version</code>,
+<code>browser_version</code>, <code>clock_offset_usec</code> and <code>raw_ua</code> were never
+collected, so history carries NULL and every metric built on them starts at the cutover. That is
+not a migration defect; it is what it means to add a column.</p>
+
+<p><strong>And one thing it produces in the wrong shape.</strong> v1 stores the attribution
+<em>verdict</em> &mdash; <code>setTrafficAttribution()</code> applies a model in the browser and the
+event carries its result (<a href="#nA113">A.1.13</a>). So migrated rows fill <code>source</code>
+and <code>medium</code> with a decision, while <code>tagged_*</code> stays empty and the evidence
+to re-derive from is gone. Reprocessing a corrected classifier
+(<a href="#s26">&sect;2.6.2</a>) therefore reaches only rows collected after cutover.</p>
+
+<p><strong>Non-destructive and re-runnable.</strong> It writes v2&rsquo;s tables and never touches
+v1&rsquo;s, so it can run as often as it takes to get right, and the comparison in
+<a href="#s222">&sect;2.22</a> happens against a v1 that is still intact. Dropping v1 is a separate
+decision taken later (<a href="#s226">&sect;2.25</a>).</p>
+
+<p class="note"><strong>The acquisition backfill becomes a prerequisite, not a nicety.</strong>
+<code>cmd=backfill-visitor-acquisition</code> stays a command rather than an update &mdash; NULL
+acquisition is a consistent state, and the join it runs is a decision for whoever knows what else
+shares the database. What changes is that <strong>its window closes</strong>: it recovers
+acquisition by reading <code>owa_visitor.first_session_id</code> back through
+<code>owa_session</code> and four dimension tables, all of which step&nbsp;5 drops. Migrate before
+backfilling and the acquisition was recoverable; drop v1 and it is not. So the migrator checks for
+visitors still holding NULL and says so, and the drop refuses quietly until someone has looked.</p>
+
+<p class="note"><strong>Domstream recordings are the exception.</strong> Everything v2 changes
+about them is storage-shaped: a recording becomes an attachment rather than a parallel fact row,
+the payload moves outside the row, and the encoding becomes delta tuples plus gzip, measured at
+~30&times;. Migrating them means re-encoding, so they either go last or stay in
+<code>owa_domstream</code> until it is dropped with the rest.</p>
 
 <h3 id="s222"><span class="num">2.22</span>The parity harness <span class="chip c-dec">Decided</span></h3>
-<p>Both pipelines consume identical events, so <strong>v1 is an oracle only below the session
-boundary.</strong> v2 keeps the event and changes the session, so everything the session model
-touches diverges by design: per-site session stores, sessions created only by page-view events, and
-the store withheld until <code>sendAccepted</code> all move <code>visits</code> &mdash; which is
-the denominator of six of the eight formulas in the tree.</p>
-<p><strong>So this is two instruments, and they must not share a verdict:</strong></p>
+<p><strong>Parity runs over migrated history, not over two live pipelines.</strong> The same rows
+are read twice &mdash; by v1&rsquo;s reports from its own tables, and by v2&rsquo;s from the
+migrated ones &mdash; so the input is fixed, the comparison is deterministic, and nothing is
+double-written in production to make it possible.</p>
+<p><strong>It is still two instruments, and they must not share a verdict.</strong></p>
 <div class="scroll"><table>
 <thead><tr><th>Instrument</th><th>Scope</th><th>Basis</th></tr></thead>
 <tbody>
-<tr><td><strong>Pipeline integrity</strong></td><td>below the session boundary — event-level
-attributes parsed from the same wire data (browser, OS, device, geo, page host/path/title,
-referrer host), plus raw event counts 1:1</td><td><strong>v1 is a true oracle.</strong> Same input,
-same parser, same expected output; a disagreement is a bug. Generated and exhaustive, as originally
-described</td></tr>
-<tr><td><strong>Model characterization</strong></td><td>at or above it — sessions, attribution, and
-everything derived from them</td><td><strong>Model characterization.</strong> Expected values come from
-the new model's definition, not from v1's output. Hand-written and small, because the model
-decisions are few</td></tr>
+<tr><td><strong>Pipeline integrity</strong></td><td>below the session boundary &mdash; event-level attributes carried across the migration unchanged, plus row counts 1:1</td><td><strong>v1 is a true oracle.</strong> Same rows in, same values out; a disagreement is a migration bug. Generated and exhaustive</td></tr>
+<tr><td><strong>Model characterization</strong></td><td>at or above it &mdash; sessions, attribution, and everything derived from them</td><td>Expected values come from the new model&rsquo;s definition, not from v1&rsquo;s output. Hand-written and small, because the model decisions are few</td></tr>
 </tbody></table></div>
-<p><strong>And two exclusion lists, deliberately distinct.</strong> Conflating them is how a real
-regression hides behind an expected one:</p>
-<div class="scroll"><table>
-<thead><tr><th>List</th><th>Treatment</th><th>Contents</th></tr></thead>
-<tbody>
-<tr><td>Intended differences</td><td>compared, expected to diverge</td><td>bounce, visit duration, exit page, goals, the 11 dead <code>*InVisit</code> dimensions</td></tr>
-<tr><td>Early cutover</td><td><em>not compared at all</em> — no v1 side exists</td><td>domstreams, heatmaps</td></tr>
-</tbody></table></div>
-<p>It ships as a command whose output is the artefact the cutover decision is made from. The
-criterion is not one empty list: <strong>integrity empty, and every model change carrying a stated,
-tested expected behaviour.</strong></p>
-
-<h4><span class="num">2.22.1</span>Attribution has a warm-up, so it cannot be cut over cold</h4>
-<p>Attribution is decided in the browser today &mdash; <code>setTrafficAttribution()</code> reads
-the <code>owa_c</code> cookie's <code>attribs</code> stack and the event carries the decided result,
-not the observation. Two consequences: existing history is not a usable touchpoint log, so the
-server-side model cannot be validated by replaying it; and <code>original</code> is a sliding
-60-day window, so a server-side implementation produces nothing trustworthy until it has observed
-60 days of traffic.</p>
-<p><strong>Recording raw touchpoints is therefore an early additive 1.x item</strong>, earlier than
-the switch-over it serves. Started early, the warm-up runs in the background while other phases
-proceed; started at cutover, it is a 60-day hold on the one part of v2 that cannot be hurried.</p>
+<p>v2 keeps the event and changes the session, so everything the session model touches diverges by
+design &mdash; sessions created only by page-view events, the store withheld until
+<code>sendAccepted</code>, the midnight split and the restart on new tags all move
+<code>visits</code>, which is the denominator of most of the formula tree
+(<a href="#s12">&sect;1.2</a>). Those differences are compared and expected, never reconciled.</p>
+<p class="note"><strong>What this cannot test is collection.</strong> Every migrated row was
+collected by v1&rsquo;s tracker, so the pass and the reporting layer are under test and the new
+tracker is not (<a href="#s19">&sect;1.9</a>). The harness proves the migration and the
+derivation; e2e coverage is what stands behind the client.</p>
 
 <h3 id="s223"><span class="num">2.23</span>The v2 reporting UI is a separate path <span class="chip c-dec">Decided</span></h3>
 <p><strong>v2 reporting is served under its own path &mdash; <code>/v2</code> &mdash; and the
@@ -1738,7 +1762,7 @@ one it wants.</p>
 <tr><td>Rollback</td><td>A URL. There is no flip to undo</td></tr>
 </tbody></table></div>
 <p>It costs nothing on the client: <a href="#s19">&sect;1.9</a> already has one tracker feeding
-both pipelines, and <a href="#s17">&sect;1.7</a> already has both UIs running side by side on one
+one pipeline, and <a href="#s17">&sect;1.7</a> has both UIs running side by side on one
 session so they can be compared.</p>
 
 <h4><span class="num">2.23.1</span>The registry needs no new channel</h4>
@@ -1884,19 +1908,20 @@ and because the bundle lives inside every per-site file, an OWA upgrade republis
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 <ol>
-<li>Ship the additive work in 1.x releases, each standing on its own</li>
-<li>v2 creates its tables alongside; the single tracker's events fan out to both pipelines,
-except for features on the early-cutover list</li>
-<li>Run both for an overlap period, comparing the two UIs over <em>the same events</em> — which is
-what makes it a test rather than an impression</li>
-<li>When satisfied, switch off the fan-out to v1 and keep v1 reporting for history</li>
-<li>When the history is no longer wanted, a command drops the 20 parallel tables, leaving the
-shared admin tables untouched</li>
+<li>Build v2&rsquo;s tables and the pass. They sit alongside v1 and nothing reads them yet.</li>
+<li><strong>Migrate</strong> (<a href="#s221">&sect;2.21</a>). Non-destructive and re-runnable, against a v1 that stays intact.</li>
+<li><strong>Compare</strong> (<a href="#s222">&sect;2.22</a>) over the migrated rows, until the differences are all ones the model explains.</li>
+<li><strong>Switch collection to v2.</strong> One tracker, one pipeline; v1 stops receiving. v1&rsquo;s reports stay up, reading history.</li>
+<li><strong>Drop v1</strong> when nobody wants its reports any more &mdash; a command that removes the 20 parallel tables and leaves the shared admin tables alone.</li>
 </ol>
-<p><strong>No step is irreversible until the last one</strong>, and the last one is the
-administrator's decision rather than an upgrade's side effect.</p>
+<p><strong>Nothing is irreversible until step&nbsp;5</strong>, and step&nbsp;5 is the
+administrator&rsquo;s decision rather than an upgrade&rsquo;s side effect. Steps&nbsp;2 and 3 can
+repeat as often as needed, because the migration only ever writes v2&rsquo;s side.</p>
+<p class="note">Step&nbsp;4 is the one step with no rehearsal: it is a schema this installation has
+never run before, which is the shape that produced the Update&nbsp;023 and 026 failures. The
+mitigation is that steps&nbsp;2 and 3 have already exercised the tables and the pass against that
+installation&rsquo;s own data before any collection depends on them.</p>
 
-<!-- ============ PART IV ============ -->
 <h2><span class="secn">III</span>Open issues</h2>
 <h3 id="s31"><span class="num">3.1</span>Everything still undecided</h3>
 <p>Anything with an answer lives in
@@ -2094,7 +2119,7 @@ is parallel &mdash; v1 keeps its own facts and dimensions, and the shared admin 
     recomputable, correctable, and independent of whether a cookie survived. That is the reason to
     do it early, and it stands whether or not the session step is ever quantified.</p>
   </div>
-<h4 id="nA114"><span class="num">A.1.14</span>The measured cost of running both pipelines</h4>
+<h4 id="nA114"><span class="num">A.1.14</span>What running both pipelines would have cost</h4>
 <div class="scroll"><table>
 <thead><tr><th>Set</th><th class="n">Tables</th><th class="n">Size</th><th>Treatment</th></tr></thead>
 <tbody>
