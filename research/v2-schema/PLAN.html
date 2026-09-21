@@ -553,7 +553,7 @@ observed and the surface realtime queries.</p>
 <tr><td class="n">15</td><td><code>page_title</code></td><td>VARCHAR(512)</td><td>varies for one URL over time, so it is per event</td></tr>
 <tr><td class="n">16</td><td><code>content_group</code></td><td>VARCHAR(255) NULL</td><td>author-assigned grouping of pages, set from the snippet. A release-known name, so a column rather than a param</td></tr>
 <tr><td class="n">17</td><td><code>referer_url</code></td><td>VARCHAR(1024)</td><td>the previous page. Also the attribution fallback when no tags are present</td></tr>
-<tr><td class="n">18</td><td><code>tagged_source</code></td><td>VARCHAR(255) NULL</td><td>as collected from the URL. NULL when the visit carried no tags. Ingest transcribes, it does not classify (<a href="#s26">&sect;2.6.2</a>)</td></tr>
+<tr><td class="n">18</td><td><code>tagged_source</code></td><td>VARCHAR(255) NULL</td><td>as collected from the landing URL. Populated on the session&rsquo;s landing event only, and NULL there too when the URL carried no tags. Ingest transcribes, it does not classify (<a href="#s26">&sect;2.6.2</a>)</td></tr>
 <tr><td class="n">19</td><td><code>tagged_medium</code></td><td>VARCHAR(64) NULL</td><td>as collected</td></tr>
 <tr><td class="n">20</td><td><code>tagged_campaign</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
 <tr><td class="n">21</td><td><code>tagged_ad</code></td><td>VARCHAR(255) NULL</td><td>as collected</td></tr>
@@ -593,22 +593,27 @@ observed and the surface realtime queries.</p>
 </tbody></table></div>
 
 <p><strong>Raw holds the evidence; the denormalised table holds the reading.</strong> The
-<code>tagged_*</code> columns are what the URL carried, written as collected, with
+<code>tagged_*</code> columns are what the landing URL carried, written as collected, with
 <code>referer_url</code> beside them. The pass turns the pair into <code>source</code> and
-<code>medium</code> &mdash; the tag if there was one, otherwise the referrer classified. Ingest can
-write the evidence on every event rather than only the session&rsquo;s first, because the tracker
-carries it on every beacon: <code>Tracker.js</code> sets each campaign key and
-<code>session_referer</code> as <em>global event properties</em>, which are applied to every event
-it sends.</p>
+<code>medium</code> &mdash; the tag if there was one, otherwise the referrer classified.</p>
+
+<p><strong>Only the landing event carries tags.</strong> The landing URL rides the landing beacon
+and no other (<a href="#s210">&sect;2.10</a>), so ingest parses the tags out of that event&rsquo;s
+<code>page_location</code> and every later raw row of the session holds NULL in
+<code>tagged_*</code>. The pass reads the session&rsquo;s first event anyway, for the landing page,
+so carrying the reading across the session adds no read.
+<code>session_referer</code> is not in that position: it is session-scoped tracker state and does
+ride every beacon, so the referring host is on every raw row.</p>
 
 <p><strong>The verdict is never written where it cannot be corrected.</strong> Not in the cookie
 &mdash; that is the objection <a href="#s15">&sect;1.5.3</a> raises against carrying
 <code>attribs</code> &mdash; and not in raw either. It goes in the derived layer, which exists to
 be rebuilt, so a fixed classifier re-reads history instead of leaving it wrong.</p>
 
-<p class="note">The cost falls on realtime, narrowly: a live query over raw shows tagged campaigns
-and the referring host, but not the classified channel or the landing page &mdash; both are the
-pass&rsquo;s (<a href="#s15">&sect;1.5</a>).</p>
+<p class="note">The cost falls on realtime, narrowly: a live query over raw shows the referring
+host on any row and the tagged campaign on the landing row, but not the classified channel, and not
+the landing page for a row later in the session &mdash; both are the pass&rsquo;s
+(<a href="#s15">&sect;1.5</a>).</p>
 
 <p class="note"><strong>No <code>landing_url</code> column in raw.</strong> It would be
 populated on the session's first event and NULL on every other — and on that one row it would duplicate <code>page_location</code>,
@@ -948,7 +953,7 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>daysSinceFirstVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>visitor_fsts</code></td><td>both anchors ride every event, so no lookup</td></tr>
 <tr><td></td><td><code>daysSinceLastVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>prev_event_ts</code></td><td>the anchor GA carries as <code>event_previous_timestamp</code></td></tr>
 <tr><td></td><td><code>userEmail</code></td><td>&mdash;</td><td>&mdash;</td><td>PII on a fact row</td></tr>
-<tr><td></td><td><code>userName</code></td><td>&mdash;</td><td>&mdash;</td><td>the <code>(not set)</code> column A.1.16 measures</td></tr>
+<tr><td></td><td><code>userName</code></td><td>&mdash;</td><td>&mdash;</td><td>the <code>(not set)</code> column A.1.16 measured</td></tr>
 <tr><td>Session</td><td><code>sessionId</code></td><td>column</td><td><code>session_id</code></td><td>counted as the pair with <code>visitor_id</code> (1.2)</td></tr>
 <tr><td></td><td><code>timeSinceLastVisit</code></td><td>test</td><td><code>ts</code> &minus; <code>prev_event_ts</code></td><td>same anchor, finer unit</td></tr>
 <tr><td></td><td><code>the 11 <code>*InVisit</code> dimensions</code></td><td>&mdash;</td><td>&mdash;</td><td>zero references anywhere outside their own registration</td></tr>
@@ -1079,10 +1084,10 @@ rather than as &ldquo;a transaction&rdquo;: on MySQL it is a transaction, and on
 single multi-row <code>INSERT</code> lands as one part, which satisfies it equally.</p>
 
 <h4><span class="num">2.6.2</span>The flags, and why acquisition keys off one</h4>
-<p><strong>Ingest records the tagged values and stops there.</strong> Whatever the URL carried
-&mdash; source, medium, campaign, ad, term &mdash; is written onto the event as
+<p><strong>Ingest records the tagged values and stops there.</strong> Whatever the landing URL
+carried &mdash; source, medium, campaign, ad, term &mdash; is written onto the landing event as
 <code>tagged_*</code>, beside the <code>referer_url</code> it arrived with. That is transcription,
-which is why it sits here next to the geo and device lookups.</p>
+and it sits here next to the geo and device lookups.</p>
 <p><strong>The reading is the pass&rsquo;s, and the model is the report&rsquo;s.</strong> Whether
 a referring host counts as organic search, a social network or a plain referral is a table that
 grows and gets corrected, so the pass resolves it into <code>source</code> and <code>medium</code>
@@ -1129,8 +1134,9 @@ rows, or an event from years ago.</p>
 <tr><th>scope</th><th>value</th><th>how it gets onto the denormalised row</th></tr>
 <tr><td>event</td><td>page url, event params, collected <code>tagged_*</code> / <code>gclid</code></td><td><strong>observed</strong> &mdash; on the beacon, already in raw</td></tr>
 <tr><td>event</td><td>geo, device, browser, OS</td><td><strong>resolved at INGEST.</strong> Deterministic lookups with no model and no cross-event context, and realtime reads raw and reports on them</td></tr>
-<tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code>, <code>tagged_*</code></td><td><strong>observed</strong> &mdash; OWA carries session-scoped values on every beacon</td></tr>
-<tr><td>session</td><td><strong>source, medium, campaign</strong></td><td><strong>collected at INGEST</strong>, on every event of the session &mdash; the tagged values only, never a classification. Its inputs &mdash; <code>session_referer</code> and the collected tags &mdash; ride every beacon, so each event resolves the same answer independently. The values are sticky because the inputs are; the pass does not touch them</td></tr>
+<tr><td>session</td><td><code>session_id</code>, <code>session_referer</code>, <code>sts</code></td><td><strong>observed</strong> &mdash; OWA carries these session-scoped values on every beacon</td></tr>
+<tr><td>session</td><td><code>tagged_*</code></td><td><strong>observed on the landing event only.</strong> The landing URL rides one beacon (<a href="#s210">&sect;2.10</a>), so later raw rows hold NULL</td></tr>
+<tr><td>session</td><td><strong>source, medium, campaign</strong></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read the landing page needs. A mid-session raw row has neither the tags nor a classifier, so ingest cannot resolve this</td></tr>
 <tr><td>session</td><td>landing page / <code>landing_page_location</code></td><td><strong>stamped by the PASS</strong> onto every row, from the session&rsquo;s first event &mdash; the same read session finalisation needs, so one mechanism serves both</td></tr>
 <tr><td>session, <em>terminal</em></td><td>engagement time, exit page, bounce, duration</td><td><strong>computed by the PASS</strong>, from the session&rsquo;s own rows, once it is closed</td></tr>
 <tr><td>visitor</td><td>acquisition source/medium/campaign, first-visit date</td><td><strong>collected at INGEST</strong> like any other event's, on the <code>first_visit</code> event. The pass copies it onto later rows, reading the visitor store because <strong>that event is usually not in this partition</strong></td></tr>
@@ -1316,7 +1322,9 @@ pruned, with no evidence left to re-read. Keeping the URL means the evidence out
 parser fix can be reapplied to years of history &mdash; the same argument that justified the
 visitor table, one layer down.</p>
 <p class="note">The cost falls on realtime, and it is narrow: a raw row from later in the session
-carries no landing URL, so a live query cannot show the <em>landing page</em> for it. The tagged values and <code>session_referer</code> ride every beacon, so a tagged campaign and the referring host read live; the classified channel does not.</p>
+carries neither the landing URL nor the tags parsed out of it, so a live query cannot show the
+<em>landing page</em> or the campaign for it. <code>session_referer</code> does ride every beacon,
+so the referring host reads live; the classified channel does not.</p>
 
 <h3 id="s211"><span class="num">2.11</span>Absence is stored as NULL <span class="chip c-dec">Decided</span></h3>
 
@@ -2100,7 +2108,9 @@ combinations on its own. It was written to validate authored reports; it turns o
 GUID, unique but unordered &mdash; so the 1.x fact table has no sub-second ordering at all. Fixing it
 in 1.x would be worse than leaving it: existing rows stay 0/1, so old and new rows would order
 differently inside one report, and a funnel spanning the cutover would be wrong in a way nobody
-could see. </p>
+could see. <code>VisualizationFunnel::walk()</code> resolves same-second events as a set rather than
+comparing them, and the two tests pinning that assumption (<code>FunnelMathTest</code>,
+<code>GoalFunnelOrderTest</code>) should be <em>retired</em> when v2 lands, not re-baselined.</p>
 
 <h4 id="nA112"><span class="num">A.1.12</span>What the shape is worth, measured</h4>
 <div class="scroll"><table>
@@ -2235,12 +2245,16 @@ parser is the prerequisite for a <em>user-authored</em> metric builder, and a pl
 grammar would not cover today's set, since <code>round(actions / visits, 1)</code> needs function
 application. Separately: the <code>@</code> means a malformed formula falls through to
 <code>0</code>, so a broken metric reads as a real zero.</p>
-<h4 id="nA116"><span class="num">A.1.16</span>What the <code>(not set)</code> sentinel costs in 1.x</h4>
+<h4 id="nA116"><span class="num">A.1.16</span>What the <code>(not set)</code> sentinel cost 1.x</h4>
 <p><span class="chip c-meas">Measured</span> <strong>16</strong> tracking properties in
-<code>modules/Base/Module.php</code> declare <code>'default_value' =&gt; '(not set)'</code>. Because
-those properties are <code>required</code>, the string is written to the fact row on every event
-that does not carry a real value &mdash; <code>user_name</code> among them, so on a default install
-every row carries the literal text.</p>
+<code>modules/Base/Module.php</code> declared <code>'default_value' =&gt; '(not set)'</code>. Because
+those properties were <code>required</code>, the string was written to the fact row on every event
+that did not carry a real value &mdash; <code>user_name</code> among them, so on a default install
+every row carried the literal text.</p>
+<p><strong>Fixed in 1.14.0</strong> (<code>f84f0a51</code>, Update&nbsp;031): none of the 16 declare
+a sentinel default now, absence is stored as NULL, and <code>(not set)</code> is a label the
+formatter applies at render time. v2 inherits the decision rather than making it
+(<a href="#s211">&sect;2.11</a>).</p>
 <h4 id="nA117"><span class="num">A.1.17</span>What shipping both schemas costs a fresh install</h4>
 <p><span class="chip c-meas">Measured</span> A fresh install creates both shapes: 19 empty tables
 cost <strong>27.0 MB</strong>, nearly all per-partition tablespace overhead on 15 partitioned fact
@@ -2337,7 +2351,7 @@ is exactly the distinction between the per-visitor record and the rows it has al
 <p>The tempting shortcut is to let each computed dimension carry its own SQL. That works until the
 reporting store is not MySQL &mdash; and <a href="#s21">&sect;2.1</a> deliberately holds that door
 open behind a second DSN. Then a store move rewrites every derived dimension by hand.</p>
-<p>The dialect layer does not cover this today. The dialect in <code>Core/Db/Mysql.php</code> abstracts DDL and
+<p>The dialect layer does not cover this today. <code>MysqlDialect</code> abstracts DDL and
 introspection &mdash; partitioning, keys, indexes, session <code>sql_mode</code> &mdash; and has no
 expression surface, nor an interface a second implementation could satisfy.</p>
 <p>Declaring a shape is cheap rather than a mini-language only because the column-admission rule
@@ -2388,11 +2402,11 @@ that they mean the same thing, and a renderer that still draws them apart contra
 things for v2 follow: <code>NOT NULL DEFAULT 0</code> fixes new writes and nothing else, so a
 schema that has ever permitted the third value needs a migration to close it; and any renderer
 that groups by a <em>labelled</em> value must fold labels, not rows.</p>
-<h4 id="nA127"><span class="num">A.1.27</span>Why <code>owa_exit</code> keeps its alias</h4>
-<p>The entity was renamed <code>ExitPage</code>, and the <code>owa_exit</code> alias still
-resolves &mdash; <code>owa_compat_aliases.php</code> maps it to
-<code>OWA\Module\Base\Entity\ExitPage</code>. Removal is a later phase and is a real
-backward-compat break when it comes, which is why it is not folded into the rename.</p>
+<h4 id="nA127"><span class="num">A.1.27</span>Why owa_exit went on the RETIRED list</h4>
+<p>The name moved to the legacy class-name test's RETIRED
+list, which asserts it is gone rather than merely dropping it &mdash; a real backward-compat break,
+taken deliberately. The <code>exit</code> table itself is left in place: dropping it is a
+destructive migration and a separate decision from removing dead code.</p>
 <h4 id="nA128"><span class="num">A.1.28</span>Measured: what each rollup key column costs</h4>
 <p>peteradamsphoto, August 2026 &mdash; <strong>5,455 sessions over 31 days</strong>. Each row adds
 the named columns to the <code>GROUP BY</code> that builds the rollup, so the row count is the
