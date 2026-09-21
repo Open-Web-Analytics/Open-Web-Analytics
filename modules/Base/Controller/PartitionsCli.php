@@ -8,9 +8,8 @@ namespace OWA\Module\Base\Controller;
 /**
  * Shared behaviour for the partition commands.
  *
- * The fact tables are the partitioned ones, and they come from the module's
- * entity registry rather than a list here, so the set stays correct as entities
- * are added.
+ * The partitioned tables come from the module's entity registry rather than a
+ * list here, so the set stays correct as entities are added.
  */
 abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
@@ -22,7 +21,16 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The fact tables, by name.
+     * The partitioned tables, by name.
+     *
+     * Selected by whether the entity DECLARES a partition column, not by
+     * whether it extends Entity\FactTable. Every fact table calls
+     * setPartitionColumn('yyyymmdd') in that base constructor, so the set is
+     * unchanged for them -- but v2's owa_event_raw is partitioned on the same
+     * scheme while deliberately NOT extending FactTable, whose constructor
+     * hard-codes the star's ten dimension foreign keys. Asking about the
+     * property that actually matters lets it join the set instead of needing a
+     * second copy of every partition command.
      *
      * @param string|null $only  restrict to one table
      * @return string[]
@@ -37,7 +45,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
             $entity = \OWA\Core\CoreAPI::entityFactory( 'base.' . $name );
 
-            if ( ! $entity instanceof \OWA\Core\Entity\FactTable ) {
+            if ( ! method_exists( $entity, 'getPartitionColumn' )
+                 || ! $entity->getPartitionColumn() ) {
 
                 continue;
             }
@@ -55,7 +64,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         if ( $only && ! $tables ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '"%s" is not a fact table. Partitioning applies to: %s.',
+                '"%s" is not a partitioned table. Partitioning applies to: %s.',
                 $only, implode( ', ', $this->factTables() )
             ) );
         }

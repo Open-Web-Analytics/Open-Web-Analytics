@@ -785,9 +785,22 @@ class Entity {
 
         foreach ( array(
             'OWA_DTD_VARCHAR10',
+            'OWA_DTD_VARCHAR16',
+            'OWA_DTD_VARCHAR24',
+            'OWA_DTD_VARCHAR32',
+            'OWA_DTD_VARCHAR45',
+            'OWA_DTD_VARCHAR64',
+            'OWA_DTD_VARCHAR128',
             'OWA_DTD_VARCHAR255',
+            'OWA_DTD_VARCHAR512',
+            'OWA_DTD_VARCHAR1024',
+            'OWA_DTD_CHAR2',
+            'OWA_DTD_CHAR3',
             'OWA_DTD_TEXT',
             'OWA_DTD_BLOB',
+            // A text type with validation on both MySQL and MariaDB, so an
+            // unset value is written the same way as any other text column.
+            'OWA_DTD_JSON',
         ) as $constant ) {
 
             if ( defined( $constant ) ) {
@@ -1356,6 +1369,40 @@ class Entity {
     function setPartitionColumn($column) {
         
         $this->_tableProperties['partition_column'] = $column;
+    }
+
+    /**
+     * Declare a multi-column index on this entity's table.
+     *
+     * DbColumn::setIndex() covers the single-column case and cannot express
+     * this one: an index over (site_id, yyyymmdd) is one object belonging to the
+     * table, not a property of either column. Two single-column indexes are not
+     * a substitute -- MySQL uses one of them and then filters, where the
+     * composite seeks straight to the range.
+     *
+     * The name is explicit rather than generated because dropping an index
+     * needs it: Db::dropIndex() takes the INDEX name, not a column list, so a
+     * generated name would have to be regenerated identically by every update
+     * that ever removes one.
+     *
+     * @param string $name    index name, unique within the table
+     * @param array  $columns column names, in key order -- order is the index
+     */
+    function addCompositeIndex( $name, array $columns ) {
+        
+        $this->_tableProperties['composite_indexes'][ $name ] = $columns;
+    }
+    
+    /**
+     * The multi-column indexes declared on this entity, name => columns.
+     *
+     * @return array
+     */
+    function getCompositeIndexes() {
+        
+        return isset( $this->_tableProperties['composite_indexes'] )
+            ? $this->_tableProperties['composite_indexes']
+            : array();
     }
     
     /**

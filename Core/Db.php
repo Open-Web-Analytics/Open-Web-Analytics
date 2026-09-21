@@ -3336,6 +3336,18 @@ class Db extends \OWA\Core\Base {
 
         }
 
+        // Multi-column indexes are declared on the ENTITY, not on a column --
+        // see Entity::addCompositeIndex(). Named, so that an update removing
+        // one has something to pass to dropIndex().
+        if ( method_exists( $entity, 'getCompositeIndexes' ) ) {
+
+            foreach ( $entity->getCompositeIndexes() as $index_name => $index_columns ) {
+
+                $indexes[] = sprintf(
+                    'INDEX %s (%s)', $index_name, implode( ', ', $index_columns ) );
+            }
+        }
+
         if ( $indexes ) {
 
             $columns .= ', ' . implode( ', ', $indexes );

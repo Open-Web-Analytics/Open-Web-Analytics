@@ -43,6 +43,32 @@ if ( ! defined( 'OWA_DTD_PRIMARY_KEY' ) ) { define('OWA_DTD_PRIMARY_KEY', 'PRIMA
 if ( ! defined( 'OWA_DTD_VARCHAR10' ) ) { define('OWA_DTD_VARCHAR10', 'VARCHAR(10)'); }
 if ( ! defined( 'OWA_DTD_VARCHAR255' ) ) { define('OWA_DTD_VARCHAR255', 'VARCHAR(255)'); }
 if ( ! defined( 'OWA_DTD_VARCHAR' ) ) { define('OWA_DTD_VARCHAR', 'VARCHAR(%s)'); }
+
+/*
+ * Widths v2's event tables declare. Concrete constants rather than
+ * OWA_DTD_VARCHAR, which is a sprintf template and never a type a column
+ * carries -- see Entity::textColumnTypes(). Each one has to be named in three
+ * places to be fully wired: here, Entity::textColumnTypes() so an unset value
+ * is written the way a text column is, and DbColumn::maxLength() so an
+ * over-long value is trimmed to fit rather than silently losing its tail.
+ */
+if ( ! defined( 'OWA_DTD_VARCHAR16' ) ) { define('OWA_DTD_VARCHAR16', 'VARCHAR(16)'); }
+if ( ! defined( 'OWA_DTD_VARCHAR24' ) ) { define('OWA_DTD_VARCHAR24', 'VARCHAR(24)'); }
+if ( ! defined( 'OWA_DTD_VARCHAR32' ) ) { define('OWA_DTD_VARCHAR32', 'VARCHAR(32)'); }
+if ( ! defined( 'OWA_DTD_VARCHAR45' ) ) { define('OWA_DTD_VARCHAR45', 'VARCHAR(45)'); }
+if ( ! defined( 'OWA_DTD_VARCHAR64' ) ) { define('OWA_DTD_VARCHAR64', 'VARCHAR(64)'); }
+if ( ! defined( 'OWA_DTD_VARCHAR128' ) ) { define('OWA_DTD_VARCHAR128', 'VARCHAR(128)'); }
+if ( ! defined( 'OWA_DTD_VARCHAR512' ) ) { define('OWA_DTD_VARCHAR512', 'VARCHAR(512)'); }
+if ( ! defined( 'OWA_DTD_VARCHAR1024' ) ) { define('OWA_DTD_VARCHAR1024', 'VARCHAR(1024)'); }
+if ( ! defined( 'OWA_DTD_CHAR2' ) ) { define('OWA_DTD_CHAR2', 'CHAR(2)'); }
+if ( ! defined( 'OWA_DTD_CHAR3' ) ) { define('OWA_DTD_CHAR3', 'CHAR(3)'); }
+
+/*
+ * MySQL 5.7+ and MariaDB 10.2+ both have it; on either it is a text type with
+ * validation, so a dialect without JSON can define this as its own text type
+ * and nothing above here changes.
+ */
+if ( ! defined( 'OWA_DTD_JSON' ) ) { define('OWA_DTD_JSON', 'JSON'); }
 if ( ! defined( 'OWA_DTD_TEXT' ) ) { define('OWA_DTD_TEXT', 'MEDIUMTEXT'); }
 if ( ! defined( 'OWA_DTD_BOOLEAN' ) ) { define('OWA_DTD_BOOLEAN', 'TINYINT(1)'); }
 if ( ! defined( 'OWA_DTD_TIMESTAMP' ) ) { define('OWA_DTD_TIMESTAMP', 'TIMESTAMP'); }
@@ -50,6 +76,7 @@ if ( ! defined( 'OWA_DTD_BLOB' ) ) { define('OWA_DTD_BLOB', 'BLOB'); }
 if ( ! defined( 'OWA_DTD_INDEX' ) ) { define('OWA_DTD_INDEX', 'KEY'); }
 if ( ! defined( 'OWA_DTD_AUTO_INCREMENT' ) ) { define('OWA_DTD_AUTO_INCREMENT', 'AUTO_INCREMENT'); }
 if ( ! defined( 'OWA_DTD_NOT_NULL' ) ) { define('OWA_DTD_NOT_NULL', 'NOT NULL'); }
+if ( ! defined( 'OWA_DTD_DEFAULT' ) ) { define('OWA_DTD_DEFAULT', 'DEFAULT %s'); }
 if ( ! defined( 'OWA_DTD_UNIQUE' ) ) { define('OWA_DTD_UNIQUE', 'PRIMARY KEY(%s)'); }
 if ( ! defined( 'OWA_SQL_ADD_COLUMN' ) ) { define('OWA_SQL_ADD_COLUMN', 'ALTER TABLE %s ADD %s %s'); }
 if ( ! defined( 'OWA_SQL_DROP_COLUMN' ) ) { define('OWA_SQL_DROP_COLUMN', 'ALTER TABLE %s DROP %s'); }

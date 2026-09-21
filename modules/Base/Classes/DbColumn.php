@@ -317,7 +317,22 @@ class DbColumn {
 
         $lengths = array();
 
-        foreach ( array( 'OWA_DTD_VARCHAR255' => 255, 'OWA_DTD_VARCHAR10' => 10 ) as $constant => $length ) {
+        $declared = array(
+            'OWA_DTD_VARCHAR10'   => 10,
+            'OWA_DTD_VARCHAR16'   => 16,
+            'OWA_DTD_VARCHAR24'   => 24,
+            'OWA_DTD_VARCHAR32'   => 32,
+            'OWA_DTD_VARCHAR45'   => 45,
+            'OWA_DTD_VARCHAR64'   => 64,
+            'OWA_DTD_VARCHAR128'  => 128,
+            'OWA_DTD_VARCHAR255'  => 255,
+            'OWA_DTD_VARCHAR512'  => 512,
+            'OWA_DTD_VARCHAR1024' => 1024,
+            'OWA_DTD_CHAR2'       => 2,
+            'OWA_DTD_CHAR3'       => 3,
+        );
+
+        foreach ( $declared as $constant => $length ) {
 
             if ( defined( $constant ) ) {
 
@@ -364,6 +379,30 @@ class DbColumn {
         // Check for auto Not null
         if ($this->get('is_not_null') == true):
             $definition .= ' '.OWA_DTD_NOT_NULL;
+        endif;
+
+        /*
+         * A declared column default.
+         *
+         * NUMERIC ONLY, on purpose. A string default would have to be quoted
+         * and escaped the way the dialect quotes literals, and DbColumn has no
+         * connection to ask -- so it would either hard-code MySQL's quoting
+         * here or produce a broken statement somewhere else. Nothing declares a
+         * string default; when something needs to, the escaping belongs in the
+         * dialect and this should call into it rather than guessing.
+         *
+         * What it is FOR is `NOT NULL DEFAULT 0` on a boolean. A boolean column
+         * that permits NULL holds three values, and each one groups separately
+         * -- which cost 1.x a pie chart drawing two slices with the same label.
+         * NOT NULL alone is not enough: with no default, an INSERT that omits
+         * the column is refused under a strict sql_mode and writes an implicit
+         * 0 under a permissive one, so the guarantee depends on a server
+         * setting. The default is what makes it a property of the schema.
+         */
+        $default = $this->get('default_value');
+
+        if ( $default !== null && ( is_int( $default ) || is_float( $default ) ) ):
+            $definition .= ' '.sprintf( OWA_DTD_DEFAULT, $default );
         endif;
 
         // Check for unique
