@@ -150,6 +150,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
         $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli',             'Controller/CubeRebuildCli.php' );
+        $this->registerAction( 'base.cubeRotateCli',                 'OWA\\Module\\Base\\Controller\\CubeRotateCli',              'Controller/CubeRotateCli.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
         $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
         $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
@@ -284,6 +285,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
         $this->registerCliCommand('cube-rebuild', 'base.cubeRebuildCli');
+        $this->registerCliCommand('cube-rotate', 'base.cubeRotateCli');
     }
 
     /**

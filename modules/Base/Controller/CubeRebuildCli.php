@@ -194,13 +194,19 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         $today = (int) date( 'Ymd' );
 
+        /*
+         * Compared against null, not for truthiness. getParam() answers null
+         * for a parameter that was not given, and `days=0` is a string that is
+         * FALSY -- so a truthiness test reads "0" as "not supplied" and quietly
+         * runs the default window instead of refusing a nonsense one.
+         */
         $from = $this->getParam( 'from' );
         $to   = $this->getParam( 'to' );
 
-        if ( $from || $to ) {
+        if ( $from !== null || $to !== null ) {
 
-            $from = $from ? $this->asDate( $from ) : $today;
-            $to   = $to ? $this->asDate( $to ) : $today;
+            $from = $from !== null ? $this->asDate( $from ) : $today;
+            $to   = $to !== null ? $this->asDate( $to ) : $today;
 
             return ( $from && $to && $from <= $to )
                 ? array( 'from' => $from, 'to' => $to ) : null;
@@ -208,7 +214,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         $days = $this->getParam( 'days' );
 
-        if ( $days ) {
+        if ( $days !== null ) {
 
             if ( ! ctype_digit( (string) $days ) || (int) $days < 1 ) {
 
@@ -221,7 +227,29 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        return array( 'from' => $today, 'to' => $today );
+        /*
+         * YESTERDAY AND TODAY, not today. A session whose last event is in the
+         * previous partition and which closed after that partition's final
+         * build has is_exit = 0 -- correctly, it was still open at the time --
+         * and nothing would ever revisit it. Its exit page would be missing for
+         * good.
+         *
+         * The read already looks back a day for session CONTEXT; this is the
+         * other end, the terminal values settling.
+         *
+         * It is close to free because a range resolves to PARTITIONS: mid-month
+         * under monthly granularity both dates land in one, and the second
+         * partition appears exactly when there is a boundary to settle. Under
+         * the daily granularity 2.8 wants, it is two every day, which is the
+         * case this exists for.
+         *
+         * One day rather than one idle timeout because a day is the smallest
+         * unit a partition is cut on, and session_length is half an hour.
+         */
+        return array(
+            'from' => (int) date( 'Ymd', strtotime( '-1 day' ) ),
+            'to'   => $today,
+        );
     }
 
     /**

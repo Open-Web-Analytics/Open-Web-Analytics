@@ -1201,6 +1201,12 @@ namespace OWA\Module\Base\Classes;
                 // Fewest partitions a table may be limited to, whatever the
                 // budget arithmetic says.
                 'partition_min_limit'                => 24,
+                // How long a day stays in the cube's daily front tier before
+                // its month merges back. This IS the late-arrival window: past
+                // it, an event for that day is in raw and not in the cube
+                // until someone rebuilds that month. 3.1 has the number open
+                // pending a measurement of client-side lateness.
+                'cube_rebuild_window_days'           => 7,
                 // Largest run of calendar years that may be merged into a single
                 // partition. A cap: without it, an unreachable budget would drive
                 // everything into one partition, which fits no better and means
