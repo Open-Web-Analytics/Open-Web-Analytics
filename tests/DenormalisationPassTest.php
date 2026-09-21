@@ -29,6 +29,7 @@ final class DenormalisationPassTest extends TestCase
     const VISITOR_REFERRED = 7771000000000002;
     const VISITOR_DIRECT  = 7771000000000003;
     const VISITOR_OPEN    = 7771000000000004;
+    const VISITOR_LONG_REF = 7771000000000005;
 
     /** @var array id => row, as seeded */
     private $seeded = [];
@@ -132,6 +133,15 @@ final class DenormalisationPassTest extends TestCase
             'page_title'    => 'Direct',
         ]);
 
+        // A referrer that parses to a host far wider than `source` holds. No
+        // scheme and no path, so the whole 900-character string is the host.
+        $this->seed('page_view', self::VISITOR_LONG_REF, 8881000000000005, $t, [
+            'page_location' => 'https://example.test/long-referrer',
+            'page_path'     => '/long-referrer',
+            'page_title'    => 'Long referrer',
+            'referer_url'   => str_repeat('a', 900),
+        ]);
+
         // Still inside the idle timeout, so its last event is not an exit yet.
         $this->seed('page_view', self::VISITOR_OPEN, 8881000000000004, $this->t_open, [
             'page_location' => 'https://example.test/open',
@@ -226,7 +236,7 @@ final class DenormalisationPassTest extends TestCase
         $out = $db->get_row(sprintf("SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
             $this->table('base.event'), $db->prepare(self::SITE), $this->yyyymmdd));
 
-        $this->assertSame(6, (int) $in['n']);
+        $this->assertSame(7, (int) $in['n']);
         $this->assertSame((int) $in['n'], (int) $out['n'],
             'The pass enriches. It creates nothing and drops nothing.');
     }
@@ -311,6 +321,16 @@ final class DenormalisationPassTest extends TestCase
         // NULL and the sentinel are different statements, and the row makes
         // both: nothing was observed, and nothing could be resolved.
         $this->assertNull($row['acq_search_terms']);
+    }
+
+    public function testAnOverlongParsedHostIsClampedRatherThanFailingTheRun(): void
+    {
+        // Without the clamp this row aborts the INSERT under STRICT_ALL_TABLES
+        // and nothing is rebuilt, so setUp() fails before reaching this.
+        $row = $this->built('page_view', self::VISITOR_LONG_REF, 8881000000000005, $this->t0);
+
+        $this->assertSame(255, strlen($row['source']));
+        $this->assertSame(str_repeat('a', 255), $row['source']);
     }
 
     public function testIsExitMarksTheLastEventOfAClosedSession(): void

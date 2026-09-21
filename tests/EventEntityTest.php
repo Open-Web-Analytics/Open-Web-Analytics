@@ -76,9 +76,10 @@ final class EventEntityTest extends TestCase
             $this->assertEmpty($entity->getColumn($name)->nullable, "$name must not be nullable");
         }
 
-        // A copy cannot be more certain than the column it came from. NOT NULL
-        // here would store '' under OWA's permissive sql_mode -- a second
-        // spelling of absence in a table whose premise is that there is one.
+        // Raw declares every one of these sources nullable, so the pass copies
+        // NULLs. Under STRICT_ALL_TABLES a NULL into a NOT NULL column aborts
+        // the statement: one page with no title, and the partition rebuild
+        // fails.
         foreach ([
             'campaign', 'ad', 'search_terms', 'landing_page_location',
             'landing_page_path', 'landing_page_query', 'landing_page_title',

@@ -28,13 +28,12 @@ namespace OWA\Module\Base\Entity;
  *
  * SIGNED BIGINT, NOT UNSIGNED
  * The design note asks for BIGINT UNSIGNED on the id columns. Signed, and
- * deliberately: OWA runs with `SET SESSION sql_mode=''`, under which a negative
- * value written to an UNSIGNED column is silently clamped to 0 rather than
- * refused. v1 has negative visitor ids -- enough of them to need their own
- * fix -- and migrating those into this table would turn each one into visitor
- * 0, merging strangers, with no error anywhere. The headroom UNSIGNED buys is
- * not needed: wideStringGuid() tops out at 63 bits by construction and a
- * microsecond timestamp is nowhere near it.
+ * deliberately: v1 has negative visitor ids -- enough of them to need their own
+ * fix -- and they are real ids that have to round-trip. UNSIGNED refuses them
+ * under STRICT_ALL_TABLES and clamps them to 0 without it, so the migrator
+ * either dies on them or merges strangers into visitor 0. The headroom UNSIGNED
+ * buys is not needed: wideStringGuid() tops out at 63 bits by construction and
+ * a microsecond timestamp is nowhere near it.
  *
  * ABSENCE IS NULL
  * Every column that can be absent is declared nullable, so an unset value is

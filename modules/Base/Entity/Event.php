@@ -20,9 +20,16 @@ namespace OWA\Module\Base\Entity;
  * drift the first time raw gained a column.
  *
  * NULLABILITY FOLLOWS WHAT THE PASS CAN PRODUCE
- * Copies -- landing_page_*, prev_event_ts -- are as nullable as the column they
- * are copied from. Resolutions -- source, medium, acq_* -- always produce a
- * value or the sentinel, so they are NOT NULL and a NULL in one is a bug.
+ * Copies -- landing_page_*, prev_event_ts -- are nullable because raw declares
+ * their sources nullable. Under STRICT_ALL_TABLES a NULL into a NOT NULL column
+ * aborts the statement, so one page with no title would fail the whole
+ * partition rebuild.
+ *
+ * Resolutions -- source, medium, acq_* -- always produce a value or the
+ * sentinel, so they are NOT NULL.
+ *
+ * 2.1's type column lists some of the copies without NULL. Satisfying that
+ * would mean inventing a value for an absence, which 2.11 forbids.
  *
  * campaign, ad and search_terms are copies despite being attribution: a
  * campaign exists only because a URL was tagged with one, so no tag is an

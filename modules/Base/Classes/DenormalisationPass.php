@@ -274,8 +274,8 @@ class DenormalisationPass {
             $select[] = 'e.' . $column;
         }
 
-        $session_host = $this->hostExpression( 'e.s_referer_url' );
-        $acq_host     = $this->hostExpression( 'v.acq_referer_url' );
+        $session_host = $this->hostExpression( 'e.s_referer_url', $this->columnLength( 'source' ) );
+        $acq_host     = $this->hostExpression( 'v.acq_referer_url', $this->columnLength( 'acq_source' ) );
         $unresolved   = $this->literal( V2Event::UNRESOLVED );
 
         $select[] = $this->sourceExpression( 'e.s_tagged_source', $session_host );
@@ -459,21 +459,46 @@ class DenormalisationPass {
     }
 
     /**
-     * The host of a URL held in a column, lowercased and without a leading www.
+     * The host of a URL held in a column, lowercased, without a leading www,
+     * and clamped to what the destination column holds.
      *
-     * Parsed here rather than stored: it is needed once per session, by this
-     * statement, and a column for it would be one more thing ingest could
-     * disagree with.
+     * Parsed here rather than stored: it is read once per session, by this
+     * statement.
+     *
+     * The clamp is required. referer_url is VARCHAR(1024) and source is
+     * VARCHAR(255), and a URL with no scheme and no path parses to itself, so a
+     * malformed referrer yields a host wider than the column it goes into.
+     * Under STRICT_ALL_TABLES that aborts the statement rather than truncating,
+     * failing the whole partition rebuild. DbColumn's healing does not cover
+     * it: the pass writes SQL, not entities.
      *
      * @param string $column
+     * @param int    $width  the destination column's length
      * @return string
      */
-    protected function hostExpression( $column ) {
+    protected function hostExpression( $column, $width ) {
 
         $host = sprintf( OWA_SQL_URL_HOST, $column );
 
-        return sprintf( "LOWER(CASE WHEN %s LIKE 'www.%%' THEN SUBSTRING(%s, 5) ELSE %s END)",
+        $stripped = sprintf( "LOWER(CASE WHEN %s LIKE 'www.%%' THEN SUBSTRING(%s, 5) ELSE %s END)",
             $host, $host, $host );
+
+        return sprintf( 'LEFT(%s, %d)', $stripped, (int) $width );
+    }
+
+    /**
+     * How many characters a column of owa_event holds.
+     *
+     * Read from the entity rather than written here, so widening a column does
+     * not silently leave the clamp behind at the old number.
+     *
+     * @param string $name
+     * @return int
+     */
+    protected function columnLength( $name ) {
+
+        return (int) \OWA\Core\CoreAPI::entityFactory( 'base.event' )
+            ->getColumn( $name )->maxLength();
     }
 
     /**
