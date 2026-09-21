@@ -847,7 +847,7 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>priorPagePath</code></td><td><strong>open</strong></td><td>&mdash;</td><td><code>referer_url</code> holds the previous page only when it was a link. 1.x&rsquo;s <code>priorPage*</code> came from the session chain, which v2 would have to walk</td></tr>
 <tr><td></td><td><code>landingPageTitle</code></td><td>column</td><td><code>landing_page_title</code></td><td>the session&rsquo;s first title, stamped like the other landing columns</td></tr>
 <tr><td></td><td><code>exitPageTitle</code></td><td>filtered</td><td><code>page_title</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td>needs no column of its own</td></tr>
-<tr><td></td><td><code>pageType / entryPageType / exitPageType / priorPageType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.x&rsquo;s document type, which sorted pages from feed requests. <code>event_type</code> carries that distinction and nothing else was in it</td></tr>
+<tr><td></td><td><code>pageType / entryPageType / exitPageType / priorPageType</code></td><td>&mdash;</td><td>&mdash;</td><td><strong>Superseded by <code>contentGroup</code>.</strong> 1.x&rsquo;s document type sorted pages from feed requests, which <code>event_type</code> now carries; categorising pages is what <code>content_group</code> is for, and one of the two is enough</td></tr>
 <tr><td></td><td><code>priorPageTitle / priorPageUrl</code></td><td>&mdash;</td><td>&mdash;</td><td>open for the same reason as <code>priorPagePath</code> &mdash; all three need the session chain walked</td></tr>
 <tr><td>Traffic source</td><td><code>sessionSource</code></td><td>column</td><td><code>source</code></td><td>the reading on this event&rsquo;s session</td></tr>
 <tr><td></td><td><code>firstSource</code></td><td>column</td><td><code>acq_source</code></td><td>the same reading from the visit that acquired them</td></tr>
@@ -1758,8 +1758,8 @@ tracker on every page with nothing to fall back to. Publish on site creation, an
 the URL once before calling the site configured.</p>
 
 <h4><span class="num">2.24.4</span>What the snippet keeps</h4>
-<p><strong>Only what the server cannot know when it publishes.</strong> Page title, page type, user
-id, custom variables, and the <code>trackPageView</code> call. Everything else &mdash;
+<p><strong>Only what the server cannot know when it publishes.</strong> Page title, content group, user
+id, custom variables, and the <code>trackPageView</code> call. <code>setPageType</code> goes with the dimension it fed (<a href="#s24">&sect;2.4</a>). Everything else &mdash;
 <code>logClicks</code>, <code>logPage</code>, <code>movementInterval</code>, the three
 <code>domstream*</code> options, <code>sessionLength</code>, <code>cookie_domain</code>,
 <code>campaignKeys</code>, <code>maxCustomVars</code>, <code>getRequestCharacterLimit</code>,
