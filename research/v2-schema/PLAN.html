@@ -2042,16 +2042,29 @@ and because the bundle lives inside every per-site file, an OWA upgrade republis
 <li><strong>Switch collection to v2.</strong> One tracker, one pipeline; v1 stops receiving. v1&rsquo;s reports stay up, reading history.</li>
 <li><strong>Drop v1</strong> when nobody wants its reports any more &mdash; a command that removes the 20 parallel tables and leaves the shared admin tables alone.</li>
 </ol>
-<p class="note"><strong>Step&nbsp;4 retires v1&rsquo;s HANDLERS, not v1&rsquo;s wire
-format.</strong> Trackers are cached in browsers, so beacons in v1&rsquo;s shape keep arriving for
-as long as those bundles live &mdash; weeks, and longer for a site that never redeploys its
-snippet. Ingest therefore has to accept a v1 beacon with no v1 handler involved, which is a
-requirement of step&nbsp;4 rather than something that happens to be true:
-<code>Classes\V2Event::name()</code> maps <code>base.page_request</code>,
-<code>dom.click</code> and <code>ecommerce.transaction</code> onto the v2 vocabulary, and the
-markers are raised from <code>is_new_session_start</code> and
-<code>is_new_visitor_created</code>, which v1&rsquo;s tracker already sends. Retiring the wire
-format is a later and separate decision, and there is no reason to take it.</p>
+<p><strong>Step&nbsp;4 retires v1&rsquo;s handlers, not v1&rsquo;s wire format</strong>, and
+what is different about it is narrower than it first looks. Cached trackers are the standing
+constraint on <em>every</em> tracker release &mdash; 1.x already carries the pattern in three
+places: <code>taggedValue()</code> prefers a <code>tagged_*</code> the beacon actually sent over
+its own re-parse, <code>SessionHandlers</code> falls back to the page-scoped flag for trackers
+cached before the two were split, and the state loader sniffs cookie format rather than assuming
+it. The mitigation is always the same: <strong>keep the old path, prefer the new.</strong></p>
+<p><strong>Step&nbsp;4 is the one release where that is unavailable</strong>, because deleting the
+old path is the point of the step. There is no fallback branch to add &mdash; the new code is the
+only code, and it has to understand v1&rsquo;s vocabulary outright. Hence
+<code>Classes\V2Event::name()</code>, which maps <code>base.page_request</code>,
+<code>dom.click</code> and <code>ecommerce.transaction</code> onto the v2 names.</p>
+<p class="note"><strong>Measured, against the beacon contract:</strong> a cached tracker sends
+<strong>nothing</strong> v2 ignores, and fails to send exactly two things v2 wants &mdash;
+<code>client_ts_usec</code> and <code>page_location</code>. Both already have server-side answers:
+<code>clock_offset_usec</code> goes NULL, which is the honest reading when no client clock arrived,
+and <code>keepCompleteUrl()</code> stashes the URL before <code>makeUrlCanonical()</code> strips
+it. <code>is_new_session_start</code>, <code>is_new_visitor_created</code> and
+<code>landing_url</code> are already on v1&rsquo;s wire &mdash; the first two were put there for
+this handover and nothing in 1.x reads them. So a cached beacon becomes a correct but
+<em>thinner</em> row, and the events only the v2 tracker raises simply do not arrive until the
+bundle refreshes. That is <a href="#s12">&sect;1.2.4</a>&rsquo;s rule holding: values may degrade,
+records must not vanish.</p>
 
 <p class="note"><strong>The parallel pipeline is development scaffolding, and it ends at
 step&nbsp;4.</strong> v2 does not ship alongside v1. During development a site can be switched on
