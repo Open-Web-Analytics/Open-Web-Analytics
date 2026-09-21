@@ -2042,6 +2042,25 @@ and because the bundle lives inside every per-site file, an OWA upgrade republis
 <li><strong>Switch collection to v2.</strong> One tracker, one pipeline; v1 stops receiving. v1&rsquo;s reports stay up, reading history.</li>
 <li><strong>Drop v1</strong> when nobody wants its reports any more &mdash; a command that removes the 20 parallel tables and leaves the shared admin tables alone.</li>
 </ol>
+<p class="note"><strong>Step&nbsp;4 retires v1&rsquo;s HANDLERS, not v1&rsquo;s wire
+format.</strong> Trackers are cached in browsers, so beacons in v1&rsquo;s shape keep arriving for
+as long as those bundles live &mdash; weeks, and longer for a site that never redeploys its
+snippet. Ingest therefore has to accept a v1 beacon with no v1 handler involved, which is a
+requirement of step&nbsp;4 rather than something that happens to be true:
+<code>Classes\V2Event::name()</code> maps <code>base.page_request</code>,
+<code>dom.click</code> and <code>ecommerce.transaction</code> onto the v2 vocabulary, and the
+markers are raised from <code>is_new_session_start</code> and
+<code>is_new_visitor_created</code>, which v1&rsquo;s tracker already sends. Retiring the wire
+format is a later and separate decision, and there is no reason to take it.</p>
+
+<p class="note"><strong>The parallel pipeline is development scaffolding, and it ends at
+step&nbsp;4.</strong> v2 does not ship alongside v1. During development a site can be switched on
+with the <code>v2_raw_collection</code> setting, so that ingest is exercised against real traffic
+before the switch instead of the switch being the first time it ever runs &mdash; which is the
+shape that produced the Update&nbsp;023 and 026 failures. It is denylisted from the options form
+and off for every site. At step&nbsp;4 the setting is deleted along with v1&rsquo;s handler
+registrations, and <code>Handler\EventRawHandlers</code> registers unconditionally.</p>
+
 <p><strong>Nothing is irreversible until step&nbsp;5</strong>, and step&nbsp;5 is the
 administrator&rsquo;s decision rather than an upgrade&rsquo;s side effect. Steps&nbsp;2 and 3 can
 repeat as often as needed, because the migration only ever writes v2&rsquo;s side.</p>
