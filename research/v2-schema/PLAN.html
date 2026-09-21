@@ -1606,7 +1606,7 @@ the most is known.</p>
 <tr><td>7</td><td><strong>Chunk <code>seq</code></strong>, shipping with domstream early cutover (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td>Not started</td></tr>
 <tr><td>8</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td>Not started</td></tr>
 <tr><td>9</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td>Not started</td></tr>
-<tr><td>10</td><td><strong>Removals</strong> &mdash; stop sending <code>attribs</code> (<a href="#s15">&sect;1.5.3</a>), and delete four options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code>, <code>trafficAttributionMode</code> (<a href="#s225">&sect;2.24.4</a>).</td><td>Not started</td></tr>
+<tr><td>10</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops being fanned to. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td>Not started. The three deletions are additive; the other two wait for cutover</td></tr>
 </tbody></table></div>
 <div class="flag"><strong>Status &mdash; 2026-09-21</strong>
 <p><strong>All ten items are unstarted</strong>, checked against the code rather than against
@@ -1840,12 +1840,14 @@ id, custom variables, and the <code>trackPageView</code> call. <code>setPageType
 <code>encodeProperties</code>, the site id and the endpoints &mdash; bakes in.</p>
 <p>Today&rsquo;s tag pushes six commands, of which two are site config that lives in the page only
 because there was nowhere else to put it.</p>
-<p class="note"><strong>Four options would be publishing a control that does nothing.</strong>
+<p class="note"><strong>Three options would be publishing a control that does nothing.</strong>
 <code>logMovement</code> appears once in <code>Tracker.js</code> &mdash; its own declaration;
 <code>bindMovementEvents()</code> never reads it. <code>thirdParty</code> sets a flag no server
-code consumes. <code>campaignAttributionWindow</code> is inert because <code>StateManager</code>
-drops its expiration argument, and <code>trafficAttributionMode</code> is inert server-side. Decide
-what these are before giving any of them a screen.</p>
+code consumes. <code>campaignAttributionWindow</code> is passed to <code>setState</code> as an
+expiry that <code>StateManager</code> drops. <strong><code>trafficAttributionMode</code> is not
+one of them</strong>: it is inert <em>server-side</em>, but <code>Tracker.js</code> switches on it
+to choose between the direct and original models, so the verdict the event carries depends on it.
+Decide what these are before giving any of them a screen.</p>
 
 <h4><span class="num">2.24.5</span>Which tier a setting comes from</h4>
 <p><strong>Both, with the site winning.</strong> The two tiers already exist:</p>
