@@ -146,6 +146,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s223">2.23 The v2 reporting UI is a separate path</a>
   <a href="#s225">2.24 Publishing the tracker</a>
   <a href="#s227">2.26 Custom dimensions</a>
+  <a href="#s228">2.27 A cube per property</a>
   <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
@@ -2323,6 +2324,13 @@ and because the bundle lives inside every per-site file, an OWA upgrade republis
 
 <h3 id="s227"><span class="num">2.26</span>Custom dimensions <span class="chip c-dec">Decided</span></h3>
 
+<p class="note"><strong>SUPERSEDED IN ONE RESPECT by <a href="#s228">&sect;2.27</a>.</strong>
+This section was written while there was one cube for the installation, so it
+places registration at installation level. With a cube per Property, registration
+is per PROPERTY -- which is also what GA does, and for the same reason: the level
+that owns the table is the level that owns the definitions. Everything else here
+stands unchanged.</p>
+
 <p><strong>A site-defined value becomes queryable by being REGISTERED, and
 registration adds a real column to the cube.</strong> Everything queryable is a
 dimension; there is no path that reads an unregistered key. The mechanism was
@@ -2478,6 +2486,84 @@ cannot overwrite a newer value with an older beacon</li>
 <code>acq_*</code> is write-once evidence captured at first visit, and
 <code>properties</code> is mutable state the site sets whenever it likes. 2.9 already
 drew that line; this keeps it drawn while letting both live in one row.</p>
+
+<h3 id="s228"><span class="num">2.27</span>A cube per property <span class="chip c-dec">Decided</span></h3>
+
+<p><strong>One <code>owa_event</code> per Property, not one per installation.
+Decided 22&nbsp;Sep.</strong> Raw stays single &mdash; it is written by ingest and
+read only by a build &mdash; and the CUBE is split, because the cube is what
+reports read and what custom dimensions add columns to.</p>
+
+<h4><span class="num">2.27.1</span>Why, and what it costs <span class="chip c-dec">Decided</span></h4>
+
+<p>It is the same rule GA applies. A GA property owns its dataset, which is why
+custom definitions are registered there (<code>properties.customDimensions</code>,
+Editor at the property level) rather than on the account or the data stream. A
+property with several data streams shares one set of definitions across them.
+Splitting the cube per Property gives OWA the same shape, and with it:</p>
+
+<ul>
+<li><strong>Custom dimensions belong to a Property</strong> rather than to the
+whole installation, so two Properties can use the same key for different things.
+Sharing one cube forces one namespace &mdash; which is the v1 failure
+<a href="#s226">&sect;2.26</a> criticises, <code>cv3</code> meaning something
+different per site, arriving by a different road.</li>
+<li><strong>The row budget stops being shared.</strong> InnoDB refuses the 17th
+<code>VARCHAR(255)</code> column on a cube that already has 73 (error 1118,
+measured); at <code>VARCHAR(36)</code> it takes over a hundred. Shared, one
+Property could exhaust the installation. Split, each has its own budget.</li>
+<li><strong>Retention and granularity become per Property</strong>, as the
+partition commands already allow per table.</li>
+</ul>
+
+<p>What it costs, and none of it is the file handles this was first argued on:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Cost</th><th>Measured / stated</th></tr></thead>
+<tbody>
+<tr><td>The build runs N times</td><td>235ms fixed per build after <a href="#s227">&sect;2.26</a>'s staging rework, so 59s for 150 Properties against 21.6 MINUTES before it. The rework is what makes this affordable at all</td></tr>
+<tr><td>Cross-property totals become a UNION</td><td>Accepted: roll up when needed, rather than pay a shared namespace always</td></tr>
+<tr><td>N tables in schema lockstep</td><td>Every release update and every registration touches N tables</td></tr>
+<tr><td>N partition leads to maintain</td><td><code>partition-rotate</code> already loops the fact tables; the set is larger</td></tr>
+</tbody></table></div>
+
+<p class="note"><strong>The file-handle argument was wrong and is withdrawn.</strong>
+<code>innodb_open_files</code> is an LRU cache of descriptors, not a ceiling on
+tablespaces: InnoDB closes the least recently used to open another. Measured on
+the dev server, 2,131 tablespaces exist while 2,014 are open, under a cache of
+4,000. Exceeding it costs close/reopen churn, not failure &mdash; and partition
+pruning keeps the working set to the partitions a query actually reads.
+<code>PARTITION_COUNT_LIMIT</code> and the per-table budget are OWA policy, which
+an installation can raise. Neither disqualifies this.</p>
+
+<h4><span class="num">2.27.2</span>What has to change <span class="chip c-dec">Decided</span></h4>
+
+<div class="scroll"><table>
+<thead><tr><th>Today</th><th>Becomes</th></tr></thead>
+<tbody>
+<tr><td>One <code>owa_event</code>, created by Update&nbsp;035</td><td>One per Property, created when the Property is created &mdash; and backfilled for Properties that already exist</td></tr>
+<tr><td><code>Entity\Event</code> names one table</td><td>The entity is a SHAPE; the table name comes from the Property</td></tr>
+<tr><td><code>Builder</code> targets <code>base.event</code></td><td>Targets a named cube; the build loops Properties</td></tr>
+<tr><td><code>cmd=cube-rebuild</code> rebuilds the cube</td><td>Rebuilds one Property's, or every one</td></tr>
+<tr><td>The build lock is keyed <code>cube-build:&lt;table&gt;</code></td><td>Unchanged, and already correct &mdash; it becomes per Property for free</td></tr>
+<tr><td><code>PartitionsCli::factTables()</code> reads the entity registry</td><td>Has to enumerate the per-Property cubes too</td></tr>
+<tr><td>Custom dimensions register install-wide (<a href="#s227">&sect;2.26.2</a>)</td><td>Register per Property, which is what GA does</td></tr>
+</tbody></table></div>
+
+<p class="note"><strong>Two things are deliberately NOT split.</strong>
+<code>owa_event_raw</code> stays single: ingest writes it on the hot path, nothing
+reports from it, and splitting it would multiply the write path's table count for
+no reader's benefit. <code>owa_visitor_acquisition</code> stays single too, because
+a visitor is shared across Properties by the same cookie &mdash; splitting it would
+give one person a first-touch per Property, which is a different claim from the
+one 2.9 makes.</p>
+
+<p class="note"><strong>Open: what a Property with no data costs.</strong> A cube
+is created with 72 partitions (2.8), which is 72 files and about 2.7 seconds,
+whether or not the Property is ever used. At a few Properties that is nothing; at
+the 212 sites on the dev installation it is not. Creating the cube LAZILY &mdash;
+on the Property's first event rather than at creation &mdash; is the obvious
+answer and is not yet decided.</p>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
