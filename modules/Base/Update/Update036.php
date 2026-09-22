@@ -80,11 +80,12 @@ class Update036 extends \OWA\Core\Update {
 
     function down() {
 
-        $tables = $this->columns();
+        if ( $this->dropCubeColumn( 'referer_host' ) === false ) {
 
-        $tables['base.event'] = 'referer_host';
+            return false;
+        }
 
-        foreach ( array_reverse( $tables, true ) as $name => $column ) {
+        foreach ( array_reverse( $this->columns(), true ) as $name => $column ) {
 
             $entity = \OWA\Core\CoreAPI::entityFactory( $name );
 
@@ -97,7 +98,7 @@ class Update036 extends \OWA\Core\Update {
             }
         }
 
-        return $this->clearCubeInstantColumns();
+        return true;
     }
 
 }

@@ -5,7 +5,13 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * A build, end to end: raw rows in, cube rows out of owa_event.
+ * A build, end to end: raw rows in, cube rows out of one Property's cube.
+ *
+ * THE FIXTURE OWNS A PROPERTY. There is no owa_event -- a cube belongs to a
+ * Property and holds the rows of that Property's profiles -- so the fixture
+ * creates a Property, a profile under it, and the cube, and drops all three
+ * afterwards. That also makes the site filter testable: raw is shared, and
+ * everything else in it has to stay out of this cube.
  *
  * Runs the real statement and the real swap against the configured database,
  * because every interesting part of this is SQL -- the window frames, the
@@ -25,6 +31,16 @@ final class CubeBuildTest extends TestCase
     /** Visitors, sessions and events of the fixture, all numeric ids. */
     const SITE = 'owa-denorm-test-site';
 
+    /** A second profile of the SAME Property: its rows belong in the same cube. */
+    const OTHER_SITE = 'owa-denorm-other-site';
+
+    /** A profile of a DIFFERENT Property: its rows must stay out of it. */
+    const FOREIGN_SITE = 'owa-denorm-foreign-site';
+
+    /** The Property the fixture's cube belongs to, and the one beside it. */
+    const PROPERTY         = 7779000000000001;
+    const FOREIGN_PROPERTY = 7779000000000002;
+
     const VISITOR_TAGGED  = 7771000000000001;
     const VISITOR_REFERRED = 7771000000000002;
     const VISITOR_DIRECT  = 7771000000000003;
@@ -33,6 +49,8 @@ final class CubeBuildTest extends TestCase
     const VISITOR_LONG_HOST = 7771000000000006;
     const VISITOR_SEARCHER  = 7771000000000007;
     const VISITOR_TAGGED_SEARCH = 7771000000000008;
+    const VISITOR_SECOND_PROFILE = 7771000000000010;
+    const VISITOR_FOREIGN        = 7771000000000011;
 
     /** @var array id => row, as seeded */
     private $seeded = [];
@@ -54,6 +72,34 @@ final class CubeBuildTest extends TestCase
     /** @var int microseconds, now: a session still inside the idle timeout */
     private $t_open;
 
+    /**
+     * The Property, its profiles and its cube: made ONCE for the whole class.
+     *
+     * Creating a cube is seventy-odd partitions and about 2.7 seconds. Per test
+     * that was 26 creates and 26 drops -- most of the file's runtime spent on
+     * DDL that no test is about. What each test does need is its own rows, and
+     * a rebuild REPLACES a partition, so re-seeding and rebuilding gives every
+     * test a clean cube without the table going anywhere.
+     */
+    public static function setUpBeforeClass(): void
+    {
+        if (!owa_test_db_available()) {
+            return;
+        }
+
+        self::dropFixture();
+        self::seedProperty();
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        if (!owa_test_db_available()) {
+            return;
+        }
+
+        self::dropFixture();
+    }
+
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
@@ -64,6 +110,7 @@ final class CubeBuildTest extends TestCase
         $this->t0       = (time() - 7200) * 1000000;
         $this->t_open   = time() * 1000000;
 
+        self::clearRows();
         $this->seedRaw();
         $this->seedVisitorStore();
         $this->rebuild();
@@ -75,21 +122,119 @@ final class CubeBuildTest extends TestCase
             return;
         }
 
+        self::clearRows();
+
+        // The cube stays, holding what raw now says, which is nothing of ours.
+        $this->rebuild();
+    }
+
+    /** The fixture's rows in the two shared tables. */
+    private static function clearRows(): void
+    {
         $db = owa_coreAPI::dbSingleton();
 
-        $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            $this->table('base.event_raw'), $db->prepare(self::SITE)));
+        foreach ([self::SITE, self::OTHER_SITE, self::FOREIGN_SITE] as $site) {
+            foreach (['base.event_raw', 'base.visitor_acquisition'] as $entity) {
+                $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
+                    owa_coreAPI::entityFactory($entity)->getTableName(), $db->prepare($site)));
+            }
+        }
+    }
 
-        $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            $this->table('base.visitor_acquisition'), $db->prepare(self::SITE)));
+    /**
+     * Everything the fixture makes, in any order it may be in.
+     *
+     * Run before seeding as well as after, so a crashed run does not leave the
+     * next one failing on a duplicate key or an existing table.
+     */
+    private static function dropFixture(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
 
-        // Leave owa_event holding what raw now says, which is nothing of ours.
-        $this->rebuild();
+        self::clearRows();
+
+        foreach ([self::SITE, self::OTHER_SITE, self::FOREIGN_SITE] as $site) {
+            $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
+                owa_coreAPI::entityFactory('base.site')->getTableName(), $db->prepare($site)));
+        }
+
+        foreach ([self::PROPERTY, self::FOREIGN_PROPERTY] as $property_id) {
+            $db->query(sprintf('DELETE FROM %s WHERE id = %d',
+                owa_coreAPI::entityFactory('base.property')->getTableName(), $property_id));
+
+            // The cube goes with the Property, and so do its working tables.
+            // One per Property means a fixture that leaves its own behind
+            // leaves seventy partitions on the developer's installation.
+            $cube = \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id);
+
+            foreach (['', '_rebuild', '_computed'] as $suffix) {
+                $db->query(sprintf('DROP TABLE IF EXISTS %s%s', $cube, $suffix));
+            }
+        }
+    }
+
+    /**
+     * Two Properties: the fixture's, with two profiles, and one beside it.
+     *
+     * Both halves are the point. Raw is shared and the cubes are not, so a
+     * build has to take every profile of ITS Property -- which is why there are
+     * two -- and nothing from any other, which is why there is a second
+     * Property whose rows sit in the same partition of raw.
+     */
+    private static function seedProperty(): void
+    {
+        foreach ([
+            self::PROPERTY         => [self::SITE, self::OTHER_SITE],
+            self::FOREIGN_PROPERTY => [self::FOREIGN_SITE],
+        ] as $property_id => $sites) {
+
+            $property = owa_coreAPI::entityFactory('base.property');
+            $property->setProperties([
+                'id'            => $property_id,
+                'name'          => 'Cube build fixture',
+                'domain'        => 'example.test',
+                'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
+                'creation_date' => time(),
+            ]);
+
+            if (!$property->create()) {
+                throw new \RuntimeException('seeding owa_property failed');
+            }
+
+            foreach ($sites as $i => $site_id) {
+                $site = owa_coreAPI::entityFactory('base.site');
+                $site->setProperties([
+                    // A profile's primary key is `id`; site_id is the string
+                    // the beacon quotes. Derived from the Property's, and from
+                    // the position under it, so a crashed run leaves nothing
+                    // for the next one to collide with.
+                    'id'          => $property_id * 10 + $i,
+                    'site_id'     => $site_id,
+                    'property_id' => $property_id,
+                    'name'        => 'Cube build fixture profile',
+                    'domain'      => 'example.test',
+                ]);
+
+                if (!$site->create()) {
+                    throw new \RuntimeException('seeding owa_site failed');
+                }
+            }
+        }
+
+        if (!\OWA\Module\Base\Classes\Cube\Cubes::create(self::PROPERTY)) {
+            throw new \RuntimeException('creating the fixture Property\'s cube failed');
+        }
     }
 
     private function table(string $entity): string
     {
         return owa_coreAPI::entityFactory($entity)->getTableName();
+    }
+
+    /** The fixture Property's cube. */
+    private function cube(): string
+    {
+        return \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
     }
 
     private function seedRaw(): void
@@ -191,19 +336,35 @@ final class CubeBuildTest extends TestCase
             'page_path'     => '/open',
             'page_title'    => 'Open',
         ]);
+
+        // The SAME Property's second profile. Its rows belong in this cube.
+        $this->seed('page_view', self::VISITOR_SECOND_PROFILE, 8881000000000010, $t, [
+            'page_location' => 'https://example.test/second-profile',
+            'page_path'     => '/second-profile',
+            'page_title'    => 'Second profile',
+        ], self::OTHER_SITE);
+
+        // A DIFFERENT Property's, in the same partition of the same raw table.
+        // Its rows must not reach this cube.
+        $this->seed('page_view', self::VISITOR_FOREIGN, 8881000000000011, $t, [
+            'page_location' => 'https://example.test/foreign',
+            'page_path'     => '/foreign',
+            'page_title'    => 'Foreign',
+        ], self::FOREIGN_SITE);
     }
 
     /**
      * One raw row, with the id a build will find it under.
      */
-    private function seed(string $type, int $visitor, int $session, int $ts, array $row): void
+    private function seed(string $type, int $visitor, int $session, int $ts, array $row,
+                          string $site = self::SITE): void
     {
-        $id = \OWA\Module\Base\Classes\V2Event::id(self::SITE, $visitor, $session, $ts, $type);
+        $id = \OWA\Module\Base\Classes\V2Event::id($site, $visitor, $session, $ts, $type);
 
         $row += [
             'id'            => $id,
             'event_type'    => $type,
-            'site_id'       => self::SITE,
+            'site_id'       => $site,
             'visitor_id'    => $visitor,
             'session_id'    => $session,
             'ts'            => $ts,
@@ -243,10 +404,10 @@ final class CubeBuildTest extends TestCase
 
     private function rebuild(): void
     {
-        $builder = new \OWA\Module\Base\Classes\Cube\Builder();
+        $builder = new \OWA\Module\Base\Classes\Cube\Builder(self::PROPERTY);
         $spans = $builder->partitions($this->yyyymmdd, $this->yyyymmdd);
 
-        $this->assertNotEmpty($spans, 'owa_event has no dated partition covering today');
+        $this->assertNotEmpty($spans, $this->cube() . ' has no dated partition covering today');
 
         foreach ($spans as $span) {
             $result = $builder->rebuild($span);
@@ -263,7 +424,7 @@ final class CubeBuildTest extends TestCase
 
         $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
             'SELECT * FROM %s WHERE id = %d AND yyyymmdd = %d',
-            $this->table('base.event'), $id, $this->yyyymmdd));
+            $this->cube(), $id, $this->yyyymmdd));
 
         $this->assertNotEmpty($row, "no cube row for $type/$visitor");
 
@@ -286,7 +447,7 @@ final class CubeBuildTest extends TestCase
     public function testStagingIsBuiltFlatFromTheCubesOwnShape(): void
     {
         $db      = owa_coreAPI::dbSingleton();
-        $cube    = $this->table('base.event');
+        $cube    = $this->cube();
         $staging = $cube . '_rebuild';
 
         $db->query("DROP TABLE IF EXISTS $staging");
@@ -322,7 +483,7 @@ final class CubeBuildTest extends TestCase
     public function testStagingCopiesARuntimeAddedColumn(): void
     {
         $db      = owa_coreAPI::dbSingleton();
-        $cube    = $this->table('base.event');
+        $cube    = $this->cube();
         $staging = $cube . '_rebuild';
 
         $db->query("ALTER TABLE $cube ADD COLUMN cd_probe VARCHAR(32) NULL, ALGORITHM=INPLACE");
@@ -369,7 +530,7 @@ final class CubeBuildTest extends TestCase
             $this->markTestSkipped('This server does not report instant-column history.');
         }
 
-        $table = $this->table('base.event');
+        $table = $this->cube();
         $tests = [];
 
         foreach ($available as $column) {
@@ -409,11 +570,99 @@ final class CubeBuildTest extends TestCase
         };
 
         $missing = array_diff($columns($this->table('base.event_raw')),
-                              $columns($this->table('base.event')));
+                              $columns($this->cube()));
 
         $this->assertSame([], array_values($missing), sprintf(
             '%s is missing columns %s has. An update added them to raw only.',
-            $this->table('base.event'), $this->table('base.event_raw')));
+            $this->cube(), $this->table('base.event_raw')));
+    }
+
+    /**
+     * A cube holds EVERY profile of its Property.
+     *
+     * A Property may be measured more than one way -- that is what a profile is
+     * -- and a report over the Property has to see all of it. So the build's
+     * filter is the Property's site ids, not one site id.
+     */
+    public function testEveryProfileOfThePropertyIsInItsCube(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $row = $db->get_row(sprintf(
+            "SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s'",
+            $this->cube(), $db->prepare(self::OTHER_SITE)));
+
+        $this->assertSame(1, (int) $row['n'],
+            'the second profile of this Property is measured by the same cube');
+    }
+
+    /**
+     * And NOTHING of any other Property's.
+     *
+     * Raw is shared: the foreign row sits in the same partition of the same
+     * table, one row away. Without the site filter a build would publish every
+     * Property's traffic into every Property's cube, and the row-count check
+     * would not catch it -- rows in would equal rows out, just the wrong rows.
+     */
+    public function testAnotherPropertysRowsStayOutOfThisCube(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $foreign = $db->get_row(sprintf(
+            "SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
+            $this->table('base.event_raw'), $db->prepare(self::FOREIGN_SITE), $this->yyyymmdd));
+
+        $this->assertSame(1, (int) $foreign['n'],
+            'the foreign row has to BE in raw for its absence from the cube to mean anything');
+
+        $row = $db->get_row(sprintf(
+            "SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s'",
+            $this->cube(), $db->prepare(self::FOREIGN_SITE)));
+
+        $this->assertSame(0, (int) $row['n']);
+
+        // And the cube holds nothing else either -- the installation's own
+        // traffic is in raw too, and a missing filter would sweep that in.
+        $stray = $db->get_row(sprintf(
+            "SELECT COUNT(*) AS n FROM %s WHERE site_id NOT IN ('%s', '%s')",
+            $this->cube(), $db->prepare(self::SITE), $db->prepare(self::OTHER_SITE)));
+
+        $this->assertSame(0, (int) $stray['n'],
+            'a cube holds its own Property and nothing else');
+    }
+
+    /**
+     * A Property with no profiles left builds an EMPTY partition.
+     *
+     * The filter is a list of site ids, and an empty list has to mean "nothing
+     * matches" rather than "no restriction" -- the second reading would hand a
+     * Property that has lost its profiles every other Property's traffic, and
+     * the row-count check would agree with it, because rows in would equal rows
+     * out.
+     *
+     * It is a state a cube really reaches: profiles get deleted or moved, and
+     * the cube outlives them until somebody removes it.
+     */
+    public function testACubeWhoseProfilesAreGoneGetsNothingRatherThanEverything(): void
+    {
+        $db   = owa_coreAPI::dbSingleton();
+        $site = $this->table('base.site');
+
+        $db->query(sprintf('UPDATE %s SET property_id = NULL WHERE property_id = %d',
+            $site, self::PROPERTY));
+
+        try {
+            $this->rebuild();
+
+            $row = $db->get_row(sprintf('SELECT COUNT(*) AS n FROM %s', $this->cube()));
+
+            $this->assertSame(0, (int) $row['n'],
+                'no profiles means no rows, not every row in raw');
+        } finally {
+            $db->query(sprintf('UPDATE %s SET property_id = %d WHERE site_id IN (\'%s\', \'%s\')',
+                $site, self::PROPERTY,
+                $db->prepare(self::SITE), $db->prepare(self::OTHER_SITE)));
+        }
     }
 
     public function testEveryRawRowBecomesExactlyOneEventRow(): void
@@ -424,7 +673,7 @@ final class CubeBuildTest extends TestCase
             $this->table('base.event_raw'), $db->prepare(self::SITE), $this->yyyymmdd));
 
         $out = $db->get_row(sprintf("SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
-            $this->table('base.event'), $db->prepare(self::SITE), $this->yyyymmdd));
+            $this->cube(), $db->prepare(self::SITE), $this->yyyymmdd));
 
         $this->assertSame(10, (int) $in['n']);
         $this->assertSame((int) $in['n'], (int) $out['n'],

@@ -585,7 +585,7 @@ final class PartitionCliTest extends CliControllerTestCase
         $this->assertStringContainsString('half-month    24 partitions', $out);
         $this->assertStringContainsString('granularity   half-month', $out,
             'the granularity is the head, not the tail');
-        $this->assertStringContainsString('merged to fit the budget', $out);
+        $this->assertStringContainsString('Older periods have been merged', $out);
         $this->assertStringContainsString('OWA_PARTITION_DETAIL_MONTHS', $out,
             'name the setting that governs it');
 
@@ -594,14 +594,14 @@ final class PartitionCliTest extends CliControllerTestCase
     /** Counts read as English, singular and plural, in the tiers and the lead. */
     public function testStatusCountsReadAsEnglish()
     {
-        $one = $this->callProtected($this->statusCli(), 'describeTiers', [$this->layout([
+        $one = $this->callProtected($this->statusCli(), 'describeTiers', ['owa_x', $this->layout([
             'tiers' => [['period' => '1 year', 'count' => 1, 'start' => '20250101', 'end' => '20260101']],
         ])]);
 
         $this->assertStringContainsString('1 partition,', $one[0]);
         $this->assertStringNotContainsString('1 partitions,', $one[0]);
 
-        $many = $this->callProtected($this->statusCli(), 'describeTiers', [$this->layout()]);
+        $many = $this->callProtected($this->statusCli(), 'describeTiers', ['owa_x', $this->layout()]);
         $this->assertStringContainsString('24 partitions,', $many[0]);
 
         $lead = $this->callProtected($this->statusCli(), 'describeLead', [$this->layout(['lead' => 1, 'ahead' => 1])]);
@@ -714,7 +714,7 @@ final class PartitionCliTest extends CliControllerTestCase
             ['limit' => 200, 'reason' => 'x'],
         ]));
 
-        $this->assertStringContainsString('2 of 3 fact tables partitioned', $out);
+        $this->assertStringContainsString('2 of 3 fact tables and cubes partitioned', $out);
         $this->assertStringContainsString('Not partitioned: owa_c', $out);
         $this->assertStringContainsString('ACTION: owa_b has run out of lead', $out);
         $this->assertStringNotContainsString('shortest lead runs out', $out,
@@ -732,7 +732,7 @@ final class PartitionCliTest extends CliControllerTestCase
             ['limit' => 200, 'reason' => 'x'],
         ]));
 
-        $this->assertStringContainsString('2 of 2 fact tables partitioned, 42 partitions in total', $out);
+        $this->assertStringContainsString('2 of 2 fact tables and cubes partitioned, 42 partitions in total', $out);
         $this->assertStringContainsString('covering 2020-01-01 to 2027-01-01', $out,
             'the overall range spans the widest of the tables');
         $this->assertStringContainsString('31 days from now', $out, 'the shortest lead sets the deadline');
@@ -755,7 +755,7 @@ final class PartitionCliTest extends CliControllerTestCase
             ['limit' => 200, 'reason' => 'x'],
         ]));
 
-        $this->assertStringContainsString('0 of 2 fact tables partitioned, 0 partitions in total.', $out);
+        $this->assertStringContainsString('0 of 2 fact tables and cubes partitioned, 0 partitions in total.', $out);
         $this->assertStringContainsString('cmd=partition-init converts them', $out);
         $this->assertStringNotContainsString('covering', $out, 'no range to report');
         $this->assertStringNotContainsString('deadline', $out);
@@ -835,7 +835,7 @@ final class PartitionCliTest extends CliControllerTestCase
         $summary = implode("\n", $this->callProtected($ctrl, 'summarise', [$layouts, $budget]));
 
         $this->assertStringContainsString(
-            sprintf('of %d fact tables partitioned', count($tables)),
+            sprintf('of %d fact tables and cubes partitioned', count($tables)),
             $summary
         );
     }

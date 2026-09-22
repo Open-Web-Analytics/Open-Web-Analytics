@@ -615,7 +615,7 @@ final class CubeRotateTest extends TestCase
             [$this->span('20261201', '20270101')]
         );
 
-        $touched = $this->call('mergeExpiredCubeDays', ['owa_event', false]);
+        $touched = $this->call('mergeExpiredCubeDays', ['owa_event_1', false]);
 
         $this->assertTrue($touched);
         $this->assertSame(
@@ -630,7 +630,7 @@ final class CubeRotateTest extends TestCase
         RotateAtDate::$now       = '20261205';
         RotateAtDate::$db->spans = $this->dailySpans('202610');
 
-        $this->assertTrue($this->call('mergeExpiredCubeDays', ['owa_event', true]));
+        $this->assertTrue($this->call('mergeExpiredCubeDays', ['owa_event_1', true]));
         $this->assertSame([], RotateAtDate::$db->merged);
     }
 
@@ -645,7 +645,7 @@ final class CubeRotateTest extends TestCase
             [$this->span('20270201', '20270301')]
         );
 
-        $touched = $this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], false]);
+        $touched = $this->call('carveCubeMonths', ['owa_event_1', ['limit' => 145, 'reason' => 'test'], false]);
 
         $this->assertTrue($touched);
         $this->assertSame(
@@ -665,7 +665,7 @@ final class CubeRotateTest extends TestCase
             $this->span('20270101', '20270201'),
         ];
 
-        $this->assertTrue($this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], true]));
+        $this->assertTrue($this->call('carveCubeMonths', ['owa_event_1', ['limit' => 145, 'reason' => 'test'], true]));
         $this->assertSame([], RotateAtDate::$db->carved);
     }
 
@@ -679,7 +679,7 @@ final class CubeRotateTest extends TestCase
         ];
         RotateAtDate::$db->rows = ['p20261101' => 48_000];
 
-        $this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], false]);
+        $this->call('carveCubeMonths', ['owa_event_1', ['limit' => 145, 'reason' => 'test'], false]);
 
         $this->assertSame('p20261101', RotateAtDate::$db->carved[0]['from'],
             'the one taking writes is carved first, despite its rows');
@@ -704,7 +704,7 @@ final class CubeRotateTest extends TestCase
         ];
 
         $touched = $this->call('carveCubeMonths',
-            ['owa_event', ['limit' => 20, 'reason' => 'a small server'], false]);
+            ['owa_event_1', ['limit' => 20, 'reason' => 'a small server'], false]);
 
         $this->assertFalse($touched);
         $this->assertSame([], RotateAtDate::$db->carved,
@@ -734,7 +734,7 @@ final class CubeRotateTest extends TestCase
         $this->assertSame(0, $this->call('dailyCount', [RotateAtDate::$db->spans]),
             'the fixture starts with nothing daily');
 
-        $this->call('carveCubeMonths', ['owa_event', ['limit' => 400, 'reason' => 'test'], false]);
+        $this->call('carveCubeMonths', ['owa_event_1', ['limit' => 400, 'reason' => 'test'], false]);
 
         $carved = RotateAtDate::$db->carved;
 
@@ -765,7 +765,7 @@ final class CubeRotateTest extends TestCase
         RotateAtDate::$db->spans = $recovered;
         RotateAtDate::$db->rows  = ['p20261101' => 12_000];
 
-        $this->call('carveCubeMonths', ['owa_event', ['limit' => 400, 'reason' => 'test'], false]);
+        $this->call('carveCubeMonths', ['owa_event_1', ['limit' => 400, 'reason' => 'test'], false]);
 
         $this->assertSame([], RotateAtDate::$db->carved,
             'two months daily already, so nothing is rewritten');
@@ -782,7 +782,7 @@ final class CubeRotateTest extends TestCase
         );
         RotateAtDate::$db->rows = ['p20261001' => 48_000];
 
-        $this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], false]);
+        $this->call('carveCubeMonths', ['owa_event_1', ['limit' => 145, 'reason' => 'test'], false]);
 
         $this->assertNotContains('p20261001', array_column(RotateAtDate::$db->carved, 'from'),
             'not taking writes and merges shortly, so rewriting it buys nothing');

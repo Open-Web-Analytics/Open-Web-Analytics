@@ -11,8 +11,8 @@ namespace OWA\Module\Base\Controller;
  * The other three commands change things; this one only looks. It answers the
  * questions an operator has before deciding whether to run any of them: what is
  * partitioned, how much time the partitions cover, at what resolution, how much
- * of the open-file budget is spent, whether anything has collected in the
- * catch-all, and how long the lead lasts before a rotate is due.
+ * of the ceiling is spent, whether anything has collected in the catch-all,
+ * and how long the lead lasts before a rotate is due.
  *
  *   php cli.php cmd=partition-status
  *   php cli.php cmd=partition-status table=owa_session
@@ -122,7 +122,7 @@ class PartitionStatusCli extends PartitionsCli {
                 . 'cmd=partition-reorganize sets it deliberately.'
         );
 
-        $lines = array_merge( $lines, $this->describeTiers( $layout ) );
+        $lines = array_merge( $lines, $this->describeTiers( $table, $layout ) );
         $lines = array_merge( $lines, $this->describeCatchAll( $layout ) );
         $lines = array_merge( $lines, $this->describeLead( $layout ) );
 
@@ -137,10 +137,11 @@ class PartitionStatusCli extends PartitionsCli {
      * data or understate the new. Each run of partitions covering the same
      * length of time is reported with the span it covers.
      *
-     * @param array $layout
+     * @param string $table
+     * @param array  $layout
      * @return string[]
      */
-    protected function describeTiers( $layout ) {
+    protected function describeTiers( $table, $layout ) {
 
         $lines = array();
 
@@ -156,10 +157,30 @@ class PartitionStatusCli extends PartitionsCli {
             );
         }
 
-        if ( count( $layout['tiers'] ) > 1 ) {
+        $tiers = $layout['tiers'];
+
+        /*
+         * A CUBE'S DAILY FRONT IS NOT COMPACTION. It is the front of its lead,
+         * cut fine so a rebuild rewrites a day instead of a month, and
+         * cmd=partition-rotate puts it there on purpose -- so the line below
+         * would tell an operator that the normal, intended shape of the table
+         * was something the ceiling had forced. Set aside before counting, and
+         * named for what it is.
+         */
+        if ( $this->dailyLeadMonths( $table ) && $tiers
+          && $tiers[0]['period'] === 'daily' ) {
+
+            array_shift( $tiers );
+
+            $lines[] =
+                '                The daily part is the front of its lead, kept fine so a '
+              . 'rebuild rewrites a day rather than a month; cmd=partition-rotate maintains it.';
+        }
+
+        if ( count( $tiers ) > 1 ) {
 
             $lines[] = sprintf(
-                '                Older periods have been merged to fit the budget; the most recent '
+                '                Older periods have been merged; the most recent '
               . '%d months keep full granularity (OWA_PARTITION_DETAIL_MONTHS).',
                 $this->detailMonths()
             );
@@ -308,7 +329,7 @@ class PartitionStatusCli extends PartitionsCli {
         }
 
         $lines = array( sprintf(
-            '%d of %d fact tables partitioned, %d partitions in total%s.',
+            '%d of %d fact tables and cubes partitioned, %d partitions in total%s.',
             count( $layouts ) - count( $unpartitioned ),
             count( $layouts ),
             $total,

@@ -52,17 +52,19 @@ class Update039 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach ( $this->columns() as $column => $type ) {
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
-            if ( $db->modifyColumn( $entity->getTableName(), $column, $type . ' NULL' ) === false ) {
+            foreach ( $this->columns() as $column => $type ) {
 
-                $this->e->notice( sprintf(
-                    'Making %s.%s nullable failed', $entity->getTableName(), $column ) );
+                if ( $db->modifyColumn( $table, $column, $type . ' NULL' ) === false ) {
 
-                return false;
+                    $this->e->notice( sprintf(
+                        'Making %s.%s nullable failed', $table, $column ) );
+
+                    return false;
+                }
             }
         }
 
@@ -80,24 +82,25 @@ class Update039 extends \OWA\Core\Update {
      */
     function down() {
 
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
-        $table  = $entity->getTableName();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach ( $this->columns() as $column => $type ) {
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
-            $db->query( sprintf(
-                "UPDATE %s SET %s = '%s' WHERE %s IS NULL",
-                $table, $column,
-                $db->prepare( \OWA\Module\Base\Classes\V2Event::UNRESOLVED ),
-                $column ) );
+            foreach ( $this->columns() as $column => $type ) {
 
-            if ( $db->modifyColumn( $table, $column, $type . ' NOT NULL' ) === false ) {
+                $db->query( sprintf(
+                    "UPDATE %s SET %s = '%s' WHERE %s IS NULL",
+                    $table, $column,
+                    $db->prepare( \OWA\Module\Base\Classes\V2Event::UNRESOLVED ),
+                    $column ) );
 
-                $this->e->notice( sprintf(
-                    'Making %s.%s NOT NULL failed', $table, $column ) );
+                if ( $db->modifyColumn( $table, $column, $type . ' NOT NULL' ) === false ) {
 
-                return false;
+                    $this->e->notice( sprintf(
+                        'Making %s.%s NOT NULL failed', $table, $column ) );
+
+                    return false;
+                }
             }
         }
 

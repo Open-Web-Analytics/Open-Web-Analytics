@@ -14,6 +14,24 @@ use OWA\Module\Base\Controller\CubeRebuildCli;
  */
 final class CubeRebuildRangeTest extends TestCase
 {
+    /**
+     * A Property that does not exist, and therefore has no cube.
+     *
+     * The lock is keyed on the cube's NAME, which is derived from the Property
+     * id and needs nothing in the database -- so these can assert the lock
+     * without creating seventy partitions to do it.
+     */
+    const PROPERTY = 7778000000000001;
+
+    /*
+     * The key is 'dry-run', NOT '--dry-run'. Lib::parseCliArgs() strips the
+     * leading dashes before a controller ever sees a switch, so getParam() is
+     * asked for the bare name -- and a params array keyed with the dashes on
+     * makes every one of these a REAL build instead of a dry one. It did, until
+     * a Property with no cube made it visible by creating the cube.
+     */
+
+
     private function range(array $params): ?array
     {
         $class = new ReflectionClass(CubeRebuildCli::class);
@@ -51,14 +69,17 @@ final class CubeRebuildRangeTest extends TestCase
             $this->markTestSkipped('OWA database not reachable; the build lock is a row.');
         }
 
-        $table = owa_coreAPI::entityFactory('base.event')->getTableName();
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
 
         $held = new \OWA\Module\Base\Classes\JobLease('cube-build:' . $table);
 
         $this->assertTrue($held->acquire(600), 'the first build takes the lock');
 
         try {
-            $cli = $this->cli(['--dry-run' => 1]);
+            // property= so the run covers exactly this one cube, whatever else
+            // the installation holds -- with one cube in the run and that one
+            // locked, "already running" IS the outcome.
+            $cli = $this->cli(['dry-run' => 1, 'property' => (string) self::PROPERTY]);
             $cli->action();
 
             $this->assertSame('refused', $cli->getCliOutcome()['outcome']);
@@ -77,11 +98,48 @@ final class CubeRebuildRangeTest extends TestCase
             $this->markTestSkipped('OWA database not reachable; the build lock is a row.');
         }
 
-        $cli = $this->cli(['--dry-run' => 1]);
+        $cli = $this->cli(['dry-run' => 1, 'property' => (string) self::PROPERTY]);
         $cli->action();
 
         $this->assertNotSame('refused', $cli->getCliOutcome()['outcome'],
             'the lock is released after a run, so the next one is not blocked');
+    }
+
+    /**
+     * A build takes the cube's lock BEFORE it would create the cube.
+     *
+     * Creating one is the step two concurrent runs are most likely to meet on
+     * -- a Property's first data is exactly when both cadences reach it with
+     * nothing there -- so a lock taken afterwards would guard the build and
+     * leave the CREATE TABLE racing.
+     *
+     * Asserted through a Property that has no cube: the run is refused for the
+     * lock rather than reporting what it would create, which it can only do if
+     * the lock came first.
+     */
+    public function testTheLockIsTakenBeforeTheCubeWouldBeCreated(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('OWA database not reachable; the build lock is a row.');
+        }
+
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
+
+        $this->assertFalse(owa_coreAPI::dbSingleton()->tableExists($table),
+            'this Property is chosen because it has no cube');
+
+        $held = new \OWA\Module\Base\Classes\JobLease('cube-build:' . $table);
+
+        $this->assertTrue($held->acquire(600));
+
+        try {
+            $cli = $this->cli(['dry-run' => 1, 'property' => (string) self::PROPERTY]);
+            $cli->action();
+
+            $this->assertSame('refused', $cli->getCliOutcome()['outcome']);
+        } finally {
+            $held->release();
+        }
     }
 
     private function cli(array $params): \OWA\Module\Base\Controller\CubeRebuildCli

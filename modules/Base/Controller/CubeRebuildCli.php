@@ -8,14 +8,28 @@ namespace OWA\Module\Base\Controller;
 //
 
 /**
- * Rebuild the reporting cube from owa_event_raw, a partition at a time.
+ * Rebuild the reporting cubes from owa_event_raw, a partition at a time.
  *
  *   cmd=cube-rebuild                     yesterday and today
  *   cmd=cube-rebuild from=20260901       that date through to today
  *   cmd=cube-rebuild from=20260901 to=20260930
  *   cmd=cube-rebuild days=3              the last 3 days, today included
+ *   cmd=cube-rebuild property=<id>       just that Property's cube
  *   cmd=cube-rebuild days=3 --dry-run    print the statements, run nothing
  *   cmd=cube-rebuild steps=1             per-step timings and counts
+ *
+ * ONE CUBE PER PROPERTY. Raw is shared; owa_event_<property id> is not. With no
+ * property= this covers every cube that exists plus every Property that has raw
+ * rows in the range -- the second half being how a cube comes to exist at all:
+ * it is created here, on a Property's first data, rather than when the Property
+ * is created. Seventy-odd partitions and 2.7 seconds each is not worth spending
+ * on the 216 Properties of this installation that have never collected
+ * anything, and the alternative reading -- create it on the first event -- puts
+ * that CREATE TABLE inside a beacon request.
+ *
+ * The cost of a cube that has stopped collecting is one empty partition per
+ * run, and it is not optional: skipping it would leave rows in a partition that
+ * raw no longer has.
  *
  * Convergent: a partition rebuilt twice comes out the same, so a missed run
  * costs freshness and nothing else.
@@ -58,9 +72,10 @@ namespace OWA\Module\Base\Controller;
  * against each other by it. They are serialised here instead, by a lock keyed on
  * the cube itself (JobLease 'cube-build:<table>'): the staging and computed
  * tables are named after the target, so two builds of one cube would fight over
- * them, and the two cadences overlap on today's partition by construction. A
- * cube per property therefore locks per property, and builds for different
- * properties still run at the same time.
+ * them, and the two cadences overlap on today's partition by construction.
+ * Keying it on the cube makes it per Property, so two Properties still build at
+ * the same time -- and a Property whose cube is locked is skipped rather than
+ * failing the run, since the build in progress produces what this one would.
  */
 class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
@@ -93,15 +108,6 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
               . 'a partition to publish a rebuild. Nothing to do.' );
         }
 
-        $builder = new \OWA\Module\Base\Classes\Cube\Builder();
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getTableName();
-
-        if ( ! $db->isPartitioned( $table ) ) {
-
-            return $this->refuse( sprintf(
-                '%s is not partitioned. Run cmd=partition-init first.', $table ) );
-        }
-
         $range = $this->resolveRange();
 
         if ( ! $range ) {
@@ -111,40 +117,137 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
               . 'days=N for the same relatively, or from=yyyymmdd to=yyyymmdd for a closed window.' );
         }
 
-        $dry_run    = (bool) $this->getParam( 'dry-run' );
-        $partitions = $builder->partitions( $range['from'], $range['to'] );
+        $properties = $this->resolveProperties( $range );
 
-        if ( ! $partitions ) {
+        if ( $properties === null ) {
+
+            return;
+        }
+
+        if ( ! $properties ) {
+
+            return \OWA\Core\CoreAPI::notice(
+                'No Property has a cube or has collected anything in that range. Nothing to do.' );
+        }
+
+        $dry_run = (bool) $this->getParam( 'dry-run' );
+        $failed  = 0;
+        $built   = 0;
+        $locked  = 0;
+
+        foreach ( $properties as $property_id ) {
+
+            $outcome = $this->rebuildProperty( $property_id, $range, $dry_run );
+
+            $failed += $outcome['failed'];
+            $built  += $outcome['built'];
+            $locked += $outcome['locked'];
+        }
+
+        /*
+         * Every cube in the run locked is a refusal; one of fifty is a notice
+         * and the run carries on. The difference is whether anything was
+         * possible -- with one Property named, or one cube in the
+         * installation, "another build is already running" IS the outcome.
+         */
+        if ( $locked === count( $properties ) ) {
+
+            return $this->refuse( sprintf(
+                'Another build is already running for %s. Nothing to do -- a build is '
+              . 'convergent, so the run in progress produces what this one would.',
+                $locked === 1 ? 'that cube' : 'every cube in this run' ) );
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf( '%d partition(s) across %d cube(s)%s.',
+            $built, count( $properties ) - $locked, $dry_run ? ' (dry run)' : ' rebuilt' ) );
+
+        if ( $failed ) {
+
+            return $this->fail( sprintf(
+                '%d partition(s) failed to rebuild. Those cubes are unchanged for them.',
+                $failed ) );
+        }
+    }
+
+    /**
+     * Whose cubes this run covers.
+     *
+     * EVERY EXISTING CUBE, PLUS EVERY PROPERTY WITH RAW ROWS IN THE RANGE.
+     *
+     * The second half is §2.27.3: a cube is created on first data, by a build.
+     * The first half is why it is a union rather than just the collecting set
+     * -- a Property that has stopped collecting still has to be rebuilt, or a
+     * partition keeps rows that raw no longer has. A build is convergent, so a
+     * cube with nothing to say costs one empty partition and 235ms.
+     *
+     * @param array $range from resolveRange()
+     * @return string[]|null  property ids, or null having already refused
+     */
+    protected function resolveProperties( array $range ) {
+
+        $cubes = \OWA\Module\Base\Classes\Cube\Cubes::existing();
+        $only  = $this->getParam( 'property' );
+
+        if ( $only !== null ) {
+
+            $only = trim( (string) $only );
+
+            if ( ! ctype_digit( $only ) ) {
+
+                $this->refuse( 'property= takes a Property id.' );
+
+                return null;
+            }
 
             /*
-             * A dated partition covering the range is missing, which means the
-             * rows are in the catch-all or nowhere. Refused rather than
-             * rebuilt: exchanging into pmax would put rows in a partition that
-             * does not describe them.
+             * Named explicitly, so it is built whether or not it has collected
+             * anything -- that is what a backfill of one Property looks like,
+             * and refusing it would make the command useless for the one case
+             * an operator reaches for it.
              */
-            return $this->refuse( sprintf(
-                'No dated partition of %s covers %d to %d. Run cmd=partition-rotate to extend the lead.',
-                $table, $range['from'], $range['to'] ) );
+            return array( $only );
         }
 
-        /*
-         * Say what the dates RESOLVED TO, not what was asked for. A build
-         * rebuilds whole partitions -- the swap is the unit of work -- so
-         * date=20260915 against monthly partitioning rebuilds all of September,
-         * and reporting the requested day back would hide that entirely.
-         */
-        \OWA\Core\CoreAPI::notice( sprintf( '%d to %d covers %d partition(s) of %s.%s',
-            $range['from'], $range['to'], count( $partitions ), $table,
-            $dry_run ? ' Dry run.' : '' ) );
+        $collecting = \OWA\Module\Base\Classes\Cube\Cubes::collecting(
+            $range['from'], $range['to'] );
 
-        foreach ( $partitions as $span ) {
+        if ( $collecting['orphan_rows'] ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf( '  %s spans %s to %s, and all of it is rebuilt.',
-                $span['name'], $span['start'], $span['less_than'] ) );
+            /*
+             * Said once, because it is a real condition with no cube to put it
+             * in: either a profile was deleted while its rows remain, or a
+             * beacon quoted a site id nothing issued. Neither is this
+             * command's to fix, and neither should be silent.
+             */
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s raw row(s) in that range belong to a site id no Property claims, '
+              . 'so they are in no cube.', number_format( $collecting['orphan_rows'] ) ) );
         }
 
+        $properties = array_unique( array_merge(
+            array_keys( $cubes ), $collecting['properties'] ) );
+
+        sort( $properties, SORT_STRING );
+
+        return $properties;
+    }
+
+    /**
+     * Build one Property's cube over the range.
+     *
+     * @param string $property_id
+     * @param array  $range
+     * @param bool   $dry_run
+     * @return array ['built' => int, 'failed' => int]
+     */
+    protected function rebuildProperty( $property_id, array $range, $dry_run ) {
+
+        $none  = array( 'built' => 0, 'failed' => 0, 'locked' => 0 );
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $property_id );
+
         /*
-         * ONE BUILD PER CUBE AT A TIME.
+         * ONE BUILD PER CUBE AT A TIME, AND THE LOCK COMES FIRST.
          *
          * The staging and computed tables are named after the target, so two
          * builds of the same cube share them: one would drop the table the
@@ -158,21 +261,122 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
          * lease is keyed on the JOB NAME, which is what lets them run
          * concurrently, so it cannot be what stops them colliding.
          *
-         * Keyed on the TARGET TABLE, not the command, so it is the thing they
-         * actually contend for. A cube per property therefore locks per
-         * property, and builds for different properties still run at the same
-         * time.
+         * Taken before the cube is created, not after, because CREATING it is
+         * the one step two runs could both do -- a Property's first data is
+         * exactly when two cadences are most likely to meet on it.
+         *
+         * Keyed on the CUBE, not the command, so it is the thing they actually
+         * contend for -- which makes it per Property for free, and lets two
+         * Properties build at the same time.
          */
         $lock = new \OWA\Module\Base\Classes\JobLease( 'cube-build:' . $table );
 
         if ( ! $lock->acquire( self::BUILD_LEASE ) ) {
 
-            return $this->refuse( sprintf(
-                'Another build of %s is already running. Nothing to do -- a build is '
-              . 'convergent, so the run in progress produces what this one would.', $table ) );
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'Another build of %s is already running; skipped. A build is convergent, '
+              . 'so the run in progress produces what this one would.', $table ) );
+
+            return array( 'built' => 0, 'failed' => 0, 'locked' => 1 );
         }
 
-        $failed = 0;
+        try {
+
+            return $this->buildUnderLock( $property_id, $table, $range, $dry_run, $lock );
+
+        } finally {
+
+            $lock->release();
+        }
+    }
+
+    /**
+     * The build itself, with this cube's lock already held.
+     *
+     * @param string   $property_id
+     * @param string   $table
+     * @param array    $range
+     * @param bool     $dry_run
+     * @param \OWA\Module\Base\Classes\JobLease $lock
+     * @return array ['built' => int, 'failed' => int, 'locked' => int]
+     */
+    protected function buildUnderLock( $property_id, $table, array $range, $dry_run, $lock ) {
+
+        $none = array( 'built' => 0, 'failed' => 0, 'locked' => 0 );
+        $bad  = array( 'built' => 0, 'failed' => 1, 'locked' => 0 );
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+
+        if ( ! $db->tableExists( $table ) ) {
+
+            if ( $dry_run ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s does not exist yet and would be created.', $table ) );
+
+                return $none;
+            }
+
+            /*
+             * THE BUILD CREATES THE CUBE, not ingest and not the Property
+             * form. A cube is seventy-odd partitions and about 2.7 seconds, so
+             * creating one for every Property that might collect something
+             * spends all of it on Properties that never will -- and putting the
+             * creation on the beacon path would put that CREATE TABLE inside a
+             * request, with every concurrent first event of the Property racing
+             * to do it. A build already runs on a schedule and already holds
+             * this cube's lock.
+             */
+            if ( ! \OWA\Module\Base\Classes\Cube\Cubes::create( $property_id ) ) {
+
+                \OWA\Core\CoreAPI::error( sprintf(
+                    'Could not create %s. Nothing was built for Property %s.',
+                    $table, $property_id ) );
+
+                return $bad;
+            }
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s created: Property %s has collected its first data.', $table, $property_id ) );
+        }
+
+        if ( ! $db->isPartitioned( $table ) ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                '%s is not partitioned, and a build publishes by swapping a partition. '
+              . 'Run cmd=partition-init table=%s first.', $table, $table ) );
+
+            return $bad;
+        }
+
+        $builder    = new \OWA\Module\Base\Classes\Cube\Builder( $property_id );
+        $partitions = $builder->partitions( $range['from'], $range['to'] );
+
+        if ( ! $partitions ) {
+
+            /*
+             * A dated partition covering the range is missing, which means the
+             * rows are in the catch-all or nowhere. Refused rather than
+             * rebuilt: exchanging into pmax would put rows in a partition that
+             * does not describe them.
+             */
+            \OWA\Core\CoreAPI::error( sprintf(
+                'No dated partition of %s covers %d to %d. Run cmd=partition-rotate to extend the lead.',
+                $table, $range['from'], $range['to'] ) );
+
+            return $bad;
+        }
+
+        /*
+         * Say what the dates RESOLVED TO, not what was asked for. A build
+         * rebuilds whole partitions -- the swap is the unit of work -- so
+         * date=20260915 against monthly partitioning rebuilds all of September,
+         * and reporting the requested day back would hide that entirely.
+         */
+        \OWA\Core\CoreAPI::notice( sprintf( '%s: %d to %d covers %d partition(s).%s',
+            $table, $range['from'], $range['to'], count( $partitions ),
+            $dry_run ? ' Dry run.' : '' ) );
+
+        $outcome = $none;
 
         foreach ( $partitions as $span ) {
 
@@ -180,20 +384,25 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
             if ( $dry_run ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf( "%s:\n%s", $span['name'], $result['sql'] ) );
+                \OWA\Core\CoreAPI::notice( sprintf( "%s %s:\n%s",
+                    $table, $span['name'], $result['sql'] ) );
+
+                $outcome['built']++;
 
                 continue;
             }
 
             if ( ! $result['ok'] ) {
 
-                $failed++;
+                $outcome['failed']++;
 
                 continue;
             }
 
+            $outcome['built']++;
+
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s rebuilt: %s rows, %d steps, %d values computed.',
+                '  %s rebuilt: %s rows, %d steps, %d values computed.',
                 $span['name'], number_format( $result['rows'] ),
                 $result['steps'], $result['computed'] ) );
 
@@ -209,14 +418,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             $lock->refresh( self::BUILD_LEASE );
         }
 
-        $lock->release();
-
-        if ( $failed ) {
-
-            return $this->fail( sprintf(
-                '%d of %d partition(s) failed to rebuild. The live table is unchanged for those.',
-                $failed, count( $partitions ) ) );
-        }
+        return $outcome;
     }
 
     /**
