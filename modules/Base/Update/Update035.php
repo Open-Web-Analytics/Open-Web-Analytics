@@ -13,6 +13,18 @@ namespace OWA\Module\Base\Update;
  * partition column: partitioning a table after it holds rows rewrites every one
  * of them, and a build cannot publish into a table with no partitions to
  * exchange.
+ *
+ * And already partitioned IN THE RIGHT SHAPE. Event::getInitialPartitionRanges()
+ * asks for the front of the lead daily, so this creates the layout
+ * partition-rotate maintains rather than a monthly one that the first rotate has
+ * to reshape. A cube created monthly would rewrite a whole month on every
+ * cube-rebuild until that rotate ran, and on an installation whose scheduler was
+ * never set up, for as long as the month lasted.
+ *
+ * An installation that applied this update before that was so gets a monthly
+ * cube, and the next partition-rotate carves the front in one run -- including
+ * the current partition, despite its rows, because leaving it costs the same
+ * rewrite on every rebuild. No separate update is needed for it.
  */
 class Update035 extends \OWA\Core\Update {
 

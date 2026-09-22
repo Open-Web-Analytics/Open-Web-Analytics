@@ -57,6 +57,93 @@ final class EventEntityTest extends TestCase
         $this->assertSame($this->raw()->getPartitionColumn(), $this->event()->getPartitionColumn());
     }
 
+    /**
+     * The cube is CREATED with the daily front of its lead, not given it later.
+     *
+     * Relying on the first partition-rotate leaves the table in exactly the
+     * state the daily front exists to avoid -- every cube-rebuild rewriting a
+     * whole month -- and on an installation whose scheduler was never set up,
+     * permanently.
+     */
+    public function testItIsCreatedWithTheDailyFrontOfItsLeadAlreadyThere(): void
+    {
+        $ranges = $this->event()->getInitialPartitionRanges();
+        $daily  = 0;
+        $prev   = null;
+
+        foreach ($ranges as $name => $less_than) {
+            $start = substr($name, 1);
+
+            if ($prev !== null) {
+                $this->assertSame($prev, $start, 'the lead must have no gap and no overlap');
+            }
+
+            $prev = $less_than;
+
+            if ((strtotime($less_than) - strtotime($start)) / 86400 <= 1) {
+                $daily++;
+            }
+        }
+
+        $this->assertSame('p' . date('Ym01'), array_key_first($ranges),
+            'the lead starts at the beginning of the current month');
+        $this->assertGreaterThan(55, $daily, 'about two months of it is daily');
+        $this->assertLessThanOrEqual(62, $daily, 'and not more than two months');
+    }
+
+    /**
+     * The last span must be MONTHLY, or the next rotate extends a year at daily.
+     *
+     * Granularity is never stored: inferPartitionGranularity() reads the last
+     * span. This is the same invariant the carve's last-span guard protects,
+     * arriving at creation instead of at a rotate.
+     */
+    public function testTheCreatedLeadEndsMonthlyAndAtTheLeadBoundary(): void
+    {
+        $ranges = $this->event()->getInitialPartitionRanges();
+        $last   = array_key_last($ranges);
+        $start  = substr($last, 1);
+
+        $this->assertGreaterThan(
+            1,
+            (strtotime($ranges[$last]) - strtotime($start)) / 86400,
+            'the furthest-future partition is not a single day'
+        );
+
+        $this->assertSame(
+            \OWA\Core\Db::partitionLeadBoundary(),
+            end($ranges),
+            'and the lead reaches exactly as far as every other fact table'
+        );
+    }
+
+    /**
+     * Created in the shape partition-rotate maintains, so the first run is a
+     * no-op rather than a month to rewrite.
+     */
+    public function testTheFirstRotateHasNothingToDoOnAFreshCube(): void
+    {
+        $spans = [];
+
+        foreach ($this->event()->getInitialPartitionRanges() as $name => $less_than) {
+            $spans[] = ['name' => $name, 'start' => substr($name, 1), 'less_than' => $less_than];
+        }
+
+        $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
+        $cli   = $class->newInstanceWithoutConstructor();
+        $p     = $class->getProperty('params');
+        $p->setAccessible(true);
+        $p->setValue($cli, []);
+
+        foreach (['carvePlan' => $spans, 'mergeablePeriods' => $spans] as $method => $arg) {
+            $m = new ReflectionMethod($cli, $method);
+            $m->setAccessible(true);
+
+            $this->assertSame([], $m->invoke($cli, $arg),
+                "$method should find nothing to do on a freshly created cube");
+        }
+    }
+
     public function testItIsNotAFactTable(): void
     {
         $this->assertNotInstanceOf(\OWA\Core\Entity\FactTable::class, $this->event());

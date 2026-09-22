@@ -3237,14 +3237,24 @@ class Db extends \OWA\Core\Base {
      * range is snapped outwards to the boundaries of the partitions it touches,
      * since a partition can only be rewritten whole.
      *
+     * A SKIP RANGE is left exactly as it is, and is how the reporting cube keeps
+     * the daily part of its lead. Those are ordinary one-day partitions, so
+     * every filter here would admit them and a change of granularity would
+     * merge them away -- rewriting live rows, which partition-rotate would then
+     * rewrite a second time putting them back. Skipping splits the selection
+     * into more than one run, and each run is planned on its own; planning
+     * across the hole would try to merge partitions from either side of it into
+     * one.
+     *
      * @param string      $table_name
      * @param string      $granularity  quarter-month|half-month|monthly
      * @param bool        $dry_run      report the statements without running them
      * @param string|null $from         first day to convert, yyyymmdd
      * @param string|null $to           first day not to convert, yyyymmdd
+     * @param array|null  $skip         ['start','less_than'] to leave untouched
      * @return array ['changed' => string[], 'skipped' => int, 'failed' => string[]]
      */
-    function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null ) {
+    function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null ) {
 
         $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array(), 'planned' => 0 );
 
@@ -3315,19 +3325,103 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        $span_start = $spans[0]['start'];
-        $span_end   = $spans[ count( $spans ) - 1 ]['less_than'];
+        // Leave the skip range exactly as it is.
+        if ( $skip ) {
 
-        $target = self::makePartitionRangesForSpan( $span_start, $span_end, $granularity );
+            $kept = array();
 
-        if ( ! $target ) {
+            foreach ( $spans as $span ) {
+
+                if ( (string) $span['start'] >= (string) $skip['start']
+                  && (string) $span['less_than'] <= (string) $skip['less_than'] ) {
+
+                    continue;
+                }
+
+                $kept[] = $span;
+            }
+
+            $spans = array_values( $kept );
+
+            if ( ! $spans ) {
+
+                return $result;
+            }
+        }
+
+        // One run per contiguous stretch. A skip range leaves a hole, and a
+        // target planned across it would merge partitions from either side.
+        $runs = array();
+        $run  = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( $run && (string) $run[ count( $run ) - 1 ]['less_than'] !== (string) $span['start'] ) {
+
+                $runs[] = $run;
+                $run    = array();
+            }
+
+            $run[] = $span;
+        }
+
+        if ( $run ) {
+
+            $runs[] = $run;
+        }
+
+        $total    = count( $this->getPartitionSpans( $table_name ) );
+        $selected = count( $spans );
+        $targets  = array();
+
+        foreach ( $runs as $i => $one ) {
+
+            $t = self::makePartitionRangesForSpan(
+                $one[0]['start'], $one[ count( $one ) - 1 ]['less_than'], $granularity );
+
+            if ( ! $t ) {
+
+                continue;
+            }
+
+            $targets[ $i ] = $t;
+        }
+
+        if ( ! $targets ) {
 
             return $result;
         }
 
-        // What the table would end up with: the converted span, plus whatever
-        // partitions the range left alone.
-        $result['planned'] = count( $target ) + ( count( $this->getPartitionSpans( $table_name ) ) - count( $spans ) );
+        // What the table would end up with: every converted run, plus whatever
+        // the filters and the skip range left alone.
+        $planned = $total - $selected;
+
+        foreach ( $targets as $t ) {
+
+            $planned += count( $t );
+        }
+
+        $result['planned'] = $planned;
+
+        foreach ( $targets as $i => $target ) {
+
+            $this->repartitionRun( $table_name, $runs[ $i ], $target, $dry_run, $result );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Reshape one contiguous run of partitions into one target shape.
+     *
+     * @param string $table_name
+     * @param array  $spans    the run, in order
+     * @param array  $target   name => less_than
+     * @param bool   $dry_run
+     * @param array  $result   accumulated across runs
+     * @return void
+     */
+    private function repartitionRun( $table_name, array $spans, array $target, $dry_run, array &$result ) {
 
         // Cut only where both sequences agree on a boundary. Every such cut
         // consumes at least one partition from each side, and the span end is
@@ -3397,8 +3491,6 @@ class Db extends \OWA\Core\Base {
                 $result['failed'][] = implode( ',', $from );
             }
         }
-
-        return $result;
     }
 
     /**
@@ -3446,6 +3538,8 @@ class Db extends \OWA\Core\Base {
     /**
      * Creates a new table
      *
+     * @param \OWA\Core\Entity $entity
+     * @return mixed
      */
     function createTable($entity) {
 
@@ -3555,18 +3649,49 @@ class Db extends \OWA\Core\Base {
                 $columns .= sprintf( ', %s (%s, %s)', OWA_DTD_PRIMARY_KEY, $pk, $partition_column );
             }
 
-            // Cover the current month and a year ahead, so that the catch-all
-            // stays empty until the lead runs down. partition-init tops this up
-            // and is meant to run periodically; a table created and never
-            // topped up still has a year before anything reaches the catch-all.
-            $table_options .= $this->makePartitionClause(
-                $partition_column,
-                self::makePartitionRanges(
+            /*
+             * Cover the current month and a year ahead, so that the catch-all
+             * stays empty until the lead runs down. partition-init tops this up
+             * and is meant to run periodically; a table created and never
+             * topped up still has a year before anything reaches the catch-all.
+             *
+             * AN ENTITY MAY ASK FOR A DIFFERENT SHAPE, and the reporting cube
+             * does: the front of its lead has to be daily or every rebuild
+             * rewrites a whole month. Built here rather than left to the first
+             * partition-rotate, because until that runs the table is in the
+             * state the daily part exists to avoid -- and a rotate that is not
+             * scheduled never comes.
+             */
+            $ranges = null;
+
+            if ( method_exists( $entity, 'getInitialPartitionRanges' ) ) {
+
+                $ranges = $entity->getInitialPartitionRanges();
+
+                // An entity cannot spend more than the hard ceiling on its own
+                // say-so. Falling back to monthly leaves a correct table that
+                // rebuilds a period at a time, which partition-rotate reports.
+                if ( $ranges && count( $ranges ) > self::PARTITION_COUNT_LIMIT ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        '%s asked for %d partitions at creation, over the ceiling of %d. '
+                      . 'Created monthly instead.',
+                        $entity->getTableName(), count( $ranges ), self::PARTITION_COUNT_LIMIT ) );
+
+                    $ranges = null;
+                }
+            }
+
+            if ( ! $ranges ) {
+
+                $ranges = self::makePartitionRanges(
                     date( 'Ymd' ),
                     date( 'Ymd', strtotime( self::partitionLeadBoundary() . ' -1 day' ) ),
                     'monthly'
-                )
-            );
+                );
+            }
+
+            $table_options .= $this->makePartitionClause( $partition_column, $ranges );
         }
 
         return $this->query(sprintf(OWA_SQL_CREATE_TABLE, $entity->getTableName(), $columns, $table_options));

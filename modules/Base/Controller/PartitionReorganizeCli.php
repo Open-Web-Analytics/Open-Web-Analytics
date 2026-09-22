@@ -20,6 +20,11 @@ namespace OWA\Module\Base\Controller;
  *   cmd=partition-reorganize granularity=half-month
  *   cmd=partition-reorganize granularity=quarter-month from=20260801 to=20260901
  *   cmd=partition-reorganize granularity=monthly --dry-run
+ *
+ * The reporting cube is partly exempt. The front of its lead is daily and
+ * cmd=partition-rotate maintains it, so this leaves that part alone and changes
+ * the granularity of the rest; `daily` is refused for it outright. An explicit
+ * from=/to= covering the front is still honoured.
  */
 class PartitionReorganizeCli extends PartitionsCli {
 
@@ -30,7 +35,7 @@ class PartitionReorganizeCli extends PartitionsCli {
             return;
         }
 
-        $db          = \OWA\Core\CoreAPI::dbSingleton();
+        $db          = $this->db();
         $granularity = $this->getParam( 'granularity' );
         $dry_run     = (bool) $this->getParam( 'dry-run' );
         $from        = $this->getParam( 'from' ) ?: null;
@@ -81,10 +86,54 @@ class PartitionReorganizeCli extends PartitionsCli {
                 continue;
             }
 
+            /*
+             * DAILY IS NOT AN OPERATOR'S CHOICE FOR THE CUBE.
+             *
+             * Granularity is never stored: inferPartitionGranularity() reads
+             * the LAST span. Take the cube wholly daily and the next
+             * partition-rotate infers `daily` and extends twelve months of lead
+             * at daily -- some 365 partitions, with no warning. The front two
+             * months are daily already and partition-rotate owns them
+             * (Db::CUBE_DAILY_MONTHS); what this command sets is the
+             * granularity of the rest.
+             */
+            if ( $granularity === 'daily' && $this->isCube( $table ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: refusing daily. The front of its lead is daily already and '
+                  . 'cmd=partition-rotate maintains it; taking the whole table daily would make '
+                  . 'the next rotate extend a year of lead at daily. Choose quarter-month, '
+                  . 'half-month or monthly for the rest of the lead.', $table ) );
+
+                continue;
+            }
+
             $touched++;
 
+            /*
+             * The cube's daily front is left alone unless a range asks for it.
+             *
+             * Those are ordinary one-day partitions, so every filter in
+             * repartitionTable() admits them and a change of granularity would
+             * merge them away -- rewriting live rows, which the next rotate
+             * would rewrite again putting them back. An explicit from=/to= is
+             * still honoured, for an operator who means it.
+             */
+            $protect = ( $from === null && $to === null && $this->isCube( $table ) )
+                ? $this->dailyCoverage( $db->getPartitionSpans( $table ) )
+                : null;
+
+            if ( $protect ) {
+
+                $protect = array( 'start' => $protect['start'], 'less_than' => $protect['end'] );
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: leaving %s to %s daily -- that is the front of its lead, which '
+                  . 'cmd=partition-rotate maintains.', $table, $protect['start'], $protect['less_than'] ) );
+            }
+
             // Plan first so the count can be judged before anything is rewritten.
-            $plan = $db->repartitionTable( $table, $granularity, true, $from, $to );
+            $plan = $db->repartitionTable( $table, $granularity, true, $from, $to, $protect );
 
             // A finer granularity multiplies the detail window, which can put the
             // table over its budget. Coarsening old history is what makes room:
@@ -116,7 +165,7 @@ class PartitionReorganizeCli extends PartitionsCli {
                 );
 
                 // Re-plan against what the table now looks like.
-                $plan = $db->repartitionTable( $table, $granularity, true, $from, $to );
+                $plan = $db->repartitionTable( $table, $granularity, true, $from, $to, $protect );
             }
 
             if ( ! $this->withinPartitionBudget( $table, $plan['planned'], $budget ) ) {
@@ -124,7 +173,7 @@ class PartitionReorganizeCli extends PartitionsCli {
                 continue;
             }
 
-            $result = $dry_run ? $plan : $db->repartitionTable( $table, $granularity, false, $from, $to );
+            $result = $dry_run ? $plan : $db->repartitionTable( $table, $granularity, false, $from, $to, $protect );
 
             if ( ! $result['changed'] && ! $result['failed'] ) {
 

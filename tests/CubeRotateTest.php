@@ -711,6 +711,66 @@ final class CubeRotateTest extends TestCase
             'refused whole rather than part-carved up to the limit');
     }
 
+    /**
+     * THE LEAD IS EXHAUSTED: rows are landing in a coarse partition.
+     *
+     * The case a missed run or an upgrade leaves behind. Nothing is daily, the
+     * partition holding today has rows, and every cube-rebuild until that
+     * period ends is rewriting a whole month. One run has to get the whole
+     * daily part back, not just make a start on it.
+     */
+    public function testItRecoversTheWholeDailyPartWhenTheLeadIsExhausted(): void
+    {
+        RotateAtDate::$now       = '20261110';
+        RotateAtDate::$db->spans = array_merge(
+            [$this->span('20261101', '20261201')],          // current, HOLDS ROWS
+            [$this->span('20261201', '20270101')],
+            [$this->span('20270101', '20270201')],
+            [$this->span('20270201', '20270301')],
+            [$this->span('20270301', '20270401')]
+        );
+        RotateAtDate::$db->rows = ['p20261101' => 120_000];
+
+        $this->assertSame(0, $this->call('dailyCount', [RotateAtDate::$db->spans]),
+            'the fixture starts with nothing daily');
+
+        $this->call('carveCubeMonths', ['owa_event', ['limit' => 400, 'reason' => 'test'], false]);
+
+        $carved = RotateAtDate::$db->carved;
+
+        $this->assertSame(['p20261101', 'p20261201'], array_column($carved, 'from'),
+            'both months in one run -- November despite its rows, then December');
+
+        $this->assertSame(61, array_sum(array_column($carved, 'into')),
+            'which is the full two months, not a first instalment');
+    }
+
+    /**
+     * And the recovery is idempotent: a second run has nothing left to do.
+     *
+     * Otherwise the daily part would be re-carved on every run, rewriting the
+     * rows it just rewrote.
+     */
+    public function testTheRecoveryDoesNotRepeatOnTheNextRun(): void
+    {
+        RotateAtDate::$now = '20261110';
+
+        $recovered = array_merge(
+            $this->dailySpans('202611'),
+            $this->dailySpans('202612'),
+            [$this->span('20270101', '20270201')],
+            [$this->span('20270201', '20270301')]
+        );
+
+        RotateAtDate::$db->spans = $recovered;
+        RotateAtDate::$db->rows  = ['p20261101' => 12_000];
+
+        $this->call('carveCubeMonths', ['owa_event', ['limit' => 400, 'reason' => 'test'], false]);
+
+        $this->assertSame([], RotateAtDate::$db->carved,
+            'two months daily already, so nothing is rewritten');
+    }
+
     public function testItLeavesAPastMonthWithRowsAlone(): void
     {
         RotateAtDate::$now       = '20261110';
