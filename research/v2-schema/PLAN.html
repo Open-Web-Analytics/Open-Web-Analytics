@@ -2487,7 +2487,7 @@ cannot overwrite a newer value with an older beacon</li>
 <code>properties</code> is mutable state the site sets whenever it likes. 2.9 already
 drew that line; this keeps it drawn while letting both live in one row.</p>
 
-<h3 id="s228"><span class="num">2.27</span>A cube per property <span class="chip c-dec">Decided</span></h3>
+<h3 id="s228"><span class="num">2.27</span>A cube per property <span class="chip c-done">Shipped</span></h3>
 
 <p><strong>One <code>owa_event</code> per Property, not one per installation.
 Decided 22&nbsp;Sep.</strong> Raw stays single &mdash; it is written by ingest and
@@ -2536,19 +2536,32 @@ pruning keeps the working set to the partitions a query actually reads.
 <code>PARTITION_COUNT_LIMIT</code> and the per-table budget are OWA policy, which
 an installation can raise. Neither disqualifies this.</p>
 
-<h4><span class="num">2.27.2</span>What has to change <span class="chip c-dec">Decided</span></h4>
+<h4><span class="num">2.27.2</span>What has to change <span class="chip c-done">Shipped</span></h4>
+
+<p>Built on <code>feature/v2-cube-per-property</code>, schema&nbsp;41. Everything
+below but the last row is done.</p>
 
 <div class="scroll"><table>
-<thead><tr><th>Today</th><th>Becomes</th></tr></thead>
+<thead><tr><th>Before</th><th>Now</th></tr></thead>
 <tbody>
-<tr><td>One <code>owa_event</code>, created by Update&nbsp;035</td><td>One per Property, created when the Property is created &mdash; and backfilled for Properties that already exist</td></tr>
-<tr><td><code>Entity\Event</code> names one table</td><td>The entity is a SHAPE; the table name comes from the Property</td></tr>
-<tr><td><code>Builder</code> targets <code>base.event</code></td><td>Targets a named cube; the build loops Properties</td></tr>
-<tr><td><code>cmd=cube-rebuild</code> rebuilds the cube</td><td>Rebuilds one Property's, or every one</td></tr>
-<tr><td>The build lock is keyed <code>cube-build:&lt;table&gt;</code></td><td>Unchanged, and already correct &mdash; it becomes per Property for free</td></tr>
-<tr><td><code>PartitionsCli::factTables()</code> reads the entity registry</td><td>Has to enumerate the per-Property cubes too</td></tr>
-<tr><td>Custom dimensions register install-wide (<a href="#s227">&sect;2.26.2</a>)</td><td>Register per Property, which is what GA does</td></tr>
+<tr><td>One <code>owa_event</code>, created by Update&nbsp;035</td><td><code>owa_event_&lt;property&nbsp;id&gt;</code>, created by a build on the Property's first data (<a href="#s227">&sect;2.27.3</a>). Update&nbsp;041 drops <code>owa_event</code>; nothing is backfilled, because a cube is rebuilt rather than copied</td></tr>
+<tr><td><code>Entity\Event</code> names one table</td><td>The entity is a SHAPE with no table, and is not registered as one of the module's entities. <code>Classes\Cube\Cubes</code> names and creates the tables</td></tr>
+<tr><td><code>Builder</code> targets <code>base.event</code></td><td>Constructed with a Property, and restricts every read of raw to that Property's profiles</td></tr>
+<tr><td><code>cmd=cube-rebuild</code> rebuilds the cube</td><td>Every cube that exists plus every Property collecting in the range, or <code>property=&lt;id&gt;</code> for one</td></tr>
+<tr><td>The build lock is keyed <code>cube-build:&lt;table&gt;</code></td><td>Unchanged, and per Property for free &mdash; but taken BEFORE the cube is created, which is the one step two cadences are most likely to meet on</td></tr>
+<tr><td><code>PartitionsCli::factTables()</code> reads the entity registry</td><td>Plus the cubes, enumerated from the database: what these commands maintain is the tables that exist, which after a Property is deleted is not the set of Properties</td></tr>
+<tr><td>Custom dimensions register install-wide (<a href="#s227">&sect;2.26.2</a>)</td><td>Register per Property, which is what GA does. <strong>Still to build</strong></td></tr>
 </tbody></table></div>
+
+<p class="note"><strong>Two traps this turned up.</strong>
+<code>Entity\Event extends EventRaw</code>, so the table name the parent
+constructor sets is <code>owa_event_RAW</code> &mdash; an unbound cube entity
+answered with a real table, and writing a cube's rows into raw is not a failure
+anything downstream would notice. The constructor removes it and an unbound
+instance refuses to name a table at all. And an empty site list has to mean
+<code>1 = 0</code> rather than no restriction: a Property whose profiles have
+been deleted or moved would otherwise be handed every other Property's traffic,
+and the build's rows-in-equals-rows-out check would agree with it.</p>
 
 <p class="note"><strong>Two things are deliberately NOT split.</strong>
 <code>owa_event_raw</code> stays single: ingest writes it on the hot path, nothing
@@ -2558,7 +2571,7 @@ a visitor is shared across Properties by the same cookie &mdash; splitting it wo
 give one person a first-touch per Property, which is a different claim from the
 one 2.9 makes.</p>
 
-<h4><span class="num">2.27.3</span>A cube is created on first data, by the build <span class="chip c-dec">Decided</span></h4>
+<h4><span class="num">2.27.3</span>A cube is created on first data, by the build <span class="chip c-done">Shipped</span></h4>
 
 <p><strong>Not when the Property is created.</strong> A cube is 72 partitions
 (<a href="#s228">&sect;2.8</a>) &mdash; 72 files and about 2.7 seconds &mdash;
