@@ -477,7 +477,6 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         return $done;
     }
 
-    /** Is the driver able to partition at all? Report once, clearly. */
     /**
      * Today, as yyyymmdd.
      *
@@ -490,6 +489,21 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     protected function today() {
 
         return date( 'Ymd' );
+    }
+
+    /**
+     * The database.
+     *
+     * The second seam the front tier needs. Its merge and carve read the live
+     * partition list and then issue DDL against it, so without this a test can
+     * only reach the arithmetic -- and the loop that turns a decision into an
+     * ALTER goes uncovered.
+     *
+     * @return \OWA\Core\Db
+     */
+    protected function db() {
+
+        return \OWA\Core\CoreAPI::dbSingleton();
     }
 
     /**
@@ -532,11 +546,13 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * A month cannot merge the moment it ends: its last days are still inside
      * the window, and merging would make settling them cost a month. So the
      * trigger is the window no longer reaching the month's final day, which is
-     * why two months are daily for the first few days of each month.
+     * why THREE months are daily for the first week of each month: the one the
+     * window still reaches, the current one, and the carve-ahead margin. The
+     * count sawtooths between about 71 and 103 rather than growing -- every
+     * carve is answered by a merge a week later -- and the peak is what has to
+     * fit the budget, not the steady state.
      *
      * @param string $table
-     * @param array  $spans
-     * @param int    $window
      * @param bool   $dry_run
      * @return bool whether anything was merged
      */
@@ -547,34 +563,17 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             return false;
         }
 
-        $window = $this->windowDays();
-        $spans  = \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans( $table );
-
-        $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $cutoff  = date( 'Ymd', strtotime( $this->today() . ' -' . (int) $window . ' days' ) );
-        $months  = $this->dailyByMonth( $spans );
+        $db      = $this->db();
+        $spans   = $db->getPartitionSpans( $table );
         $touched = false;
 
-        foreach ( $months as $month => $group ) {
-
-            $month_end = date( 'Ymd', strtotime( $month . '01 +1 month -1 day' ) );
-
-            // Still inside the window, or it is this month.
-            if ( $month_end >= $cutoff ) {
-
-                continue;
-            }
-
-            if ( count( $group['names'] ) < 2 ) {
-
-                continue;
-            }
+        foreach ( $this->mergeableMonths( $spans ) as $month => $group ) {
 
             $touched = true;
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 '  merge %d daily partitions of %s back into one (window passed %s).',
-                count( $group['names'] ), $month, $month_end ) );
+                count( $group['names'] ), $month, $group['month_end'] ) );
 
             if ( $dry_run ) {
 
@@ -593,6 +592,40 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * The months whose daily partitions the window no longer reaches.
+     *
+     * The exact complement of carveCandidates(): merge once a month's last day
+     * is older than the window, carve while it is not. Disjoint by
+     * construction, so nothing is merged and re-carved on alternating runs --
+     * which would rewrite the table forever for no change in shape.
+     *
+     * @param array $spans
+     * @return array yyyymm => ['names','start','less_than','month_end']
+     */
+    protected function mergeableMonths( array $spans ) {
+
+        $cutoff = date( 'Ymd', strtotime( $this->today() . ' -' . $this->windowDays() . ' days' ) );
+
+        $mergeable = array();
+
+        foreach ( $this->dailyByMonth( $spans ) as $month => $group ) {
+
+            $month_end = date( 'Ymd', strtotime( $month . '01 +1 month -1 day' ) );
+
+            // Still reached by the window, or nothing to merge.
+            if ( $month_end >= $cutoff || count( $group['names'] ) < 2 ) {
+
+                continue;
+            }
+
+            $group['month_end']  = $month_end;
+            $mergeable[ $month ] = $group;
+        }
+
+        return $mergeable;
+    }
+
+    /**
      * Carve an empty monthly partition into days.
      *
      * Only empty ones, and only the current month or later: reorganizing a
@@ -600,7 +633,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * scheme exists to avoid paying repeatedly.
      *
      * @param string $table
-     * @param array  $spans
+     * @param array  $budget   from partitionLimit()
      * @param bool   $dry_run
      * @return bool whether anything was carved
      */
@@ -611,9 +644,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             return false;
         }
 
-        $spans = \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans( $table );
-
-        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $db      = $this->db();
+        $spans   = $db->getPartitionSpans( $table );
         $touched = false;
 
         /*
@@ -719,13 +751,28 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         $this_month = substr( $this->today(), 0, 6 ) . '01';
         $horizon    = date( 'Ymd', strtotime( $this_month . ' +1 month' ) );
 
+        /*
+         * The window's reach is the lower bound, not the start of this month.
+         *
+         * A month that has ENDED can still be inside the rebuild window -- on
+         * 5 December with a seven-day window, November is rebuilt until the
+         * 7th -- and those rebuilds are month-sized until it is carved. Cutting
+         * at the start of the current month would exclude it before anything
+         * looked at what carving would actually cost, so an operator asking why
+         * would be told "it is in the past" when the real answer is "it holds
+         * rows, and this would rewrite them". force=1 has something to override
+         * this way, and nothing the other.
+         */
+        $reach = date( 'Ymd', strtotime( $this->today() . ' -' . $this->windowDays() . ' days' ) );
+
         $candidates = array();
 
         foreach ( $spans as $span ) {
 
-            // Already fine-grained, older than this month, or beyond the margin.
+            // Already fine-grained, ended before the window reaches it, or
+            // beyond the carve-ahead margin.
             if ( $this->spanDays( $span ) <= 1
-              || $span['less_than'] <= $this_month
+              || $span['less_than'] <= $reach
               || $span['start'] > $horizon ) {
 
                 continue;
@@ -794,6 +841,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         return (int) round( ( $end - $start ) / 86400 );
     }
 
+    /** Is the driver able to partition at all? Report once, clearly. */
     protected function assertPartitioningSupported() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
