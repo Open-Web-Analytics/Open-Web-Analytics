@@ -219,8 +219,6 @@ namespace OWA\Module\Base\Classes;
         // See the Partitioning Fact Tables page in the wiki.
         foreach (array(
             'OWA_PARTITION_DETAIL_MONTHS'       => 'partition_detail_months',
-            'OWA_PARTITION_BUDGET_RESERVE'      => 'partition_budget_reserve',
-            'OWA_PARTITION_MIN_LIMIT'           => 'partition_min_limit',
             'OWA_PARTITION_MAX_YEARS_PER_BLOCK' => 'partition_max_years_per_block',
             'OWA_PARTITION_MAX_PARTITIONS'      => 'partition_max_partitions',
         ) as $constant => $key) {
@@ -1180,10 +1178,8 @@ namespace OWA\Module\Base\Classes;
                 // Fraction of the server's spare open-file slots partitioning may
                 // claim, as a divisor: 2 means half. The cap is shared with every
                 // other table on the instance, and the schema grows.
-                'partition_budget_reserve'           => 2,
                 // Fewest partitions a table may be limited to, whatever the
                 // budget arithmetic says.
-                'partition_min_limit'                => 24,
                 // How long a day stays in the cube's daily front tier before
                 // its month merges back. This IS the late-arrival window: past
                 // it, an event for that day is in raw and not in the cube
