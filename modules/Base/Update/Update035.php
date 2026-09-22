@@ -3,7 +3,14 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Create owa_event, the reporting cube.
+ * Create owa_event, the one installation-wide reporting cube.
+ *
+ * SUPERSEDED BY UPDATE 041, which drops it: there is one cube per Property now
+ * (Classes\Cube\Cubes) and no owa_event at all. This is left doing what it did
+ * rather than gutted, so that the up and down of the schema stay exact
+ * inverses of each other -- a rewind past 41 puts owa_event back, and 35 is
+ * what has to take it away again. A fresh installation pays one CREATE and one
+ * DROP of an empty table on its way through.
  *
  * Empty, and written only by cmd=cube-rebuild, so this adds storage and
  * changes no behaviour -- the same shape as Update034, which created the two
@@ -34,7 +41,7 @@ class Update035 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
+        $entity = \OWA\Module\Base\Classes\Cube\Cubes::preSplitEntity();
 
         if ( $entity->createTable() === false ) {
 
@@ -54,7 +61,7 @@ class Update035 extends \OWA\Core\Update {
      */
     function down() {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
+        $entity = \OWA\Module\Base\Classes\Cube\Cubes::preSplitEntity();
 
         if ( $entity->dropTable() === false ) {
 

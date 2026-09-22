@@ -59,7 +59,8 @@ class ReorganizeAsCube extends \OWA\Module\Base\Controller\PartitionReorganizeCl
 
     protected function factTables($only = null)
     {
-        return ['owa_event'];
+        // A cube is named after its Property; there is no owa_event.
+        return ['owa_event_1'];
     }
 
     protected function factTableBudget()

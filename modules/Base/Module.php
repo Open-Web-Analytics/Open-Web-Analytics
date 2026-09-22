@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 40;
+        $this->required_schema_version = 41;
         return parent::__construct();
     }
 
@@ -2617,17 +2617,22 @@ class Module extends \OWA\Core\Module {
                 'job_lock',
                 'site_user',
                 /*
-                 * v2. Registered unconditionally so cmd=update creates them
-                 * and the partition commands find owa_event_raw and owa_event
-                 * -- neither is conditional on anything, and a table nothing
-                 * writes to costs an empty tablespace.
+                 * v2. Registered unconditionally so cmd=update creates them and
+                 * the partition commands find them -- neither is conditional on
+                 * anything, and a table nothing writes to costs an empty
+                 * tablespace. Handler\EventRawHandlers writes both, for every
+                 * site.
                  *
-                 * Handler\EventRawHandlers writes the first two, for every
-                 * site. owa_event has one writer, cmd=cube-rebuild.
+                 * `event` IS NOT HERE, and that is not an omission. There is no
+                 * owa_event: the reporting cube is one table per Property,
+                 * named and created by Classes\Cube\Cubes, so Entity\Event is
+                 * a shape rather than a table. Registering it would have this
+                 * module's install create owa_event, and would have the
+                 * partition commands maintain a lead on a table nothing writes
+                 * to.
                  */
                 'event_raw',
-                'visitor_acquisition',
-                'event')
+                'visitor_acquisition')
             );
 
     }

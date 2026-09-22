@@ -32,6 +32,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * property that actually matters lets it join the set instead of needing a
      * second copy of every partition command.
      *
+     * THE CUBES ARE NOT IN THE REGISTRY. There is one per Property, so they are
+     * enumerated from the database and appended -- see Classes\Cube\Cubes.
+     *
      * @param string|null $only  restrict to one table
      * @return string[]
      */
@@ -59,6 +62,23 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             }
 
             $tables[] = $table;
+        }
+
+        /*
+         * And the reporting cubes, which are not in the registry: there is one
+         * per Property, so Entity\Event is a shape and the tables are named
+         * after Properties. Read from the database rather than from the
+         * Property list -- what these commands maintain is the tables that
+         * exist, which after a Property is deleted is not the same set.
+         */
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::existing() as $cube ) {
+
+            if ( $only && $cube !== $only ) {
+
+                continue;
+            }
+
+            $tables[] = $cube;
         }
 
         if ( $only && ! $tables ) {
@@ -551,7 +571,11 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             }
         }
 
-        return null;
+        // A cube's name carries its Property, so this needs no query.
+        $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdFor( $table );
+
+        return $property_id === ''
+            ? null : \OWA\Module\Base\Classes\Cube\Cubes::entityFor( $property_id );
     }
 
     /**

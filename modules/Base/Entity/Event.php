@@ -37,13 +37,49 @@ namespace OWA\Module\Base\Entity;
  */
 class Event extends EventRaw {
 
+    /**
+     * Which Property's cube this instance is, as a decimal string.
+     *
+     * Empty until bindToProperty() is called, and every table operation
+     * refuses while it is.
+     *
+     * @var string
+     */
+    private $property_id = '';
+
+    /**
+     * Whether this instance has a table at all.
+     *
+     * Separate from $property_id because the pre-split cube has a table and no
+     * Property -- and separate from the inherited table name because that name
+     * is owa_event_raw until something overwrites it, which is exactly the
+     * mistake this exists to make impossible.
+     *
+     * @var bool
+     */
+    private $bound = false;
+
     function __construct() {
 
         // Raw's 54 columns, its primary key, its indexes and its partition
         // column, in that order.
         parent::__construct();
 
-        $this->setTableName( 'event' );
+        /*
+         * NO TABLE HERE. There is no owa_event: this class is the SHAPE of a
+         * cube, and a cube belongs to a Property (Cube\Cubes).
+         * bindToProperty() is what gives an instance a table.
+         *
+         * The name parent::__construct() set is removed rather than left. It
+         * is owa_event_RAW -- inherited along with raw's columns -- so an
+         * unbound instance would otherwise answer with a real table, and a
+         * caller that forgot to bind would write the cube's rows into raw.
+         */
+        unset( $this->_tableProperties['name'], $this->_tableProperties['alias'] );
+
+        // And the flag that name set on the way past: setTableName() is what
+        // records a binding, and raw's constructor has just called it.
+        $this->bound = false;
 
         /*
          * The session's attribution, read from its first event -- the only row
@@ -172,6 +208,92 @@ class Event extends EventRaw {
     public function getDailyLeadMonths() {
 
         return \OWA\Core\Db::CUBE_DAILY_MONTHS;
+    }
+
+    /**
+     * Point this shape at one Property's cube.
+     *
+     * The columns are the same for every Property -- a release adds one to all
+     * of them -- so there is one class and N tables rather than N classes.
+     * Custom dimensions are what make two cubes differ, and they are registered
+     * per Property precisely because the namespace is the Property's.
+     *
+     * @param int|string $property_id
+     * @return $this
+     */
+    public function bindToProperty( $property_id ) {
+
+        $this->property_id = (string) $property_id;
+
+        return $this->bindToTable(
+            \OWA\Module\Base\Classes\Cube\Cubes::PREFIX . $this->property_id );
+    }
+
+    /**
+     * Point this shape at a table by name, without a Property.
+     *
+     * For the pre-split cube: `owa_event` existed between schema 35 and 41, and
+     * the updates that created it, added columns to it and finally dropped it
+     * have to be able to name it. It has no Property, so bindToProperty()
+     * cannot express it. A test probing the creation path is the other caller.
+     *
+     * @param string $alias  the name without the namespace prefix
+     * @return $this
+     */
+    public function bindToTable( $alias ) {
+
+        $this->setTableName( $alias, \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) );
+
+        return $this;
+    }
+
+    /**
+     * Naming a table is what binds this shape to one.
+     *
+     * Overridden only to record that it happened. The constructor removes the
+     * name it inherits -- EventRaw's -- so an instance has a table only if
+     * something gave it one, and this is the single way through.
+     *
+     * @param string $name
+     * @param string $namespace
+     * @return void
+     */
+    public function setTableName( $name, $namespace = 'owa_' ) {
+
+        parent::setTableName( $name, $namespace );
+
+        $this->bound = true;
+    }
+
+    /** @return string  the Property's id, or '' while unbound */
+    public function getPropertyId() {
+
+        return $this->property_id;
+    }
+
+    /**
+     * The cube's table, once it has a Property.
+     *
+     * Refuses rather than answering 'owa_event'. That table does not exist, and
+     * a caller that has not said which Property it means is asking a question
+     * with no answer -- so the failure belongs here, naming the fix, rather
+     * than several layers down as "table doesn't exist" against a name nothing
+     * ever created.
+     *
+     * @return string
+     * @throws \RuntimeException while unbound
+     */
+    public function getTableName() {
+
+        if ( ! $this->bound ) {
+
+            throw new \RuntimeException(
+                'There is no owa_event: a reporting cube belongs to a Property. '
+              . 'Bind the entity with bindToProperty(), or go through '
+              . 'Classes\\Cube\\Cubes, which names and creates them.' );
+        }
+
+        return parent::getTableName();
     }
 
     /**

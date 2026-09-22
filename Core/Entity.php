@@ -175,13 +175,16 @@ class Entity {
         
         //print_r($all_cols);
         
-        $table = $this->getTableName();
         $new_cols = array();
         $ns = '';
         $as = '';
         
+        // Asked for only when it is wanted. A cube entity is a shape until it
+        // is bound to a Property (Entity\Event), and answering "what are this
+        // shape's columns" must not depend on which table it happens to be
+        // pointed at -- which is the question a build asks before it has one.
         if (!empty($table_namespace)):
-            $ns = $table.'.';
+            $ns = $this->getTableName().'.';
         endif;
                 
         foreach ($all_cols as $k => $v) {

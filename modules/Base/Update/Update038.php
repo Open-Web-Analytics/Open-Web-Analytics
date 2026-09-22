@@ -35,20 +35,22 @@ class Update038 extends \OWA\Core\Update {
 
     function down() {
 
-        foreach ( array( 'base.event', 'base.event_raw' ) as $name ) {
+        if ( $this->dropCubeColumn( 'referer_query' ) === false ) {
 
-            $entity = \OWA\Core\CoreAPI::entityFactory( $name );
-
-            if ( $this->dropColumnIfPresent( $entity, 'referer_query' ) === false ) {
-
-                $this->e->notice( sprintf(
-                    'Dropping %s.referer_query failed', $entity->getTableName() ) );
-
-                return false;
-            }
+            return false;
         }
 
-        return $this->clearCubeInstantColumns();
+        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
+
+        if ( $this->dropColumnIfPresent( $raw, 'referer_query' ) === false ) {
+
+            $this->e->notice( sprintf(
+                'Dropping %s.referer_query failed', $raw->getTableName() ) );
+
+            return false;
+        }
+
+        return true;
     }
 }
 

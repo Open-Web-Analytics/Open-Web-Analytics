@@ -8,8 +8,14 @@ namespace OWA\Module\Base\Classes\Cube;
 //
 
 /**
- * Builds the reporting cube: raw events in one partition, enriched into
- * owa_event.
+ * Builds one Property's reporting cube: raw events in one partition, enriched
+ * into owa_event_<property id>.
+ *
+ * ONE BUILDER, ONE PROPERTY. Raw is shared and the cubes are not (Cubes), so a
+ * builder is constructed with the Property whose cube it writes and restricts
+ * every read of raw to that Property's profiles. Its staging and computed
+ * tables are named after its target, so two Properties build concurrently
+ * without contending for anything.
  *
  * One statement and a swap. The statement builds every row of the partition
  * into a staging table; the swap exchanges that table with the live partition.
@@ -79,12 +85,24 @@ class Builder {
     /** @var Columns */
     protected $columns;
 
-    function __construct() {
+    /** @var string the Property this build is for */
+    protected $property_id;
 
-        $this->db = \OWA\Core\CoreAPI::dbSingleton();
+    /** @var string[] the site ids whose raw rows belong in it */
+    protected $site_ids;
+
+    /**
+     * @param int|string $property_id  whose cube this builds
+     */
+    function __construct( $property_id ) {
+
+        $this->db          = \OWA\Core\CoreAPI::dbSingleton();
+        $this->property_id = (string) $property_id;
+        $this->site_ids    = Cubes::siteIds( $this->property_id );
+
+        $this->tables['target'] = Cubes::tableFor( $this->property_id );
 
         foreach ( array(
-            'target'   => 'base.event',
             'raw'      => 'base.event_raw',
             'visitors' => 'base.visitor_acquisition',
         ) as $role => $entity ) {
@@ -98,6 +116,46 @@ class Builder {
 
         $this->columns = new Columns();
         $this->steps   = $this->columns->steps( $this->derivedColumns() );
+    }
+
+    /** @return string the table this build writes */
+    public function table() {
+
+        return $this->tables['target'];
+    }
+
+    /**
+     * The predicate restricting raw to this Property's rows.
+     *
+     * Raw is shared by every Property, so this is what makes one build's
+     * partition its own. It goes on EVERY read of raw the build makes -- the
+     * insert, the window, the candidate query, the row count and the last_seen
+     * update -- because they have to agree about which rows exist: the build
+     * refuses to swap when rows in does not equal rows out, so a filter on one
+     * side and not the other would fail every build rather than mis-fill one.
+     *
+     * A PROPERTY WITH NO PROFILES MATCHES NOTHING, rather than everything. That
+     * is a real state -- a cube whose profiles were all deleted or moved -- and
+     * an unfiltered build would hand it every other Property's rows.
+     *
+     * @param string $alias
+     * @return string  SQL, beginning with AND
+     */
+    protected function siteFilter( $alias ) {
+
+        if ( ! $this->site_ids ) {
+
+            return ' AND 1 = 0';
+        }
+
+        $quoted = array();
+
+        foreach ( $this->site_ids as $site_id ) {
+
+            $quoted[] = "'" . $this->db->prepare( $site_id ) . "'";
+        }
+
+        return sprintf( ' AND %s.site_id IN (%s)', $alias, implode( ', ', $quoted ) );
     }
 
     /**
@@ -401,11 +459,12 @@ class Builder {
         $columns = array_merge( array( 'id', 'yyyymmdd' ), array_keys( $reads ) );
 
         $rows = (array) $this->db->get_results( sprintf(
-            'SELECT %s FROM %s WHERE yyyymmdd >= %d AND yyyymmdd < %d AND (%s) LIMIT %d',
-            implode( ', ', $columns ),
+            'SELECT %s FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s AND (%s) LIMIT %d',
+            'r.' . implode( ', r.', $columns ),
             $this->tables['raw'],
             (int) $span['start'],
             (int) $span['less_than'],
+            $this->siteFilter( 'r' ),
             implode( ' OR ', $where ),
             self::CANDIDATE_CAP + 1
         ) );
@@ -632,7 +691,7 @@ class Builder {
         }
 
         return sprintf(
-            'INSERT INTO %s (%s) SELECT %s FROM %s %s%s WHERE %s.yyyymmdd >= %d AND %s.yyyymmdd < %d',
+            'INSERT INTO %s (%s) SELECT %s FROM %s %s%s WHERE %s.yyyymmdd >= %d AND %s.yyyymmdd < %d%s',
             $this->tables['staging'],
             implode( ', ', array_merge( $raw_columns, $derived ) ),
             implode( ', ', $select ),
@@ -640,7 +699,8 @@ class Builder {
             Context::RAW,
             $joins,
             Context::RAW, $start,
-            Context::RAW, $end
+            Context::RAW, $end,
+            $this->siteFilter( Context::RAW )
         );
     }
 
@@ -675,13 +735,14 @@ class Builder {
         $columns[] = 'LAST_VALUE(w.ts) OVER session_w AS session_last_ts';
 
         return sprintf(
-            'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d '
+            'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d%s '
           . 'WINDOW session_w AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
           . 'ORDER BY w.ts, w.id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)',
             implode( ', ', $columns ),
             $this->tables['raw'],
             (int) $from,
-            (int) $to
+            (int) $to,
+            $this->siteFilter( 'w' )
         );
     }
 
@@ -764,14 +825,15 @@ class Builder {
     protected function advanceLastSeen( array $span ) {
 
         return (bool) $this->db->query( sprintf(
-            'UPDATE %s v JOIN (SELECT visitor_id, FLOOR(MAX(yyyymmdd) / 100) AS period FROM %s '
-          . 'WHERE yyyymmdd >= %d AND yyyymmdd < %d GROUP BY visitor_id) seen '
+            'UPDATE %s v JOIN (SELECT r.visitor_id, FLOOR(MAX(r.yyyymmdd) / 100) AS period FROM %s r '
+          . 'WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s GROUP BY r.visitor_id) seen '
           . 'ON seen.visitor_id = v.visitor_id '
           . 'SET v.last_seen = GREATEST(COALESCE(v.last_seen, 0), seen.period)',
             $this->tables['visitors'],
             $this->tables['raw'],
             (int) $span['start'],
-            (int) $span['less_than']
+            (int) $span['less_than'],
+            $this->siteFilter( 'r' )
         ) );
     }
 
@@ -799,9 +861,10 @@ class Builder {
     /** @return int raw rows the partition should hold */
     protected function countRaw( array $span ) {
 
-        return $this->count( $this->tables['raw'], sprintf(
-            'WHERE yyyymmdd >= %d AND yyyymmdd < %d',
-            (int) $span['start'], (int) $span['less_than'] ) );
+        return $this->count( $this->tables['raw'] . ' r', sprintf(
+            'WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s',
+            (int) $span['start'], (int) $span['less_than'],
+            $this->siteFilter( 'r' ) ) );
     }
 
     /**

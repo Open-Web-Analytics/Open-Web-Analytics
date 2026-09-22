@@ -3,7 +3,12 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Adding a column to owa_event_raw is also adding it to the cube.
+ * Adding a column to owa_event_raw is also adding it to every cube.
+ *
+ * EVERY cube: there is one per Property (Classes\Cube\Cubes), so a release
+ * that adds a column adds it N times. That is the cost the split was accepted
+ * with, and having one place do the loop is what keeps it from being a note in
+ * every future update.
  *
  * The cube is raw's columns verbatim plus the ones a build derives -- the
  * entity inherits them -- so a raw column that reaches only raw leaves the two
@@ -57,55 +62,100 @@ trait CubeColumn {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
         $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $table  = $entity->getTableName();
 
-        $existing = (array) $db->get_results( sprintf(
-            "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
-        $added = $existing
-            || $db->addColumnRebuilding( $table, $column, $entity->getColumnDefinition( $column ) );
+            $existing = (array) $db->get_results( sprintf(
+                "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
 
-        // addColumnIfMissing(), not addColumn(): the latter answers false for
-        // "already there" as well as for "could not", which is how an upgrade
-        // stops dead on a database that is already correct.
-        if ( ! $added && $this->addColumnIfMissing( $entity, $column ) === false ) {
+            $added = $existing
+                || $db->addColumnRebuilding( $table, $column, $entity->getColumnDefinition( $column ) );
 
-            $this->e->notice( sprintf( 'Adding %s.%s failed', $table, $column ) );
+            // addColumnIfMissing(), not addColumn(): the latter answers false for
+            // "already there" as well as for "could not", which is how an upgrade
+            // stops dead on a database that is already correct.
+            if ( ! $added
+              && $this->addColumnIfMissing( $this->cubeEntity( $table ), $column ) === false ) {
 
-            return false;
+                $this->e->notice( sprintf( 'Adding %s.%s failed', $table, $column ) );
+
+                return false;
+            }
         }
 
         return $this->clearCubeInstantColumns();
     }
 
     /**
-     * Rebuild the cube, but only if it has instant-column history to clear.
+     * Drop a column from every cube.
+     *
+     * The inverse of addCubeColumn(), and the reason a down() cannot just walk
+     * a list of entity names any more: there is no entity per cube, only the
+     * one shape bound to each table in turn.
+     *
+     * @param string $column
+     * @return bool
+     */
+    protected function dropCubeColumn( $column ) {
+
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
+
+            if ( $this->dropColumnIfPresent( $this->cubeEntity( $table ), $column ) === false ) {
+
+                $this->e->notice( sprintf( 'Dropping %s.%s failed', $table, $column ) );
+
+                return false;
+            }
+        }
+
+        return $this->clearCubeInstantColumns();
+    }
+
+    /**
+     * The cube shape, bound to one existing cube table.
+     *
+     * @param string $table
+     * @return \OWA\Module\Base\Entity\Event
+     */
+    protected function cubeEntity( $table ) {
+
+        $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdFor( $table );
+
+        return $property_id === ''
+            ? \OWA\Module\Base\Classes\Cube\Cubes::preSplitEntity()
+            : \OWA\Module\Base\Classes\Cube\Cubes::entityFor( $property_id );
+    }
+
+    /**
+     * Rebuild any cube that has instant-column history to clear.
      *
      * Asked rather than assumed, so the common path -- the column went in with
-     * ALGORITHM=INPLACE and the table is already flat -- costs one query
-     * instead of a second full table copy.
+     * ALGORITHM=INPLACE and the table is already flat -- costs one query per
+     * cube instead of a second full table copy.
      *
      * @return bool
      */
     protected function clearCubeInstantColumns() {
 
-        $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getTableName();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        // null means the server does not report it. Rebuilding on a maybe would
-        // spend a full table copy to answer a question nobody asked.
-        if ( $db->hasInstantColumns( $table ) !== true ) {
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
-            return true;
-        }
+            // null means the server does not report it. Rebuilding on a maybe would
+            // spend a full table copy to answer a question nobody asked.
+            if ( $db->hasInstantColumns( $table ) !== true ) {
 
-        if ( $db->rebuildTable( $table ) === false ) {
+                continue;
+            }
 
-            $this->e->notice( sprintf(
-                'Rebuilding %s failed. A cube build cannot swap a partition into it '
-              . 'until ALTER TABLE %s FORCE succeeds.', $table, $table ) );
+            if ( $db->rebuildTable( $table ) === false ) {
 
-            return false;
+                $this->e->notice( sprintf(
+                    'Rebuilding %s failed. A cube build cannot swap a partition into it '
+                  . 'until ALTER TABLE %s FORCE succeeds.', $table, $table ) );
+
+                return false;
+            }
         }
 
         return true;
