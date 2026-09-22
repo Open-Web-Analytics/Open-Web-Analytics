@@ -37,9 +37,10 @@
  *   literal  one value for the whole build.
  *   compute  PHP works it out; see Classes\Cube\ComputeStep.
  *
- * `absent` names the test that is true when the visitor store has no row at
- * all, which is what distinguishes "unresolved" from an ordinary NULL in one
- * column.
+ * `absent` names the test that is true when the visitor's ACQUISITION was never
+ * captured, which is what distinguishes "unresolved" from an ordinary NULL in
+ * one column. Not the row: a user property can put a row there for a visitor
+ * whose acquisition is still unknown.
  */
 
 return array(
@@ -87,24 +88,24 @@ return array(
         'kind'   => 'source',
         'tag'    => 'visitor.acq_source',
         'host'   => 'visitor.acq_referer_host',
-        'absent' => 'visitor.missing',
+        'absent' => 'acquisition.missing',
     ),
 
     'acq_medium' => array(
         'kind'   => 'medium',
         'tag'    => 'visitor.acq_medium',
         'host'   => 'visitor.acq_referer_host',
-        'absent' => 'visitor.missing',
+        'absent' => 'acquisition.missing',
     ),
 
     'acq_campaign' => array(
         'kind' => 'copy', 'from' => 'visitor.acq_campaign',
-        'text' => true, 'absent' => 'visitor.missing',
+        'text' => true, 'absent' => 'acquisition.missing',
     ),
 
     'acq_ad' => array(
         'kind' => 'copy', 'from' => 'visitor.acq_ad',
-        'text' => true, 'absent' => 'visitor.missing',
+        'text' => true, 'absent' => 'acquisition.missing',
     ),
 
     // Nullable, and no sentinel: an acquisition with no search terms is an

@@ -104,6 +104,32 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         $last_seen = $this->column( 'last_seen', OWA_DTD_INT );
         $last_seen->setIndex();
         $this->setProperty( $last_seen );
+
+        /*
+         * USER-SCOPED CUSTOM PROPERTIES, and when each was set.
+         *
+         *   {"plan": {"v": "enterprise", "ts": 1790000000000000}}
+         *
+         * A JSON column on this row rather than a key-value table: measured at
+         * 100k visitors and 400k events, a key store is five times the rows and
+         * its pivot makes a build's join 2.2x slower. This reuses the join
+         * acq_* already makes, so the marginal cost is one JSON_VALUE per
+         * joined visitor -- proportional to distinct visitors in the partition,
+         * not to events, and zero where no user-scoped dimension is registered
+         * because the join is demand-driven.
+         *
+         * A SECOND WRITE DISCIPLINE IN THE SAME ROW, deliberately. acq_* is
+         * write-once evidence captured at the first visit; this is mutable
+         * state a site sets whenever it likes, written last-value-wins with the
+         * event ts as the ordering guard so an out-of-order queue drain cannot
+         * overwrite a newer value with an older beacon.
+         *
+         * The set timestamp is carried per property because the cube stamps the
+         * CURRENT value onto every event row it builds. Without it a row can
+         * say what the value is and not whether it applied yet -- which is what
+         * GA's export carries set_timestamp_micros for (2.26.5).
+         */
+        $this->setProperty( $this->column( 'properties', OWA_DTD_JSON ) );
     }
 
     /**

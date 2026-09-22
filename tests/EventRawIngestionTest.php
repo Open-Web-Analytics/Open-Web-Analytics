@@ -32,6 +32,26 @@ final class EventRawIngestionTest extends IngestionTestCase
     /**
      * Fire a page view and hand back its raw rows, keyed by event_type.
      */
+    /**
+     * Fire a first-session page view for a given visitor and return whether the
+     * acquisition write reported success.
+     *
+     * Drives the real handler rather than calling the protected method, so the
+     * path under test is the one ingest actually takes.
+     */
+    private function callWriteAcquisition($visitor): bool
+    {
+        $this->firePageView([
+            'visitor_id' => $visitor,
+            'session_id' => $this->uniqueSessionId(),
+        ]);
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+
+        return $check->wasPersisted();
+    }
+
     private function firePageView(array $override = []): array
     {
         $visitor = $this->uniqueGuid();
@@ -274,6 +294,67 @@ final class EventRawIngestionTest extends IngestionTestCase
             (int) $rows['page_view']['visitor_id']));
 
         $this->assertSame(0, (int) $count['n']);
+    }
+
+    /**
+     * A late first_visit still lands on a row that a property created.
+     *
+     * The write used to skip whenever the row existed, which was safe only
+     * while nothing but acquisition ever wrote one. A user property can now
+     * create a row for a visitor whose acquisition is unknown, and a queue
+     * drain can deliver the real first_visit afterwards -- so skipping on row
+     * presence would lose the acquisition permanently and silently, which is
+     * exactly the placeholder hazard 2.9 refuses.
+     */
+    public function testALateFirstVisitFillsARowThatHasNoAcquisitionYet(): void
+    {
+        // A fresh id each run: this seeds a row directly, and a fixed id would
+        // make create() fail the second time the suite is run against the same
+        // database.
+        $visitor = $this->uniqueGuid();
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id' => $visitor,
+            'site_id'    => $this->site,
+            'acq_ts'     => null,
+            'properties' => json_encode(['plan' => ['v' => 'pro', 'ts' => 1790000000000000]]),
+        ]);
+        $this->assertTrue($entity->create());
+
+        $written = $this->callWriteAcquisition($visitor);
+
+        $this->assertTrue($written, 'the write should fill rather than skip');
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+
+        $this->assertNotEmpty($check->get('acq_ts'), 'the acquisition landed');
+        $this->assertNotEmpty($check->get('properties'), 'and the property survived it');
+    }
+
+    /** Once acq_ts is set, write-once still holds. */
+    public function testASecondAcquisitionNeverOverwritesTheFirst(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id' => $visitor,
+            'site_id'    => $this->site,
+            'acq_source' => 'first-source',
+            'acq_ts'     => 1790000000000000,
+        ]);
+        $this->assertTrue($entity->create());
+
+        $this->callWriteAcquisition($visitor);
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+
+        $this->assertSame('first-source', $check->get('acq_source'),
+            'write-once: an acquisition already captured is never moved');
+        $this->assertSame('1790000000000000', (string) $check->get('acq_ts'));
     }
 
     /**

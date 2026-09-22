@@ -484,6 +484,48 @@ final class CubeBuildTest extends TestCase
         $this->assertNotNull($row['acq_medium']);
     }
 
+    /**
+     * A row with no acquisition is still "unresolved".
+     *
+     * THE TEST IS acq_ts, NOT THE ROW. A user property can create a visitor row
+     * for someone whose acquisition is unknown; if the sentinel still keyed on
+     * row presence, the build would resolve acq_source to `direct` -- an
+     * unknown silently becoming a claim -- because a NULL referring host
+     * classifies as direct.
+     */
+    public function testAVisitorRowWithNoAcquisitionStillGetsTheSentinel(): void
+    {
+        $visitor = 8881000000000011;
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id' => $visitor,
+            'site_id'    => self::SITE,
+            'acq_ts'     => null,          // never captured
+            'properties' => json_encode(['plan' => ['v' => 'enterprise', 'ts' => $this->t0]]),
+            'last_seen'  => (int) substr((string) $this->yyyymmdd, 0, 6),
+        ]);
+
+        $this->assertTrue($entity->create(), 'seeding a property-only visitor row');
+
+        $this->seed('page_view', $visitor, 8881000000000012, $this->t0, [
+            'page_location' => 'https://example.test/props',
+            'page_path'     => '/props',
+            'page_title'    => 'Props',
+        ]);
+
+        $this->rebuild();
+
+        $row      = $this->built('page_view', $visitor, 8881000000000012, $this->t0);
+        $sentinel = \OWA\Module\Base\Classes\V2Event::UNRESOLVED;
+
+        $this->assertSame($sentinel, $row['acq_source'],
+            'the row exists but the acquisition does not, so this is unresolved');
+        $this->assertSame($sentinel, $row['acq_medium']);
+        $this->assertNotSame('direct', $row['acq_source'],
+            'the failure this guards: unknown resolving to a claim');
+    }
+
     public function testAVisitorWithNoStoreRowGetsTheSentinel(): void
     {
         $row = $this->built('page_view', self::VISITOR_REFERRED, 8881000000000002, $this->t0);

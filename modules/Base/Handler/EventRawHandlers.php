@@ -708,7 +708,37 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $entity->load( $row['visitor_id'], 'visitor_id' );
 
+        /*
+         * A ROW MAY EXIST WITHOUT AN ACQUISITION. A user property can create
+         * one for a visitor whose acquisition is still unknown, so "the row is
+         * there" no longer means "this is already captured" -- acq_ts does.
+         *
+         * Filling the columns of an acquisition-less row rather than skipping
+         * it is what keeps write-once true across a late first_visit: a queue
+         * drain that delivers it after a property write still lands, where
+         * skipping on row-presence would have lost it permanently and
+         * silently. Once acq_ts is set nothing here touches it again.
+         */
         if ( $entity->wasPersisted() ) {
+
+            if ( $entity->get( 'acq_ts' ) ) {
+
+                return true;
+            }
+
+            $entity->setProperties( $acquisition + array( 'acq_ts' => $row['ts'] ) );
+
+            // update('visitor_id'), not update(): the no-argument form keys on
+            // an `id` column, and this table has none -- its primary key is
+            // visitor_id. Called bare it builds WHERE id = NULL, matches
+            // nothing, and reports failure having written nothing.
+            if ( $entity->update( 'visitor_id' ) === false ) {
+
+                \OWA\Core\CoreAPI::error(
+                    'v2 ingest: filling the visitor acquisition row failed.' );
+
+                return false;
+            }
 
             return true;
         }
