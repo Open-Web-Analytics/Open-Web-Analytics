@@ -243,7 +243,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function extendTableLead( $table, $granularity, $through, $budget, $dry_run ) {
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db = $this->db();
 
         $plan = $db->extendPartitions( $table, $granularity, $through, true );
 
@@ -540,17 +540,39 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         return $window > 0 ? $window : 7;
     }
 
+
+    /**
+     * How many of these spans are already daily.
+     *
+     * @param array $spans
+     * @return int
+     */
+    protected function dailyCount( array $spans ) {
+
+        $daily = 0;
+
+        foreach ( $spans as $span ) {
+
+            if ( $this->spanDays( $span ) === 1 ) {
+
+                $daily++;
+            }
+        }
+
+        return $daily;
+    }
+
     /**
      * Merge each month's daily partitions back once the window has passed it.
      *
      * A month cannot merge the moment it ends: its last days are still inside
      * the window, and merging would make settling them cost a month. So the
-     * trigger is the window no longer reaching the month's final day, which is
-     * why THREE months are daily for the first week of each month: the one the
-     * window still reaches, the current one, and the carve-ahead margin. The
-     * count sawtooths between about 71 and 103 rather than growing -- every
-     * carve is answered by a merge a week later -- and the peak is what has to
-     * fit the budget, not the steady state.
+     * trigger is the window no longer reaching the month's final day.
+     *
+     * This is the half that RELEASES partitions; carvePlan() is the half that
+     * claims them, and it claims only out to cubeDailyBoundary(). A merge here
+     * is what stops the daily tier trailing backwards without limit while the
+     * carve extends it forwards.
      *
      * @param string $table
      * @param bool   $dry_run
@@ -567,13 +589,15 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         $spans   = $db->getPartitionSpans( $table );
         $touched = false;
 
-        foreach ( $this->mergeableMonths( $spans ) as $month => $group ) {
+        $granularity = $db->inferPartitionGranularity( $table ) ?: 'monthly';
+
+        foreach ( $this->mergeablePeriods( $spans, $granularity ) as $month => $group ) {
 
             $touched = true;
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '  merge %d daily partitions of %s back into one (window passed %s).',
-                count( $group['names'] ), $month, $group['month_end'] ) );
+                '  merge %d daily partitions from %s back into one (window passed %s).',
+                count( $group['names'] ), $month, $group['period_end'] ) );
 
             if ( $dry_run ) {
 
@@ -592,45 +616,60 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The months whose daily partitions the window no longer reaches.
+     * The periods whose daily partitions the window no longer reaches.
      *
-     * The exact complement of carveCandidates(): merge once a month's last day
+     * A PERIOD OF THE TABLE'S OWN GRANULARITY, not a calendar month. If the
+     * middle tier is quarter-month then the cycle is quarter-monthly: the
+     * window clears a quarter, that quarter merges back to one partition, and
+     * the carve tops the daily tier up in the same run. Monthly is only the
+     * default.
+     *
+     * The exact complement of carveCandidates(): merge once a period's last day
      * is older than the window, carve while it is not. Disjoint by
      * construction, so nothing is merged and re-carved on alternating runs --
      * which would rewrite the table forever for no change in shape.
      *
-     * @param array $spans
-     * @return array yyyymm => ['names','start','less_than','month_end']
+     * A period is merged only when its daily partitions tile it completely. A
+     * partial period would merge into a span overlapping the days still
+     * separate, which the server refuses.
+     *
+     * @param array  $spans
+     * @param string $granularity
+     * @return array  period start => ['names','start','less_than','period_end']
      */
-    protected function mergeableMonths( array $spans ) {
+    protected function mergeablePeriods( array $spans, $granularity = 'monthly' ) {
 
         $cutoff = date( 'Ymd', strtotime( $this->today() . ' -' . $this->windowDays() . ' days' ) );
 
         $mergeable = array();
 
-        foreach ( $this->dailyByMonth( $spans ) as $month => $group ) {
+        foreach ( $this->dailyByPeriod( $spans, $granularity ) as $start => $group ) {
 
-            $month_end = date( 'Ymd', strtotime( $month . '01 +1 month -1 day' ) );
+            $period_end = date( 'Ymd', strtotime( $group['less_than'] . ' -1 day' ) );
+            $whole      = $this->spanDays( $group );
 
-            // Still reached by the window, or nothing to merge.
-            if ( $month_end >= $cutoff || count( $group['names'] ) < 2 ) {
+            // Still reached by the window, nothing to merge, or only part of
+            // the period is daily.
+            if ( $period_end >= $cutoff
+              || count( $group['names'] ) < 2
+              || count( $group['names'] ) !== $whole ) {
 
                 continue;
             }
 
-            $group['month_end']  = $month_end;
-            $mergeable[ $month ] = $group;
+            $group['period_end']  = $period_end;
+            $mergeable[ $start ]  = $group;
         }
 
         return $mergeable;
     }
 
     /**
-     * Carve an empty monthly partition into days.
+     * Top the daily tier up to its target, carving only empty partitions.
      *
-     * Only empty ones, and only the current month or later: reorganizing a
-     * partition that holds rows rewrites all of them, which is the cost this
-     * scheme exists to avoid paying repeatedly.
+     * Reorganizing a partition that holds rows rewrites all of them, which is
+     * the cost this scheme exists to avoid paying repeatedly, so a candidate
+     * holding rows is reported and left alone. force=1 overrides that.
      *
      * @param string $table
      * @param array  $budget   from partitionLimit()
@@ -649,50 +688,53 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         $touched = false;
 
         /*
-         * ONLY THE CURRENT MONTH AND THE NEXT ONE.
-         *
-         * extendPartitions() fills PARTITION_MONTHS_AHEAD (12) of lead, and
-         * carving all of it would put ~390 daily partitions on the table --
-         * spending the whole budget on empty future months, which is exactly
-         * what 2.8 says the two-stage scheme exists to avoid. The daily lead
-         * only has to cover the rebuild window plus margin, and one month of
-         * margin is ample for a job that runs at least monthly.
-         */
-        /*
          * Projected cumulatively: each carve adds to what the last one left, so
          * checking a single carve against the budget in isolation would wave
          * through a run that breaches it three carves later.
-         *
-         * Not directly covered by a test -- it only diverges from the naive
-         * version within a carve or two of the limit, and carveCandidates()
-         * caps a run at two. It is defence for the day the horizon widens.
          */
         $projected = count( $spans );
 
-        foreach ( $this->carveCandidates( $spans ) as $span ) {
+        foreach ( $this->carvePlan( $spans ) as $span ) {
 
             $contents = $db->getPartitionContents( $table, $span['name'] );
             $rows     = $contents ? (int) $contents['rows'] : 0;
 
-            if ( $rows > 0 && ! $this->getParam( 'force' ) ) {
+            /*
+             * A partition holding rows is normally left alone, because
+             * reorganizing it rewrites every one of them.
+             *
+             * THE ONE THAT IS TAKING WRITES IS THE EXCEPTION. If today falls
+             * inside a monthly partition then the tier has fallen behind -- an
+             * install upgrading into the front tier, or a run that was missed
+             * long enough for the daily lead to run out -- and every cube
+             * rebuild until that month ends rewrites a month. Carving it costs
+             * that rewrite ONCE and every rebuild afterwards is a day. Leaving
+             * it costs the same rewrite on every run.
+             *
+             * Only that one. A past month holding rows is not being written to
+             * and merges shortly anyway, so rewriting it buys nothing.
+             */
+            $current = $span['start'] <= $this->today() && $this->today() < $span['less_than'];
+
+            if ( $rows > 0 && ! $current && ! $this->getParam( 'force' ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '  %s holds %s rows, so carving it would rewrite them. Left alone; the '
-                  . 'next month is carved while still empty. Use force=1 to carve it anyway.',
+                    '  %s holds %s rows and is not the one taking writes, so carving it would '
+                  . 'rewrite them for nothing. Left alone. Use force=1 to carve it anyway.',
                     $span['name'], number_format( $rows ) ) );
 
                 continue;
             }
 
-            $ranges = \OWA\Core\Db::makePartitionRangesForSpan(
-                $span['start'], $span['less_than'], 'daily' );
+            if ( $rows > 0 && $current ) {
 
-            if ( ! $ranges ) {
-
-                continue;
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '  %s is monthly and taking writes, so every rebuild is rewriting %s rows. '
+                  . 'Carving it once to get the daily tier back on track.',
+                    $span['name'], number_format( $rows ) ) );
             }
 
-            $projected = $projected - 1 + count( $ranges );
+            $projected = $projected - 1 + count( $span['ranges'] );
 
             if ( ! $this->withinPartitionBudget( $table, $projected, $budget ) ) {
 
@@ -702,16 +744,21 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             $touched = true;
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '  carve %s (%s to %s, %s rows) into %d daily partitions.',
+                '  carve %s (%s to %s, %s rows) into %d daily partitions%s.',
                 $span['name'], $span['start'], $span['less_than'],
-                number_format( $rows ), count( $ranges ) ) );
+                number_format( $rows ), $span['days'],
+                $span['days'] < $this->spanDays( $span )
+                    ? sprintf( ', leaving %s to %s as one',
+                        date( 'Ymd', strtotime( $span['start'] . ' +' . $span['days'] . ' days' ) ),
+                        $span['less_than'] )
+                    : '' ) );
 
             if ( $dry_run ) {
 
                 continue;
             }
 
-            if ( ! $db->reorganizePartitions( $table, array( $span['name'] ), $ranges ) ) {
+            if ( ! $db->reorganizePartitions( $table, array( $span['name'] ), $span['ranges'] ) ) {
 
                 $this->fail( sprintf( '%s: carving %s failed.', $table, $span['name'] ) );
 
@@ -723,33 +770,24 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The spans a run may carve, by shape alone.
+     * The spans a run may carve, in time order, by shape alone.
      *
-     * ONLY THE CURRENT MONTH AND THE NEXT ONE. extendPartitions() fills
-     * PARTITION_MONTHS_AHEAD (12) of lead, and carving all of it would put
-     * ~390 daily partitions on the table -- spending the whole budget on empty
-     * future months, which is exactly what the two-stage scheme exists to
-     * avoid. The daily lead only has to cover the rebuild window plus margin,
-     * and one month of margin is ample for a job that runs at least monthly.
+     * Shape only -- how MUCH of them to carve is carvePlan()'s decision, and
+     * whether they hold rows is the caller's.
      *
-     * THE HORIZON ALSO KEEPS partition-rotate CORRECT, which is less obvious
-     * and more dangerous. Granularity is never stored: inferPartitionGranularity()
+     * NEVER THE LAST SPAN, which is less obvious than the rest and more
+     * dangerous. Granularity is never stored: inferPartitionGranularity()
      * reads the LAST span's month and matches its day boundaries against
-     * PARTITION_CUTS. The furthest-future partitions are monthly lead precisely
-     * because this horizon stops short of them, so the cube infers `monthly`
-     * and partition-rotate extends its lead a month at a time. Carve to the end
-     * of the lead and the inference flips to `daily` -- at which point
-     * partition-rotate would extend twelve months of lead AT DAILY, ~365
-     * partitions, with no warning. CubeRotateTest pins that the last span is
-     * never a candidate.
+     * PARTITION_CUTS. The furthest-future partitions have to stay monthly lead
+     * so the cube infers `monthly` and partition-rotate extends its lead a
+     * month at a time. Let the carve reach the end of the lead and the
+     * inference flips to `daily` -- at which point partition-rotate would
+     * extend twelve months of lead AT DAILY, ~365 partitions, with no warning.
      *
      * @param array $spans
      * @return array
      */
     protected function carveCandidates( array $spans ) {
-
-        $this_month = substr( $this->today(), 0, 6 ) . '01';
-        $horizon    = date( 'Ymd', strtotime( $this_month . ' +1 month' ) );
 
         /*
          * The window's reach is the lower bound, not the start of this month.
@@ -765,15 +803,18 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
          */
         $reach = date( 'Ymd', strtotime( $this->today() . ' -' . $this->windowDays() . ' days' ) );
 
+        usort( $spans, function ( $a, $b ) { return strcmp( $a['start'], $b['start'] ); } );
+
+        $last       = count( $spans ) - 1;
         $candidates = array();
 
-        foreach ( $spans as $span ) {
+        foreach ( $spans as $i => $span ) {
 
-            // Already fine-grained, ended before the window reaches it, or
-            // beyond the carve-ahead margin.
+            // Already fine-grained, ended before the window reaches it, or the
+            // one the granularity inference reads.
             if ( $this->spanDays( $span ) <= 1
               || $span['less_than'] <= $reach
-              || $span['start'] > $horizon ) {
+              || $i === $last ) {
 
                 continue;
             }
@@ -785,37 +826,179 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The daily partitions, grouped by the calendar month they belong to.
+     * What to carve this run.
+     *
+     * Whole spans, and only while the daily tier is shallower than
+     * Db::CUBE_DAILY_MONTHS. That gate is what keeps the count flat: a month is
+     * carved only once the month behind it has merged and given the partitions
+     * back, so merge and carve happen in the same run and the tier never holds
+     * three months at once.
+     *
+     * Without it the carve runs ahead of the merge -- carving on the 1st while
+     * the merge waits for the window to clear the previous month's last day,
+     * about the 8th -- and the tier is three months wide for that week. The
+     * open-file budget then has to be sized for a peak near 103 partitions to
+     * hold a tier that only ever needs about 60, and the difference is spent on
+     * empty future days.
+     *
+     * Spans are carved WHOLE, so the tier ends where the table's own
+     * granularity begins. Nothing is part-carved and no remainder is left
+     * behind for a later run to find.
      *
      * @param array $spans
-     * @return array yyyymm => ['names','start','less_than']
+     * @return array  each span plus 'ranges' (name => less_than) and 'days'
      */
-    protected function dailyByMonth( array $spans ) {
+    protected function carvePlan( array $spans ) {
 
-        $months = array();
+        $candidates = $this->carveCandidates( $spans );
 
-        foreach ( $spans as $span ) {
+        if ( ! $candidates ) {
 
-            if ( $this->spanDays( $span ) > 1 ) {
+            return array();
+        }
+
+        $coverage = $this->dailyCoverage( $spans );
+
+        // No daily tier yet, so it starts where the first carve will.
+        if ( ! $coverage ) {
+
+            $coverage = array( 'start' => $candidates[0]['start'], 'end' => $candidates[0]['start'] );
+        }
+
+        $enough = date( 'Ymd', strtotime(
+            $coverage['start'] . ' +' . \OWA\Core\Db::CUBE_DAILY_MONTHS . ' months' ) );
+
+        $plan = array();
+
+        foreach ( $candidates as $span ) {
+
+            // yyyymmdd compares as a string in date order.
+            if ( $coverage['end'] >= $enough ) {
+
+                break;
+            }
+
+            $ranges = \OWA\Core\Db::makePartitionRangesForSpan(
+                $span['start'], $span['less_than'], 'daily' );
+
+            if ( ! $ranges ) {
 
                 continue;
             }
 
-            $month = substr( $span['start'], 0, 6 );
+            $span['ranges'] = $ranges;
+            $span['days']   = count( $ranges );
 
-            if ( ! isset( $months[ $month ] ) ) {
+            $plan[] = $span;
 
-                $months[ $month ] = array(
-                    'names'     => array(),
-                    'start'     => date( 'Ymd', strtotime( $month . '01' ) ),
-                    'less_than' => date( 'Ymd', strtotime( $month . '01 +1 month' ) ),
-                );
-            }
-
-            $months[ $month ]['names'][] = $span['name'];
+            $coverage['end'] = $span['less_than'];
         }
 
-        return $months;
+        return $plan;
+    }
+
+    /**
+     * How far the daily tier currently runs.
+     *
+     * @param array $spans
+     * @return array|null  ['start','end'], or null when nothing is daily
+     */
+    protected function dailyCoverage( array $spans ) {
+
+        $start = null;
+        $end   = null;
+
+        foreach ( $spans as $span ) {
+
+            if ( $this->spanDays( $span ) !== 1 ) {
+
+                continue;
+            }
+
+            if ( $start === null || $span['start'] < $start ) {
+
+                $start = $span['start'];
+            }
+
+            if ( $end === null || $span['less_than'] > $end ) {
+
+                $end = $span['less_than'];
+            }
+        }
+
+        return $start === null ? null : array( 'start' => $start, 'end' => $end );
+    }
+
+    /**
+     * The daily partitions, grouped by the calendar month they belong to.
+     *
+     * @param array  $spans
+     * @param string $granularity  the one the table is otherwise on
+     * @return array  period start (yyyymmdd) => ['names','start','less_than']
+     */
+    protected function dailyByPeriod( array $spans, $granularity = 'monthly' ) {
+
+        $periods = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( $this->spanDays( $span ) !== 1 ) {
+
+                continue;
+            }
+
+            $period = $this->periodFor( $span['start'], $granularity );
+
+            if ( ! $period ) {
+
+                continue;
+            }
+
+            if ( ! isset( $periods[ $period['start'] ] ) ) {
+
+                $period['names'] = array();
+
+                $periods[ $period['start'] ] = $period;
+            }
+
+            $periods[ $period['start'] ]['names'][] = $span['name'];
+        }
+
+        ksort( $periods );
+
+        return $periods;
+    }
+
+    /**
+     * The period of a given granularity that a date falls in.
+     *
+     * Every granularity cuts on days of the month, so the periods of the month
+     * holding the date are the candidates and the one containing it is the
+     * answer. Month-aligned by construction, which is what makes a merged
+     * partition tile exactly the span its daily partitions covered.
+     *
+     * @param string $date  yyyymmdd
+     * @param string $granularity
+     * @return array|null  ['start','less_than'], or null for an unknown granularity
+     */
+    protected function periodFor( $date, $granularity ) {
+
+        $month = substr( $date, 0, 6 ) . '01';
+
+        $ranges = \OWA\Core\Db::makePartitionRangesForSpan(
+            $month, date( 'Ymd', strtotime( $month . ' +1 month' ) ), $granularity );
+
+        foreach ( $ranges as $name => $less_than ) {
+
+            $start = substr( $name, 1 );
+
+            if ( $date >= $start && $date < $less_than ) {
+
+                return array( 'start' => $start, 'less_than' => $less_than );
+            }
+        }
+
+        return null;
     }
 
     /**

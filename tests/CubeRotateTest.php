@@ -9,9 +9,8 @@ use OWA\Module\Base\Controller\PartitionRotateCli;
 /**
  * A database that records what the front tier asked of it.
  *
- * Only the four calls the merge and carve make. Every partition it is given is
- * reported empty, because carving a month that holds rows is a separate branch
- * with its own test.
+ * Only the four calls the merge and carve make. A partition is empty unless the
+ * test puts a row count in $rows.
  */
 class RecordingDb
 {
@@ -19,14 +18,25 @@ class RecordingDb
     public array $merged = [];
     public array $carved = [];
 
+    /** partition name => rows. Anything unlisted is empty. */
+    public array $rows = [];
+
+    /** What the table is otherwise partitioned on; the merge cycle follows it. */
+    public string $granularity = 'monthly';
+
     public function getPartitionSpans($table)
     {
         return $this->spans;
     }
 
+    public function inferPartitionGranularity($table)
+    {
+        return $this->granularity;
+    }
+
     public function getPartitionContents($table, $partition, $column = 'yyyymmdd')
     {
-        return ['rows' => 0];
+        return ['rows' => $this->rows[$partition] ?? 0];
     }
 
     public function mergePartitions($table, $names, $start, $less_than)
@@ -130,6 +140,21 @@ final class CubeRotateTest extends TestCase
         return ['name' => 'p' . $start, 'start' => $start, 'less_than' => $less_than];
     }
 
+    /** Monthly spans from a given month forward, for a fixed clock. */
+    private function monthlyLeadFrom(string $month, int $count): array
+    {
+        $spans = [];
+        $start = $month . '01';
+
+        for ($i = 0; $i < $count; $i++) {
+            $end     = date('Ymd', strtotime($start . ' +1 month'));
+            $spans[] = $this->span($start, $end);
+            $start   = $end;
+        }
+
+        return $spans;
+    }
+
     /** A month's worth of monthly spans, from this month forward. */
     private function monthlyLead(int $months): array
     {
@@ -153,18 +178,216 @@ final class CubeRotateTest extends TestCase
         $this->assertSame(0, $this->call('spanDays', [$this->span('20260901', '20260901')]));
     }
 
-    public function testItCarvesThisMonthAndNextAndNotTheWholeLead(): void
+    public function testItCarvesTwoMonthsOfTheLeadAndNotTheWholeLead(): void
     {
         // The bug: extendPartitions() fills twelve months of lead, and carving
         // all of it is ~390 daily partitions -- the whole budget spent on empty
-        // future months, which is what the two-stage scheme exists to avoid.
-        $candidates = $this->call('carveCandidates', [$this->monthlyLead(12)]);
+        // future months. The lead stays twelve months; two of them are daily.
+        RotateAtDate::$now = '20261110';
 
-        $this->assertCount(2, $candidates,
-            'the daily lead covers the rebuild window plus a margin, not the whole lead');
+        $plan = $this->call('carvePlan', [$this->monthlyLeadFrom('202611', 12)]);
 
-        $this->assertSame(date('Ym01'), $candidates[0]['start']);
-        $this->assertSame(date('Ym01', strtotime('first day of +1 month')), $candidates[1]['start']);
+        $this->assertSame(['20261101', '20261201'], array_column($plan, 'start'),
+            'two months, and the other ten left at the table\'s own granularity');
+        $this->assertSame([30, 31], array_column($plan, 'days'));
+    }
+
+    /**
+     * The carve waits for the merge rather than running ahead of it.
+     *
+     * This is what keeps the count flat. The merge cannot fire until the window
+     * has cleared the previous month's last day, about the 8th; if the carve
+     * fired on the 1st the tier would be three months wide until then, and the
+     * budget would have to cover that peak.
+     */
+    public function testItDoesNotCarveUntilTheMergeHasMadeRoom(): void
+    {
+        RotateAtDate::$now = '20261101';
+
+        // The 1st: last month's days are still inside the window, so nothing
+        // has merged, and the tier is already two months deep.
+        $spans = array_merge(
+            $this->dailySpans('202610'),
+            $this->dailySpans('202611'),
+            [$this->span('20261201', '20270101')],
+            [$this->span('20270101', '20270201')]
+        );
+
+        $this->assertSame([], $this->call('mergeablePeriods', [$spans]));
+        $this->assertSame([], $this->call('carvePlan', [$spans]),
+            'nothing merged, so nothing is carved -- the tier stays two months, not three');
+
+        // The 8th: October has left the window and merged, so December is carved
+        // in the same run.
+        RotateAtDate::$now = '20261108';
+
+        $merged = array_merge(
+            [$this->span('20261001', '20261101')],
+            $this->dailySpans('202611'),
+            [$this->span('20261201', '20270101')],
+            [$this->span('20270101', '20270201')]
+        );
+
+        $this->assertSame(['20261201'], array_column($this->call('carvePlan', [$merged]), 'start'));
+    }
+
+    /**
+     * Two months of coverage, not sixty partitions.
+     *
+     * A flat count gets February wrong: after a 31-day month merges, 31 + 28 is
+     * 59, and a gate of 60 would let a third month through.
+     */
+    public function testTheTierIsMeasuredInMonthsNotPartitions(): void
+    {
+        RotateAtDate::$now = '20270108';
+
+        // January daily (31), February and March still monthly.
+        $spans = array_merge(
+            $this->dailySpans('202701'),
+            [$this->span('20270201', '20270301')],
+            [$this->span('20270301', '20270401')],
+            [$this->span('20270401', '20270501')]
+        );
+
+        $plan = $this->call('carvePlan', [$spans]);
+
+        $this->assertSame(['20270201'], array_column($plan, 'start'),
+            'February completes the two months at 59 partitions; March is not carved');
+        $this->assertSame(59, $this->call('dailyCount', [$spans]) + $plan[0]['days']);
+    }
+
+    public function testATierAlreadyTwoMonthsDeepIsLeftAlone(): void
+    {
+        RotateAtDate::$now = '20261110';
+
+        $spans = array_merge(
+            $this->dailySpans('202611'),
+            $this->dailySpans('202612'),
+            [$this->span('20270101', '20270201')],
+            [$this->span('20270201', '20270301')]
+        );
+
+        $this->assertSame([], $this->call('carvePlan', [$spans]),
+            'two months already, so nothing is rewritten');
+    }
+
+    public function testCoverageIsReadFromTheBoundsNotTheCount(): void
+    {
+        $spans = array_merge(
+            $this->dailySpans('202611'),
+            [$this->span('20261201', '20270101')]
+        );
+
+        $this->assertSame(
+            ['start' => '20261101', 'end' => '20261201'],
+            $this->call('dailyCoverage', [$spans])
+        );
+
+        $this->assertNull($this->call('dailyCoverage', [[$this->span('20261101', '20261201')]]),
+            'nothing daily at all');
+    }
+
+    /** A twelve-month lead at a given granularity, as spans. */
+    private function leadAt(string $granularity, string $from, string $to): array
+    {
+        $spans  = [];
+        $ranges = \OWA\Core\Db::makePartitionRangesForSpan($from, $to, $granularity);
+
+        foreach ($ranges as $name => $less_than) {
+            $spans[] = $this->span(substr($name, 1), $less_than);
+        }
+
+        return $spans;
+    }
+
+    /**
+     * Run the real merge and carve day by day for a year and report the
+     * deepest the daily tier ever got, in days.
+     */
+    private function deepestTierOverAYear(string $granularity): int
+    {
+        $spans = $this->leadAt($granularity, '20260901', '20270901');
+        $worst = 0;
+
+        for ($date = '20260921'; $date <= '20270801'; $date = date('Ymd', strtotime($date . ' +1 day'))) {
+            RotateAtDate::$now = $date;
+
+            foreach ($this->call('mergeablePeriods', [$spans, $granularity]) as $group) {
+                $spans = array_values(array_filter(
+                    $spans, fn($s) => !in_array($s['name'], $group['names'], true)));
+                $spans[] = $this->span($group['start'], $group['less_than']);
+            }
+
+            foreach ($this->call('carvePlan', [$spans]) as $carve) {
+                $spans = array_values(array_filter($spans, fn($s) => $s['name'] !== $carve['name']));
+
+                foreach ($carve['ranges'] as $name => $less_than) {
+                    $spans[] = $this->span(substr($name, 1), $less_than);
+                }
+            }
+
+            usort($spans, fn($a, $b) => strcmp($a['start'], $b['start']));
+
+            $coverage = $this->call('dailyCoverage', [$spans]);
+
+            if ($coverage) {
+                $worst = max($worst, (int) round(
+                    (strtotime($coverage['end']) - strtotime($coverage['start'])) / 86400));
+            }
+        }
+
+        return $worst;
+    }
+
+    /**
+     * THE INVARIANT: never more than two months of daily in the cube's lead,
+     * whatever the middle tier's granularity is.
+     *
+     * Driven through a year day by day rather than asserted at one date,
+     * because the way this breaks is a carve firing before the merge that pays
+     * for it -- which only shows up at a period boundary.
+     *
+     * @dataProvider middleTierGranularities
+     */
+    public function testTheDailyTierNeverExceedsTwoMonths(string $granularity): void
+    {
+        $deepest = $this->deepestTierOverAYear($granularity);
+
+        $this->assertLessThanOrEqual(62, $deepest,
+            "a $granularity middle tier let the daily tier reach $deepest days");
+
+        $this->assertGreaterThan(55, $deepest,
+            'and it does reach two months, rather than never carving at all');
+    }
+
+    public static function middleTierGranularities(): array
+    {
+        return [
+            'monthly'       => ['monthly'],
+            'half-month'    => ['half-month'],
+            'quarter-month' => ['quarter-month'],
+        ];
+    }
+
+    /**
+     * Daily is the exception: the whole table is already daily, so there is no
+     * front tier to hold at two months and nothing to carve or merge.
+     */
+    public function testAnAllDailyTableHasNoFrontTierToBound(): void
+    {
+        $spans = $this->leadAt('daily', '20260901', '20270901');
+
+        RotateAtDate::$now = '20261110';
+
+        $this->assertSame([], $this->call('carvePlan', [$spans]),
+            'everything is daily already, so there is nothing to carve');
+        $this->assertSame([], $this->call('mergeablePeriods', [$spans, 'daily']),
+            'a daily period is one partition, so there is nothing to merge it into');
+
+        $coverage = $this->call('dailyCoverage', [$spans]);
+
+        $this->assertGreaterThan(62, (strtotime($coverage['end']) - strtotime($coverage['start'])) / 86400,
+            'and the tier is the whole lead, which is the granularity the operator asked for');
     }
 
     public function testItNeverCarvesTheFurthestFutureMonth(): void
@@ -205,7 +428,7 @@ final class CubeRotateTest extends TestCase
             'carving a month with rows rewrites all of them, which is the cost being avoided');
     }
 
-    public function testDailyPartitionsGroupByTheirOwnMonth(): void
+    public function testDailyPartitionsGroupByTheirOwnPeriod(): void
     {
         $spans = [
             $this->span('20260901', '20260902'),
@@ -214,23 +437,55 @@ final class CubeRotateTest extends TestCase
             $this->span('20261101', '20261201'),   // monthly, not part of any group
         ];
 
-        $months = $this->call('dailyByMonth', [$spans]);
+        $periods = $this->call('dailyByPeriod', [$spans]);
 
         // Numeric-string keys become ints in PHP, so compare as such.
-        $this->assertSame([202609, 202610], array_keys($months));
-        $this->assertCount(2, $months[202609]['names']);
-        $this->assertSame('20260901', $months[202609]['start']);
-        $this->assertSame('20261001', $months[202609]['less_than'],
-            'a merge replaces the days with one partition spanning the whole month');
+        $this->assertSame([20260901, 20261001], array_keys($periods));
+        $this->assertCount(2, $periods[20260901]['names']);
+        $this->assertCount(1, $periods[20261001]['names']);
     }
 
     /**
-     * A run 40 days after the first: September merges back, November is carved.
+     * The cycle follows the table's granularity, not the calendar month.
      *
-     * The cube breathes -- one month merged behind, one carved ahead -- so the
-     * count sawtooths rather than growing. It is two months of daily for most
-     * of a month and three for the week between a carve and its merge.
+     * With a quarter-month middle tier the merge happens a window after each
+     * QUARTER ends, and merges that quarter's days back into one partition.
      */
+    public function testTheCycleFollowsTheTablesOwnGranularity(): void
+    {
+        $spans = $this->dailySpans('202610');
+
+        $periods = $this->call('dailyByPeriod', [$spans, 'quarter-month']);
+
+        $this->assertSame([20261001, 20261008, 20261015, 20261022], array_keys($periods),
+            'the quarter-month cuts are the 1st, 8th, 15th and 22nd');
+        $this->assertCount(7, $periods[20261001]['names']);
+        $this->assertCount(10, $periods[20261022]['names'], 'the last quarter carries the remainder');
+
+        // A window after the third quarter ends, that quarter merges and the
+        // fourth -- still inside the window -- does not.
+        RotateAtDate::$now = '20261029';
+
+        $starts = array_keys($this->call('mergeablePeriods', [$spans, 'quarter-month']));
+
+        $this->assertContains(20261015, $starts, 'the third quarter ended on the 21st');
+        $this->assertNotContains(20261022, $starts, 'the fourth is still inside the window');
+    }
+
+    /** A period only partly carved is not merged: the span would overlap. */
+    public function testAPartlyDailyPeriodIsNotMerged(): void
+    {
+        RotateAtDate::$now = '20261205';
+
+        $spans = array_values(array_filter(
+            $this->dailySpans('202610'),
+            fn($s) => $s['start'] < '20261020'
+        ));
+
+        $this->assertSame([], array_keys($this->call('mergeablePeriods', [$spans])),
+            'merging 19 of October days into a span covering the month would overlap the rest');
+    }
+
     public function testARunFortyDaysLaterMergesBehindAndCarvesAhead(): void
     {
         RotateAtDate::$now = '20261031';
@@ -243,15 +498,16 @@ final class CubeRotateTest extends TestCase
         );
 
         // September's days have left the 7-day window; October's have not.
-        $months = $this->call('dailyByMonth', [$spans]);
-        $this->assertCount(30, $months[202609]['names']);
-        $this->assertCount(31, $months[202610]['names']);
+        $months = $this->call('dailyByPeriod', [$spans]);
+        $this->assertCount(30, $months['20260901']['names']);
+        $this->assertCount(31, $months['20261001']['names']);
 
         $cutoff = date('Ymd', strtotime('20261031 -7 days'));
         $this->assertLessThan($cutoff, '20260930', 'September has expired');
         $this->assertGreaterThanOrEqual($cutoff, '20261031', 'October has not');
 
         // And November -- next month, still empty -- is what gets carved.
+        // December is excluded as the last span, not by any horizon.
         $candidates = $this->call('carveCandidates', [$spans]);
 
         $this->assertCount(1, $candidates);
@@ -275,8 +531,8 @@ final class CubeRotateTest extends TestCase
             $this->span('20261001', '20261101'),   // ended, window has passed it
             $this->span('20261101', '20261201'),   // ended, window still reaches it
             $this->span('20261201', '20270101'),   // current
-            $this->span('20270101', '20270201'),   // next
-            $this->span('20270201', '20270301'),   // beyond the margin
+            $this->span('20270101', '20270201'),   // lead
+            $this->span('20270201', '20270301'),   // the last span, read for granularity
         ];
 
         $starts = array_column($this->call('carveCandidates', [$spans]), 'start');
@@ -284,8 +540,9 @@ final class CubeRotateTest extends TestCase
         $this->assertNotContains('20261001', $starts, 'the window no longer reaches October');
         $this->assertContains('20261101', $starts, 'November is rebuilt until the 7th');
         $this->assertContains('20261201', $starts, 'December is current');
-        $this->assertContains('20270101', $starts, 'January is the carve-ahead margin');
-        $this->assertNotContains('20270201', $starts, 'February is beyond it');
+        $this->assertContains('20270101', $starts, 'January is ordinary lead');
+        $this->assertNotContains('20270201', $starts,
+            'February is the last span, which granularity is inferred from');
     }
 
     /**
@@ -311,13 +568,19 @@ final class CubeRotateTest extends TestCase
             $daily     = array_merge($daily, $this->dailySpans($month));
         }
 
+        // One month past the ones under test, because the LAST span is never a
+        // candidate -- granularity is inferred from it. Without this the
+        // exclusion would land on 202701 and read as a disjointness failure.
+        $monthly[] = $this->span('20270201', '20270301');
+
         $carvable = array_column($this->call('carveCandidates', [$monthly]), 'start');
 
         $window = $this->call('windowDays', []);
         $cutoff = date('Ymd', strtotime(RotateAtDate::$now . " -$window days"));
 
-        foreach ($this->call('dailyByMonth', [$daily]) as $month => $group) {
-            $month_end = date('Ymd', strtotime($month . '01 +1 month -1 day'));
+        foreach ($this->call('dailyByPeriod', [$daily]) as $start => $group) {
+            $month     = substr($start, 0, 6);
+            $month_end = date('Ymd', strtotime($group['less_than'] . ' -1 day'));
             $mergeable = $month_end < $cutoff;
 
             $this->assertSame(
@@ -329,34 +592,12 @@ final class CubeRotateTest extends TestCase
     }
 
     /**
-     * For the week after a carve, three months are daily at once.
+     * The partition taking writes is carved even though it holds rows.
      *
-     * The window reaches back seven days while the carve reaches forward up to
-     * thirty-one, so they overlap: the month the window still covers, the
-     * current one, and the margin. That peak is what has to fit the partition
-     * budget -- roughly 103 against a limit of 145 here -- not the steady state
-     * of about 73.
+     * If today is inside a monthly partition the tier has fallen behind, and
+     * every cube rebuild until that month ends rewrites a month. Carving costs
+     * that rewrite once; not carving costs it on every run.
      */
-    public function testTheCarveAndTheWindowOverlapForAWeek(): void
-    {
-        RotateAtDate::$now = '20261101';   // carve day, before that month merges
-
-        $spans = array_merge(
-            $this->dailySpans('202610'),                        // window still reaches it
-            $this->dailySpans('202611'),                        // current
-            [$this->span('20261201', '20270101')],              // the margin, about to be carved
-            [$this->span('20270101', '20270201')]
-        );
-
-        $mergeable = array_keys($this->call('mergeableMonths', [$spans]));
-        $carvable  = array_column($this->call('carveCandidates', [$spans]), 'start');
-
-        $this->assertSame([], $mergeable,
-            'on the 1st the window still reaches last month, so nothing merges yet');
-        $this->assertSame(['20261201'], $carvable,
-            'and December is carved, making three months daily at once');
-    }
-
     /**
      * The merge turns a decision into one ALTER per month, not one per day.
      *
@@ -366,7 +607,7 @@ final class CubeRotateTest extends TestCase
      */
     public function testTheMergeIssuesOneAlterPerMonth(): void
     {
-        RotateAtDate::$now      = '20261205';
+        RotateAtDate::$now       = '20261205';
         RotateAtDate::$db->spans = array_merge(
             $this->dailySpans('202610'),
             $this->dailySpans('202611'),
@@ -392,25 +633,73 @@ final class CubeRotateTest extends TestCase
         $this->assertSame([], RotateAtDate::$db->merged);
     }
 
-    /** The carve turns one monthly partition into that month's days. */
-    public function testTheCarveIssuesOneReorganizePerMonth(): void
+    /** The carve issues one REORGANIZE per span, for as many days as the plan took. */
+    public function testTheCarveIssuesOneReorganizePerSpan(): void
     {
-        RotateAtDate::$now       = '20261101';
+        RotateAtDate::$now       = '20261110';
         RotateAtDate::$db->spans = array_merge(
-            $this->dailySpans('202611'),
+            $this->dailySpans('202611'),                    // 30 daily already
             [$this->span('20261201', '20270101')],
-            [$this->span('20270101', '20270201')]
+            [$this->span('20270101', '20270201')],
+            [$this->span('20270201', '20270301')]
         );
 
-        $budget  = ['limit' => 145, 'reason' => 'test'];
-        $touched = $this->call('carveCubeMonths', ['owa_event', $budget, false]);
+        $touched = $this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], false]);
 
         $this->assertTrue($touched);
         $this->assertSame(
             [['from' => 'p20261201', 'into' => 31]],
             RotateAtDate::$db->carved,
-            'December is carved into 31 days; January is beyond the margin'
+            'one REORGANIZE, for one whole span -- November is daily already, so December '
+          . 'completes the two months and January is left monthly'
         );
+    }
+
+    public function testADryRunCarveIssuesNothing(): void
+    {
+        RotateAtDate::$now       = '20261110';
+        RotateAtDate::$db->spans = [
+            $this->span('20261101', '20261201'),
+            $this->span('20261201', '20270101'),
+            $this->span('20270101', '20270201'),
+        ];
+
+        $this->assertTrue($this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], true]));
+        $this->assertSame([], RotateAtDate::$db->carved);
+    }
+
+    public function testItCarvesTheMonthlyPartitionThatIsTakingWrites(): void
+    {
+        RotateAtDate::$now       = '20261110';
+        RotateAtDate::$db->spans = [
+            $this->span('20261101', '20261201'),
+            $this->span('20261201', '20270101'),
+            $this->span('20270101', '20270201'),
+        ];
+        RotateAtDate::$db->rows = ['p20261101' => 48_000];
+
+        $this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], false]);
+
+        $this->assertSame('p20261101', RotateAtDate::$db->carved[0]['from'],
+            'the one taking writes is carved first, despite its rows');
+        $this->assertSame(30, RotateAtDate::$db->carved[0]['into']);
+    }
+
+    public function testItLeavesAPastMonthWithRowsAlone(): void
+    {
+        RotateAtDate::$now       = '20261110';
+        RotateAtDate::$db->spans = array_merge(
+            [$this->span('20261001', '20261101')],          // past, holds rows
+            $this->dailySpans('202611'),                    // current, already daily
+            [$this->span('20261201', '20270101')],
+            [$this->span('20270101', '20270201')]
+        );
+        RotateAtDate::$db->rows = ['p20261001' => 48_000];
+
+        $this->call('carveCubeMonths', ['owa_event', ['limit' => 145, 'reason' => 'test'], false]);
+
+        $this->assertNotContains('p20261001', array_column(RotateAtDate::$db->carved, 'from'),
+            'not taking writes and merges shortly, so rewriting it buys nothing');
     }
 
     public function testTheWindowDefaultsRatherThanBeingZero(): void

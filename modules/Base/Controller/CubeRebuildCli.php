@@ -10,20 +10,21 @@ namespace OWA\Module\Base\Controller;
 /**
  * Rebuild the reporting cube from owa_event_raw, a partition at a time.
  *
- *   cmd=cube-rebuild                     the partition holding today
- *   cmd=cube-rebuild date=20260901       the partition holding that date
- *   cmd=cube-rebuild days=3              the partitions covering the last 3 days
+ *   cmd=cube-rebuild                     yesterday and today
+ *   cmd=cube-rebuild from=20260901       that date through to today
  *   cmd=cube-rebuild from=20260901 to=20260930
+ *   cmd=cube-rebuild days=3              the last 3 days, today included
  *   cmd=cube-rebuild days=3 --dry-run    print the statements, run nothing
+ *   cmd=cube-rebuild steps=1             per-step timings and counts
  *
  * Convergent: a partition rebuilt twice comes out the same, so a missed run
  * costs freshness and nothing else.
  *
  * THE DATES SELECT PARTITIONS, NOT DAYS. A build rebuilds a whole partition,
- * because the swap is the unit of work -- so `date=20260915` against monthly
- * partitioning rebuilds every row of September, and `days=3` usually resolves
- * to the one current partition rather than to three days of work. The command
- * prints what each date range resolved to for exactly that reason.
+ * because the swap is the unit of work -- so `from=20260915 to=20260915` against
+ * monthly partitioning rebuilds every row of September, and `days=3` usually
+ * resolves to the one current partition rather than to three days of work. The
+ * command prints what each date range resolved to for exactly that reason.
  *
  * It is also why partition granularity and the run interval are one decision
  * rather than two (2.5.1): at a quarter-hourly cadence on a monthly partition,
@@ -39,10 +40,15 @@ namespace OWA\Module\Base\Controller;
  *
  *   define( 'OWA_SCHEDULED_JOBS', serialize( array(
  *       'rebuild-cube-current' => array( 'command' => 'cube-rebuild',
- *           'schedule' => '*\/15 * * * *' ),
+ *           'schedule' => '0,15,30,45 * * * *' ),
  *       'rebuild-cube-window'  => array( 'command' => 'cube-rebuild',
  *           'schedule' => '@hourly', 'params' => array( 'days' => 3 ) ),
  *   ) ) );
+ *
+ * Written long rather than as a step expression because the step form's slash
+ * would have to be escaped to survive this docblock, and Cron::parse() refuses
+ * the escaped text -- so the line an operator copied would leave the job
+ * silently unscheduled. The two parse identically.
  *
  * The lock is keyed on the job NAME, so those two serialise separately and a
  * long window rebuild does not hold up the current one.
