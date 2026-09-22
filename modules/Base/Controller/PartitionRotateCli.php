@@ -254,7 +254,9 @@ class PartitionRotateCli extends PartitionsCli {
             $rotated++;
 
             /*
-             * The cube's front tier, before the lead work. Merging frees a
+             * The daily part of the cube's lead, before the rest of the lead
+             * work -- it is the same lead, so this is not a separate budget.
+             * Merging frees a
              * month of partitions before anything consumes one, so a run peaks
              * near its starting count and a run that dies part way leaves the
              * table below where it started rather than over budget.

@@ -1566,17 +1566,18 @@ class Db extends \OWA\Core\Base {
      * fact table holds one granularity across the whole of it. The cube holds a
      * mix: about two months daily at the front, the rest at the granularity the
      * table is otherwise on -- so the lead is 2 + 10, not twelve months plus a
-     * daily tier bolted on the front.
+     * separate daily thing bolted on the front: there is ONE lead, and its
+     * granularity varies along it.
      *
-     * Measured as MONTHS OF COVERAGE, not as a count of partitions. The tier
-     * extends backwards as well as forwards -- elapsed days stay daily until
+     * Measured as MONTHS OF COVERAGE, not as a count of partitions. The daily
+     * part extends backwards as well as forwards -- elapsed days stay daily until
      * their month merges -- so it is the span from its first daily partition to
      * its last that has to be two months, not the distance ahead of today. A
      * count would do the same job on average and get February wrong: after a
      * 31-day month merges, 31 + 28 is 59, and a flat gate of 60 lets a third
      * month through.
      *
-     * Fixed rather than a setting: it is the DEPTH of the tier, and an install
+     * Fixed rather than a setting: it is how much of the lead is daily, and an install
      * that lowered it below the window would silently stop late events being
      * folded in.
      */

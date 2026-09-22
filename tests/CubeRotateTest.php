@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 use OWA\Module\Base\Controller\PartitionRotateCli;
 
 /**
- * A database that records what the front tier asked of it.
+ * A database that records what the lead maintenance asked of it.
  *
  * Only the four calls the merge and carve make. A partition is empty unless the
  * test puts a row count in $rows.
@@ -80,8 +80,9 @@ class RotateAtDate extends PartitionRotateCli
 }
 
 /**
- * The cube front tier's carve-and-merge arithmetic, which cmd=partition-rotate
- * runs alongside the lead.
+ * The carve-and-merge arithmetic that keeps the front of the cube's lead daily.
+ * cmd=partition-rotate runs it as part of maintaining that one lead -- there is
+ * no second lead and no second budget.
  *
  * Two of these pin bugs that were in the first working version and that the
  * dry-run did not make obvious: it carved the entire twelve-month lead, and it
@@ -197,7 +198,7 @@ final class CubeRotateTest extends TestCase
      *
      * This is what keeps the count flat. The merge cannot fire until the window
      * has cleared the previous month's last day, about the 8th; if the carve
-     * fired on the 1st the tier would be three months wide until then, and the
+     * fired on the 1st the daily part would be three months wide until then, and the
      * budget would have to cover that peak.
      */
     public function testItDoesNotCarveUntilTheMergeHasMadeRoom(): void
@@ -205,7 +206,7 @@ final class CubeRotateTest extends TestCase
         RotateAtDate::$now = '20261101';
 
         // The 1st: last month's days are still inside the window, so nothing
-        // has merged, and the tier is already two months deep.
+        // has merged, and the daily part is already two months deep.
         $spans = array_merge(
             $this->dailySpans('202610'),
             $this->dailySpans('202611'),
@@ -215,7 +216,7 @@ final class CubeRotateTest extends TestCase
 
         $this->assertSame([], $this->call('mergeablePeriods', [$spans]));
         $this->assertSame([], $this->call('carvePlan', [$spans]),
-            'nothing merged, so nothing is carved -- the tier stays two months, not three');
+            'nothing merged, so nothing is carved -- it stays two months, not three');
 
         // The 8th: October has left the window and merged, so December is carved
         // in the same run.
@@ -237,7 +238,7 @@ final class CubeRotateTest extends TestCase
      * A flat count gets February wrong: after a 31-day month merges, 31 + 28 is
      * 59, and a gate of 60 would let a third month through.
      */
-    public function testTheTierIsMeasuredInMonthsNotPartitions(): void
+    public function testTheDailyPartIsMeasuredInMonthsNotPartitions(): void
     {
         RotateAtDate::$now = '20270108';
 
@@ -256,7 +257,7 @@ final class CubeRotateTest extends TestCase
         $this->assertSame(59, $this->call('dailyCount', [$spans]) + $plan[0]['days']);
     }
 
-    public function testATierAlreadyTwoMonthsDeepIsLeftAlone(): void
+    public function testALeadAlreadyTwoMonthsDailyIsLeftAlone(): void
     {
         RotateAtDate::$now = '20261110';
 
@@ -302,9 +303,9 @@ final class CubeRotateTest extends TestCase
 
     /**
      * Run the real merge and carve day by day for a year and report the
-     * deepest the daily tier ever got, in days.
+     * deepest the daily part of the lead ever got, in days.
      */
-    private function deepestTierOverAYear(string $granularity): int
+    private function deepestDailyPartOverAYear(string $granularity): int
     {
         $spans = $this->leadAt($granularity, '20260901', '20270901');
         $worst = 0;
@@ -340,27 +341,27 @@ final class CubeRotateTest extends TestCase
     }
 
     /**
-     * THE INVARIANT: never more than two months of daily in the cube's lead,
-     * whatever the middle tier's granularity is.
+     * THE INVARIANT: never more than two months of the cube's lead is daily,
+     * whatever granularity the rest of the lead is at.
      *
      * Driven through a year day by day rather than asserted at one date,
      * because the way this breaks is a carve firing before the merge that pays
      * for it -- which only shows up at a period boundary.
      *
-     * @dataProvider middleTierGranularities
+     * @dataProvider leadGranularities
      */
-    public function testTheDailyTierNeverExceedsTwoMonths(string $granularity): void
+    public function testTheDailyPartOfTheLeadNeverExceedsTwoMonths(string $granularity): void
     {
-        $deepest = $this->deepestTierOverAYear($granularity);
+        $deepest = $this->deepestDailyPartOverAYear($granularity);
 
         $this->assertLessThanOrEqual(62, $deepest,
-            "a $granularity middle tier let the daily tier reach $deepest days");
+            "a $granularity lead let its daily part reach $deepest days");
 
         $this->assertGreaterThan(55, $deepest,
             'and it does reach two months, rather than never carving at all');
     }
 
-    public static function middleTierGranularities(): array
+    public static function leadGranularities(): array
     {
         return [
             'monthly'       => ['monthly'],
@@ -371,9 +372,9 @@ final class CubeRotateTest extends TestCase
 
     /**
      * Daily is the exception: the whole table is already daily, so there is no
-     * front tier to hold at two months and nothing to carve or merge.
+     * daily part to bound at two months and nothing to carve or merge.
      */
-    public function testAnAllDailyTableHasNoFrontTierToBound(): void
+    public function testAnAllDailyTableHasNothingToBound(): void
     {
         $spans = $this->leadAt('daily', '20260901', '20270901');
 
@@ -387,7 +388,7 @@ final class CubeRotateTest extends TestCase
         $coverage = $this->call('dailyCoverage', [$spans]);
 
         $this->assertGreaterThan(62, (strtotime($coverage['end']) - strtotime($coverage['start'])) / 86400,
-            'and the tier is the whole lead, which is the granularity the operator asked for');
+            'the whole lead is daily, which is the granularity the operator asked for');
     }
 
     public function testItNeverCarvesTheFurthestFutureMonth(): void
@@ -448,7 +449,7 @@ final class CubeRotateTest extends TestCase
     /**
      * The cycle follows the table's granularity, not the calendar month.
      *
-     * With a quarter-month middle tier the merge happens a window after each
+     * With a quarter-month lead the merge happens a window after each
      * QUARTER ends, and merges that quarter's days back into one partition.
      */
     public function testTheCycleFollowsTheTablesOwnGranularity(): void
@@ -594,7 +595,7 @@ final class CubeRotateTest extends TestCase
     /**
      * The partition taking writes is carved even though it holds rows.
      *
-     * If today is inside a monthly partition the tier has fallen behind, and
+     * If today is inside a monthly partition the daily part has fallen behind, and
      * every cube rebuild until that month ends rewrites a month. Carving costs
      * that rewrite once; not carving costs it on every run.
      */
@@ -683,6 +684,31 @@ final class CubeRotateTest extends TestCase
         $this->assertSame('p20261101', RotateAtDate::$db->carved[0]['from'],
             'the one taking writes is carved first, despite its rows');
         $this->assertSame(30, RotateAtDate::$db->carved[0]['into']);
+    }
+
+    /**
+     * A budget too small for a daily front leaves the lead coarse, not broken.
+     *
+     * One lead, one budget, and the daily part is the half that loses:
+     * extendTableLead() runs first and its dozen coarse partitions always fit,
+     * so it is the sixty daily ones the budget refuses. The table still has a
+     * lead; every rebuild is just period-sized.
+     */
+    public function testATightBudgetLeavesTheLeadCoarseRatherThanCarvingPastIt(): void
+    {
+        RotateAtDate::$now       = '20261110';
+        RotateAtDate::$db->spans = [
+            $this->span('20261101', '20261201'),
+            $this->span('20261201', '20270101'),
+            $this->span('20270101', '20270201'),
+        ];
+
+        $touched = $this->call('carveCubeMonths',
+            ['owa_event', ['limit' => 20, 'reason' => 'a small server'], false]);
+
+        $this->assertFalse($touched);
+        $this->assertSame([], RotateAtDate::$db->carved,
+            'refused whole rather than part-carved up to the limit');
     }
 
     public function testItLeavesAPastMonthWithRowsAlone(): void

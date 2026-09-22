@@ -494,7 +494,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * The database.
      *
-     * The second seam the front tier needs. Its merge and carve read the live
+     * The second seam the cube's lead maintenance needs. Its merge and carve read the live
      * partition list and then issue DDL against it, so without this a test can
      * only reach the arithmetic -- and the loop that turns a decision into an
      * ALTER goes uncovered.
@@ -509,10 +509,10 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * Whether this table is the reporting cube.
      *
-     * Only the cube has a front tier. Raw is never rebuilt and its retention is
-     * a DROP PARTITION, so it would pay the merge for nothing, and v1's fact
-     * tables keep the two tiers they have. Carving every fact table would spend
-     * the open-file budget to no purpose.
+     * Only the cube's lead is part daily. Raw is never rebuilt and its retention
+     * is a DROP PARTITION, so it would pay the merge for nothing, and v1's fact
+     * tables have no rebuild to make cheaper. Carving every fact table would
+     * spend the open-file budget to no purpose.
      *
      * @param string $table
      * @return bool
@@ -571,7 +571,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      *
      * This is the half that RELEASES partitions; carvePlan() is the half that
      * claims them, and it claims only out to cubeDailyBoundary(). A merge here
-     * is what stops the daily tier trailing backwards without limit while the
+     * is what stops the daily part trailing backwards without limit while the
      * carve extends it forwards.
      *
      * @param string $table
@@ -619,9 +619,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * The periods whose daily partitions the window no longer reaches.
      *
      * A PERIOD OF THE TABLE'S OWN GRANULARITY, not a calendar month. If the
-     * middle tier is quarter-month then the cycle is quarter-monthly: the
-     * window clears a quarter, that quarter merges back to one partition, and
-     * the carve tops the daily tier up in the same run. Monthly is only the
+     * table's granularity is quarter-month then the cycle is quarter-monthly:
+     * the window clears a quarter, that quarter merges back to one partition,
+     * and the carve extends the daily part in the same run. Monthly is only the
      * default.
      *
      * The exact complement of carveCandidates(): merge once a period's last day
@@ -665,7 +665,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * Top the daily tier up to its target, carving only empty partitions.
+     * Extend the daily part of the lead, carving only empty partitions.
      *
      * Reorganizing a partition that holds rows rewrites all of them, which is
      * the cost this scheme exists to avoid paying repeatedly, so a candidate
@@ -704,9 +704,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
              * reorganizing it rewrites every one of them.
              *
              * THE ONE THAT IS TAKING WRITES IS THE EXCEPTION. If today falls
-             * inside a monthly partition then the tier has fallen behind -- an
-             * install upgrading into the front tier, or a run that was missed
-             * long enough for the daily lead to run out -- and every cube
+             * inside a monthly partition then the daily part has fallen
+             * behind -- an install upgrading into it, or a run missed long
+             * enough for it to run out -- and every cube
              * rebuild until that month ends rewrites a month. Carving it costs
              * that rewrite ONCE and every rebuild afterwards is a day. Leaving
              * it costs the same rewrite on every run.
@@ -730,13 +730,29 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '  %s is monthly and taking writes, so every rebuild is rewriting %s rows. '
-                  . 'Carving it once to get the daily tier back on track.',
+                  . 'Carving it once to get the daily part of the lead back on track.',
                     $span['name'], number_format( $rows ) ) );
             }
 
             $projected = $projected - 1 + count( $span['ranges'] );
 
             if ( ! $this->withinPartitionBudget( $table, $projected, $budget ) ) {
+
+                /*
+                 * ONE LEAD, ONE BUDGET -- and the daily part is the half that
+                 * loses. extendTableLead() runs first and fills twelve months
+                 * at the coarse granularity, which is a dozen partitions and
+                 * always fits; the daily part is sixty and is what the budget
+                 * refuses. So the table keeps a lead, at the wrong granularity
+                 * for rebuilding, and the operator has to be told which half
+                 * was dropped rather than left to infer it from a partition
+                 * count.
+                 */
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s: the lead is in place but its front is not daily, so every cube '
+                  . 'rebuild rewrites a whole %s. Raise the partition budget, or accept '
+                  . 'month-sized rebuilds.',
+                    $table, $this->db()->inferPartitionGranularity( $table ) ?: 'period' ) );
 
                 return $touched;
             }
@@ -828,20 +844,20 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * What to carve this run.
      *
-     * Whole spans, and only while the daily tier is shallower than
+     * Whole spans, and only while the daily part of the lead is shallower than
      * Db::CUBE_DAILY_MONTHS. That gate is what keeps the count flat: a month is
      * carved only once the month behind it has merged and given the partitions
-     * back, so merge and carve happen in the same run and the tier never holds
-     * three months at once.
+     * back, so merge and carve happen in the same run and the daily part never
+     * holds three months at once.
      *
      * Without it the carve runs ahead of the merge -- carving on the 1st while
      * the merge waits for the window to clear the previous month's last day,
-     * about the 8th -- and the tier is three months wide for that week. The
+     * about the 8th -- and it is three months wide for that week. The
      * open-file budget then has to be sized for a peak near 103 partitions to
-     * hold a tier that only ever needs about 60, and the difference is spent on
-     * empty future days.
+     * hold what only ever needs about 60, and the difference is spent on empty
+     * future days.
      *
-     * Spans are carved WHOLE, so the tier ends where the table's own
+     * Spans are carved WHOLE, so the daily part ends where the table's own
      * granularity begins. Nothing is part-carved and no remainder is left
      * behind for a later run to find.
      *
@@ -859,7 +875,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         $coverage = $this->dailyCoverage( $spans );
 
-        // No daily tier yet, so it starts where the first carve will.
+        // Nothing daily yet, so it starts where the first carve will.
         if ( ! $coverage ) {
 
             $coverage = array( 'start' => $candidates[0]['start'], 'end' => $candidates[0]['start'] );
@@ -898,7 +914,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * How far the daily tier currently runs.
+     * How far the daily part of the lead currently runs.
      *
      * @param array $spans
      * @return array|null  ['start','end'], or null when nothing is daily
