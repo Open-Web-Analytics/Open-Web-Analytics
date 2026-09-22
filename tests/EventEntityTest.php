@@ -155,9 +155,16 @@ final class EventEntityTest extends TestCase
     {
         $entity = $this->event();
 
-        // A build always produces one of these, so a NULL arriving in one is a
-        // bug to fail on rather than to store.
-        foreach (['source', 'medium', 'acq_source', 'acq_medium', 'acq_campaign', 'acq_ad'] as $name) {
+        // RESOLVED, not copied: each of these is classified from a referring
+        // host, and a visit with no referrer is `direct` rather than nothing.
+        // A build always produces one, so a NULL arriving in one is a bug to
+        // fail on rather than to store.
+        //
+        // acq_campaign and acq_ad are NOT in this list, though they were: they
+        // are transcribed as collected, and most first visits carry neither, so
+        // declaring them NOT NULL failed the build for a whole partition the
+        // first time an untagged visitor appeared.
+        foreach (['source', 'medium', 'acq_source', 'acq_medium'] as $name) {
             $this->assertNotEmpty($entity->getColumn($name)->is_not_null,
                 "$name is resolved by a build and always has a value");
             $this->assertEmpty($entity->getColumn($name)->nullable, "$name must not be nullable");
@@ -170,7 +177,7 @@ final class EventEntityTest extends TestCase
         foreach ([
             'campaign', 'ad', 'search_terms', 'landing_page_location',
             'landing_page_path', 'landing_page_query', 'landing_page_title',
-            'acq_search_terms',
+            'acq_search_terms', 'acq_campaign', 'acq_ad',
         ] as $name) {
             $this->assertNotEmpty($entity->getColumn($name)->nullable,
                 "$name is copied from a nullable column and must be nullable");

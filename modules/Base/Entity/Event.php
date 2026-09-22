@@ -102,14 +102,25 @@ class Event extends EventRaw {
          * Write-once at first_visit: a later campaign moves `source`, never
          * these. Where the store has no row a build writes the sentinel.
          *
-         * acq_search_terms is nullable: an acquisition with no search terms is
-         * an ordinary absence, and past the store's retention it stays NULL
-         * rather than falling back to a later event.
+         * SOURCE AND MEDIUM RESOLVE; THE OTHER THREE COPY, so only the first
+         * two can be NOT NULL. acq_source and acq_medium are classified from
+         * the stored referring host and always produce a value -- a visit with
+         * no referrer is `direct`, not nothing. A campaign, an ad and a search
+         * term are transcribed as collected, and most first visits carry none
+         * of them: a visitor who arrived untagged has a store row with NULL in
+         * all three.
+         *
+         * Declaring those NOT NULL made one untagged visitor fail the build for
+         * a WHOLE PARTITION with "Column 'acq_campaign' cannot be null", and it
+         * asked the copy step for something it deliberately does not do --
+         * CopyStep writes the sentinel where there is NO ROW, which is a
+         * different statement from a row holding NULL in one column. That
+         * distinction needs somewhere to live, so it lives in NULL.
          */
         $this->setProperty( $this->resolved( 'acq_source', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->resolved( 'acq_medium', OWA_DTD_VARCHAR64 ) );
-        $this->setProperty( $this->resolved( 'acq_campaign', OWA_DTD_VARCHAR255 ) );
-        $this->setProperty( $this->resolved( 'acq_ad', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'acq_campaign', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'acq_ad', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'acq_search_terms', OWA_DTD_VARCHAR255 ) );
 
         // When a build last wrote this partition, in microseconds. Carries the

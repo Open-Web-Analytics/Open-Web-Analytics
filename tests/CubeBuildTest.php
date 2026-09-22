@@ -426,6 +426,64 @@ final class CubeBuildTest extends TestCase
         $this->assertSame('tile-b', $row['acq_ad']);
     }
 
+    /**
+     * A visitor whose store row carries no campaign gets NULL, not the sentinel
+     * -- and above all does not fail the build.
+     *
+     * THE DISTINCTION THE SENTINEL EXISTS FOR. "No row in the store" is
+     * unresolved; "a row that recorded no campaign" is an ordinary absence, and
+     * most first visits are untagged so it is the common case, not the edge.
+     *
+     * acq_campaign and acq_ad were declared NOT NULL with the two that actually
+     * resolve, and one untagged visitor then failed the INSERT for the WHOLE
+     * partition -- "Column 'acq_campaign' cannot be null" -- leaving the
+     * partition at whatever the last good build wrote, because a failed build
+     * does not swap. It went unnoticed while the only visitor rows in existence
+     * were seeded by this file with every column filled.
+     */
+    public function testAnUntaggedVisitorGetsNullAcquisitionAndDoesNotFailTheBuild(): void
+    {
+        $visitor = 8881000000000009;
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id'       => $visitor,
+            'site_id'          => self::SITE,
+            'acq_source'       => null,
+            'acq_medium'       => null,
+            'acq_campaign'     => null,   // untagged: the common case
+            'acq_ad'           => null,
+            'acq_referer_host' => null,
+            'acq_ts'           => $this->t0,
+            'last_seen'        => (int) substr((string) $this->yyyymmdd, 0, 6),
+        ]);
+
+        $this->assertTrue($entity->create(), 'seeding an untagged visitor');
+
+        $this->seed('page_view', $visitor, 8881000000000010, $this->t0, [
+            'page_location' => 'https://example.test/untagged',
+            'page_path'     => '/untagged',
+            'page_title'    => 'Untagged',
+        ]);
+
+        // The build has to survive it. Before the fix this threw the whole
+        // partition away.
+        $this->rebuild();
+
+        $row = $this->built('page_view', $visitor, 8881000000000010, $this->t0);
+
+        $sentinel = \OWA\Module\Base\Classes\V2Event::UNRESOLVED;
+
+        $this->assertNull($row['acq_campaign'], 'recorded no campaign, which is not "unresolved"');
+        $this->assertNull($row['acq_ad']);
+        $this->assertNotSame($sentinel, $row['acq_campaign']);
+
+        // The two that RESOLVE still do: no referring host is `direct`, which
+        // is a value, so they stay NOT NULL.
+        $this->assertNotNull($row['acq_source']);
+        $this->assertNotNull($row['acq_medium']);
+    }
+
     public function testAVisitorWithNoStoreRowGetsTheSentinel(): void
     {
         $row = $this->built('page_view', self::VISITOR_REFERRED, 8881000000000002, $this->t0);
