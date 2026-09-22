@@ -507,19 +507,52 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * Whether this table is the reporting cube.
+     * How much of this table's lead has to be daily, as the ENTITY declares it.
      *
-     * Only the cube's lead is part daily. Raw is never rebuilt and its retention
-     * is a DROP PARTITION, so it would pay the merge for nothing, and v1's fact
-     * tables have no rebuild to make cheaper. Carving every fact table would
-     * spend the open-file budget to no purpose.
+     * Asked here rather than decided here. The three things that shape a
+     * table's partitions -- Db::createTable(), partition-rotate's lead
+     * maintenance, and partition-reorganize -- all read the same declaration,
+     * so a table cannot be created in one shape and maintained in another.
+     * Two of the three were once written as if every fact table were alike and
+     * both were wrong the same way.
+     *
+     * Table NAME in, because that is what the partition commands work in; the
+     * entity is looked up rather than assumed.
      *
      * @param string $table
-     * @return bool
+     * @return int  months, or 0 for a table of one granularity throughout
      */
-    protected function isCube( $table ) {
+    protected function dailyLeadMonths( $table ) {
 
-        return $table === \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getTableName();
+        $entity = $this->entityFor( $table );
+
+        return ( $entity && method_exists( $entity, 'getDailyLeadMonths' ) )
+            ? (int) $entity->getDailyLeadMonths() : 0;
+    }
+
+    /**
+     * The entity behind a partitioned table's name.
+     *
+     * Same registry walk factTables() makes, so the two cannot disagree about
+     * which entity owns a name.
+     *
+     * @param string $table
+     * @return object|null
+     */
+    protected function entityFor( $table ) {
+
+        $s  = \OWA\Core\CoreAPI::serviceSingleton();
+        $ns = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+
+        foreach ( $s->modules['base']->getEntities() as $name ) {
+
+            if ( $ns . $name === $table ) {
+
+                return \OWA\Core\CoreAPI::entityFactory( 'base.' . $name );
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -580,7 +613,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function mergeExpiredCubeDays( $table, $dry_run ) {
 
-        if ( ! $this->isCube( $table ) ) {
+        if ( ! $this->dailyLeadMonths( $table ) ) {
 
             return false;
         }
@@ -678,7 +711,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function carveCubeMonths( $table, $budget, $dry_run ) {
 
-        if ( ! $this->isCube( $table ) ) {
+        if ( ! $this->dailyLeadMonths( $table ) ) {
 
             return false;
         }

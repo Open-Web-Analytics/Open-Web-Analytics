@@ -138,42 +138,29 @@ class Event extends EventRaw {
     }
 
     /**
-     * The lead this table is created with: daily at the front, monthly behind.
+     * How much of this table's lead has to be daily.
      *
-     * Db::createTable() asks for this instead of building a monthly lead, so a
-     * fresh install and an upgrade both get a cube that is already the right
-     * shape. Left to the first partition-rotate, the table would spend until
-     * then in exactly the state the daily front exists to avoid -- every
-     * cube-rebuild rewriting a whole month -- and on an installation whose
-     * scheduler was never set up, permanently.
+     * THE ONE PLACE THIS IS DECLARED. Three things shape a table's partitions --
+     * Db::createTable() at creation, partition-rotate as it maintains the lead,
+     * partition-reorganize when an operator changes granularity -- and each of
+     * them asks here. Two of the three had already been written as if every fact
+     * table were alike, and both were wrong in the same way: reorganize merged
+     * the daily front away, and createTable built a monthly lead that left every
+     * rebuild rewriting a month until the first rotate ran.
      *
-     * Db::CUBE_DAILY_MONTHS of daily from the start of the current month, then
-     * monthly to the ordinary lead boundary. The same shape partition-rotate
-     * maintains, so the first run has nothing to do rather than a month to
-     * rewrite.
+     * It lives on the ENTITY because Db::createTable() sits below the
+     * controllers and cannot reach them. A description kept anywhere else is one
+     * the creation path cannot consult, and the two would drift apart again.
      *
-     * THE LAST SPAN MUST BE MONTHLY. Granularity is never stored:
-     * inferPartitionGranularity() reads the last span, and a table whose lead
-     * ended daily would have its lead extended a year at daily by the next
-     * rotate.
+     * Only the cube answers. Raw is never rebuilt -- its retention is a DROP
+     * PARTITION -- so it would pay the merge for nothing, and v1's fact tables
+     * have no rebuild to make cheaper.
      *
-     * @return array  name => less_than
+     * @return int  months, or 0 for a table of one granularity throughout
      */
-    public function getInitialPartitionRanges() {
+    public function getDailyLeadMonths() {
 
-        $month  = date( 'Ym01' );
-        $daily  = date( 'Ym01', strtotime(
-            'first day of +' . \OWA\Core\Db::CUBE_DAILY_MONTHS . ' month' ) );
-
-        $ranges = \OWA\Core\Db::makePartitionRangesForSpan( $month, $daily, 'daily' );
-
-        for ( $m = $daily; $m < \OWA\Core\Db::partitionLeadBoundary();
-              $m = date( 'Ymd', strtotime( $m . ' +1 month' ) ) ) {
-
-            $ranges[ 'p' . $m ] = date( 'Ymd', strtotime( $m . ' +1 month' ) );
-        }
-
-        return $ranges;
+        return \OWA\Core\Db::CUBE_DAILY_MONTHS;
     }
 
     /**

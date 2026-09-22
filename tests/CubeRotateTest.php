@@ -72,10 +72,10 @@ class RotateAtDate extends PartitionRotateCli
         return self::$db;
     }
 
-    /** The cube is named by prefix, and the test builds no config. */
-    protected function isCube($table)
+    /** The entity declares this; the test states it directly. */
+    protected function dailyLeadMonths($table)
     {
-        return true;
+        return \OWA\Core\Db::CUBE_DAILY_MONTHS;
     }
 }
 

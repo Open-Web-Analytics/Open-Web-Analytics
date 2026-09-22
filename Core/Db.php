@@ -1636,6 +1636,53 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * A twelve-month lead, with the first months daily where asked for.
+     *
+     * The shape Db::createTable() gives a new table and the shape
+     * partition-rotate maintains, built in one place so a table is created in
+     * the layout it will be kept in rather than one the first rotate has to
+     * reshape.
+     *
+     * THE LAST SPAN IS ALWAYS THE COARSE ONE. Granularity is never stored:
+     * inferPartitionGranularity() reads the last span, so a lead that ended
+     * daily would have its lead extended a year AT DAILY by the next rotate --
+     * some 365 partitions, silently.
+     *
+     * TWO HALVES FROM TWO PLACES, and only one of them is declared. How much is
+     * daily is the entity's, fixed. The granularity of the rest is the
+     * OPERATOR'S, and is not recorded anywhere but the shape of the table
+     * itself -- inferPartitionGranularity() reads it back off the last span. So
+     * the caller supplies it: at creation there is no table to infer from and
+     * monthly is the only answer available; a caller maintaining an existing
+     * table passes what that table is on.
+     *
+     * @param int    $daily_months  how many of the leading months are daily
+     * @param string $granularity   the rest of the lead; the operator's choice
+     * @return array  name => less_than
+     */
+    public static function makeLeadRanges( $daily_months = 0, $granularity = 'monthly' ) {
+
+        if ( ! self::isPartitionGranularity( $granularity ) ) {
+
+            $granularity = 'monthly';
+        }
+
+        $month    = date( 'Ym01' );
+        $boundary = self::partitionLeadBoundary();
+
+        if ( $daily_months < 1 ) {
+
+            return self::makePartitionRanges(
+                date( 'Ymd' ), date( 'Ymd', strtotime( $boundary . ' -1 day' ) ), $granularity );
+        }
+
+        $coarse_from = date( 'Ym01', strtotime( $month . ' +' . (int) $daily_months . ' month' ) );
+        $ranges      = self::makePartitionRangesForSpan( $month, $coarse_from, 'daily' );
+
+        return $ranges + self::makePartitionRangesForSpan( $coarse_from, $boundary, $granularity );
+    }
+
+    /**
      * Is this a granularity we can partition by?
      *
      * @param string $granularity
@@ -3662,33 +3709,23 @@ class Db extends \OWA\Core\Base {
              * state the daily part exists to avoid -- and a rotate that is not
              * scheduled never comes.
              */
-            $ranges = null;
+            $daily = method_exists( $entity, 'getDailyLeadMonths' )
+                ? (int) $entity->getDailyLeadMonths() : 0;
 
-            if ( method_exists( $entity, 'getInitialPartitionRanges' ) ) {
+            $ranges = self::makeLeadRanges( $daily );
 
-                $ranges = $entity->getInitialPartitionRanges();
+            // An entity cannot spend more than the hard ceiling on its own
+            // say-so. Falling back to a lead of one granularity leaves a correct
+            // table that rebuilds a period at a time, which partition-rotate
+            // reports.
+            if ( $daily && count( $ranges ) > self::PARTITION_COUNT_LIMIT ) {
 
-                // An entity cannot spend more than the hard ceiling on its own
-                // say-so. Falling back to monthly leaves a correct table that
-                // rebuilds a period at a time, which partition-rotate reports.
-                if ( $ranges && count( $ranges ) > self::PARTITION_COUNT_LIMIT ) {
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s asked for %d partitions at creation, over the ceiling of %d. '
+                  . 'Created monthly throughout instead.',
+                    $entity->getTableName(), count( $ranges ), self::PARTITION_COUNT_LIMIT ) );
 
-                    \OWA\Core\CoreAPI::notice( sprintf(
-                        '%s asked for %d partitions at creation, over the ceiling of %d. '
-                      . 'Created monthly instead.',
-                        $entity->getTableName(), count( $ranges ), self::PARTITION_COUNT_LIMIT ) );
-
-                    $ranges = null;
-                }
-            }
-
-            if ( ! $ranges ) {
-
-                $ranges = self::makePartitionRanges(
-                    date( 'Ymd' ),
-                    date( 'Ymd', strtotime( self::partitionLeadBoundary() . ' -1 day' ) ),
-                    'monthly'
-                );
+                $ranges = self::makeLeadRanges( 0 );
             }
 
             $table_options .= $this->makePartitionClause( $partition_column, $ranges );

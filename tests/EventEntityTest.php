@@ -67,7 +67,7 @@ final class EventEntityTest extends TestCase
      */
     public function testItIsCreatedWithTheDailyFrontOfItsLeadAlreadyThere(): void
     {
-        $ranges = $this->event()->getInitialPartitionRanges();
+        $ranges = \OWA\Core\Db::makeLeadRanges($this->event()->getDailyLeadMonths());
         $daily  = 0;
         $prev   = null;
 
@@ -100,7 +100,7 @@ final class EventEntityTest extends TestCase
      */
     public function testTheCreatedLeadEndsMonthlyAndAtTheLeadBoundary(): void
     {
-        $ranges = $this->event()->getInitialPartitionRanges();
+        $ranges = \OWA\Core\Db::makeLeadRanges($this->event()->getDailyLeadMonths());
         $last   = array_key_last($ranges);
         $start  = substr($last, 1);
 
@@ -125,7 +125,7 @@ final class EventEntityTest extends TestCase
     {
         $spans = [];
 
-        foreach ($this->event()->getInitialPartitionRanges() as $name => $less_than) {
+        foreach (\OWA\Core\Db::makeLeadRanges($this->event()->getDailyLeadMonths()) as $name => $less_than) {
             $spans[] = ['name' => $name, 'start' => substr($name, 1), 'less_than' => $less_than];
         }
 

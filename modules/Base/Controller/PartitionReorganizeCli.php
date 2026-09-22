@@ -97,7 +97,7 @@ class PartitionReorganizeCli extends PartitionsCli {
              * (Db::CUBE_DAILY_MONTHS); what this command sets is the
              * granularity of the rest.
              */
-            if ( $granularity === 'daily' && $this->isCube( $table ) ) {
+            if ( $granularity === 'daily' && $this->dailyLeadMonths( $table ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '%s: refusing daily. The front of its lead is daily already and '
@@ -119,7 +119,7 @@ class PartitionReorganizeCli extends PartitionsCli {
              * would rewrite again putting them back. An explicit from=/to= is
              * still honoured, for an operator who means it.
              */
-            $protect = ( $from === null && $to === null && $this->isCube( $table ) )
+            $protect = ( $from === null && $to === null && $this->dailyLeadMonths( $table ) )
                 ? $this->dailyCoverage( $db->getPartitionSpans( $table ) )
                 : null;
 

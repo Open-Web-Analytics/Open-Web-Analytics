@@ -14,7 +14,7 @@ namespace OWA\Module\Base\Update;
  * of them, and a build cannot publish into a table with no partitions to
  * exchange.
  *
- * And already partitioned IN THE RIGHT SHAPE. Event::getInitialPartitionRanges()
+ * And already partitioned IN THE RIGHT SHAPE. Event::getDailyLeadMonths()
  * asks for the front of the lead daily, so this creates the layout
  * partition-rotate maintains rather than a monthly one that the first rotate has
  * to reshape. A cube created monthly would rewrite a whole month on every

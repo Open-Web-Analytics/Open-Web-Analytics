@@ -1600,7 +1600,7 @@ final class PartitionOperationsTest extends TestCase
         $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $alias  = 'event_raw_leadprobe_' . bin2hex(random_bytes(3));
 
-        $this->assertFalse(method_exists($entity, 'getInitialPartitionRanges'),
+        $this->assertFalse(method_exists($entity, 'getDailyLeadMonths'),
             'raw asks for nothing -- if that changes, this test is measuring the wrong thing');
 
         $entity->setTableName($alias);
@@ -1616,6 +1616,130 @@ final class PartitionOperationsTest extends TestCase
                 'no partition of an ordinary fact table is created daily'
             );
         }
+    }
+
+    /**
+     * Creation and maintenance read the SAME declaration.
+     *
+     * The failure this guards against is a table created in one shape and kept
+     * in another: it happened twice, once in createTable() and once in
+     * partition-reorganize, because each had its own idea of what a fact table
+     * looks like. If these two ever disagree, the first partition-rotate after
+     * a fresh install starts rewriting partitions that were correct.
+     */
+    public function testCreationAndMaintenanceAgreeOnTheLeadsShape()
+    {
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event');
+        $alias  = 'event_agreeprobe_' . bin2hex(random_bytes(3));
+
+        $entity->setTableName($alias);
+        $table = $entity->getTableName();
+        $this->tables[] = $table;
+
+        $this->assertTrue((bool) $entity->createTable());
+
+        $spans = $db->getPartitionSpans($table);
+
+        $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
+        $cli   = $class->newInstanceWithoutConstructor();
+        $p     = $class->getProperty('params');
+        $p->setAccessible(true);
+        $p->setValue($cli, []);
+
+        foreach (['carvePlan', 'mergeablePeriods'] as $method) {
+            $m = new ReflectionMethod($cli, $method);
+            $m->setAccessible(true);
+
+            $this->assertSame([], $m->invoke($cli, $spans),
+                "$method found work to do on a table that was just created correctly");
+        }
+    }
+
+    /**
+     * The operator's granularity is tracked by INFERENCE, not by the declaration.
+     *
+     * Only half the lead's shape is declared: how much of it is daily, which is
+     * the entity's and fixed. The granularity of the rest is the operator's and
+     * is recorded nowhere but the shape of the table -- inferPartitionGranularity()
+     * reads it back off the last span. So after partition-reorganize the daily
+     * front is still daily, the table now reads as the new granularity, and
+     * partition-rotate has nothing to correct.
+     */
+    public function testAChangeOfGranularityIsPickedUpFromTheTableItself()
+    {
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event');
+        $alias  = 'event_granprobe_' . bin2hex(random_bytes(3));
+
+        $entity->setTableName($alias);
+        $table = $entity->getTableName();
+        $this->tables[] = $table;
+
+        $this->assertTrue((bool) $entity->createTable());
+        $this->assertSame('monthly', $db->inferPartitionGranularity($table),
+            'created monthly behind the front, since there was nothing to infer from');
+
+        $before = 0;
+
+        foreach ($db->getPartitionSpans($table) as $span) {
+            if ((strtotime($span['less_than']) - strtotime($span['start'])) / 86400 <= 1) { $before++; }
+        }
+
+        // What cmd=partition-reorganize does for a table with a daily front.
+        $skip = array(
+            'start'     => date('Ym01'),
+            'less_than' => date('Ym01', strtotime('first day of +' . \OWA\Core\Db::CUBE_DAILY_MONTHS . ' month')),
+        );
+
+        $db->repartitionTable($table, 'quarter-month', false, null, null, $skip);
+
+        $after = 0;
+
+        foreach ($db->getPartitionSpans($table) as $span) {
+            if ((strtotime($span['less_than']) - strtotime($span['start'])) / 86400 <= 1) { $after++; }
+        }
+
+        $this->assertSame($before, $after, 'the daily front survives the change');
+        $this->assertSame('quarter-month', $db->inferPartitionGranularity($table),
+            'and the table now reads as the granularity the operator chose');
+
+        // And rotate, which reads that inference, finds the table already right.
+        $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
+        $cli   = $class->newInstanceWithoutConstructor();
+        $p     = $class->getProperty('params');
+        $p->setAccessible(true);
+        $p->setValue($cli, []);
+
+        $spans = $db->getPartitionSpans($table);
+
+        $merge = new ReflectionMethod($cli, 'mergeablePeriods');
+        $merge->setAccessible(true);
+
+        $monthly = $merge->invoke($cli, $spans, 'monthly');
+        $quarter = $merge->invoke($cli, $spans, 'quarter-month');
+
+        $this->assertSame(array(), $monthly,
+            'no whole MONTH of the front has left the window');
+
+        $this->assertNotSame(array(), $quarter,
+            'but a quarter has, and that is the unit the table is now on');
+
+        $group = reset($quarter);
+
+        $this->assertSame(
+            7,
+            (int) round((strtotime($group['less_than']) - strtotime($group['start'])) / 86400),
+            'the merge releases a QUARTER, not a month -- the cycle follows the inference'
+        );
+
+        // Carving is unaffected: the front is still two months deep, and what
+        // the merge releases is what the next carve claims.
+        $carve = new ReflectionMethod($cli, 'carvePlan');
+        $carve->setAccessible(true);
+
+        $this->assertSame(array(), $carve->invoke($cli, $spans),
+            'two months of daily already, so nothing is carved until a merge frees room');
     }
 
     /** An explicit range may still refine the tail, for an operator who means it. */

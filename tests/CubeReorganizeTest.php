@@ -57,9 +57,9 @@ class ReorganizeAsCube extends \OWA\Module\Base\Controller\PartitionReorganizeCl
         return self::$db;
     }
 
-    protected function isCube($table)
+    protected function dailyLeadMonths($table)
     {
-        return self::$cube;
+        return self::$cube ? \OWA\Core\Db::CUBE_DAILY_MONTHS : 0;
     }
 
     protected function factTables($only = null)
