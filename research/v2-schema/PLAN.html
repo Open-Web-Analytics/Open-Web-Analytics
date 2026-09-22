@@ -2480,6 +2480,25 @@ cannot overwrite a newer value with an older beacon</li>
 drew that line; this keeps it drawn while letting both live in one row.</p>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
+
+<p class="note"><strong>ONE RELEASE, NOT A STAGED ROLLOUT. Decided 22&nbsp;Sep.</strong>
+The five steps below are the order the WORK is done in, not a sequence of
+shipped releases with installations sitting between them. Every v2 pull request
+merges into a <code>v2</code> integration branch, and that branch merges to
+master once reporting runs off v2 &mdash; so master always holds a working
+system and there is never a release in which v2 collects while v1 reports.</p>
+
+<p class="note">What follows from it: there is no later release to defer a
+removal to. v1&rsquo;s tracker vocabulary &mdash; the <code>cv1..cvN</code>
+stores and their scoped getters &mdash; goes in the same release that adds
+<code>setEventProperty</code> and <code>setUserProperty</code>, rather than being
+deprecated across one. The one thing that is NOT a release event is dropping
+v1&rsquo;s tables: that stays an administrator&rsquo;s command, because an
+upgrade must not delete data. And accepting a v1-shaped beacon is a separate
+concern from any of this &mdash; a stale tracker keeps sending one long after
+the install has upgraded, so the server&rsquo;s compat for <code>cvN</code> is
+not retired with the client&rsquo;s.</p>
+
 <ol>
 <li>Build v2&rsquo;s tables and the pass. They sit alongside v1 and nothing reads them yet.</li>
 <li><strong>Migrate</strong> (<a href="#s221">&sect;2.21</a>). Non-destructive and re-runnable, against a v1 that stays intact.</li>
