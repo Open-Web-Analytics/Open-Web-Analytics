@@ -1447,6 +1447,54 @@ a whole period. Carving costs that rewrite once; leaving it costs the same rewri
 on every run. Only that one: a past period holding rows is not being written to
 and merges shortly anyway.</p>
 
+<h4><span class="num">2.8.3</span>What the other commands must not do to it <span class="chip c-dec">Decided</span></h4>
+
+<p><strong>A daily partition is an ordinary fine period, and that is enough to
+break two of the three partition commands.</strong> Both were found by driving the
+real code against a cube-shaped table rather than reading it.</p>
+
+<p><strong><code>partition-reorganize</code> merged the daily front away.</strong>
+Every filter in <code>repartitionTable()</code> admits a one-day partition, so
+<code>granularity=monthly</code> collapsed two months of them into two, rewriting
+every live row &mdash; and the next <code>partition-rotate</code> rewrote them
+again putting them back. That is the merge-and-re-carve churn the merge/carve
+disjointness was built to prevent, arriving from outside the cycle. It also
+reported the wrong budget (56 partitions for a table that would hold 74 once
+rotate restored the front), and it accepted <code>granularity=daily</code>, which
+takes the whole lead daily and makes the next rotate extend a year of lead at
+daily.</p>
+
+<p>So <code>repartitionTable()</code> takes a <strong>skip range</strong> and plans
+each contiguous run on its own &mdash; one target across the hole would merge
+partitions from either side of it and swallow the front. The command passes the
+cube&rsquo;s live daily coverage as that range, reports it, and refuses
+<code>daily</code> for the cube. An explicit <code>from=</code>/<code>to=</code>
+still overrides, for an operator who means it: the protection is a default, not a
+prohibition.</p>
+
+<p><strong>The cube is created in shape, not given its front by a later
+rotate.</strong> <code>Db::createTable()</code> built a monthly lead
+unconditionally, so a fresh install and the upgrade both produced a cube with no
+daily front &mdash; every rebuild rewriting a whole month until the first rotate
+ran, and on an installation whose scheduler was never set up, for as long as the
+month lasted. An entity may now declare the lead it needs, and the cube asks for
+61 daily plus 11 monthly, contiguous, ending at the ordinary lead boundary with a
+<strong>monthly last span</strong> so the granularity inference still reads
+monthly. The first rotate then carves nothing and merges nothing. An entity cannot
+exceed <code>PARTITION_COUNT_LIMIT</code> on its own say-so; over it, the table is
+created monthly and the run says so.</p>
+
+<p class="note"><code>partition-init</code> was never affected: it refuses any
+table that is already partitioned, and the cube is always created partitioned. One
+job each &mdash; init sets a table up, rotate keeps it in shape, reorganize changes
+the granularity of the part it owns.</p>
+
+<p class="note"><strong>The exhausted lead recovers in one run.</strong> Nothing
+daily, rows landing in a coarse partition &mdash; a missed run, or an installation
+upgrading into this. One <code>partition-rotate</code> carves the whole two months
+back, including the partition taking writes, and a second run does nothing, so the
+recovery cannot re-rewrite what it has just written.</p>
+
 <p class="note"><strong>One lead means one budget, and the daily part is the half
 that loses.</strong> <code>partition-rotate</code> computes the per-table budget
 once and passes the same number to the lead extension, the compaction and the
