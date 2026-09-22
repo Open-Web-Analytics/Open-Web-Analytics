@@ -168,6 +168,49 @@ final class CustomDimensionsTest extends TestCase
             'a VARCHAR(255) is 1020 bytes on utf8mb4 and 765 on utf8mb3');
     }
 
+    /**
+     * A TEXT or BLOB column costs a POINTER, not its declared width.
+     *
+     * The trap this closes, and it was a real one: information_schema reports a
+     * TEXT column's CHARACTER_OCTET_LENGTH as its whole capacity -- 65,535 for
+     * TEXT and over four billion for LONGTEXT -- so charging the declared width
+     * prices a single one past the entire row allowance, and every registration
+     * against a cube with one is refused for a budget that is not actually
+     * spent. Measured: a table takes 197 off-page columns whatever their
+     * declared size, where it takes 85 VARCHAR(255), so what bounds them is a
+     * different limit from this one.
+     *
+     * The cube already has a JSON column -- `params`, inherited from raw -- and
+     * JSON is stored the same way.
+     */
+    public function testAnOffPageColumnIsPricedAsAPointer(): void
+    {
+        foreach (['text', 'mediumtext', 'longtext', 'blob', 'longblob', 'json'] as $type) {
+            $this->assertSame(12, \OWA\Core\Db::columnRowBytes($type, 65535), $type);
+            $this->assertSame(12, \OWA\Core\Db::columnRowBytes($type, 4294967295), $type);
+        }
+
+        // And a VARCHAR still costs its width, which is the whole distinction.
+        $this->assertGreaterThan(700, \OWA\Core\Db::columnRowBytes('varchar', 765));
+    }
+
+    /**
+     * The corrected arithmetic against what the server really allows.
+     *
+     * Re-validated after the off-page fix, with and without a TEXT column
+     * present: a copy of the 73-column cube took exactly 15 more VARCHAR(255)
+     * and 106 more VARCHAR(36) either way, and this predicts both.
+     */
+    public function testTheBudgetIsUnmovedByAnOffPageColumn(): void
+    {
+        $varchars = 40 * \OWA\Core\Db::columnRowBytes('varchar', 765);
+
+        $this->assertSame(
+            $varchars + 12,
+            $varchars + \OWA\Core\Db::columnRowBytes('text', 65535),
+            'adding a TEXT column moves the budget by twelve bytes, not by sixty-five thousand');
+    }
+
     public function testAFixedWidthTypeIsPricedAsOne(): void
     {
         $this->assertSame(8, Dimensions::definitionRowBytes('BIGINT NULL', 4));

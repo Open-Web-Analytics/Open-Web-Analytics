@@ -2207,6 +2207,31 @@ class Db extends \OWA\Core\Base {
      */
     static function columnRowBytes( $data_type, $octets ) {
 
+        $data_type = strtolower( (string) $data_type );
+
+        /*
+         * STORED OFF THE ROW, SO IT COSTS A POINTER AND NOT ITS WIDTH.
+         *
+         * Checked first, because information_schema reports a TEXT column's
+         * CHARACTER_OCTET_LENGTH as its whole declared capacity -- 65,535 for
+         * TEXT, four billion for LONGTEXT -- and charging that would price a
+         * single TEXT column past the entire row allowance. Measured: a table
+         * takes 197 of these whatever their declared size, where it takes 85
+         * VARCHAR(255), so what bounds them is not this budget at all.
+         *
+         * Twelve is the top of the 9-to-12 bytes MySQL documents, taken rather
+         * than the bottom because over-charging refuses a registration that
+         * would have fitted and under-charging lets the server refuse an ALTER
+         * that has already paid for a rebuild.
+         */
+        $off_page = array( 'tinytext', 'text', 'mediumtext', 'longtext',
+                           'tinyblob', 'blob', 'mediumblob', 'longblob', 'json' );
+
+        if ( in_array( $data_type, $off_page, true ) ) {
+
+            return 12;
+        }
+
         if ( $octets > 0 ) {
 
             return $octets + ( $octets > 255 ? 2 : 1 );
@@ -2216,12 +2241,12 @@ class Db extends \OWA\Core\Base {
             'tinyint' => 1, 'smallint' => 2, 'mediumint' => 3, 'int' => 4,
             'bigint'  => 8, 'float'    => 4, 'double'    => 8, 'decimal' => 8,
             'date'    => 3, 'datetime' => 5, 'timestamp' => 4, 'time'    => 3,
-            'year'    => 1, 'json'     => 8,
+            'year'    => 1,
         );
 
         // Unknown types are charged the widest fixed width rather than nothing,
         // so a type this does not know about cannot make the estimate optimistic.
-        return isset( $fixed[ strtolower( $data_type ) ] ) ? $fixed[ strtolower( $data_type ) ] : 8;
+        return isset( $fixed[ $data_type ] ) ? $fixed[ $data_type ] : 8;
     }
 
     /**
