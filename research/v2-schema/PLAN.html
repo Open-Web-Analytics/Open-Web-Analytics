@@ -1401,6 +1401,33 @@ is never rebuilt, so it pays no merge and gains nothing from being finer at the
 front. v1&rsquo;s fact tables have no rebuild to make cheaper. Carving every fact
 table would spend the open-file budget for nothing.</p>
 
+<p class="note"><strong>REVISIT THIS WHEN v1&rsquo;s FACT TABLES ARE DROPPED.</strong>
+The mixed lead is the right shape <em>while v1 is still here</em>, and that is a
+transition constraint rather than a property of the design. The per-table budget
+is the server&rsquo;s spare open-file slots divided by the reserve and <strong>by
+the number of partitioned fact tables</strong> &mdash; ten today, eight of them
+v1&rsquo;s. Measured on the dev box: 2916 spare gives <strong>145 per table now
+and 737 once only <code>owa_event_raw</code> and <code>owa_event</code>
+remain</strong>. The mixed lead needs 73 of that; a cube pegged daily throughout
+needs 366. Both fit comfortably at 737.</p>
+
+<p class="note">At which point <strong>pegging the cube daily is the simpler
+system</strong> and should replace this: it deletes the carve, the merge, the skip
+range that keeps <code>partition-reorganize</code> off the daily front, the
+last-span guard and the <code>daily</code> refusal. The costs are measured and
+negligible &mdash; <code>EXCHANGE PARTITION</code> goes from 77ms at 72 partitions
+to 115ms at 365, the partition listing from 8ms to 51ms, and the extra lead
+extension is a few seconds of <code>REORGANIZE</code> against an empty
+<code>pmax</code> spread over a year. The ~350 extra partitions are empty future
+days, and nothing rebuilds a future partition.</p>
+
+<p class="note">What forbids doing it NOW is sequencing. With the budget at 145, a
+daily cube needs 366 for its lead alone &mdash; so it is not the carve that gets
+refused but <code>extendTableLead()</code>, which means no lead and writes reaching
+the catch-all. That is worse than anything the mixed lead does. Making the daily
+depth adapt to the budget to bridge the gap is more machinery, not less. So: this
+shape until v1 goes, then delete it.</p>
+
 <h4><span class="num">2.8.2</span>The carve waits for the merge <span class="chip c-dec">Decided</span></h4>
 
 <p><strong>This coupling is the whole of it, and getting it wrong is what made the
