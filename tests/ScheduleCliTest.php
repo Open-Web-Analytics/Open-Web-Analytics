@@ -114,22 +114,23 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * The two shipped daily jobs do not land on the same minute.
+     * No two shipped daily jobs land on the same minute.
      *
      * The spread exists so installs sharing a host do not fire together; a
      * shared seed would fix that between installs and break it within one.
      */
     public function testTheShippedDailyJobsDoNotCollide()
     {
-        $jobs = $this->callProtected($this->runner(), 'jobs');
+        $jobs      = $this->callProtected($this->runner(), 'jobs');
+        $schedules = array_column($jobs, 'schedule');
 
-        $this->assertNotSame(
-            $jobs['rotate-partitions']['schedule'],
-            $jobs['fetch-notifications']['schedule'],
+        $this->assertSame(
+            count($schedules),
+            count(array_unique($schedules)),
             'the job name has to be part of the seed, not just the install' );
     }
 
-    /** Only that one job ships; everything else is opt-in. */
+    /** Only these jobs ship; everything else is opt-in. */
     public function testTheDefaultJobsAreRegistered()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
@@ -137,8 +138,31 @@ final class ScheduleCliTest extends CliControllerTestCase
         // Named exactly, not counted: a job appearing here means every install
         // starts running something on a timer, which is a decision rather than
         // a detail. fetch-notifications joined rotate-partitions when the OWA
-        // News panel stopped calling api.github.com during page renders.
-        $this->assertSame(['rotate-partitions', 'fetch-notifications'], array_keys($jobs));
+        // News panel stopped calling api.github.com during page renders, and
+        // rebuild-cube joined them once it could refuse cheaply on an install
+        // with no site collecting into v2.
+        $this->assertSame(
+            ['rotate-partitions', 'rebuild-cube', 'fetch-notifications'],
+            array_keys($jobs)
+        );
+    }
+
+    /**
+     * The cube build ships with no arguments, like rotate.
+     *
+     * Its default range is yesterday and today. A registered days= would make
+     * the window a property of the upgrade rather than of the installation.
+     */
+    public function testTheCubeBuildShipsWithNoArgumentsAndSpread()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertArrayHasKey('rebuild-cube', $jobs);
+        $this->assertSame([], $jobs['rebuild-cube']['params']);
+        $this->assertSame('code', $jobs['rebuild-cube']['source']);
+        $this->assertMatchesRegularExpression(
+            '/^\d+ \d+ \* \* \*$/', $jobs['rebuild-cube']['schedule'],
+            'a spread daily schedule -- it ends in an EXCHANGE PARTITION' );
     }
 
     /**

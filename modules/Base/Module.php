@@ -361,6 +361,30 @@ class Module extends \OWA\Core\Module {
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array() );
 
         /*
+         * The reporting cube's build. Registered, and safe to be, because the
+         * command refuses cheaply when no site collects into v2 -- which is
+         * every installation until one turns it on. Without that guard this
+         * would do DDL on every run on every install to rebuild an empty
+         * partition, which is why it shipped unregistered at first.
+         *
+         * ONE JOB, AT DAILY SPREAD, not the quarter-hourly cadence 2.5.1
+         * eventually wants. The default range is yesterday and today, so a
+         * daily run keeps the cube a day fresh, and nothing reports over
+         * owa_event yet -- so a frequent run would buy freshness no reader can
+         * see while paying a swap every fifteen minutes. An installation that
+         * wants it states it in OWA_SCHEDULED_JOBS; CubeRebuildCli's docblock
+         * carries both cadences. Same rule as the empty params above: turning
+         * the scheduler on must not turn anything else on.
+         *
+         * NOT '@daily', for the reason rotate-partitions is not: several OWA
+         * installs commonly share one database server, and this one ends in an
+         * EXCHANGE PARTITION.
+         */
+        $this->registerJob(
+            'rebuild-cube', 'cube-rebuild',
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rebuild-cube' ) ), array() );
+
+        /*
          * Daily is the right cadence for release announcements: they are not
          * urgent, and the endpoint is rate limited per IP. Nothing renders from
          * the network any more, so a missed run costs a day's freshness rather
