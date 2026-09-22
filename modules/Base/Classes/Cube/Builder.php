@@ -247,7 +247,7 @@ class Builder {
             return $result;
         }
 
-        // Staging now holds the partition's previous contents.
+        // Staging now holds the partition's previous contents, swapped out.
         $this->dropWorkingTables();
 
         $this->advanceLastSeen( $span );
@@ -697,22 +697,22 @@ class Builder {
 
         $this->dropWorkingTables();
 
-        if ( ! $this->db->createTableLike( $this->tables['staging'], $this->tables['target'] ) ) {
+        /*
+         * FLAT FROM THE START. EXCHANGE PARTITION refuses a partitioned table,
+         * and CREATE TABLE LIKE then REMOVE PARTITIONING created the cube's 72
+         * partitions only to delete them again -- 4,181ms of a 4,317ms build,
+         * against 136ms for everything that did actual work. Creating it
+         * unpartitioned costs 55ms.
+         *
+         * Built fresh every run rather than kept and emptied: it is derived
+         * from the live cube's own DDL, so it cannot be stale after a release
+         * adds a column or a custom dimension is registered, and there is no
+         * shape to check.
+         */
+        if ( ! $this->db->createUnpartitionedCopy( $this->tables['staging'], $this->tables['target'] ) ) {
 
             \OWA\Core\CoreAPI::error( sprintf(
                 'Cube build: could not create %s.', $this->tables['staging'] ) );
-
-            return false;
-        }
-
-        // CREATE TABLE LIKE copies the partitioning, and EXCHANGE PARTITION
-        // refuses a partitioned table.
-        if ( ! $this->db->removePartitioning( $this->tables['staging'] ) ) {
-
-            \OWA\Core\CoreAPI::error( sprintf(
-                'Cube build: could not flatten %s.', $this->tables['staging'] ) );
-
-            $this->dropWorkingTables();
 
             return false;
         }

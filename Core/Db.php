@@ -2019,6 +2019,99 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Copy a partitioned table's structure WITHOUT its partitions.
+     *
+     * For a staging table that EXCHANGE PARTITION will swap in. The swap
+     * refuses a partitioned table, so the partitions have to go -- and
+     * CREATE TABLE LIKE then REMOVE PARTITIONING creates every one of them
+     * only to delete it again: 2,690ms plus 1,491ms on a 72-partition cube,
+     * against 55ms to create it flat in the first place.
+     *
+     * Taken from the LIVE table's own DDL rather than rebuilt from an entity,
+     * because the swap compares column for column and the table may carry
+     * columns no entity declares -- a registered custom dimension is added at
+     * runtime. Reading what is actually there is the only way to match it.
+     *
+     * @param string $new     table to create
+     * @param string $source  partitioned table to copy
+     * @return bool
+     */
+    function createUnpartitionedCopy( $new, $source ) {
+
+        if ( ! defined( 'OWA_SQL_SHOW_CREATE_TABLE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $new )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $source ) ) {
+
+            return false;
+        }
+
+        $row = $this->get_row( sprintf( OWA_SQL_SHOW_CREATE_TABLE, $source ) );
+        $row = (array) $row;
+        $ddl = isset( $row['Create Table'] ) ? $row['Create Table'] : '';
+
+        if ( ! $ddl ) {
+
+            return false;
+        }
+
+        /*
+         * The partition clause is last, and MySQL emits it inside a version
+         * comment. Cutting at whichever marker appears keeps the column list,
+         * the keys and the table options exactly as they are -- which is what
+         * the swap compares.
+         */
+        foreach ( array( '/*!50100 PARTITION BY', "\nPARTITION BY", ' PARTITION BY' ) as $marker ) {
+
+            $at = strpos( $ddl, $marker );
+
+            if ( $at !== false ) {
+
+                $ddl = rtrim( substr( $ddl, 0, $at ) );
+
+                break;
+            }
+        }
+
+        $ddl = preg_replace(
+            '/^CREATE TABLE `' . preg_quote( (string) $source, '/' ) . '`/',
+            'CREATE TABLE `' . $new . '`',
+            $ddl, 1, $renamed );
+
+        // Refuse rather than create a second copy of the source table.
+        if ( ! $renamed ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( $ddl );
+    }
+
+    /**
+     * Empty a table, keeping its definition.
+     *
+     * For a working table that is rebuilt on every use: dropping and creating
+     * it again costs whatever its definition costs, and a staging table built
+     * with CREATE TABLE LIKE from a partitioned cube costs seconds. TRUNCATE
+     * costs milliseconds and leaves the shape alone.
+     *
+     * NOT a substitute for DELETE where rows matter: it cannot be rolled back,
+     * and it does not fire triggers.
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function truncateTable( $table_name ) {
+
+        if ( ! defined( 'OWA_SQL_TRUNCATE_TABLE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_TRUNCATE_TABLE, $table_name ) );
+    }
+
+    /**
      * Add a column without the instant algorithm, rebuilding the table.
      *
      * For a table that EXCHANGE PARTITION compares byte for byte. An instantly

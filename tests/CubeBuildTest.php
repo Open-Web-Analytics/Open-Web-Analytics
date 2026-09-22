@@ -270,6 +270,77 @@ final class CubeBuildTest extends TestCase
         return $row;
     }
 
+    /**
+     * The staging table is created UNPARTITIONED, and cheaply.
+     *
+     * EXCHANGE PARTITION refuses a partitioned table, so the partitions have to
+     * go -- and CREATE TABLE LIKE then REMOVE PARTITIONING created all 72 of
+     * the cube's only to delete them again: 4,181ms of a 4,317ms build, against
+     * 136ms for everything that does actual work. Taking the cube's own DDL and
+     * cutting the partition clause off costs 55ms.
+     *
+     * Derived from the LIVE table rather than from the entity, because the swap
+     * compares column for column and the cube may carry columns no entity
+     * declares -- a registered custom dimension is added at runtime.
+     */
+    public function testStagingIsBuiltFlatFromTheCubesOwnShape(): void
+    {
+        $db      = owa_coreAPI::dbSingleton();
+        $cube    = $this->table('base.event');
+        $staging = $cube . '_rebuild';
+
+        $db->query("DROP TABLE IF EXISTS $staging");
+        $this->assertTrue($db->createUnpartitionedCopy($staging, $cube));
+
+        $parts = $db->get_row(
+            "SELECT COUNT(*) AS n FROM information_schema.PARTITIONS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$staging'
+                AND PARTITION_NAME IS NOT NULL");
+
+        $this->assertSame(0, (int) $parts['n'], 'the swap refuses a partitioned table');
+
+        // Same columns, same order, same types -- which is what 1736 checks.
+        $shape = function ($table) use ($db) {
+            $out = [];
+            foreach ($db->get_results(
+                "SELECT COLUMN_NAME c, COLUMN_TYPE t FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '$table'
+               ORDER BY ORDINAL_POSITION") as $row) {
+                $row = (array) $row;
+                $out[] = $row['c'] . ':' . $row['t'];
+            }
+            return $out;
+        };
+
+        $this->assertSame($shape($cube), $shape($staging),
+            'column for column, or EXCHANGE PARTITION refuses it');
+
+        $db->query("DROP TABLE IF EXISTS $staging");
+    }
+
+    /** It copies a column the entity never declared, which is the point. */
+    public function testStagingCopiesARuntimeAddedColumn(): void
+    {
+        $db      = owa_coreAPI::dbSingleton();
+        $cube    = $this->table('base.event');
+        $staging = $cube . '_rebuild';
+
+        $db->query("ALTER TABLE $cube ADD COLUMN cd_probe VARCHAR(32) NULL, ALGORITHM=INPLACE");
+        $db->query("DROP TABLE IF EXISTS $staging");
+
+        try {
+            $this->assertTrue($db->createUnpartitionedCopy($staging, $cube));
+
+            $found = $db->get_row("SHOW COLUMNS FROM $staging LIKE 'cd_probe'");
+
+            $this->assertNotNull($found,
+                'a registered custom dimension is added at runtime; staging has to carry it');
+        } finally {
+            $db->query("DROP TABLE IF EXISTS $staging");
+            $db->query("ALTER TABLE $cube DROP COLUMN cd_probe, ALGORITHM=INPLACE");
+        }
+    }
+
     public function testOwaEventCarriesNoInstantColumnHistory(): void
     {
         // MySQL 8 adds a column instantly by default, and the row-format
