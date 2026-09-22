@@ -147,6 +147,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s225">2.24 Publishing the tracker</a>
   <a href="#s227">2.26 Custom dimensions</a>
   <a href="#s228">2.27 A cube per property</a>
+  <a href="#s229">2.28 URL canonicalisation</a>
   <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
@@ -2701,6 +2702,91 @@ not reportable until the next build, where an eagerly-created cube would have
 been ready to fill immediately. That is the same latency every other row already
 has &mdash; nothing is reportable until a build runs &mdash; so it adds a
 boundary case rather than a new kind of wait.</p>
+
+<h3 id="s229"><span class="num">2.28</span>URL canonicalisation <span class="chip c-open">Open</span></h3>
+
+<p><strong>v2 currently applies NONE, and that is not a decision anybody made
+&mdash; it is what fell out of keeping the evidence complete.</strong> Traced
+through the code 22 Sep: the tracker sends <code>page_location</code> =
+<code>document.URL</code>, and ingest stores it with nothing removed but control
+bytes (<code>EventRawHandlers::text()</code>). <code>page_path</code> and
+<code>page_query</code> are <code>parse_url()</code> of that same string.</p>
+
+<p>v1 does a great deal more, in <code>makeUrlCanonical()</code>, registered on
+<code>page_url</code>. Side by side:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Step</th><th>v1 <code>page_url</code></th><th>v2 today</th></tr></thead>
+<tbody>
+<tr><td><code>html_entity_decode</code></td><td>yes</td><td>no</td></tr>
+<tr><td>strip port, user, pass</td><td>yes</td><td>only from <code>host</code></td></tr>
+<tr><td>strip fragment</td><td>yes</td><td><strong>no</strong> &mdash; kept in <code>page_location</code>; absent from <code>page_path</code> because <code>parse_url</code> splits it off</td></tr>
+<tr><td>strip OWA's own params (<code>owa_source</code>, <code>_medium</code>, <code>_campaign</code>, <code>_ad</code>, <code>_ad_type</code>, <code>_overlay</code>, <code>_state</code>, feed param)</td><td>yes</td><td><strong>no</strong></td></tr>
+<tr><td>strip the site's and the installation's <code>query_string_filters</code></td><td>yes</td><td><strong>no</strong></td></tr>
+<tr><td>strip <code>default_page</code> (<code>index.html</code>)</td><td>yes</td><td><strong>no</strong></td></tr>
+<tr><td>strip trailing slash</td><td>yes</td><td><strong>no</strong></td></tr>
+<tr><td>lowercase the host</td><td>no</td><td>yes</td></tr>
+</tbody></table></div>
+
+<p class="note"><strong>The one that is a defect rather than a difference:</strong>
+<code>/store</code>, <code>/store/</code> and <code>/store/index.html</code> are
+three <code>page_path</code> values for one page, and v1 collapses them.
+Whatever else is decided here, v2 fragments page reports where v1 did not, and
+<code>default_page</code> and the trailing slash are the reason those two
+per-site settings exist.</p>
+
+<h4><span class="num">2.28.1</span>Canonicalise the READINGS, never the evidence <span class="chip c-dec">Decided</span></h4>
+
+<p>The split this plan already makes everywhere else settles most of it.
+<code>page_location</code> is EVIDENCE and stays byte-for-byte as it arrived:
+it is what a corrected parse is re-applied to, and stripping it means the
+question cannot be asked twice. GA reaches the same place &mdash; its
+<code>page_location</code> is the raw URL &mdash; and it is why v1 needed
+<code>keepCompleteUrl()</code> to stash the URL before its own canonicaliser ate
+it.</p>
+
+<p><code>page_path</code>, <code>page_query</code> and <code>host</code> are
+READINGS: they are what reports group by, and a reading that varies where the
+page does not is a broken report. They are already parsed at ingest, by a real
+URL parser, which is the only place that both can and should canonicalise.</p>
+
+<h4><span class="num">2.28.2</span>What each reading gets <span class="chip c-open">Open</span></h4>
+
+<div class="scroll"><table>
+<thead><tr><th>Column</th><th>Proposed</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td><code>page_location</code></td><td>nothing</td><td>evidence</td></tr>
+<tr><td><code>host</code></td><td>lowercase, no port <em>(already)</em></td><td>hostnames are case-insensitive; a port is not part of a page's identity</td></tr>
+<tr><td><code>page_path</code></td><td>strip <code>default_page</code>, strip trailing slash. NOT lowercased</td><td>the fragmentation above. Paths are case-SENSITIVE and two that differ in case are two pages</td></tr>
+<tr><td><code>page_query</code></td><td>strip OWA's own control params and both <code>query_string_filters</code>. KEEP <code>utm_*</code></td><td><code>owa_state</code> and friends are OWA's plumbing appearing in somebody's page report. <code>utm_*</code> is the site's own tagging and v1 keeps it, as does GA</td></tr>
+<tr><td><code>referer_url</code>, <code>referer_query</code></td><td>nothing beyond the host</td><td>somebody else's URL. Canonicalising it against THIS site's settings would be a category error</td></tr>
+<tr><td><code>landing_page_*</code></td><td>inherited</td><td>copied from the session's first event by a build, so they get whatever the readings got</td></tr>
+</tbody></table></div>
+
+<p><strong>Open, and these are the calls to make:</strong></p>
+
+<ul>
+<li><strong>Does the fragment belong in <code>page_location</code>?</strong> It
+is genuinely part of what the browser showed, and single-page apps put real
+navigation in it. v1 discards it. Keeping it is the evidence rule applied
+literally; it also means <code>page_location</code> alone cannot be grouped by.</li>
+<li><strong>Is <code>page_query</code> filtered at INGEST or at BUILD?</strong>
+Ingest is where the parser is and costs nothing per report. Build would let a
+corrected filter list be re-applied to history, which is the whole argument for
+the cube &mdash; and the filters are per-site settings an administrator edits,
+so they WILL change. This is the one that needs deciding rather than
+assuming.</li>
+<li><strong>Does <code>html_entity_decode</code> survive?</strong> v1 does it;
+it is a fix for URLs that arrived HTML-escaped from a template, and it is not
+obviously still needed.</li>
+</ul>
+
+<p class="note"><strong>Whatever is decided, it is not
+<code>makeUrlCanonical()</code>.</strong> That function strips parameters with a
+regex over the whole URL (<code>#\?param=.*$|&amp;param=.*$|param=.*&amp;#msiU</code>),
+which matches a parameter name appearing anywhere &mdash; inside a path segment,
+inside another parameter's value &mdash; and takes everything after it. v2 has a
+parsed query to work on and should rebuild it from parts.</p>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
