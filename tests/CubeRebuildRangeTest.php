@@ -45,6 +45,12 @@ final class CubeRebuildRangeTest extends TestCase
      */
     public function testASecondBuildOfTheSameCubeIsRefused(): void
     {
+        // The lock is a row: taking it needs a database, and CI's unit job has
+        // none. The rest of this file is date arithmetic and does not.
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('OWA database not reachable; the build lock is a row.');
+        }
+
         $table = owa_coreAPI::entityFactory('base.event')->getTableName();
 
         $held = new \OWA\Module\Base\Classes\JobLease('cube-build:' . $table);
@@ -67,6 +73,10 @@ final class CubeRebuildRangeTest extends TestCase
     /** With nothing holding it, the same run proceeds. */
     public function testABuildProceedsWhenTheCubeIsNotAlreadyBuilding(): void
     {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('OWA database not reachable; the build lock is a row.');
+        }
+
         $cli = $this->cli(['--dry-run' => 1]);
         $cli->action();
 
