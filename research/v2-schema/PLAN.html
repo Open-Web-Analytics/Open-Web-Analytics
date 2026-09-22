@@ -1484,6 +1484,33 @@ monthly. The first rotate then carves nothing and merges nothing. An entity cann
 exceed <code>PARTITION_COUNT_LIMIT</code> on its own say-so; over it, the table is
 created monthly and the run says so.</p>
 
+<p><strong>One declaration, and only half of it is declared.</strong> Three things
+shape a table&rsquo;s partitions and each had its own idea of what a fact table
+looks like, which is why two of them were wrong the same way. The shape is now
+stated once, on the ENTITY &mdash; <code>Event::getDailyLeadMonths()</code> &mdash;
+and every command reads it. It has to live there: <code>Db::createTable()</code>
+sits below the controllers and cannot reach them, so a description kept anywhere
+else is one the creation path cannot consult. Building the ranges is
+<code>Db::makeLeadRanges()</code>: the entity states a requirement, the database
+layer renders it.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Half of the shape</th><th>Whose it is</th><th>Where it is recorded</th></tr></thead>
+<tbody>
+<tr><td>How much of the lead is daily</td><td>nobody &mdash; fixed</td><td><code>Event::getDailyLeadMonths()</code></td></tr>
+<tr><td>The granularity of the rest</td><td><strong>the operator</strong>, through <code>partition-reorganize</code></td><td><strong>nowhere but the shape of the table.</strong> <code>inferPartitionGranularity()</code> reads it off the LAST span</td></tr>
+</tbody></table></div>
+
+<p>So the granularity is deliberately NOT part of the declaration, and
+<code>makeLeadRanges()</code> takes it as an argument rather than assuming monthly:
+at creation there is no table to infer from and monthly is the only answer
+available, while a caller maintaining an existing table passes what that table is
+on. <strong>Measured consequence:</strong> move the cube to quarter-month and the
+merge releases a QUARTER of the daily front rather than a month &mdash; the cycle
+follows the inference, and turning in smaller steps rewrites less per merge.
+Coverage stays two months either way, because what the merge releases the next
+carve claims.</p>
+
 <p class="note"><code>partition-init</code> was never affected: it refuses any
 table that is already partitioned, and the cube is always created partitioned. One
 job each &mdash; init sets a table up, rotate keeps it in shape, reorganize changes
