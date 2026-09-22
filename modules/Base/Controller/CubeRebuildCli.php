@@ -36,11 +36,6 @@ namespace OWA\Module\Base\Controller;
  * quarter-hourly run would buy freshness no reader can see while paying a swap
  * every fifteen minutes.
  *
- * It is safe to register only because the command refuses cheaply when no site
- * collects into v2, which is every installation until one turns it on. Without
- * that guard this would do DDL on every run everywhere to rebuild an empty
- * partition.
- *
  * TWO CADENCES ARE INTENDED EVENTUALLY, one job each, because they answer
  * different questions. A frequent run over the current partition sets how stale
  * a report can be; an infrequent run over the trailing window is where a late
@@ -73,24 +68,6 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
     }
 
     function action() {
-
-        /*
-         * NOTHING COLLECTING INTO v2 MEANS NOTHING TO BUILD, and saying so is
-         * the whole reason this can be a registered job at all. v2 collection is
-         * off until a site turns it on, so on most installations a build would
-         * rebuild an empty partition -- and a rebuild is not free even then: it
-         * creates a staging table, strips its partitioning and exchanges a
-         * partition, which is DDL on every run.
-         *
-         * refuse(), not fail(): the scheduler counts a refusal as satisfying the
-         * occurrence, so the job goes quiet instead of retrying forever.
-         */
-        if ( ! $this->anySiteCollectsV2() ) {
-
-            return $this->refuse(
-                'No site has v2 collection turned on, so owa_event_raw has nothing in it to '
-              . 'build from. Nothing to do.' );
-        }
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -212,31 +189,6 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 $entry['msec'] . 'ms',
                 $entry['ok'] ? 'ok' : ( 'FAILED: ' . $entry['error'] ) ) );
         }
-    }
-
-    /**
-     * Is any site collecting into owa_event_raw?
-     *
-     * A seam as much as a check: a test can answer it without a site table, and
-     * the scheduled job can be exercised on an installation that has none.
-     *
-     * @return bool
-     */
-    protected function anySiteCollectsV2() {
-
-        foreach ( \OWA\Core\CoreAPI::getSitesList() as $site ) {
-
-            $id = is_array( $site )
-                ? ( isset( $site['site_id'] ) ? $site['site_id'] : null )
-                : ( isset( $site->site_id ) ? $site->site_id : null );
-
-            if ( $id && \OWA\Module\Base\Handler\EventRawHandlers::isEnabledForSite( $id ) ) {
-
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

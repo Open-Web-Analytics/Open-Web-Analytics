@@ -22,15 +22,10 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->site = md5('owa-test-site');
         $this->ensureSiteRegistered($this->site);
 
-        owa_coreAPI::setScopedSetting('profile', $this->site, 'base', 'v2_raw_collection', 1);
-        owa_coreAPI::settingCacheFlush();
     }
 
     protected function tearDown(): void
     {
-        owa_coreAPI::clearScopedSetting('profile', $this->site, 'base', 'v2_raw_collection');
-        owa_coreAPI::settingCacheFlush();
-
         parent::tearDown();
     }
 
@@ -282,15 +277,17 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * Nothing reaches owa_event_raw for a site that has not asked for it. The
-     * default matters more than the feature: every site is off.
+     * Every site collects, with nothing to opt into.
+     *
+     * The inverse of the test this replaces, which asserted that a site had to
+     * turn `v2_raw_collection` on first. The gate was development scaffolding
+     * for exercising ingest against one site; the tracker now sends v2-shaped
+     * events, so there is nothing left to gate on.
      */
-    public function testASiteThatHasNotOptedInWritesNothing(): void
+    public function testEverySiteCollectsWithNoSettingToTurnOn(): void
     {
-        owa_coreAPI::clearScopedSetting('profile', $this->site, 'base', 'v2_raw_collection');
-        owa_coreAPI::settingCacheFlush();
-
-        $this->assertSame([], $this->firePageView());
+        $this->assertNotSame([], $this->firePageView(),
+            'a site that was never configured for v2 still writes to owa_event_raw');
     }
 
     /**

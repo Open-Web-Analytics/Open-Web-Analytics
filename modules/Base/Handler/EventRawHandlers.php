@@ -10,12 +10,17 @@ namespace OWA\Module\Base\Handler;
 /**
  * v2 ingest: one beacon becomes its rows in owa_event_raw.
  *
- * Registered beside v1's handlers on the same tracking events, and OFF unless a
- * site turns on `v2_raw_collection`. That is a development instrument, not the
- * architecture: v2 collects and v1 does not run beside it, and the two
- * pipelines are not meant to be compared live -- migrating v1's history into
- * v2 is the oracle. But the schema is not right until something writes to all
- * of it, and one site collecting into raw is how that gets found out.
+ * Registered beside v1's handlers on the same tracking events, for EVERY site.
+ * There is no setting: `v2_raw_collection` was a development instrument for
+ * exercising ingest against one site, and it is gone now that the tracker sends
+ * v2-shaped events.
+ *
+ * STILL NOT THE ARCHITECTURE. v2 is meant to collect where v1 does not run
+ * beside it, and the two pipelines are not meant to be compared live --
+ * migrating v1's history into v2 is the oracle. Both run today because the
+ * reporting layer reads v1's tables and nothing reads owa_event yet: 151 metric
+ * and dimension registrations, none of them over the cube. v1's ingest can stop
+ * when that is no longer true, which is 2.25 step 4.
  *
  * WHAT THIS DOES THAT v1's HANDLERS DO NOT
  *
@@ -41,11 +46,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * @param object $event
      */
     function notify( $event ) {
-
-        if ( ! self::isEnabledForSite( $event->get( 'site_id' ) ) ) {
-
-            return OWA_EHS_EVENT_HANDLED;
-        }
 
         $type = $event->getEventType();
 
@@ -86,26 +86,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return $this->store( $rows, $event );
-    }
-
-    /**
-     * Whether this site collects into v2 yet.
-     *
-     * Profile-scoped, so one site can be switched on without touching the rest
-     * of the installation -- which is the entire point of it being a setting.
-     *
-     * @param string $site_id
-     * @return bool
-     */
-    public static function isEnabledForSite( $site_id ) {
-
-        if ( ! $site_id ) {
-
-            return false;
-        }
-
-        return (bool) \OWA\Core\CoreAPI::getSetting(
-            'base', 'v2_raw_collection', 'profile', $site_id );
     }
 
     /**

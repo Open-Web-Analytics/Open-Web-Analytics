@@ -2505,11 +2505,15 @@ class Module extends \OWA\Core\Module {
         /*
          * v2 ingest, beside v1's handlers on the same events.
          *
-         * Registered unconditionally and gated inside the handler, on the
-         * site: the registration runs once per process with no event and no
-         * site_id in hand, so there is nothing to ask here. It returns
-         * immediately for a site that has not turned v2_raw_collection on,
-         * which is every site by default.
+         * Every site, no setting. The gate was development scaffolding for
+         * exercising ingest against one site and it is gone now that the
+         * tracker sends v2-shaped events.
+         *
+         * BOTH PIPELINES RUN, which is not the architecture (2.25 step 4 is
+         * where v1's registrations below come out). They run together because
+         * the reporting layer reads v1's tables and nothing reads owa_event
+         * yet. v2 is being built front to back; nothing ships until reporting
+         * is driven off v2.
          *
          * The list is tracking_event_types minus the two that are not events:
          * dom.stream is an ATTACHMENT to a page view and base.feed_request is
@@ -2618,9 +2622,8 @@ class Module extends \OWA\Core\Module {
                  * -- neither is conditional on anything, and a table nothing
                  * writes to costs an empty tablespace.
                  *
-                 * Whether anything writes to the first two is the
-                 * v2_raw_collection setting, per site (Handler\EventRawHandlers).
-                 * owa_event has one writer, cmd=events-rebuild.
+                 * Handler\EventRawHandlers writes the first two, for every
+                 * site. owa_event has one writer, cmd=cube-rebuild.
                  */
                 'event_raw',
                 'visitor_acquisition',
