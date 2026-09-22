@@ -143,7 +143,7 @@ class PartitionReorganizeCli extends PartitionsCli {
             if ( $plan['planned'] > $budget['limit'] && ! $this->getParam( 'force' ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: %s needs %d partitions, over the budget of %d. Merging old periods to '
+                    '%s: %s needs %d partitions, over the ceiling of %d. Merging old periods to '
                   . 'make room.', $table, $granularity, $plan['planned'], $budget['limit']
                 ) );
 

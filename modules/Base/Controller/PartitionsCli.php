@@ -218,7 +218,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         \OWA\Core\CoreAPI::notice( sprintf(
             '%s: refusing to create %d partitions (limit %d -- %s). Each partition is a file, and '
-          . 'past the budget MySQL closes and reopens tablespaces under load, which slows '
+          . 'past a few thousand, MySQL closes and reopens tablespaces under load, which slows '
           . 'everything on the instance. Lower OWA_PARTITION_DETAIL_MONTHS so less history is '
           . 'kept at full granularity, choose a coarser granularity, or set '
           . 'OWA_PARTITION_MAX_PARTITIONS if you have checked innodb_open_files yourself.',
@@ -422,7 +422,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             if ( ! $plan['fits'] ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: %d partitions exceeds the budget of %d and cannot be merged below %d, '
+                    '%s: %d partitions exceeds the ceiling of %d and cannot be merged below %d, '
                   . 'because everything within the last %d months is kept at full granularity. '
                   . 'Lower OWA_PARTITION_DETAIL_MONTHS to reduce it further.',
                     $table, $plan['projected'], $budget['limit'], $plan['floor'], $this->detailMonths()
@@ -467,7 +467,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         if ( ! $plan['fits'] ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: still %d partitions against a budget of %d. Lower OWA_PARTITION_DETAIL_MONTHS '
+                '%s: still %d partitions against a ceiling of %d. Lower OWA_PARTITION_DETAIL_MONTHS '
               . 'to reduce it further; no more can be merged while the last %d months are kept '
               . 'at full granularity.',
                 $table, $plan['projected'], $budget['limit'], $this->detailMonths()
@@ -782,7 +782,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
                  */
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '%s: the lead is in place but its front is not daily, so every cube '
-                  . 'rebuild rewrites a whole %s. Raise the partition budget, or accept '
+                  . 'rebuild rewrites a whole %s. Raise OWA_PARTITION_MAX_PARTITIONS, or accept '
                   . 'month-sized rebuilds.',
                     $table, $this->db()->inferPartitionGranularity( $table ) ?: 'period' ) );
 
