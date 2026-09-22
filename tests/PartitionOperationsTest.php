@@ -1441,15 +1441,27 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t  = $this->makeTable();
 
-        $front  = date('Ym01', strtotime('first day of -1 month'));
+        /*
+         * DELIBERATELY SMALLER THAN A REAL CUBE: one month of daily and three
+         * of lead, not two and twelve. Every assertion here is about WHICH
+         * partitions a skip range protects and which a run plans, so the shape
+         * has to be daily-then-coarse and the size is free. A full-size fixture
+         * built and dropped ~360 partitions across this file's cases, and a
+         * partition costs about 10ms to create and 9ms to drop -- which is paid
+         * on every run of the isolation sweep, once per driver.
+         */
+        $front  = date('Ym01');
+        $lead   = date('Ym01', strtotime('first day of +1 month'));
         $ranges = array();
 
-        for ($d = $front; $d < date('Ym01', strtotime('first day of +1 month')); $d = date('Ymd', strtotime($d . ' +1 day'))) {
+        for ($d = $front; $d < $lead; $d = date('Ymd', strtotime($d . ' +1 day'))) {
             $ranges['p' . $d] = date('Ymd', strtotime($d . ' +1 day'));
         }
 
-        for ($m = date('Ym01', strtotime('first day of +1 month')); $m < \OWA\Core\Db::partitionLeadBoundary(); $m = date('Ymd', strtotime($m . ' +1 month'))) {
-            $ranges['p' . $m] = date('Ymd', strtotime($m . ' +1 month'));
+        for ($i = 0; $i < 3; $i++) {
+            $next = date('Ymd', strtotime($lead . ' +1 month'));
+            $ranges['p' . $lead] = $next;
+            $lead = $next;
         }
 
         $db->partitionTable($t, 'yyyymmdd', $ranges);
@@ -1492,10 +1504,10 @@ final class PartitionOperationsTest extends TestCase
             $before = $this->dailyCount($t);
             $rows   = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
 
-            $this->assertGreaterThan(50, $before, "$granularity: fixture needs a daily front");
+            $this->assertGreaterThan(25, $before, "$granularity: fixture needs a daily front");
 
             $skip = array(
-                'start'     => date('Ym01', strtotime('first day of -1 month')),
+                'start'     => date('Ym01'),
                 'less_than' => date('Ym01', strtotime('first day of +1 month')),
             );
 
@@ -1532,7 +1544,7 @@ final class PartitionOperationsTest extends TestCase
         $t  = $this->cubeShapedTable();
 
         $skip = array(
-            'start'     => date('Ym01', strtotime('first day of -1 month')),
+            'start'     => date('Ym01'),
             'less_than' => date('Ym01', strtotime('first day of +1 month')),
         );
 
