@@ -2558,12 +2558,35 @@ a visitor is shared across Properties by the same cookie &mdash; splitting it wo
 give one person a first-touch per Property, which is a different claim from the
 one 2.9 makes.</p>
 
-<p class="note"><strong>Open: what a Property with no data costs.</strong> A cube
-is created with 72 partitions (2.8), which is 72 files and about 2.7 seconds,
-whether or not the Property is ever used. At a few Properties that is nothing; at
-the 212 sites on the dev installation it is not. Creating the cube LAZILY &mdash;
-on the Property's first event rather than at creation &mdash; is the obvious
-answer and is not yet decided.</p>
+<h4><span class="num">2.27.3</span>A cube is created on first data, by the build <span class="chip c-dec">Decided</span></h4>
+
+<p><strong>Not when the Property is created.</strong> A cube is 72 partitions
+(<a href="#s228">&sect;2.8</a>) &mdash; 72 files and about 2.7 seconds &mdash;
+and a Property that never collects anything would pay all of it. At a handful
+that is nothing; the dev installation has 212 sites. GA works the same way:
+nothing is materialised for a property until it has at least one event.</p>
+
+<p><strong>THE BUILD WATCHES, NOT INGEST.</strong> The obvious reading of "create
+it on the first event" puts the creation in the beacon path, and that is the
+version to avoid: a 2.7-second <code>CREATE TABLE</code> inside a request, with
+every concurrent first event of that Property racing to do it. The build is
+already the right place &mdash; it runs on a schedule, it already holds a
+per-cube lock (<a href="#s227">&sect;2.26</a>), and it already asks which
+partitions hold rows for a range, which is most of the question. So:</p>
+
+<ul>
+<li>ingest writes <code>owa_event_raw</code> and knows nothing about cubes</li>
+<li>a build, finding raw rows for a Property with no cube, creates it and then
+builds it</li>
+<li>a Property with no data has no cube, and therefore no reports &mdash; which
+is the same thing a Property with no data would show anyway</li>
+</ul>
+
+<p class="note">The delay is the whole of the cost: a Property's first data is
+not reportable until the next build, where an eagerly-created cube would have
+been ready to fill immediately. That is the same latency every other row already
+has &mdash; nothing is reportable until a build runs &mdash; so it adds a
+boundary case rather than a new kind of wait.</p>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
