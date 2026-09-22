@@ -29,6 +29,63 @@ final class CubeRebuildRangeTest extends TestCase
         return $method->invoke($cli);
     }
 
+    /**
+     * Two builds of the same cube cannot run at once.
+     *
+     * The staging and computed tables are named after the target, so a second
+     * build would drop the table the first is filling. The row-count check
+     * would usually refuse the resulting swap -- the live table is not at risk
+     * -- but the failure reads as builds mysteriously failing.
+     *
+     * And the two intended cadences OVERLAP by construction: a frequent run
+     * over the current partition and an hourly one over the trailing window
+     * both cover today. The scheduler's lease is keyed on the JOB NAME, which
+     * is exactly what lets them run concurrently, so it cannot be what stops
+     * them colliding. This lock is keyed on the TARGET TABLE.
+     */
+    public function testASecondBuildOfTheSameCubeIsRefused(): void
+    {
+        $table = owa_coreAPI::entityFactory('base.event')->getTableName();
+
+        $held = new \OWA\Module\Base\Classes\JobLease('cube-build:' . $table);
+
+        $this->assertTrue($held->acquire(600), 'the first build takes the lock');
+
+        try {
+            $cli = $this->cli(['--dry-run' => 1]);
+            $cli->action();
+
+            $this->assertSame('refused', $cli->getCliOutcome()['outcome']);
+            $this->assertStringContainsString('already running',
+                (string) $cli->getCliOutcome()['message'],
+                'and it says why, rather than failing obscurely');
+        } finally {
+            $held->release();
+        }
+    }
+
+    /** With nothing holding it, the same run proceeds. */
+    public function testABuildProceedsWhenTheCubeIsNotAlreadyBuilding(): void
+    {
+        $cli = $this->cli(['--dry-run' => 1]);
+        $cli->action();
+
+        $this->assertNotSame('refused', $cli->getCliOutcome()['outcome'],
+            'the lock is released after a run, so the next one is not blocked');
+    }
+
+    private function cli(array $params): \OWA\Module\Base\Controller\CubeRebuildCli
+    {
+        $class = new ReflectionClass(CubeRebuildCli::class);
+        $cli   = $class->newInstanceWithoutConstructor();
+
+        $p = $class->getProperty('params');
+        $p->setAccessible(true);
+        $p->setValue($cli, $params);
+
+        return $cli;
+    }
+
     public function testTheDefaultCoversYesterdayAsWellAsToday(): void
     {
         // A session whose last event is in the previous partition, and which

@@ -54,10 +54,25 @@ namespace OWA\Module\Base\Controller;
  * the escaped text -- so the line an operator copied would leave the job
  * silently unscheduled. The two parse identically.
  *
- * The lock is keyed on the job NAME, so those two serialise separately and a
- * long window rebuild does not hold up the current one.
+ * The SCHEDULER's lock is keyed on the job name, so those two are not serialised
+ * against each other by it. They are serialised here instead, by a lock keyed on
+ * the cube itself (JobLease 'cube-build:<table>'): the staging and computed
+ * tables are named after the target, so two builds of one cube would fight over
+ * them, and the two cadences overlap on today's partition by construction. A
+ * cube per property therefore locks per property, and builds for different
+ * properties still run at the same time.
  */
 class CubeRebuildCli extends \OWA\Core\Controller\Cli {
+
+    /**
+     * How long the per-cube build lock outlives proof of life.
+     *
+     * Sized for ONE partition, not a whole run, because the run refreshes after
+     * each. A million-row partition measured 162 seconds; thirty minutes is
+     * generous against that and short enough that a crashed build does not
+     * block the next one for a working day.
+     */
+    const BUILD_LEASE = 1800;
 
     function __construct( $params ) {
 
@@ -128,6 +143,35 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 $span['name'], $span['start'], $span['less_than'] ) );
         }
 
+        /*
+         * ONE BUILD PER CUBE AT A TIME.
+         *
+         * The staging and computed tables are named after the target, so two
+         * builds of the same cube share them: one would drop the table the
+         * other is filling. The row-count check would usually catch the result
+         * and refuse the swap -- so the live table is not at risk -- but the
+         * failure would read as builds mysteriously failing.
+         *
+         * And the two cadences this command is meant to run at OVERLAP by
+         * construction: a frequent run over the current partition and an hourly
+         * one over the trailing window both cover today. The scheduler's own
+         * lease is keyed on the JOB NAME, which is what lets them run
+         * concurrently, so it cannot be what stops them colliding.
+         *
+         * Keyed on the TARGET TABLE, not the command, so it is the thing they
+         * actually contend for. A cube per property therefore locks per
+         * property, and builds for different properties still run at the same
+         * time.
+         */
+        $lock = new \OWA\Module\Base\Classes\JobLease( 'cube-build:' . $table );
+
+        if ( ! $lock->acquire( self::BUILD_LEASE ) ) {
+
+            return $this->refuse( sprintf(
+                'Another build of %s is already running. Nothing to do -- a build is '
+              . 'convergent, so the run in progress produces what this one would.', $table ) );
+        }
+
         $failed = 0;
 
         foreach ( $partitions as $span ) {
@@ -154,7 +198,18 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 $result['steps'], $result['computed'] ) );
 
             $this->reportSteps( $builder );
+
+            /*
+             * Proof of life per partition, not one lease for the whole run. A
+             * backfill can legitimately run for hours -- days=365 is many
+             * partitions -- and sizing one lease for that would leave a crashed
+             * run blocking every later build until it expired. Refreshing means
+             * the lease only has to outlive ONE partition.
+             */
+            $lock->refresh( self::BUILD_LEASE );
         }
+
+        $lock->release();
 
         if ( $failed ) {
 
