@@ -42,7 +42,7 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(54, $columns);
+        $this->assertCount(57, $columns);
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
@@ -52,6 +52,7 @@ final class EventRawEntityTest extends TestCase
             'engagement_msec', 'scroll_depth', 'element_path', 'consent_state',
             'user_id', 'content_group', 'currency', 'clock_offset_usec',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
+            'referer_host', 'referer_query', 'prev_event_ts',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }
@@ -170,36 +171,42 @@ final class EventRawEntityTest extends TestCase
     }
 
     /**
-     * The parallel pipeline is development scaffolding and must not be
-     * reachable as a product feature.
+     * The collection gate is GONE, not merely defaulted off.
      *
-     * v2 does not ship alongside v1: it is built, v1's history is migrated into
-     * it, collection switches over, and v1's tables are dropped as a separate
-     * decision. The setting exists only so the v2 work can exercise ingest
-     * against one real site before the switch, rather than making the switch
-     * itself the first time it ever runs.
-     *
-     * No template renders a field for it, but that is not the guarantee -- the
-     * options form persists whatever it is posted minus a denylist, and an
-     * install-wide value is what every Profile inherits.
+     * `v2_raw_collection` was development scaffolding for exercising ingest
+     * against one site, and while it existed it had to be denylisted from the
+     * options form -- that form persists whatever it is posted minus a denylist
+     * that fails open, and an install-wide value is what every Profile inherits.
+     * Now that the tracker sends v2-shaped events there is nothing to gate on,
+     * so the setting, its default and its denylist entry all go. Asserted as an
+     * absence because a leftover default would be read by nothing and a
+     * leftover denylist entry would protect a setting that no longer exists.
      */
-    public function testTheDevelopmentPipelineIsOffAndNotWebSettable(): void
+    public function testTheCollectionGateIsGoneEntirely(): void
     {
-        $this->assertFalse(
-            (bool) owa_coreAPI::getSetting('base', 'v2_raw_collection'),
-            'Every site is off by default, and the default is the important half.');
+        // Read from the DECLARATION, not through getSetting(): that answers
+        // false for an absent key and for one declared false, so it cannot
+        // tell "removed" from "defaulted off" -- which is the whole claim.
+        $class = new ReflectionClass(\OWA\Module\Base\Classes\Settings::class);
+        $method = $class->getMethod('getDefaultSettingsArray');
+        $method->setAccessible(true);
+
+        $declared = $method->invoke($class->newInstanceWithoutConstructor());
+
+        $this->assertArrayNotHasKey('v2_raw_collection', $declared['base'],
+            'the setting must not still be declared with a default');
 
         $denylist = array_merge(
             \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'],
             \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']);
 
-        $this->assertArrayHasKey('v2_raw_collection', $denylist,
-            'The options form must not be able to turn the second pipeline on install-wide.');
+        $this->assertArrayNotHasKey('v2_raw_collection', $denylist,
+            'nothing left to protect from the options form');
 
         foreach (glob(OWA_BASE_DIR . '/modules/Base/templates/*.php') as $template) {
 
             $this->assertStringNotContainsString('v2_raw_collection', file_get_contents($template),
-                basename($template) . ' renders the development flag as a setting.');
+                basename($template) . ' still names the removed flag.');
         }
     }
 

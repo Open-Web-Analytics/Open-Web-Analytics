@@ -22,21 +22,36 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->site = md5('owa-test-site');
         $this->ensureSiteRegistered($this->site);
 
-        owa_coreAPI::setScopedSetting('profile', $this->site, 'base', 'v2_raw_collection', 1);
-        owa_coreAPI::settingCacheFlush();
     }
 
     protected function tearDown(): void
     {
-        owa_coreAPI::clearScopedSetting('profile', $this->site, 'base', 'v2_raw_collection');
-        owa_coreAPI::settingCacheFlush();
-
         parent::tearDown();
     }
 
     /**
      * Fire a page view and hand back its raw rows, keyed by event_type.
      */
+    /**
+     * Fire a first-session page view for a given visitor and return whether the
+     * acquisition write reported success.
+     *
+     * Drives the real handler rather than calling the protected method, so the
+     * path under test is the one ingest actually takes.
+     */
+    private function callWriteAcquisition($visitor): bool
+    {
+        $this->firePageView([
+            'visitor_id' => $visitor,
+            'session_id' => $this->uniqueSessionId(),
+        ]);
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+
+        return $check->wasPersisted();
+    }
+
     private function firePageView(array $override = []): array
     {
         $visitor = $this->uniqueGuid();
@@ -282,15 +297,170 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * Nothing reaches owa_event_raw for a site that has not asked for it. The
-     * default matters more than the feature: every site is off.
+     * An `ep_` property lands in params, by name, with the prefix stripped.
+     *
+     * The prefix is how the beacon says which scope a value belongs to, so this
+     * needs no allowlist -- unlike the per-event-type params, which are names
+     * the release knows.
      */
-    public function testASiteThatHasNotOptedInWritesNothing(): void
+    public function testAnEventPropertyLandsInParamsUnderItsBareName(): void
     {
-        owa_coreAPI::clearScopedSetting('profile', $this->site, 'base', 'v2_raw_collection');
-        owa_coreAPI::settingCacheFlush();
+        $rows = $this->firePageView(['ep_coupon_code' => 'SPRING']);
 
-        $this->assertSame([], $this->firePageView());
+        $params = json_decode($rows['page_view']['params'], true);
+
+        $this->assertSame('SPRING', $params['coupon_code'] ?? null);
+        $this->assertArrayNotHasKey('ep_coupon_code', $params,
+            'the prefix is routing, not part of the name');
+    }
+
+    /** A `up_` property goes to the visitor store, not to params. */
+    public function testAUserPropertyGoesToTheVisitorStoreAndNotToParams(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $rows = $this->firePageView([
+            'visitor_id' => $visitor,
+            'up_plan'    => 'enterprise',
+        ]);
+
+        $params = json_decode((string) $rows['page_view']['params'], true) ?: [];
+
+        $this->assertArrayNotHasKey('plan', $params, 'a user property is not an event param');
+        $this->assertArrayNotHasKey('up_plan', $params);
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->load($visitor, 'visitor_id');
+
+        $stored = json_decode((string) $entity->get('properties'), true);
+
+        $this->assertSame('enterprise', $stored['plan']['v'] ?? null);
+        $this->assertSame(
+            (int) $rows['page_view']['ts'],
+            (int) ($stored['plan']['ts'] ?? 0),
+            'and it carries when it was set'
+        );
+    }
+
+    /**
+     * Last value wins, but an OLDER beacon never displaces a newer value.
+     *
+     * A queue drain can deliver events out of order; without the timestamp
+     * guard the last one WRITTEN would win rather than the last one SET.
+     */
+    public function testAnOlderBeaconNeverOverwritesANewerProperty(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id' => $visitor,
+            'site_id'    => $this->site,
+            'properties' => json_encode([
+                'plan' => ['v' => 'newer', 'ts' => (int) (microtime(true) * 1000000) + 60000000],
+            ]),
+        ]);
+        $this->assertTrue($entity->create());
+
+        $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'older']);
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+        $stored = json_decode((string) $check->get('properties'), true);
+
+        $this->assertSame('newer', $stored['plan']['v'] ?? null,
+            'the value set later stands, whichever beacon arrived last');
+    }
+
+    /** A second property merges rather than replacing the first. */
+    public function testASecondPropertyMergesWithTheFirst(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'pro']);
+        $this->firePageView(['visitor_id' => $visitor, 'up_tier' => 'gold']);
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->load($visitor, 'visitor_id');
+        $stored = json_decode((string) $entity->get('properties'), true);
+
+        $this->assertSame('pro', $stored['plan']['v'] ?? null);
+        $this->assertSame('gold', $stored['tier']['v'] ?? null);
+    }
+
+    /**
+     * A late first_visit still lands on a row that a property created.
+     *
+     * The write used to skip whenever the row existed, which was safe only
+     * while nothing but acquisition ever wrote one. A user property can now
+     * create a row for a visitor whose acquisition is unknown, and a queue
+     * drain can deliver the real first_visit afterwards -- so skipping on row
+     * presence would lose the acquisition permanently and silently, which is
+     * exactly the placeholder hazard 2.9 refuses.
+     */
+    public function testALateFirstVisitFillsARowThatHasNoAcquisitionYet(): void
+    {
+        // A fresh id each run: this seeds a row directly, and a fixed id would
+        // make create() fail the second time the suite is run against the same
+        // database.
+        $visitor = $this->uniqueGuid();
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id' => $visitor,
+            'site_id'    => $this->site,
+            'acq_ts'     => null,
+            'properties' => json_encode(['plan' => ['v' => 'pro', 'ts' => 1790000000000000]]),
+        ]);
+        $this->assertTrue($entity->create());
+
+        $written = $this->callWriteAcquisition($visitor);
+
+        $this->assertTrue($written, 'the write should fill rather than skip');
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+
+        $this->assertNotEmpty($check->get('acq_ts'), 'the acquisition landed');
+        $this->assertNotEmpty($check->get('properties'), 'and the property survived it');
+    }
+
+    /** Once acq_ts is set, write-once still holds. */
+    public function testASecondAcquisitionNeverOverwritesTheFirst(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id' => $visitor,
+            'site_id'    => $this->site,
+            'acq_source' => 'first-source',
+            'acq_ts'     => 1790000000000000,
+        ]);
+        $this->assertTrue($entity->create());
+
+        $this->callWriteAcquisition($visitor);
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+
+        $this->assertSame('first-source', $check->get('acq_source'),
+            'write-once: an acquisition already captured is never moved');
+        $this->assertSame('1790000000000000', (string) $check->get('acq_ts'));
+    }
+
+    /**
+     * Every site collects, with nothing to opt into.
+     *
+     * The inverse of the test this replaces, which asserted that a site had to
+     * turn `v2_raw_collection` on first. The gate was development scaffolding
+     * for exercising ingest against one site; the tracker now sends v2-shaped
+     * events, so there is nothing left to gate on.
+     */
+    public function testEverySiteCollectsWithNoSettingToTurnOn(): void
+    {
+        $this->assertNotSame([], $this->firePageView(),
+            'a site that was never configured for v2 still writes to owa_event_raw');
     }
 
     /**

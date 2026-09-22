@@ -313,7 +313,7 @@ class DbColumn {
      *
      * @return int
      */
-    protected function maxLength() {
+    public function maxLength() {
 
         $lengths = array();
 

@@ -141,27 +141,34 @@ describe('two trackers sharing the state stores', () => {
          * Visitor scope is the axis that still crosses trackers -- see below.
          */
         const a = new OWATracker({ cookie_domain_set: true, site_id: 'site-a' });
-        a.setCustomVar(1, 'Plan', 'Pro', 'session');
+        a.setEventProperty('Plan', 'Pro');
 
         const b = new OWATracker({ cookie_domain_set: true, site_id: 'site-b' });
         const beacons = [];
         b.logEvent = (p) => beacons.push({ ...p });
         b.trackPageView('https://example.com/pricing');
 
-        expect(beacons[0].cv1).toBeUndefined();
+        // Named, not just absent: asserting on a key that no longer exists
+        // anywhere would pass whatever the tracker did.
+        expect(beacons[0].ep_Plan).toBeUndefined();
+        expect(a.getGlobalEventProperty('ep_Plan')).toBe('Pro');
     });
 
-    test('a VISITOR-scoped custom var still rides the events of both', () => {
+    test('VISITOR-scoped state still rides the events of both', () => {
         // The visitor is shared -- GA's _ga -- so anything scoped to the
-        // visitor is shared with it.
+        // visitor is shared with it. user_id is the v2 example: setUserId()
+        // writes the 'v' store, and every tracker collects it from there.
+        // A visitor-scoped CUSTOM var used to be the payload here; those are
+        // setUserProperty() now, which is page-lifetime by design and so is
+        // per-tracker rather than shared.
         const a = new OWATracker({ cookie_domain_set: true, site_id: 'site-a' });
-        a.setCustomVar(2, 'Tier', 'Gold', 'visitor');
+        a.setUserId('u-shared');
 
         const b = new OWATracker({ cookie_domain_set: true, site_id: 'site-b' });
         const beacons = [];
         b.logEvent = (p) => beacons.push({ ...p });
         b.trackPageView('https://example.com/pricing');
 
-        expect(beacons[0].cv2).toBe('Tier=Gold');
+        expect(beacons[0].user_id).toBe('u-shared');
     });
 });

@@ -12,7 +12,7 @@ namespace OWA\Module\Base\Entity;
  *
  * One row per tracked interaction, as received. Append-only: written a beacon
  * at a time, never updated, and the record realtime queries read. Everything a
- * pass has to derive belongs in the denormalised table instead -- the cut is
+ * pass has to derive belongs in the cube instead -- the cut is
  * that a column lives here if it is an OBSERVATION or a MECHANICAL RESOLUTION
  * (geo from the address, device from the user agent), and there if deriving it
  * needs other rows.
@@ -28,13 +28,12 @@ namespace OWA\Module\Base\Entity;
  *
  * SIGNED BIGINT, NOT UNSIGNED
  * The design note asks for BIGINT UNSIGNED on the id columns. Signed, and
- * deliberately: OWA runs with `SET SESSION sql_mode=''`, under which a negative
- * value written to an UNSIGNED column is silently clamped to 0 rather than
- * refused. v1 has negative visitor ids -- enough of them to need their own
- * fix -- and migrating those into this table would turn each one into visitor
- * 0, merging strangers, with no error anywhere. The headroom UNSIGNED buys is
- * not needed: wideStringGuid() tops out at 63 bits by construction and a
- * microsecond timestamp is nowhere near it.
+ * deliberately: v1 has negative visitor ids -- enough of them to need their own
+ * fix -- and they are real ids that have to round-trip. UNSIGNED refuses them
+ * under STRICT_ALL_TABLES and clamps them to 0 without it, so the migrator
+ * either dies on them or merges strangers into visitor 0. The headroom UNSIGNED
+ * buys is not needed: wideStringGuid() tops out at 63 bits by construction and
+ * a microsecond timestamp is nowhere near it.
  *
  * ABSENCE IS NULL
  * Every column that can be absent is declared nullable, so an unset value is
@@ -92,6 +91,23 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'prior_sessions', OWA_DTD_INT ) );
 
         /*
+         * The visitor's previous event, in server time. Carried, not derived:
+         * the tracker keeps last_req for its own session decision, so 1.5.3's
+         * rule applies -- an anchor the client already maintains is sent.
+         *
+         * It was a window function in a build until that was measured. The
+         * window partitions by visitor where the other partitions by session,
+         * so it cannot share a sort, and it cost 128 of 195 seconds at a
+         * million rows.
+         *
+         * Corrected to server time at ingest with clock_offset_usec, which is
+         * what makes carrying it acceptable -- the objection to the client's
+         * value was provenance, and that column did not exist when the window
+         * was chosen.
+         */
+        $this->setProperty( $this->column( 'prev_event_ts', OWA_DTD_BIGINT ) );
+
+        /*
          * The page. page_location is the evidence; every reading of it is its
          * own column, parsed at ingest. A GROUP BY over a parsing expression
          * cannot use an index, and the expression would have to be written once
@@ -104,12 +120,25 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'content_group', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'referer_url', OWA_DTD_VARCHAR1024 ) );
 
+        // Parsed at ingest beside host and target_host, by the same parser.
+        // A build classifies it -- which search engine, which social network
+        // -- but does not parse it: SQL has no URL parser, and a chain of
+        // SUBSTRING_INDEX cannot tell a URL from a string that is not one.
+        $this->setProperty( $this->column( 'referer_host', OWA_DTD_VARCHAR255 ) );
+
+        // The referrer's query string, kept for the same reason page_query is:
+        // it is the evidence a reading is taken from. A search engine that
+        // still sends the term puts it here, and the cube's compute step reads
+        // it -- pulling a named parameter out and percent-decoding it is PHP,
+        // because SQL has no decode.
+        $this->setProperty( $this->column( 'referer_query', OWA_DTD_VARCHAR1024 ) );
+
         /*
          * Attribution EVIDENCE, never a verdict. The landing URL rides the
          * landing beacon and no other, so these are populated on the session's
-         * landing event and NULL on every later row of it. The pass reads that
+         * landing event and NULL on every later row of it. A build reads that
          * first event anyway, for the landing page, and turns the pair of
-         * (tags, referer) into source and medium on the denormalised row --
+         * (tags, referer) into source and medium on the cube row --
          * where a classifier fix can be re-applied, which is the whole reason
          * the reading is not stored here.
          */

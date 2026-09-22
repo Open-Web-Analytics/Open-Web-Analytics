@@ -43,6 +43,24 @@ class V2Event {
     const MARKER_FIRST_VISIT   = 'first_visit';
 
     /**
+     * What a build writes where it could not resolve a value at all.
+     *
+     * NULL keeps one meaning -- the beacon carried nothing -- and this carries
+     * the other, the pipeline could not work it out. Not a contradiction of
+     * "absence is NULL": a build generates this and no visitor can.
+     *
+     * It is a control byte because it has to be un-typeable. A tagged visit
+     * puts the URL's own text straight into source and medium, so a readable
+     * token like "(unknown)" would be forgeable by anyone who could write a
+     * link -- and this value asserts that OUR pipeline failed. strip() below is
+     * the other half: control bytes are removed from observed values, so the
+     * two alphabets do not overlap.
+     *
+     * The renderer shows NULL as `(not set)` and this as `(unknown)`.
+     */
+    const UNRESOLVED = "\x1A";
+
+    /**
      * Event types that never reach owa_event_raw.
      *
      * A domstream chunk is an ATTACHMENT to a page view, not an event: promoting
@@ -128,6 +146,40 @@ class V2Event {
     }
 
     /**
+     * An observed value with its control bytes removed.
+     *
+     * Keeps UNRESOLVED un-forgeable, and keeps control bytes out of a VARCHAR
+     * every consumer downstream has to render. Tab, CR and LF are left: they
+     * are whitespace by intent, and removing them joins two words.
+     *
+     * Matched as BYTES, not with /u. A Unicode class match returns null on
+     * malformed UTF-8, erasing the value, and \p{C} also covers the format
+     * characters that are load-bearing in Arabic, Persian and emoji sequences.
+     * The bytes below cannot occur inside a UTF-8 multibyte sequence.
+     *
+     * @param mixed $value
+     * @return string|null  null in, null out
+     */
+    public static function strip( $value ) {
+
+        if ( $value === null ) {
+
+            return null;
+        }
+
+        return preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', (string) $value );
+    }
+
+    /**
+     * The longest a domain name can be, per RFC 1035.
+     *
+     * A parse that yields something longer has not found a host, whatever else
+     * it looks like. Checked here so `(not a host)` is one answer -- NULL --
+     * rather than a value that overflows the column it is headed for.
+     */
+    const MAX_HOSTNAME = 253;
+
+    /**
      * Split a URL into the three readings owa_event_raw stores beside it.
      *
      * Stored as columns rather than parsed in SQL at read time, because a GROUP
@@ -164,9 +216,16 @@ class V2Event {
             return $empty;
         }
 
+        $host = isset( $parts['host'] ) && $parts['host'] !== ''
+            ? strtolower( $parts['host'] ) : null;
+
+        if ( $host !== null && strlen( $host ) > self::MAX_HOSTNAME ) {
+
+            $host = null;
+        }
+
         return array(
-            'host'  => isset( $parts['host'] ) && $parts['host'] !== ''
-                ? strtolower( $parts['host'] ) : null,
+            'host'  => $host,
             // A URL with no path is the site root, which IS a path -- '/' --
             // and grouping it under NULL would hide the home page from the
             // landing-page report.

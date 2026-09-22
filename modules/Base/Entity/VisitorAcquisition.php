@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Entity;
  * would break the write rule above: insert-if-absent would find it present when
  * the real first_visit arrived late on a queue drain, and block the real value
  * permanently and silently. Keeping the row absent leaves that path open, and
- * the pass writes its sentinel from the row being missing.
+ * a build writes its sentinel from the row being missing.
  *
  * NOT PARTITIONED, DELIBERATELY
  * Partitioning on last_seen is refused by MySQL rather than merely expensive:
@@ -64,7 +64,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         /*
          * Acquisition, as collected. Write-once: these are the tagged values
          * from the first session, transcribed, never a classification -- the
-         * reading over them is the pass's, the same as for an event.
+         * reading over them is the build's, the same as for an event.
          */
         $this->setProperty( $this->column( 'acq_source', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'acq_medium', OWA_DTD_VARCHAR64 ) );
@@ -77,6 +77,11 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         // classifier re-reads when there were no tags to transcribe.
         $this->setProperty( $this->column( 'acq_referer_url', OWA_DTD_VARCHAR1024 ) );
 
+        // Its host, parsed at ingest like owa_event_raw.referer_host, so the
+        // build classifies an acquisition the same way it classifies a session
+        // and neither one parses a URL in SQL.
+        $this->setProperty( $this->column( 'acq_referer_host', OWA_DTD_VARCHAR255 ) );
+
         // Microseconds, matching owa_event_raw.ts. Not the TTL input -- that is
         // last_seen -- but the tie-break a full rebuild from raw orders by.
         $this->setProperty( $this->column( 'acq_ts', OWA_DTD_BIGINT ) );
@@ -85,7 +90,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
          * A PERIOD, not a timestamp: yyyymm. Three things follow, and they are
          * why maintaining it does not add a second keyed write per event.
          *
-         *   - the pass advances it, not ingest -- one set-based UPDATE over the
+         *   - a build advances it, not ingest -- one set-based UPDATE over the
          *     visitors seen in the partition being rebuilt;
          *   - a period changes at most once per visitor per month, so the
          *     common case is a write that changes nothing;
@@ -99,6 +104,32 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         $last_seen = $this->column( 'last_seen', OWA_DTD_INT );
         $last_seen->setIndex();
         $this->setProperty( $last_seen );
+
+        /*
+         * USER-SCOPED CUSTOM PROPERTIES, and when each was set.
+         *
+         *   {"plan": {"v": "enterprise", "ts": 1790000000000000}}
+         *
+         * A JSON column on this row rather than a key-value table: measured at
+         * 100k visitors and 400k events, a key store is five times the rows and
+         * its pivot makes a build's join 2.2x slower. This reuses the join
+         * acq_* already makes, so the marginal cost is one JSON_VALUE per
+         * joined visitor -- proportional to distinct visitors in the partition,
+         * not to events, and zero where no user-scoped dimension is registered
+         * because the join is demand-driven.
+         *
+         * A SECOND WRITE DISCIPLINE IN THE SAME ROW, deliberately. acq_* is
+         * write-once evidence captured at the first visit; this is mutable
+         * state a site sets whenever it likes, written last-value-wins with the
+         * event ts as the ordering guard so an out-of-order queue drain cannot
+         * overwrite a newer value with an older beacon.
+         *
+         * The set timestamp is carried per property because the cube stamps the
+         * CURRENT value onto every event row it builds. Without it a row can
+         * say what the value is and not whether it applied yet -- which is what
+         * GA's export carries set_timestamp_micros for (2.26.5).
+         */
+        $this->setProperty( $this->column( 'properties', OWA_DTD_JSON ) );
     }
 
     /**

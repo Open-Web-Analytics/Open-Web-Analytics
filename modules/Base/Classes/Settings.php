@@ -809,23 +809,6 @@ namespace OWA\Module\Base\Classes;
                  'schema_version'   => true,
                  'install_complete' => true,
                  'is_active'        => true,
-                 /*
-                  * DEVELOPMENT SCAFFOLDING, and the only reason it is a stored
-                  * setting at all is that the v2 work needs to exercise ingest
-                  * on one site at a time.
-                  *
-                  * Denylisted because it must not be reachable from the options
-                  * form. No template renders a field for it, but the form
-                  * persists whatever it is posted minus this list, so "no field
-                  * exists" is not a guarantee -- and an install-wide value is
-                  * what every Profile inherits, so one crafted POST would turn
-                  * the second pipeline on for every site.
-                  *
-                  * REMOVED AT CUTOVER (2.25 step 4), together with v1's handler
-                  * registrations. At that point v2 collection is not optional
-                  * and Handler\EventRawHandlers registers unconditionally.
-                  */
-                 'v2_raw_collection' => true,
              ),
          );
      }
@@ -1201,6 +1184,12 @@ namespace OWA\Module\Base\Classes;
                 // Fewest partitions a table may be limited to, whatever the
                 // budget arithmetic says.
                 'partition_min_limit'                => 24,
+                // How long a day stays in the cube's daily front tier before
+                // its month merges back. This IS the late-arrival window: past
+                // it, an event for that day is in raw and not in the cube
+                // until someone rebuilds that month. 3.1 has the number open
+                // pending a measurement of client-side lateness.
+                'cube_rebuild_window_days'           => 7,
                 // Largest run of calendar years that may be merged into a single
                 // partition. A cap: without it, an unreachable budget would drive
                 // everything into one partition, which fits no better and means
@@ -1341,16 +1330,6 @@ namespace OWA\Module\Base\Classes;
                 'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
                 'instance_mode'                     => '',
-                /*
-                 * v2 collection, per site. OFF, and the default is the
-                 * important half: turning it on makes a site write every
-                 * beacon to owa_event_raw as well as to v1's tables, which is
-                 * a development instrument for exercising the v2 schema and
-                 * NOT the architecture -- v2 collects and v1 does not run
-                 * beside it. Profile-scoped so one site can be switched on
-                 * without touching the installation.
-                 */
-                'v2_raw_collection'                 => false,
                 /*
                  * v2's event names. Kept as their own list rather than merged
                  * into tracking_event_types, so that what v1 collects and what

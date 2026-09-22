@@ -10,12 +10,17 @@ namespace OWA\Module\Base\Handler;
 /**
  * v2 ingest: one beacon becomes its rows in owa_event_raw.
  *
- * Registered beside v1's handlers on the same tracking events, and OFF unless a
- * site turns on `v2_raw_collection`. That is a development instrument, not the
- * architecture: v2 collects and v1 does not run beside it, and the two
- * pipelines are not meant to be compared live -- migrating v1's history into
- * v2 is the oracle. But the schema is not right until something writes to all
- * of it, and one site collecting into raw is how that gets found out.
+ * Registered beside v1's handlers on the same tracking events, for EVERY site.
+ * There is no setting: `v2_raw_collection` was a development instrument for
+ * exercising ingest against one site, and it is gone now that the tracker sends
+ * v2-shaped events.
+ *
+ * STILL NOT THE ARCHITECTURE. v2 is meant to collect where v1 does not run
+ * beside it, and the two pipelines are not meant to be compared live --
+ * migrating v1's history into v2 is the oracle. Both run today because the
+ * reporting layer reads v1's tables and nothing reads owa_event yet: 151 metric
+ * and dimension registrations, none of them over the cube. v1's ingest can stop
+ * when that is no longer true, which is 2.25 step 4.
  *
  * WHAT THIS DOES THAT v1's HANDLERS DO NOT
  *
@@ -28,24 +33,30 @@ namespace OWA\Module\Base\Handler;
  *     server raises session_start and first_visit from them, here, into raw.
  *     The test for which side a derivation falls on is whether it is a pure
  *     function of ONE beacon: these are, so they happen at ingest. Acquisition
- *     and session finalisation need other events, so they are the pass's.
+ *     and session finalisation need other events, so they are the build's.
  *   - Records EVIDENCE and stops. The tagged values are transcribed; whether a
  *     referring host counts as organic search, a social network or a plain
  *     referral is a table that grows and gets corrected, so the reading is
- *     written by the pass onto the denormalised row where a fix can be
+ *     written by a build onto the cube row where a fix can be
  *     re-applied. A verdict is never written where it cannot be corrected.
  */
 class EventRawHandlers extends \OWA\Core\Observer {
 
     /**
+     * The wire prefixes that carry scope, matching the tracker's.
+     *
+     * Scope lives in the NAME so ingest never has to infer which bag a value
+     * belongs to, and the same name in two scopes stays two different things.
+     * See Tracker.EVENT_PROPERTY_PREFIX / USER_PROPERTY_PREFIX.
+     */
+    const EVENT_PROPERTY_PREFIX = 'ep_';
+    const USER_PROPERTY_PREFIX  = 'up_';
+
+
+    /**
      * @param object $event
      */
     function notify( $event ) {
-
-        if ( ! self::isEnabledForSite( $event->get( 'site_id' ) ) ) {
-
-            return OWA_EHS_EVENT_HANDLED;
-        }
 
         $type = $event->getEventType();
 
@@ -89,26 +100,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
-     * Whether this site collects into v2 yet.
-     *
-     * Profile-scoped, so one site can be switched on without touching the rest
-     * of the installation -- which is the entire point of it being a setting.
-     *
-     * @param string $site_id
-     * @return bool
-     */
-    public static function isEnabledForSite( $site_id ) {
-
-        if ( ! $site_id ) {
-
-            return false;
-        }
-
-        return (bool) \OWA\Core\CoreAPI::getSetting(
-            'base', 'v2_raw_collection', 'profile', $site_id );
-    }
-
-    /**
      * One beacon -> the rows it becomes, primary event first.
      *
      * ORDER MATTERS ONLY FOR THE CALLER's idempotence check, not for the ids:
@@ -135,7 +126,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * The markers. Raised from flags that are already on this beacon, in
          * the same write, so a marker cannot be lost while its own page view
          * survives -- the beacon carrying the flag can be lost, and then the
-         * session simply has no marker row, which a later pass cannot repair
+         * session simply has no marker row, which a later build cannot repair
          * either way because re-reading raw reproduces the same partial state.
          *
          * is_new_session_start and is_new_visitor_created are REQUEST scoped:
@@ -207,6 +198,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $page = \OWA\Module\Base\Classes\V2Event::parseUrl( $location );
         $target = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'target_url' ) );
+        $referer = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'HTTP_REFERER' ) );
 
         $row = array(
 
@@ -225,6 +217,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             'visitor_fsts'   => $this->number( $event->get( 'fsts' ) ),
             'prior_sessions' => $this->number( $event->get( 'num_prior_sessions' ) ),
+            'prev_event_ts'  => $this->previousEventTs( $event, $ts ),
 
             'page_location' => $this->text( $location ),
             'page_path'     => $page['path'],
@@ -232,6 +225,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'page_title'    => $this->text( $event->get( 'page_title' ) ),
             'content_group' => $this->text( $event->get( 'content_group' ) ),
             'referer_url'   => $this->text( $event->get( 'HTTP_REFERER' ) ),
+            'referer_host'  => $referer['host'],
+            'referer_query' => $referer['query'],
 
             'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
@@ -314,6 +309,46 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
+     * The visitor's previous event, in server time.
+     *
+     * The tracker sends last_req -- the prior request's time, read from the
+     * session store BEFORE the session decision discards it, so the first event
+     * of a new session carries the last event of the PREVIOUS one. That is
+     * exactly what "time since last visit" means.
+     *
+     * Client-clock, so it is corrected by the same offset this row already
+     * records. Without a client clock there is nothing to correct against and
+     * the answer is NULL, which is the honest reading -- not zero, and not a
+     * value silently mixing two clocks the way 1.x does.
+     *
+     * NULL is also right when the state store is gone: nothing knows when the
+     * visitor was last here, and inventing an anchor would be worse.
+     *
+     * @param object $event
+     * @param int    $ts  server receipt, microseconds
+     * @return int|null microseconds
+     */
+    protected function previousEventTs( $event, $ts ) {
+
+        $last_req = $event->get( 'last_req' );
+
+        if ( ! $last_req || ! is_numeric( $last_req ) ) {
+
+            return null;
+        }
+
+        $offset = $this->clockOffset( $event, $ts );
+
+        if ( $offset === null ) {
+
+            return null;
+        }
+
+        // last_req is seconds on the client's clock.
+        return (int) ( $last_req * 1000000 ) + $offset;
+    }
+
+    /**
      * browser / os version and the device, from the one user-agent parse.
      *
      * Split out because all six come from the same parser object and asking it
@@ -384,7 +419,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * Transcription, never classification: what the URL CLAIMED. The answer
      * over it -- tag if there was one, else the referrer classified -- is the
-     * pass's, on the denormalised row, where correcting the classifier is a
+     * pass's, on the cube row, where correcting the classifier is a
      * reprocess rather than an edit.
      *
      * @param object $event
@@ -405,7 +440,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * Which event is the landing one. session_start is materialised from
          * the session's first page_view and first_visit from the visitor's, so
          * all three of these are the same beacon -- the landing beacon -- and
-         * each keeps its own copy, since the pass reads whichever of them it
+         * each keeps its own copy, since a build reads whichever of them it
          * finds first.
          */
         $is_landing = $event->get( 'is_new_session_start' )
@@ -488,6 +523,30 @@ class EventRawHandlers extends \OWA\Core\Observer {
             if ( $name && $name !== \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL ) {
 
                 $params[ (string) $name ] = $value;
+            }
+        }
+
+        /*
+         * Custom event properties, by name, with the `ep_` prefix stripped.
+         *
+         * The prefix is how the beacon says which scope a value belongs to
+         * (Tracker.setEventProperty), so this needs no allowlist and no
+         * knowledge of the site's keys -- unlike the per-event-type params
+         * below, which are names the release knows. `up_` is the other half and
+         * goes to the visitor store, not here.
+         */
+        foreach ( (array) $event->getProperties() as $key => $value ) {
+
+            if ( strpos( (string) $key, self::EVENT_PROPERTY_PREFIX ) !== 0 ) {
+
+                continue;
+            }
+
+            $name = substr( (string) $key, strlen( self::EVENT_PROPERTY_PREFIX ) );
+
+            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
+
+                $params[ $name ] = $value;
             }
         }
 
@@ -586,7 +645,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * Write the rows, and the visitor store row if this is a first session.
      *
      * ONE ATOMIC WRITE OF EVERYTHING THE BEACON BECOMES. A page_view that
-     * landed without its session_start is not something a later pass can
+     * landed without its session_start is not something a later build can
      * repair: the flag was on the beacon that half-wrote, so re-reading raw
      * reproduces the same partial state. The guarantee has to be made where the
      * rows are created.
@@ -629,9 +688,160 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_FAILED;
         }
 
+        if ( ! $this->writeUserProperties( $event, $rows[0] ) ) {
+
+            $db->rollbackTransaction();
+
+            return OWA_EHS_EVENT_FAILED;
+        }
+
         $db->endTransaction();
 
         return OWA_EHS_EVENT_HANDLED;
+    }
+
+    /**
+     * User-scoped custom properties, onto the visitor store.
+     *
+     * LAST VALUE WINS, which is the opposite discipline from the acquisition
+     * columns beside them: acq_* is write-once evidence captured at the first
+     * visit, and a property is mutable state a site sets whenever it likes. GA
+     * resolves the same way -- "the most recent value of a user property for
+     * each user".
+     *
+     * EACH CARRIES WHEN IT WAS SET, and the timestamp is a guard as well as a
+     * record. The build stamps the CURRENT value onto every event row, so
+     * without it a row says what the value is and not whether it applied yet;
+     * and comparing it is what stops an out-of-order queue drain overwriting a
+     * newer value with an older beacon. Same shape as GA's
+     * set_timestamp_micros.
+     *
+     *   {"plan": {"v": "enterprise", "ts": 1790000000000000}}
+     *
+     * IN THE CALLER'S TRANSACTION, alongside the raw rows, so a visitor never
+     * carries a property for an event that was not stored.
+     *
+     * @param object $event
+     * @param array  $row  the primary row, already built
+     * @return bool
+     */
+    protected function writeUserProperties( $event, $row ) {
+
+        $incoming = array();
+
+        foreach ( (array) $event->getProperties() as $key => $value ) {
+
+            if ( strpos( (string) $key, self::USER_PROPERTY_PREFIX ) !== 0 ) {
+
+                continue;
+            }
+
+            $name = substr( (string) $key, strlen( self::USER_PROPERTY_PREFIX ) );
+
+            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
+
+                $incoming[ $name ] = (string) $value;
+            }
+        }
+
+        // Nothing set on this beacon, which is almost every beacon.
+        if ( ! $incoming ) {
+
+            return true;
+        }
+
+        $ts     = (int) $row['ts'];
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
+
+        $entity->load( $row['visitor_id'], 'visitor_id' );
+
+        $existing = $entity->wasPersisted()
+            ? (array) json_decode( (string) $entity->get( 'properties' ), true )
+            : array();
+
+        $merged  = $existing;
+        $changed = false;
+
+        foreach ( $incoming as $name => $value ) {
+
+            // An older beacon never displaces a newer value. A queue drain can
+            // deliver events out of order, and without this the last one
+            // WRITTEN would win rather than the last one SET.
+            if ( isset( $merged[ $name ]['ts'] ) && (int) $merged[ $name ]['ts'] > $ts ) {
+
+                continue;
+            }
+
+            if ( isset( $merged[ $name ]['v'] ) && $merged[ $name ]['v'] === $value ) {
+
+                continue;
+            }
+
+            $merged[ $name ] = array( 'v' => $value, 'ts' => $ts );
+            $changed = true;
+        }
+
+        if ( ! $changed ) {
+
+            return true;
+        }
+
+        $json = json_encode( $merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+
+        // json_encode answers false on malformed UTF-8, and a JSON column
+        // refuses an invalid value outright under a strict sql_mode -- so the
+        // row would be LOST rather than the properties dropped. Keeping the
+        // event is worth more than the properties.
+        if ( $json === false ) {
+
+            return true;
+        }
+
+        if ( $entity->wasPersisted() ) {
+
+            $entity->setProperties( array( 'properties' => $json ) );
+
+            // update('visitor_id'): the no-argument form keys on an `id`
+            // column and this table has none.
+            if ( $entity->update( 'visitor_id' ) === false ) {
+
+                \OWA\Core\CoreAPI::error( 'v2 ingest: writing user properties failed.' );
+
+                return false;
+            }
+
+            return true;
+        }
+
+        $entity->setProperties( array(
+            'visitor_id' => $row['visitor_id'],
+            'site_id'    => $row['site_id'],
+            'properties' => $json,
+            'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
+        ) );
+
+        /*
+         * No acq_ts. The row exists to hold a property, and the acquisition is
+         * still unknown -- which is exactly why the cube's sentinel tests
+         * acq_ts rather than the row (2.26.6). A racing insert is benign: the
+         * other writer put the row there, and the next beacon merges into it.
+         */
+        if ( $entity->create() !== true ) {
+
+            $check = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
+            $check->load( $row['visitor_id'], 'visitor_id' );
+
+            if ( $check->wasPersisted() ) {
+
+                return true;
+            }
+
+            \OWA\Core\CoreAPI::error( 'v2 ingest: creating the row for user properties failed.' );
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -647,7 +857,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * A VISITOR WITH NO KNOWN ACQUISITION GETS NO ROW. A placeholder would be
      * found present when the real first_visit arrived late on a queue drain and
-     * would block the real value permanently and silently; the pass writes its
+     * would block the real value permanently and silently; a build writes its
      * sentinel from the row being missing instead.
      *
      * @param object $event
@@ -671,6 +881,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'acq_ad'           => $row['tagged_ad'],
             'acq_search_terms' => $row['tagged_search_terms'],
             'acq_referer_url'  => $row['referer_url'],
+            'acq_referer_host' => $row['referer_host'],
         );
 
         // Nothing to stamp, so no row. See above.
@@ -683,7 +894,37 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $entity->load( $row['visitor_id'], 'visitor_id' );
 
+        /*
+         * A ROW MAY EXIST WITHOUT AN ACQUISITION. A user property can create
+         * one for a visitor whose acquisition is still unknown, so "the row is
+         * there" no longer means "this is already captured" -- acq_ts does.
+         *
+         * Filling the columns of an acquisition-less row rather than skipping
+         * it is what keeps write-once true across a late first_visit: a queue
+         * drain that delivers it after a property write still lands, where
+         * skipping on row-presence would have lost it permanently and
+         * silently. Once acq_ts is set nothing here touches it again.
+         */
         if ( $entity->wasPersisted() ) {
+
+            if ( $entity->get( 'acq_ts' ) ) {
+
+                return true;
+            }
+
+            $entity->setProperties( $acquisition + array( 'acq_ts' => $row['ts'] ) );
+
+            // update('visitor_id'), not update(): the no-argument form keys on
+            // an `id` column, and this table has none -- its primary key is
+            // visitor_id. Called bare it builds WHERE id = NULL, matches
+            // nothing, and reports failure having written nothing.
+            if ( $entity->update( 'visitor_id' ) === false ) {
+
+                \OWA\Core\CoreAPI::error(
+                    'v2 ingest: filling the visitor acquisition row failed.' );
+
+                return false;
+            }
 
             return true;
         }
@@ -692,7 +933,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'visitor_id' => $row['visitor_id'],
             'site_id'    => $row['site_id'],
             'acq_ts'     => $row['ts'],
-            // A PERIOD, yyyymm. The pass advances it from there; ingest writes
+            // A PERIOD, yyyymm. A build advances it from there; ingest writes
             // the one it is creating the row in so the TTL has something to
             // read before a pass has ever run.
             'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
@@ -731,6 +972,15 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * applied when a value is RENDERED, so a null groups with the other nulls
      * and is labelled once, at the edge.
      *
+     * Control bytes are removed on the way in. The pass's unresolved sentinel
+     * is one (Classes\V2Event::UNRESOLVED), and it only means anything if a
+     * visitor cannot write it: a campaign tag carrying \x1A would otherwise
+     * produce a row claiming OUR pipeline had failed to resolve it. Stripping
+     * here keeps the two alphabets disjoint, and a VARCHAR wants it anyway.
+     *
+     * The strip happens BEFORE the emptiness tests below, so a value that was
+     * nothing but control bytes lands as NULL rather than as ''.
+     *
      * @param mixed $value
      * @return string|null
      */
@@ -741,7 +991,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return null;
         }
 
-        $value = (string) $value;
+        $value = \OWA\Module\Base\Classes\V2Event::strip( (string) $value );
 
         if ( trim( $value ) === ''
              || $value === \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL

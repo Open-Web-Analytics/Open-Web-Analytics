@@ -1560,6 +1560,30 @@ class Db extends \OWA\Core\Base {
     const PARTITION_MONTHS_AHEAD = 12;
 
     /**
+     * How much of the cube's lead is daily: two months' worth of partitions.
+     *
+     * THE LEAD IS ALWAYS TWELVE MONTHS, whatever the granularity. An ordinary
+     * fact table holds one granularity across the whole of it. The cube holds a
+     * mix: about two months daily at the front, the rest at the granularity the
+     * table is otherwise on -- so the lead is 2 + 10, not twelve months plus a
+     * separate daily thing bolted on the front: there is ONE lead, and its
+     * granularity varies along it.
+     *
+     * Measured as MONTHS OF COVERAGE, not as a count of partitions. The daily
+     * part extends backwards as well as forwards -- elapsed days stay daily until
+     * their month merges -- so it is the span from its first daily partition to
+     * its last that has to be two months, not the distance ahead of today. A
+     * count would do the same job on average and get February wrong: after a
+     * 31-day month merges, 31 + 28 is 59, and a flat gate of 60 lets a third
+     * month through.
+     *
+     * Fixed rather than a setting: it is how much of the lead is daily, and an install
+     * that lowered it below the window would silently stop late events being
+     * folded in.
+     */
+    const CUBE_DAILY_MONTHS = 2;
+
+    /**
      * Days of slack on the lower bound used to prune per-session queries.
      *
      * See factLowerBound(). Sized empirically against observed anomalies, not
@@ -1609,6 +1633,53 @@ class Db extends \OWA\Core\Base {
     static function partitionLeadBoundary( $months = self::PARTITION_MONTHS_AHEAD ) {
 
         return date( 'Ymd', strtotime( date( 'Ym' ) . '01 +' . ( (int) $months + 1 ) . ' months' ) );
+    }
+
+    /**
+     * A twelve-month lead, with the first months daily where asked for.
+     *
+     * The shape Db::createTable() gives a new table and the shape
+     * partition-rotate maintains, built in one place so a table is created in
+     * the layout it will be kept in rather than one the first rotate has to
+     * reshape.
+     *
+     * THE LAST SPAN IS ALWAYS THE COARSE ONE. Granularity is never stored:
+     * inferPartitionGranularity() reads the last span, so a lead that ended
+     * daily would have its lead extended a year AT DAILY by the next rotate --
+     * some 365 partitions, silently.
+     *
+     * TWO HALVES FROM TWO PLACES, and only one of them is declared. How much is
+     * daily is the entity's, fixed. The granularity of the rest is the
+     * OPERATOR'S, and is not recorded anywhere but the shape of the table
+     * itself -- inferPartitionGranularity() reads it back off the last span. So
+     * the caller supplies it: at creation there is no table to infer from and
+     * monthly is the only answer available; a caller maintaining an existing
+     * table passes what that table is on.
+     *
+     * @param int    $daily_months  how many of the leading months are daily
+     * @param string $granularity   the rest of the lead; the operator's choice
+     * @return array  name => less_than
+     */
+    public static function makeLeadRanges( $daily_months = 0, $granularity = 'monthly' ) {
+
+        if ( ! self::isPartitionGranularity( $granularity ) ) {
+
+            $granularity = 'monthly';
+        }
+
+        $month    = date( 'Ym01' );
+        $boundary = self::partitionLeadBoundary();
+
+        if ( $daily_months < 1 ) {
+
+            return self::makePartitionRanges(
+                date( 'Ymd' ), date( 'Ymd', strtotime( $boundary . ' -1 day' ) ), $granularity );
+        }
+
+        $coarse_from = date( 'Ym01', strtotime( $month . ' +' . (int) $daily_months . ' month' ) );
+        $ranges      = self::makePartitionRangesForSpan( $month, $coarse_from, 'daily' );
+
+        return $ranges + self::makePartitionRangesForSpan( $coarse_from, $boundary, $granularity );
     }
 
     /**
@@ -1902,6 +1973,238 @@ class Db extends \OWA\Core\Base {
         return $this->query( sprintf(
             OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $from ), implode( ', ', $parts )
         ) );
+    }
+
+    /**
+     * Build an empty table with another table's exact structure.
+     *
+     * The copy inherits the target's partitioning, which EXCHANGE PARTITION
+     * then refuses, so removePartitioning() is a required second step.
+     *
+     * @param string $table_name  the table to create
+     * @param string $like        the table to copy the structure of
+     * @return bool
+     */
+    function createTableLike( $table_name, $like ) {
+
+        if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $like ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_CREATE_TABLE_LIKE, $table_name, $like ) );
+    }
+
+    /**
+     * Flatten a partitioned table into an ordinary one.
+     *
+     * Keeps every row: the partitions are merged, not dropped. Against a table
+     * holding data this rewrites all of it, so it belongs on an empty staging
+     * table and nowhere else.
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function removePartitioning( $table_name ) {
+
+        if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_REMOVE_PARTITIONING, $table_name ) );
+    }
+
+    /**
+     * Copy a partitioned table's structure WITHOUT its partitions.
+     *
+     * For a staging table that EXCHANGE PARTITION will swap in. The swap
+     * refuses a partitioned table, so the partitions have to go -- and
+     * CREATE TABLE LIKE then REMOVE PARTITIONING creates every one of them
+     * only to delete it again: 2,690ms plus 1,491ms on a 72-partition cube,
+     * against 55ms to create it flat in the first place.
+     *
+     * Taken from the LIVE table's own DDL rather than rebuilt from an entity,
+     * because the swap compares column for column and the table may carry
+     * columns no entity declares -- a registered custom dimension is added at
+     * runtime. Reading what is actually there is the only way to match it.
+     *
+     * @param string $new     table to create
+     * @param string $source  partitioned table to copy
+     * @return bool
+     */
+    function createUnpartitionedCopy( $new, $source ) {
+
+        if ( ! defined( 'OWA_SQL_SHOW_CREATE_TABLE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $new )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $source ) ) {
+
+            return false;
+        }
+
+        $row = $this->get_row( sprintf( OWA_SQL_SHOW_CREATE_TABLE, $source ) );
+        $row = (array) $row;
+        $ddl = isset( $row['Create Table'] ) ? $row['Create Table'] : '';
+
+        if ( ! $ddl ) {
+
+            return false;
+        }
+
+        /*
+         * The partition clause is last, and MySQL emits it inside a version
+         * comment. Cutting at whichever marker appears keeps the column list,
+         * the keys and the table options exactly as they are -- which is what
+         * the swap compares.
+         */
+        foreach ( array( '/*!50100 PARTITION BY', "\nPARTITION BY", ' PARTITION BY' ) as $marker ) {
+
+            $at = strpos( $ddl, $marker );
+
+            if ( $at !== false ) {
+
+                $ddl = rtrim( substr( $ddl, 0, $at ) );
+
+                break;
+            }
+        }
+
+        $ddl = preg_replace(
+            '/^CREATE TABLE `' . preg_quote( (string) $source, '/' ) . '`/',
+            'CREATE TABLE `' . $new . '`',
+            $ddl, 1, $renamed );
+
+        // Refuse rather than create a second copy of the source table.
+        if ( ! $renamed ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( $ddl );
+    }
+
+    /**
+     * Empty a table, keeping its definition.
+     *
+     * For a working table that is rebuilt on every use: dropping and creating
+     * it again costs whatever its definition costs, and a staging table built
+     * with CREATE TABLE LIKE from a partitioned cube costs seconds. TRUNCATE
+     * costs milliseconds and leaves the shape alone.
+     *
+     * NOT a substitute for DELETE where rows matter: it cannot be rolled back,
+     * and it does not fire triggers.
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function truncateTable( $table_name ) {
+
+        if ( ! defined( 'OWA_SQL_TRUNCATE_TABLE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_TRUNCATE_TABLE, $table_name ) );
+    }
+
+    /**
+     * Add a column without the instant algorithm, rebuilding the table.
+     *
+     * For a table that EXCHANGE PARTITION compares byte for byte. An instantly
+     * added column leaves row-format metadata that a freshly built staging
+     * table cannot have -- staging is always empty, so it has no old rows to
+     * version -- and the swap is then refused with error 1731.
+     *
+     * Online: reads and writes continue during the rebuild.
+     *
+     * @param string $table_name
+     * @param string $column_name
+     * @param string $column_definition
+     * @return bool false where the server will not do it this way
+     */
+    function addColumnRebuilding( $table_name, $column_name, $column_definition ) {
+
+        if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_ADD_COLUMN_REBUILD,
+            $table_name, $column_name, $column_definition ) );
+    }
+
+    /**
+     * Whether a table carries instant-column history.
+     *
+     * A driver that can answer overrides this; the dialect is where the
+     * introspection lives, as it does for partitions. Unknown is null, not
+     * false -- "no history" and "cannot tell" lead to different decisions.
+     *
+     * @param string $table_name
+     * @return bool|null
+     */
+    function hasInstantColumns( $table_name ) {
+
+        return null;
+    }
+
+    /**
+     * Rewrite a table in place, keeping its rows.
+     *
+     * Costs a full rebuild, so it belongs in a deliberate operation. Its one
+     * use is clearing the row-format metadata an instant ADD COLUMN leaves
+     * behind, which EXCHANGE PARTITION refuses against a staging table built by
+     * CREATE TABLE LIKE. REBUILD PARTITION does not clear it.
+     *
+     * @param string $table_name
+     * @return bool
+     */
+    function rebuildTable( $table_name ) {
+
+        if ( ! defined( 'OWA_SQL_REBUILD_TABLE' )
+          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return false;
+        }
+
+        return (bool) $this->query( sprintf( OWA_SQL_REBUILD_TABLE, $table_name ) );
+    }
+
+    /**
+     * Swap a partition's contents with an unpartitioned table's, atomically.
+     *
+     * The two tablespaces change places: afterwards the staging table holds
+     * what the partition held, so the old contents survive to drop or inspect.
+     *
+     * This is the commit. A build that dies before it leaves the live table as
+     * it was, and the next run rebuilds.
+     *
+     * @param string $table_name  the partitioned table
+     * @param string $partition   the partition to exchange
+     * @param string $with_table  an unpartitioned table of identical structure
+     * @return bool
+     */
+    function exchangePartition( $table_name, $partition, $with_table ) {
+
+        if ( ! $this->supportsPartitioning() || ! defined( 'OWA_SQL_EXCHANGE_PARTITION' ) ) {
+
+            return false;
+        }
+
+        foreach ( array( $table_name, $partition, $with_table ) as $identifier ) {
+
+            if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $identifier ) ) {
+
+                return false;
+            }
+        }
+
+        return (bool) $this->query( sprintf(
+            OWA_SQL_EXCHANGE_PARTITION, $table_name, $partition, $with_table ) );
     }
 
     /**
@@ -3074,14 +3377,24 @@ class Db extends \OWA\Core\Base {
      * range is snapped outwards to the boundaries of the partitions it touches,
      * since a partition can only be rewritten whole.
      *
+     * A SKIP RANGE is left exactly as it is, and is how the reporting cube keeps
+     * the daily part of its lead. Those are ordinary one-day partitions, so
+     * every filter here would admit them and a change of granularity would
+     * merge them away -- rewriting live rows, which partition-rotate would then
+     * rewrite a second time putting them back. Skipping splits the selection
+     * into more than one run, and each run is planned on its own; planning
+     * across the hole would try to merge partitions from either side of it into
+     * one.
+     *
      * @param string      $table_name
      * @param string      $granularity  quarter-month|half-month|monthly
      * @param bool        $dry_run      report the statements without running them
      * @param string|null $from         first day to convert, yyyymmdd
      * @param string|null $to           first day not to convert, yyyymmdd
+     * @param array|null  $skip         ['start','less_than'] to leave untouched
      * @return array ['changed' => string[], 'skipped' => int, 'failed' => string[]]
      */
-    function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null ) {
+    function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null ) {
 
         $result = array( 'changed' => array(), 'skipped' => 0, 'failed' => array(), 'planned' => 0 );
 
@@ -3152,19 +3465,103 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        $span_start = $spans[0]['start'];
-        $span_end   = $spans[ count( $spans ) - 1 ]['less_than'];
+        // Leave the skip range exactly as it is.
+        if ( $skip ) {
 
-        $target = self::makePartitionRangesForSpan( $span_start, $span_end, $granularity );
+            $kept = array();
 
-        if ( ! $target ) {
+            foreach ( $spans as $span ) {
+
+                if ( (string) $span['start'] >= (string) $skip['start']
+                  && (string) $span['less_than'] <= (string) $skip['less_than'] ) {
+
+                    continue;
+                }
+
+                $kept[] = $span;
+            }
+
+            $spans = array_values( $kept );
+
+            if ( ! $spans ) {
+
+                return $result;
+            }
+        }
+
+        // One run per contiguous stretch. A skip range leaves a hole, and a
+        // target planned across it would merge partitions from either side.
+        $runs = array();
+        $run  = array();
+
+        foreach ( $spans as $span ) {
+
+            if ( $run && (string) $run[ count( $run ) - 1 ]['less_than'] !== (string) $span['start'] ) {
+
+                $runs[] = $run;
+                $run    = array();
+            }
+
+            $run[] = $span;
+        }
+
+        if ( $run ) {
+
+            $runs[] = $run;
+        }
+
+        $total    = count( $this->getPartitionSpans( $table_name ) );
+        $selected = count( $spans );
+        $targets  = array();
+
+        foreach ( $runs as $i => $one ) {
+
+            $t = self::makePartitionRangesForSpan(
+                $one[0]['start'], $one[ count( $one ) - 1 ]['less_than'], $granularity );
+
+            if ( ! $t ) {
+
+                continue;
+            }
+
+            $targets[ $i ] = $t;
+        }
+
+        if ( ! $targets ) {
 
             return $result;
         }
 
-        // What the table would end up with: the converted span, plus whatever
-        // partitions the range left alone.
-        $result['planned'] = count( $target ) + ( count( $this->getPartitionSpans( $table_name ) ) - count( $spans ) );
+        // What the table would end up with: every converted run, plus whatever
+        // the filters and the skip range left alone.
+        $planned = $total - $selected;
+
+        foreach ( $targets as $t ) {
+
+            $planned += count( $t );
+        }
+
+        $result['planned'] = $planned;
+
+        foreach ( $targets as $i => $target ) {
+
+            $this->repartitionRun( $table_name, $runs[ $i ], $target, $dry_run, $result );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Reshape one contiguous run of partitions into one target shape.
+     *
+     * @param string $table_name
+     * @param array  $spans    the run, in order
+     * @param array  $target   name => less_than
+     * @param bool   $dry_run
+     * @param array  $result   accumulated across runs
+     * @return void
+     */
+    private function repartitionRun( $table_name, array $spans, array $target, $dry_run, array &$result ) {
 
         // Cut only where both sequences agree on a boundary. Every such cut
         // consumes at least one partition from each side, and the span end is
@@ -3234,8 +3631,6 @@ class Db extends \OWA\Core\Base {
                 $result['failed'][] = implode( ',', $from );
             }
         }
-
-        return $result;
     }
 
     /**
@@ -3283,6 +3678,8 @@ class Db extends \OWA\Core\Base {
     /**
      * Creates a new table
      *
+     * @param \OWA\Core\Entity $entity
+     * @return mixed
      */
     function createTable($entity) {
 
@@ -3392,18 +3789,39 @@ class Db extends \OWA\Core\Base {
                 $columns .= sprintf( ', %s (%s, %s)', OWA_DTD_PRIMARY_KEY, $pk, $partition_column );
             }
 
-            // Cover the current month and a year ahead, so that the catch-all
-            // stays empty until the lead runs down. partition-init tops this up
-            // and is meant to run periodically; a table created and never
-            // topped up still has a year before anything reaches the catch-all.
-            $table_options .= $this->makePartitionClause(
-                $partition_column,
-                self::makePartitionRanges(
-                    date( 'Ymd' ),
-                    date( 'Ymd', strtotime( self::partitionLeadBoundary() . ' -1 day' ) ),
-                    'monthly'
-                )
-            );
+            /*
+             * Cover the current month and a year ahead, so that the catch-all
+             * stays empty until the lead runs down. partition-init tops this up
+             * and is meant to run periodically; a table created and never
+             * topped up still has a year before anything reaches the catch-all.
+             *
+             * AN ENTITY MAY ASK FOR A DIFFERENT SHAPE, and the reporting cube
+             * does: the front of its lead has to be daily or every rebuild
+             * rewrites a whole month. Built here rather than left to the first
+             * partition-rotate, because until that runs the table is in the
+             * state the daily part exists to avoid -- and a rotate that is not
+             * scheduled never comes.
+             */
+            $daily = method_exists( $entity, 'getDailyLeadMonths' )
+                ? (int) $entity->getDailyLeadMonths() : 0;
+
+            $ranges = self::makeLeadRanges( $daily );
+
+            // An entity cannot spend more than the hard ceiling on its own
+            // say-so. Falling back to a lead of one granularity leaves a correct
+            // table that rebuilds a period at a time, which partition-rotate
+            // reports.
+            if ( $daily && count( $ranges ) > self::PARTITION_COUNT_LIMIT ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s asked for %d partitions at creation, over the ceiling of %d. '
+                  . 'Created monthly throughout instead.',
+                    $entity->getTableName(), count( $ranges ), self::PARTITION_COUNT_LIMIT ) );
+
+                $ranges = self::makeLeadRanges( 0 );
+            }
+
+            $table_options .= $this->makePartitionClause( $partition_column, $ranges );
         }
 
         return $this->query(sprintf(OWA_SQL_CREATE_TABLE, $entity->getTableName(), $columns, $table_options));

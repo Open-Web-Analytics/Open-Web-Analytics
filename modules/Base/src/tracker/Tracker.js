@@ -317,8 +317,8 @@ class OWATracker  {
 	    // the page -- the state manager never writes it to a cookie. Page scope
 	    // used to be the ABSENCE of a case in setCustomVar(): the value fell
 	    // through to a global event property and happened to work. Declaring it
-	    // makes the three scopes symmetrical and gives getCustomPageVar()
-	    // somewhere to read from.
+	    // makes the three scopes symmetrical. The scoped custom-variable
+	    // getters that read from it are gone; see setEventProperty().
 	    OWA.registerStateStore('d', '', '', 'json', { persist: 'never' });
 	
 	    // Configuration options
@@ -3179,78 +3179,112 @@ class OWATracker  {
     }
 
     /**
+     * The wire prefixes that carry scope.
+     *
+     * Scope lives in the NAME, at every layer -- the beacon, the store and
+     * eventually the registered dimension -- so nothing downstream has to infer
+     * which bag a value belongs to, and the same name in two scopes is two
+     * different things all the way down. GA does the same with `ep.` and `up.`;
+     * underscores here because OWA's own params are read as bare keys.
+     */
+    static get EVENT_PROPERTY_PREFIX() { return 'ep_'; }
+    static get USER_PROPERTY_PREFIX()  { return 'up_'; }
+
+    /** Names must survive becoming a JSON key and then a column. */
+    static get PROPERTY_NAME_PATTERN() { return /^[A-Za-z][A-Za-z0-9_]{0,39}$/; }
+
+    /**
+     * A custom value describing THIS event.
+     *
+     * Rides every event this tracker sends for the life of the page, and lands
+     * in `params` on the raw row. The server never has to guess the scope: the
+     * `ep_` prefix says it.
+     *
+     * Page-lifetime and in memory, like GA's event parameters -- nothing is
+     * written to a cookie, so a value set here cannot outlive its own meaning
+     * the way v1's persisted custom variables could.
+     *
+     * @param  name   string  letters, digits and underscores; must start with a letter
+     * @param  value  string
+     */
+    setEventProperty( name, value ) {
+
+        if ( ! OWATracker.PROPERTY_NAME_PATTERN.test( String( name ) ) ) {
+
+            OWA.debug( 'Event property name must start with a letter and contain only letters, digits and underscores (max 40).' );
+
+            return;
+        }
+
+        this.setGlobalEventProperty( OWATracker.EVENT_PROPERTY_PREFIX + name, String( value ) );
+    }
+
+    /**
+     * A custom value describing the VISITOR.
+     *
+     * Also page-lifetime on the client, and deliberately so: GA holds user
+     * properties in memory for the page, stamps them on each hit, and persists
+     * them server side against the user. Exercising their tracker confirmed it
+     * -- set one, navigate, and the next page's beacons carry nothing until it
+     * is set again; the cookies hold only the client id and session state.
+     *
+     * OWA does the same. The `up_` prefix routes it to the visitor store at
+     * ingest, where it is written last-value-wins with the event's timestamp,
+     * so what persists is a server record rather than a cookie that can outlive
+     * the value it holds.
+     *
+     * @param  name   string
+     * @param  value  string
+     */
+    setUserProperty( name, value ) {
+
+        if ( ! OWATracker.PROPERTY_NAME_PATTERN.test( String( name ) ) ) {
+
+            OWA.debug( 'User property name must start with a letter and contain only letters, digits and underscores (max 40).' );
+
+            return;
+        }
+
+        this.setGlobalEventProperty( OWATracker.USER_PROPERTY_PREFIX + name, String( value ) );
+    }
+
+    /**
      * Set a custom variable
      *
-     * @param    slot    int        the identifying number for the custom variable. 1-5.
+     * @deprecated Use setEventProperty() or setUserProperty().
+     *
+     * THREE SCOPES BECOME TWO, and the slot number goes.
+     *
+     *   page, session, anything else  ->  setEventProperty()
+     *   visitor                       ->  setUserProperty()
+     *
+     * SESSION SCOPE MAPS TO EVENT, which is the one that looks like a loss and
+     * is not. A session-scoped value carried by the CLIENT is exactly what the
+     * v2 design refuses: it is something the server can derive from the
+     * session's own events, and something the client can get wrong -- v1's own
+     * session store had a variable outliving the session that set it, because
+     * nothing cleared it at a session boundary. GA offers site authors event
+     * and user scope for the same reason and derives session scope itself.
+     *
+     * The slot is ignored. It was v1 storage -- five numbered columns on a fact
+     * table -- and never information; two calls with the same name now mean the
+     * same property rather than colliding on a slot.
+     *
+     * @param    slot    int        ignored; kept so existing calls still parse
      * @param    name    string    the key of the custom variable.
      * @param    value    string    the value of the varible
      * @param    scope    string    the scope of the variable. can be page, session, or visitor
      */
     setCustomVar(slot, name, value, scope) {
 
-        var cv_param_name = 'cv' + slot;
-        var cv_param_value = name + '=' + value;
+        if ( scope === 'visitor' ) {
 
-        if (cv_param_value.length > 65) {
-            OWA.debug('Custom variable name + value is too large. Must be less than 64 characters.');
+            this.setUserProperty( name, value );
+
             return;
         }
 
-        //this.dirtyCustomVars[cv_param_name] = {'value' : cv_param_value, 'scope' : scope};
-
-        switch (scope) {
-
-            case 'page':
-            default:
-
-                // Memory only, discarded with the page.
-                //
-                // Also the default: an absent or unrecognised scope is treated
-                // as page rather than dropped. That is what the old fallthrough
-                // did, when there was no 'page' case at all and the value
-                // simply landed on the global event property below the switch.
-                OWA.setState('d', cv_param_name, cv_param_value);
-                break;
-
-            case 'session':
-
-                // The session store, not a second cookie beside it. 'b' existed
-                // only to hold these, which is why a variable scoped to the
-                // session did not share that session's lifetime.
-                //
-                // This lands in MEMORY. It reaches the cookie when the session
-                // is settled and a request carrying it has been accepted -- see
-                // the 'persistSession' action. Holding it back is what makes it
-                // distinguishable from a value the previous session left in the
-                // cookie, which is the whole reason a new session can discard
-                // one and keep the other.
-                OWA.setState( this.storeName('s'), cv_param_name, cv_param_value);
-                // Drop the NARROWER copies of this slot. Re-scoping upwards is
-                // a promotion, so the old copy is stale, and leaving it behind
-                // lets it shadow the new value: getCustomVar() checks 'd'
-                // before 's', and only the tracker that made the call has the
-                // global event property that would otherwise mask the
-                // difference. A second tracker on the same page would read the
-                // superseded page value while this one read the session value.
-                //
-                // Setting page scope over a session value does NOT do the
-                // reverse, and should not: that direction is a deliberate
-                // per-page override of a longer-lived value, not a promotion.
-                OWA.clearState('d', cv_param_name);
-                OWA.clearState('b', cv_param_name);
-                OWA.debug('just set custom var on session.');
-                break;
-
-            case 'visitor':
-
-                // store in visitor cookie
-                OWA.setState('v', cv_param_name, cv_param_value);
-                // remove slot from the narrower stores
-                OWA.clearState('d', cv_param_name);
-                OWA.clearState( this.storeName('s'), cv_param_name);
-                OWA.clearState('b', cv_param_name);
-                break;
-        }
+        this.setEventProperty( name, value );
     }
 
     /**
@@ -3275,7 +3309,7 @@ class OWATracker  {
      * Anything put in 'd' rides the page's events, so a page-scoped property
      * added later needs no plumbing here. Two keys are excluded: custom
      * variables, which span three stores and are collected with their own
-     * precedence (see collectCustomVars()), and the state manager's own
+     * precedence, and the state manager's own
      * bookkeeping -- 'cdh', the cookie domain hash, and 'sv', the format
      * version (StateManager.VERSION_KEY). Both describe the STORE; neither is
      * a tracking property, and sending either would put a private
@@ -3450,126 +3484,6 @@ class OWATracker  {
         return collected;
     }
 
-    collectCustomVars() {
-
-        var collected = {};
-        var stores = [ 'v', 's', 'd' ];
-        var max = this.getOption('maxCustomVars');
-
-        for ( var i = 0; i < stores.length; i++ ) {
-
-            for ( var slot = 1; slot <= max; slot++ ) {
-
-                var cv_param_name = 'cv' + slot;
-                var value = OWA.getState( this.storeName( stores[ i ] ), cv_param_name );
-
-                if ( value ) {
-                    collected[ cv_param_name ] = value;
-                }
-            }
-        }
-
-        return collected;
-    }
-
-    getCustomVar(slot) {
-
-        var cv_param_name = 'cv' + slot;
-        var cv = '';
-        // check request/page level
-        cv = this.getGlobalEventProperty( cv_param_name );
-        if ( ! cv ) {
-            cv = OWA.getState( 'd', cv_param_name );
-        }
-        //check session store
-        if ( ! cv ) {
-            cv = OWA.getState( this.storeName('s'), cv_param_name );
-        }
-        // NOTE: no read of the legacy 'b' store. The collapse migration moves
-        // its values into 's' before anything reads, so a fallback here would
-        // be dead after the migration and WRONG before it -- 'b' is a persisted
-        // cookie, so reading it returns a previous session's value without any
-        // of the settling that decides whether that value still applies. See
-        // getCustomSessionVar().
-        // check visitor store
-        if ( ! cv ) {
-            cv = OWA.getState( 'v', cv_param_name );
-        }
-
-        return cv;
-
-    }
-
-    /**
-     * Read a page-scoped custom variable.
-     *
-     * Always available: page scope is memory only and never waits on anything.
-     */
-    getCustomPageVar( slot ) {
-
-        var cv_param_name = 'cv' + slot;
-        var cv = this.getGlobalEventProperty( cv_param_name );
-
-        if ( ! cv ) {
-            cv = OWA.getState( 'd', cv_param_name );
-        }
-
-        return cv;
-    }
-
-    /**
-     * Read a session-scoped custom variable.
-     *
-     * CALL THIS AFTER trackPageView(). Before it, the session store holds only
-     * what this page load has set: whether the values a previous page persisted
-     * still apply depends on whether that session is still running, and nothing
-     * knows that until sessionization has run. A read beforehand therefore
-     * returns what you set on this page and nothing else.
-     *
-     * That is a deliberate restriction rather than a limitation to work around.
-     * Serving the persisted value early would mean answering with a variable
-     * belonging to a session that may already have ended, and the caller would
-     * have no way to tell.
-     *
-     * This is also why there is no fallback read of the legacy 'b' store. It
-     * would be dead weight after the collapse migration has run -- 'b' is empty
-     * by then -- and before it, it would do exactly what the paragraph above
-     * rules out: 'b' is a persisted cookie, so reading it hands back a previous
-     * session's value with none of the settling that decides whether it still
-     * applies. On a real page the migration runs on the first tracked event
-     * (the cookie domain is not known before then), so that window is real, not
-     * theoretical.
-     */
-    getCustomSessionVar( slot ) {
-
-        return OWA.getState( this.storeName('s'), 'cv' + slot );
-    }
-
-    /**
-     * Read a visitor-scoped custom variable.
-     *
-     * Always available: the visitor store does not wait on the session
-     * decision, because a visitor outlives their sessions.
-     */
-    getCustomVisitorVar( slot ) {
-
-        return OWA.getState( 'v', 'cv' + slot );
-    }
-
-    deleteCustomVar(slot) {
-
-        var cv_param_name = 'cv' + slot;
-        // clear page level store
-        Util.clearState( 'd', cv_param_name );
-        //clear session level, current and legacy
-        Util.clearState( this.storeName('s'), cv_param_name );
-        Util.clearState( 'b', cv_param_name );
-        //clear visitor level
-        Util.clearState( 'v', cv_param_name );
-        // clear page level
-        this.deleteGlobalEventProperty( cv_param_name )
-    }
-
     /**
      * Applies default values for required properties 
      * to any event where the properties were not
@@ -3700,7 +3614,6 @@ class OWATracker  {
 
         var collected = this.collectPageProperties();
         var state_properties = this.collectStateProperties();
-        var custom_vars = this.collectCustomVars();
 
         for ( var sp_name in state_properties ) {
             if ( state_properties.hasOwnProperty( sp_name ) ) {
@@ -3708,11 +3621,13 @@ class OWATracker  {
             }
         }
 
-        for ( var cv_name in custom_vars ) {
-            if ( custom_vars.hasOwnProperty( cv_name ) ) {
-                collected[ cv_name ] = custom_vars[ cv_name ];
-            }
-        }
+        /*
+         * Custom values are global event properties now -- `ep_` and `up_` --
+         * so they are already on the event by the time this runs and need no
+         * collection pass. The cv1..cvN stores they replaced were read from
+         * three places with a shadowing order, which is the machinery the two
+         * prefixes remove.
+         */
 
         // user_name lives on the visitor, not the page.
         var user_name = OWA.getState( 'v', 'user_name' );

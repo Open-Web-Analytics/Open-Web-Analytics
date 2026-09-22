@@ -35,9 +35,9 @@ namespace OWA\Module\Base\Controller;
  * WHAT THE AGGREGATES MEAN, AND WHY THEY ARE AGGREGATES
  *
  * The previous query grouped by domstream_guid and then selected `duration`,
- * `page_url`, `page_height` and `page_width` as BARE columns. Under this
- * install's sql_mode -- which is set to '' on every connection, so
- * ONLY_FULL_GROUP_BY is off -- MySQL answers with an arbitrary row's value
+ * `page_url`, `page_height` and `page_width` as BARE columns. OWA's sql_mode is
+ * STRICT_ALL_TABLES, which does not include ONLY_FULL_GROUP_BY, so MySQL
+ * answers a bare column with an arbitrary row's value
  * instead of refusing. For duration that is not cosmetic: `duration` is
  * cumulative elapsed seconds at the moment of each flush, so a twenty-minute
  * recording stored in twelve rows carries twelve different durations and the

@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 34;
+        $this->required_schema_version = 40;
         return parent::__construct();
     }
 
@@ -149,6 +149,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.crawlDocumentCli',              'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',             'Controller/CrawlDocumentCli.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
+        $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli',             'Controller/CubeRebuildCli.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
         $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
         $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
@@ -282,6 +283,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
+        $this->registerCliCommand('cube-rebuild', 'base.cubeRebuildCli');
     }
 
     /**
@@ -301,6 +303,31 @@ class Module extends \OWA\Core\Module {
      * it queues in the first place. It is added in OWA_SCHEDULED_JOBS when
      * wanted -- see owa_settings::applyConfigConstants().
      */
+    /**
+     * A stable seed for spreading one daily job, per install and per job.
+     *
+     * The fallbacks matter: an install that has not been configured yet has no
+     * public_url, and seeding every one of those from the same empty string
+     * would put exactly the installs most likely to share an image back on the
+     * same minute. The directory path differs per install even then.
+     *
+     * @return string
+     */
+    private function jobSeed( $job ) {
+
+        $seed = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
+
+        if ( $seed === '' ) {
+
+            $seed = defined( 'OWA_DIR' ) ? OWA_DIR : php_uname( 'n' );
+        }
+
+        // The JOB NAME is part of it, or every daily job on one install lands
+        // on the same minute -- which is the collision the spread exists to
+        // avoid, just moved from between installs to within one.
+        return $seed . '|' . $job;
+    }
+
     function registerJobs() {
 
         // The NAME is deliberately not the command name. They are separate
@@ -314,7 +341,48 @@ class Module extends \OWA\Core\Module {
         // OWA_SCHEDULED_JOBS, which is the deliberate act it should be.
         // Retention must never arrive as a side effect of turning the scheduler
         // on. ScheduleCliTest pins the empty array for exactly that reason.
-        $this->registerJob( 'rotate-partitions', 'partition-rotate', '@monthly', array() );
+        //
+        // DAILY, NOT MONTHLY. Every piece of work this job does is triggered by
+        // a period AGEING -- a lead running short, a month passing out of the
+        // detail window, the cube's daily partitions leaving the rebuild
+        // window. Running monthly does not do less of it, it just finds each
+        // one up to a month late: the cube would hold an extra month of daily
+        // partitions, and a stalled lead would have a month to erode before the
+        // next attempt, which 2.8 calls the invariant everything else rests on.
+        // A run with nothing due is a handful of catalogue queries.
+        //
+        // NOT '@daily'. That is midnight exactly, and several OWA installs
+        // commonly share one database server -- so every one of them would
+        // start a run, and possibly a REORGANIZE that rewrites rows, at the
+        // same instant. Same reasoning as fetch-notifications below, for a
+        // local reason rather than a remote one.
+        $this->registerJob(
+            'rotate-partitions', 'partition-rotate',
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array() );
+
+        /*
+         * The reporting cube's build. Registered, and safe to be, because the
+         * command refuses cheaply when no site collects into v2 -- which is
+         * every installation until one turns it on. Without that guard this
+         * would do DDL on every run on every install to rebuild an empty
+         * partition, which is why it shipped unregistered at first.
+         *
+         * ONE JOB, AT DAILY SPREAD, not the quarter-hourly cadence 2.5.1
+         * eventually wants. The default range is yesterday and today, so a
+         * daily run keeps the cube a day fresh, and nothing reports over
+         * owa_event yet -- so a frequent run would buy freshness no reader can
+         * see while paying a swap every fifteen minutes. An installation that
+         * wants it states it in OWA_SCHEDULED_JOBS; CubeRebuildCli's docblock
+         * carries both cadences. Same rule as the empty params above: turning
+         * the scheduler on must not turn anything else on.
+         *
+         * NOT '@daily', for the reason rotate-partitions is not: several OWA
+         * installs commonly share one database server, and this one ends in an
+         * EXCHANGE PARTITION.
+         */
+        $this->registerJob(
+            'rebuild-cube', 'cube-rebuild',
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rebuild-cube' ) ), array() );
 
         /*
          * Daily is the right cadence for release announcements: they are not
@@ -335,16 +403,9 @@ class Module extends \OWA\Core\Module {
          * back on the same minute. The directory path differs per install even
          * then.
          */
-        $seed = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
-
-        if ( $seed === '' ) {
-
-            $seed = defined( 'OWA_DIR' ) ? OWA_DIR : php_uname( 'n' );
-        }
-
         $this->registerJob(
             'fetch-notifications', 'fetch-notifications',
-            \OWA\Core\Cron::dailySpreadFor( $seed ), array() );
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'fetch-notifications' ) ), array() );
 
         // NOT registering update-ua-regexes here, deliberately.
         //
@@ -2444,11 +2505,15 @@ class Module extends \OWA\Core\Module {
         /*
          * v2 ingest, beside v1's handlers on the same events.
          *
-         * Registered unconditionally and gated inside the handler, on the
-         * site: the registration runs once per process with no event and no
-         * site_id in hand, so there is nothing to ask here. It returns
-         * immediately for a site that has not turned v2_raw_collection on,
-         * which is every site by default.
+         * Every site, no setting. The gate was development scaffolding for
+         * exercising ingest against one site and it is gone now that the
+         * tracker sends v2-shaped events.
+         *
+         * BOTH PIPELINES RUN, which is not the architecture (2.25 step 4 is
+         * where v1's registrations below come out). They run together because
+         * the reporting layer reads v1's tables and nothing reads owa_event
+         * yet. v2 is being built front to back; nothing ships until reporting
+         * is driven off v2.
          *
          * The list is tracking_event_types minus the two that are not events:
          * dom.stream is an ATTACHMENT to a page view and base.feed_request is
@@ -2553,15 +2618,16 @@ class Module extends \OWA\Core\Module {
                 'site_user',
                 /*
                  * v2. Registered unconditionally so cmd=update creates them
-                 * and the partition commands find owa_event_raw -- neither is
-                 * conditional on anything, and a table nothing writes to costs
-                 * an empty tablespace.
+                 * and the partition commands find owa_event_raw and owa_event
+                 * -- neither is conditional on anything, and a table nothing
+                 * writes to costs an empty tablespace.
                  *
-                 * Whether anything WRITES to them is the v2_raw_collection
-                 * setting, per site. See Handler\EventRawHandlers.
+                 * Handler\EventRawHandlers writes the first two, for every
+                 * site. owa_event has one writer, cmd=cube-rebuild.
                  */
                 'event_raw',
-                'visitor_acquisition')
+                'visitor_acquisition',
+                'event')
             );
 
     }

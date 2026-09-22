@@ -102,11 +102,35 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $this->assertArrayHasKey('rotate-partitions', $jobs);
         $this->assertSame([], $jobs['rotate-partitions']['params'], 'no keep= may be registered in code');
-        $this->assertSame('@monthly', $jobs['rotate-partitions']['schedule']);
         $this->assertSame('code', $jobs['rotate-partitions']['source']);
+
+        // Daily, and spread: every piece of work it does is triggered by a
+        // period ageing, so a monthly run finds each one up to a month late.
+        // Not '@daily' -- midnight exactly would start a run, and possibly a
+        // REORGANIZE, on every install sharing a database server at once.
+        $this->assertMatchesRegularExpression(
+            '/^\d+ \d+ \* \* \*$/', $jobs['rotate-partitions']['schedule'],
+            'a spread daily schedule, not a literal @daily' );
     }
 
-    /** Only that one job ships; everything else is opt-in. */
+    /**
+     * No two shipped daily jobs land on the same minute.
+     *
+     * The spread exists so installs sharing a host do not fire together; a
+     * shared seed would fix that between installs and break it within one.
+     */
+    public function testTheShippedDailyJobsDoNotCollide()
+    {
+        $jobs      = $this->callProtected($this->runner(), 'jobs');
+        $schedules = array_column($jobs, 'schedule');
+
+        $this->assertSame(
+            count($schedules),
+            count(array_unique($schedules)),
+            'the job name has to be part of the seed, not just the install' );
+    }
+
+    /** Only these jobs ship; everything else is opt-in. */
     public function testTheDefaultJobsAreRegistered()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
@@ -114,8 +138,31 @@ final class ScheduleCliTest extends CliControllerTestCase
         // Named exactly, not counted: a job appearing here means every install
         // starts running something on a timer, which is a decision rather than
         // a detail. fetch-notifications joined rotate-partitions when the OWA
-        // News panel stopped calling api.github.com during page renders.
-        $this->assertSame(['rotate-partitions', 'fetch-notifications'], array_keys($jobs));
+        // News panel stopped calling api.github.com during page renders, and
+        // rebuild-cube joined them once it could refuse cheaply on an install
+        // with no site collecting into v2.
+        $this->assertSame(
+            ['rotate-partitions', 'rebuild-cube', 'fetch-notifications'],
+            array_keys($jobs)
+        );
+    }
+
+    /**
+     * The cube build ships with no arguments, like rotate.
+     *
+     * Its default range is yesterday and today. A registered days= would make
+     * the window a property of the upgrade rather than of the installation.
+     */
+    public function testTheCubeBuildShipsWithNoArgumentsAndSpread()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertArrayHasKey('rebuild-cube', $jobs);
+        $this->assertSame([], $jobs['rebuild-cube']['params']);
+        $this->assertSame('code', $jobs['rebuild-cube']['source']);
+        $this->assertMatchesRegularExpression(
+            '/^\d+ \d+ \* \* \*$/', $jobs['rebuild-cube']['schedule'],
+            'a spread daily schedule -- it ends in an EXCHANGE PARTITION' );
     }
 
     /**
@@ -164,7 +211,8 @@ final class ScheduleCliTest extends CliControllerTestCase
         $jobs = $this->jobsWith(['rotate-partitions' => ['params' => ['keep' => 24]]]);
 
         $this->assertSame(['keep' => 24], $jobs['rotate-partitions']['params']);
-        $this->assertSame('@monthly', $jobs['rotate-partitions']['schedule'], 'the shipped schedule survives');
+        $this->assertMatchesRegularExpression('/^\d+ \d+ \* \* \*$/',
+            $jobs['rotate-partitions']['schedule'], 'the shipped schedule survives');
         $this->assertSame('config-override', $jobs['rotate-partitions']['source']);
 
         $jobs = $this->jobsWith(['rotate-partitions' => ['schedule' => '@daily']]);

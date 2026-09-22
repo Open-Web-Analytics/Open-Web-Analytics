@@ -1435,6 +1435,325 @@ final class PartitionOperationsTest extends TestCase
         }
     }
 
+    /** A cube-shaped table: two months of daily, then monthly lead, rows in the front. */
+    private function cubeShapedTable()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->makeTable();
+
+        /*
+         * DELIBERATELY SMALLER THAN A REAL CUBE: one month of daily and three
+         * of lead, not two and twelve. Every assertion here is about WHICH
+         * partitions a skip range protects and which a run plans, so the shape
+         * has to be daily-then-coarse and the size is free. A full-size fixture
+         * built and dropped ~360 partitions across this file's cases, and a
+         * partition costs about 10ms to create and 9ms to drop -- which is paid
+         * on every run of the isolation sweep, once per driver.
+         */
+        $front  = date('Ym01');
+        $lead   = date('Ym01', strtotime('first day of +1 month'));
+        $ranges = array();
+
+        for ($d = $front; $d < $lead; $d = date('Ymd', strtotime($d . ' +1 day'))) {
+            $ranges['p' . $d] = date('Ymd', strtotime($d . ' +1 day'));
+        }
+
+        for ($i = 0; $i < 3; $i++) {
+            $next = date('Ymd', strtotime($lead . ' +1 month'));
+            $ranges['p' . $lead] = $next;
+            $lead = $next;
+        }
+
+        $db->partitionTable($t, 'yyyymmdd', $ranges);
+
+        $id = 0;
+        for ($d = $front; $d < date('Ym01', strtotime('first day of +1 month')); $d = date('Ymd', strtotime($d . ' +7 days'))) {
+            $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, ++$id, $d));
+        }
+
+        return $t;
+    }
+
+    private function dailyCount($table)
+    {
+        $n = 0;
+
+        foreach (\OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans($table) as $span) {
+            if ((strtotime($span['less_than']) - strtotime($span['start'])) / 86400 <= 1) { $n++; }
+        }
+
+        return $n;
+    }
+
+    /**
+     * A skip range is left exactly as it is, which is how the cube keeps the
+     * daily part of its lead.
+     *
+     * Those are ordinary one-day partitions, so every filter in
+     * repartitionTable() admits them: without this, changing granularity merges
+     * them away and rewrites live rows, and the next partition-rotate rewrites
+     * them again putting them back.
+     */
+    public function testASkipRangeKeepsItsPartitionsAtTheirOwnGranularity()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (['monthly', 'half-month', 'quarter-month'] as $granularity) {
+
+            $t      = $this->cubeShapedTable();
+            $before = $this->dailyCount($t);
+            $rows   = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'];
+
+            $this->assertGreaterThan(25, $before, "$granularity: fixture needs a daily front");
+
+            $skip = array(
+                'start'     => date('Ym01'),
+                'less_than' => date('Ym01', strtotime('first day of +1 month')),
+            );
+
+            $db->repartitionTable($t, $granularity, false, null, null, $skip);
+
+            $this->assertSame($before, $this->dailyCount($t),
+                "$granularity: the daily front must be untouched");
+            $this->assertSame($rows, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'],
+                "$granularity: no row may be lost");
+        }
+    }
+
+    /** Without the skip range the front is merged away -- the defect this fixes. */
+    public function testWithoutASkipRangeTheDailyFrontIsMergedAway()
+    {
+        $t      = $this->cubeShapedTable();
+        $before = $this->dailyCount($t);
+
+        \OWA\Core\CoreAPI::dbSingleton()->repartitionTable($t, 'monthly');
+
+        $this->assertLessThan($before, $this->dailyCount($t),
+            'this is the behaviour the skip range exists to prevent');
+    }
+
+    /**
+     * Planning is per contiguous run, so a hole is not bridged.
+     *
+     * A single target across the whole selection would merge partitions from
+     * either side of the skipped range into one, which would swallow it.
+     */
+    public function testEachContiguousRunIsPlannedOnItsOwn()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t  = $this->cubeShapedTable();
+
+        $skip = array(
+            'start'     => date('Ym01'),
+            'less_than' => date('Ym01', strtotime('first day of +1 month')),
+        );
+
+        $plan = $db->repartitionTable($t, 'quarter-month', true, null, null, $skip);
+
+        foreach ($plan['changed'] as $change) {
+            $from = explode(' -> ', $change)[0];
+
+            foreach (explode(',', $from) as $name) {
+                $this->assertGreaterThanOrEqual($skip['less_than'], substr($name, 1),
+                    'no rewrite may take a partition from inside the skipped range');
+            }
+        }
+
+        // And the count reported is what the table would really hold: the
+        // skipped partitions kept, plus the converted run.
+        $this->assertSame(
+            $this->dailyCount($t) + 4 * (count($db->getPartitionSpans($t)) - $this->dailyCount($t)),
+            $plan['planned'],
+            'planned must count the skipped front, not report the table without it'
+        );
+    }
+
+    /**
+     * Db::createTable() really honours an entity's requested lead.
+     *
+     * The entity-level test proves the ranges are right; this proves they reach
+     * the table. A hook that is declared and never consulted would pass the
+     * first and fail here.
+     */
+    public function testCreateTableHonoursAnEntitysRequestedLead()
+    {
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event');
+        $alias  = 'event_leadprobe_' . bin2hex(random_bytes(3));
+
+        $entity->setTableName($alias);
+        $table = $entity->getTableName();
+        $this->tables[] = $table;
+
+        $this->assertTrue((bool) $entity->createTable(), 'the probe table should be created');
+
+        $daily = 0;
+
+        foreach ($db->getPartitionSpans($table) as $span) {
+            if ((strtotime($span['less_than']) - strtotime($span['start'])) / 86400 <= 1) { $daily++; }
+        }
+
+        $this->assertGreaterThan(55, $daily,
+            'the cube is created with the daily front of its lead, not given it by a later rotate');
+
+        $this->assertSame('monthly', $db->inferPartitionGranularity($table),
+            'and it still reads as monthly, so the next rotate extends the lead monthly');
+    }
+
+    /**
+     * A table whose entity asks for nothing keeps the monthly lead.
+     *
+     * The hook is opt-in: only the cube needs a mixed lead, and every other
+     * fact table must be unaffected.
+     */
+    public function testAnEntityWithNoRequestedLeadStillGetsAMonthlyOne()
+    {
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
+        $alias  = 'event_raw_leadprobe_' . bin2hex(random_bytes(3));
+
+        $this->assertFalse(method_exists($entity, 'getDailyLeadMonths'),
+            'raw asks for nothing -- if that changes, this test is measuring the wrong thing');
+
+        $entity->setTableName($alias);
+        $table = $entity->getTableName();
+        $this->tables[] = $table;
+
+        $this->assertTrue((bool) $entity->createTable());
+
+        foreach ($db->getPartitionSpans($table) as $span) {
+            $this->assertGreaterThan(
+                1,
+                (strtotime($span['less_than']) - strtotime($span['start'])) / 86400,
+                'no partition of an ordinary fact table is created daily'
+            );
+        }
+    }
+
+    /**
+     * Creation and maintenance read the SAME declaration.
+     *
+     * The failure this guards against is a table created in one shape and kept
+     * in another: it happened twice, once in createTable() and once in
+     * partition-reorganize, because each had its own idea of what a fact table
+     * looks like. If these two ever disagree, the first partition-rotate after
+     * a fresh install starts rewriting partitions that were correct.
+     */
+    public function testCreationAndMaintenanceAgreeOnTheLeadsShape()
+    {
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event');
+        $alias  = 'event_agreeprobe_' . bin2hex(random_bytes(3));
+
+        $entity->setTableName($alias);
+        $table = $entity->getTableName();
+        $this->tables[] = $table;
+
+        $this->assertTrue((bool) $entity->createTable());
+
+        $spans = $db->getPartitionSpans($table);
+
+        $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
+        $cli   = $class->newInstanceWithoutConstructor();
+        $p     = $class->getProperty('params');
+        $p->setAccessible(true);
+        $p->setValue($cli, []);
+
+        foreach (['carvePlan', 'mergeablePeriods'] as $method) {
+            $m = new ReflectionMethod($cli, $method);
+            $m->setAccessible(true);
+
+            $this->assertSame([], $m->invoke($cli, $spans),
+                "$method found work to do on a table that was just created correctly");
+        }
+    }
+
+    /**
+     * The operator's granularity is tracked by INFERENCE, not by the declaration.
+     *
+     * Only half the lead's shape is declared: how much of it is daily, which is
+     * the entity's and fixed. The granularity of the rest is the operator's and
+     * is recorded nowhere but the shape of the table -- inferPartitionGranularity()
+     * reads it back off the last span. So after partition-reorganize the daily
+     * front is still daily, the table now reads as the new granularity, and
+     * partition-rotate has nothing to correct.
+     */
+    public function testAChangeOfGranularityIsPickedUpFromTheTableItself()
+    {
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event');
+        $alias  = 'event_granprobe_' . bin2hex(random_bytes(3));
+
+        $entity->setTableName($alias);
+        $table = $entity->getTableName();
+        $this->tables[] = $table;
+
+        $this->assertTrue((bool) $entity->createTable());
+        $this->assertSame('monthly', $db->inferPartitionGranularity($table),
+            'created monthly behind the front, since there was nothing to infer from');
+
+        $before = 0;
+
+        foreach ($db->getPartitionSpans($table) as $span) {
+            if ((strtotime($span['less_than']) - strtotime($span['start'])) / 86400 <= 1) { $before++; }
+        }
+
+        // What cmd=partition-reorganize does for a table with a daily front.
+        $skip = array(
+            'start'     => date('Ym01'),
+            'less_than' => date('Ym01', strtotime('first day of +' . \OWA\Core\Db::CUBE_DAILY_MONTHS . ' month')),
+        );
+
+        $db->repartitionTable($table, 'quarter-month', false, null, null, $skip);
+
+        $after = 0;
+
+        foreach ($db->getPartitionSpans($table) as $span) {
+            if ((strtotime($span['less_than']) - strtotime($span['start'])) / 86400 <= 1) { $after++; }
+        }
+
+        $this->assertSame($before, $after, 'the daily front survives the change');
+        $this->assertSame('quarter-month', $db->inferPartitionGranularity($table),
+            'and the table now reads as the granularity the operator chose');
+
+        // And rotate, which reads that inference, finds the table already right.
+        $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
+        $cli   = $class->newInstanceWithoutConstructor();
+        $p     = $class->getProperty('params');
+        $p->setAccessible(true);
+        $p->setValue($cli, []);
+
+        $spans = $db->getPartitionSpans($table);
+
+        $merge = new ReflectionMethod($cli, 'mergeablePeriods');
+        $merge->setAccessible(true);
+
+        $monthly = $merge->invoke($cli, $spans, 'monthly');
+        $quarter = $merge->invoke($cli, $spans, 'quarter-month');
+
+        $this->assertSame(array(), $monthly,
+            'no whole MONTH of the front has left the window');
+
+        $this->assertNotSame(array(), $quarter,
+            'but a quarter has, and that is the unit the table is now on');
+
+        $group = reset($quarter);
+
+        $this->assertSame(
+            7,
+            (int) round((strtotime($group['less_than']) - strtotime($group['start'])) / 86400),
+            'the merge releases a QUARTER, not a month -- the cycle follows the inference'
+        );
+
+        // Carving is unaffected: the front is still two months deep, and what
+        // the merge releases is what the next carve claims.
+        $carve = new ReflectionMethod($cli, 'carvePlan');
+        $carve->setAccessible(true);
+
+        $this->assertSame(array(), $carve->invoke($cli, $spans),
+            'two months of daily already, so nothing is carved until a merge frees room');
+    }
+
     /** An explicit range may still refine the tail, for an operator who means it. */
     public function testAnExplicitRangeCanStillRefineTheTail()
     {

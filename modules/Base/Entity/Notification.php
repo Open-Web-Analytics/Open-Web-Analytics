@@ -96,9 +96,9 @@ class Notification extends \OWA\Core\Entity {
          * paying for the derivation forever.
          *
          * TEXT, not VARCHAR(255), even though the value is short by design.
-         * How short is a TUNING decision -- EXCERPT_WORDS -- and this install
-         * runs with an empty sql_mode, so an excerpt that outgrew a VARCHAR
-         * would be truncated SILENTLY and mid-character rather than refused.
+         * How short is a TUNING decision -- EXCERPT_WORDS -- and a VARCHAR
+         * turns that tuning into a write failure the day someone raises it:
+         * under STRICT_ALL_TABLES an over-long excerpt is refused outright.
          * Making the column indifferent means the word count can be changed
          * later without anyone having to remember this column exists.
          */
