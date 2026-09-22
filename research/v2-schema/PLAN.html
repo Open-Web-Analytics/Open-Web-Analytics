@@ -1338,19 +1338,19 @@ never exchanged and takes its columns instantly for nothing.</p>
 
 <h3 id="s28"><span class="num">2.8</span>The partition cycle <span class="chip c-dec">Decided</span></h3>
 <p>A rebuild replaces a whole partition, so the partition scheme sets the unit of work: <strong>the
-rebuild window wants fine partitions and everything older wants coarse ones.</strong> That is a
-two-stage lead of three operations, and only the last costs anything.</p>
+rebuild window wants fine partitions and everything older wants coarse ones.</strong> That is one
+lead of mixed granularity, maintained by three operations, and only the last costs anything.</p>
 <div class="scroll"><table>
 <tr><th>when</th><th>operation</th><th>cost</th></tr>
 <tr><td>continuously, far ahead</td><td><code>REORGANIZE pmax INTO (monthly&hellip;, pmax)</code></td><td>metadata &mdash; <code>pmax</code> is empty</td></tr>
-<tr><td>shortly before a month goes current</td><td><code>REORGANIZE p2026MM INTO (&lt;fine partitions&gt;)</code></td><td>metadata &mdash; that month is still empty too</td></tr>
-<tr><td>after the month closes and its window expires</td><td><code>REORGANIZE &lt;fine&gt; INTO p2026MM</code></td><td><strong>rewrites the month, once</strong></td></tr>
+<tr><td>once the merge has released the room, one period at a time</td><td><code>REORGANIZE p2026MM INTO (&lt;daily partitions&gt;)</code></td><td>metadata &mdash; that period is still empty too</td></tr>
+<tr><td>after the period closes and its window expires</td><td><code>REORGANIZE &lt;daily&gt; INTO p2026MM</code></td><td><strong>rewrites the period, once</strong></td></tr>
 </table></div>
 <ul>
-<li><strong>Fine partitions are never carved from <code>pmax</code></strong>, but from an
-already-created, still-empty monthly partition shortly before it goes current. The daily lead then
-only has to cover the reorder window plus margin; the long lead stays monthly and far out, as 1.x
-runs it today.</li>
+<li><strong>Daily partitions are never carved from <code>pmax</code></strong>, but from an
+already-created, still-empty coarse partition inside the lead. The daily part then only has to
+cover the reorder window plus margin; the rest of the lead stays coarse and far out, as 1.x runs it
+today.</li>
 <li><strong>The split is forced.</strong> <code>extendPartitions()</code> fills
 <code>PARTITION_MONTHS_AHEAD</code> (12 months) at whatever granularity the table already uses, so
 a table taken wholly to quarter-month carries ~48 partitions of lead instead of 12, against a
@@ -1368,45 +1368,105 @@ started rather than over budget.</li>
 stalled rotation erodes the lead until rows reach <code>pmax</code>. It wants an alarm rather than
 a log line; there have been two scheduler-adjacent stalls already.</li>
 </ul>
-<h4><span class="num">2.8.1</span>Three tiers, and one of them is nobody&rsquo;s choice <span class="chip c-dec">Decided</span></h4>
+<h4><span class="num">2.8.1</span>One lead, two granularities <span class="chip c-dec">Decided</span></h4>
+
+<p><strong>There are not three tiers. There is one lead, twelve months of it, and
+its granularity varies along it.</strong> An ordinary fact table holds a single
+granularity across the whole lead. The cube holds a mix: daily for the first two
+months, the table&rsquo;s own granularity for the other ten. Calling those
+separate tiers implied separate leads and separate budgets, and both implications
+are false &mdash; the budget check is one number for one table.</p>
 
 <div class="scroll"><table>
-<thead><tr><th>Tier</th><th>Granularity</th><th>Who decides it</th></tr></thead>
+<thead><tr><th>Part of the lead</th><th>Granularity</th><th>Who decides it</th></tr></thead>
 <tbody>
-<tr><td><strong>Front</strong> &mdash; the rebuild window</td><td><strong>Daily, always</strong></td><td><strong>Nobody.</strong> Fixed</td></tr>
-<tr><td>Middle &mdash; the detail tier</td><td>as now: inferred per table from the existing layout</td><td>an operator, through <code>partition-reorganize</code></td></tr>
-<tr><td>Back &mdash; the tail</td><td>as now: whole-year blocks</td><td><code>partition_max_years_per_block</code>, as today</td></tr>
+<tr><td><strong>First two months</strong></td><td><strong>Daily, always</strong></td><td><strong>Nobody.</strong> <code>Db::CUBE_DAILY_MONTHS</code></td></tr>
+<tr><td>The other ten</td><td>as now: inferred per table from the existing layout</td><td>an operator, through <code>partition-reorganize</code></td></tr>
+<tr><td>Behind the lead &mdash; the tail</td><td>as now: whole-year blocks</td><td><code>partition_max_years_per_block</code>, as today</td></tr>
 </tbody></table></div>
 
-<p><strong>The front tier is not a setting, and that is the decision.</strong>
-<a href="#s25">&sect;2.5.1</a> says the interval and the granularity are one
-decision rather than two &mdash; so exposing the front granularity beside the
-cadence lets an install pick a monthly front tier and a quarter-hourly run,
-which is 96 rebuilds a day each rewriting up to a month. Nothing would report
-that; it would simply get slower through the month and stall near the end of
-it. Fixing the tier at daily makes the incoherent pair unrepresentable instead
-of merely discouraged, and removes a question an operator has no way to answer
-well.</p>
+<p><strong>How much of the lead is daily is not a setting, and that is the
+decision.</strong> <a href="#s25">&sect;2.5.1</a> says the interval and the
+granularity are one decision rather than two &mdash; so exposing the front
+granularity beside the cadence lets an install pick a monthly front and a
+quarter-hourly run, which is 96 rebuilds a day each rewriting up to a month.
+Nothing would report that; it would simply get slower through the month and stall
+near the end of it. Fixing it at daily makes the incoherent pair unrepresentable
+instead of merely discouraged. It is also a floor: an install that lowered it
+below the rebuild window would silently stop late events being folded in.</p>
 
-<p><strong>Only the cube has a front tier.</strong> Raw never needs one
-(<a href="#nA18">A.1.8</a>): its retention is a <code>DROP PARTITION</code> and
-it is never rebuilt, so it pays no merge and gains nothing from being finer at
-the front. v1&rsquo;s fact tables keep the two tiers they have. Carving every
-fact table would spend the open-file budget for nothing.</p>
+<p><strong>Only the cube&rsquo;s lead is part daily.</strong> Raw never needs it
+(<a href="#nA18">A.1.8</a>): its retention is a <code>DROP PARTITION</code> and it
+is never rebuilt, so it pays no merge and gains nothing from being finer at the
+front. v1&rsquo;s fact tables have no rebuild to make cheaper. Carving every fact
+table would spend the open-file budget for nothing.</p>
 
-<p class="note">What stays configurable is unchanged, which is the point of
-writing this down: the middle tier is still inferred per table and still changed
-only by <code>partition-reorganize</code>, and the tail still takes its block
-size from <code>partition_max_years_per_block</code>. One new tier, no new
-knobs.</p>
+<h4><span class="num">2.8.2</span>The carve waits for the merge <span class="chip c-dec">Decided</span></h4>
+
+<p><strong>This coupling is the whole of it, and getting it wrong is what made the
+first version cost 40% more partitions than it needed.</strong> Bound the carve by
+a month horizon and it fires on the 1st, while the merge cannot fire until the
+window has cleared the previous period&rsquo;s last day &mdash; about the 8th. For
+that week the daily part is three months wide, and the open-file budget has to be
+sized for a peak near 103 partitions to hold what only ever needs 60.</p>
+
+<p>Gating the carve on the daily part being shallower than two months couples
+them: the merge gives the partitions back and the carve takes them, in the same
+run, once per period. Driven day by day for a year against the real code:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>carve rule</th><th>daily partitions</th><th>total, peak</th><th>REORGANIZEs/yr</th></tr></thead>
+<tbody>
+<tr><td>whole periods to a month horizon</td><td>61 &rarr; 92</td><td>103</td><td>~12</td></tr>
+<tr><td>whole periods inside today+2mo</td><td>61 &rarr; 92</td><td>103</td><td>~12</td></tr>
+<tr><td>part-carve to today+2mo, weekly</td><td>61 &rarr; 97</td><td>108</td><td>~52</td></tr>
+<tr><td><strong>gated on the merge having released room</strong></td><td><strong>59&ndash;62, flat</strong></td><td><strong>74</strong></td><td>~12</td></tr>
+</tbody></table></div>
+
+<p><strong>Measured as months of coverage, not as a count of partitions.</strong>
+The daily part extends backwards as well as forwards &mdash; elapsed days stay
+daily until their period merges &mdash; so it is the span from its first daily
+partition to its last that has to be two months, not the distance ahead of today.
+A flat count of 60 does the same job on average and gets February wrong: after a
+31-day month merges, 31&nbsp;+&nbsp;28 is 59, and the gate lets a third month
+through.</p>
+
+<p><strong>The cycle is the table&rsquo;s own period, not the calendar
+month.</strong> With a quarter-month granularity the window clears a quarter, that
+quarter merges back to one partition, and the carve extends the daily part in the
+same run. A period is merged only when its daily partitions tile it completely
+&mdash; a partial merge would produce a span overlapping the days still separate,
+which the server refuses.</p>
+
+<p><strong>The partition taking writes is carved despite holding rows.</strong>
+Normally a partition with rows is left alone, because reorganizing it rewrites
+every one of them. But if today falls inside a coarse partition then the daily
+part has fallen behind &mdash; an install upgrading into it, or a run missed long
+enough for it to run out &mdash; and every rebuild until that period ends rewrites
+a whole period. Carving costs that rewrite once; leaving it costs the same rewrite
+on every run. Only that one: a past period holding rows is not being written to
+and merges shortly anyway.</p>
+
+<p class="note"><strong>One lead means one budget, and the daily part is the half
+that loses.</strong> <code>partition-rotate</code> computes the per-table budget
+once and passes the same number to the lead extension, the compaction and the
+carve; all three measure total partitions on that table. The lead extension runs
+first and its dozen coarse partitions always fit, so it is the sixty daily ones
+the budget refuses &mdash; leaving a table with a lead at a granularity that makes
+every rebuild period-sized. The run now says which half was dropped. The opposite
+priority is arguable, since the far lead only has to exist before writes reach it
+while the daily part governs rebuild cost on every run, and is <strong>not decided
+here</strong>.</p>
 
 <p class="note">Three month-counts govern partitioning in 1.x and only one is about granularity:
 <code>PARTITION_CUTS</code> is the granularity itself and is not a month count;
 <code>PARTITION_DETAIL_MONTHS</code> (36) is how long a period keeps it before compaction;
 <code>PARTITION_MONTHS_AHEAD</code> (12) is the lead. Granularity is never stored &mdash; it is
-inferred per table from the existing layout and only <code>partition-reorganize</code> changes it,
-which is the seam a two-stage scheme extends. <code>daily</code> was added in PR&nbsp;#1113; which
-tier the rebuild window uses is open (<a href="#s31">&sect;3.1</a>).</p>
+inferred per table from the existing layout, read from the LAST span, and only
+<code>partition-reorganize</code> changes it. That inference is why the carve must never touch the
+furthest-future span: carve it and the cube infers <code>daily</code>, and the next rotate extends
+twelve months of lead at daily &mdash; ~365 partitions, silently. <code>daily</code> was added in
+PR&nbsp;#1113.</p>
 
 <h3 id="s29"><span class="num">2.9</span>The visitor store <span class="chip c-dec">Decided</span></h3>
 <p><strong>This is not a fact table. It is a lookup with one job: stamping first
@@ -1833,7 +1893,7 @@ report off.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>10</td><td><strong><code>owa_event</code> and the denormalisation pass</strong> &mdash; the build into staging and a partition swap (<a href="#s27">&sect;2.7</a>), with the partition cycle and scheduling model <a href="#s15">&sect;1.5</a> brought with it.</td><td>Table, pass and <code>cmd=events-rebuild</code> built 21&nbsp;Sep. The partition cycle (<a href="#s28">&sect;2.8</a>) is not, so every run still rewrites a month. Measured and costed in <a href="#s27">&sect;2.7.2</a>&ndash;3</td></tr>
+<tr><td>10</td><td><strong><code>owa_event</code>, the reporting cube, and the build that fills it</strong> &mdash; the build into staging and a partition swap (<a href="#s27">&sect;2.7</a>), with the partition cycle and scheduling model <a href="#s15">&sect;1.5</a> brought with it.</td><td><strong>Done</strong>, PR&nbsp;#1120. Cube, build and <code>cmd=cube-rebuild</code>; columns are configuration and a step may compute in PHP (<a href="#s27">&sect;2.7.1</a>); the partition cycle (<a href="#s28">&sect;2.8</a>) is folded into <code>partition-rotate</code>, which now runs daily. Measured and costed in <a href="#s27">&sect;2.7.2</a>&ndash;3. Open: <code>search_terms</code> has no referrer fallback, the build ships unregistered, and budget priority between the two halves of the lead</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.5</span>Phase 8 &mdash; migrate, and prove it</h4>
@@ -2217,7 +2277,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tbody>
 <tr><td><strong>Client-side lateness</strong></td><td>How late a beacon can arrive — unload beacons behind a later hit, browser retries, bfcache restores, a device that was offline.</td><td>Measurement. It is not visible server-side, and it is the number the late-arrival window is derived from.</td></tr>
 <tr><td><strong>Late-arrival window</strong></td><td>How far back each pass reaches, and what becomes of an event landing outside it.</td><td>Falls out of the above, plus the file queue's drain cadence, which is configured rather than measured.</td></tr>
-<tr><td><strong>Rebuild granularity</strong> <span class="chip c-dec">Decided</span></td><td><strong>Daily, fixed, and not a setting.</strong> The measurement was taken (<a href="#s27">&sect;2.7.2</a>) and it argues for the finest tier available: the build cost tracks the partition's row count, mildly superlinearly, so a month-end rebuild under monthly granularity is the case that stalls.</td><td>Settled. The reason it is not configurable is <a href="#s28">&sect;2.8</a>: the interval and the granularity are one decision, so a free knob beside the cadence lets an install configure a stall that nothing reports.</td></tr>
+<tr><td><strong>Rebuild granularity</strong> <span class="chip c-dec">Decided</span></td><td><strong>Daily, fixed, and not a setting.</strong> The measurement was taken (<a href="#s27">&sect;2.7.2</a>) and it argues for the finest granularity available: the build cost tracks the partition's row count, mildly superlinearly, so a month-end rebuild under monthly granularity is the case that stalls.</td><td>Settled. The reason it is not configurable is <a href="#s28">&sect;2.8</a>: the interval and the granularity are one decision, so a free knob beside the cadence lets an install configure a stall that nothing reports. <strong>Built</strong> as the first two months of the one lead (<a href="#s28">&sect;2.8.1</a>).</td></tr>
 <tr><td><strong>Rebuild set</strong></td><td>Whether each pass rebuilds the whole late-arrival window or something narrower.</td><td>The whole window is the only provably correct option given a late flagged event; narrower needs a way to know which partitions changed.</td></tr>
 <tr><td><strong>Raw retention</strong></td><td>How long raw is kept.</td><td>A trade: storage against how far back the model can be re-derived.</td></tr>
 <tr><td><strong>Cost on a small install</strong></td><td>What a pass costs in practice. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, so the row count is not the problem.</td><td>Measuring against the shared RDS instance, which is the real constraint — eight WordPress sites are on it.</td></tr>
@@ -2310,7 +2370,11 @@ browser cookie physics that set the window: Chrome&rsquo;s 400-day cap, Safari&r
 and people changing device or clearing state. <strong>The theoretical hole is closed by the same
 mechanism that produced the TTL.</strong></p>
 <h4 id="nA18"><span class="num">A.1.8</span>Why reprocess cadence is bounded by the partition scheme</h4>
-<p>A swap replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact tables monthly for <code>partition_detail_months</code> (default 36) and then merges into blocks of up to <code>partition_max_years_per_block</code> (default 5), bounded by the server's open-file budget &mdash; each partition is a file. Carried over unchanged, rebuilding &ldquo;today&rdquo; would mean rebuilding the whole month: on the 31st every intraday pass rewrites 31 days, and the job's cost grows through the month for no benefit. <br>So the <strong>denormalised table wants a daily tier at the front</strong> &mdash; daily while a day is still being rebuilt, merged to monthly once it is final, and into year blocks later. That is three tiers and two merge steps rather than one, each merge a <code>REORGANIZE</code> that rewrites rows, but each bounded: one day's worth daily, one month's worth monthly. <br><strong>Which gives the late-arrival window a concrete meaning</strong> rather than a policy: it is the point at which a day's partition stops being rebuilt and is merged. An event landing after that is outside the window by definition. Setting that number sets the reprocess cost, the freshness, and the merge schedule together &mdash; it is the one dial worth getting right. <br><strong>The raw table needs none of this.</strong> If raw is pruned at a retention horizon rather than compacted, it only ever needs <code>DROP PARTITION</code> &mdash; free on MySQL and on columnar &mdash; so it can stay daily throughout and never pay a merge at all. Tiering exists to serve query efficiency, and nothing queries raw except realtime, which wants the recent end.</p>
+<p>A swap replaces a whole partition, so <em>the partition is the unit of work</em>. 1.x partitions fact tables monthly for <code>partition_detail_months</code> (default 36) and then merges into blocks of up to <code>partition_max_years_per_block</code> (default 5), bounded by the server's open-file budget &mdash; each partition is a file. Carried over unchanged, rebuilding &ldquo;today&rdquo; would mean rebuilding the whole month: on the 31st every intraday pass rewrites 31 days, and the job's cost grows through the month for no benefit. <br>So the <strong>denormalised table wants a daily tier at the front</strong> &mdash; daily while a day is still being rebuilt, merged to monthly once it is final, and into year blocks later. That is three tiers and two merge steps rather than one, each merge a <code>REORGANIZE</code> that rewrites rows, but each bounded: one day's worth daily, one month's worth monthly. <br><strong>Which gives the late-arrival window a concrete meaning</strong> rather than a policy: it is the point at which a day's partition stops being rebuilt and is merged. An event landing after that is outside the window by definition. Setting that number sets the reprocess cost, the freshness, and the merge schedule together &mdash; it is the one dial worth getting right. <br><strong>The raw table needs none of this.</strong> If raw is pruned at a retention horizon rather than compacted, it only ever needs <code>DROP PARTITION</code> &mdash; free on MySQL and on columnar &mdash; so it can stay daily throughout and never pay a merge at all. Tiering exists to serve query efficiency, and nothing queries raw except realtime, which wants the recent end.
+<br><strong>&ldquo;Three tiers&rdquo; is how this note framed it and is superseded by
+<a href="#s28">&sect;2.8.1</a>:</strong> what was built is one twelve-month lead whose granularity
+varies along it, not three schemes with three leads. The mechanics above are unchanged; the framing
+mattered because it implied a budget per tier, and there is one budget per table.</p>
 <h4 id="nA19"><span class="num">A.1.9</span>The rebuild-and-swap idiom ports to columnar stores</h4>
 <p>The pass rebuilds a partition and swaps it into place, and that idiom is not a MySQL trick that has to be abandoned if the reporting store changes. Both tables key on <code>yyyymmdd</code>; rebuild one partition and swap it. MySQL has <code>ALTER TABLE &hellip; EXCHANGE PARTITION</code>; ClickHouse has <code>ALTER TABLE dest REPLACE PARTITION p FROM staging</code>, which is <em>atomic</em> and exists precisely for zero-downtime reloading &mdash; stronger than MySQL's, not weaker. Delta Lake's <code>replaceWhere</code> is looser still: selective overwrite by arbitrary predicate, with no requirement that the table be partitioned on those columns. (Iceberg unchecked; BigQuery's truncate-then-load pattern is established but its mechanics were not verified.) So the rebuild-and-swap idiom is not a MySQL trick abandoned at the columnar boundary &mdash; it is the native idiom on the other side. <br><strong>Staging must mirror the target, on both engines.</strong> Both MySQL and ClickHouse require the staging table to mirror the target &mdash; same structure, partition key, ordering and primary key &mdash; so staging carries no convenience columns and a schema change must alter both in step. MySQL additionally refuses the exchange where foreign keys are involved, which the denormalised table would not have. <br><strong><code>DROP PARTITION</code> is metadata only; <code>REORGANIZE</code> rewrites every row it touches.</strong> 1.x already relies on this in production: <code>PartitionRotateCli</code> notes that &ldquo;drops are not counted at all: <code>DROP PARTITION</code> discards a file and returns&rdquo;, while extending the lead or merging is a <code>REORGANIZE</code> that rewrites rows. Columnar stores are the same shape only more so &mdash; the partition <em>is</em> the storage unit, so a drop unlinks files rather than scanning. Retention is therefore cheap on both; what is expensive on both is updating rows, which this design does not do.</p>
 <h4 id="nA110"><span class="num">A.1.10</span>What the report work left on v2</h4>
