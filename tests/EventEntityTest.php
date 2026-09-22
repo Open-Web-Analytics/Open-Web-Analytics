@@ -144,6 +144,45 @@ final class EventEntityTest extends TestCase
         }
     }
 
+    /**
+     * Each kind of table says how many partitions its lead needs.
+     *
+     * The budget cannot be divided equally between them: a cube wants about
+     * seventy-three -- two months of daily plus the coarse remainder -- where an
+     * ordinary fact table wants a dozen. An equal share gives the small tables
+     * far more than they use and the cube less than it needs, and refuses
+     * configurations the server can comfortably hold.
+     */
+    public function testEachKindOfTableDeclaresWhatItsLeadNeeds(): void
+    {
+        $cube = $this->event();
+        $raw  = $this->raw();
+
+        $this->assertGreaterThan(55, $cube->partitionsNeeded('monthly'),
+            'the cube carries two months of daily at the front');
+        $this->assertLessThan(20, $raw->partitionsNeeded('monthly'),
+            'raw carries one granularity across its whole lead');
+
+        $this->assertGreaterThan(
+            $raw->partitionsNeeded('monthly') * 3,
+            $cube->partitionsNeeded('monthly'),
+            'which is why one allowance cannot be shared equally between them'
+        );
+
+        // A finer middle tier costs more, and the count says so.
+        $this->assertGreaterThan(
+            $cube->partitionsNeeded('monthly'),
+            $cube->partitionsNeeded('quarter-month'),
+            'the need follows the granularity the rest of the lead is cut at'
+        );
+    }
+
+    /** A table that is not partitioned needs nothing. */
+    public function testAnUnpartitionedTableNeedsNoPartitions(): void
+    {
+        $this->assertSame(0, owa_coreAPI::entityFactory('base.site')->partitionsNeeded('monthly'));
+    }
+
     public function testItIsNotAFactTable(): void
     {
         $this->assertNotInstanceOf(\OWA\Core\Entity\FactTable::class, $this->event());

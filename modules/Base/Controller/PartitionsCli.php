@@ -526,8 +526,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         $entity = $this->entityFor( $table );
 
-        return ( $entity && method_exists( $entity, 'getDailyLeadMonths' ) )
-            ? (int) $entity->getDailyLeadMonths() : 0;
+        return $entity ? (int) $entity->getDailyLeadMonths() : 0;
     }
 
     /**

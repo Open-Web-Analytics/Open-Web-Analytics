@@ -3802,8 +3802,7 @@ class Db extends \OWA\Core\Base {
              * state the daily part exists to avoid -- and a rotate that is not
              * scheduled never comes.
              */
-            $daily = method_exists( $entity, 'getDailyLeadMonths' )
-                ? (int) $entity->getDailyLeadMonths() : 0;
+            $daily = (int) $entity->getDailyLeadMonths();
 
             $ranges = self::makeLeadRanges( $daily );
 
