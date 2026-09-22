@@ -55,17 +55,6 @@ class Dimensions {
     const KEY_PATTERN = '/^[A-Za-z][A-Za-z0-9_]{0,39}$/';
 
     /**
-     * MySQL's row DEFINITION limit, which is what actually binds.
-     *
-     * Not InnoDB's ~8KB page limit -- both raise error 1118, which is why the
-     * two get confused. The page limit does not bind because DYNAMIC pushes
-     * long values off-page. Measured: a 73-column cube took exactly 16 more
-     * VARCHAR(255), 64 more VARCHAR(64) or 114 more VARCHAR(36), and this
-     * number predicts all three.
-     */
-    const MAX_ROW_BYTES = 65535;
-
-    /**
      * How many dimensions one Property may register.
      *
      * A FLAT CAP, not a byte sum, because a byte sum is not a number anyone can
@@ -74,11 +63,19 @@ class Dimensions {
      * one is -- 15 at VARCHAR(255) against 106 at VARCHAR(36) on the same cube.
      * Twenty of a fixed width is a promise that stays true.
      *
-     * Twenty fits with room to spare: 20 x VARCHAR(64) is 3,860 bytes against
-     * the 11,625 the cube has left, and 20 user-scoped ones -- which carry a
-     * timestamp each -- is 4,020. The byte budget stays as a backstop for the
-     * day a release widens the cube enough to matter, and says so when it
-     * refuses; it is no longer the thing an operator runs into.
+     * Twenty fits with room to spare, measured against the server rather than
+     * argued: a cube spends 53,026 of MySQL's 65,535-byte row limit before any
+     * dimension, and twenty user-scoped ones -- the expensive shape, since each
+     * carries a set-time stamp -- need 4,020 of the 12,509 left.
+     *
+     * NOTHING HERE CHECKS THAT, DELIBERATELY. It would take a future release
+     * adding some eight thousand bytes of columns to the cube before twenty
+     * stopped fitting, and if that ever happens the server refuses the ALTER,
+     * reconcile() records the refusal against the registration and the build
+     * carries on regardless -- which is the same outcome arithmetic here would
+     * produce, for the cost of a model of MySQL's row accounting that has to
+     * stay true. The server already knows; asking it is cheaper than
+     * predicting it.
      */
     const MAX_PER_PROPERTY = 20;
 
@@ -87,8 +84,8 @@ class Dimensions {
      *
      * Between GA's two caps -- it truncates a user property at 36 characters
      * and an event parameter at 100 -- and chosen as one number because a
-     * per-registration width is a knob whose only effect is to spend a budget
-     * the cap has already made irrelevant. The build clamps to it, so a longer
+     * per-registration width is a knob whose only effect is to spend room the
+     * cap has already made irrelevant. The build clamps to it, so a longer
      * value is truncated rather than aborting the partition.
      */
     const DIMENSION_LENGTH = 64;
@@ -248,14 +245,14 @@ class Dimensions {
      * @param int|string $property_id
      * @param array      $requests  each ['key','scope','type','label']
      * @return array ['ok' => bool, 'error' => string, 'registered' => array,
-     *                'columns' => string[], 'bytes' => int]
+     *                'columns' => string[]]
      */
     public static function register( $property_id, array $requests ) {
 
         $fail = function ( $message ) {
 
             return array( 'ok' => false, 'error' => $message,
-                'registered' => array(), 'columns' => array(), 'bytes' => 0 );
+                'registered' => array(), 'columns' => array() );
         };
 
         $table = Cubes::tableFor( $property_id );
@@ -314,22 +311,6 @@ class Dimensions {
             return $fail( 'Nothing to register.' );
         }
 
-        /*
-         * PRICED HERE AND AGAIN AT APPLY TIME, and the two answer different
-         * questions. This one is for the person: refusing "1,020 bytes needed,
-         * 800 left" while they are looking at the screen is the whole value of
-         * it, and it costs two introspection queries. It cannot be the
-         * authority, because another registration made between now and the
-         * reconcile would invalidate it -- two that each fit alone need not fit
-         * together. The check under the lock is the one that decides.
-         */
-        $budget = self::budget( $table, $definitions );
-
-        if ( ! $budget['ok'] ) {
-
-            return $fail( $budget['error'] );
-        }
-
         foreach ( $validated as $row ) {
 
             $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' );
@@ -360,7 +341,6 @@ class Dimensions {
             'error'      => '',
             'registered' => $validated,
             'columns'    => array_keys( $definitions ),
-            'bytes'      => $budget['after'],
         );
     }
 
@@ -479,39 +459,23 @@ class Dimensions {
             return $nothing;
         }
 
-        /*
-         * The authoritative budget check. The one made at registration was for
-         * the person and could not see a second registration made after it;
-         * this one sees every pending column at once, which is the case that
-         * actually overflows.
-         */
         $skipped = array();
-
-        if ( $add ) {
-
-            $budget = self::budget( $table, $add );
-
-            if ( ! $budget['ok'] ) {
-
-                /*
-                 * Refuse the ADDS and still do the DROPS, because dropping is
-                 * what makes room. An operator who over-registered de-registers
-                 * something and the next reconcile fits.
-                 */
-                foreach ( array_keys( $add ) as $column ) {
-
-                    $skipped[ $column ] = $budget['error'];
-                }
-
-                $add = array();
-            }
-        }
 
         if ( $add || $drop ) {
 
+            /*
+             * ASKED, NOT PREDICTED. The server enforces a row-size limit and
+             * knows its own accounting; modelling it here would be a second
+             * copy of that arithmetic to keep true, guarding a case twenty
+             * dimensions cannot reach. A refusal is recorded against the
+             * registrations and the build carries on without them.
+             */
             if ( ! $db->alterColumnsRebuilding( $table, $add, $drop ) ) {
 
-                $message = sprintf( 'Altering %s failed.', $table );
+                $message = sprintf(
+                    'Altering %s was refused. If the server reported 1118, the cube has no '
+                  . 'room left in its row for another column and something has to be '
+                  . 'de-registered first.', $table );
 
                 foreach ( array_keys( $add ) as $column ) {
 
@@ -616,75 +580,6 @@ class Dimensions {
     }
 
     /**
-     * Whether the cube's row can afford these columns.
-     *
-     * Priced rather than attempted, because the attempt costs a full table
-     * rebuild before the server refuses -- and because "row size too large"
-     * names neither the limit that was hit nor what would fit instead.
-     *
-     * @param string $table
-     * @param array  $definitions  column => type definition
-     * @return array ['ok','error','after']
-     */
-    public static function budget( $table, array $definitions ) {
-
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $before = $db->tableRowBytes( $table );
-
-        // Null is "this backend has no such limit, or cannot tell". Let the
-        // server decide rather than refusing on arithmetic we do not have.
-        if ( $before === null ) {
-
-            return array( 'ok' => true, 'error' => '', 'after' => 0 );
-        }
-
-        $maxlen = (int) $db->tableCharsetMaxLen( $table );
-        $after  = $before;
-
-        foreach ( $definitions as $definition ) {
-
-            $after += self::definitionRowBytes( $definition, $maxlen );
-        }
-
-        if ( $after <= self::MAX_ROW_BYTES ) {
-
-            return array( 'ok' => true, 'error' => '', 'after' => $after );
-        }
-
-        $spare = self::MAX_ROW_BYTES - $before;
-
-        return array( 'ok' => false, 'after' => $after, 'error' => sprintf(
-            '%s has %s bytes of its %s-byte row left and these columns need %s. '
-          . 'A narrower string buys more dimensions: at this table\'s %d byte(s) per '
-          . 'character, %d more VARCHAR(255) would fit, or %d more VARCHAR(36).',
-            $table, number_format( $spare ), number_format( self::MAX_ROW_BYTES ),
-            number_format( $after - $before ), $maxlen,
-            intdiv( $spare, self::definitionRowBytes( 'VARCHAR(255)', $maxlen ) ),
-            intdiv( $spare, self::definitionRowBytes( 'VARCHAR(36)', $maxlen ) ) ) );
-    }
-
-    /**
-     * What one column definition costs against the row allowance.
-     *
-     * @param string $definition
-     * @param int    $maxlen  bytes per character on the table
-     * @return int
-     */
-    public static function definitionRowBytes( $definition, $maxlen ) {
-
-        if ( preg_match( '/^VARCHAR\((\d+)\)/i', (string) $definition, $m ) ) {
-
-            return \OWA\Core\Db::columnRowBytes( 'varchar', (int) $m[1] * $maxlen );
-        }
-
-        // Everything else this can produce is a fixed width, and the type name
-        // is the first word of the definition.
-        $type = strtolower( strtok( (string) $definition, ' (' ) );
-
-        return \OWA\Core\Db::columnRowBytes( $type, 0 );
-    }
-
-    /**
      * One registration request, checked.
      *
      * @param array $request
@@ -725,7 +620,7 @@ class Dimensions {
         }
 
         /*
-         * THE CAP IS THE LIMIT AN OPERATOR MEETS, not the row budget. Counted
+         * THE CAP IS THE LIMIT, and the only one. Counted
          * across what is already registered AND what this call has queued, so
          * a batch cannot step over it one request at a time.
          */

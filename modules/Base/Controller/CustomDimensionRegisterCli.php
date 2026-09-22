@@ -18,8 +18,9 @@ namespace OWA\Module\Base\Controller;
  *
  * TWENTY PER PROPERTY, each VARCHAR(64). A flat cap rather than a byte sum,
  * because a byte sum is not a number anyone can plan against -- it moves
- * whenever a release adds a column to the cube. The row budget is still checked
- * underneath, as a backstop.
+ * whenever a release adds a column to the cube. Nothing here prices the row:
+ * that twenty still fit is a fact about the schema, checked by a test rather
+ * than on every registration.
  *
  * REGISTERING RECORDS IT; THE COLUMN ARRIVES SEPARATELY. Adding it is a full
  * table rebuild -- 4.4 seconds on an empty 73-partition cube, 11.3 at 1.5M rows
@@ -98,11 +99,8 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
 
         $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $property_id );
 
-        \OWA\Core\CoreAPI::notice( sprintf(
-            'Recorded %d dimension(s) for %s; the row will then spend %s of %s bytes.',
-            count( $result['registered'] ), $table,
-            number_format( $result['bytes'] ),
-            number_format( \OWA\Module\Base\Classes\Cube\Dimensions::MAX_ROW_BYTES ) ) );
+        \OWA\Core\CoreAPI::notice( sprintf( 'Recorded %d dimension(s) for %s.',
+            count( $result['registered'] ), $table ) );
 
         if ( $this->getParam( 'defer' ) ) {
 

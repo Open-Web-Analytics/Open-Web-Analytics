@@ -149,95 +149,6 @@ final class CustomDimensionsTest extends TestCase
             Dimensions::definitionFor(CustomDimension::TYPE_INTEGER, 0));
     }
 
-    /**
-     * The row budget, against the numbers it was derived from.
-     *
-     * Adding VARCHAR columns to a copy of a real 73-column cube until the
-     * server refused gave 16 at VARCHAR(255), 64 at VARCHAR(64) and 114 at
-     * VARCHAR(36) on a three-byte charset. This is the arithmetic that predicts
-     * all three, and it predicting them is the only reason to trust a refusal
-     * that happens before the ALTER rather than during it.
-     */
-    public function testTheRowBudgetMatchesWhatTheServerActuallyAllows(): void
-    {
-        // 53,022 was that cube's measured row cost.
-        $spare = Dimensions::MAX_ROW_BYTES - 53022;
-
-        foreach ([255 => 16, 64 => 64, 36 => 114] as $length => $expected) {
-            $cost = Dimensions::definitionRowBytes("VARCHAR($length)", 3);
-
-            $this->assertSame($expected, intdiv($spare, $cost),
-                "a 73-column cube took exactly $expected more VARCHAR($length)");
-        }
-    }
-
-    /** A wider charset costs proportionally more, which is why it is read. */
-    public function testAWiderCharsetCostsMore(): void
-    {
-        $this->assertGreaterThan(
-            Dimensions::definitionRowBytes('VARCHAR(255)', 3),
-            Dimensions::definitionRowBytes('VARCHAR(255)', 4),
-            'a VARCHAR(255) is 1020 bytes on utf8mb4 and 765 on utf8mb3');
-    }
-
-    /**
-     * A TEXT or BLOB column costs a POINTER, not its declared width.
-     *
-     * The trap this closes, and it was a real one: information_schema reports a
-     * TEXT column's CHARACTER_OCTET_LENGTH as its whole capacity -- 65,535 for
-     * TEXT and over four billion for LONGTEXT -- so charging the declared width
-     * prices a single one past the entire row allowance, and every registration
-     * against a cube with one is refused for a budget that is not actually
-     * spent. Measured: a table takes 197 off-page columns whatever their
-     * declared size, where it takes 85 VARCHAR(255), so what bounds them is a
-     * different limit from this one.
-     *
-     * The cube already has a JSON column -- `params`, inherited from raw -- and
-     * JSON is stored the same way.
-     */
-    public function testAnOffPageColumnIsPricedAsAPointer(): void
-    {
-        foreach (['text', 'mediumtext', 'longtext', 'blob', 'longblob', 'json'] as $type) {
-            $this->assertSame(12, \OWA\Core\Db::columnRowBytes($type, 65535), $type);
-            $this->assertSame(12, \OWA\Core\Db::columnRowBytes($type, 4294967295), $type);
-        }
-
-        // And a VARCHAR still costs its width, which is the whole distinction.
-        $this->assertGreaterThan(700, \OWA\Core\Db::columnRowBytes('varchar', 765));
-    }
-
-    /**
-     * The corrected arithmetic against what the server really allows.
-     *
-     * Re-validated after the off-page fix, with and without a TEXT column
-     * present: a copy of the 73-column cube took exactly 15 more VARCHAR(255)
-     * and 106 more VARCHAR(36) either way, and this predicts both.
-     */
-    public function testTheBudgetIsUnmovedByAnOffPageColumn(): void
-    {
-        $varchars = 40 * \OWA\Core\Db::columnRowBytes('varchar', 765);
-
-        $this->assertSame(
-            $varchars + 12,
-            $varchars + \OWA\Core\Db::columnRowBytes('text', 65535),
-            'adding a TEXT column moves the budget by twelve bytes, not by sixty-five thousand');
-    }
-
-    public function testAFixedWidthTypeIsPricedAsOne(): void
-    {
-        $this->assertSame(8, Dimensions::definitionRowBytes('BIGINT NULL', 4));
-        $this->assertSame(8, Dimensions::definitionRowBytes('DOUBLE NULL', 4));
-    }
-
-    public function testTheBudgetRefusalSaysWhatWouldFitInstead(): void
-    {
-        $result = Dimensions::budget('owa_no_such_table_for_budget', ['cd_x' => 'VARCHAR(255) NULL']);
-
-        // Unknown table: no arithmetic to refuse on, so the server decides.
-        $this->assertTrue($result['ok'],
-            'an unpriceable table lets the ALTER be the judge rather than refusing blind');
-    }
-
     /** There is no session scope, and the refusal says why. */
     public function testSessionScopeIsRefusedWithItsReason(): void
     {
@@ -290,23 +201,34 @@ final class CustomDimensionsTest extends TestCase
     }
 
     /**
-     * Twenty of them fit the cube's row with room to spare, which is the whole
-     * reason the cap can be the limit instead of the bytes.
+     * NOTHING HERE PRICES THE ROW, and that is the decision.
+     *
+     * MySQL enforces a row-size limit and refuses an ALTER that would cross it.
+     * Predicting that here would be a second copy of the server's own
+     * arithmetic to keep true -- and it was wrong twice while being written,
+     * once charging a TEXT column its full declared width of 65,535 bytes
+     * instead of the twelve it actually costs. It guarded a case twenty
+     * dimensions cannot reach: a cube spends 53,026 of the 65,535 before any
+     * dimension, and twenty user-scoped ones need 4,020 of the 12,509 left.
+     *
+     * So the server decides, reconcile() records the refusal against the
+     * registrations, and the build carries on without them.
      */
-    public function testTwentyOfThemFitTheRowComfortably(): void
+    public function testTheRowSizeIsLeftToTheServer(): void
     {
-        // A user-scoped one is the expensive shape: it carries a timestamp too.
-        $each = Dimensions::definitionRowBytes(
-                    'VARCHAR(' . Dimensions::DIMENSION_LENGTH . ')', 3)
-              + \OWA\Core\Db::columnRowBytes('bigint', 0);
+        $body = file_get_contents(
+            __DIR__ . '/../modules/Base/Classes/Cube/Dimensions.php');
 
-        $needed = Dimensions::MAX_PER_PROPERTY * $each;
+        foreach (['MAX_ROW_BYTES', 'definitionRowBytes', 'tableRowBytes'] as $gone) {
+            $this->assertStringNotContainsString($gone, $body,
+                "$gone was removed; predicting the server's row accounting is not this "
+              . 'class\'s job');
+        }
 
-        // Measured: the cube spends 53,910 of 65,535 before any dimension.
-        $this->assertLessThan(65535 - 53910, $needed,
-            'twenty user-scoped dimensions have to fit what the cube leaves');
+        // What replaced it: the refusal is caught and explained.
+        $this->assertStringContainsString('1118', $body,
+            'a refused ALTER should name the error an operator will see');
     }
-
     /** The width is fixed, so there is no knob to get wrong. */
     public function testTheWidthIsNotAnOption(): void
     {

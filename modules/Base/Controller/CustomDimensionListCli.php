@@ -13,9 +13,8 @@ namespace OWA\Module\Base\Controller;
  *   cmd=custom-dimension-list                 every Property that has one
  *   cmd=custom-dimension-list property=<id>   just that Property's
  *
- * The room is worth printing beside the list. The cap is the number an operator
- * plans against; the row budget underneath it is a backstop, and is shown so
- * that a refusal from it is never a surprise.
+ * The count is printed beside the list, because how many are left is the one
+ * thing a person needs before deciding whether to register another.
  */
 class CustomDimensionListCli extends CustomDimensionsCli {
 
@@ -61,7 +60,7 @@ class CustomDimensionListCli extends CustomDimensionsCli {
                 \OWA\Core\CoreAPI::notice( $this->describe( $row ) );
             }
 
-            $this->reportRoom( $table, count( $rows ) );
+            $this->reportRoom( count( $rows ) );
         }
 
         \OWA\Core\CoreAPI::notice( sprintf( '%d dimension(s) across %d cube(s).',
@@ -69,49 +68,24 @@ class CustomDimensionListCli extends CustomDimensionsCli {
     }
 
     /**
-     * How many of the twenty are used, and how the row is doing underneath.
+     * How many of the cap are used.
      *
-     * The cap is what an operator plans against; the bytes are the backstop and
-     * are worth a line only so that a refusal from them is not a surprise. They
-     * were the headline until a flat cap replaced them, and the reason they
-     * could not stay one is that the number moves whenever a release adds a
-     * column to the cube.
+     * There was a second line here reporting how much of MySQL's row-size limit
+     * the cube had left. It went because it was answering a question nobody has
+     * to ask: twenty dimensions need 4,020 bytes of the 12,509 a cube leaves, so
+     * the cap is reached long before the row is, and reporting both invited the
+     * reader to work out which one was binding when the answer is always the
+     * cap.
      *
-     * @param string $table
-     * @param int    $used
+     * @param int $used
      * @return void
      */
-    protected function reportRoom( $table, $used ) {
+    protected function reportRoom( $used ) {
 
         $cap = \OWA\Module\Base\Classes\Cube\Dimensions::MAX_PER_PROPERTY;
 
         \OWA\Core\CoreAPI::notice( sprintf( '  %d of %d used, %d left.',
             $used, $cap, max( 0, $cap - $used ) ) );
-
-        $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $bytes = $db->tableRowBytes( $table );
-
-        if ( $bytes === null ) {
-
-            return;
-        }
-
-        $spare  = \OWA\Module\Base\Classes\Cube\Dimensions::MAX_ROW_BYTES - $bytes;
-        $maxlen = (int) $db->tableCharsetMaxLen( $table );
-        $each   = \OWA\Module\Base\Classes\Cube\Dimensions::definitionRowBytes(
-            sprintf( 'VARCHAR(%d)', \OWA\Module\Base\Classes\Cube\Dimensions::DIMENSION_LENGTH ),
-            $maxlen );
-
-        $affordable = intdiv( $spare, max( 1, $each ) );
-
-        \OWA\Core\CoreAPI::notice( sprintf(
-            '  row: %s of %s bytes left, which is %d more at VARCHAR(%d)%s',
-            number_format( $spare ),
-            number_format( \OWA\Module\Base\Classes\Cube\Dimensions::MAX_ROW_BYTES ),
-            $affordable, \OWA\Module\Base\Classes\Cube\Dimensions::DIMENSION_LENGTH,
-            $affordable >= ( $cap - $used )
-                ? ' -- so the cap is what binds, not the row.'
-                : ' -- LESS THAN THE CAP ALLOWS, so the row is what binds here.' ) );
     }
 }
 

@@ -584,66 +584,74 @@ final class CustomDimensionBuildTest extends TestCase
     }
 
     /**
-     * TWO THAT EACH FIT ALONE NEED NOT FIT TOGETHER, and only the check made
-     * under the lock can see it.
+     * AN ALTER THE SERVER REFUSES MARKS THE REGISTRATION AND SPARES THE BUILD.
      *
-     * The hole is exact: the advisory check at registration prices the cube as
-     * it is NOW, and a pending registration has no column yet -- so two
-     * registrations made separately both pass it, and the reconcile is the
-     * first moment anything sees them together. That is why the second check
-     * exists and why it is the authoritative one.
+     * Nothing predicts whether a column will fit -- MySQL enforces its own row
+     * limit and refusing to duplicate that arithmetic is deliberate (see
+     * CustomDimensionsTest::testTheRowSizeIsLeftToTheServer). So the case that
+     * has to work is the one where the server says no, and what matters is that
+     * a Property does not lose its reporting over it.
      *
-     * Reproduced by padding the cube until it has room for one more and then
-     * registering two. With the twenty-dimension cap in place this is no longer
-     * something an operator can reach by registering a lot -- it needs the cube
-     * itself to have grown -- which is the cap doing its job, and is exactly
-     * why the path still has to work.
+     * Provoked by padding the cube until one more column will not fit, which
+     * takes a deliberate act now that twenty dimensions need 4,020 bytes of the
+     * 12,509 a cube leaves.
      */
-    public function testTwoRegistrationsThatFitAloneButNotTogetherFailUnderTheLock(): void
+    public function testAnAlterTheServerRefusesIsRecordedAndDoesNotBreakTheBuild(): void
     {
-        $db     = owa_coreAPI::dbSingleton();
-        $maxlen = (int) $db->tableCharsetMaxLen($this->cube());
-        $each   = Dimensions::definitionRowBytes(
-            'VARCHAR(' . Dimensions::DIMENSION_LENGTH . ')', $maxlen);
+        $db = owa_coreAPI::dbSingleton();
 
-        // Leave room for exactly one more dimension.
-        $spare = Dimensions::MAX_ROW_BYTES - (int) $db->tableRowBytes($this->cube());
-        $pad   = intdiv($spare - $each - 8, $maxlen);
+        /*
+         * Fill the row by ASKING rather than by arithmetic, which is the same
+         * rule the code under test follows: add filler columns until the server
+         * refuses one, and the row is then provably full whatever the cube's
+         * shape has become since this was written.
+         */
+        $filler = [];
 
-        $this->assertTrue(
-            $db->alterColumnsRebuilding($this->cube(), ['filler' => "VARCHAR($pad) NULL"]),
-            'padding the cube to leave room for one');
-
-        // Each passes its own advisory check, because neither column exists yet.
-        foreach (['first', 'second'] as $key) {
-            $result = Dimensions::register(self::PROPERTY, [['key' => $key, 'scope' => 'event']]);
-
-            $this->assertTrue($result['ok'], "$key: " . $result['error']);
+        for ($i = 0; $i < 60; $i++) {
+            $filler['filler' . $i] = 'VARCHAR(64) NULL';
         }
+
+        $this->assertTrue($db->alterColumnsRebuilding($this->cube(), $filler),
+            'a first batch of filler should fit');
+
+        while (count($filler) < 200) {
+            $one = 'filler' . count($filler);
+
+            if (!$db->alterColumnsRebuilding($this->cube(), [$one => 'VARCHAR(64) NULL'])) {
+                break;
+            }
+
+            $filler[$one] = 'VARCHAR(64) NULL';
+        }
+
+        $this->assertLessThan(200, count($filler),
+            'the server should have refused one before we ran out of patience');
+
+        $result = Dimensions::register(self::PROPERTY, [['key' => 'doomed', 'scope' => 'event']]);
+
+        $this->assertTrue($result['ok'], 'registering is a write and still succeeds');
 
         $reconciled = Dimensions::reconcile(self::PROPERTY);
 
-        $this->assertNotEmpty($reconciled['skipped'],
-            'the reconcile is the first thing to see both at once');
-        $this->assertStringContainsString('row left', reset($reconciled['skipped']));
+        $this->assertFalse($reconciled['ok']);
+        $this->assertNotEmpty($reconciled['skipped']);
+        $this->assertStringContainsString('1118', reset($reconciled['skipped']),
+            'and names the error an operator will actually see');
 
-        $states = [$this->registration('first')['state'], $this->registration('second')['state']];
+        $this->assertSame('failed', $this->registration('doomed')['state']);
+        $this->assertNotEmpty($this->registration('doomed')['state_message'],
+            'with the reason, because whoever registered it is long gone');
 
-        sort($states);
-
-        $this->assertSame(['failed', 'failed'], $states,
-            'the batch is refused whole rather than half-applied');
-        $this->assertNotEmpty($this->registration('first')['state_message'],
-            'and says why, because the person who registered it is long gone');
-
-        // The cube still builds. One bad registration must not cost a Property
-        // its reporting.
-        $this->seed(['first' => 'x']);
+        // The cube still builds. One refused registration must not cost a
+        // Property its reporting.
+        $this->seed(['doomed' => 'x']);
         $this->rebuild();
 
         $this->assertNotEmpty($this->built());
 
-        $this->assertTrue($db->alterColumnsRebuilding($this->cube(), [], ['filler']));
+        $this->assertTrue(
+            $db->alterColumnsRebuilding($this->cube(), [], array_keys($filler)));
     }
 
     /**
