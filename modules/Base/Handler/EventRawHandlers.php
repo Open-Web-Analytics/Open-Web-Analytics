@@ -43,6 +43,17 @@ namespace OWA\Module\Base\Handler;
 class EventRawHandlers extends \OWA\Core\Observer {
 
     /**
+     * The wire prefixes that carry scope, matching the tracker's.
+     *
+     * Scope lives in the NAME so ingest never has to infer which bag a value
+     * belongs to, and the same name in two scopes stays two different things.
+     * See Tracker.EVENT_PROPERTY_PREFIX / USER_PROPERTY_PREFIX.
+     */
+    const EVENT_PROPERTY_PREFIX = 'ep_';
+    const USER_PROPERTY_PREFIX  = 'up_';
+
+
+    /**
      * @param object $event
      */
     function notify( $event ) {
@@ -516,6 +527,30 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         /*
+         * Custom event properties, by name, with the `ep_` prefix stripped.
+         *
+         * The prefix is how the beacon says which scope a value belongs to
+         * (Tracker.setEventProperty), so this needs no allowlist and no
+         * knowledge of the site's keys -- unlike the per-event-type params
+         * below, which are names the release knows. `up_` is the other half and
+         * goes to the visitor store, not here.
+         */
+        foreach ( (array) $event->getProperties() as $key => $value ) {
+
+            if ( strpos( (string) $key, self::EVENT_PROPERTY_PREFIX ) !== 0 ) {
+
+                continue;
+            }
+
+            $name = substr( (string) $key, strlen( self::EVENT_PROPERTY_PREFIX ) );
+
+            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
+
+                $params[ $name ] = $value;
+            }
+        }
+
+        /*
          * Event params the release knows by name but which belong to ONE event
          * type each. A column for them would be a column that is NULL on every
          * other row; these are what the dimension vocabulary reaches as
@@ -653,9 +688,160 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_FAILED;
         }
 
+        if ( ! $this->writeUserProperties( $event, $rows[0] ) ) {
+
+            $db->rollbackTransaction();
+
+            return OWA_EHS_EVENT_FAILED;
+        }
+
         $db->endTransaction();
 
         return OWA_EHS_EVENT_HANDLED;
+    }
+
+    /**
+     * User-scoped custom properties, onto the visitor store.
+     *
+     * LAST VALUE WINS, which is the opposite discipline from the acquisition
+     * columns beside them: acq_* is write-once evidence captured at the first
+     * visit, and a property is mutable state a site sets whenever it likes. GA
+     * resolves the same way -- "the most recent value of a user property for
+     * each user".
+     *
+     * EACH CARRIES WHEN IT WAS SET, and the timestamp is a guard as well as a
+     * record. The build stamps the CURRENT value onto every event row, so
+     * without it a row says what the value is and not whether it applied yet;
+     * and comparing it is what stops an out-of-order queue drain overwriting a
+     * newer value with an older beacon. Same shape as GA's
+     * set_timestamp_micros.
+     *
+     *   {"plan": {"v": "enterprise", "ts": 1790000000000000}}
+     *
+     * IN THE CALLER'S TRANSACTION, alongside the raw rows, so a visitor never
+     * carries a property for an event that was not stored.
+     *
+     * @param object $event
+     * @param array  $row  the primary row, already built
+     * @return bool
+     */
+    protected function writeUserProperties( $event, $row ) {
+
+        $incoming = array();
+
+        foreach ( (array) $event->getProperties() as $key => $value ) {
+
+            if ( strpos( (string) $key, self::USER_PROPERTY_PREFIX ) !== 0 ) {
+
+                continue;
+            }
+
+            $name = substr( (string) $key, strlen( self::USER_PROPERTY_PREFIX ) );
+
+            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
+
+                $incoming[ $name ] = (string) $value;
+            }
+        }
+
+        // Nothing set on this beacon, which is almost every beacon.
+        if ( ! $incoming ) {
+
+            return true;
+        }
+
+        $ts     = (int) $row['ts'];
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
+
+        $entity->load( $row['visitor_id'], 'visitor_id' );
+
+        $existing = $entity->wasPersisted()
+            ? (array) json_decode( (string) $entity->get( 'properties' ), true )
+            : array();
+
+        $merged  = $existing;
+        $changed = false;
+
+        foreach ( $incoming as $name => $value ) {
+
+            // An older beacon never displaces a newer value. A queue drain can
+            // deliver events out of order, and without this the last one
+            // WRITTEN would win rather than the last one SET.
+            if ( isset( $merged[ $name ]['ts'] ) && (int) $merged[ $name ]['ts'] > $ts ) {
+
+                continue;
+            }
+
+            if ( isset( $merged[ $name ]['v'] ) && $merged[ $name ]['v'] === $value ) {
+
+                continue;
+            }
+
+            $merged[ $name ] = array( 'v' => $value, 'ts' => $ts );
+            $changed = true;
+        }
+
+        if ( ! $changed ) {
+
+            return true;
+        }
+
+        $json = json_encode( $merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+
+        // json_encode answers false on malformed UTF-8, and a JSON column
+        // refuses an invalid value outright under a strict sql_mode -- so the
+        // row would be LOST rather than the properties dropped. Keeping the
+        // event is worth more than the properties.
+        if ( $json === false ) {
+
+            return true;
+        }
+
+        if ( $entity->wasPersisted() ) {
+
+            $entity->setProperties( array( 'properties' => $json ) );
+
+            // update('visitor_id'): the no-argument form keys on an `id`
+            // column and this table has none.
+            if ( $entity->update( 'visitor_id' ) === false ) {
+
+                \OWA\Core\CoreAPI::error( 'v2 ingest: writing user properties failed.' );
+
+                return false;
+            }
+
+            return true;
+        }
+
+        $entity->setProperties( array(
+            'visitor_id' => $row['visitor_id'],
+            'site_id'    => $row['site_id'],
+            'properties' => $json,
+            'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
+        ) );
+
+        /*
+         * No acq_ts. The row exists to hold a property, and the acquisition is
+         * still unknown -- which is exactly why the cube's sentinel tests
+         * acq_ts rather than the row (2.26.6). A racing insert is benign: the
+         * other writer put the row there, and the next beacon merges into it.
+         */
+        if ( $entity->create() !== true ) {
+
+            $check = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
+            $check->load( $row['visitor_id'], 'visitor_id' );
+
+            if ( $check->wasPersisted() ) {
+
+                return true;
+            }
+
+            \OWA\Core\CoreAPI::error( 'v2 ingest: creating the row for user properties failed.' );
+
+            return false;
+        }
+
+        return true;
     }
 
     /**

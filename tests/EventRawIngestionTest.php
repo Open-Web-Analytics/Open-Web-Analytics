@@ -297,6 +297,98 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * An `ep_` property lands in params, by name, with the prefix stripped.
+     *
+     * The prefix is how the beacon says which scope a value belongs to, so this
+     * needs no allowlist -- unlike the per-event-type params, which are names
+     * the release knows.
+     */
+    public function testAnEventPropertyLandsInParamsUnderItsBareName(): void
+    {
+        $rows = $this->firePageView(['ep_coupon_code' => 'SPRING']);
+
+        $params = json_decode($rows['page_view']['params'], true);
+
+        $this->assertSame('SPRING', $params['coupon_code'] ?? null);
+        $this->assertArrayNotHasKey('ep_coupon_code', $params,
+            'the prefix is routing, not part of the name');
+    }
+
+    /** A `up_` property goes to the visitor store, not to params. */
+    public function testAUserPropertyGoesToTheVisitorStoreAndNotToParams(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $rows = $this->firePageView([
+            'visitor_id' => $visitor,
+            'up_plan'    => 'enterprise',
+        ]);
+
+        $params = json_decode((string) $rows['page_view']['params'], true) ?: [];
+
+        $this->assertArrayNotHasKey('plan', $params, 'a user property is not an event param');
+        $this->assertArrayNotHasKey('up_plan', $params);
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->load($visitor, 'visitor_id');
+
+        $stored = json_decode((string) $entity->get('properties'), true);
+
+        $this->assertSame('enterprise', $stored['plan']['v'] ?? null);
+        $this->assertSame(
+            (int) $rows['page_view']['ts'],
+            (int) ($stored['plan']['ts'] ?? 0),
+            'and it carries when it was set'
+        );
+    }
+
+    /**
+     * Last value wins, but an OLDER beacon never displaces a newer value.
+     *
+     * A queue drain can deliver events out of order; without the timestamp
+     * guard the last one WRITTEN would win rather than the last one SET.
+     */
+    public function testAnOlderBeaconNeverOverwritesANewerProperty(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->setProperties([
+            'visitor_id' => $visitor,
+            'site_id'    => $this->site,
+            'properties' => json_encode([
+                'plan' => ['v' => 'newer', 'ts' => (int) (microtime(true) * 1000000) + 60000000],
+            ]),
+        ]);
+        $this->assertTrue($entity->create());
+
+        $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'older']);
+
+        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check->load($visitor, 'visitor_id');
+        $stored = json_decode((string) $check->get('properties'), true);
+
+        $this->assertSame('newer', $stored['plan']['v'] ?? null,
+            'the value set later stands, whichever beacon arrived last');
+    }
+
+    /** A second property merges rather than replacing the first. */
+    public function testASecondPropertyMergesWithTheFirst(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'pro']);
+        $this->firePageView(['visitor_id' => $visitor, 'up_tier' => 'gold']);
+
+        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity->load($visitor, 'visitor_id');
+        $stored = json_decode((string) $entity->get('properties'), true);
+
+        $this->assertSame('pro', $stored['plan']['v'] ?? null);
+        $this->assertSame('gold', $stored['tier']['v'] ?? null);
+    }
+
+    /**
      * A late first_visit still lands on a row that a property created.
      *
      * The write used to skip whenever the row existed, which was safe only
