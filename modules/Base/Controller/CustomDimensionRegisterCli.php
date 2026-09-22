@@ -13,9 +13,13 @@ namespace OWA\Module\Base\Controller;
  *   cmd=custom-dimension-register property=<id> key=plan scope=user
  *   cmd=custom-dimension-register property=<id> key=tier scope=event type=integer
  *   cmd=custom-dimension-register property=<id> key=plan,tier,region scope=event
- *   cmd=custom-dimension-register property=<id> key=sku scope=event length=36
  *   cmd=custom-dimension-register property=<id> key=plan scope=user --defer
  *   cmd=custom-dimension-register property=<id> key=plan scope=user --dry-run
+ *
+ * TWENTY PER PROPERTY, each VARCHAR(64). A flat cap rather than a byte sum,
+ * because a byte sum is not a number anyone can plan against -- it moves
+ * whenever a release adds a column to the cube. The row budget is still checked
+ * underneath, as a backstop.
  *
  * REGISTERING RECORDS IT; THE COLUMN ARRIVES SEPARATELY. Adding it is a full
  * table rebuild -- 4.4 seconds on an empty 73-partition cube, 11.3 at 1.5M rows
@@ -67,7 +71,6 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
                 'key'    => $key,
                 'scope'  => (string) $this->getParam( 'scope' ),
                 'type'   => (string) $this->getParam( 'type' ),
-                'length' => (string) $this->getParam( 'length' ),
                 // One label for several keys would be wrong, so a label is only
                 // taken when one key was named.
                 'label'  => count( $keys ) === 1 ? (string) $this->getParam( 'label' ) : '',

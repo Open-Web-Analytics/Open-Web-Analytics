@@ -84,7 +84,7 @@ class JsonStep extends Step {
 
         return sprintf( 'LEFT(%s, %d)',
             sprintf( OWA_SQL_JSON_VALUE, $this->document, $this->path ),
-            $this->max_length > 0 ? $this->max_length : Dimensions::DEFAULT_STRING_LENGTH );
+            $this->max_length > 0 ? $this->max_length : Dimensions::DIMENSION_LENGTH );
     }
 }
 

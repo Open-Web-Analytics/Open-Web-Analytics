@@ -375,11 +375,12 @@ final class CustomDimensionBuildTest extends TestCase
      */
     public function testAValueLongerThanItsColumnIsClampedRatherThanFailingTheBuild(): void
     {
-        $this->register(['key' => 'sku', 'scope' => 'event', 'length' => '36']);
+        $this->register(['key' => 'sku', 'scope' => 'event']);
         $this->seed(['sku' => str_repeat('x', 400)]);
         $this->rebuild();
 
-        $this->assertSame(36, strlen((string) $this->built()['cd_sku']));
+        $this->assertSame(Dimensions::DIMENSION_LENGTH,
+            strlen((string) $this->built()['cd_sku']));
     }
 
     /**
@@ -583,53 +584,66 @@ final class CustomDimensionBuildTest extends TestCase
     }
 
     /**
-     * A registration the row cannot afford is marked failed, and nothing else
-     * breaks.
+     * TWO THAT EACH FIT ALONE NEED NOT FIT TOGETHER, and only the check made
+     * under the lock can see it.
      *
-     * The budget is checked twice and this is the check that decides: the one
-     * made at registration is for the person looking at the screen and cannot
-     * see a second registration made after it. Two that each fit alone need not
-     * fit together, and that is exactly what this does.
+     * The hole is exact: the advisory check at registration prices the cube as
+     * it is NOW, and a pending registration has no column yet -- so two
+     * registrations made separately both pass it, and the reconcile is the
+     * first moment anything sees them together. That is why the second check
+     * exists and why it is the authoritative one.
+     *
+     * Reproduced by padding the cube until it has room for one more and then
+     * registering two. With the twenty-dimension cap in place this is no longer
+     * something an operator can reach by registering a lot -- it needs the cube
+     * itself to have grown -- which is the cap doing its job, and is exactly
+     * why the path still has to work.
      */
-    public function testARegistrationTheRowCannotAffordFailsWithoutBreakingTheBuild(): void
+    public function testTwoRegistrationsThatFitAloneButNotTogetherFailUnderTheLock(): void
     {
         $db     = owa_coreAPI::dbSingleton();
-        $spare  = Dimensions::MAX_ROW_BYTES - (int) $db->tableRowBytes($this->cube());
         $maxlen = (int) $db->tableCharsetMaxLen($this->cube());
-        $width  = Dimensions::MAX_STRING_LENGTH;
-        $each   = Dimensions::definitionRowBytes("VARCHAR($width)", $maxlen);
+        $each   = Dimensions::definitionRowBytes(
+            'VARCHAR(' . Dimensions::DIMENSION_LENGTH . ')', $maxlen);
 
-        // One more than fits, recorded one at a time so each passes the
-        // advisory check on its own.
-        $wanted = intdiv($spare, $each) + 1;
+        // Leave room for exactly one more dimension.
+        $spare = Dimensions::MAX_ROW_BYTES - (int) $db->tableRowBytes($this->cube());
+        $pad   = intdiv($spare - $each - 8, $maxlen);
 
-        if ($wanted > 40) {
-            $this->markTestSkipped('this cube has room for too many to be worth filling');
-        }
+        $this->assertTrue(
+            $db->alterColumnsRebuilding($this->cube(), ['filler' => "VARCHAR($pad) NULL"]),
+            'padding the cube to leave room for one');
 
-        for ($i = 0; $i < $wanted; $i++) {
-            $result = Dimensions::register(self::PROPERTY,
-                [['key' => 'fat' . $i, 'scope' => 'event', 'length' => (string) $width]]);
+        // Each passes its own advisory check, because neither column exists yet.
+        foreach (['first', 'second'] as $key) {
+            $result = Dimensions::register(self::PROPERTY, [['key' => $key, 'scope' => 'event']]);
 
-            $this->assertTrue($result['ok'], (string) $result['error']);
+            $this->assertTrue($result['ok'], "$key: " . $result['error']);
         }
 
         $reconciled = Dimensions::reconcile(self::PROPERTY);
 
         $this->assertNotEmpty($reconciled['skipped'],
-            'the authoritative check is the one made with every pending column in view');
+            'the reconcile is the first thing to see both at once');
         $this->assertStringContainsString('row left', reset($reconciled['skipped']));
 
-        $this->assertSame('failed', $this->registration('fat0')['state']);
-        $this->assertNotEmpty($this->registration('fat0')['state_message'],
-            'and it says why, because the person who registered it is long gone');
+        $states = [$this->registration('first')['state'], $this->registration('second')['state']];
+
+        sort($states);
+
+        $this->assertSame(['failed', 'failed'], $states,
+            'the batch is refused whole rather than half-applied');
+        $this->assertNotEmpty($this->registration('first')['state_message'],
+            'and says why, because the person who registered it is long gone');
 
         // The cube still builds. One bad registration must not cost a Property
         // its reporting.
-        $this->seed(['fat0' => 'x']);
+        $this->seed(['first' => 'x']);
         $this->rebuild();
 
         $this->assertNotEmpty($this->built());
+
+        $this->assertTrue($db->alterColumnsRebuilding($this->cube(), [], ['filler']));
     }
 
     /**

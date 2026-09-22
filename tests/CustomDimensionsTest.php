@@ -26,8 +26,20 @@ final class CustomDimensionsTest extends TestCase
 
     private function request(array $over = []): array
     {
-        return $over + ['key' => 'plan', 'scope' => 'event', 'type' => 'string',
-                        'length' => '', 'label' => ''];
+        return $over + ['key' => 'plan', 'scope' => 'event', 'type' => 'string', 'label' => ''];
+    }
+
+    /** @return array<string, array> `$existing` for a Property holding $n of them */
+    private function alreadyHolding(int $n): array
+    {
+        $existing = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $existing['cd_held' . $i] = ['dimension_key' => 'held' . $i,
+                                         'column_name' => 'cd_held' . $i];
+        }
+
+        return $existing;
     }
 
     public function testAKeyBecomesAPrefixedColumn(): void
@@ -240,27 +252,77 @@ final class CustomDimensionsTest extends TestCase
         $this->assertArrayHasKey('error', $this->validate($this->request(['type' => 'blob'])));
     }
 
-    public function testStringLengthIsBounded(): void
+    /**
+     * TWENTY PER PROPERTY, and the cap is what an operator meets.
+     *
+     * A flat cap rather than a byte sum, because a byte sum is not a number
+     * anyone can plan against: it moves whenever a release adds a column to the
+     * cube, and it buys 15 dimensions at VARCHAR(255) against 106 at
+     * VARCHAR(36) on the very same table.
+     */
+    public function testAPropertyMayRegisterTwenty(): void
     {
-        $this->assertArrayHasKey('error', $this->validate($this->request(['length' => '0'])));
-        $this->assertArrayHasKey('error', $this->validate($this->request(['length' => '99999'])));
-        $this->assertArrayNotHasKey('error', $this->validate($this->request(['length' => '36'])));
+        $this->assertSame(20, Dimensions::MAX_PER_PROPERTY);
+
+        $this->assertArrayNotHasKey('error',
+            $this->validate($this->request(), $this->alreadyHolding(19)),
+            'the twentieth is allowed');
+
+        $refused = $this->validate($this->request(), $this->alreadyHolding(20));
+
+        $this->assertArrayHasKey('error', $refused);
+        $this->assertStringContainsString('De-register one', $refused['error'],
+            'and says what to do about it');
     }
 
-    /** Type defaults to string, and length to the string default. */
-    public function testTheDefaults(): void
+    /** A batch cannot step over the cap one request at a time. */
+    public function testABatchIsCountedAgainstTheCapToo(): void
     {
-        $checked = $this->validate($this->request(['type' => '', 'length' => '']));
+        $queued = [];
+
+        for ($i = 0; $i < 5; $i++) {
+            $queued['cd_queued' . $i] = 'VARCHAR(64) NULL';
+        }
+
+        $this->assertArrayHasKey('error',
+            $this->validate($this->request(), $this->alreadyHolding(15), $queued),
+            '15 registered plus 5 queued is already twenty');
+    }
+
+    /**
+     * Twenty of them fit the cube's row with room to spare, which is the whole
+     * reason the cap can be the limit instead of the bytes.
+     */
+    public function testTwentyOfThemFitTheRowComfortably(): void
+    {
+        // A user-scoped one is the expensive shape: it carries a timestamp too.
+        $each = Dimensions::definitionRowBytes(
+                    'VARCHAR(' . Dimensions::DIMENSION_LENGTH . ')', 3)
+              + \OWA\Core\Db::columnRowBytes('bigint', 0);
+
+        $needed = Dimensions::MAX_PER_PROPERTY * $each;
+
+        // Measured: the cube spends 53,910 of 65,535 before any dimension.
+        $this->assertLessThan(65535 - 53910, $needed,
+            'twenty user-scoped dimensions have to fit what the cube leaves');
+    }
+
+    /** The width is fixed, so there is no knob to get wrong. */
+    public function testTheWidthIsNotAnOption(): void
+    {
+        $this->assertSame(64, Dimensions::DIMENSION_LENGTH);
+
+        $checked = $this->validate($this->request(['type' => '']));
 
         $this->assertSame(CustomDimension::TYPE_STRING, $checked['data_type']);
-        $this->assertSame(Dimensions::DEFAULT_STRING_LENGTH, $checked['max_length']);
+        $this->assertSame(Dimensions::DIMENSION_LENGTH, $checked['max_length']);
         $this->assertSame('plan', $checked['label'], 'the key stands in for a label');
     }
 
     /** A non-string type carries no width, so nothing can read one off it. */
     public function testANumericDimensionHasNoWidth(): void
     {
-        $checked = $this->validate($this->request(['type' => 'integer', 'length' => '36']));
+        $checked = $this->validate($this->request(['type' => 'integer']));
 
         $this->assertSame(0, $checked['max_length']);
     }

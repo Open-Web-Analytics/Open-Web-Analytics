@@ -65,11 +65,33 @@ class Dimensions {
      */
     const MAX_ROW_BYTES = 65535;
 
-    /** Widest string column a registration may ask for. */
-    const MAX_STRING_LENGTH = 1024;
+    /**
+     * How many dimensions one Property may register.
+     *
+     * A FLAT CAP, not a byte sum, because a byte sum is not a number anyone can
+     * plan against: it moves whenever a release adds a column to the cube, and
+     * it buys wildly different numbers of dimensions depending on how wide each
+     * one is -- 15 at VARCHAR(255) against 106 at VARCHAR(36) on the same cube.
+     * Twenty of a fixed width is a promise that stays true.
+     *
+     * Twenty fits with room to spare: 20 x VARCHAR(64) is 3,860 bytes against
+     * the 11,625 the cube has left, and 20 user-scoped ones -- which carry a
+     * timestamp each -- is 4,020. The byte budget stays as a backstop for the
+     * day a release widens the cube enough to matter, and says so when it
+     * refuses; it is no longer the thing an operator runs into.
+     */
+    const MAX_PER_PROPERTY = 20;
 
-    /** What a string dimension gets when no width is given. */
-    const DEFAULT_STRING_LENGTH = 255;
+    /**
+     * How wide a string dimension is. Not an option.
+     *
+     * Between GA's two caps -- it truncates a user property at 36 characters
+     * and an event parameter at 100 -- and chosen as one number because a
+     * per-registration width is a knob whose only effect is to spend a budget
+     * the cap has already made irrelevant. The build clamps to it, so a longer
+     * value is truncated rather than aborting the partition.
+     */
+    const DIMENSION_LENGTH = 64;
 
     /**
      * The column name a key becomes.
@@ -198,8 +220,11 @@ class Dimensions {
                 return 'DOUBLE NULL';
         }
 
+        // The stored width, not the constant: a dimension registered before
+        // the constant changed keeps the column it was given, because changing
+        // it would be an ALTER nobody asked for.
         return sprintf( 'VARCHAR(%d) NULL', $max_length > 0
-            ? $max_length : self::DEFAULT_STRING_LENGTH );
+            ? $max_length : self::DIMENSION_LENGTH );
     }
 
     /**
@@ -221,7 +246,7 @@ class Dimensions {
      * so a batch cannot half-register.
      *
      * @param int|string $property_id
-     * @param array      $requests  each ['key','scope','type','length','label']
+     * @param array      $requests  each ['key','scope','type','label']
      * @return array ['ok' => bool, 'error' => string, 'registered' => array,
      *                'columns' => string[], 'bytes' => int]
      */
@@ -699,14 +724,17 @@ class Dimensions {
                 implode( ', ', CustomDimension::types() ) ) );
         }
 
-        $length = isset( $request['length'] ) && $request['length'] !== ''
-            ? (int) $request['length'] : self::DEFAULT_STRING_LENGTH;
-
-        if ( $type === CustomDimension::TYPE_STRING
-          && ( $length < 1 || $length > self::MAX_STRING_LENGTH ) ) {
+        /*
+         * THE CAP IS THE LIMIT AN OPERATOR MEETS, not the row budget. Counted
+         * across what is already registered AND what this call has queued, so
+         * a batch cannot step over it one request at a time.
+         */
+        if ( count( $existing ) + count( $in_this_call ) >= self::MAX_PER_PROPERTY ) {
 
             return array( 'error' => sprintf(
-                'length must be between 1 and %d.', self::MAX_STRING_LENGTH ) );
+                'a Property may register %d custom dimensions and this one already has %d. '
+              . 'De-register one to make room.',
+                self::MAX_PER_PROPERTY, count( $existing ) + count( $in_this_call ) ) );
         }
 
         $column = self::columnFor( $key );
@@ -742,7 +770,7 @@ class Dimensions {
             'dimension_key' => $key,
             'column_name'   => $column,
             'data_type'     => $type,
-            'max_length'    => $type === CustomDimension::TYPE_STRING ? $length : 0,
+            'max_length'    => $type === CustomDimension::TYPE_STRING ? self::DIMENSION_LENGTH : 0,
             'label'         => $label,
         );
     }
