@@ -90,6 +90,45 @@ class Cron {
     }
 
     /**
+     * Every N minutes, at an offset this install keeps.
+     *
+     * The frequent counterpart of dailySpreadFor(), and spread for the local
+     * reason rather than the remote one: several OWA installs commonly share
+     * one database server, so a job on `0,15,30,45` would have all of them
+     * reach for the same server at the same instant, four times an hour.
+     *
+     * Seeded the same way and for the same reason -- the scheduler decides
+     * whether a job is due by comparing the occurrence it last satisfied
+     * against the expression, so an expression that changed between runs would
+     * leave a job either firing repeatedly or never being due again.
+     *
+     * @param string $seed     something stable and install-specific
+     * @param int    $interval minutes between runs; must divide 60
+     * @return string a five-field cron expression
+     */
+    public static function minutelySpreadFor( $seed, $interval = 15 ) {
+
+        $interval = max( 1, min( 60, (int) $interval ) );
+
+        // Anything that does not divide the hour would make the last gap of
+        // each hour a different length from the others.
+        if ( 60 % $interval !== 0 ) {
+
+            $interval = 15;
+        }
+
+        $offset  = hexdec( substr( md5( (string) $seed ), 0, 6 ) ) % $interval;
+        $minutes = array();
+
+        for ( $minute = $offset; $minute < 60; $minute += $interval ) {
+
+            $minutes[] = $minute;
+        }
+
+        return sprintf( '%s * * * *', implode( ',', $minutes ) );
+    }
+
+    /**
      * How far back nextDueSince() will look for an unsatisfied occurrence.
      *
      * A job that has not run in years should still run once, but walking minute

@@ -17,6 +17,7 @@
     ],
     "config": {
         "sort-packages": true,
+        "process-timeout": 0,
         "platform": {
             "php": "8.2.0"
         },

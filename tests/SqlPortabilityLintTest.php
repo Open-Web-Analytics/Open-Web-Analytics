@@ -48,6 +48,12 @@ final class SqlPortabilityLintTest extends TestCase {
         'SQL_CALC_FOUND_ROWS' => 'MySQL-only and removed in MySQL 8.0.17+',
         'STRAIGHT_JOIN'    => 'MySQL-only optimiser hint',
         'information_schema' => 'schema introspection belongs in the dialect',
+        // SQL:2016, and Postgres 17 has it -- but the RETURNING clause and what
+        // happens on a conversion error are not uniform, so it goes behind
+        // OWA_SQL_JSON_VALUE and its typed variants like everything else.
+        'JSON_VALUE('      => 'use OWA_SQL_JSON_VALUE / _SIGNED / _UNSIGNED / _DOUBLE',
+        'JSON_EXTRACT('    => 'use OWA_SQL_JSON_VALUE -- and note JSON_UNQUOTE(JSON_EXTRACT()) '
+                            . 'is NOT equivalent: it turns a stored JSON null into the string "null"',
     ];
 
     /**

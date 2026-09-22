@@ -152,6 +152,36 @@ if ( ! defined( 'OWA_SQL_REBUILD_TABLE' ) ) { define('OWA_SQL_REBUILD_TABLE', 'A
  * plus a window in which the pass cannot publish.
  */
 if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_REBUILD', 'ALTER TABLE %s ADD %s %s, ALGORITHM=INPLACE'); }
+
+/*
+ * SEVERAL COLUMN CHANGES IN ONE STATEMENT, still rebuilding rather than instant.
+ *
+ * Registering ten custom dimensions costs ONE rebuild this way: ten columns in
+ * one ALTER measured 13,664ms against 13,057ms for one, a 5% margin, where ten
+ * separate statements would be ten rebuilds. INPLACE is not an optimisation
+ * here -- the default is INSTANT, and an instant column leaves row-format
+ * metadata that makes EXCHANGE PARTITION refuse the swap with error 1731, so
+ * every later cube build would fail having published nothing.
+ */
+if ( ! defined( 'OWA_SQL_ALTER_COLUMNS_REBUILD' ) ) { define('OWA_SQL_ALTER_COLUMNS_REBUILD', 'ALTER TABLE %s %s, ALGORITHM=INPLACE'); }
+
+/*
+ * Reading one value out of a JSON document.
+ *
+ * JSON_VALUE is SQL:2016 and not MySQL's alone, but the RETURNING clause and
+ * what happens on a conversion error are not uniform, so it is spelled here
+ * like everything else. Measured on 8.4: a missing key, a JSON null and a NULL
+ * document all give NULL, and so does a value that will not convert -- "abc"
+ * RETURNING SIGNED is NULL rather than an error, which is what keeps one site's
+ * bad value from failing a whole partition's build.
+ *
+ * JSON_UNQUOTE(JSON_EXTRACT(...)) is NOT equivalent and must not be substituted:
+ * it turns a stored JSON null into the four-character string "null".
+ */
+if ( ! defined( 'OWA_SQL_JSON_VALUE' ) ) { define('OWA_SQL_JSON_VALUE', "JSON_VALUE(%s, '%s')"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_SIGNED' ) ) { define('OWA_SQL_JSON_VALUE_SIGNED', "JSON_VALUE(%s, '%s' RETURNING SIGNED)"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_UNSIGNED' ) ) { define('OWA_SQL_JSON_VALUE_UNSIGNED', "JSON_VALUE(%s, '%s' RETURNING UNSIGNED)"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_DOUBLE' ) ) { define('OWA_SQL_JSON_VALUE_DOUBLE', "JSON_VALUE(%s, '%s' RETURNING DOUBLE)"); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }
@@ -402,6 +432,132 @@ trait MysqlDialect
      * @param string $table_name
      * @return string[]
      */
+    /**
+     * A table's column names, optionally only those with a prefix.
+     *
+     * Introspection, so it lives in the dialect. What the custom-dimension
+     * reconcile needs is the AUTHORITY on which cd_ columns exist: a registry
+     * row is a statement of intent and this is what a build can actually read.
+     *
+     * @param string $table_name
+     * @param string $prefix
+     * @return string[]
+     */
+    function listColumns( $table_name, $prefix = '' ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ( $prefix !== '' && ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $prefix ) ) ) {
+
+            return array();
+        }
+
+        // The table name is substituted FIRST and the LIKE appended after, so
+        // the pattern's own % never reaches a format string.
+        $sql = sprintf(
+            "SELECT COLUMN_NAME AS c FROM information_schema.COLUMNS "
+          . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'", $table_name );
+
+        if ( $prefix !== '' ) {
+
+            // The underscore is a LIKE wildcard, so an unescaped cd_ would also
+            // match cdx_something.
+            $sql .= " AND COLUMN_NAME LIKE '"
+                  . str_replace( '_', '\\_', $prefix ) . "%'";
+        }
+
+        $sql .= ' ORDER BY ORDINAL_POSITION';
+
+        $columns = array();
+
+        foreach ( (array) $this->get_results( $sql ) as $row ) {
+
+            $columns[] = (string) $row['c'];
+        }
+
+        return $columns;
+    }
+
+    /**
+     * How many bytes of a row's 65,535-byte allowance a table already spends.
+     *
+     * MEASURED, NOT MODELLED FROM THE MANUAL. Adding VARCHAR columns to a copy
+     * of a real 73-column cube until the server refused gave 16 at VARCHAR(255),
+     * 64 at VARCHAR(64) and 114 at VARCHAR(36); this arithmetic predicts all
+     * three exactly. What binds is MySQL's row DEFINITION limit of 65,535
+     * bytes, not InnoDB's ~8KB page limit -- both raise error 1118, which is
+     * why the two are easy to confuse. The page limit does not bind because
+     * DYNAMIC pushes long values off-page.
+     *
+     * A variable-length column costs its declared width in BYTES -- characters
+     * times the charset's maximum bytes per character -- plus one length byte,
+     * or two once that exceeds 255.
+     *
+     * Introspection, so it lives in the dialect. A backend with no such limit
+     * says so by leaving the base class's null.
+     *
+     * @param string $table_name
+     * @return int|null  bytes, or null if the table is not there
+     */
+    function tableRowBytes( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return null;
+        }
+
+        $rows = (array) $this->get_results( sprintf(
+            "SELECT DATA_TYPE AS dt, COALESCE(CHARACTER_OCTET_LENGTH, 0) AS oct "
+          . "FROM information_schema.COLUMNS "
+          . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'",
+            $table_name ) );
+
+        if ( ! $rows ) {
+
+            return null;
+        }
+
+        $bytes = 0;
+
+        foreach ( $rows as $row ) {
+
+            $bytes += self::columnRowBytes( (string) $row['dt'], (int) $row['oct'] );
+        }
+
+        return $bytes;
+    }
+
+    /**
+     * The most bytes one character can take in a table's own character set.
+     *
+     * Needed to price a column before it exists: a VARCHAR(255) costs 765 bytes
+     * on a utf8mb3 table and 1020 on a utf8mb4 one, which is the difference
+     * between sixteen custom dimensions and twelve.
+     *
+     * @param string $table_name
+     * @return int  bytes per character, 4 when it cannot be read
+     */
+    function tableCharsetMaxLen( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return 4;
+        }
+
+        $row = $this->get_row( sprintf(
+            "SELECT cs.MAXLEN AS maxlen FROM information_schema.TABLES t "
+          . "JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY ccsa "
+          . "  ON ccsa.COLLATION_NAME = t.TABLE_COLLATION "
+          . "JOIN information_schema.CHARACTER_SETS cs "
+          . "  ON cs.CHARACTER_SET_NAME = ccsa.CHARACTER_SET_NAME "
+          . "WHERE t.TABLE_SCHEMA = DATABASE() AND t.TABLE_NAME = '%s'",
+            $table_name ) );
+
+        // Four, not one, when the answer is unreadable: over-charging refuses a
+        // registration that would have fitted, where under-charging lets the
+        // server refuse the ALTER instead -- and the ALTER is the expensive one.
+        return ( is_array( $row ) && (int) $row['maxlen'] > 0 ) ? (int) $row['maxlen'] : 4;
+    }
+
     function getPrimaryKeyColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {

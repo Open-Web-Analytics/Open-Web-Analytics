@@ -348,6 +348,27 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             return $bad;
         }
 
+        /*
+         * BRING THE REGISTERED COLUMNS UP TO DATE FIRST, under the lock this
+         * run already holds.
+         *
+         * Registering a custom dimension records a row and nothing else -- the
+         * ALTER is a full table rebuild and cannot happen inside the request
+         * that asked for it. Doing it here means it can never be forgotten:
+         * whatever else is or is not scheduled, a cube that gets built gets its
+         * columns. And it MUST be under this lock rather than beside it, since
+         * an ALTER landing between the staging copy and the swap makes
+         * EXCHANGE PARTITION refuse the pair.
+         *
+         * A dry run reports and changes nothing, so it is skipped -- which
+         * means a dry run of a Property with a pending registration shows the
+         * statement without that column, correctly.
+         */
+        if ( ! $dry_run ) {
+
+            $this->reconcileDimensions( $property_id, $table );
+        }
+
         $builder    = new \OWA\Module\Base\Classes\Cube\Builder( $property_id );
         $partitions = $builder->partitions( $range['from'], $range['to'] );
 
@@ -419,6 +440,38 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         }
 
         return $outcome;
+    }
+
+    /**
+     * Apply whatever has been registered or de-registered since the last run.
+     *
+     * One ALTER however much has accumulated, and a failure here does NOT stop
+     * the build: a column that could not be added is a dimension that is not
+     * filled yet, where refusing to build would turn one bad registration into
+     * a Property with no reporting at all.
+     *
+     * @param string $property_id
+     * @param string $table
+     * @return void
+     */
+    protected function reconcileDimensions( $property_id, $table ) {
+
+        $result = \OWA\Module\Base\Classes\Cube\Dimensions::reconcile( $property_id );
+
+        if ( $result['added'] || $result['dropped'] ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( '%s: custom dimensions applied -- %s%s%s.',
+                $table,
+                $result['added'] ? 'added ' . implode( ', ', $result['added'] ) : '',
+                $result['added'] && $result['dropped'] ? '; ' : '',
+                $result['dropped'] ? 'dropped ' . implode( ', ', $result['dropped'] ) : '' ) );
+        }
+
+        foreach ( $result['skipped'] as $column => $why ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                '%s: %s could not be added, so it stays unfilled. %s', $table, $column, $why ) );
+        }
     }
 
     /**
