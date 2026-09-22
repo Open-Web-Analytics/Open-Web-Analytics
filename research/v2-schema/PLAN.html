@@ -2750,6 +2750,49 @@ READINGS: they are what reports group by, and a reading that varies where the
 page does not is a broken report. They are already parsed at ingest, by a real
 URL parser, which is the only place that both can and should canonicalise.</p>
 
+<h4><span class="num">2.28.1b</span>What GA does, which answers two of these <span class="chip c-meas">Measured</span></h4>
+
+<p><strong>GA STRIPS THE FRAGMENT IN THE TRACKER, not on the server.</strong>
+From Google&rsquo;s own developer documentation rather than a blog:
+<code>page_location</code> defaults to <code>location.href</code>, and
+&ldquo;<em>the default value excludes the fragment portion of the URL</em>&rdquo;.
+So the hash never leaves the browser. Our tracker sends
+<code>document.URL</code>, which keeps it.</p>
+
+<p>That is a better answer than stripping it at ingest, and it costs nothing to
+adopt. Nothing is lost as evidence: a fragment has never carried a campaign tag,
+so the one thing <code>page_location</code> is evidence FOR is unaffected. It
+keeps whatever people put in fragments off the wire entirely, and it makes
+<code>page_location</code> groupable, which it is not today. GA reaches SPA
+navigation through history events instead, which is a separate mechanism from
+the hash.</p>
+
+<p><strong>GA REMOVES QUERY PARAMETERS AT COLLECTION, DESTRUCTIVELY, AND FOR A
+DIFFERENT REASON THAN v1 DOES.</strong> Its feature is called <em>data
+redaction</em>, configured per web data stream, and it &ldquo;<em>evaluates
+events before they are collected to find and remove any text it understands as
+an email address or query parameter key-value pair</em>&rdquo;. The examples
+Google gives are <code>firstname</code>, <code>lastname</code>,
+<code>email_address</code>. It is a PRIVACY control, not a tidiness one.</p>
+
+<p class="note"><strong>Which separates a thing v1 conflated, and is the useful
+finding here.</strong> <code>query_string_filters</code> is doing two unrelated
+jobs at once: keeping personal data out of storage, and keeping noise out of
+reports. They want opposite treatments. Redaction MUST be destructive and at
+ingest &mdash; the whole point is not to store the email address, and a
+build-time filter would mean it had already been stored. Report filtering SHOULD
+be at build and reversible, because the list is a setting an administrator edits
+and a corrected list ought to re-apply to history, which is the argument the
+cube exists for. So: two lists, two places, not one list doing both badly.</p>
+
+<p><strong>GA canonicalises the parts hardly at all.</strong> No trailing-slash
+collapsing, no <code>default_page</code>, no case folding &mdash; the
+Universal Analytics view setting for it has no GA4 equivalent, and the
+documented route is a property-level Modify event rule. So v1 does MORE here
+than GA does, and v2 doing nothing is GA parity but a v1 regression. That is a
+real choice rather than an oversight to correct, and it is the one still
+open.</p>
+
 <h4><span class="num">2.28.2</span>What each reading gets <span class="chip c-open">Open</span></h4>
 
 <div class="scroll"><table>
@@ -2763,22 +2806,23 @@ URL parser, which is the only place that both can and should canonicalise.</p>
 <tr><td><code>landing_page_*</code></td><td>inherited</td><td>copied from the session's first event by a build, so they get whatever the readings got</td></tr>
 </tbody></table></div>
 
-<p><strong>Open, and these are the calls to make:</strong></p>
+<p><strong>Where this stands after looking at GA:</strong></p>
 
 <ul>
-<li><strong>Does the fragment belong in <code>page_location</code>?</strong> It
-is genuinely part of what the browser showed, and single-page apps put real
-navigation in it. v1 discards it. Keeping it is the evidence rule applied
-literally; it also means <code>page_location</code> alone cannot be grouped by.</li>
-<li><strong>Is <code>page_query</code> filtered at INGEST or at BUILD?</strong>
-Ingest is where the parser is and costs nothing per report. Build would let a
-corrected filter list be re-applied to history, which is the whole argument for
-the cube &mdash; and the filters are per-site settings an administrator edits,
-so they WILL change. This is the one that needs deciding rather than
-assuming.</li>
-<li><strong>Does <code>html_entity_decode</code> survive?</strong> v1 does it;
-it is a fix for URLs that arrived HTML-escaped from a template, and it is not
-obviously still needed.</li>
+<li class="done"><strong>The fragment: strip it in the TRACKER</strong>, as GA
+does and for the reason 2.28.1b gives. Nothing of evidential value is lost, and
+it never reaches the wire.</li>
+<li class="done"><strong>Query parameters: BOTH, split by what they are for.</strong>
+Redaction at ingest, destructive, for personal data. Report filtering at build,
+reversible, for noise. v1 has one list doing both; v2 should have two.</li>
+<li><strong>STILL OPEN: does <code>page_path</code> get v1&rsquo;s
+collapsing?</strong> <code>default_page</code> and the trailing slash. v1 does
+it, GA does not, and doing nothing is parity with GA at the cost of a v1
+regression &mdash; <code>/store</code>, <code>/store/</code> and
+<code>/store/index.html</code> stay three rows in a page report.</li>
+<li><strong>STILL OPEN: does <code>html_entity_decode</code> survive?</strong>
+v1 does it; it is a fix for URLs that arrived HTML-escaped from a template, and
+it is not obviously still needed.</li>
 </ul>
 
 <p class="note"><strong>Whatever is decided, it is not
