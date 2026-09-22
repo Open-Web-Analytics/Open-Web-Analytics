@@ -235,20 +235,25 @@ describe('state written before the first event survives the next page load', () 
         OWA.state.cookies = Util.readAllCookies();
     });
 
-    test('a visitor custom var set BEFORE any tracking is readable on the next page', () => {
+    // Payload is setUserId(), which writes the visitor store. These cases are
+    // about the STORE surviving a page load and the domain it was stamped with,
+    // not about what was put in it -- they used a visitor-scoped custom var
+    // until those were retired for setUserProperty(), which is page-lifetime
+    // and deliberately writes no cookie.
+    test('visitor state written BEFORE any tracking is readable on the next page', () => {
         const first = new OWATracker({ site_id: 'domain-persist-site' });
-        first.setCustomVar(1, 'Plan', 'Pro', 'visitor');
+        first.setUserId('u-123');
 
         // The page went away; cookies survive, memory does not.
         OWA.state = new StateManager();
         OWA.state.cookies = Util.readAllCookies();
 
-        expect(OWA.getPersistedState('v', 'cv1')).toBe('Plan=Pro');
+        expect(OWA.getPersistedState('v', 'user_id')).toBe('u-123');
     });
 
     test('the value it was stamped with is the domain it is later read against', () => {
         const t = new OWATracker({ site_id: 'domain-persist-site' });
-        t.setCustomVar(2, 'Tier', 'Gold', 'visitor');
+        t.setUserId('u-456');
 
         const stamped = OWA.getState('v', 'cdh');
 

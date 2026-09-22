@@ -135,28 +135,16 @@ describe('one OWA cookie cleared but not the other', () => {
         expect(beacon.is_new_session).toBeFalsy();
     });
 
-    test('a session-scoped custom var survives the visitor cookie being cleared', () => {
-        // Custom variables live in the session store, so they follow the
-        // session, not the visitor.
-        seed({ visitor: false, session: true });
-
-        const beacon = pageView(newTracker());
-
-        expect(beacon.cv1).toBe('plan=pro');
-    });
-
-    test('a session-scoped custom var does NOT survive the session cookie being cleared', () => {
-        // The converse, and the reason it is not a bug: the variable was scoped
-        // to a session whose state is gone. Carrying it into a new session on
-        // the strength of the visitor cookie would attach it to a session it was
-        // never set for.
-        seed({ visitor: true, session: false });
-
-        const beacon = pageView(newTracker());
-
-        expect(beacon.cv1).toBeFalsy();
-    });
-
+    /*
+     * Two cases about session-scoped custom variables stood here. They followed
+     * the session rather than the visitor, which was the point being pinned --
+     * and the capability is gone: v2 offers authors event and user scope only,
+     * and derives session scope server-side from the session's own events.
+     *
+     * What they were really exercising -- one cookie recovered, the other not --
+     * is covered by the cases above and below on visitor_id, session_id and the
+     * two is_new flags, which is the mechanism rather than a payload riding it.
+     */
     test('both cookies gone: a new visitor and a new session, as on a first visit', () => {
         seed({});
 
