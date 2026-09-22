@@ -102,8 +102,31 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $this->assertArrayHasKey('rotate-partitions', $jobs);
         $this->assertSame([], $jobs['rotate-partitions']['params'], 'no keep= may be registered in code');
-        $this->assertSame('@monthly', $jobs['rotate-partitions']['schedule']);
         $this->assertSame('code', $jobs['rotate-partitions']['source']);
+
+        // Daily, and spread: every piece of work it does is triggered by a
+        // period ageing, so a monthly run finds each one up to a month late.
+        // Not '@daily' -- midnight exactly would start a run, and possibly a
+        // REORGANIZE, on every install sharing a database server at once.
+        $this->assertMatchesRegularExpression(
+            '/^\d+ \d+ \* \* \*$/', $jobs['rotate-partitions']['schedule'],
+            'a spread daily schedule, not a literal @daily' );
+    }
+
+    /**
+     * The two shipped daily jobs do not land on the same minute.
+     *
+     * The spread exists so installs sharing a host do not fire together; a
+     * shared seed would fix that between installs and break it within one.
+     */
+    public function testTheShippedDailyJobsDoNotCollide()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertNotSame(
+            $jobs['rotate-partitions']['schedule'],
+            $jobs['fetch-notifications']['schedule'],
+            'the job name has to be part of the seed, not just the install' );
     }
 
     /** Only that one job ships; everything else is opt-in. */
@@ -164,7 +187,8 @@ final class ScheduleCliTest extends CliControllerTestCase
         $jobs = $this->jobsWith(['rotate-partitions' => ['params' => ['keep' => 24]]]);
 
         $this->assertSame(['keep' => 24], $jobs['rotate-partitions']['params']);
-        $this->assertSame('@monthly', $jobs['rotate-partitions']['schedule'], 'the shipped schedule survives');
+        $this->assertMatchesRegularExpression('/^\d+ \d+ \* \* \*$/',
+            $jobs['rotate-partitions']['schedule'], 'the shipped schedule survives');
         $this->assertSame('config-override', $jobs['rotate-partitions']['source']);
 
         $jobs = $this->jobsWith(['rotate-partitions' => ['schedule' => '@daily']]);

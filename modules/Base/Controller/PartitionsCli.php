@@ -479,6 +479,20 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
     /** Is the driver able to partition at all? Report once, clearly. */
     /**
+     * Today, as yyyymmdd.
+     *
+     * A seam, so the carve-and-merge arithmetic can be exercised at a month
+     * boundary, in a leap February, and after a run has been missed -- none of
+     * which can be reached by waiting.
+     *
+     * @return string
+     */
+    protected function today() {
+
+        return date( 'Ymd' );
+    }
+
+    /**
      * Whether this table is the reporting cube.
      *
      * Only the cube has a front tier. Raw is never rebuilt and its retention is
@@ -537,7 +551,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         $spans  = \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans( $table );
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $cutoff  = date( 'Ymd', strtotime( '-' . (int) $window . ' days' ) );
+        $cutoff  = date( 'Ymd', strtotime( $this->today() . ' -' . (int) $window . ' days' ) );
         $months  = $this->dailyByMonth( $spans );
         $touched = false;
 
@@ -702,8 +716,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function carveCandidates( array $spans ) {
 
-        $this_month = date( 'Ym' ) . '01';
-        $horizon    = date( 'Ymd', strtotime( 'first day of next month' ) );
+        $this_month = substr( $this->today(), 0, 6 ) . '01';
+        $horizon    = date( 'Ymd', strtotime( $this_month . ' +1 month' ) );
 
         $candidates = array();
 

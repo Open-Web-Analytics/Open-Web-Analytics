@@ -303,6 +303,31 @@ class Module extends \OWA\Core\Module {
      * it queues in the first place. It is added in OWA_SCHEDULED_JOBS when
      * wanted -- see owa_settings::applyConfigConstants().
      */
+    /**
+     * A stable seed for spreading one daily job, per install and per job.
+     *
+     * The fallbacks matter: an install that has not been configured yet has no
+     * public_url, and seeding every one of those from the same empty string
+     * would put exactly the installs most likely to share an image back on the
+     * same minute. The directory path differs per install even then.
+     *
+     * @return string
+     */
+    private function jobSeed( $job ) {
+
+        $seed = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
+
+        if ( $seed === '' ) {
+
+            $seed = defined( 'OWA_DIR' ) ? OWA_DIR : php_uname( 'n' );
+        }
+
+        // The JOB NAME is part of it, or every daily job on one install lands
+        // on the same minute -- which is the collision the spread exists to
+        // avoid, just moved from between installs to within one.
+        return $seed . '|' . $job;
+    }
+
     function registerJobs() {
 
         // The NAME is deliberately not the command name. They are separate
@@ -316,7 +341,24 @@ class Module extends \OWA\Core\Module {
         // OWA_SCHEDULED_JOBS, which is the deliberate act it should be.
         // Retention must never arrive as a side effect of turning the scheduler
         // on. ScheduleCliTest pins the empty array for exactly that reason.
-        $this->registerJob( 'rotate-partitions', 'partition-rotate', '@monthly', array() );
+        //
+        // DAILY, NOT MONTHLY. Every piece of work this job does is triggered by
+        // a period AGEING -- a lead running short, a month passing out of the
+        // detail window, the cube's daily partitions leaving the rebuild
+        // window. Running monthly does not do less of it, it just finds each
+        // one up to a month late: the cube would hold an extra month of daily
+        // partitions, and a stalled lead would have a month to erode before the
+        // next attempt, which 2.8 calls the invariant everything else rests on.
+        // A run with nothing due is a handful of catalogue queries.
+        //
+        // NOT '@daily'. That is midnight exactly, and several OWA installs
+        // commonly share one database server -- so every one of them would
+        // start a run, and possibly a REORGANIZE that rewrites rows, at the
+        // same instant. Same reasoning as fetch-notifications below, for a
+        // local reason rather than a remote one.
+        $this->registerJob(
+            'rotate-partitions', 'partition-rotate',
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array() );
 
         /*
          * Daily is the right cadence for release announcements: they are not
@@ -337,16 +379,9 @@ class Module extends \OWA\Core\Module {
          * back on the same minute. The directory path differs per install even
          * then.
          */
-        $seed = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
-
-        if ( $seed === '' ) {
-
-            $seed = defined( 'OWA_DIR' ) ? OWA_DIR : php_uname( 'n' );
-        }
-
         $this->registerJob(
             'fetch-notifications', 'fetch-notifications',
-            \OWA\Core\Cron::dailySpreadFor( $seed ), array() );
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'fetch-notifications' ) ), array() );
 
         // NOT registering update-ua-regexes here, deliberately.
         //
