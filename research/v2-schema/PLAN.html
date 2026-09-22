@@ -145,6 +145,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s222">2.22 The parity harness</a>
   <a href="#s223">2.23 The v2 reporting UI is a separate path</a>
   <a href="#s225">2.24 Publishing the tracker</a>
+  <a href="#s227">2.26 Custom dimensions</a>
   <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
@@ -2319,6 +2320,164 @@ same reason the runbook already requires a build. <strong>A republish becomes a 
 and because the bundle lives inside every per-site file, an OWA upgrade republishes all of them.
 <code>webpack.config.js</code> sets no <code>clean</code>, so published files under
 <code>public/</code> survive a rebuild.</p>
+
+<h3 id="s227"><span class="num">2.26</span>Custom dimensions <span class="chip c-dec">Decided</span></h3>
+
+<p><strong>A site-defined value becomes queryable by being REGISTERED, and
+registration adds a real column to the cube.</strong> Everything queryable is a
+dimension; there is no path that reads an unregistered key. The mechanism was
+settled by measurement against MySQL&nbsp;8 &mdash; every number below is
+measured on a 72-partition table, not estimated.</p>
+
+<h4><span class="num">2.26.1</span>Two scopes, and only two <span class="chip c-dec">Decided</span></h4>
+
+<p>GA offers site authors exactly two scopes for custom values &mdash; event and
+user &mdash; and derives session scope itself rather than letting a tag carry it.
+v2 does the same, which settles what the tracker exposes:</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Scope</th><th>Set by</th><th>Stored</th><th>Read by the build from</th></tr></thead>
+<tbody>
+<tr><td><strong>event</strong></td><td><code>setEventProperty(name, value)</code></td><td><code>owa_event_raw.params</code> (JSON)</td><td><code>r.params</code> &mdash; no join</td></tr>
+<tr><td><strong>user</strong></td><td><code>setUserProperty(name, value)</code></td><td><code>owa_visitor_acquisition.properties</code> (JSON)</td><td><code>v.properties</code> &mdash; the join <code>acq_*</code> already makes</td></tr>
+<tr><td>session</td><td colspan="3"><strong>not offered.</strong> Derived by the build from the session&rsquo;s own events, as <code>source</code>, <code>medium</code> and <code>landing_page_*</code> already are</td></tr>
+</tbody></table></div>
+
+<p><strong><code>setCustomVar(slot, name, value, scope)</code> is deprecated</strong>
+and maps onto the two: <code>page</code> and <code>session</code> scope both become
+event properties, <code>visitor</code> scope becomes a user property. Session scope
+maps to EVENT rather than being emulated, because a session-scoped value that the
+client carries is exactly what 2.9 refuses &mdash; it is a value the build can
+derive and the client can get wrong. The slot number is dropped: it was v1 storage,
+not information.</p>
+
+<h4><span class="num">2.26.2</span>Registration adds the column <span class="chip c-dec">Decided</span></h4>
+
+<ul>
+<li><strong>Prefixed <code>cd_</code></strong>, so the column set stays separable.
+It constrains <code>DROP COLUMN</code> to a pattern &mdash; de-registration takes a
+name from user input and issues DDL, and nothing matching
+<code>^cd_[A-Za-z0-9_]+$</code> can be a release column. It also makes collision
+with a release column impossible without a reserved-word list that would go stale
+every time the cube gains a column, and it lets a test still assert that the
+cube&rsquo;s non-<code>cd_</code> columns are exactly the entity&rsquo;s.</li>
+<li><strong>The column name is DERIVED from the key, not equal to it.</strong>
+<code>Db</code> enforces <code>^[A-Za-z0-9_]+$</code> on every DDL path and a JSON
+key has no such limit. So the registry stores key &harr; column, and uniqueness is
+enforced on the COLUMN: <code>my.key</code> and <code>my_key</code> both derive
+<code>cd_my_key</code>, and JSON keys are case-sensitive where column names are
+not.</li>
+<li><strong>Type is declared at registration</strong>, because the ALTER fixes it
+and the JSON does not.</li>
+<li><strong>No <code>Update</code> class.</strong> This is per-site runtime state,
+not release schema, so <code>required_schema_version</code> does not move.</li>
+</ul>
+
+<h4><span class="num">2.26.3</span>ALGORITHM=INPLACE, on both the add and the drop <span class="chip c-dec">Decided</span></h4>
+
+<p><strong>The default is <code>INSTANT</code>, and <code>INSTANT</code> silently
+breaks every subsequent cube build.</strong> It leaves instant-column metadata, and
+<code>EXCHANGE PARTITION</code> then refuses the swap with error 1731 &mdash; the
+same failure 2.7.3 records. The build fails, does not swap, and the partition keeps
+its last good contents. So both directions pin the algorithm, as
+<code>addColumnRebuilding()</code> already does for release columns.</p>
+
+<div class="scroll"><table>
+<thead><tr><th>Operation</th><th>Cost (72 partitions)</th><th>Blocks</th><th>Swap safe</th></tr></thead>
+<tbody>
+<tr><td><code>ADD COLUMN &hellip; INPLACE</code></td><td>rebuild: 2.8s empty, 13.2s at 400k rows, linear</td><td>nothing &mdash; <code>LOCK=NONE</code> accepted</td><td>yes</td></tr>
+<tr><td><code>ADD COLUMN &hellip; INSTANT</code></td><td>~350ms flat</td><td>nothing</td><td><strong>NO &mdash; error 1731</strong></td></tr>
+<tr><td><code>DROP COLUMN &hellip; INPLACE</code></td><td>rebuild</td><td>nothing &mdash; <code>LOCK=NONE</code> accepted</td><td>yes</td></tr>
+<tr><td><code>DROP COLUMN &hellip; INSTANT</code></td><td>flat</td><td>nothing</td><td><strong>NO &mdash; error 1731</strong></td></tr>
+</tbody></table></div>
+
+<p><strong>Both directions cost a rebuild, and neither blocks.</strong> MySQL
+refuses <code>LOCK=NONE</code> rather than silently taking a stronger lock &mdash;
+it did so twice while this was being measured, error 1845 for a <code>STORED</code>
+generated column and 1846 for a column and its index in one statement &mdash; so
+acceptance is a guarantee. Reads and writes continue throughout; the only exclusive
+moment is the metadata flip at the end.</p>
+
+<p><strong>Registering several at once costs ONE rebuild</strong>, which is why
+batching belongs in the UI rather than in a background reconcile pass: ten columns
+in one <code>ALTER</code> measured 13,664ms against 13,057ms for one, a 5% margin,
+where the same ten as separate statements would cost ten rebuilds.</p>
+
+<p class="note">A <code>VIRTUAL</code> generated column over the JSON was measured
+as the alternative and rejected: ~330ms flat and retroactive over all history,
+which is better on both counts, but it puts the JSON extraction in the SCHEMA
+rather than in one dialect expression. A.1.9 wants the rebuild-and-swap idiom to
+port to columnar stores, and those have columns but generally not generated
+columns. A real column filled by the build also parses the JSON once at build time
+rather than on every read.</p>
+
+<h4><span class="num">2.26.4</span>No backfill, by default <span class="chip c-dec">Decided</span></h4>
+
+<p>The column is NULL for rows that already exist and the next build fills it
+going forward. Backfilling is <code>cmd=cube-rebuild</code> over the range wanted,
+and it is the operator&rsquo;s choice rather than a side effect of registering.</p>
+
+<p><strong>This is the opposite of GA and worth stating as a capability.</strong>
+GA&rsquo;s registration is mandatory AND early: a custom dimension is not
+retroactive, so everything collected before it was registered is permanently
+unreportable. v2 keeps <code>params</code> on every raw row, so a registration made
+today can be backfilled across the whole of retained history. Registration can be
+late without penalty; the only bounds are raw retention and the cost of rebuilding
+the coarse end of history.</p>
+
+<h4><span class="num">2.26.5</span>User properties, and when they were set <span class="chip c-dec">Decided</span></h4>
+
+<p><strong>A JSON column on the visitor store, not a key-value table and not a
+second table.</strong> Measured at 100k visitors and 400k events: a key-value
+visitor store is 5&times; the rows and its pivot makes the build&rsquo;s join
+2.2&times; slower (1,097ms &rarr; 2,382ms). A JSON column keeps one row per visitor
+and reuses the join <code>acq_*</code> already makes, so the marginal cost is one
+<code>JSON_VALUE</code> per joined visitor &mdash; proportional to distinct visitors
+in the partition, not to events, and zero when no user-scoped dimension is
+registered because the join is demand-driven.</p>
+
+<p><strong>Each property carries when it was set</strong>, the way GA&rsquo;s
+BigQuery export carries <code>set_timestamp_micros</code>:</p>
+
+<pre><code>{"plan": {"v": "enterprise", "ts": 1790000000000000}}</code></pre>
+
+<p>Registration therefore adds TWO columns, <code>cd_&lt;name&gt;</code> and
+<code>cd_&lt;name&gt;_set_ts</code>, in the same <code>ALTER</code> &mdash; which the
+5% batching margin makes free. <strong>The timestamp does not become a dimension on
+its own:</strong> a microsecond value has one bucket per event, which is a
+pathological dimension. What it is FOR is the <code>test</code> kind &mdash;
+<code>cd_&lt;name&gt;_set_ts &lt;= ts</code>, &ldquo;the property was already in force
+at this event&rdquo; &mdash; which is boolean, and which is the question a
+write-time stamp cannot otherwise answer. A cube row says the property&rsquo;s
+value; without this it cannot say whether that value applied yet.</p>
+
+<h4><span class="num">2.26.6</span>What this changes about the visitor store <span class="chip c-dec">Decided</span></h4>
+
+<p><strong>The absence test moves from the ROW to the ACQUISITION.</strong> 2.9
+writes the unresolved sentinel where the visitor store has no row, and the cube
+tests <code>v.visitor_id IS NULL</code> for it. That was only ever a proxy, and it
+breaks the moment anything else writes to that row &mdash; a user property arriving
+for a visitor whose acquisition is unknown would create a row, and the build would
+then resolve <code>acq_source</code> to <code>direct</code> rather than the
+sentinel: unknown silently becoming a claim.</p>
+
+<ul>
+<li>the test becomes <code>v.acq_ts IS NULL</code>, renamed
+<code>acquisition.missing</code> since it no longer tests the row. Equivalently:
+stamp the <code>acq_*</code> columns when <code>acq_ts IS NOT NULL</code>, sentinel
+otherwise</li>
+<li>the acquisition write fills <code>acq_*</code> while <code>acq_ts IS NULL</code>
+rather than skipping when the row exists, so a late <code>first_visit</code> on a
+queue drain still lands and write-once still holds</li>
+<li>user properties are written last-value-wins, in the SAME transaction as the raw
+insert, with <code>ts</code> as the ordering guard so an out-of-order queue drain
+cannot overwrite a newer value with an older beacon</li>
+</ul>
+
+<p class="note">The two disciplines now coexist explicitly rather than by accident:
+<code>acq_*</code> is write-once evidence captured at first visit, and
+<code>properties</code> is mutable state the site sets whenever it likes. 2.9 already
+drew that line; this keeps it drawn while letting both live in one row.</p>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 <ol>
