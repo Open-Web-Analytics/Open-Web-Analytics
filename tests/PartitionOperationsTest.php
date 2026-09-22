@@ -1612,7 +1612,9 @@ final class PartitionOperationsTest extends TestCase
         $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $alias  = 'event_raw_leadprobe_' . bin2hex(random_bytes(3));
 
-        $this->assertFalse(method_exists($entity, 'getDailyLeadMonths'),
+        // Asked, not inferred from whether a method exists: every partitioned
+        // entity answers this now, and raw answers zero.
+        $this->assertSame(0, $entity->getDailyLeadMonths(),
             'raw asks for nothing -- if that changes, this test is measuring the wrong thing');
 
         $entity->setTableName($alias);

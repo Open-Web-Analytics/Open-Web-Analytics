@@ -231,7 +231,7 @@ class PartitionRotateCli extends PartitionsCli {
             : sprintf(
                 'Rotating: RETAINING EVERYTHING (no keep given, so nothing will be dropped), '
               . 'and %d month(s) of partitions ahead (through %s). Old periods are merged, not '
-              . 'deleted, to stay within the partition budget.',
+              . 'deleted, to stay within the partition ceiling.',
                 $months_ahead, $through )
         );
 

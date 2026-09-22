@@ -1443,6 +1443,54 @@ class Entity {
         
         return isset($this->_tableProperties['partition_column']) ? $this->_tableProperties['partition_column'] : null;
     }
+
+    /**
+     * How much of this table's lead is DAILY, where that differs from the rest.
+     *
+     * Zero for every ordinary table: a fact table holds one granularity across
+     * the whole of its lead. A reporting cube holds a mix -- the front daily so
+     * a rebuild is a day rather than a month -- and overrides this.
+     *
+     * Declared here beside the partition column rather than discovered with
+     * method_exists(), so "is this a cube" is a question every partitioned
+     * entity answers rather than one that depends on which class happens to
+     * define a method.
+     *
+     * @return int months
+     */
+    function getDailyLeadMonths() {
+
+        return 0;
+    }
+
+    /**
+     * How many partitions this table's lead needs.
+     *
+     * ASKED OF THE TABLE, because the answer differs by kind and the caller
+     * cannot know it: a cube wants about 73 -- two months of daily plus the
+     * coarse remainder -- where an ordinary fact table wants a dozen. Dividing
+     * one allowance equally between them gives the small tables far more than
+     * they use and the cube less than it needs, and refuses configurations the
+     * server can hold.
+     *
+     * The lead only. History is compaction's business, and what it leaves
+     * depends on how much there is.
+     *
+     * @param string $granularity  what the rest of the lead is cut at
+     * @return int  partitions, including the catch-all
+     */
+    function partitionsNeeded($granularity = 'monthly') {
+
+        if (!$this->getPartitionColumn()) {
+
+            return 0;
+        }
+
+        $daily = (int) $this->getDailyLeadMonths();
+
+        // +1 for pmax, which every partitioned table carries.
+        return count(\OWA\Core\Db::makeLeadRanges($daily, $granularity)) + 1;
+    }
     
     function setProperty($obj) {
         

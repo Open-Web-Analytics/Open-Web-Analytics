@@ -1366,15 +1366,6 @@ class Db extends \OWA\Core\Base {
         return array();
     }
 
-    /**
-     * Spare open-file slots on this server. Unknown, without introspection.
-     *
-     * @return int|null
-     */
-    function getPartitionBudget() {
-
-        return null;
-    }
 
     /**
      * The scheduler's lock table, resolved through the entity so the namespace
@@ -2794,26 +2785,7 @@ class Db extends \OWA\Core\Base {
      */
     const PARTITION_DETAIL_MONTHS = 36;
 
-    /**
-     * Fraction of the server's spare open-file slots this feature may claim,
-     * expressed as a divisor: 2 means half of them.
-     *
-     * The reading is a snapshot of a shared resource -- every other table on the
-     * instance draws on the same cap, and the schema grows -- so taking all of it
-     * would be planning for a server that no longer exists by the time the
-     * partitions are created.
-     */
-    const PARTITION_BUDGET_RESERVE = 2;   // default; OWA_PARTITION_BUDGET_RESERVE
 
-    /**
-     * Fewest partitions a table is allowed regardless of what the budget says.
-     *
-     * A server reporting almost no headroom would otherwise derive a limit that
-     * refuses even a couple of years of monthly partitions, which is worse than
-     * useless -- the feature would be unavailable exactly where retention matters
-     * most.
-     */
-    const PARTITION_MIN_LIMIT = 24;       // default; OWA_PARTITION_MIN_LIMIT
 
     /**
      * Ranges for a table that is being partitioned for the first time: coarse
@@ -3802,8 +3774,7 @@ class Db extends \OWA\Core\Base {
              * state the daily part exists to avoid -- and a rotate that is not
              * scheduled never comes.
              */
-            $daily = method_exists( $entity, 'getDailyLeadMonths' )
-                ? (int) $entity->getDailyLeadMonths() : 0;
+            $daily = (int) $entity->getDailyLeadMonths();
 
             $ranges = self::makeLeadRanges( $daily );
 

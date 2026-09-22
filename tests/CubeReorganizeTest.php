@@ -31,11 +31,6 @@ class ReorganizeRecordingDb
         return $this->granularity;
     }
 
-    public function getPartitionBudget()
-    {
-        return null;
-    }
-
     public function repartitionTable($table, $granularity, $dry_run = false, $from = null, $to = null, $skip = null)
     {
         $this->calls[] = compact('table', 'granularity', 'dry_run', 'from', 'to', 'skip');

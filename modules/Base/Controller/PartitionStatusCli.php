@@ -59,7 +59,7 @@ class PartitionStatusCli extends PartitionsCli {
         }
 
         $lines = array( sprintf(
-            'Partition status, %s. Budget: %d partitions per table (%s).',
+            'Partition status, %s. Ceiling: %d partitions per table (%s).',
             date( 'Y-m-d' ), $budget['limit'], $budget['reason']
         ) );
 
@@ -94,7 +94,7 @@ class PartitionStatusCli extends PartitionsCli {
         }
 
         $lines = array( sprintf(
-            '%s: %d partitions (%d bounded + catch-all), %d%% of budget.',
+            '%s: %d partitions (%d bounded + catch-all), %d%% of the ceiling.',
             $table,
             $layout['total'],
             $layout['spans'],

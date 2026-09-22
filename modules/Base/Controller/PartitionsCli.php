@@ -114,27 +114,46 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The most partitions one table may be given in this run.
+     * The most partitions one table may hold.
      *
-     * Each partition is a file, and InnoDB caps how many tablespaces it holds
-     * open through innodb_open_files -- a cap shared with every table already
-     * on the server. Where that can be read, the budget is derived from what is
-     * actually left rather than guessed: half the spare slots, divided by the
-     * number of tables about to be partitioned. Half, because the reading is a
-     * snapshot and the schema will grow.
+     * A SANITY CEILING, not a budget. It exists to refuse a configuration that
+     * is absurd on its face -- daily granularity kept for ten years is 3,650
+     * partitions on one table -- and not to allocate a scarce resource between
+     * tables, because there is no such resource to allocate.
      *
-     * Where it cannot be read the constant stands in.
+     * WHAT THIS USED TO DO, AND WHY IT WAS WRONG. It read @@innodb_open_files,
+     * subtracted the number of base tables, halved the remainder by a reserve
+     * and divided by the number of partitioned tables, to produce a per-table
+     * cap. Four things were wrong with that chain, each on its own:
      *
-     * @param int $table_count  tables this run will partition
+     *   - innodb_open_files is an LRU CACHE of file descriptors, not a ceiling
+     *     on tablespaces. InnoDB closes the least recently used to open
+     *     another; measured on one server, 2,131 tablespaces existed while
+     *     2,014 were open under a cache of 4,000. Exceeding it costs close and
+     *     reopen, not failure, so there is nothing being consumed.
+     *   - it subtracted BASE TABLES, which are not what occupy descriptors --
+     *     partitions are, and one base table may be seventy of them.
+     *   - it divided by the table count, answering "what is an equal share?"
+     *     when nothing about the constraint is per-table.
+     *   - and halved it again by a reserve, against a number that was already
+     *     a cache size rather than a limit.
+     *
+     * The result granted 1,470 partitions across ten tables using 338, while
+     * refusing a cube-per-property layout that the same server would hold four
+     * times over.
+     *
+     * What actually costs is CHURN, and churn follows the working set -- the
+     * partitions queries touch -- which partition pruning keeps small by
+     * design. That is what the partitioning is for.
+     *
+     * @param int $table_count  unused; kept so callers read unchanged
      * @return array  limit, and how it was arrived at
      */
-    protected function partitionLimit( $table_count ) {
+    protected function partitionLimit( $table_count = 0 ) {
 
-        // Partitioning is shaped by settings, not by command arguments: how much
-        // history stays finely partitioned and how much of the server's open-file
-        // budget this may claim are properties of an installation, and an
-        // operator should not be able to change them per invocation. They are set
-        // once with a constant in owa-config.php -- see
+        // Partitioning is shaped by settings, not by command arguments: how
+        // much a table may hold is a property of an installation, set once with
+        // a constant in owa-config.php -- see
         // owa_settings::applyConfigConstants().
         $stated = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_max_partitions' );
 
@@ -146,45 +165,26 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        $spare = \OWA\Core\CoreAPI::dbSingleton()->getPartitionBudget();
-
-        if ( $spare === null ) {
-
-            return array(
-                'limit'  => \OWA\Core\Db::PARTITION_COUNT_LIMIT,
-                'reason' => 'default limit; this server does not report its open-file budget',
-            );
-        }
-
-        $reserve = max( 1, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_budget_reserve' ) );
-        $floor   = max( 1, (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_min_limit' ) );
-
-        $limit = max( $floor, intdiv( $spare, $reserve * max( 1, $table_count ) ) );
-
         return array(
-            'limit'  => $limit,
-            'reason' => sprintf(
-                '%d spare open-file slots on this server, 1/%d of them shared across %d table(s)',
-                $spare, $reserve, $table_count
-            ),
+            'limit'  => \OWA\Core\Db::PARTITION_COUNT_LIMIT,
+            'reason' => 'the default ceiling; raise it with OWA_PARTITION_MAX_PARTITIONS',
         );
     }
 
     /**
-     * The budget, sized against every fact table rather than the ones this run
-     * happens to touch.
+     * The ceiling every fact table is held to.
      *
-     * The open-file budget is a property of the server and the schema: the other
-     * fact tables hold their partitions open whether or not this invocation
-     * mentions them. Sizing it from the filtered set would hand a single-table
-     * run the whole allowance -- so `table=owa_session` would report, and permit,
-     * several times the partitions that the same command without a filter would.
+     * Kept as its own name because five commands ask for it, and because it
+     * once varied with how many tables a run touched -- `table=owa_session`
+     * would then have permitted several times what the unfiltered command did.
+     * A ceiling cannot vary that way, which is one of the things that makes it
+     * a better answer than a budget.
      *
      * @return array  from partitionLimit()
      */
     protected function factTableBudget() {
 
-        return $this->partitionLimit( max( 1, count( $this->factTables() ) ) );
+        return $this->partitionLimit();
     }
 
     /**
@@ -218,7 +218,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         \OWA\Core\CoreAPI::notice( sprintf(
             '%s: refusing to create %d partitions (limit %d -- %s). Each partition is a file, and '
-          . 'past the budget MySQL closes and reopens tablespaces under load, which slows '
+          . 'past a few thousand, MySQL closes and reopens tablespaces under load, which slows '
           . 'everything on the instance. Lower OWA_PARTITION_DETAIL_MONTHS so less history is '
           . 'kept at full granularity, choose a coarser granularity, or set '
           . 'OWA_PARTITION_MAX_PARTITIONS if you have checked innodb_open_files yourself.',
@@ -422,7 +422,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             if ( ! $plan['fits'] ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: %d partitions exceeds the budget of %d and cannot be merged below %d, '
+                    '%s: %d partitions exceeds the ceiling of %d and cannot be merged below %d, '
                   . 'because everything within the last %d months is kept at full granularity. '
                   . 'Lower OWA_PARTITION_DETAIL_MONTHS to reduce it further.',
                     $table, $plan['projected'], $budget['limit'], $plan['floor'], $this->detailMonths()
@@ -467,7 +467,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         if ( ! $plan['fits'] ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: still %d partitions against a budget of %d. Lower OWA_PARTITION_DETAIL_MONTHS '
+                '%s: still %d partitions against a ceiling of %d. Lower OWA_PARTITION_DETAIL_MONTHS '
               . 'to reduce it further; no more can be merged while the last %d months are kept '
               . 'at full granularity.',
                 $table, $plan['projected'], $budget['limit'], $this->detailMonths()
@@ -526,8 +526,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         $entity = $this->entityFor( $table );
 
-        return ( $entity && method_exists( $entity, 'getDailyLeadMonths' ) )
-            ? (int) $entity->getDailyLeadMonths() : 0;
+        return $entity ? (int) $entity->getDailyLeadMonths() : 0;
     }
 
     /**
@@ -783,7 +782,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
                  */
                 \OWA\Core\CoreAPI::notice( sprintf(
                     '%s: the lead is in place but its front is not daily, so every cube '
-                  . 'rebuild rewrites a whole %s. Raise the partition budget, or accept '
+                  . 'rebuild rewrites a whole %s. Raise OWA_PARTITION_MAX_PARTITIONS, or accept '
                   . 'month-sized rebuilds.',
                     $table, $this->db()->inferPartitionGranularity( $table ) ?: 'period' ) );
 

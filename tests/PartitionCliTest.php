@@ -268,20 +268,34 @@ final class PartitionCliTest extends CliControllerTestCase
         }
     }
 
-    /** The numbers behind the budget are named constants, not literals. */
-    public function testBudgetConstantsAreExposed()
+    /** The numbers behind partitioning are named constants, not literals. */
+    public function testPartitionConstantsAreExposed()
     {
-        $this->assertGreaterThanOrEqual(1, \OWA\Core\Db::PARTITION_BUDGET_RESERVE);
-        $this->assertGreaterThan(0, \OWA\Core\Db::PARTITION_MIN_LIMIT);
+        $this->assertGreaterThan(0, \OWA\Core\Db::PARTITION_COUNT_LIMIT);
         $this->assertGreaterThan(0, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
         $this->assertGreaterThan(0, \OWA\Core\Db::PARTITION_MAX_YEARS_PER_BLOCK);
+        $this->assertGreaterThan(0, \OWA\Core\Db::CUBE_DAILY_MONTHS);
+    }
 
-        // The floor must not exceed what a derived budget could yield, or it
-        // would silently become the only value this ever returns.
-        $this->assertLessThan(
-            \OWA\Core\Db::PARTITION_COUNT_LIMIT,
-            \OWA\Core\Db::PARTITION_MIN_LIMIT
-        );
+    /**
+     * The ceiling does not move with how many tables a run touches.
+     *
+     * It used to: the limit was one server-wide allowance divided by the number
+     * of partitioned tables, so `table=owa_session` would have permitted
+     * several times what the same command without a filter did. A ceiling
+     * cannot vary that way, which is part of why it replaced the budget.
+     */
+    public function testTheCeilingIsTheSameWhateverTheRunTouches()
+    {
+        $c = $this->rotate();
+
+        $all = $this->callProtected($c, 'factTableBudget', []);
+        $one = $this->callProtected($c, 'partitionLimit', [1]);
+        $many = $this->callProtected($c, 'partitionLimit', [50]);
+
+        $this->assertSame($all['limit'], $one['limit']);
+        $this->assertSame($all['limit'], $many['limit'],
+            'the table count is not an input any more');
     }
 
     /**
@@ -517,7 +531,7 @@ final class PartitionCliTest extends CliControllerTestCase
         $out = $this->report($this->layout());
 
         $this->assertStringContainsString('owa_x: 25 partitions (24 bounded + catch-all)', $out);
-        $this->assertStringContainsString('13% of budget', $out, '25 of 200');
+        $this->assertStringContainsString('13% of the ceiling', $out, '25 of 200');
         $this->assertStringContainsString('2024-01-01 to 2026-01-01', $out);
         $this->assertStringContainsString('granularity   monthly', $out);
         $this->assertStringContainsString('empty', $out);
@@ -677,7 +691,7 @@ final class PartitionCliTest extends CliControllerTestCase
             list($limit, $total, $expected) = $case;
 
             $this->assertStringContainsString(
-                $expected . ' of budget',
+                $expected . ' of the ceiling',
                 $this->report($this->layout(['total' => $total]), ['limit' => $limit, 'reason' => 'x']),
                 "total $total of limit $limit"
             );
