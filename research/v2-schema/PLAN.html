@@ -2703,11 +2703,17 @@ been ready to fill immediately. That is the same latency every other row already
 has &mdash; nothing is reportable until a build runs &mdash; so it adds a
 boundary case rather than a new kind of wait.</p>
 
-<h3 id="s229"><span class="num">2.28</span>URL canonicalisation <span class="chip c-open">Open</span></h3>
+<h3 id="s229"><span class="num">2.28</span>URL canonicalisation <span class="chip c-done">Shipped</span></h3>
 
-<p><strong>v2 currently applies NONE, and that is not a decision anybody made
-&mdash; it is what fell out of keeping the evidence complete.</strong> Traced
-through the code 22 Sep: the tracker sends <code>page_location</code> =
+<p><strong>BUILT 23 Sep.</strong> The fragment goes in the tracker, the readings
+are canonicalised at ingest, and the URL itself is stored exactly as it arrived.
+A second, build-time query filter is deferred &mdash; see the note at the end of
+2.28.2.</p>
+
+<p>What follows is the state it was in before, and why each piece went the way
+it did. <strong>v2 applied NONE of this, and that was not a decision anybody
+made &mdash; it is what fell out of keeping the evidence complete.</strong>
+Traced through the code 22 Sep: the tracker sends <code>page_location</code> =
 <code>document.URL</code>, and ingest stores it with nothing removed but control
 bytes (<code>EventRawHandlers::text()</code>). <code>page_path</code> and
 <code>page_query</code> are <code>parse_url()</code> of that same string.</p>
@@ -2793,7 +2799,7 @@ than GA does, and v2 doing nothing is GA parity but a v1 regression. That is a
 real choice rather than an oversight to correct, and it is the one still
 open.</p>
 
-<h4><span class="num">2.28.2</span>What each reading gets <span class="chip c-open">Open</span></h4>
+<h4><span class="num">2.28.2</span>What each reading gets <span class="chip c-done">Shipped</span></h4>
 
 <div class="scroll"><table>
 <thead><tr><th>Column</th><th>Proposed</th><th>Why</th></tr></thead>
@@ -2815,18 +2821,29 @@ it never reaches the wire.</li>
 <li class="done"><strong>Query parameters: BOTH, split by what they are for.</strong>
 Redaction at ingest, destructive, for personal data. Report filtering at build,
 reversible, for noise. v1 has one list doing both; v2 should have two.</li>
-<li><strong>STILL OPEN: does <code>page_path</code> get v1&rsquo;s
-collapsing?</strong> <code>default_page</code> and the trailing slash. v1 does
-it, GA does not, and doing nothing is parity with GA at the cost of a v1
-regression &mdash; <code>/store</code>, <code>/store/</code> and
-<code>/store/index.html</code> stay three rows in a page report.</li>
+<li class="done"><strong><code>page_path</code> DOES get v1&rsquo;s
+collapsing</strong> &mdash; <code>default_page</code> and the trailing slash,
+with the root left as <code>/</code>. v1 does more here than GA does and the v1
+behaviour is the better one: <code>/store</code>, <code>/store/</code> and
+<code>/store/index.html</code> are one page, and leaving them as three rows in a
+page report is a regression nobody asked for. Not lowercased &mdash; paths are
+case-sensitive and folding them merges rows a site may keep apart.</li>
 <li><strong>STILL OPEN: does <code>html_entity_decode</code> survive?</strong>
 v1 does it; it is a fix for URLs that arrived HTML-escaped from a template, and
-it is not obviously still needed.</li>
+it is not obviously still needed. Left out for now, since no case for it has
+been produced.</li>
 </ul>
 
-<p class="note"><strong>Whatever is decided, it is not
-<code>makeUrlCanonical()</code>.</strong> That function strips parameters with a
+<p class="note"><strong>DEFERRED, not dismissed: the build-time query
+filter.</strong> The filter list is a per-site setting an administrator edits,
+so what a page report shows depends on the list as it stood when the row was
+written, and a corrected list cannot repair history. Moving the report filter
+into the build would fix that, and is the argument the cube exists for. Ingest
+is where it is for now because that is where v1 has it and where the parser
+already is; the privacy half must stay at ingest regardless.</p>
+
+<p class="note"><strong>It is not <code>makeUrlCanonical()</code>, and that is
+the one thing not carried over.</strong> That function strips parameters with a
 regex over the whole URL (<code>#\?param=.*$|&amp;param=.*$|param=.*&amp;#msiU</code>),
 which matches a parameter name appearing anywhere &mdash; inside a path segment,
 inside another parameter's value &mdash; and takes everything after it. v2 has a
