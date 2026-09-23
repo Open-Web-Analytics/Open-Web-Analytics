@@ -416,6 +416,58 @@ final class SettingsRegistryTest extends TestCase
         unset( $c->db_settings[ self::MODULE ] );
     }
 
+    /**
+     * A value set in memory wins, and costs no query.
+     *
+     * get() consults the pending map BEFORE it reads the array, so a key not
+     * yet resolved would be fetched on the next read and the stored row would
+     * overwrite what was just set. persistSetting() sets before it queues the
+     * write, so this was live: saving a new MaxMind licence key and
+     * redisplaying it returned the OLD key, and re-saving what was displayed
+     * would have discarded the new one.
+     */
+    public function testAValueSetInMemoryIsNotOverwrittenByALaterResolve(): void
+    {
+        $this->requireDb();
+
+        $c  = $this->settings();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        // Storable and not eager, so it starts out pending and unresolved.
+        $c->registerField( self::MODULE, 'pending_key',
+            array( 'default' => 'the-default', 'storable' => true ) );
+
+        $before = (int) $db->num_queries;
+
+        $c->set( self::MODULE, 'pending_key', 'set-in-memory' );
+
+        $this->assertSame( 'set-in-memory',
+            \OWA\Core\CoreAPI::getSetting( self::MODULE, 'pending_key' ),
+            'the stored value must not replace what was just set' );
+
+        $this->assertSame( 0, (int) $db->num_queries - $before,
+            'and a key already answered from memory needs no trip to the store' );
+    }
+
+    /** persistSetting() sets first, so the same holds for it. */
+    public function testPersistSettingMakesTheNewValueReadableImmediately(): void
+    {
+        $this->requireDb();
+
+        $c = $this->settings();
+
+        $c->registerField( self::MODULE, 'persist_key',
+            array( 'default' => 'the-default', 'storable' => true ) );
+
+        $c->persistSetting( self::MODULE, 'persist_key', 'written' );
+
+        $this->assertSame( 'written',
+            \OWA\Core\CoreAPI::getSetting( self::MODULE, 'persist_key' ),
+            'a screen that saves and then redisplays must see what it saved' );
+
+        unset( $c->db_settings[ self::MODULE ] );
+    }
+
     /** 'General' is what group has always defaulted to, and it means Instance. */
     public function testTheLegacyGeneralGroupStillMeansTheInstanceMenu(): void
     {

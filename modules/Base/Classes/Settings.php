@@ -1043,7 +1043,63 @@ namespace OWA\Module\Base\Classes;
       * @return boolean
       */
      function set($module, $key, $value) {
-        
+
+         /*
+          * A value set in memory is RESOLVED. Nothing may go to the store for
+          * it afterwards.
+          *
+          * get() consults the pending map before it reads the array, so
+          * without this a key that had not been resolved yet would be fetched
+          * on the next read and the stored row would overwrite what was just
+          * set. That is not hypothetical: persistSetting() sets before it
+          * queues the write, so an admin saving a new MaxMind licence key and
+          * a screen re-reading it to redisplay got the OLD key back -- and
+          * re-saving what it displayed would have discarded the new one.
+          *
+          * It applies just as much to an in-memory override with no intention
+          * to persist, which overloadConfig() makes: an explicit set must not
+          * be silently replaced by a lazy read that happens later.
+          */
+         $this->loaded[ $module . '|' . $key ] = true;
+
+         unset( $this->pending[ $module . '|' . $key ] );
+
+         $this->writeValue( $module, $key, $value );
+     }
+
+     /**
+      * Seed a declared default.
+      *
+      * ITS OWN PATH, deliberately, because seeding a default is not the same
+      * act as setting a value and the two must not share a method.
+      *
+      * set() means "this is the value now", and therefore resolves the key:
+      * nothing may go to the store for it afterwards. Seeding means "this is
+      * what it falls back to", and must leave the key pending so the stored
+      * value can still be read and applied over it.
+      *
+      * registerField() went through set() for one commit. Every registered
+      * field was marked resolved the moment it was declared, so nothing was
+      * ever pending and no stored value would ever have been read again. The
+      * test that counts the batch query caught it on the first run.
+      *
+      * @return void
+      */
+     private function seedDefault( $module, $key, $value ) {
+
+         $this->writeValue( $module, $key, $value );
+     }
+
+     /**
+      * Write a value into the settings array, and claim nothing about it.
+      *
+      * The shared mechanism under set() and seedDefault(). It exists so those
+      * two can differ in what they RECORD while agreeing on what they store.
+      *
+      * @return void
+      */
+     private function writeValue( $module, $key, $value ) {
+
         if ( $this->config ) {
             
             $values = $this->config->get('settings');
@@ -1322,7 +1378,7 @@ namespace OWA\Module\Base\Classes;
 
              if ( ! $this->isLoaded( $module, $key ) ) {
 
-                 $this->set( $module, $key, $args['default'] );
+                 $this->seedDefault( $module, $key, $args['default'] );
              }
          }
 
