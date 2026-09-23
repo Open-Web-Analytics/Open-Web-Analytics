@@ -325,9 +325,20 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * The prune is likewise confined to modules whose defaults are known.
-     * default_config holds only 'base', so every other module is skipped -- the
-     * guard that keeps their schema_version / is_active intact.
+     * The prune is confined to modules whose defaults are known.
+     *
+     * That used to mean base alone, because default_config held nothing else.
+     * A module that ships settings.php now contributes its defaults too, and
+     * pruning those is correct -- a stored value equal to its declared default
+     * is exactly what the rule exists to drop.
+     *
+     * Two things must still hold, and they are what this asserts. A module that
+     * has declared NOTHING is untouched, as before. And is_active /
+     * schema_version are never pruned for anyone, declared or not: they carry
+     * database state rather than configuration, and core registers them with
+     * eagerness but no default precisely so they can never look like a value
+     * restating one. Dropping them makes a module look uninstalled and re-run
+     * its updates.
      */
     public function testPruneSkipsModulesWithNoKnownDefaults(): void
     {
@@ -336,26 +347,27 @@ final class SettingsPersistenceTest extends TestCase
         $this->assertArrayNotHasKey(
             'domstream',
             $c->default_config,
-            'default_config is expected to hold only base; if a module now '
-            . 'contributes defaults, re-check that pruning it is safe'
+            'domstream declares nothing, so its defaults must stay unknown'
         );
 
-        $c->db_settings['domstream'] = ['schema_version' => 1, 'is_active' => true];
-        $c->db_settings['fileCache'] = ['is_active' => false];
+        $c->db_settings['domstream']     = ['schema_version' => 1, 'is_active' => true];
+        $c->db_settings['fileCache']     = ['is_active' => false];
+        $c->db_settings['maxmind_geoip'] = ['schema_version' => 1, 'is_active' => false];
 
         $removed = $c->pruneRedundantPersistedSettings();
 
         foreach ($removed as $entry) {
-            $this->assertStringStartsWith(
-                'base.',
-                $entry,
-                "prune touched $entry; it must only ever act on modules whose "
-                . 'defaults it actually knows'
-            );
+            $this->assertStringEndsNotWith('.is_active', $entry,
+                "prune removed $entry; is_active is database state and must never be dropped");
+            $this->assertStringEndsNotWith('.schema_version', $entry,
+                "prune removed $entry; schema_version is database state and must never be dropped");
         }
 
-        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['domstream']);
+        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['domstream'],
+            'a module that declares nothing is left alone entirely');
         $this->assertSame(['is_active' => false], $c->db_settings['fileCache']);
+        $this->assertSame(['schema_version' => 1, 'is_active' => false], $c->db_settings['maxmind_geoip'],
+            'and a module that DOES declare still keeps its bootstrap state');
     }
 
     public static function differsFromDefaultProvider(): array
@@ -368,5 +380,60 @@ final class SettingsPersistenceTest extends TestCase
             // different notation are == but are NOT the same stored value.
             "'1e2' vs '100'"    => ['1e2', '100', "numeric strings in different notation must not be collapsed"],
         ];
+    }
+
+    /**
+     * Writing '' is not a removal, and there has to be something that is.
+     *
+     * persistSetting('') stores an empty string -- a row that overrides the
+     * code default with emptiness, forever. SettingsShutdownSaveTest used it as
+     * a cleanup and left `base.owa_settings_shutdown_probe` behind in the
+     * config of every install it ever ran against, this box included, since
+     * long before settings became rows. Nobody noticed because an empty string
+     * reads like an absent one until you look at the table.
+     */
+    public function testWritingAnEmptyStringStoresItRatherThanRemovingTheKey(): void
+    {
+        $c = $this->settings();
+
+        $c->persistSetting('base', 'zz_removal_probe', '');
+
+        $this->assertArrayHasKey('zz_removal_probe', $c->db_settings['base'],
+            "'' is a value: persistSetting stores it, which is why it cannot express a removal");
+        $this->assertSame('', $c->db_settings['base']['zz_removal_probe']);
+    }
+
+    /** removeSetting() is the one that removes it. */
+    public function testRemoveSettingDropsTheStoredValue(): void
+    {
+        $c = $this->settings();
+
+        $c->persistSetting('base', 'zz_removal_probe', 'stored');
+
+        $this->assertSame('stored', $c->get('base', 'zz_removal_probe'));
+
+        $c->removeSetting('base', 'zz_removal_probe');
+
+        $this->assertArrayNotHasKey('zz_removal_probe', $c->db_settings['base'] ?? [],
+            'the key is gone from what save() writes back, so the row is pruned');
+        $this->assertFalse($c->get('base', 'zz_removal_probe'),
+            'and the live array no longer answers with the value just removed');
+    }
+
+    /** A key WITH a code default goes back to that default, not to nothing. */
+    public function testRemoveSettingFallsBackToTheCodeDefault(): void
+    {
+        $c = $this->settings();
+
+        $default = $c->default_config['base']['log_robots'] ?? null;
+        $this->assertNotNull($default, 'expected a code default for base.log_robots');
+
+        $c->persistSetting('base', 'log_robots', 'not-the-default');
+        $this->assertSame('not-the-default', $c->get('base', 'log_robots'));
+
+        $c->removeSetting('base', 'log_robots');
+
+        $this->assertSame($default, $c->get('base', 'log_robots'),
+            'removing a stored value restores the default, it does not blank the setting');
     }
 }

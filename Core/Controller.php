@@ -1030,24 +1030,13 @@ class Controller extends \OWA\Core\Base {
          * register into that map, and hardcoding Base's two entries would have
          * left theirs unreachable when the old settings menu went.
          */
-        $installation = array();
+        $registered = $this->registeredSettingsNav();
 
-        foreach ( (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels() as $items ) {
+        if ( isset( $registered['Instance'] ) ) {
 
-            foreach ( (array) $items as $item ) {
+            $nav['Instance'] = $registered['Instance'];
 
-                $installation[] = array(
-                    'do'         => $item['do'],
-                    'label'      => $item['anchortext'],
-                    'params'     => array(),
-                    'capability' => 'edit_settings',
-                );
-            }
-        }
-
-        if ( $installation ) {
-
-            $nav['Instance'] = $installation;
+            unset( $registered['Instance'] );
         }
 
         $nav['Organization'] = array(
@@ -1132,7 +1121,120 @@ class Controller extends \OWA\Core\Base {
             );
         }
 
+        /*
+         * Registered pages for the other tiers, merged after those sections
+         * exist so a module can put a screen on the Property or the Profile
+         * rather than being forced into Instance -- which is where every
+         * registered page landed regardless of what it asked for.
+         *
+         * Appended, so a module adds to a section rather than replacing it.
+         */
+        foreach ( $registered as $section => $items ) {
+
+            if ( ! isset( $nav[ $section ] ) ) {
+
+                /*
+                 * A section the framework did not build -- because there is no
+                 * current Property, say. Dropped rather than invented: a nav
+                 * heading with one third-party link under it and none of the
+                 * framework's own is a worse answer than not showing it.
+                 */
+                continue;
+            }
+
+            foreach ( $items as $item ) {
+
+                $nav[ $section ][] = $item;
+            }
+        }
+
         return $nav;
+    }
+
+    /**
+     * Registered settings pages, bucketed by the nav section each asked for.
+     *
+     * Three things here were declared and ignored until now. `section` did not
+     * exist at all, so every registered page was forced under Instance and a
+     * module with per-Property configuration had nowhere to put it. `order`
+     * was defaulted to 1 and never read, so pages appeared in whatever order
+     * their modules happened to register. And `capability` was recorded and
+     * then overridden with a hard-coded 'edit_settings', so a page asking for
+     * something stricter was shown to anyone who could edit settings at all.
+     *
+     * `group` is still honoured as the name for `section`: it is what existing
+     * registrations write, and breaking them to rename a key would be a poor
+     * trade.
+     *
+     * @return array section => list of nav items
+     */
+    protected function registeredSettingsNav() {
+
+        return self::settingsNavSections(
+            (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels() );
+    }
+
+    /**
+     * Bucket and order registered pages. Pure, so the rules above can be
+     * asserted without standing up the module layer to produce panels.
+     *
+     * @param  array $panels as getAdminPanels() returns them
+     * @return array section => ordered list of nav items
+     */
+    public static function settingsNavSections( array $panels ) {
+
+        $sections = array();
+
+        foreach ( $panels as $items ) {
+
+            foreach ( (array) $items as $item ) {
+
+                $section = (string) ( $item['section'] ?? $item['group'] ?? 'Instance' );
+
+                // 'General' is what registerSettingsPage() has always defaulted
+                // `group` to, and it means "the install-wide settings menu".
+                if ( $section === 'General' ) {
+
+                    $section = 'Instance';
+                }
+
+                $sections[ $section ][] = array(
+                    'do'         => $item['do'],
+                    'label'      => $item['anchortext'],
+                    'params'     => array(),
+                    'capability' => (string) ( $item['capability'] ?? 'edit_settings' ),
+                    'order'      => (int) ( $item['order'] ?? 1 ),
+                );
+            }
+        }
+
+        foreach ( $sections as $section => $items ) {
+
+            /*
+             * Stable within an order: usort() is not stable in PHP, and two
+             * pages that both take the default would otherwise swap places
+             * between requests for no reason a reader could see.
+             */
+            $keyed = array();
+
+            foreach ( $items as $i => $item ) {
+
+                $keyed[] = array( $item['order'], $i, $item );
+            }
+
+            sort( $keyed );
+
+            $sections[ $section ] = array_map(
+                function ( $row ) {
+
+                    unset( $row[2]['order'] );
+
+                    return $row[2];
+                },
+                $keyed );
+        }
+
+        return $sections;
     }
 
     /**

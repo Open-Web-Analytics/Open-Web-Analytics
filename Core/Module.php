@@ -420,6 +420,196 @@ abstract class Module {
     }
 
     /**
+     * Declare one of this module's settings.
+     *
+     * The module is NOT a parameter: it is $this->name. A module method that
+     * made its caller repeat which module it belonged to would be one more
+     * thing that can disagree with itself.
+     *
+     * See Settings::registerField() for what the args mean. The short version:
+     * `default` always; `storable` if a value can be persisted at all, without
+     * which it is a static code constant and never queried; `autoload` if boot
+     * needs it; `scopes` for which levels may hold a row; `type`, `options`,
+     * `label` and `description` if a fieldset will render it.
+     *
+     * @param string $key
+     * @param array  $args
+     * @return void
+     */
+    public function registerSettingsField( $key, array $args = array() ) {
+
+        \OWA\Core\CoreAPI::configSingleton()->registerField( $this->name, $key, $args );
+    }
+
+    /**
+     * Declare a group of settings that render together, as one <fieldset>.
+     *
+     * The SET names its settings, rather than each setting naming its set.
+     * Layout is a property of the layout, and declaring it here means the
+     * order is just the order of the array -- no `order` integers to reconcile
+     * between fields registered in different places, and no way for two fields
+     * to claim the same position.
+     *
+     * A setting appears on a screen because a fieldset lists it. That is the
+     * whole test: schema_version needs no flag keeping it off the settings
+     * pages, because nothing lists it.
+     *
+     * Keys: id, legend, description, settings. The id is namespaced with this
+     * module, so a bare 'tracking' becomes 'base.tracking' and two modules
+     * cannot collide.
+     *
+     * @param array $set
+     * @return void
+     */
+    public function registerSettingsFieldSet( array $set ) {
+
+        $set['module'] = $this->name;
+
+        $id = (string) ( $set['id'] ?? '' );
+
+        if ( $id === '' ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'A settings fieldset needs an id; ignoring one registered by %s.', $this->name ) );
+
+            return;
+        }
+
+        if ( strpos( $id, '.' ) === false ) {
+
+            $set['id'] = $this->name . '.' . $id;
+        }
+
+        \OWA\Core\CoreAPI::configSingleton()->registerFieldSet( $set );
+    }
+
+    /**
+     * Settings every module has because the framework requires them, whatever
+     * the module author writes.
+     *
+     * Core tacks these on rather than asking for them. They are not a module
+     * author's business: `is_active` decides whether the module loads at all
+     * and `schema_version` decides whether its updates run, so an author who
+     * forgot to mark one eager would break their own activation in a way that
+     * is very hard to trace back to a missing line in a declaration file.
+     *
+     * A module MAY still describe one -- the Modules screen toggles is_active
+     * and wants a label for it -- but settingsRegistry() merges the chrome and
+     * keeps autoload forced on.
+     *
+     * @return array
+     */
+    public static function mechanicalSettings() {
+
+        /*
+         * DELIBERATELY NO DEFAULTS. Only eagerness.
+         *
+         * A registered default lands in default_config, and
+         * pruneRedundantPersistedSettings() drops any stored value equal to
+         * its default -- so declaring `is_active => false` would let the prune
+         * delete a module's stored is_active row, and declaring
+         * `schema_version => 0` would do the same to a module sitting at
+         * version 0. Both make a module look uninstalled and re-run its
+         * updates. These two keys carry database STATE, not configuration, and
+         * nothing may treat them as restating a default.
+         */
+        return array(
+            'is_active'      => array( 'autoload' => true ),
+            'schema_version' => array( 'autoload' => true ),
+        );
+    }
+
+    /**
+     * The settings catalogue for every module present on disk, with the core
+     * settings added.
+     *
+     * STATIC, and that is the point rather than a convenience: this has to be
+     * answerable before any module object exists. Service::_loadModules()
+     * calls getActiveModules(), which reads `is_active` out of the settings
+     * array -- so modules cannot be instantiated until settings are loaded, and
+     * a registry collected from module OBJECTS could never be available to
+     * Settings::load(). A file can be read with no class loading, no module
+     * list and no database.
+     *
+     * Each module may ship modules/<Dir>/settings.php returning
+     *
+     *     [ 'module'   => 'maxmind_geoip',
+     *       'settings' => [ '<key>' => [ 'default' => ..., 'autoload' => true,
+     *                                    ...chrome ] ] ]
+     *
+     * The file names its own module because core cannot work it out:
+     * Lib::moduleDirName() is LOSSY -- 'maxmind_geoip' and 'maxmindGeoip' both
+     * produce 'MaxmindGeoip' -- and the stored rows use the first form, so
+     * inverting a directory name would be a guess that silently keys settings
+     * under a module nobody reads.
+     *
+     * No `autoload` on an entry means that setting is lazy. No chrome keys mean
+     * it is code-only and will never appear on a screen, which is how a setting
+     * stays out of the UI now -- rather than by being absent from template
+     * markup and present in a denylist that fails open.
+     *
+     * A missing file is not an error: that module declares nothing and keeps
+     * the pre-registration behaviour. Adoption is one module at a time.
+     *
+     * @return array{fields: array, declared: array}
+     */
+    public static function settingsRegistry() {
+
+        static $registry = null;
+
+        if ( $registry !== null ) {
+
+            return $registry;
+        }
+
+        $fields   = array();
+        $declared = array();
+
+        $mechanical = self::mechanicalSettings();
+
+        foreach ( \OWA\Core\CoreAPI::getPresentModules() as $dir ) {
+
+            $file = OWA_DIR . 'modules' . DIRECTORY_SEPARATOR . $dir
+                  . DIRECTORY_SEPARATOR . 'settings.php';
+
+            if ( ! file_exists( $file ) ) {
+
+                continue;
+            }
+
+            $decl = include $file;
+
+            $module = is_array( $decl ) ? (string) ( $decl['module'] ?? '' ) : '';
+
+            if ( $module === '' || ! isset( $decl['settings'] ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s must return an array with a module name and a settings array; ignoring it.',
+                    $file ) );
+
+                continue;
+            }
+
+            foreach ( (array) $decl['settings'] as $key => $args ) {
+
+                $args = (array) $args;
+
+                if ( isset( $mechanical[ $key ] ) ) {
+
+                    // Chrome from the module, eagerness from core.
+                    $args = array_merge( $args, $mechanical[ $key ] );
+                }
+
+                $fields[ $module . '|' . $key ] = $args;
+            }
+
+            $declared[ $module ] = true;
+        }
+
+        return $registry = array( 'fields' => $fields, 'declared' => $declared );
+    }
+
+    /**
      * Abstract method for registering administration/settings page
      *
      * @access public
@@ -468,6 +658,32 @@ abstract class Module {
         $page['priviledge'] = $page['priviledge'] ?? 'admin';
         $page['group']      = $page['group'] ?? 'General';
         $page['order']      = $page['order'] ?? 1;
+
+        /*
+         * Which tier of the nav this page belongs to: Instance, Organization,
+         * Property or Observation Profile.
+         *
+         * Defaulted from `group`, which is what existing registrations write
+         * and which has always meant the install-wide menu. A module with
+         * per-Property configuration can now say so instead of being filed
+         * under Instance whatever it asked for.
+         */
+        $page['section'] = $page['section'] ?? $page['group'];
+
+        /*
+         * What the viewer must have. Recorded before now and then ignored --
+         * the nav hard-coded edit_settings for every registered page, so a
+         * page asking for something stricter was shown to anyone who could
+         * edit settings at all.
+         */
+        $page['capability'] = $page['capability'] ?? 'edit_settings';
+
+        /*
+         * The fieldsets this page renders, in order. Named by the page rather
+         * than each fieldset naming its page, so layout is declared where the
+         * layout decision is made and the order is just the order of the array.
+         */
+        $page['fieldsets'] = (array) ( $page['fieldsets'] ?? array() );
 
         // What marks this panel as carrying an authoritative title.
         $page['owa_titled'] = true;

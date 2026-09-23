@@ -40,8 +40,14 @@ final class SettingsShutdownSaveTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Remove the probe's setting and persist that removal explicitly.
-        owa_coreAPI::persistSetting('base', self::KEY, '');
+        /*
+         * removeSetting(), not persistSetting('') -- which is what this used to
+         * do, and which is not a removal. '' is a VALUE, so it stored a row
+         * holding an empty string, and every install this test ever ran against
+         * still carries `base.owa_settings_shutdown_probe` because of it. The
+         * live one here did, from long before settings became rows.
+         */
+        owa_coreAPI::configSingleton()->removeSetting('base', self::KEY);
         owa_coreAPI::configSingleton()->save();
     }
 
