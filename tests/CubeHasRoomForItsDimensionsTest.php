@@ -4,176 +4,239 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
-use OWA\Module\Base\Classes\Cube\Cubes;
 use OWA\Module\Base\Classes\Cube\Dimensions;
+use OWA\Module\Base\Entity\CustomDimension;
 
 /**
  * The cube still has room for a full set of custom dimensions.
  *
  * MySQL caps a row's DEFINITION at 65,535 bytes -- the sum of its columns'
  * declared widths in bytes, not what they hold -- and refuses any ALTER that
- * would cross it with error 1118. That is a real limit, and the cube already
- * spends most of it: about 53,000 bytes on its own columns before a single
- * dimension is registered.
+ * would cross it. The cube already spends most of it: about 53,000 bytes on its
+ * own columns before a single dimension is registered.
  *
  * WHAT COULD GO WRONG IS A CODE CHANGE, NOT A REGISTRATION. Twenty dimensions
  * at VARCHAR(64) need about 4,000 bytes of the 12,500 left, so no amount of
  * registering can exhaust it. What can is a release adding three more
  * VARCHAR(1024) columns to the cube, at which point custom dimensions quietly
  * stop fitting on every installation at once -- and the first anyone would know
- * is a registration failing in production.
+ * is a registration failing in production. So it belongs in a test, and the
+ * runtime carries no arithmetic for it at all.
  *
- * So this belongs in a test and not in the product. The runtime once carried
- * arithmetic that predicted the server's row accounting before every
- * registration; it was deleted, because it was a second copy of MySQL's rules
- * to keep true (it was wrong twice while being written, once charging a TEXT
- * column its full 65,535-byte declared width instead of the twelve it actually
- * costs), it guarded a case registration cannot reach, and the thing it would
- * have caught is this one -- which a test catches earlier and for good.
+ * IT COUNTS THE ENTITY RATHER THAN ASKING A SERVER, and that is a correction.
+ * The first version built a real cube and ran a real ALTER, which is more
+ * faithful in principle and was wrong in practice: it failed twice in CI for
+ * reasons that had nothing to do with the row -- an ALTER across seventy-odd
+ * partitions brings in file handles, temp space and server version -- while the
+ * row it was asking about had 12,464 bytes spare on the very same machine.
+ * A question about declared widths is answerable from the declarations, needs
+ * no database, and therefore runs in every CI environment rather than the one
+ * that has MySQL.
  *
- * IT ASKS THE SERVER RATHER THAN MODELLING IT. There is no arithmetic here at
- * all: it builds the real cube, adds a full set of real dimension columns, and
- * reports what MySQL said.
+ * THE ARITHMETIC WAS VALIDATED AGAINST THE SERVER BEFORE BEING TRUSTED. On a
+ * real 73-column cube it predicted the exact point at which MySQL refused, in
+ * four separate cases: 16 more VARCHAR(255), 64 more VARCHAR(64), 114 more
+ * VARCHAR(36), and the same numbers again with a TEXT column present. The one
+ * thing it got wrong on the way is recorded in the off-page rule below, because
+ * it is the trap: information_schema reports a TEXT column's width as its whole
+ * capacity, and charging that prices one column past the entire row.
  */
 final class CubeHasRoomForItsDimensionsTest extends TestCase
 {
-    /** @var string */
-    private $table = '';
+    /** MySQL's row definition limit. */
+    private const MAX_ROW_BYTES = 65535;
 
-    protected function setUp(): void
+    /**
+     * Bytes per character, taken from the charset OWA DECLARES rather than
+     * guessed.
+     *
+     * Every table is created `CHARACTER SET = utf8`, which MySQL 8 still maps
+     * to utf8mb3 at three bytes. Reading the constant rather than writing 3
+     * here is what makes testTheCubeWouldNotFitAtFourBytesPerCharacter below
+     * mean something: change the constant and the two tests disagree, which is
+     * the point at which somebody has to look.
+     */
+    private function bytesPerChar(): int
     {
-        if (!owa_test_db_available()) {
-            $this->markTestSkipped('OWA database not reachable; this asks the server.');
-        }
-    }
-
-    protected function tearDown(): void
-    {
-        if ($this->table !== '') {
-            owa_coreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s', $this->table));
-        }
+        return strpos(OWA_DTD_CHARACTER_ENCODING_UTF8, 'mb4') !== false ? 4 : 3;
     }
 
     /**
-     * A cube of the CURRENT shape takes a full set of dimensions.
+     * What one declared column costs against the row.
      *
-     * The expensive shape deliberately: user-scoped, so every dimension brings
-     * a set-time column as well. If this fails, the cube has grown past what it
-     * can carry and something has to come out of it -- not out of the cap.
+     * A variable-length column costs its declared width in BYTES plus one
+     * length byte, or two once that exceeds 255. Anything stored off the page
+     * -- TEXT, BLOB, JSON -- costs a pointer instead, whatever its declared
+     * capacity says.
      */
-    public function testACubeOfTodaysShapeTakesAFullSetOfDimensions(): void
+    private function cost(string $type): int
     {
-        $db = owa_coreAPI::dbSingleton();
+        $type = strtolower($type);
 
-        $this->table = 'owa_cube_room_probe_' . bin2hex(random_bytes(3));
+        if (preg_match('/(text|blob|json)/', $type)) {
+            return 12;
+        }
 
+        if (preg_match('/(?:var)?char\s*\(\s*(\d+)\s*\)/', $type, $m)) {
+            $bytes = (int) $m[1] * $this->bytesPerChar();
+
+            return $bytes + ($bytes > 255 ? 2 : 1);
+        }
+
+        foreach ([
+            'tinyint' => 1, 'smallint' => 2, 'mediumint' => 3, 'bigint' => 8,
+            'int' => 4, 'float' => 4, 'double' => 8, 'decimal' => 8,
+            'datetime' => 5, 'timestamp' => 4, 'date' => 3, 'time' => 3, 'year' => 1,
+        ] as $name => $bytes) {
+            if (strpos($type, $name) !== false) {
+                return $bytes;
+            }
+        }
+
+        // Unknown types are charged the widest fixed width rather than
+        // nothing, so a type this does not know about cannot make the
+        // estimate optimistic.
+        return 8;
+    }
+
+    /** What the cube's own columns declare. */
+    private function cubeRowBytes(): int
+    {
         $entity = owa_coreAPI::entityFactory('base.event');
-        $entity->setTableName(substr($this->table, 4));
+        $bytes  = 0;
 
-        $this->assertTrue((bool) $entity->createTable(), 'the probe cube should be created');
-
-        // createTable() is CREATE TABLE IF NOT EXISTS and answers true for
-        // "already there" as well as for "made it", so it cannot report a
-        // refusal. Asked separately, because a cube that was never created
-        // makes every assertion below fail for the wrong reason.
-        $this->assertTrue($db->tableExists($this->table),
-            'the cube was not created at all: ' . $db->lastQueryError());
-
-        /*
-         * PARTITIONS ARE NOT PART OF THIS QUESTION, so the probe does without
-         * them.
-         *
-         * How much of a row's 65,535 bytes the columns declare has nothing to
-         * do with how the rows are divided up -- and an ALTER across the
-         * cube's seventy-odd partitions is a rebuild of each, which brings in
-         * file handles, temp space and server version, none of which this
-         * test is about. It cost a failure that read as "the row is full" on a
-         * server whose row had 12,464 bytes spare.
-         */
-        $db->removePartitioning($this->table);
-
-        $columns = [];
-
-        for ($i = 0; $i < Dimensions::MAX_PER_PROPERTY; $i++) {
-            $columns['cd_probe' . $i] =
-                Dimensions::definitionFor('string', Dimensions::DIMENSION_LENGTH);
-
-            $columns['cd_probe' . $i . '_set_ts'] = OWA_DTD_BIGINT . ' NULL';
+        foreach ($entity->getColumns() as $name) {
+            $bytes += $this->cost((string) $entity->getColumnDefinition($name));
         }
 
-        $this->assertTrue(
-            $db->alterColumnsRebuilding($this->table, $columns),
+        return $bytes;
+    }
+
+    /** What a full set of dimensions declares, in its most expensive shape. */
+    private function dimensionBytes(): int
+    {
+        // User-scoped: every one brings a set-time column as well.
+        $each = $this->cost(Dimensions::definitionFor(
+                    CustomDimension::TYPE_STRING, Dimensions::DIMENSION_LENGTH))
+              + $this->cost(OWA_DTD_BIGINT);
+
+        return Dimensions::MAX_PER_PROPERTY * $each;
+    }
+
+    /**
+     * If this fails, take width OUT OF THE CUBE rather than lowering the cap.
+     *
+     * The ten VARCHAR(1024) columns are about 57% of the row between them, and
+     * raw_ua in particular has no reader in the cube at all -- its stated
+     * purpose is re-deriving a parser fix, and that reads owa_event_raw.
+     */
+    public function testACubeOfTodaysShapeHasRoomForAFullSetOfDimensions(): void
+    {
+        $cube       = $this->cubeRowBytes();
+        $dimensions = $this->dimensionBytes();
+
+        $this->assertLessThan(
+            self::MAX_ROW_BYTES,
+            $cube + $dimensions,
             sprintf(
-                'A cube can no longer take its %d custom dimensions: MySQL refused the '
-              . 'ALTER, which at this size means error 1118, the 65,535-byte row limit. '
+                "A cube can no longer take its %d custom dimensions.\n"
+              . "  the cube declares  %s bytes\n"
+              . "  %d dimensions need %s bytes\n"
+              . "  the row allows     %s bytes\n"
               . 'Something added columns to owa_event_raw or to the cube and pushed it '
-              . 'over. The fix is to take width out of the cube -- the ten VARCHAR(1024) '
-              . 'columns are about 57%% of the row between them, and raw_ua in particular '
-              . 'has no reader there -- rather than to lower the cap.%s',
-                Dimensions::MAX_PER_PROPERTY, $this->describeRow())
-          . "\n\nThe server said: " . $db->lastQueryError());
-
-        $this->assertCount(
-            Dimensions::MAX_PER_PROPERTY * 2,
-            Dimensions::registeredColumnsOn($this->table),
-            'and every one of them is really on the table');
+              . 'over. Take width out of the cube rather than lowering the cap.',
+                Dimensions::MAX_PER_PROPERTY,
+                number_format($cube), Dimensions::MAX_PER_PROPERTY,
+                number_format($dimensions), number_format(self::MAX_ROW_BYTES)));
     }
 
     /**
-     * What the cube actually costs here, for a failure message that can be
-     * acted on rather than reproduced.
+     * And it is not scraping in.
      *
-     * A row limit is the same number everywhere, but what a table spends
-     * against it is not: the charset decides how many bytes a declared
-     * character takes, and a server whose default differs turns a comfortable
-     * margin into a refusal.
-     *
-     * @return string
+     * A cube one column away from the limit passes the test above and fails for
+     * the next person to add anything, so the margin is asserted rather than
+     * left to be discovered. Not a round number: it is one more VARCHAR(1024),
+     * which is the unit the cube actually grows in.
      */
-    private function describeRow(): string
+    public function testThereIsMoreThanOneColumnOfMarginLeft(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $spare = self::MAX_ROW_BYTES - $this->cubeRowBytes() - $this->dimensionBytes();
 
-        $collation = $db->get_row(sprintf(
-            "SELECT TABLE_COLLATION AS c FROM information_schema.TABLES "
-          . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'", $this->table));
+        $this->assertGreaterThan(
+            $this->cost('VARCHAR(1024)'),
+            $spare,
+            sprintf('only %s bytes spare, which is less than one more wide column',
+                number_format($spare)));
+    }
 
-        $bytes = 0;
-        $count = 0;
-
-        foreach ((array) $db->get_results(sprintf(
-                "SELECT COALESCE(CHARACTER_OCTET_LENGTH, 0) AS o "
-              . "FROM information_schema.COLUMNS "
-              . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'",
-                $this->table)) as $column) {
-
-            $octets = (int) $column['o'];
-            $count++;
-            $bytes += $octets > 0 ? $octets + ($octets > 255 ? 2 : 1) : 8;
+    /**
+     * AND IT WOULD NOT FIT AT FOUR BYTES PER CHARACTER. Recorded, because it is
+     * a real constraint on a decision somebody will reach for.
+     *
+     * `utf8` is deprecated in MySQL and is documented as an alias that will
+     * eventually mean utf8mb4. On that day, or on the day somebody changes
+     * OWA_DTD_CHARACTER_ENCODING_UTF8 to get emoji into page titles, the cube
+     * stops being creatable AT ALL -- not "stops having room for dimensions",
+     * but exceeds the row limit on its own, before a single one is registered.
+     * Verified from the other direction too: CONVERT TO CHARACTER SET utf8mb4
+     * on a real cube is refused.
+     *
+     * So the width has to come out of the cube BEFORE that move, not after.
+     * This test is the note that says so, in the place someone will be standing
+     * when they need it.
+     */
+    public function testTheCubeWouldNotFitAtFourBytesPerCharacter(): void
+    {
+        if ($this->bytesPerChar() === 4) {
+            $this->fail(
+                'The charset was changed to a four-byte one. The cube does not fit at '
+              . 'four bytes per character -- take width out of it first; the ten '
+              . 'VARCHAR(1024) columns are about 57% of the row between them.');
         }
 
-        return sprintf(
-            "\n\nThis cube: %d columns, about %s of the 65,535-byte row (%s spare), "
-          . 'collation %s.',
-            $count, number_format($bytes), number_format(65535 - $bytes),
-            is_array($collation) ? $collation['c'] : '(unreadable)');
+        $wide = (int) round(($this->cubeRowBytes() + $this->dimensionBytes()) * 4 / 3);
+
+        $this->assertGreaterThan(self::MAX_ROW_BYTES, $wide,
+            'if this ever passes, the cube has become narrow enough to move to utf8mb4 '
+          . '-- which is worth knowing, and worth doing');
     }
 
     /**
-     * The cap is what stops a registration, and it is well inside what fits.
+     * The arithmetic above, checked against the case that fooled it once.
      *
-     * Stated as a relationship rather than a number so that raising the cap is
-     * a decision someone makes against the test above rather than a number that
-     * drifts past it.
+     * information_schema reports a TEXT column's width as its whole capacity --
+     * 65,535, and over four billion for LONGTEXT -- so charging the declared
+     * width prices a single one past the entire row. Measured: a table takes
+     * 197 off-page columns whatever their declared size, where it takes 85
+     * VARCHAR(255), so they are bounded by a different limit from this one.
      */
-    public function testTheCapIsTheOnlyLimitARegistrationCanReach(): void
+    public function testAnOffPageColumnIsPricedAsAPointer(): void
     {
-        $this->assertGreaterThan(0, Dimensions::MAX_PER_PROPERTY);
+        foreach (['TEXT', 'LONGTEXT NULL', 'BLOB', 'JSON NULL'] as $type) {
+            $this->assertSame(12, $this->cost($type), $type);
+        }
 
+        // A VARCHAR still costs its declared width, which is the distinction
+        // the pointer rule exists to draw: 255 characters at this table's
+        // bytes per character, plus a two-byte length prefix.
+        $this->assertSame(
+            255 * $this->bytesPerChar() + 2,
+            $this->cost('VARCHAR(255)'));
+    }
+
+    /** The cap is the only limit a registration can reach. */
+    public function testTheRuntimeDoesNotPriceTheRow(): void
+    {
         $body = file_get_contents(
             __DIR__ . '/../modules/Base/Classes/Cube/Dimensions.php');
 
-        $this->assertStringNotContainsString('MAX_ROW_BYTES', $body,
-            'the runtime does not price the row; this test does the asking instead');
+        foreach (['MAX_ROW_BYTES', 'definitionRowBytes', 'tableRowBytes'] as $gone) {
+            $this->assertStringNotContainsString($gone, $body,
+                "$gone was removed: predicting the server's row accounting is this "
+              . "test's job, not the runtime's");
+        }
+
+        $this->assertStringContainsString('1118', $body,
+            'and a refused ALTER names the error an operator will actually see');
     }
 }
