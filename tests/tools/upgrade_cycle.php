@@ -233,23 +233,6 @@ if ( $phase === 'down' ) {
     $note( sprintf( '--- rolled back %d update(s), down to schema %d ---',
         count( $rolled ), $floor ) );
 
-    // TEMPORARY PROBE -- remove before merge. What a COLD boot would read.
-    $probe_db = owa_coreAPI::dbSingleton();
-    foreach ( array( 'owa_configuration', 'owa_setting' ) as $probe_table ) {
-        $note( sprintf( '  [probe] %s exists=%s', $probe_table,
-            var_export( (bool) $probe_db->tableExists( $probe_table ), true ) ) );
-    }
-    $probe_row = $probe_db->get_row( 'SELECT id, LENGTH(settings) AS len FROM owa_configuration' );
-    $note( sprintf( '  [probe] blob row=%s', $probe_row
-        ? sprintf( 'id=%s len=%s', $probe_row['id'], $probe_row['len'] ) : 'MISSING' ) );
-    if ( $probe_row ) {
-        $probe_blob = $probe_db->get_row( 'SELECT settings FROM owa_configuration' );
-        $probe_vals = @unserialize( (string) $probe_blob['settings'], array( 'allowed_classes' => false ) );
-        $note( sprintf( '  [probe] blob base.schema_version=%s modules=%s',
-            var_export( is_array( $probe_vals ) ? ( $probe_vals['base']['schema_version'] ?? null ) : 'UNREADABLE', true ),
-            is_array( $probe_vals ) ? implode( ',', array_keys( $probe_vals ) ) : '-' ) );
-    }
-
     file_put_contents( OWA_UPGRADE_CYCLE_STATE, json_encode( array(
         'installed' => $installed,
         'floor'     => $floor,

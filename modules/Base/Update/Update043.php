@@ -20,9 +20,17 @@ namespace OWA\Module\Base\Update;
  *   - Nothing could be read in part, so every setting was loaded on every
  *     request. The autoload column added here is what makes that a choice.
  *
- * The entity is used directly rather than through Settings, which is
- * deliberate: a migration writes the shape it is creating, and must keep
- * working when the application code above it moves on.
+ * Every read and write here is raw SQL rather than an entity, which is not
+ * stylistic. Both entities are setCachable(), and this migration DROPS and
+ * RECREATES the tables underneath them: a cached object from an earlier call
+ * answers with an id, the write takes the update() branch, the UPDATE matches
+ * no row in the table that has since been rebuilt, and the write reports
+ * success having stored nothing. That is exactly what the rewind-and-reapply
+ * cycle does -- down(), up(), down() again in one process -- and the second
+ * down() silently wrote no blob, which left a cold boot with no
+ * schema_version and sent the upgrade back to Update003.
+ *
+ * A migration writes the shape it is creating, without a cache in front of it.
  *
  * NOT CLI-ONLY. It rewrites one small table -- 15 keys on the install this was
  * measured against -- and drops another.
@@ -156,10 +164,6 @@ class Update043 extends \OWA\Core\Update {
                 unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
         }
 
-        // TEMPORARY PROBE -- remove before merge.
-        fwrite( STDERR, sprintf( "[probe] 043.down: install rows=%d modules=%s\n",
-            count( $rows ), implode( ',', array_keys( $settings ) ) ) );
-
         if ( $settings && ! $this->writeBlob( $legacy, $settings ) ) {
 
             $this->e->notice( sprintf(
@@ -176,17 +180,8 @@ class Update043 extends \OWA\Core\Update {
          */
         $this->c->settingStoreRecheck();
 
-        // TEMPORARY PROBE -- remove before merge.
-        $probe = $db->get_row( sprintf(
-            'SELECT id, LENGTH(settings) AS len FROM %s', $legacy->getTableName() ) );
-        fwrite( STDERR, sprintf( "[probe] 043.down: blob row=%s\n",
-            $probe ? sprintf( 'id=%s len=%s', $probe['id'], $probe['len'] ) : 'MISSING' ) );
-
-        foreach ( $rows as $row ) {
-
-            $setting->delete( $setting->makeId(
-                'install', self::INSTALL_SCOPE_ID, $row['module'], $row['name'] ) );
-        }
+        $db->query( sprintf( "DELETE FROM %s WHERE scope_type = 'install'",
+            $setting->getTableName() ) );
 
         if ( ! $this->dropColumnIfPresent( $setting, 'autoload' ) ) {
 
@@ -210,10 +205,19 @@ class Update043 extends \OWA\Core\Update {
      */
     private function readBlob( $legacy ) {
 
-        $legacy->getByPk( 'id', $this->c->get( 'base', 'configuration_id' ) );
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $row = $db->get_row( sprintf( "SELECT settings FROM %s WHERE id = '%s'",
+            $legacy->getTableName(),
+            $db->prepare( (string) $this->c->get( 'base', 'configuration_id' ) ) ) );
+
+        if ( ! $row ) {
+
+            return array();
+        }
 
         $settings = unserialize(
-            (string) $legacy->get( 'settings' ), array( 'allowed_classes' => false ) );
+            (string) $row['settings'], array( 'allowed_classes' => false ) );
 
         return is_array( $settings ) ? $settings : array();
     }
@@ -223,20 +227,20 @@ class Update043 extends \OWA\Core\Update {
      */
     private function writeBlob( $legacy, $settings ) {
 
-        $id = $this->c->get( 'base', 'configuration_id' );
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $legacy->getByPk( 'id', $id );
+        $table = $legacy->getTableName();
+        $id    = $db->prepare( (string) $this->c->get( 'base', 'configuration_id' ) );
 
-        $legacy->set( 'settings', serialize( $settings ) );
+        /*
+         * Delete then insert, rather than deciding between them: there is one
+         * row, and asking whether it is there first is the step that went
+         * wrong when an entity answered from cache.
+         */
+        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
 
-        if ( $legacy->get( 'id' ) ) {
-
-            return $legacy->update() !== false;
-        }
-
-        $legacy->set( 'id', $id );
-
-        return $legacy->create() !== false;
+        return $db->query( sprintf( "INSERT INTO %s (id, settings) VALUES ('%s', '%s')",
+            $table, $id, $db->prepare( serialize( $settings ) ) ) ) !== false;
     }
 
     /**
@@ -254,28 +258,29 @@ class Update043 extends \OWA\Core\Update {
      */
     private function writeRow( $module, $name, $value ) {
 
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
-        $id = $setting->makeId( 'install', self::INSTALL_SCOPE_ID, $module, $name );
+        $table = $setting->getTableName();
 
-        $setting->load( $id );
+        // makeId() is a pure hash of the four parts, so it is safe to take
+        // from the entity; only its STORAGE is what must not go through one.
+        $id = $db->prepare( (string) $setting->makeId(
+            'install', self::INSTALL_SCOPE_ID, $module, $name ) );
 
-        $setting->set( 'scope_type', 'install' );
-        $setting->set( 'scope_id', self::INSTALL_SCOPE_ID );
-        $setting->set( 'module', $module );
-        $setting->set( 'name', $name );
-        $setting->set( 'value', serialize( $value ) );
-        $setting->set( 'autoload', 1 );
+        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
 
-        if ( $setting->wasPersisted() ) {
-
-            return $setting->update() !== false;
-        }
-
-        $setting->set( 'id', $id );
-        $setting->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-
-        return $setting->create() !== false;
+        return $db->query( sprintf(
+            "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)"
+          . " VALUES ('%s', 'install', '%s', '%s', '%s', '%s', 1, '%s')",
+            $table,
+            $id,
+            $db->prepare( self::INSTALL_SCOPE_ID ),
+            $db->prepare( (string) $module ),
+            $db->prepare( (string) $name ),
+            $db->prepare( serialize( $value ) ),
+            $db->prepare( (string) \OWA\Core\CoreAPI::getRequestTimestamp() ) ) ) !== false;
     }
 }
 
