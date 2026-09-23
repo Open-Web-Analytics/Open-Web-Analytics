@@ -687,10 +687,23 @@ namespace OWA\Module\Base\Classes;
             return array();
         }
 
-        $legacy->getByPk( 'id', $this->config_id );
+        /*
+         * Raw, like readInstallSettings(), and not through the entity. The
+         * Configuration entity is setCachable() and Update043 drops and
+         * recreates its table, so an entity read in a process that has run the
+         * migration can answer from a cache of the table as it was before --
+         * see Update043's note on the same hazard on the write side.
+         */
+        $row = $db->get_row( sprintf( "SELECT settings FROM %s WHERE id = '%s'",
+            $legacy->getTableName(), $db->prepare( (string) $this->config_id ) ) );
+
+        if ( ! $row ) {
+
+            return array();
+        }
 
         $settings = unserialize(
-            (string) $legacy->get('settings'), array( 'allowed_classes' => false ) );
+            (string) $row['settings'], array( 'allowed_classes' => false ) );
 
         return is_array( $settings ) ? $settings : array();
      }
