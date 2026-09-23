@@ -607,26 +607,30 @@ final class CustomDimensionBuildTest extends TestCase
          * shape has become since this was written.
          */
         $filler = [];
+        $batch  = 32;
 
-        for ($i = 0; $i < 60; $i++) {
-            $filler['filler' . $i] = 'VARCHAR(64) NULL';
-        }
+        // Halve the batch whenever one is refused, down to a single column, so
+        // this converges on "full" from whatever headroom the cube has here
+        // rather than assuming a number. A server whose charset spends more
+        // bytes per character leaves far less room, and asserting a fixed first
+        // batch fits is the assumption this exists to avoid making.
+        while ($batch >= 1 && count($filler) < 400) {
+            $add = [];
 
-        $this->assertTrue($db->alterColumnsRebuilding($this->cube(), $filler),
-            'a first batch of filler should fit');
-
-        while (count($filler) < 200) {
-            $one = 'filler' . count($filler);
-
-            if (!$db->alterColumnsRebuilding($this->cube(), [$one => 'VARCHAR(64) NULL'])) {
-                break;
+            for ($i = 0; $i < $batch; $i++) {
+                $add['filler' . (count($filler) + $i)] = 'VARCHAR(64) NULL';
             }
 
-            $filler[$one] = 'VARCHAR(64) NULL';
+            if ($db->alterColumnsRebuilding($this->cube(), $add)) {
+                $filler += $add;
+                continue;
+            }
+
+            $batch = (int) ($batch / 2);
         }
 
-        $this->assertLessThan(200, count($filler),
-            'the server should have refused one before we ran out of patience');
+        $this->assertLessThan(400, count($filler),
+            'the server should have refused before we ran out of patience');
 
         $result = Dimensions::register(self::PROPERTY, [['key' => 'doomed', 'scope' => 'event']]);
 

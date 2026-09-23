@@ -72,6 +72,15 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
 
         $this->assertTrue((bool) $entity->createTable(), 'the probe cube should be created');
 
+        // createTable() is CREATE TABLE IF NOT EXISTS and answers true for
+        // "already there" as well as for "made it", so it cannot report a
+        // refusal. Asked separately, because a cube that was never created
+        // makes every assertion below fail for the wrong reason.
+        $this->assertTrue($db->tableExists($this->table),
+            'the cube was not created at all -- if the server said 1118 here, this '
+          . 'installation cannot hold a cube of the current shape before a single '
+          . 'custom dimension');
+
         $columns = [];
 
         for ($i = 0; $i < Dimensions::MAX_PER_PROPERTY; $i++) {
@@ -89,13 +98,54 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
               . 'Something added columns to owa_event_raw or to the cube and pushed it '
               . 'over. The fix is to take width out of the cube -- the ten VARCHAR(1024) '
               . 'columns are about 57%% of the row between them, and raw_ua in particular '
-              . 'has no reader there -- rather than to lower the cap.',
-                Dimensions::MAX_PER_PROPERTY));
+              . 'has no reader there -- rather than to lower the cap.%s',
+                Dimensions::MAX_PER_PROPERTY, $this->describeRow()));
 
         $this->assertCount(
             Dimensions::MAX_PER_PROPERTY * 2,
             Dimensions::registeredColumnsOn($this->table),
             'and every one of them is really on the table');
+    }
+
+    /**
+     * What the cube actually costs here, for a failure message that can be
+     * acted on rather than reproduced.
+     *
+     * A row limit is the same number everywhere, but what a table spends
+     * against it is not: the charset decides how many bytes a declared
+     * character takes, and a server whose default differs turns a comfortable
+     * margin into a refusal.
+     *
+     * @return string
+     */
+    private function describeRow(): string
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $collation = $db->get_row(sprintf(
+            "SELECT TABLE_COLLATION AS c FROM information_schema.TABLES "
+          . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'", $this->table));
+
+        $bytes = 0;
+        $count = 0;
+
+        foreach ((array) $db->get_results(sprintf(
+                "SELECT COALESCE(CHARACTER_OCTET_LENGTH, 0) AS o "
+              . "FROM information_schema.COLUMNS "
+              . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'",
+                $this->table)) as $column) {
+
+            $octets = (int) $column['o'];
+            $count++;
+            $bytes += $octets > 0 ? $octets + ($octets > 255 ? 2 : 1) : 8;
+        }
+
+        return sprintf(
+            "\n\nThis cube: %d columns, about %s of the 65,535-byte row, collation %s. "
+          . 'Twenty user-scoped dimensions need about %s.',
+            $count, number_format($bytes),
+            is_array($collation) ? $collation['c'] : '(unreadable)',
+            number_format(Dimensions::MAX_PER_PROPERTY * ((Dimensions::DIMENSION_LENGTH * 4) + 2 + 8)));
     }
 
     /**
