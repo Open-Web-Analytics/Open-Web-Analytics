@@ -182,6 +182,30 @@ class Db extends \OWA\Core\Base {
     protected static $query_error_count = 0;
 
     /**
+     * What the server said about the most recent statement it refused.
+     *
+     * @var string
+     */
+    protected $last_query_error = '';
+
+    /**
+     * What the server said about the most recent statement it refused.
+     *
+     * Empty when nothing has failed, and NOT cleared on success, so read it
+     * immediately after the call that answered false. It exists because the
+     * drivers report every kind of refusal the same way -- as false -- and a
+     * caller that wants to explain one otherwise has to guess. A message
+     * asserting a cause nobody checked is worse than one that admits it does
+     * not know.
+     *
+     * @return string
+     */
+    function lastQueryError() {
+
+        return $this->last_query_error;
+    }
+
+    /**
      * Report a statement the database refused.
      *
      * This used to be $this->e->debug(), which under the production error
@@ -204,6 +228,8 @@ class Db extends \OWA\Core\Base {
      * @return void
      */
     protected function logQueryError( $message, $sql, $is_constraint_violation = false ) {
+
+        $this->last_query_error = (string) $message;
 
         // Full detail for development, unconditionally: this is the level that
         // was already being used, so nothing that worked before is lost.

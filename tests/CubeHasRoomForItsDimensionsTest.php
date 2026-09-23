@@ -77,9 +77,20 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
         // refusal. Asked separately, because a cube that was never created
         // makes every assertion below fail for the wrong reason.
         $this->assertTrue($db->tableExists($this->table),
-            'the cube was not created at all -- if the server said 1118 here, this '
-          . 'installation cannot hold a cube of the current shape before a single '
-          . 'custom dimension');
+            'the cube was not created at all: ' . $db->lastQueryError());
+
+        /*
+         * PARTITIONS ARE NOT PART OF THIS QUESTION, so the probe does without
+         * them.
+         *
+         * How much of a row's 65,535 bytes the columns declare has nothing to
+         * do with how the rows are divided up -- and an ALTER across the
+         * cube's seventy-odd partitions is a rebuild of each, which brings in
+         * file handles, temp space and server version, none of which this
+         * test is about. It cost a failure that read as "the row is full" on a
+         * server whose row had 12,464 bytes spare.
+         */
+        $db->removePartitioning($this->table);
 
         $columns = [];
 
@@ -99,7 +110,8 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
               . 'over. The fix is to take width out of the cube -- the ten VARCHAR(1024) '
               . 'columns are about 57%% of the row between them, and raw_ua in particular '
               . 'has no reader there -- rather than to lower the cap.%s',
-                Dimensions::MAX_PER_PROPERTY, $this->describeRow()));
+                Dimensions::MAX_PER_PROPERTY, $this->describeRow())
+          . "\n\nThe server said: " . $db->lastQueryError());
 
         $this->assertCount(
             Dimensions::MAX_PER_PROPERTY * 2,
@@ -141,11 +153,10 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
         }
 
         return sprintf(
-            "\n\nThis cube: %d columns, about %s of the 65,535-byte row, collation %s. "
-          . 'Twenty user-scoped dimensions need about %s.',
-            $count, number_format($bytes),
-            is_array($collation) ? $collation['c'] : '(unreadable)',
-            number_format(Dimensions::MAX_PER_PROPERTY * ((Dimensions::DIMENSION_LENGTH * 4) + 2 + 8)));
+            "\n\nThis cube: %d columns, about %s of the 65,535-byte row (%s spare), "
+          . 'collation %s.',
+            $count, number_format($bytes), number_format(65535 - $bytes),
+            is_array($collation) ? $collation['c'] : '(unreadable)');
     }
 
     /**
