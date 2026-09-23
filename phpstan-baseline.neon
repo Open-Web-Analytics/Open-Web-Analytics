@@ -81,7 +81,13 @@ parameters:
 		-
 			message: '#^Call to method getTableName\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 2
+			count: 3
+			path: Core/CoreAPI.php
+
+		-
+			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_results\(\)\.$#'
+			identifier: method.notFound
+			count: 1
 			path: Core/CoreAPI.php
 
 		-

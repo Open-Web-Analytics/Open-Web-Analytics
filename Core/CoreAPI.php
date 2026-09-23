@@ -36,11 +36,33 @@ class CoreAPI {
     /** @var array  site id => is it registered. See isSiteRegistered(). */
     protected static $registered_sites = array();
 
-    /** @var array  "scope:id:module:name" => resolved value, null for no row. */
+    /** @var array  chain key => {effective, own} maps. See settingRowsForChain(). */
     protected static $setting_row_cache = array();
+
+    /** @var array  "scope:id" => that scope's OWN rows, keyed module|name. */
+    protected static $setting_scope_cache = array();
 
     /** @var array  "scope:id" => the scope chain to walk. */
     protected static $setting_chain_cache = array();
+
+    /**
+     * How the scopes outrank each other.
+     *
+     * A fixed order, not a per-setting one, and deliberately NOT a column on
+     * owa_setting: the rank is a property of the scope, and the scope is
+     * already in the row -- storing it again would be a second copy written on
+     * every insert that never varies. Which scopes may hold a row at all DOES
+     * vary per setting, and that is enforced at write, not here.
+     *
+     * @var array
+     */
+    protected static $setting_scope_rank = array(
+        'install'      => 1,
+        'organization' => 2,
+        'property'     => 3,
+        'profile'      => 4,
+    );
+
 
 
 
@@ -332,35 +354,146 @@ class CoreAPI {
             return $s->get($module, $name);
         }
 
-        foreach ( \OWA\Core\CoreAPI::settingScopeChain( $scopeType, $scopeId ) as $scope ) {
-
-            $row = \OWA\Core\CoreAPI::getScopedSettingRow(
-                $scope['type'], $scope['id'], $module, $name );
-
-            if ( $row !== null ) {
-
-                return $row;
-            }
-
-            if ( ! $inherit ) {
-
-                /*
-                 * One level, and it had nothing. Returning null rather than
-                 * falling through is the point: the caller is asking whether
-                 * this scope owns a value, not what the effective value is.
-                 */
-                return null;
-            }
-        }
+        $chain = \OWA\Core\CoreAPI::settingScopeChain( $scopeType, $scopeId );
+        $rows  = \OWA\Core\CoreAPI::settingRowsForChain( $chain );
+        $key   = $module . '|' . $name;
 
         if ( ! $inherit ) {
 
-            return null;
+            /*
+             * One level, and null when it holds nothing rather than falling
+             * through: the caller is asking whether this scope OWNS a value,
+             * not what the effective value is.
+             */
+            $own = $scopeType . '|' . $key;
+
+            return array_key_exists( $own, $rows['own'] ) ? $rows['own'][ $own ] : null;
+        }
+
+        if ( array_key_exists( $key, $rows['effective'] ) ) {
+
+            return $rows['effective'][ $key ];
         }
 
         $s = \OWA\Core\CoreAPI::configSingleton();
         return $s->get($module, $name);
     }
+
+    /**
+     * Every stored setting for a scope chain, in ONE query.
+     *
+     * Returns both answers the chain can be asked for:
+     *
+     *   effective  module|name        => the winning value
+     *   own        scope|module|name  => the value that scope itself holds
+     *
+     * The winner is decided by the ORDER BY, and the first row seen for a
+     * module|name is it. Written as a CASE rather than MySQL's FIELD() because
+     * FIELD() does not exist in SQLite or Postgres -- see the dialect layer.
+     *
+     * One query for the whole chain, rather than one per key per level: a
+     * report screen reads a dozen settings for the same Profile, and the
+     * previous shape charged an entity load for each of them at each of up to
+     * three levels.
+     *
+     * @param  array $chain from settingScopeChain()
+     * @return array{effective: array, own: array}
+     */
+    public static function settingRowsForChain( $chain ) {
+
+        $cache_key = '';
+
+        foreach ( $chain as $scope ) {
+
+            $cache_key .= $scope['type'] . ':' . $scope['id'] . '|';
+        }
+
+        if ( isset( self::$setting_row_cache[ $cache_key ] ) ) {
+
+            return self::$setting_row_cache[ $cache_key ];
+        }
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        $predicates = array();
+        $ranks      = array();
+
+        foreach ( $chain as $scope ) {
+
+            $type = (string) $scope['type'];
+
+            $predicates[] = sprintf( "( scope_type = '%s' AND scope_id = '%s' )",
+                $db->prepare( $type ), $db->prepare( (string) $scope['id'] ) );
+
+            $ranks[ $type ] = isset( self::$setting_scope_rank[ $type ] )
+                ? self::$setting_scope_rank[ $type ] : 0;
+        }
+
+        $when = '';
+
+        foreach ( $ranks as $type => $rank ) {
+
+            $when .= sprintf( " WHEN '%s' THEN %d", $db->prepare( $type ), $rank );
+        }
+
+        $sql = sprintf(
+            'SELECT scope_type, module, name, value FROM %s WHERE %s'
+          . ' ORDER BY CASE scope_type%s ELSE 0 END DESC',
+            $entity->getTableName(),
+            implode( ' OR ', $predicates ),
+            $when );
+
+        $result = array( 'effective' => array(), 'own' => array() );
+
+        /*
+         * Seeded empty for every scope in the chain, before any row is seen. A
+         * scope that turns out to hold nothing has still been ASKED, and
+         * getScopedSettingRow() has to be able to tell that from "not looked at
+         * yet" or it will go and ask again for each key.
+         */
+        foreach ( $chain as $scope ) {
+
+            $scope_key = $scope['type'] . ':' . $scope['id'];
+
+            if ( ! isset( self::$setting_scope_cache[ $scope_key ] ) ) {
+
+                self::$setting_scope_cache[ $scope_key ] = array();
+            }
+        }
+
+        foreach ( (array) $db->get_results( $sql ) as $row ) {
+
+            $key = $row['module'] . '|' . $row['name'];
+
+            /*
+             * allowed_classes false for the same reason the install rows are
+             * read that way: a row holds a scalar or an array of them, and a
+             * tampered-with one must not be able to instantiate a class.
+             */
+            $value = unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+
+            $result['own'][ $row['scope_type'] . '|' . $key ] = $value;
+
+            foreach ( $chain as $scope ) {
+
+                if ( $scope['type'] === $row['scope_type'] ) {
+
+                    self::$setting_scope_cache[ $scope['type'] . ':' . $scope['id'] ][ $key ] = $value;
+                }
+            }
+
+            if ( ! array_key_exists( $key, $result['effective'] ) ) {
+
+                $result['effective'][ $key ] = $value;
+            }
+        }
+
+        self::$setting_row_cache[ $cache_key ] = $result;
+
+        return $result;
+    }
+
 
     /**
      * The scopes to consult, most specific first.
@@ -430,32 +563,32 @@ class CoreAPI {
      *
      * null means NO ROW. A stored false comes back as false, which is the
      * distinction the blob could not make.
+     *
+     * Reads one scope, so it asks for a chain of one. The result is cached and
+     * shared with the chain walk, which means a screen that has already
+     * resolved a Profile's effective settings answers this from memory.
      */
     public static function getScopedSettingRow( $scopeType, $scopeId, $module, $name ) {
 
-        $id = $scopeType . ':' . $scopeId . ':' . $module . ':' . $name;
+        $scope_key = $scopeType . ':' . $scopeId;
+
+        if ( ! isset( self::$setting_scope_cache[ $scope_key ] ) ) {
+
+            \OWA\Core\CoreAPI::settingRowsForChain(
+                array( array( 'type' => $scopeType, 'id' => $scopeId ) ) );
+        }
+
+        $key = $module . '|' . $name;
 
         /*
          * array_key_exists, not isset: a stored null and a missing row are
-         * different answers here and isset() cannot tell them apart. A MISS is
-         * cached too -- on the tracking path most lookups miss all the way up
-         * the chain, and re-querying for a row known not to exist is the cost
-         * worth avoiding.
+         * different answers here and isset() cannot tell them apart.
          */
-        if ( array_key_exists( $id, self::$setting_row_cache ) ) {
+        $own = isset( self::$setting_scope_cache[ $scope_key ] )
+            ? self::$setting_scope_cache[ $scope_key ]
+            : array();
 
-            return self::$setting_row_cache[ $id ];
-        }
-
-        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
-        $setting->load( $setting->makeId( $scopeType, $scopeId, $module, $name ) );
-
-        if ( ! $setting->wasPersisted() ) {
-
-            return self::$setting_row_cache[ $id ] = null;
-        }
-
-        return self::$setting_row_cache[ $id ] = unserialize( $setting->get( 'value' ) );
+        return array_key_exists( $key, $own ) ? $own[ $key ] : null;
     }
 
     /**
@@ -468,6 +601,7 @@ class CoreAPI {
     public static function settingCacheFlush() {
 
         self::$setting_row_cache   = array();
+        self::$setting_scope_cache = array();
         self::$setting_chain_cache = array();
     }
 
