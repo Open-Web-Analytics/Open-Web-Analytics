@@ -331,6 +331,11 @@ class OWATracker  {
 	        domstreamLoggingInterval: 3000,
 	        domstreamEventThreshold: 10,
 	        maxPriorCampaigns: 5,
+	        /*
+	         * Whether the #fragment is part of a page's URL. It is not, by
+	         * default, which is GA's default too -- see getCurrentUrl().
+	         */
+	        trackUrlFragments: false,
 	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
 	        /*
@@ -1106,9 +1111,53 @@ class OWATracker  {
         return this.getOption('baseUrl');
     }
 
+    /**
+     * The page's URL, WITHOUT the fragment.
+     *
+     * GA does the same and in the same place -- its page_location defaults to
+     * location.href and its documentation says "the default value excludes the
+     * fragment portion of the URL" -- so the hash never reaches the wire at
+     * all, rather than being removed by a server that has already received it.
+     *
+     * Nothing is lost by it. A fragment has never carried a campaign tag, so
+     * the one thing page_location is EVIDENCE for is unaffected; and what it
+     * buys is that page_location can be grouped by, which it cannot while
+     * /pricing and /pricing#faq are two URLs for one page.
+     *
+     * ONE FUNCTION, SO THE ROUTE COMPARISON AGREES WITH THE REPORT. This is
+     * also what trackRouteChanges() compares, which is the half that is easy to
+     * get wrong: strip the fragment from the reported URL but compare the raw
+     * one, and a hash-routed site fires a page view per anchor click with every
+     * one of them reporting the same URL.
+     *
+     * trackUrlFragments turns both halves back on together, for a site that
+     * genuinely routes on the hash.
+     */
     getCurrentUrl() {
 
-        return document.URL
+        var url = document.URL;
+
+        if ( this.getOption( 'trackUrlFragments' ) ) {
+
+            return url;
+        }
+
+        var hash = url.indexOf( '#' );
+
+        return hash === -1 ? url : url.substring( 0, hash );
+    }
+
+    /**
+     * Make the fragment part of the URL again.
+     *
+     * For a site that routes on the hash -- example.com/app#/settings -- where
+     * the fragment IS the page. It moves the route comparison with it, so
+     * turning this on gives both the page views and the URLs to tell them
+     * apart, and leaving it off gives neither.
+     */
+    setTrackUrlFragments( value ) {
+
+        this.setOption( 'trackUrlFragments', ! ! value );
     }
 
     bindClickEvents() {
@@ -2278,9 +2327,14 @@ class OWATracker  {
      * of ways a route changes without a document load. Patching is how every
      * analytics tracker does this -- there is no event for pushState.
      *
-     * OPT-IN. A site that routes on the hash for in-page anchors would
-     * otherwise get a page view per anchor click, so this is a call the site
-     * makes rather than a default.
+     * OPT-IN, because a route change is a claim about what the site means by a
+     * page and only the site can make it.
+     *
+     * In-page anchors are no longer the reason. getCurrentUrl() leaves the
+     * fragment out, so a hash change that is only an anchor produces the same
+     * URL and is not a route change -- the guard below sees to that. A site
+     * that routes on the hash turns trackUrlFragments on, which makes those
+     * URLs differ again and the page views appear.
      */
     trackRouteChanges() {
 

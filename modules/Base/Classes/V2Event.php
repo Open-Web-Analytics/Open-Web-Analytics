@@ -235,6 +235,126 @@ class V2Event {
                 ? $parts['query'] : null,
         );
     }
+
+    /**
+     * A page path, canonicalised.
+     *
+     * THE PATH IS A READING, AND page_location IS THE EVIDENCE. This edits the
+     * reading only: the URL as it arrived is stored untouched beside it, so
+     * nothing here can destroy what was observed.
+     *
+     * Two collapses, both of which v1 does and neither of which GA does:
+     *
+     *   - the site's default page. /store/index.html and /store/ are one page
+     *     to everyone except a report that groups on the raw path.
+     *   - the trailing slash, for the same reason -- except on the root, which
+     *     IS '/' and would otherwise group under the empty string.
+     *
+     * NOT LOWERCASED. Paths are case-sensitive by specification and by most
+     * servers' behaviour, so /About and /about can be two pages; folding them
+     * would merge rows that a site may deliberately keep apart.
+     *
+     * @param string|null $path
+     * @param string      $default_page  e.g. 'index.html', or '' for none
+     * @return string|null
+     */
+    public static function canonicalPath( $path, $default_page = '' ) {
+
+        if ( $path === null || $path === '' ) {
+
+            return $path;
+        }
+
+        $path = (string) $path;
+
+        if ( $default_page !== '' ) {
+
+            $length = strlen( $default_page );
+
+            if ( substr( $path, -$length ) === $default_page ) {
+
+                $path = substr( $path, 0, -$length );
+            }
+        }
+
+        // The root is '/' and stays that way. Stripping its slash would leave
+        // '' and hide the home page under a different value from every other
+        // page's.
+        if ( strlen( $path ) > 1 && substr( $path, -1 ) === '/' ) {
+
+            $path = rtrim( $path, '/' );
+        }
+
+        return $path === '' ? '/' : $path;
+    }
+
+    /**
+     * A query string with named parameters removed.
+     *
+     * REBUILT FROM PARTS, never edited with a regex. v1 strips a parameter with
+     * `#\?name=.*$|&name=.*$|name=.*&#msiU` over the whole URL, which matches
+     * the name anywhere -- inside a path segment, inside another parameter's
+     * value -- and then takes everything after it. A query string is a list and
+     * this treats it as one.
+     *
+     * What survives keeps its original encoding, because the pairs are never
+     * decoded and re-encoded: a value written with %20 comes back with %20, and
+     * one written with + comes back with +. Only the NAME is decoded, and only
+     * to compare it.
+     *
+     * @param string|null $query
+     * @param string[]    $drop  parameter names
+     * @return string|null  null when nothing is left
+     */
+    public static function filterQuery( $query, array $drop ) {
+
+        if ( $query === null || $query === '' || ! $drop ) {
+
+            return $query === '' ? null : $query;
+        }
+
+        $unwanted = array();
+
+        foreach ( $drop as $name ) {
+
+            $name = trim( (string) $name );
+
+            if ( $name !== '' ) {
+
+                $unwanted[ $name ] = true;
+            }
+        }
+
+        if ( ! $unwanted ) {
+
+            return $query;
+        }
+
+        $kept = array();
+
+        foreach ( explode( '&', (string) $query ) as $pair ) {
+
+            if ( $pair === '' ) {
+
+                continue;
+            }
+
+            $name = strpos( $pair, '=' ) === false
+                ? $pair : substr( $pair, 0, strpos( $pair, '=' ) );
+
+            // A name arrives percent-encoded; the list an operator typed does
+            // not. Compared decoded so the two can match at all.
+            if ( isset( $unwanted[ urldecode( $name ) ] ) ) {
+
+                continue;
+            }
+
+            $kept[] = $pair;
+        }
+
+        return $kept ? implode( '&', $kept ) : null;
+    }
+
 }
 
 ?>
