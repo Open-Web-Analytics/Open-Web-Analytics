@@ -1385,6 +1385,56 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
+      * The scopes a setting may be stored at, or null when nothing declared it.
+      *
+      * null is not "no scopes" -- it means UNKNOWN, and the caller must treat
+      * it as unconstrained. Base has not adopted a declaration file yet, so
+      * every one of its scoped settings is unregistered, and a rule that read
+      * null as "install only" would refuse the writes the Observation Settings
+      * screen has always made.
+      *
+      * @return array|null
+      */
+     public function scopesFor( $module, $key ) {
+
+         $args = $this->registeredField( $module, $key );
+
+         if ( ! $args ) {
+
+             return null;
+         }
+
+         /*
+          * Install-only unless the declaration says otherwise. A setting that
+          * has not thought about the hierarchy should not silently acquire
+          * per-Property overrides -- schema_version is the case that matters,
+          * and it is why the default is the narrow one.
+          */
+         return array_values( (array) ( $args['scopes'] ?? array( 'install' ) ) );
+     }
+
+     /**
+      * Whether this setting may be written at this scope.
+      *
+      * True for anything unregistered, which is the adoption path: a
+      * third-party module, or base before it declares, keeps working exactly
+      * as it did. Only a setting that HAS declared its scopes is held to them.
+      *
+      * @return bool
+      */
+     public function mayWriteAtScope( $module, $key, $scopeType ) {
+
+         $scopes = $this->scopesFor( $module, $key );
+
+         if ( $scopes === null ) {
+
+             return true;
+         }
+
+         return in_array( (string) $scopeType, $scopes, true );
+     }
+
+     /**
       * Whether a value for this setting can be persisted.
       *
       * ONE flag, said explicitly. It decides whether the code ever goes

@@ -617,6 +617,28 @@ class CoreAPI {
      */
     public static function setScopedSetting( $scopeType, $scopeId, $module, $name, $value ) {
 
+        /*
+         * A setting is stored at the levels it declared, and nowhere else.
+         *
+         * Refused at the WRITE rather than filtered at the read, because a row
+         * that exists at a scope nothing should inherit from is a value that
+         * looks saved and never takes effect -- and because the read path has
+         * no business knowing which levels are legitimate.
+         *
+         * An UNREGISTERED setting is unconstrained. That is the adoption path:
+         * base has not declared yet, and its eight scoped settings must keep
+         * working until it does.
+         */
+        if ( ! \OWA\Core\CoreAPI::configSingleton()->mayWriteAtScope( $module, $name, $scopeType ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'Refusing to store %s.%s at %s scope: it is declared for %s.',
+                $module, $name, $scopeType,
+                implode( ', ', (array) \OWA\Core\CoreAPI::configSingleton()->scopesFor( $module, $name ) ) ) );
+
+            return false;
+        }
+
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
         $id      = $setting->makeId( $scopeType, $scopeId, $module, $name );
 

@@ -225,6 +225,129 @@ final class SettingsRegistryTest extends TestCase
         $this->assertSame( 'Per Property', $sections['Property'][0]['label'] );
     }
 
+    /**
+     * A setting is stored at the levels it declared, and nowhere else.
+     *
+     * Refused at the write rather than filtered at the read: a row sitting at a
+     * scope nothing inherits from is a value that looks saved and never takes
+     * effect, which is worse than a refusal the caller can see.
+     */
+    public function testAWriteOutsideTheDeclaredScopesIsRefused(): void
+    {
+        $this->requireDb();
+
+        $c = $this->settings();
+
+        $c->registerField( self::MODULE, 'install_only',
+            array( 'default' => 'd', 'storable' => true ) );
+
+        $this->assertSame( array( 'install' ), $c->scopesFor( self::MODULE, 'install_only' ),
+            'install-only unless a declaration says otherwise -- a setting that has not '
+          . 'thought about the hierarchy must not silently acquire overrides' );
+
+        $written = \OWA\Core\CoreAPI::setScopedSetting(
+            'profile', 'zz-site', self::MODULE, 'install_only', 'nope' );
+
+        $this->assertFalse( $written, 'the write is refused' );
+
+        $this->assertNull(
+            \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', 'zz-site', self::MODULE, 'install_only' ),
+            'and nothing is stored' );
+    }
+
+    /** A setting that declares wider scopes can be written at them. */
+    public function testAWriteWithinTheDeclaredScopesIsStored(): void
+    {
+        $this->requireDb();
+
+        $c = $this->settings();
+
+        $c->registerField( self::MODULE, 'overridable', array(
+            'default'  => 'd',
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+        ) );
+
+        $this->assertTrue( (bool) \OWA\Core\CoreAPI::setScopedSetting(
+            'profile', 'zz-site', self::MODULE, 'overridable', 'yes' ) );
+
+        $this->assertSame( 'yes',
+            \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', 'zz-site', self::MODULE, 'overridable' ) );
+
+        $this->assertFalse( $c->mayWriteAtScope( self::MODULE, 'overridable', 'organization' ),
+            'and a level it did NOT declare is still refused' );
+
+        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', 'zz-site', self::MODULE, 'overridable' );
+    }
+
+    /**
+     * An unregistered setting is unconstrained, and that is load-bearing.
+     *
+     * Base has not declared yet, and eight of its settings live at profile
+     * scope right now -- default_page, domain_aliases, query_string_filters,
+     * p3p_policy, enableEcommerceReporting, goals, goal_groups and
+     * v2_raw_collection. Reading "nothing declared it" as "install only" would
+     * refuse every write the Observation Settings screen makes.
+     */
+    public function testAnUndeclaredSettingIsUnconstrained(): void
+    {
+        $this->requireDb();
+
+        $c = $this->settings();
+
+        $this->assertNull( $c->scopesFor( self::MODULE, 'never_declared' ),
+            'null means UNKNOWN, not "no scopes"' );
+
+        $this->assertTrue( $c->mayWriteAtScope( self::MODULE, 'never_declared', 'profile' ) );
+
+        $this->assertTrue( (bool) \OWA\Core\CoreAPI::setScopedSetting(
+            'profile', 'zz-site', self::MODULE, 'never_declared', 'still works' ) );
+
+        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', 'zz-site', self::MODULE, 'never_declared' );
+    }
+
+    /**
+     * Nothing already stored at a scope may become unwritable there.
+     *
+     * The trap this guards is base's adoption. Seven base settings live at
+     * profile scope right now and none of them is declared, so they pass the
+     * check by being unknown. The day base ships a declaration file,
+     * `default_page` without a `scopes` key becomes install-only and the
+     * Observation Settings screen silently stops saving -- the form posts, the
+     * write is refused, the page redirects, and the value is simply not there.
+     *
+     * Derived from what is actually stored rather than a list written here, so
+     * it keeps covering whatever an installation has, including settings added
+     * after this was written.
+     */
+    public function testNothingStoredAtAScopeBecomesUnwritableThere(): void
+    {
+        $this->requireDb();
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        $rows = (array) $db->get_results( sprintf(
+            "SELECT DISTINCT scope_type, module, name FROM %s WHERE scope_type <> 'install'",
+            $entity->getTableName() ) );
+
+        if ( ! $rows ) {
+            $this->markTestSkipped( 'no scoped settings stored on this installation' );
+        }
+
+        $c = $this->settings();
+
+        foreach ( $rows as $row ) {
+
+            $this->assertTrue(
+                $c->mayWriteAtScope( $row['module'], $row['name'], $row['scope_type'] ),
+                sprintf( '%s.%s is stored at %s scope but declares %s -- the screen that '
+                       . 'writes it would silently stop saving',
+                    $row['module'], $row['name'], $row['scope_type'],
+                    implode( ', ', (array) $c->scopesFor( $row['module'], $row['name'] ) ) ) );
+        }
+    }
+
     /** 'General' is what group has always defaulted to, and it means Instance. */
     public function testTheLegacyGeneralGroupStillMeansTheInstanceMenu(): void
     {
