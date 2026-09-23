@@ -1089,6 +1089,33 @@ namespace OWA\Module\Base\Classes;
       */
      public function persistSetting($module, $key, $value) {
 
+         /*
+          * A setting that cannot be read back must not be written.
+          *
+          * A static setting is never queried -- that is what not declaring
+          * `storable` means -- so persisting one writes a durable row that
+          * nothing will ever look at. The write succeeds, save() reports
+          * success, and the value has no effect for the life of the install.
+          * Demonstrated across two processes: the row is there, and getSetting
+          * answers with the default.
+          *
+          * The same applies to a setting whose declared scopes do not include
+          * install: storing it here puts it at a level nothing resolves from.
+          *
+          * Unregistered settings are unconstrained, as everywhere else -- base
+          * has not declared yet and OptionsUpdate writes its keys through here.
+          */
+         if ( ! $this->mayPersistInstallWide( $module, $key ) ) {
+
+             \OWA\Core\CoreAPI::notice( sprintf(
+                 'Refusing to persist %s.%s: %s.', $module, $key,
+                 $this->isStorable( $this->registeredField( $module, $key ) )
+                     ? 'it is declared for ' . implode( ', ', (array) $this->scopesFor( $module, $key ) ) . ' scope'
+                     : 'it is not declared storable, so nothing would ever read the value' ) );
+
+             return;
+         }
+
          $this->set($module, $key, $value);
 
          // Do not store a value that merely restates the code default.
@@ -1385,6 +1412,31 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
+      * Whether this setting may be stored install-wide.
+      *
+      * True for anything unregistered. Only a setting that HAS declared is
+      * held to what it declared.
+      *
+      * @return bool
+      */
+     public function mayPersistInstallWide( $module, $key ) {
+
+         $args = $this->registeredField( $module, $key );
+
+         if ( ! $args ) {
+
+             return true;
+         }
+
+         if ( ! self::isStorable( $args ) ) {
+
+             return false;
+         }
+
+         return in_array( 'install', (array) $this->scopesFor( $module, $key ), true );
+     }
+
+     /**
       * The scopes a setting may be stored at, or null when nothing declared it.
       *
       * null is not "no scopes" -- it means UNKNOWN, and the caller must treat
@@ -1454,7 +1506,7 @@ namespace OWA\Module\Base\Classes;
       * @param  array $args
       * @return bool
       */
-     private static function isStorable( array $args ) {
+     public static function isStorable( array $args ) {
 
          return ! empty( $args['storable'] ) || ! empty( $args['autoload'] );
      }

@@ -348,6 +348,74 @@ final class SettingsRegistryTest extends TestCase
         }
     }
 
+    /**
+     * A setting nothing would read back must not be written.
+     *
+     * A static setting is never queried -- that is what not declaring
+     * `storable` means -- so persisting one writes a durable row nothing will
+     * ever look at. Demonstrated across two processes before this existed: the
+     * row was in the table, save() reported success, and getSetting answered
+     * with the default. A write that succeeds and has no effect is worse than
+     * one that fails.
+     */
+    public function testPersistingAStaticSettingIsRefused(): void
+    {
+        $c = $this->settings();
+
+        $c->registerField( self::MODULE, 'static_one', array( 'default' => 'the-default' ) );
+
+        $this->assertFalse( $c->mayPersistInstallWide( self::MODULE, 'static_one' ) );
+
+        $c->persistSetting( self::MODULE, 'static_one', 'i-was-saved' );
+
+        $this->assertArrayNotHasKey( 'static_one', $c->db_settings[ self::MODULE ] ?? array(),
+            'nothing is queued for the next save' );
+        $this->assertSame( 'the-default',
+            \OWA\Core\CoreAPI::getSetting( self::MODULE, 'static_one' ),
+            'and the in-memory value is untouched too' );
+    }
+
+    /** Nor may one be stored at a level its declaration excludes. */
+    public function testPersistingInstallWideIsRefusedWhenInstallIsNotADeclaredScope(): void
+    {
+        $c = $this->settings();
+
+        $c->registerField( self::MODULE, 'profile_only', array(
+            'default'  => 'd',
+            'storable' => true,
+            'scopes'   => array( 'profile' ),
+        ) );
+
+        $this->assertFalse( $c->mayPersistInstallWide( self::MODULE, 'profile_only' ),
+            'storing it install-wide would put it at a level nothing resolves from' );
+
+        $c->persistSetting( self::MODULE, 'profile_only', 'nope' );
+
+        $this->assertArrayNotHasKey( 'profile_only', $c->db_settings[ self::MODULE ] ?? array() );
+    }
+
+    /** Storable, install-scoped and unregistered settings all still persist. */
+    public function testOrdinaryInstallWideWritesStillWork(): void
+    {
+        $c = $this->settings();
+
+        $c->registerField( self::MODULE, 'normal', array( 'default' => 'd', 'storable' => true ) );
+
+        $c->persistSetting( self::MODULE, 'normal', 'stored' );
+        $this->assertSame( 'stored', $c->db_settings[ self::MODULE ]['normal'] ?? null );
+
+        // Unregistered: base has not declared, and OptionsUpdate writes its
+        // keys through this path.
+        $this->assertTrue( $c->mayPersistInstallWide( self::MODULE, 'nobody_declared_me' ) );
+
+        // Mechanical settings are storable via autoload, so module activation
+        // and the schema-version stamp keep working.
+        $this->assertTrue( $c->mayPersistInstallWide( 'maxmind_geoip', 'is_active' ) );
+        $this->assertTrue( $c->mayPersistInstallWide( 'maxmind_geoip', 'schema_version' ) );
+
+        unset( $c->db_settings[ self::MODULE ] );
+    }
+
     /** 'General' is what group has always defaulted to, and it means Instance. */
     public function testTheLegacyGeneralGroupStillMeansTheInstanceMenu(): void
     {
