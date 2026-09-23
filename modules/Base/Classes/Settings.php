@@ -77,6 +77,9 @@ namespace OWA\Module\Base\Classes;
      /** @var bool  whether a read may consult the store on its own. See load(). */
      private $store_ready = false;
 
+     /** @var bool  the undeclared-module warning is once per process, not per boot. */
+     private $warned_about_undeclared = false;
+
      /** @var array  "module|key" => true for rows the BOOT query already applied. */
      private $loaded_at_boot = array();
 
@@ -1347,6 +1350,73 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
+      * Tell whoever is looking that a module is still being resolved
+      * wholesale.
+      *
+      * The sweep is a compatibility clause with an end (see eagerPredicate()),
+      * and a module author who never hears about it will find out when it goes
+      * -- by their settings quietly reverting to code defaults. A warning
+      * during the grace period is the whole point of having one.
+      *
+      * NOT ON EVERY REQUEST. load() runs on every tracking beacon, and OWA's
+      * error log is not rotated, so a line per request per module is a
+      * log-growth problem rather than a message. Limited to the contexts where
+      * somebody is reading: the CLI -- so `cmd=update` and the cron jobs show
+      * it -- and development mode, which is this project's existing signal for
+      * verbose output.
+      *
+      * Once per process either way: the second boot of the same request would
+      * have nothing new to say.
+      *
+      * @return void
+      */
+     private function warnAboutUndeclaredModules() {
+
+         if ( $this->warned_about_undeclared ) {
+
+             return;
+         }
+
+         $this->warned_about_undeclared = true;
+
+         if ( ! defined( 'OWA_CLI' )
+              && \OWA\Core\CoreAPI::getSetting( 'base', 'error_handler' ) !== 'development' ) {
+
+             return;
+         }
+
+         $db = \OWA\Core\CoreAPI::dbSingleton();
+
+         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+         $rows = (array) $db->get_results( sprintf(
+             "SELECT DISTINCT module FROM %s WHERE scope_type = 'install'",
+             $entity->getTableName() ) );
+
+         $undeclared = array();
+
+         foreach ( $rows as $row ) {
+
+             if ( ! isset( $this->declared_modules[ $row['module'] ] ) ) {
+
+                 $undeclared[] = $row['module'];
+             }
+         }
+
+         if ( ! $undeclared ) {
+
+             return;
+         }
+
+         \OWA\Core\CoreAPI::notice( sprintf(
+             'These modules store settings but ship no settings.php, so every row they '
+           . 'own is still loaded at boot: %s. That fallback is temporary -- declare '
+           . 'their settings before it is removed, or their stored values will revert '
+           . 'to code defaults.',
+             implode( ', ', $undeclared ) ) );
+     }
+
+     /**
       * Keys a config-file constant governs, as a NOT clause.
       *
       * The constant is the last word, so fetching its key is fetching a value
@@ -1503,6 +1573,8 @@ namespace OWA\Module\Base\Classes;
              // Nothing has declared, so nothing is narrowed: load it all.
              $parts[] = '1 = 1';
          }
+
+         $this->warnAboutUndeclaredModules();
 
          return implode( ' OR ', $parts );
      }
