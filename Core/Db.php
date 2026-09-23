@@ -3848,6 +3848,23 @@ class Db extends \OWA\Core\Base {
 
         $table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
 
+        /*
+         * Declared rather than inherited. InnoDB's ~8,126-byte on-page row
+         * limit is the one that actually stops a wide table being created, and
+         * how much of a long column can be moved off the page to satisfy it
+         * depends entirely on this. Measured: the reporting cube is creatable
+         * under DYNAMIC and refused under COMPACT and REDUNDANT.
+         */
+        if ( defined( 'OWA_DTD_TABLE_ROW_FORMAT' ) ) {
+
+            if ( ! array_key_exists( 'row_format', $options ) ) {
+
+                $options['row_format'] = OWA_DTD_TABLE_ROW_FORMAT_DEFAULT;
+            }
+
+            $table_options .= sprintf( ' ' . OWA_DTD_TABLE_ROW_FORMAT, $options['row_format'] );
+        }
+
         if ( $partition_column ) {
 
             $pk = $entity->getPrimaryKeyColumn();

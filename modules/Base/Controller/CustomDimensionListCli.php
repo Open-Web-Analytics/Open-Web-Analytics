@@ -60,7 +60,7 @@ class CustomDimensionListCli extends CustomDimensionsCli {
                 \OWA\Core\CoreAPI::notice( $this->describe( $row ) );
             }
 
-            $this->reportRoom( count( $rows ) );
+            $this->reportRoom( $property_id, count( $rows ) );
         }
 
         \OWA\Core\CoreAPI::notice( sprintf( '%d dimension(s) across %d cube(s).',
@@ -70,22 +70,27 @@ class CustomDimensionListCli extends CustomDimensionsCli {
     /**
      * How many of the cap are used.
      *
-     * There was a second line here reporting how much of MySQL's row-size limit
-     * the cube had left. It went because it was answering a question nobody has
-     * to ask: twenty dimensions need 4,020 bytes of the 12,509 a cube leaves, so
-     * the cap is reached long before the row is, and reporting both invited the
-     * reader to work out which one was binding when the answer is always the
-     * cap.
+     * THE NUMBER IS MEASURED, NOT THE CONSTANT. Twenty is an outer cap; what
+     * this server will actually take may be less, and on MySQL 8.0 it is --
+     * 19 on a cube of today's shape, against 25 on 8.4. Printing the cap when
+     * the server allows fewer would promise room that a registration then
+     * refuses.
      *
-     * @param int $used
+     * @param int|string $property_id
+     * @param int        $used
      * @return void
      */
-    protected function reportRoom( $used ) {
+    protected function reportRoom( $property_id, $used ) {
 
-        $cap = \OWA\Module\Base\Classes\Cube\Dimensions::MAX_PER_PROPERTY;
+        $capacity = \OWA\Module\Base\Classes\Cube\Dimensions::capacityFor( $property_id );
+        $cap      = \OWA\Module\Base\Classes\Cube\Dimensions::MAX_PER_PROPERTY;
 
-        \OWA\Core\CoreAPI::notice( sprintf( '  %d of %d used, %d left.',
-            $used, $cap, max( 0, $cap - $used ) ) );
+        \OWA\Core\CoreAPI::notice( sprintf( '  %d of %d used, %d left.%s',
+            $used, $capacity, max( 0, $capacity - $used ),
+            $capacity < $cap
+                ? sprintf( ' (%d rather than the usual %d: this server will not take more '
+                         . 'columns on a row of this cube\'s shape.)', $capacity, $cap )
+                : '' ) );
     }
 }
 

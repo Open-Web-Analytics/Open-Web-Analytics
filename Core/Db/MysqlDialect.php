@@ -243,6 +243,28 @@ if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) { define('OWA_DTD_CHARACTE
 if ( ! defined( 'OWA_DTD_CONNECTION_ENCODING' ) ) { define('OWA_DTD_CONNECTION_ENCODING', 'utf8mb4'); }
 if ( ! defined( 'OWA_DTD_TABLE_CHARACTER_ENCODING' ) ) { define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s'); }
 
+/*
+ * THE ROW FORMAT IS DECLARED, NOT INHERITED.
+ *
+ * It was inherited, and that is a table OWA may not be able to create at all.
+ * InnoDB caps the part of a row that lives on the page at about 8,126 bytes --
+ * half a 16KB page -- and the formats differ in how much of a long column they
+ * can move off it. DYNAMIC leaves a 20-byte pointer; COMPACT and REDUNDANT
+ * leave a 768-byte prefix of every such column inline.
+ *
+ * Measured on the reporting cube, which has ten VARCHAR(1024) columns: under
+ * DYNAMIC it is created and takes 25 custom dimensions on top, and under
+ * COMPACT or REDUNDANT the server refuses it outright with error 1118. So on
+ * an installation whose innodb_default_row_format is not dynamic -- which is a
+ * server setting nobody here chose -- v2's cube could not exist.
+ *
+ * The default has been dynamic since MySQL 5.7, so declaring it changes
+ * nothing on an ordinary server. It removes a dependency on a setting we do
+ * not control from a table we cannot do without.
+ */
+if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT' ) ) { define('OWA_DTD_TABLE_ROW_FORMAT', 'ROW_FORMAT = %s'); }
+if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_ROW_FORMAT_DEFAULT', 'DYNAMIC'); }
+
 
 /**
  * MySQL Data Access Class

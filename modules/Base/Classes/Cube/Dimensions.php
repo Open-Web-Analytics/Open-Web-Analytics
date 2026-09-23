@@ -63,19 +63,20 @@ class Dimensions {
      * one is -- 15 at VARCHAR(255) against 106 at VARCHAR(36) on the same cube.
      * Twenty of a fixed width is a promise that stays true.
      *
-     * Twenty fits with room to spare, measured against the server rather than
-     * argued: a cube spends 53,026 of MySQL's 65,535-byte row limit before any
-     * dimension, and twenty user-scoped ones -- the expensive shape, since each
-     * carries a set-time stamp -- need 4,020 of the 12,509 left.
+     * AN OUTER CAP, not the whole answer: capacityFor() asks the server how
+     * many actually fit and returns the smaller of the two.
      *
-     * NOTHING HERE CHECKS THAT, DELIBERATELY. It would take a future release
-     * adding some eight thousand bytes of columns to the cube before twenty
-     * stopped fitting, and if that ever happens the server refuses the ALTER,
-     * reconcile() records the refusal against the registration and the build
-     * carries on regardless -- which is the same outcome arithmetic here would
-     * produce, for the cost of a model of MySQL's row accounting that has to
-     * stay true. The server already knows; asking it is cheaper than
-     * predicting it.
+     * Twenty is where a person's sense of "enough" is, and it is close to what
+     * the tightest server allows -- MySQL 8.0 takes 19 on a cube of today's
+     * shape, 8.4 takes at least 20. Neither number can be assumed, because
+     * WHICH LIMIT BINDS DEPENDS ON THE SERVER. 8.4 refuses at 65,535 bytes,
+     * MySQL's row DEFINITION limit; 8.0 refuses at 8,126, InnoDB's limit on
+     * the part of a row that lives on the page. The second is far tighter, and
+     * arithmetic that predicted the first exactly said nothing useful about it.
+     *
+     * So the budget is measured rather than modelled. Two attempts to compute
+     * this from column widths were confidently wrong, and the second agreed
+     * with the permissive server while the strict one was refusing.
      */
     const MAX_PER_PROPERTY = 20;
 
@@ -90,7 +91,122 @@ class Dimensions {
      */
     const DIMENSION_LENGTH = 64;
 
+    /** Suffix of the throwaway table capacityFor() measures against. */
+    const CAPACITY_SUFFIX = '_capacity';
+
+    /** @var array property id => measured capacity, for this request only */
+    private static $capacity = array();
+
     /**
+     * How many custom dimensions this Property's cube will actually take.
+     *
+     * ASKED, NOT CALCULATED. The limit that binds depends on the server -- 8,126
+     * on-page bytes on MySQL 8.0, 65,535 declared bytes on 8.4 -- and the second
+     * is loose enough that arithmetic tuned to it is silently wrong on the
+     * first. Both were tried; both were wrong in the same direction.
+     *
+     * Measured on a THROWAWAY COPY of the cube, never on the cube itself: the
+     * search adds and drops columns, and doing that to a live table would be a
+     * rebuild each time and would race the build. An unpartitioned copy is 65ms
+     * and the whole search is about 850, which is affordable for an admin
+     * screen and would not be on a write path -- nothing on the write path asks.
+     *
+     * Measured on the cube's RELEASE shape, so the answer does not move as
+     * dimensions are registered: this is capacity, and what is left is capacity
+     * minus what is used. The expensive shape is assumed -- user-scoped, which
+     * carries a set-time column too -- so an installation registering
+     * event-scoped ones has more room than it is promised rather than less.
+     *
+     * NEVER BLOCKS ON NOT KNOWING. If the cube is missing, or the copy cannot
+     * be made, this answers the outer cap and lets reconcile()'s ALTER be the
+     * judge. Refusing a registration because a measurement failed would be the
+     * measurement causing the outage it exists to prevent.
+     *
+     * @param int|string $property_id
+     * @return int
+     */
+    public static function capacityFor( $property_id ) {
+
+        $key = (string) $property_id;
+
+        if ( isset( self::$capacity[ $key ] ) ) {
+
+            return self::$capacity[ $key ];
+        }
+
+        self::$capacity[ $key ] = self::measureCapacity( $property_id );
+
+        return self::$capacity[ $key ];
+    }
+
+    /**
+     * @param int|string $property_id
+     * @return int
+     */
+    protected static function measureCapacity( $property_id ) {
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $cube  = Cubes::tableFor( $property_id );
+
+        if ( ! $cube || ! $db->tableExists( $cube ) ) {
+
+            return self::MAX_PER_PROPERTY;
+        }
+
+        $scratch = $cube . self::CAPACITY_SUFFIX;
+
+        $db->query( sprintf( OWA_SQL_DROP_TABLE, $scratch ) );
+
+        if ( ! $db->createUnpartitionedCopy( $scratch, $cube ) ) {
+
+            return self::MAX_PER_PROPERTY;
+        }
+
+        /*
+         * The copy carries whatever is already registered, so the search runs
+         * from there and its answer is added back to what is used. Measuring a
+         * pristine shape would mean dropping the live columns off the copy
+         * first, which is more ALTERs for the same number.
+         */
+        $used = count( self::forProperty( $property_id ) );
+        $room = 0;
+        $lo   = 0;
+        $hi   = max( 0, self::MAX_PER_PROPERTY - $used );
+
+        while ( $lo < $hi ) {
+
+            $mid     = intdiv( $lo + $hi + 1, 2 );
+            $columns = array();
+
+            for ( $i = 0; $i < $mid; $i++ ) {
+
+                $columns[ 'cd_fit' . $i ] = self::definitionFor(
+                    CustomDimension::TYPE_STRING, self::DIMENSION_LENGTH );
+
+                $columns[ 'cd_fit' . $i . CustomDimension::SET_TS_SUFFIX ] =
+                    OWA_DTD_BIGINT . ' NULL';
+            }
+
+            if ( $db->alterColumnsRebuilding( $scratch, $columns ) ) {
+
+                $lo   = $mid;
+                $room = $mid;
+
+                $db->alterColumnsRebuilding( $scratch, array(), array_keys( $columns ) );
+
+            } else {
+
+                $hi = $mid - 1;
+            }
+        }
+
+        $db->query( sprintf( OWA_SQL_DROP_TABLE, $scratch ) );
+
+        return min( self::MAX_PER_PROPERTY, $used + $room );
+    }
+
+    /**
+     * The column name a key becomes.    /**
      * The column name a key becomes.
      *
      * Derived rather than equal, because Db enforces ^[A-Za-z0-9_]+$ on every
@@ -289,9 +405,13 @@ class Dimensions {
         $definitions = array();
         $validated   = array();
 
+        // Measured once for the whole call, not per request: it is the same
+        // answer for every one of them and it costs an ALTER or five.
+        $capacity = self::capacityFor( $property_id );
+
         foreach ( $requests as $request ) {
 
-            $checked = self::validate( $request, $existing, $definitions );
+            $checked = self::validate( $request, $existing, $definitions, $capacity );
 
             if ( isset( $checked['error'] ) ) {
 
@@ -587,7 +707,8 @@ class Dimensions {
      * @param array $in_this_call column => definition already queued
      * @return array the row to write, or ['error' => string]
      */
-    protected static function validate( array $request, array $existing, array $in_this_call ) {
+    protected static function validate( array $request, array $existing, array $in_this_call,
+                                        $capacity = self::MAX_PER_PROPERTY ) {
 
         $key = isset( $request['key'] ) ? trim( (string) $request['key'] ) : '';
 
@@ -620,16 +741,24 @@ class Dimensions {
         }
 
         /*
-         * THE CAP IS THE LIMIT, and the only one. Counted
-         * across what is already registered AND what this call has queued, so
-         * a batch cannot step over it one request at a time.
+         * THE BUDGET, which is the smaller of the outer cap and what this
+         * server will actually take. Counted across what is already registered
+         * AND what this call has queued, so a batch cannot step over it one
+         * request at a time.
          */
-        if ( count( $existing ) + count( $in_this_call ) >= self::MAX_PER_PROPERTY ) {
+        $held = count( $existing ) + count( $in_this_call );
+
+        if ( $held >= $capacity ) {
 
             return array( 'error' => sprintf(
-                'a Property may register %d custom dimensions and this one already has %d. '
-              . 'De-register one to make room.',
-                self::MAX_PER_PROPERTY, count( $existing ) + count( $in_this_call ) ) );
+                'this Property has room for %d custom dimensions and already has %d. '
+              . 'De-register one to make room.%s',
+                $capacity, $held,
+                $capacity < self::MAX_PER_PROPERTY
+                    ? sprintf( ' (%d rather than the usual %d: this server will not take '
+                             . 'more columns on a row of this cube\'s shape.)',
+                               $capacity, self::MAX_PER_PROPERTY )
+                    : '' ) );
         }
 
         $column = self::columnFor( $key );
