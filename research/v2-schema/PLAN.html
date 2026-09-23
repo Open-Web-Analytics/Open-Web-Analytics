@@ -2439,6 +2439,35 @@ because it sweeps up everything registered AND de-registered since it last ran,
 in one statement, with no dependence on anyone remembering to submit them
 together.</p>
 
+<p class="note"><strong>ROW_FORMAT=DYNAMIC IS DECLARED, NOT INHERITED.</strong>
+It was inherited, and that is a table OWA might not be able to create at all.
+The formats differ in how much of a long column they can move off the page:
+DYNAMIC leaves a 20-byte pointer, COMPACT and REDUNDANT leave the first 768
+bytes of each one inline. Measured on the cube, which has ten
+<code>VARCHAR(1024)</code> columns: creatable under DYNAMIC and refused with
+error 1118 under either of the others. The server default has been DYNAMIC
+since 5.7, so declaring it changes nothing on an ordinary installation and
+removes a dependency on <code>innodb_default_row_format</code> &mdash; a
+setting nobody here chooses &mdash; from a table v2 cannot do without.</p>
+
+<p class="note"><strong>utf8mb4: CONSIDERED AND DECLINED. Decided 23 Sep.</strong>
+Tables are created <code>CHARACTER SET = utf8</code>, which MySQL still maps to
+utf8mb3 at three bytes per character, so a four-byte character does not fit any
+text column in the schema. What that costs today, measured through real ingest:
+a page title of <code>Summer sale &#127881; now on</code> stores as
+<code>Summer sale&nbsp;&nbsp;now on</code> &mdash; the event survives and the
+emoji is dropped, silently, by the entity layer before the insert. A raw INSERT
+of the same value is refused outright with error 1366, so nothing is at risk
+beyond the character itself.
+<br><strong>It cannot simply be switched on.</strong> The cube at utf8mb4 is
+about 70,700 declared bytes against the 65,535 limit; <code>CONVERT TO
+CHARACTER SET utf8mb4</code> on a real cube is refused. The only route is to
+convert the widest never-grouped columns to <code>TEXT</code> first, since those
+contribute 9&ndash;12 bytes rather than their width &mdash; which is a schema
+change to raw AND the cube, with a rebuild on every installation, to stop
+dropping emoji from page titles. Not worth it. Revisit only if something that
+matters more than emoji needs four-byte characters.</p>
+
 <p class="note">A <code>VIRTUAL</code> generated column over the JSON was measured
 as the alternative and rejected: ~330ms flat and retroactive over all history,
 which is better on both counts, but it puts the JSON extraction in the SCHEMA
@@ -2606,14 +2635,27 @@ different per site, arriving by a different road.</li>
 <code>VARCHAR(64)</code> or 114 more <code>VARCHAR(36)</code> before the server
 refuses (error 1118, measured). Shared, one Property could exhaust the
 installation. Split, each has its own budget.
-<br><strong>Correction:</strong> this first attributed the limit to
-InnoDB&rsquo;s ~8KB row limit. It is not &mdash; that one does not bind, because
-<code>DYNAMIC</code> pushes long values off-page. What binds is MySQL&rsquo;s
-row DEFINITION limit of 65,535 bytes; both raise error 1118, which is why they
-are easy to confuse. It matters because the real limit is exactly computable
-&mdash; declared width in bytes plus one length byte, or two past 255 &mdash; so
-a registration can be priced and refused BEFORE paying for a rebuild, rather
-than during one. The arithmetic predicts all three measurements above.</li>
+<br><strong>THERE ARE TWO LIMITS AND WHICH ONE BINDS DEPENDS ON THE SERVER.</strong>
+This section twice claimed to know which, and was wrong both times.
+<ul>
+<li><strong>65,535 bytes</strong> &mdash; MySQL&rsquo;s row DEFINITION limit,
+the sum of declared widths. A <code>VARCHAR(255)</code> on utf8mb3 costs 767:
+255&times;3 plus two length bytes. <code>TEXT</code> and <code>BLOB</code>
+contribute only 9&ndash;12 whatever their declared size, which is the trap that
+broke the first attempt at pricing this.</li>
+<li><strong>~8,126 bytes</strong> &mdash; InnoDB&rsquo;s limit on the part of a
+row stored on the page, slightly under half a 16KB page. InnoDB moves
+variable-length columns off-page until the row fits, so a long
+<code>VARCHAR</code> is nearly free against this one and the cost is in the MANY
+SHORT columns. Measured on MySQL 8.0: dropping <code>raw_ua</code> bought no
+extra dimensions at all, and dropping eight wide columns bought two.</li>
+</ul>
+Measured: MySQL 8.4 refuses at 65,535 and takes 25 custom dimensions; MySQL
+8.0.46 refuses at 8,126 and takes 19. Same row format, same charset, same DDL.
+So the budget is MEASURED against the server in front of us
+(<code>Dimensions::capacityFor()</code>) and not calculated &mdash; two
+calculations were written, and the more careful one predicted 8.4&rsquo;s
+refusal point exactly while 8.0 was refusing something it called fine.</li>
 <li><strong>Retention and granularity become per Property</strong>, as the
 partition commands already allow per table.</li>
 </ul>
