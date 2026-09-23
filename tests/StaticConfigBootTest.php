@@ -11,7 +11,8 @@ use PHPUnit\Framework\TestCase;
  * WHY IT MATTERS
  * Every OWA process normally issues two DB queries at boot -- a connection
  * handshake (SET SESSION sql_mode='') and the user-settings read
- * (SELECT * FROM owa_configuration ...) at owa_caller.php:~97. They are one
+ * (the install rows of owa_setting; the owa_configuration blob before
+ * Update043) at owa_caller.php:~97. They are one
  * cause: the config read opens the (lazily-connected) DB handle, which triggers
  * the handshake. A dedicated node that only queues incoming tracking events to a
  * file needs neither. OWA_USE_STATIC_CONFIG_ONLY skips the config read, so such
@@ -66,7 +67,7 @@ final class StaticConfigBootTest extends TestCase
         $this->assertTrue($verdict['static'], 'probe should have run in static-config mode');
         $this->assertFalse($verdict['connected'],
             'With OWA_USE_STATIC_CONFIG_ONLY defined true, boot must not open a DB connection '
-            . '(no owa_configuration read => no connection handshake).');
+            . '(no settings read => no connection handshake).');
     }
 
     public function testDefaultBootStillLoadsConfigFromDatabase(): void
@@ -75,7 +76,7 @@ final class StaticConfigBootTest extends TestCase
 
         $this->assertFalse($verdict['static'], 'probe should have run in default mode');
         $this->assertTrue($verdict['connected'],
-            'A normal boot must still read settings from the owa_configuration table '
+            'A normal boot must still read the stored settings '
             . '(the switch is opt-in; the default is unchanged).');
     }
 }

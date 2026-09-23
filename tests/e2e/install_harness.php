@@ -470,7 +470,13 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
     }
 
     // 1. Core tables exist.
-    foreach (['owa_user', 'owa_site', 'owa_configuration'] as $t) {
+    //
+    // owa_setting, not owa_configuration: Update043 unpacked the settings blob
+    // into install-scope rows and retired that table, and a fresh install must
+    // not create it -- Settings reads its presence as "the blob is still the
+    // store of record", so an installer that created it would put a new install
+    // into the migration window it is supposed to be past.
+    foreach (['owa_user', 'owa_site', 'owa_setting'] as $t) {
         $r = mysqli_query($m, "SHOW TABLES LIKE '" . mysqli_real_escape_string($m, $t) . "'");
         $checks["table_$t"] = ($r && mysqli_num_rows($r) > 0);
     }
@@ -494,17 +500,29 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
         }
     }
 
-    // 4. install_complete flag serialized into owa_configuration.
+    // 4. install_complete flag stored as an install-scope setting row.
     $checks['install_complete'] = false;
-    if ($checks['table_owa_configuration']) {
-        $r = mysqli_query($m, "SELECT settings FROM owa_configuration ORDER BY id DESC LIMIT 1");
+    $checks['no_legacy_blob_table'] = false;
+    if ($checks['table_owa_setting']) {
+
+        /*
+         * A fresh install has no owa_configuration at all. Asserted rather than
+         * assumed: if the installer started creating it again, every other
+         * check here would still pass and the install would quietly boot off
+         * the legacy path.
+         */
+        $r = mysqli_query($m, "SHOW TABLES LIKE 'owa_configuration'");
+        $checks['no_legacy_blob_table'] = !($r && mysqli_num_rows($r) > 0);
+
+        $r = mysqli_query($m, "SELECT value FROM owa_setting
+            WHERE scope_type = 'install' AND module = 'base' AND name = 'install_complete'
+            LIMIT 1");
         if ($r && ($row = mysqli_fetch_assoc($r))) {
-            // Settings are a serialized PHP blob; a loose contains check avoids
-            // coupling to the exact nesting while still proving the flag is set.
-            $blob = (string) $row['settings'];
-            $checks['install_complete'] =
-                (strpos($blob, 'install_complete') !== false)
-                && (bool) preg_match('/install_complete[^;]*;b:1/', $blob);
+            // One serialized value per row now. Still matched loosely rather
+            // than compared exactly, so a change of storable type here does not
+            // read as a failed install.
+            $blob = (string) $row['value'];
+            $checks['install_complete'] = (bool) preg_match('/^b:1/', $blob);
 
             /*
              * 4b. The timezone the wizard was given is the one that got stored.
@@ -519,8 +537,18 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
              */
             if ( $expectedTimezone !== null ) {
 
-                $checks['timezone_stored'] =
-                    (bool) preg_match('/timezone[^;]*;s:\d+:"' . preg_quote($expectedTimezone, '/') . '"/', $blob);
+                $checks['timezone_stored'] = false;
+
+                $tz = mysqli_query($m, "SELECT value FROM owa_setting
+                    WHERE scope_type = 'install' AND module = 'base' AND name = 'timezone'
+                    LIMIT 1");
+
+                if ($tz && ($tzrow = mysqli_fetch_assoc($tz))) {
+
+                    $checks['timezone_stored'] = (bool) preg_match(
+                        '/^s:\d+:"' . preg_quote($expectedTimezone, '/') . '"/',
+                        (string) $tzrow['value']);
+                }
             }
         }
     }

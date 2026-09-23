@@ -6,7 +6,7 @@
  * WHY A SUBPROCESS
  * The switch is a process-global `define` (OWA_USE_STATIC_CONFIG_ONLY) that
  * owa_settings::__construct reads once, before owa_caller decides whether to
- * load user settings from the owa_configuration DB table. It cannot be toggled
+ * load the stored user settings from the database. It cannot be toggled
  * mid-process, and the PHPUnit runner has already booted OWA once as a singleton
  * against the live config. So the only honest way to observe a FRESH boot under
  * a given define is to spawn a clean PHP process. This probe is that process: it
@@ -16,9 +16,10 @@
  * SIGNAL
  * owa_db::isConnectionEstablished() is the reliable "did boot touch the DB?"
  * marker: the mysql driver connects lazily on the first query(), and the only
- * boot-time query is the owa_configuration read at owa_caller.php:~99. No read
- * => no connection => the two boot queries (the SET SESSION sql_mode='' + SELECT
- * * FROM owa_configuration) never fire.
+ * boot-time query is the settings read at owa_caller.php:~99 -- the install
+ * rows of owa_setting since Update043, the owa_configuration blob before it. No
+ * read => no connection => the two boot queries (the SET SESSION sql_mode='' +
+ * the settings SELECT) never fire.
  *
  * USAGE
  *   php static_config_boot_probe.php            -> default boot (loads DB config)

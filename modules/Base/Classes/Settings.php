@@ -56,6 +56,9 @@ namespace OWA\Module\Base\Classes;
      
      var $config_file_loaded;
 
+     /** @var bool|null  whether owa_configuration still exists; see legacyBlobIsAuthoritative(). */
+     private $legacy_blob_present = null;
+
      /**
       * Constructor
       *
@@ -410,28 +413,48 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
+      * The scope every install-wide setting is stored at.
+      *
+      * There is one install, so the id is a constant. Carrying one at all
+      * keeps a stored setting the same shape at every level, which is what
+      * lets one query answer the whole chain.
+      *
+      * '1' AND NOT '0', which is not cosmetic. scope_id is a string column, and
+      * Entity::set() skips a falsy value on one of those -- deliberately, since
+      * '' is how a caller says "I have nothing" and several handlers rely on it
+      * preserving the existing value. A '0' therefore writes as '', the row
+      * stops matching `scope_id = '0'`, and the setting silently resolves to
+      * its default. Caught by SettingsStoreConsolidationTest rather than by
+      * reading the code.
+      */
+     const INSTALL_SCOPE_ID = '1';
+
+     /**
       * Loads configuration from data store
       *
-      * @param string id  the id of the configuration array to load
+      * Reads the install-scope rows of owa_setting in ONE query and merges them
+      * over the code defaults. Until Update043 this read a single serialized
+      * blob out of owa_configuration; the merge below is unchanged, only where
+      * the overrides come from.
+      *
+      * Which store is read is decided by legacyBlobIsAuthoritative(), the same
+      * way round as save() decides where to write.
+      *
+      * @param string id  retained for callers; the install scope has one id
       */
      function load($id = 1) {
 
         $this->config_id = $id;
 
-        $db_config = \OWA\Core\CoreAPI::entityFactory('base.configuration');
-        $db_config->getByPk('id', $id);
-        // The settings blob is a nested array of scalars and nothing else --
-        // save() writes serialize($this->db_settings). Refusing objects here
-        // costs nothing and means a tampered-with row cannot instantiate a
-        // class during unserialize.
-        $db_settings = unserialize($db_config->get('settings'), ['allowed_classes' => false]);
+        $db_settings = $this->legacyBlobIsAuthoritative()
+            ? $this->readLegacyConfigurationBlob()
+            : $this->readInstallSettings( true );
 
-        //print $db_settings;
-        // store copy of config for use with updates and set a flag
         if (!empty($db_settings)) {
 
             // needed to get rid of legacy setting that used to be stored in the DB.
-            if (array_key_exists('error_handler', $db_settings['base'])) {
+            if ( isset( $db_settings['base'] )
+                 && array_key_exists('error_handler', $db_settings['base'] ) ) {
 
                 unset($db_settings['base']['error_handler']);
             }
@@ -458,11 +481,6 @@ namespace OWA\Module\Base\Classes;
 
             $this->db_settings = $db_settings;
             $this->config_from_db = true;
-        }
-
-        if (!empty($db_settings)) {
-            //print_r($db_settings);
-            //$db_settings = unserialize($db_settings);
 
             $default = $this->config->get('settings');
 
@@ -473,68 +491,121 @@ namespace OWA\Module\Base\Classes;
             foreach ($db_settings as $k => $v) {
 
                 if (isset($default[$k]) && is_array($default[$k])) {
-                 
+
                     $new_config[$k] = array_merge($default[$k], $db_settings[$k]);
-                
+
                 } else {
-                 
+
                     $new_config[$k] = $db_settings[$k];
                 }
             }
 
+            /*
+             * Modules absent from the stored settings are dropped here rather
+             * than merged, which is how this has always behaved. It looks
+             * wrong -- a module holding only in-memory values from
+             * applyConfigConstants() loses them -- but default_config carries
+             * 'base' alone and every install stores base rows, so nothing has
+             * ever been observed to fall through it. Left as found: changing
+             * it would resurrect values for modules this has been discarding
+             * for years, which is not a change to make alongside a storage
+             * migration.
+             */
             $this->config->set('settings', $new_config);
         }
 
-        $db_id = $db_config->get('id');
-        $this->config->set('id', $db_id);
+        $this->config->set('id', $id);
      }
 
      /**
-      * Fetches a modules entire configuration array
+      * Every install-scope setting, as [module][key] => value.
       *
-      * @param string $module The name of module whose configuration values you want to fetch
-      * @return array Config values
-      */
-     /**
-      * One module's whole settings map, or an empty array when it has none.
+      * ONE query, which is the whole point of the autoload column: the blob
+      * this replaced was read whole because a blob cannot be read in part, and
+      * rows would otherwise cost a query each.
       *
-      * fetch() indexes $v[$module] unguarded, so asking it about a module that
-      * has never stored a setting is an undefined-key warning rather than an
-      * empty answer. Callers that iterate a map -- the scoped settings screens
-      * -- need the empty answer.
+      * @param  bool $autoload_only restrict to rows wanted at boot
+      * @return array
       */
-     public function getModuleSettings( $module = 'base' ) {
+     private function readInstallSettings( $autoload_only = false ) {
 
-         $v = $this->config->get('settings');
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
-         if ( is_array( $v ) && isset( $v[ $module ] ) && is_array( $v[ $module ] ) ) {
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
-             return $v[ $module ];
-         }
+        $sql = sprintf(
+            "SELECT module, name, value FROM %s WHERE scope_type = 'install'%s",
+            $entity->getTableName(),
+            $autoload_only ? ' AND autoload = 1' : '' );
 
-         return array();
-     }
+        $rows = (array) $db->get_results( $sql );
 
-     function fetch($module = '') {
-        
-        $v = $this->config->get('settings');
+        $settings = array();
 
-        if (!empty($module)) {
+        foreach ( $rows as $row ) {
 
-            return $v[$module];
-        
-        } else {
-         
-            return $v['base'];
+            /*
+             * Array data only, as the blob read was. A row is written by
+             * save() and holds a scalar or an array of them; refusing objects
+             * costs nothing and means a tampered-with row cannot instantiate a
+             * class during unserialize.
+             */
+            $settings[ $row['module'] ][ $row['name'] ] =
+                unserialize( $row['value'], array( 'allowed_classes' => false ) );
         }
+
+        return $settings;
      }
 
      /**
-      * updates or creates configuration values
+      * Whether the pre-Update043 blob is still the store of record.
+      *
+      * TRUE exactly while owa_configuration exists. That table is what
+      * Update043 drops, so its presence is the migration's own switch rather
+      * than a second flag that could disagree with the schema -- and it points
+      * the same way on the way back down, when a rollback recreates it.
+      *
+      * Memoised: a request that saves twice should not ask twice, and the
+      * table cannot appear or vanish under a running request that is not
+      * itself the migration. The migration calls settingStoreRecheck() when it
+      * is.
+      *
+      * @return bool
+      */
+     private function legacyBlobIsAuthoritative() {
+
+        if ( $this->legacy_blob_present === null ) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+
+            $legacy = \OWA\Core\CoreAPI::entityFactory( 'base.configuration' );
+
+            $this->legacy_blob_present = (bool) $db->tableExists( $legacy->getTableName() );
+        }
+
+        return $this->legacy_blob_present;
+     }
+
+     /**
+      * Forget which store is authoritative.
+      *
+      * For Update043 and its rollback, which change the answer mid-request.
+      */
+     public function settingStoreRecheck() {
+
+        $this->legacy_blob_present = null;
+     }
+
+     /**
+      * The pre-Update043 write path: one serialized blob in one row.
+      *
+      * Unchanged from what save() used to be, and reachable only while
+      * owa_configuration exists. It goes when that table's last install does.
       *
       * @return boolean
       */
-     function save() {
+     private function saveToLegacyConfigurationBlob() {
+
 
          // serialize array of values prior to update
 
@@ -596,6 +667,247 @@ namespace OWA\Module\Base\Classes;
         $this->is_dirty = false;
 
         return $status;
+          }
+
+     /**
+      * The pre-Update043 blob, or an empty array once the table is gone.
+      *
+      * Only reachable during the migration window -- see load().
+      *
+      * @return array
+      */
+     private function readLegacyConfigurationBlob() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $legacy = \OWA\Core\CoreAPI::entityFactory( 'base.configuration' );
+
+        if ( ! $db->tableExists( $legacy->getTableName() ) ) {
+
+            return array();
+        }
+
+        /*
+         * Raw, like readInstallSettings(), and not through the entity. The
+         * Configuration entity is setCachable() and Update043 drops and
+         * recreates its table, so an entity read in a process that has run the
+         * migration can answer from a cache of the table as it was before --
+         * see Update043's note on the same hazard on the write side.
+         */
+        $row = $db->get_row( sprintf( "SELECT settings FROM %s WHERE id = '%s'",
+            $legacy->getTableName(), $db->prepare( (string) $this->config_id ) ) );
+
+        if ( ! $row ) {
+
+            return array();
+        }
+
+        $settings = unserialize(
+            (string) $row['settings'], array( 'allowed_classes' => false ) );
+
+        return is_array( $settings ) ? $settings : array();
+     }
+
+     /**
+      * Fetches a modules entire configuration array
+      *
+      * @param string $module The name of module whose configuration values you want to fetch
+      * @return array Config values
+      */
+     /**
+      * One module's whole settings map, or an empty array when it has none.
+      *
+      * fetch() indexes $v[$module] unguarded, so asking it about a module that
+      * has never stored a setting is an undefined-key warning rather than an
+      * empty answer. Callers that iterate a map -- the scoped settings screens
+      * -- need the empty answer.
+      */
+     public function getModuleSettings( $module = 'base' ) {
+
+         $v = $this->config->get('settings');
+
+         if ( is_array( $v ) && isset( $v[ $module ] ) && is_array( $v[ $module ] ) ) {
+
+             return $v[ $module ];
+         }
+
+         return array();
+     }
+
+     function fetch($module = '') {
+        
+        $v = $this->config->get('settings');
+
+        if (!empty($module)) {
+
+            return $v[$module];
+        
+        } else {
+         
+            return $v['base'];
+        }
+     }
+
+     /**
+      * Write the install-wide settings back, one row per key.
+      *
+      * The stored set is made to MATCH db_settings, which is what writing
+      * serialize($this->db_settings) into a single blob did implicitly. Both
+      * places that drop a key -- persistSetting()'s default-equivalence prune
+      * and pruneRedundantPersistedSettings() -- unset it from db_settings and
+      * rely on that, so the deletes here are not an extra feature, they are
+      * the half of the old behaviour that rows make explicit.
+      *
+      * When load() never ran, the stored rows are merged UNDER db_settings and
+      * nothing is deleted. That is the same guard the blob version carried, and
+      * for the same reason: a process that never read the settings does not
+      * know what it would be throwing away.
+      *
+      * While owa_configuration still exists this writes the blob instead, by
+      * the rule in legacyBlobIsAuthoritative(). It matters in both directions:
+      * a rollback of Update043 restores that table and drops the autoload
+      * column, and Update::rollback() then persists the reverted schema_version
+      * and calls save() -- which must land in the store the rollback just
+      * restored, not in rows whose column has gone.
+      *
+      * @return boolean
+      */
+     function save() {
+
+        if ( $this->legacyBlobIsAuthoritative() ) {
+
+            return $this->saveToLegacyConfigurationBlob();
+        }
+
+        $target = $this->db_settings;
+
+        if ( $this->config_from_db != true ) {
+
+            $stored = $this->readInstallSettings();
+
+            foreach ( $target as $module => $values ) {
+
+                $stored[ $module ] = array_merge(
+                    isset( $stored[ $module ] ) && is_array( $stored[ $module ] )
+                        ? $stored[ $module ] : array(),
+                    (array) $values );
+            }
+
+            $target = $stored;
+
+            $status = $this->writeInstallSettings( $target, false );
+
+        } else {
+
+            $status = $this->writeInstallSettings( $target, true );
+        }
+
+        $this->is_dirty = false;
+
+        return $status;
+     }
+
+     /**
+      * Store one row per setting, and optionally remove the rows for keys that
+      * are no longer held.
+      *
+      * @param  array $settings [module][key] => value
+      * @param  bool  $prune    delete stored keys absent from $settings
+      * @return boolean
+      */
+     private function writeInstallSettings( $settings, $prune ) {
+
+        $status = true;
+
+        $wanted = array();
+
+        foreach ( $settings as $module => $values ) {
+
+            if ( ! is_array( $values ) ) {
+
+                /*
+                 * db_settings has been seen holding a scalar under a module
+                 * key -- Update012 asserts the scan tolerates it. A scalar is
+                 * not a settings map and there is no key to name a row after,
+                 * so it is skipped rather than guessed at.
+                 */
+                continue;
+            }
+
+            foreach ( $values as $key => $value ) {
+
+                $wanted[ $module . '|' . $key ] = true;
+
+                if ( ! $this->writeInstallSetting( $module, $key, $value ) ) {
+
+                    $status = false;
+                }
+            }
+        }
+
+        if ( ! $prune ) {
+
+            return $status;
+        }
+
+        foreach ( $this->readInstallSettings() as $module => $values ) {
+
+            foreach ( $values as $key => $value ) {
+
+                if ( ! isset( $wanted[ $module . '|' . $key ] ) ) {
+
+                    $this->deleteInstallSetting( $module, $key );
+                }
+            }
+        }
+
+        return $status;
+     }
+
+     /**
+      * Upsert one install-scope row.
+      *
+      * The id is derived from the scope/module/name, so the same setting is
+      * always the same row and two writers cannot produce two rows that
+      * disagree. See Entity\Setting::makeId().
+      *
+      * @return boolean
+      */
+     private function writeInstallSetting( $module, $key, $value ) {
+
+        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        $id = $setting->makeId( 'install', self::INSTALL_SCOPE_ID, $module, $key );
+
+        $setting->load( $id );
+
+        $setting->set( 'scope_type', 'install' );
+        $setting->set( 'scope_id', self::INSTALL_SCOPE_ID );
+        $setting->set( 'module', $module );
+        $setting->set( 'name', $key );
+        $setting->set( 'value', serialize( $value ) );
+
+        if ( $setting->wasPersisted() ) {
+
+            return $setting->update() !== false;
+        }
+
+        $setting->set( 'id', $id );
+        $setting->set( 'autoload', 1 );
+        $setting->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+
+        return $setting->create() !== false;
+     }
+
+     /**
+      * Remove one install-scope row, so the key reverts to its code default.
+      */
+     private function deleteInstallSetting( $module, $key ) {
+
+        $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        return $setting->delete(
+            $setting->makeId( 'install', self::INSTALL_SCOPE_ID, $module, $key ) );
      }
 
      /**

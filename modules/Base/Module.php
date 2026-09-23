@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 42;
+        $this->required_schema_version = 43;
         return parent::__construct();
     }
 
@@ -2627,7 +2627,15 @@ class Module extends \OWA\Core\Module {
                 'host',
                 'os',
                 'impression',
-                'configuration',
+            /*
+             * 'configuration' is NOT here. Update043 unpacked that table into
+             * install-scope rows of owa_setting and dropped it, so a fresh
+             * install must not create it -- its presence is what tells
+             * Settings the blob is still the store of record.
+             *
+             * The entity class stays: the rollback recreates the table, and
+             * entityFactory resolves by PSR-4 rather than from this list.
+             */
             'setting',
             'goal_event',
             'goal_event_condition',
