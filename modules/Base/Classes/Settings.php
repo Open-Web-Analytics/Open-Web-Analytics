@@ -1442,6 +1442,22 @@ namespace OWA\Module\Base\Classes;
       * exactly that behaviour -- so this can ship without converting anything,
       * and each module narrows its own boot cost when it declares.
       *
+      * PART 3 IS MEANT TO BE REMOVED. It is a compatibility clause, not a
+      * permanent feature: every module in this repository can declare, and a
+      * third-party module needs a few releases' notice to do the same. Once
+      * that notice has been given and taken, delete it and the boot query
+      * becomes a plain statement of what boot wants -- the mechanical names
+      * plus each module's declared eager keys, and nothing else.
+      *
+      * Know what removal does before doing it: an undeclared module's stored
+      * settings stop being read. Not an error, not a warning -- its values
+      * quietly revert to whatever its code defaults say, which for `is_active`
+      * and `schema_version` is covered by part 1, and for everything else is
+      * not. So it wants a release note and a version to land in, not a quiet
+      * commit. declarationProblems() already reports the same condition for
+      * modules that HAVE declared, and is the right place to surface the
+      * warning for those that have not.
+      *
       * @param  object $db for escaping
       * @return string
       */
