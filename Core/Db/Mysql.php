@@ -195,6 +195,8 @@ class Mysql extends \OWA\Core\Db {
 
         $this->e->debug(sprintf('Query: %s', $sql));
 
+        $this->num_queries++;
+
         $this->result = array();
 
         $this->new_result = '';

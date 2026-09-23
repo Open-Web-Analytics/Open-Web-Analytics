@@ -62,11 +62,17 @@ class Db extends \OWA\Core\Base {
     var $connectionParams;
 
     /**
-     * Number of queries
+     * Queries issued on this connection.
+     *
+     * Declared since 1.0 and never incremented until now, so anything that
+     * read it saw null. The drivers count here because a claim about how many
+     * queries a code path costs is otherwise untestable -- settingRowsForChain()
+     * exists to turn one query per key per scope into one per chain, and that
+     * is only a fact if something can count.
      *
      * @var integer
      */
-    var $num_queries;
+    var $num_queries = 0;
 
     /**
      * Raw result object
