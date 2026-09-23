@@ -104,7 +104,7 @@ final class SettingsDeclarationContractTest extends TestCase
         $declared = $this->baseDeclaration();
 
         foreach ( array_keys(
-            (array) ( \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'] ?? array() ) )
+            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array() ) )
             as $key ) {
 
             $args = (array) ( $declared[ $key ] ?? array() );

@@ -290,9 +290,13 @@ namespace OWA\Module\Base\Classes;
 
          $args = $this->registry[ $id ] ?? array();
 
+         /*
+          * Records the constant and NOTHING ELSE. Being static follows from
+          * it -- see isStorable() -- rather than being written into the entry,
+          * because a written demotion has to be undone and forgetConfigConstant()
+          * could not know what to put back. Derived state needs no inverse.
+          */
          $args['constant'] = (string) $constant;
-         $args['storable'] = false;
-         $args['autoload'] = false;
 
          $this->registry[ $id ] = $args;
 
@@ -601,35 +605,34 @@ namespace OWA\Module\Base\Classes;
             }
 
             /*
-             * KEPT, although base now declares all 21 of these static and the
-             * boot query therefore never asks for them.
+             * No config-file-only strip. Base declares all 21 of these static,
+             * so the boot query never asks for them and persistSetting()
+             * refuses to create one.
              *
-             * It is not redundant, because it guards a route the declaration
-             * cannot: if modules/Base/settings.php were deleted, renamed or
-             * failed to parse, base would fall back into the wholesale sweep
-             * and every one of its rows would be loaded again. A stored
-             * error_log_file or report_wrapper is an RCE primitive, and one
-             * file is too little standing between that and the database.
-             *
-             * Costs a loop over 21 keys, once per boot. The other two call
-             * sites are gone; this one is the latch.
+             * The route this used to guard -- modules/Base/settings.php missing,
+             * so Base falls back into the wholesale sweep and its rows load
+             * again -- is guarded where it belongs now:
+             * BaseDeclarationPresentTest fails if the file is not there, and
+             * OptionsUpdate refuses to save a setting the registry does not
+             * describe. A rule enforced in two places acquires two slightly
+             * different definitions.
              */
-            $db_settings = self::stripConfigFileOnlySettings( $db_settings );
 
             /*
              * A constant declared in owa-config.php wins over the database.
              *
-             * Implemented the same way the config-file-only settings are -- by
-             * removing the key from the LOSING side before the merge -- because
-             * load() array_merges the database over everything applyConfigConstants()
-             * put in place, so precedence here can only be expressed as absence.
+             * Implemented by removing the key from the LOSING side before the
+             * merge, because load() array_merges the database over everything
+             * applyConfigConstants() put in place -- so precedence here can
+             * only be expressed as absence.
              *
-             * Distinct from stripConfigFileOnlySettings() on purpose. That list is
-             * a SECURITY denylist: keys an authenticated web request must never be
-             * able to write, because doing so is an RCE primitive (error_log_file
-             * + report_wrapper). This is a precedence rule about what the operator
-             * explicitly declared. Same mechanism, different reason, and merging
-             * the two would lose the reason.
+             * A precedence rule about what the operator declared, and nothing
+             * more. The security half of this used to live beside it as a
+             * denylist of keys an authenticated request must never write, an
+             * RCE primitive in the case of error_log_file and report_wrapper.
+             * That is the declaration's job now: those settings are declared
+             * static, so no query asks for them and persistSetting() refuses
+             * them.
              */
             $db_settings = $this->stripSettingsSuppliedByConstants( $db_settings );
 
@@ -1496,7 +1499,8 @@ namespace OWA\Module\Base\Classes;
 
          foreach ( $this->registry as $id => $args ) {
 
-             if ( empty( $args['autoload'] ) ) {
+             // A governed key is static, so boot has nothing to fetch for it.
+             if ( empty( $args['autoload'] ) || ! empty( $args['constant'] ) ) {
 
                  continue;
              }
@@ -1650,13 +1654,17 @@ namespace OWA\Module\Base\Classes;
           * after. Without this, that later registration would hand storability
           * back and the constant would stop being the last word.
           */
+         /*
+          * Carried across a later declaration. Constants are applied during
+          * boot and a module registers when it loads, which is after -- so
+          * without this, that registration would drop the constant and the
+          * setting would stop being static.
+          */
          $governing = $this->configFileConstantFor( $module, $key );
 
          if ( $governing ) {
 
              $args['constant'] = $governing;
-             $args['storable'] = false;
-             $args['autoload'] = false;
          }
 
          $this->registry[ $id ] = $args;
@@ -1937,6 +1945,17 @@ namespace OWA\Module\Base\Classes;
       * @return bool
       */
      public static function isStorable( array $args ) {
+
+         /*
+          * A config-file constant makes the setting static, whatever it
+          * declared. The constant is the last word on boot, so a stored value
+          * could never be read -- and this is where that is said, once, rather
+          * than by rewriting the declaration when the constant is applied.
+          */
+         if ( ! empty( $args['constant'] ) ) {
+
+             return false;
+         }
 
          return ! empty( $args['storable'] ) || ! empty( $args['autoload'] );
      }
@@ -2253,81 +2272,40 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Settings that must come from the config file or the installer, and must
-      * NEVER be read from the database.
+      * Settings that cannot hold a stored value, DERIVED from the registry.
       *
-      * These name filesystem paths, stream targets, credentials and template
-      * files. Two rules combine to make a stored copy unreachable:
+      * The replacement for configFileOnlySettings(), which was a
+      * hand-maintained list of 21 keys saying what the declaration now says:
+      * not storable. Two statements of one rule are two things to keep in
+      * step, and the list is the one that goes.
       *
-      *   1. the options form refuses to write them (see
-      *      OptionsUpdate::isSensitiveSettingKey -- allowing it is an RCE
-      *      primitive), and
-      *   2. load() merges the DB array OVER the config-file array, so a stored
-      *      value WINS against owa-config.php.
+      * A setting is here because its module declared it without `storable`, or
+      * because a config-file constant governs it. Nothing to update when a
+      * setting is added -- the declaration is the source.
       *
-      * So once one is persisted there is no supported way to change it: not the
-      * form, not the config file. Observed in the wild -- two installs carried
-      * async_log_dir values pointing at a previous server's /home/padams/...
-      * paths that do not exist, silently overriding a correct config file.
-      *
-      * Value is irrelevant here. Whatever it holds, it must not come from the
-      * database, so it is dropped on load regardless -- the same treatment
-      * error_handler already gets in load().
-      *
-      * NOT included: configuration_id, schema_version, install_complete and
-      * is_active. Those are denylisted from the FORM but are legitimate
-      * database state -- schema_version and install_complete have no code
-      * default at all, so dropping them would make a working install look
-      * uninstalled and re-run every update from scratch.
-      *
-      * @return array<string, array<string, bool>> module => key => true
+      * @return array module => key => true
       */
-     public static function configFileOnlySettings() {
+     public static function staticSettings() {
 
-         return array(
-             'base' => array(
-                 'error_log_file'       => true,
-                 'async_error_log_file' => true,
-                 'async_log_file'       => true,
-                 'async_log_dir'        => true,
-                 'async_lock_file'      => true,
-                 'report_wrapper'       => true,
-                 'db_type'              => true,
-                 'db_host'              => true,
-                 'db_port'              => true,
-                 'db_name'              => true,
-                 'db_user'              => true,
-                 'db_password'          => true,
-                 'db_class_dir'         => true,
-                 'plugin_dir'           => true,
-                 'module_dir'           => true,
-                 'templates_dir'        => true,
-                 'public_path'          => true,
-                 'search_engines.ini'   => true,
-                 'query_strings.ini'    => true,
+         $c = \OWA\Core\CoreAPI::configSingleton();
 
-                 /*
-                  * The role-to-capability model is configuration, not stored
-                  * state. It ships with the code and is customised the same way
-                  * the other entries here are -- from owa-config.php, which is
-                  * included from inside this object before the configuration
-                  * entity exists, so a call like
-                  *
-                  *     $this->addCapabilityToRole( 'everyone', ['view_reports'] );
-                  *
-                  * writes the defaults array and is re-applied on every request.
-                  * That route is unaffected by this listing; only a copy read
-                  * back out of the data store is dropped.
-                  *
-                  * Both keys are listed together because they are two halves of
-                  * one model, and splitting them across two storage rules would
-                  * be worse than either choice made consistently.
-                  */
-                 'capabilities'                      => true,
-                 'capabilitiesThatRequireSiteAccess' => true,
-             ),
-         );
+         $out = array();
+
+         foreach ( $c->registeredFields() as $id => $args ) {
+
+             if ( self::isStorable( (array) $args ) ) {
+
+                 continue;
+             }
+
+             list( $module, $key ) = explode( '|', $id, 2 );
+
+             $out[ $module ][ $key ] = true;
+         }
+
+         return $out;
      }
+
 
      /**
       * Form-denylisted settings that ARE legitimate database state. Listed
@@ -2409,26 +2387,6 @@ namespace OWA\Module\Base\Classes;
          return $db_settings;
      }
 
-     public static function stripConfigFileOnlySettings( $db_settings ) {
-
-         if ( ! is_array( $db_settings ) ) {
-             return $db_settings;
-         }
-
-         foreach ( self::configFileOnlySettings() as $module => $keys ) {
-
-             if ( ! isset( $db_settings[ $module ] ) || ! is_array( $db_settings[ $module ] ) ) {
-                 continue;
-             }
-
-             foreach ( array_keys( $keys ) as $key ) {
-
-                 unset( $db_settings[ $module ][ $key ] );
-             }
-         }
-
-         return $db_settings;
-     }
 
      /**
       * Is a stored value equivalent to the code default, such that dropping it

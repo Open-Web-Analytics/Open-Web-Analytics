@@ -399,13 +399,21 @@ final class InstallTimezoneTest extends TestCase
         $load = substr($src, strpos($src, 'function load('), 4000);
 
         $strip  = strpos($load, 'stripSettingsSuppliedByConstants(');
-        $secure = strpos($load, 'stripConfigFileOnlySettings(');
         $merge  = strpos($load, 'array_merge($default[$k]');
 
         $this->assertNotFalse($strip, 'load() never applies the constant precedence rule');
         $this->assertNotFalse($merge, 'the merge moved; this test needs updating');
-        $this->assertGreaterThan($secure, $strip, 'must run after the security strip');
         $this->assertLessThan($merge, $strip, 'must run before the database is merged in');
+
+        /*
+         * There is no security strip to run after any more. The
+         * config-file-only settings are declared static, so the boot query does
+         * not fetch them and nothing arrives for a strip to remove -- see
+         * BaseDeclarationPresentTest, which is what guarantees the declaration
+         * is there to do it.
+         */
+        $this->assertFalse(strpos($load, 'stripConfigFileOnlySettings('),
+            'the strip is gone; the declaration states the rule once');
     }
 
     /**

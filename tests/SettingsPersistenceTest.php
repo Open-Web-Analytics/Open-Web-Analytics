@@ -203,7 +203,7 @@ final class SettingsPersistenceTest extends TestCase
     public function testFormDenylistStillCoversEveryOriginalKey(): void
     {
         $union = array_merge(
-            \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'],
+            \OWA\Module\Base\Classes\Settings::staticSettings()['base'],
             \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']
         );
 
@@ -226,21 +226,33 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * The two categories must stay disjoint, and the ones that are real
-     * database state must NOT be in the config-file-only list -- dropping
-     * schema_version or install_complete makes a working install look
-     * uninstalled and re-run every update.
+     * Real database state must stay READABLE from the store.
+     *
+     * The old form of this asserted those keys were absent from the
+     * config-file-only list, because being on it meant being dropped on load.
+     * The mechanism is the declaration now, and the equivalent hazard is being
+     * declared STATIC: a static setting is never fetched, so a stored
+     * schema_version would be invisible and every update would re-run.
+     *
+     * configuration_id is deliberately not in this list any more. It named the
+     * blob row Update043 retired, so it is vestigial rather than state, and
+     * its default of '1' is the whole of it.
      */
-    public function testDatabaseStateKeysAreNotTreatedAsConfigFileOnly(): void
+    public function testDatabaseStateKeysAreStillReadFromTheStore(): void
     {
-        $cfo = \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'];
+        $c = $this->settings();
 
-        foreach (['schema_version', 'install_complete', 'configuration_id', 'is_active'] as $key) {
-            $this->assertArrayNotHasKey(
-                $key,
-                $cfo,
-                "$key is real database state; dropping it on load would break the install."
-            );
+        $static = \OWA\Module\Base\Classes\Settings::staticSettings()['base'];
+
+        foreach (['schema_version', 'install_complete', 'is_active'] as $key) {
+
+            $this->assertArrayNotHasKey($key, $static,
+                "$key is real database state; declaring it static would make the "
+                . 'stored value invisible and the install look uninstalled.');
+
+            $this->assertTrue($c->mayPersistInstallWide('base', $key),
+                "$key must remain storable: code writes it to record what has "
+                . 'happened to this installation.');
         }
     }
 
@@ -257,31 +269,47 @@ final class SettingsPersistenceTest extends TestCase
      */
     public function testConfigFileOnlySettingsAreStrippedRegardlessOfValue($value): void
     {
-        $stripped = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings([
-            'base' => [
-                'async_log_dir'  => $value,
-                'report_wrapper' => $value,
-                'error_log_file' => $value,
-                // must survive: not config-file-only
-                'notice_email'   => 'peter@example.com',
-            ],
-        ]);
-
-        foreach (['async_log_dir', 'report_wrapper', 'error_log_file'] as $key) {
-            $this->assertArrayNotHasKey(
-                $key,
-                $stripped['base'],
-                "base.$key must never be sourced from the database -- its value is "
-                . 'irrelevant, because neither the form nor the config file can '
-                . 'override a stored copy.'
-            );
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('writes real rows and reloads');
         }
 
-        $this->assertSame(
-            'peter@example.com',
-            $stripped['base']['notice_email'] ?? null,
-            'a normal setting must pass through untouched'
-        );
+        $c      = $this->settings();
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.setting');
+        $table  = $entity->getTableName();
+
+        $keys = ['async_log_dir', 'report_wrapper', 'error_log_file'];
+
+        $before = [];
+
+        foreach ($keys as $key) {
+            $before[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
+
+            $id = $db->prepare((string) $entity->makeId('install', '1', 'base', $key));
+            $db->query(sprintf("DELETE FROM %s WHERE id = '%s'", $table, $id));
+            $db->query(sprintf(
+                "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)"
+                . " VALUES ('%s', 'install', '1', 'base', '%s', '%s', 1, '0')",
+                $table, $id, $db->prepare($key), $db->prepare(serialize($value))));
+        }
+
+        $c->load(1);
+
+        $after = [];
+        foreach ($keys as $key) {
+            $after[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
+        }
+
+        $db->query(sprintf("DELETE FROM %s WHERE scope_type = 'install' AND module = 'base'"
+            . " AND name IN ('%s')", $table, implode("', '", $keys)));
+        $c->load(1);
+
+        foreach ($keys as $key) {
+            $this->assertSame($before[$key], $after[$key],
+                "base.$key must never be sourced from the database -- its value is "
+                . 'irrelevant, because neither the form nor the config file can '
+                . 'override a stored copy.');
+        }
     }
 
     public static function configFileOnlyValueProvider(): array
@@ -296,33 +324,34 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * The strip must not touch other modules. What they store is their own
-     * schema_version and is_active -- dropping fileCache.is_active=false would
-     * silently re-enable a module that was deliberately disabled, and dropping
-     * a module's schema_version would re-run its updates.
+     * Base's declaration says nothing about other modules.
+     *
+     * What they store is their own schema_version and is_active -- losing
+     * fileCache.is_active=false would silently re-enable a module that was
+     * deliberately disabled, and losing a module's schema_version would re-run
+     * its updates. A key named identically to one of Base's static settings is
+     * not covered by Base's declaration.
      */
-    public function testStripLeavesOtherModulesAlone(): void
+    public function testBasesDeclarationLeavesOtherModulesAlone(): void
     {
-        $stripped = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings([
-            'base'      => ['async_log_dir' => '/gone/', 'notice_email' => 'a@b.c'],
-            'domstream' => ['schema_version' => 1, 'is_active' => true],
-            'fileCache' => ['is_active' => false],
-            // a module that happens to use a name from the base list
-            'hello'     => ['report_wrapper' => 'something.php', 'is_active' => true],
-        ]);
+        $c = $this->settings();
 
-        $this->assertArrayNotHasKey('async_log_dir', $stripped['base']);
+        $static = \OWA\Module\Base\Classes\Settings::staticSettings();
 
-        $this->assertSame(['schema_version' => 1, 'is_active' => true], $stripped['domstream']);
-        $this->assertSame(['is_active' => false], $stripped['fileCache'],
-            'a deliberately disabled module must stay disabled');
-        $this->assertSame(
-            ['report_wrapper' => 'something.php', 'is_active' => true],
-            $stripped['hello'],
-            'the base list is scoped to base; an identically named key in another '
-            . 'module is not covered by it'
-        );
+        $this->assertArrayHasKey('report_wrapper', $static['base'],
+            'base.report_wrapper is static');
+
+        $this->assertArrayNotHasKey('report_wrapper', $static['hello'] ?? [],
+            'an identically named key in another module is not covered by Base');
+
+        foreach (['domstream' => 'is_active', 'fileCache' => 'is_active'] as $module => $key) {
+
+            $this->assertTrue($c->mayPersistInstallWide($module, $key),
+                "$module.$key must stay storable, or a disabled module cannot "
+                . 'record that it is disabled');
+        }
     }
+
 
     /**
      * The prune is confined to modules whose defaults are known.
@@ -407,7 +436,7 @@ final class SettingsPersistenceTest extends TestCase
         $c = $this->settings();
 
         foreach ( array_keys(
-            (array) ( \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'] ?? array() ) )
+            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array() ) )
             as $key ) {
 
             $this->assertFalse( $c->mayPersistInstallWide( 'base', $key ),

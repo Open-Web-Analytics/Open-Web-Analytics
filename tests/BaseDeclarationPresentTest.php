@@ -68,7 +68,7 @@ final class BaseDeclarationPresentTest extends TestCase
         $c = \OWA\Core\CoreAPI::configSingleton();
 
         foreach ( array_keys(
-            (array) ( \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'] ?? array() ) )
+            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array() ) )
             as $key ) {
 
             $this->assertTrue( $c->isRegistered( 'base', $key ), sprintf(

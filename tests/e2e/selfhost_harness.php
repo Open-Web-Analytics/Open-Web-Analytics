@@ -409,7 +409,8 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
     // Point the file queue and error log at this run's own directory.
     //
     // Set through the config file because both are config-file-only settings
-    // (Settings::configFileOnlySettings) -- a stored value is stripped on load,
+    // (declared static in modules/Base/settings.php) -- a stored value is never
+    // fetched at boot,
     // deliberately, so a path from a previous server cannot follow a database
     // around. setupPaths() fills them only when unset, which is what lets this
     // land.

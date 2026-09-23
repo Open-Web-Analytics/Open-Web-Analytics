@@ -197,7 +197,7 @@ final class EventRawEntityTest extends TestCase
             'the setting must not still be declared with a default');
 
         $denylist = array_merge(
-            \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'],
+            \OWA\Module\Base\Classes\Settings::staticSettings()['base'],
             \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']);
 
         $this->assertArrayNotHasKey('v2_raw_collection', $denylist,
