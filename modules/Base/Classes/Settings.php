@@ -1010,27 +1010,22 @@ namespace OWA\Module\Base\Classes;
          }
 
          /*
-          * LAST DITCH. Nothing registered this key and nothing has a default
-          * for it, so it is either a third-party module that has not adopted
-          * registration yet or a genuine typo. One query tells them apart, and
-          * the attempt is recorded either way, so a typo costs one query per
-          * request rather than one per read.
+          * No last-ditch lookup, deliberately.
           *
-          * This is what lets registration be adopted module by module rather
-          * than as a cutover: an unregistered module's stored settings keep
-          * working, they just do not get the batch.
+          * It used to query for any key that was neither declared nor in the
+          * array, justified as keeping un-adopted modules working. That
+          * justification was wrong: a module with no settings.php is swept up
+          * wholesale by the boot query's `module NOT IN (declared)` clause, and
+          * so is one whose files were deleted but whose rows remain. The only
+          * case that ever reached the fallback was a DECLARED module with a row
+          * for a key its declaration does not mention -- which is a bug in the
+          * declaration, and papering over it at one query per key per request
+          * hid the exact condition someone needed to be told about.
+          *
+          * A declaration is now the complete list of what a module stores.
+          * Anything else is reported by declarationProblems() and ignored, the
+          * same way a key declared static already ignored its row.
           */
-         if ( ! $this->isLoaded( $module, $key ) && ! isset( $this->registry[ $id ] ) ) {
-
-             $this->resolveFromStore( array( $id => array( $module, $key ) ) );
-
-             $values = $this->config ? $this->config->get('settings') : $this->default_config;
-
-             if ( isset( $values[$module] ) && array_key_exists($key, $values[$module])) {
-                 return $values[$module][$key];
-             }
-         }
-
          return false;
      }
 
@@ -1421,6 +1416,76 @@ namespace OWA\Module\Base\Classes;
      public function registeredFieldSets() {
 
          return $this->fieldsets;
+     }
+
+     /**
+      * Stored values a declaration has orphaned.
+      *
+      * A declaration is the complete list of what a module stores. Two ways a
+      * stored row can fall outside it, and BOTH mean the value is ignored:
+      *
+      *   - the key is not in the declaration at all;
+      *   - the key is declared without `storable`, so it is never queried.
+      *
+      * Neither is visible otherwise. The row sits in the table, the setting
+      * answers with its default, and nothing reports the disagreement -- which
+      * is the whole reason the read path stopped quietly querying for the first
+      * case rather than continuing to mask it.
+      *
+      * Only DECLARED modules are examined. A module with no settings.php has
+      * all its rows loaded at boot and has made no claim to contradict.
+      *
+      * This QUERIES. It is for an operator asking what is wrong, not for a
+      * request path.
+      *
+      * @return array human-readable strings
+      */
+     public function declarationProblems() {
+
+         if ( ! $this->declared_modules ) {
+
+             return array();
+         }
+
+         $db = \OWA\Core\CoreAPI::dbSingleton();
+
+         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+         $quoted = array();
+
+         foreach ( array_keys( $this->declared_modules ) as $module ) {
+
+             $quoted[] = "'" . $db->prepare( (string) $module ) . "'";
+         }
+
+         $rows = (array) $db->get_results( sprintf(
+             "SELECT module, name FROM %s WHERE scope_type = 'install' AND module IN ( %s )",
+             $entity->getTableName(), implode( ', ', $quoted ) ) );
+
+         $problems = array();
+
+         foreach ( $rows as $row ) {
+
+             $args = $this->registeredField( $row['module'], $row['name'] );
+
+             if ( ! $args ) {
+
+                 $problems[] = sprintf(
+                     '%s stores %s but does not declare it, so the stored value is ignored',
+                     $row['module'], $row['name'] );
+
+                 continue;
+             }
+
+             if ( ! self::isStorable( $args ) ) {
+
+                 $problems[] = sprintf(
+                     '%s stores %s but declares it static, so the stored value is ignored',
+                     $row['module'], $row['name'] );
+             }
+         }
+
+         return $problems;
      }
 
      /**

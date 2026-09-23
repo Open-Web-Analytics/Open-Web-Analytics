@@ -590,17 +590,28 @@ abstract class Module {
                 continue;
             }
 
-            foreach ( (array) $decl['settings'] as $key => $args ) {
+            $declared_settings = (array) $decl['settings'];
 
-                $args = (array) $args;
+            /*
+             * ADDED, not merely merged when mentioned.
+             *
+             * An earlier version only applied these to keys the module's file
+             * already listed, which meant a module that did not mention
+             * is_active simply had no is_active in the registry -- and every
+             * installation then reported its own stored is_active and
+             * schema_version as values nothing declares. Core says every module
+             * has these, so core puts them there.
+             */
+            foreach ( $mechanical as $key => $args ) {
 
-                if ( isset( $mechanical[ $key ] ) ) {
+                // Chrome from the module if it offered any, eagerness from core.
+                $declared_settings[ $key ] = array_merge(
+                    (array) ( $declared_settings[ $key ] ?? array() ), $args );
+            }
 
-                    // Chrome from the module, eagerness from core.
-                    $args = array_merge( $args, $mechanical[ $key ] );
-                }
+            foreach ( $declared_settings as $key => $args ) {
 
-                $fields[ $module . '|' . $key ] = $args;
+                $fields[ $module . '|' . $key ] = (array) $args;
             }
 
             $declared[ $module ] = true;

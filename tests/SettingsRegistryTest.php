@@ -522,6 +522,106 @@ final class SettingsRegistryTest extends TestCase
           . 'nothing: boot already fetched them', count( $undeclared ) ) );
     }
 
+    /**
+     * Core ADDS the mechanical settings, it does not merely decorate them.
+     *
+     * An earlier version only applied them to keys a module's file already
+     * listed, so a module that did not mention is_active had none in the
+     * registry -- and every installation then reported its own stored
+     * is_active and schema_version as values nothing declares. Caught by
+     * declarationProblems() on its first run.
+     */
+    public function testCoreAddsTheMechanicalSettingsToEveryDeclaredModule(): void
+    {
+        $registry = \OWA\Core\Module::settingsRegistry();
+
+        foreach ( array_keys( (array) $registry['declared'] ) as $module ) {
+
+            foreach ( array_keys( \OWA\Core\Module::mechanicalSettings() ) as $key ) {
+
+                $this->assertArrayHasKey( $module . '|' . $key, $registry['fields'],
+                    sprintf( 'core must give %s an %s whether or not its file mentions one',
+                        $module, $key ) );
+
+                $this->assertNotEmpty( $registry['fields'][ $module . '|' . $key ]['autoload'],
+                    'and it stays eager: a module cannot make its own activation lazy' );
+
+                $this->assertArrayNotHasKey( 'default',
+                    $registry['fields'][ $module . '|' . $key ],
+                    'with NO default, or the prune could drop it and the module would '
+                  . 'look uninstalled' );
+            }
+        }
+    }
+
+    /**
+     * A stored value the declaration has orphaned is reported, not masked.
+     *
+     * Two ways for a declared module to have a row outside its declaration,
+     * and both mean the value is ignored: the key is absent from the
+     * declaration, or it is declared without `storable` and so never queried.
+     * The read path used to quietly query for the first case, at one query per
+     * key per request, which hid the condition someone needed to be told about.
+     */
+    public function testAnOrphanedStoredValueIsReported(): void
+    {
+        $this->requireDb();
+
+        $declared = array_keys(
+            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() ) );
+
+        if ( ! $declared ) {
+            $this->markTestSkipped( 'no module ships a declaration on this installation' );
+        }
+
+        $module = $declared[0];
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+        $table  = $entity->getTableName();
+
+        $id = $db->prepare( (string) $entity->makeId( 'install', '1', $module, 'zz_orphan' ) );
+
+        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
+        $db->query( sprintf(
+            "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)"
+          . " VALUES ('%s', 'install', '1', '%s', 'zz_orphan', '%s', 1, '0')",
+            $table, $id, $db->prepare( $module ), $db->prepare( serialize( 'stored' ) ) ) );
+
+        $problems = implode( "\n", $this->settings()->declarationProblems() );
+
+        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
+
+        $this->assertStringContainsString( 'zz_orphan', $problems );
+        $this->assertStringContainsString( 'ignored', $problems,
+            'the message has to say the value has no effect, which is the part '
+          . 'nobody would otherwise discover' );
+    }
+
+    /** And the read does NOT go looking for it. */
+    public function testAnUndeclaredKeyOfADeclaredModuleIsNotQueriedFor(): void
+    {
+        $this->requireDb();
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $declared = array_keys(
+            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() ) );
+
+        if ( ! $declared ) {
+            $this->markTestSkipped( 'no module ships a declaration on this installation' );
+        }
+
+        $before = (int) $db->num_queries;
+
+        $this->assertFalse(
+            \OWA\Core\CoreAPI::getSetting( $declared[0], 'zz_not_in_the_declaration' ) );
+
+        $this->assertSame( 0, (int) $db->num_queries - $before,
+            'a declaration is the complete list of what a module stores; there is no '
+          . 'fallback lookup masking an incomplete one' );
+    }
+
     /** 'General' is what group has always defaulted to, and it means Instance. */
     public function testTheLegacyGeneralGroupStillMeansTheInstanceMenu(): void
     {
