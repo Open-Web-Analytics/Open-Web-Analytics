@@ -30,6 +30,27 @@ final class SettingsDeclarationContractTest extends TestCase
         return \OWA\Core\CoreAPI::configSingleton();
     }
 
+    /**
+     * The LITERAL defaults, as getDefaultSettingsArray() returns them.
+     *
+     * Not $c->default_config, which is the live array: applyConfigConstants()
+     * and setupPaths() have already written into it, so on an installation
+     * whose config file sets async_log_dir it holds that path rather than the
+     * code's ''. Comparing a static declaration against a mutated array makes
+     * the test fail wherever the installation differs from the developer's --
+     * which is exactly what the isolation sweep found, running from a scratch
+     * install with its own log directory configured.
+     *
+     * @return array<string,mixed>
+     */
+    private function literalDefaults(): array
+    {
+        $m = new ReflectionMethod( $this->settings(), 'getDefaultSettingsArray' );
+        $m->setAccessible( true );
+
+        return (array) ( $m->invoke( $this->settings() )['base'] ?? array() );
+    }
+
     /** @return array<string,mixed> */
     private function baseDeclaration(): array
     {
@@ -56,7 +77,7 @@ final class SettingsDeclarationContractTest extends TestCase
     public function testEveryBaseDefaultIsDeclared(): void
     {
         $declared = $this->baseDeclaration();
-        $defaults = $this->settings()->default_config['base'];
+        $defaults = $this->literalDefaults();
 
         $missing = array_diff( array_keys( $defaults ), array_keys( $declared ) );
 
@@ -73,7 +94,7 @@ final class SettingsDeclarationContractTest extends TestCase
     public function testDeclaredDefaultsMatchTheCodeDefaults(): void
     {
         $declared = $this->baseDeclaration();
-        $defaults = $this->settings()->default_config['base'];
+        $defaults = $this->literalDefaults();
 
         foreach ( $declared as $key => $args ) {
 
@@ -163,6 +184,79 @@ final class SettingsDeclarationContractTest extends TestCase
                 'base.%s records installation state and the prune could drop it: it '
               . 'has a default AND can be persisted. Dropping it makes the module '
               . 'look uninstalled and re-run its updates.', $key ) );
+        }
+    }
+
+    /**
+     * Every setting the code persists is declared storable.
+     *
+     * Derived by scanning for persistSetting() and setSetting(..., true) call
+     * sites rather than from a list here, because the list is what went wrong:
+     * base.queue_incoming_tracking_events has no code default and was not
+     * stored on the machine this declaration was generated from, so neither
+     * source saw it. The e2e queue suite found it -- the helper persisted the
+     * value, nothing read it back, and every beacon bypassed the queue.
+     *
+     * An undeclared key of a declared module is written and then never
+     * fetched. That is deliberate, and it is why this has to be checked.
+     */
+    public function testEverySettingTheCodePersistsIsDeclaredStorable(): void
+    {
+        $roots = array( OWA_DIR . 'Core', OWA_DIR . 'modules', OWA_DIR . 'tests' );
+
+        $found = array();
+
+        foreach ( $roots as $root ) {
+
+            $it = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root ) );
+
+            foreach ( $it as $file ) {
+
+                if ( $file->getExtension() !== 'php' ) {
+                    continue;
+                }
+
+                $src = (string) file_get_contents( $file->getPathname() );
+
+                if ( preg_match_all(
+                    "/persistSetting\(\s*'([a-z_]+)'\s*,\s*'([a-zA-Z_]+)'/",
+                    $src, $m, PREG_SET_ORDER ) ) {
+
+                    foreach ( $m as $hit ) {
+                        $found[ $hit[1] . '|' . $hit[2] ] = true;
+                    }
+                }
+            }
+        }
+
+        $this->assertNotEmpty( $found, 'the scan found no persistSetting() calls at all' );
+
+        $c = $this->settings();
+
+        foreach ( array_keys( $found ) as $id ) {
+
+            list( $module, $key ) = explode( '|', $id, 2 );
+
+            // Probe keys invented by tests are not product settings.
+            if ( strpos( $key, 'zz_' ) === 0 || strpos( $module, 'zz_' ) === 0 ) {
+                continue;
+            }
+
+            if ( ! $c->isRegistered( $module, $key ) ) {
+
+                // Only modules that have declared are held to this; an
+                // un-adopted module is still resolved wholesale.
+                $declared = (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() );
+
+                $this->assertArrayNotHasKey( $module, $declared, sprintf(
+                    '%s.%s is persisted by code but %s does not declare it, so the '
+                  . 'stored value is written and never read', $module, $key, $module ) );
+
+                continue;
+            }
+
+            $this->assertTrue( $c->mayPersistInstallWide( $module, $key ), sprintf(
+                '%s.%s is persisted by code but is not storable', $module, $key ) );
         }
     }
 

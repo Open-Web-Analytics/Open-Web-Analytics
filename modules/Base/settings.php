@@ -144,6 +144,20 @@ return array(
         'query_string_filters' => array( 'default' => '', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'query_strings.ini' => array(),
         'queue_events' => array( 'default' => false ),
+
+        /*
+         * NO DEFAULT, because the code has none -- and storable because
+         * queue_e2e_helper and the queue itself persist it at runtime.
+         *
+         * Missing from the first version of this file. It is not in
+         * getDefaultSettingsArray(), so generating from there did not find it,
+         * and it was not stored on the machine the file was generated on
+         * either. The e2e queue suite caught it: the helper persisted it, the
+         * value was never read back because an undeclared key of a declared
+         * module is not fetched, and every beacon went straight to the facts
+         * instead of the queue.
+         */
+        'queue_incoming_tracking_events' => array( 'storable' => true, 'autoload' => true ),
         'queue_max_retry_age' => array( 'default' => 86400 ),
         'queue_max_retry_count' => array( 'default' => 25 ),
         'remote_event_queue_endpoint' => array( 'default' => '' ),
