@@ -351,8 +351,22 @@ final class Update012Test extends TestCase
 
         $this->repair();
 
-        $this->assertSame( 'my_custom_wrapper.php', $c->db_settings['base']['report_wrapper'] );
-        $this->assertSame( 'my_custom_wrapper.php', $c->get( 'base', 'report_wrapper' ) );
+        $this->assertSame( 'my_custom_wrapper.php', $c->db_settings['base']['report_wrapper'],
+            'the stored row is retargeted, so a stale .tpl cannot outlive this update' );
+
+        /*
+         * But the LIVE value stays the default, and that is not a regression.
+         *
+         * report_wrapper is config-file-only: it must never come from the
+         * database, which is why base declares it static and Settings refuses
+         * to persist one. The retarget writes the row directly, so the row is
+         * repaired without the setting becoming readable from the store --
+         * this assertion used to expect the custom value because
+         * persistSetting() also updated the in-memory array, which quietly
+         * bypassed the very rule the strip exists to enforce.
+         */
+        $this->assertSame( 'wrapper_default.php', $c->get( 'base', 'report_wrapper' ),
+            'a config-file-only setting is never served from a stored value' );
     }
 
     // ---- 5. reversibility --------------------------------------------------

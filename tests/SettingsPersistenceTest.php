@@ -55,13 +55,13 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $default = $c->default_config['base']['report_wrapper'] ?? null;
-        $this->assertNotNull($default, 'expected a code default for base.report_wrapper');
+        $default = $c->default_config['base']['log_robots'] ?? null;
+        $this->assertNotNull($default, 'expected a code default for base.log_robots');
 
-        $c->persistSetting('base', 'report_wrapper', $default);
+        $c->persistSetting('base', 'log_robots', $default);
 
         $this->assertArrayNotHasKey(
-            'report_wrapper',
+            'log_robots',
             $c->db_settings['base'] ?? [],
             'A value identical to the code default was persisted. That pins the '
             . 'default forever and breaks silently when the default later changes.'
@@ -72,11 +72,11 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->persistSetting('base', 'report_wrapper', 'wrapper_public.php');
+        $c->persistSetting('base', 'log_robots', 'customised');
 
         $this->assertSame(
-            'wrapper_public.php',
-            $c->db_settings['base']['report_wrapper'] ?? null,
+            'customised',
+            $c->db_settings['base']['log_robots'] ?? null,
             'A genuine customisation must still be stored.'
         );
     }
@@ -89,15 +89,15 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $default = $c->default_config['base']['report_wrapper'];
+        $default = $c->default_config['base']['log_robots'];
 
-        $c->persistSetting('base', 'report_wrapper', 'wrapper_public.php');
-        $this->assertArrayHasKey('report_wrapper', $c->db_settings['base']);
+        $c->persistSetting('base', 'log_robots', 'customised');
+        $this->assertArrayHasKey('log_robots', $c->db_settings['base']);
 
-        $c->persistSetting('base', 'report_wrapper', $default);
+        $c->persistSetting('base', 'log_robots', $default);
 
         $this->assertArrayNotHasKey(
-            'report_wrapper',
+            'log_robots',
             $c->db_settings['base'],
             'Re-persisting the default should remove the stored override.'
         );
@@ -392,6 +392,31 @@ final class SettingsPersistenceTest extends TestCase
      * long before settings became rows. Nobody noticed because an empty string
      * reads like an absent one until you look at the table.
      */
+    /**
+     * And the setting these three USED to demonstrate cannot be persisted.
+     *
+     * They were written around base.report_wrapper, which is convenient -- a
+     * code default and a documented history of being pinned -- and is also
+     * config-file-only: a stored value there is an arbitrary file include.
+     * Base declares all 21 of those static now, so persistSetting refuses
+     * them, and the pruning rule is shown on a setting that can legitimately
+     * hold a stored value.
+     */
+    public function testAConfigFileOnlySettingCannotBePersistedAtAll(): void
+    {
+        $c = $this->settings();
+
+        foreach ( array_keys(
+            (array) ( \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'] ?? array() ) )
+            as $key ) {
+
+            $this->assertFalse( $c->mayPersistInstallWide( 'base', $key ),
+                sprintf( 'base.%s must never be storable: it is config-file-only, and for '
+                       . 'report_wrapper and error_log_file a stored value is an RCE '
+                       . 'primitive', $key ) );
+        }
+    }
+
     public function testWritingAnEmptyStringStoresItRatherThanRemovingTheKey(): void
     {
         $c = $this->settings();

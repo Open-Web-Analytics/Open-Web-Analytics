@@ -600,7 +600,20 @@ namespace OWA\Module\Base\Classes;
                 unset($db_settings['base']['error_handler']);
             }
 
-            // Same treatment, generalised -- see stripConfigFileOnlySettings().
+            /*
+             * KEPT, although base now declares all 21 of these static and the
+             * boot query therefore never asks for them.
+             *
+             * It is not redundant, because it guards a route the declaration
+             * cannot: if modules/Base/settings.php were deleted, renamed or
+             * failed to parse, base would fall back into the wholesale sweep
+             * and every one of its rows would be loaded again. A stored
+             * error_log_file or report_wrapper is an RCE primitive, and one
+             * file is too little standing between that and the database.
+             *
+             * Costs a loop over 21 keys, once per boot. The other two call
+             * sites are gone; this one is the latch.
+             */
             $db_settings = self::stripConfigFileOnlySettings( $db_settings );
 
             /*
@@ -2024,6 +2037,19 @@ namespace OWA\Module\Base\Classes;
 
          $this->resolving = true;
 
+         /*
+          * Kept, because only these keys may be APPLIED.
+          *
+          * The query below asks for the rows it does not already have, which
+          * is cheaper than enumerating a hundred names -- but that means it
+          * also brings back rows for keys nobody asked about: static ones, and
+          * the config-file-only ones whose whole point is never to come from
+          * the database. Applying what arrived rather than what was wanted
+          * made a static setting's stored value take effect whenever something
+          * else happened to trigger the batch, and do nothing when it did not.
+          */
+         $wanted = $this->pending;
+
          foreach ( array_keys( $this->pending ) as $id ) {
 
              $this->loaded[ $id ] = true;
@@ -2051,7 +2077,7 @@ namespace OWA\Module\Base\Classes;
               * value here would put back a config-file-only setting that was
               * deliberately dropped.
               */
-             if ( isset( $this->loaded_at_boot[ $id ] ) ) {
+             if ( isset( $this->loaded_at_boot[ $id ] ) || ! isset( $wanted[ $id ] ) ) {
 
                  continue;
              }
@@ -2060,8 +2086,15 @@ namespace OWA\Module\Base\Classes;
                  unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
          }
 
-         $stored = self::stripConfigFileOnlySettings( $stored );
-         $stored = $this->stripSettingsSuppliedByConstants( $stored );
+         /*
+          * No config-file-only strip here, and no constant strip either. Both
+          * are redundant on this path now: only keys that were PENDING are
+          * applied, a config-file-only setting is declared static so is never
+          * pending, and a constant-governed key is made static the moment the
+          * constant is applied.
+          *
+          * The strip stays in load(), which is not redundant -- see there.
+          */
 
          foreach ( $stored as $module => $values ) {
 
@@ -2137,8 +2170,15 @@ namespace OWA\Module\Base\Classes;
           * it, and a config-file-only key must still never come from the
           * database, which is a security rule rather than a precedence one.
           */
-         $stored = self::stripConfigFileOnlySettings( $stored );
-         $stored = $this->stripSettingsSuppliedByConstants( $stored );
+         /*
+          * No config-file-only strip here, and no constant strip either. Both
+          * are redundant on this path now: only keys that were PENDING are
+          * applied, a config-file-only setting is declared static so is never
+          * pending, and a constant-governed key is made static the moment the
+          * constant is applied.
+          *
+          * The strip stays in load(), which is not redundant -- see there.
+          */
 
          foreach ( $stored as $module => $values ) {
 

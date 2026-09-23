@@ -29,7 +29,19 @@ use PHPUnit\Framework\TestCase;
 final class SettingsShutdownSaveTest extends TestCase
 {
     private const PROBE = __DIR__ . '/fixtures/settings_shutdown_probe.php';
-    private const KEY   = 'owa_settings_shutdown_probe';
+    /**
+     * A DECLARED, storable setting -- not an ad-hoc probe key.
+     *
+     * It used to be 'owa_settings_shutdown_probe', which worked while base
+     * declared nothing and every base row was loaded wholesale at boot. Base
+     * has a catalogue now, so a key outside it is written and then never read:
+     * the shutdown save would succeed and the read-back would still see
+     * nothing, and this test would be reporting the wrong failure.
+     *
+     * log_robots is storable, has a code default to restore to, and is not on
+     * the boot path for anything this test disturbs.
+     */
+    private const KEY   = 'log_robots';
 
     protected function setUp(): void
     {
