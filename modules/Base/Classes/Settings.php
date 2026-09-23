@@ -1350,12 +1350,21 @@ namespace OWA\Module\Base\Classes;
       * Keys a config-file constant governs, as a NOT clause.
       *
       * The constant is the last word, so fetching its key is fetching a value
-      * that is about to be discarded. Leaving it out of the query is the whole
-      * mechanism -- there is no stored value in play at any point, rather than
-      * one that is read, overwritten and then set back.
+      * that is about to be discarded. Leaving it out is the whole mechanism --
+      * there is no stored value in play at any point, rather than one read,
+      * overwritten and then set back. It is also what leaves
+      * stripSettingsSuppliedByConstants() nothing to strip on the boot path.
       *
-      * This is also what makes stripSettingsSuppliedByConstants() redundant on
-      * the boot path: nothing arrives for it to strip.
+      * ONLY for modules that have not declared, because that is the only
+      * clause this compensates for. A declared module's constant-governed key
+      * is already absent from the query: noteConfigConstant() clears its
+      * autoload, so it never reaches the eager list. What needs carving out is
+      * the wholesale `module NOT IN (declared)` sweep, which takes every row a
+      * module has whether anyone asked for it or not.
+      *
+      * That sweep is PERMANENT, not transitional. Third-party modules will not
+      * ship declarations, so there will always be modules resolved wholesale --
+      * and this will always have to hold their constants out of it.
       *
       * @param  object $db for escaping
       * @return string a leading " AND NOT ( ... )", or ''
@@ -1365,6 +1374,11 @@ namespace OWA\Module\Base\Classes;
          $parts = array();
 
          foreach ( $this->configConstants() as $module => $keys ) {
+
+             if ( isset( $this->declared_modules[ $module ] ) ) {
+
+                 continue;
+             }
 
              $quoted = array();
 

@@ -227,17 +227,27 @@ final class InstallTimezoneTest extends TestCase
     {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
+        // Simulate an installation that declares none: forget every recorded
+        // constant, then put them all back. This install declares eleven, so
+        // without the forget this asserts nothing -- it passed only where no
+        // config file exists and the ledger was empty anyway.
         $ledger = $c->configConstants();
+
+        foreach ( $ledger as $module => $keys ) {
+            foreach ( array_keys( $keys ) as $key ) {
+                $c->forgetConfigConstant( $module, $key );
+            }
+        }
 
         try {
             $stored = array( 'base' => array( 'timezone' => 'Europe/London' ) );
 
             $this->assertSame( $stored, $c->stripSettingsSuppliedByConstants( $stored ) );
         } finally {
-            if ( $had ) {
-                $c->noteConfigConstant( 'base', 'timezone', $had );
-            } else {
-                $c->forgetConfigConstant( 'base', 'timezone' );
+            foreach ( $ledger as $module => $keys ) {
+                foreach ( $keys as $key => $constant ) {
+                    $c->noteConfigConstant( $module, $key, $constant );
+                }
             }
         }
     }
