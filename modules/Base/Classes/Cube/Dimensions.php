@@ -465,6 +465,52 @@ class Dimensions {
     }
 
     /**
+     * Why this request would be refused, in words, or '' if it would not.
+     *
+     * The same rules register() applies, reachable before anything is written,
+     * so a screen can refuse a form the way it refuses any other invalid field
+     * -- with the reason, on the form, keeping what was typed. Every refusal
+     * here explains itself; a screen that replaced them with "could not save"
+     * would throw that away at the one moment somebody needs it.
+     *
+     * ADVISORY, LIKE ANY PRE-CHECK. register() applies the same rules again
+     * when it runs, because the answer can change between the two -- another
+     * registration, or a cube that has since grown.
+     *
+     * @param int|string $property_id
+     * @param array      $request  as register() takes them
+     * @return string
+     */
+    public static function refusalFor( $property_id, array $request ) {
+
+        $table = Cubes::tableFor( $property_id );
+
+        if ( ! $table ) {
+
+            return 'That is not a Property id.';
+        }
+
+        if ( ! \OWA\Core\CoreAPI::dbSingleton()->tableExists( $table ) ) {
+
+            return sprintf(
+                'This Property has no reporting cube yet. One is created the first time it '
+              . 'collects something, and there is nothing to add a column to until then.' );
+        }
+
+        $existing = array();
+
+        foreach ( self::forProperty( $property_id ) as $row ) {
+
+            $existing[ $row['column_name'] ] = $row;
+        }
+
+        $checked = self::validate( $request, $existing, array(),
+            self::capacityFor( $property_id ) );
+
+        return isset( $checked['error'] ) ? (string) $checked['error'] : '';
+    }
+
+    /**
      * Remove a registration.
      *
      * The row goes now; the column goes at the next reconcile, for the same

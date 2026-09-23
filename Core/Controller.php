@@ -1081,6 +1081,19 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_settings' ),
+                /*
+                 * Custom dimensions belong to the Property because the
+                 * reporting cube does -- one cube per Property, so the column a
+                 * registration adds is the Property's and two Properties may
+                 * use the same key for different things. GA registers custom
+                 * definitions on the property for the same reason.
+                 *
+                 * Addressed by siteId like the goal events beside it: reached
+                 * from a Profile, and it resolves the Property itself.
+                 */
+                array( 'do' => 'base.customDimensions', 'label' => 'Custom Dimensions',
+                       'params' => array( 'siteId' => $siteId ),
+                       'capability' => 'edit_settings' ),
             );
 
             /*
