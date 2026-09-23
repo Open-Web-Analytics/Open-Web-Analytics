@@ -25,14 +25,9 @@ class V2Event {
      * names is not where this project should spend its budget. A name already
      * in that vocabulary passes through untouched, which is what lets the
      * tracker send `scroll` or `file_download` directly without a line here.
-     *
-     * base.first_page_request collapses into page_view deliberately: it was
-     * never a different KIND of event, only a page view carrying a flag, and
-     * the flag is what the markers are raised from.
      */
     const TYPE_MAP = array(
         'base.page_request'       => 'page_view',
-        'base.first_page_request' => 'page_view',
         'dom.click'               => 'click',
         'ecommerce.transaction'   => 'purchase',
         'track.action'            => 'custom_event',

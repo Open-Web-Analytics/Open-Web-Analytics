@@ -47,7 +47,6 @@ final class ControllerCapabilityContractTest extends TestCase
         // they cannot require a login by definition.
         'ProcessEvent',
         'ProcessRequest',
-        'ProcessFirstRequest',
         'NotifyNewSession',
 
         // Authentication entry points -- these are how a session is

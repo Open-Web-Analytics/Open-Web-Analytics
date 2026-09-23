@@ -96,7 +96,6 @@ final class V2EventTest extends TestCase
     {
         $map = [
             'base.page_request'       => 'page_view',
-            'base.first_page_request' => 'page_view',
             'dom.click'               => 'click',
             'ecommerce.transaction'   => 'purchase',
             'track.action'            => 'custom_event',

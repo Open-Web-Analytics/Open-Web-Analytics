@@ -143,6 +143,26 @@ return array(
         'public_url' => array( 'default' => '' ),
         'query_string_filters' => array( 'default' => '', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'query_strings.ini' => array(),
+        /*
+         * COMPUTED AT BOOT, never stored, and declared anyway.
+         *
+         * setupPaths() derives these from OWA_DIR and the configured main_url,
+         * and RequestContainer/Browscap read them back. They have no literal
+         * default, so generating this file from getDefaultSettingsArray() did
+         * not produce them -- and a key read on a module that HAS declared is a
+         * key whose stored value would never be fetched. Declaring them static
+         * says that deliberately rather than by omission, and keeps the
+         * catalogue complete enough for the read sweep to need no exceptions.
+         */
+        'images_absolute_url' => array(),
+        'is_embedded'         => array(),
+        'log_url'             => array(),
+        'main_url'            => array(),
+        'modules_url'         => array(),
+        'rest_api_url'        => array(),
+        'tracking_mode'       => array(),
+        'ua_regexes_dir'      => array(),
+
         'queue_events' => array( 'default' => false ),
 
         /*

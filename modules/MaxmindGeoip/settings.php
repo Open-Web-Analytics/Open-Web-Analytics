@@ -33,6 +33,30 @@ return array(
         ),
 
         /*
+         * Which lookup path the module takes. Read in the module's own
+         * constructor, so boot needs it.
+         *
+         * No UI offers it, which is the only reason its absence went unnoticed
+         * for so long -- see the note on Maxmind::getLocationFromWebService().
+         * It is still storable: an operator sets it from the config file or
+         * directly, and a declaration that left it out would mean the stored
+         * value was written and never read.
+         */
+        'lookup_method' => array(
+            'default'     => 'city_lite_db',
+            'storable'    => true,
+            'autoload'    => true,
+        ),
+
+        /*
+         * Credentials for the web-service lookup path, read only when
+         * lookup_method selects it. No default -- a blank key is not a
+         * credential -- and no chrome, because no screen offers them.
+         */
+        'ws_license_key' => array( 'storable' => true ),
+        'ws_user_name'   => array( 'storable' => true ),
+
+        /*
          * No autoload: read by the options screen and by the db update job,
          * never on a request that tracks or reports. One query, the first time
          * something asks.

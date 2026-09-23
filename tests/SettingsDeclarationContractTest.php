@@ -260,6 +260,78 @@ final class SettingsDeclarationContractTest extends TestCase
         }
     }
 
+    /**
+     * Every setting the code READS is declared, on a module that has declared.
+     *
+     * The other half of the persist sweep, and the half that actually bites.
+     * Declaring takes a module out of the boot query's wholesale clause, so
+     * from that moment any key it did not declare is one whose stored value is
+     * never fetched -- written, kept, and ignored.
+     *
+     * That is not hypothetical. It shipped twice in this branch:
+     * base.queue_incoming_tracking_events, which the e2e queue suite caught
+     * after every beacon bypassed the file queue; and three MaxmindGeoip
+     * settings -- lookup_method and the two web-service credentials -- which
+     * nothing caught, because that module's declaration was hand-written from
+     * the two fields its options screen happens to show.
+     *
+     * Scanned rather than listed, for the same reason the persist sweep is.
+     */
+    public function testEverySettingTheCodeReadsIsDeclared(): void
+    {
+        $roots = array( OWA_DIR . 'Core', OWA_DIR . 'modules' );
+
+        $found = array();
+
+        foreach ( $roots as $root ) {
+
+            $it = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root ) );
+
+            foreach ( $it as $file ) {
+
+                if ( $file->getExtension() !== 'php' ) {
+                    continue;
+                }
+
+                if ( preg_match_all(
+                    "/getSetting\(\s*'([a-zA-Z_]+)'\s*,\s*'([a-zA-Z_.]+)'/",
+                    (string) file_get_contents( $file->getPathname() ), $m, PREG_SET_ORDER ) ) {
+
+                    foreach ( $m as $hit ) {
+                        $found[ $hit[1] . '|' . $hit[2] ] = true;
+                    }
+                }
+            }
+        }
+
+        $this->assertNotEmpty( $found, 'the scan found no getSetting() calls at all' );
+
+        $c        = $this->settings();
+        $declared = (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() );
+
+        $undeclared = array();
+
+        foreach ( array_keys( $found ) as $id ) {
+
+            list( $module, $key ) = explode( '|', $id, 2 );
+
+            // A module that has not adopted is still resolved wholesale.
+            if ( ! isset( $declared[ $module ] ) ) {
+                continue;
+            }
+
+            if ( ! $c->isRegistered( $module, $key ) ) {
+                $undeclared[] = $module . '.' . $key;
+            }
+        }
+
+        $this->assertSame( array(), $undeclared, sprintf(
+            "read but not declared: %s\n"
+          . 'Each is a setting whose stored value would be written and never read, '
+          . 'because declaring anything takes the module out of the wholesale clause.',
+            implode( ', ', $undeclared ) ) );
+    }
+
     /** No settings screen renders a field that cannot work. */
     public function testNoFieldSetRendersAnImpossibleField(): void
     {
