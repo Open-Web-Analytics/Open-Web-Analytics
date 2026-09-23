@@ -1851,12 +1851,12 @@ namespace OWA\Module\Base\Classes;
              return false;
          }
 
-         $args = $this->registeredField( $module, $key );
-
-         if ( ! $args ) {
+         if ( ! $this->isRegistered( $module, $key ) ) {
 
              return true;
          }
+
+         $args = $this->registeredField( $module, $key );
 
          if ( ! self::isStorable( $args ) ) {
 
@@ -1879,12 +1879,12 @@ namespace OWA\Module\Base\Classes;
       */
      public function scopesFor( $module, $key ) {
 
-         $args = $this->registeredField( $module, $key );
-
-         if ( ! $args ) {
+         if ( ! $this->isRegistered( $module, $key ) ) {
 
              return null;
          }
+
+         $args = $this->registeredField( $module, $key );
 
          /*
           * Install-only unless the declaration says otherwise. A setting that
@@ -1945,6 +1945,22 @@ namespace OWA\Module\Base\Classes;
      public function registeredField( $module, $key ) {
 
          return $this->registry[ $module . '|' . $key ] ?? array();
+     }
+
+     /**
+      * Whether anything declared this key at all.
+      *
+      * Distinct from registeredField() being non-empty, and the distinction is
+      * load-bearing: a setting can be declared with NOTHING -- static, no
+      * default, no chrome -- which is exactly what a config-file-only setting
+      * whose default is derived from OWA_DIR looks like. Reading the empty
+      * array as "not registered" made those unconstrained, so persistSetting()
+      * would have accepted a stored db_class_dir. Caught by the contract test
+      * the moment the baked-in paths were removed.
+      */
+     public function isRegistered( $module, $key ) {
+
+         return isset( $this->registry[ $module . '|' . $key ] );
      }
 
      /** Every registered key, as "module|key" => args. */

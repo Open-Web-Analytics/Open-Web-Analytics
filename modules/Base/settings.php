@@ -38,6 +38,15 @@
  * guarantee configFileOnlySettings() gives by listing them: never read from
  * the database. A stored error_log_file or report_wrapper is an RCE primitive,
  * so that list stays as a test asserting this file agrees with it.
+ *
+ * SEVEN SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
+ * config_file, db_class_dir, templates_dir, plugin_dir, module_dir,
+ * search_engines.ini and query_strings.ini. getDefaultSettingsArray() builds
+ * those from OWA_DIR, so their value depends on where the installation lives
+ * -- baking one into a static file made the declaration disagree with the code
+ * the moment the checkout moved, which the configless CI run caught by running
+ * from a temporary directory. The code default still applies; the declaration
+ * simply does not restate it.
  */
 
 return array(
@@ -64,14 +73,14 @@ return array(
         'capabilities' => array( 'default' => array( 'admin' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce', 'edit_settings', 'edit_sites', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ), 'analyst' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce' ), 'viewer' => array( 'install_schema', 'view_site_list', 'view_reports' ), 'everyone' => array( 'install_schema' ) ) ),
         'capabilitiesThatRequireSiteAccess' => array( 'default' => array( 'view_reports', 'view_reports_ecommerce', 'edit_sites' ) ),
         'clean_query_string' => array( 'default' => true ),
-        'config_file' => array( 'default' => '/var/www/html/test.openwebanalytics.com/owa/owa-config.php' ),
+        'config_file' => array(),
         'configuration_id' => array( 'default' => '1' ),
         'cookie_domain' => array( 'default' => false ),
         'cookie_persistence' => array( 'default' => true ),
         'cube_rebuild_window_days' => array( 'default' => 7 ),
         'currencyISO3' => array( 'default' => 'USD' ),
         'currencyLocal' => array( 'default' => 'en_US' ),
-        'db_class_dir' => array( 'default' => '/var/www/html/test.openwebanalytics.com/owa/plugins/db/' ),
+        'db_class_dir' => array(),
         'db_force_new_connections' => array( 'default' => true ),
         'db_host' => array( 'default' => '' ),
         'db_make_persistant_connections' => array( 'default' => false ),
@@ -116,7 +125,7 @@ return array(
         'maxCustomVars' => array( 'default' => 5 ),
         'memcachedPersistantConnections' => array( 'default' => true ),
         'memcachedServers' => array( 'default' => array() ),
-        'module_dir' => array( 'default' => '/var/www/html/test.openwebanalytics.com/owa/modules' ),
+        'module_dir' => array(),
         'modules' => array( 'default' => array( 'base' ) ),
         'nonce_expiration_period' => array( 'default' => 7200 ),
         'notice_email' => array( 'default' => '', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
@@ -129,11 +138,11 @@ return array(
         'partition_detail_months' => array( 'default' => 36 ),
         'partition_max_partitions' => array( 'default' => 0 ),
         'password_length' => array( 'default' => 4 ),
-        'plugin_dir' => array( 'default' => '/var/www/html/test.openwebanalytics.com/owa/plugins/' ),
+        'plugin_dir' => array(),
         'public_path' => array( 'default' => '' ),
         'public_url' => array( 'default' => '' ),
         'query_string_filters' => array( 'default' => '', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
-        'query_strings.ini' => array( 'default' => '/var/www/html/test.openwebanalytics.com/owa/conf/query_strings.ini' ),
+        'query_strings.ini' => array(),
         'queue_events' => array( 'default' => false ),
         'queue_max_retry_age' => array( 'default' => 86400 ),
         'queue_max_retry_count' => array( 'default' => 25 ),
@@ -144,13 +153,13 @@ return array(
         'resolve_hosts' => array( 'default' => true, 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'scheduled_jobs' => array( 'default' => array() ),
         'scheduler_enabled' => array( 'default' => true ),
-        'search_engines.ini' => array( 'default' => '/var/www/html/test.openwebanalytics.com/owa/conf/search_engines.ini' ),
+        'search_engines.ini' => array(),
         'session_length' => array( 'default' => 1800 ),
         'site_id' => array( 'default' => '' ),
         'slowly_changing_dimension_entities' => array( 'default' => array() ),
         'source_param' => array( 'default' => 'source' ),
         'start_page' => array( 'default' => 'base.reportingHome' ),
-        'templates_dir' => array( 'default' => '/var/www/html/test.openwebanalytics.com/owa/templates/' ),
+        'templates_dir' => array(),
         'theme' => array( 'default' => '' ),
         'timezone' => array( 'default' => 'America/Los_Angeles', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'tracking_event_types' => array( 'default' => array( 'dom.click', 'ecommerce.transaction', 'base.page_request', 'dom.stream', 'base.feed_request', 'track.action' ) ),
