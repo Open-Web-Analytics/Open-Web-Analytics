@@ -98,6 +98,14 @@ $_owa_messages = [
     3208 => ['headline' => 'Error', 'message' => 'Please remove the http:// from your beginning of your domain.'],
     3209 => ['headline' => 'Error', 'message' => 'That site does not exist.'],
 
+    // custom dimensions
+    //
+    // The success message says the column is NOT there yet, because that is
+    // the part a person would otherwise be surprised by: registering writes a
+    // row and the ALTER happens later, under the lock the cube build holds.
+    3210 => ['headline' => 'Success', 'message' => 'Custom dimension registered. Its column is added to the reporting cube within a few minutes, and filled from then on -- to fill it over past data, rebuild the cube for the range you want.'],
+    3211 => ['headline' => 'Success', 'message' => 'Custom dimension removed. Its column and the values in it go at the next cube build; the events they came from are untouched, so registering it again and rebuilding brings them back.'],
+
 
     //install
     3300 => ['headline' => 'Error', 'message' => 'Could not connect to the database. Please check the database connection settings in your configuration file and try again.'],
