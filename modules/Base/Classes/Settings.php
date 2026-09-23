@@ -221,7 +221,61 @@ namespace OWA\Module\Base\Classes;
          // is not an actionable thing to tell someone.
          $this->config_file_constants[ $module ][ $key ] = $constant;
 
+         /*
+          * A constant governs this key, so the key becomes STATIC for this
+          * install: nothing may store a value for it, and nothing goes looking
+          * for one.
+          *
+          * That is what makes the constant's precedence structural rather than
+          * something every read has to remember. A stored row for a static key
+          * is never queried, and persistSetting() refuses to create one -- so
+          * the options form's disabled field stops being a courtesy backed by a
+          * special case in OptionsUpdate and becomes the ordinary consequence
+          * of the declaration.
+          *
+          * Declared storability is what a setting CAN be; a constant narrows it
+          * for one installation. Only ever narrower -- a constant cannot make
+          * something storable that was not.
+          */
+         if ( isset( $this->registry[ $module . '|' . $key ] ) ) {
+
+             $this->registry[ $module . '|' . $key ]['storable'] = false;
+             $this->registry[ $module . '|' . $key ]['autoload'] = false;
+         }
+
+         unset( $this->pending[ $module . '|' . $key ] );
+
          return $this->set( $module, $key, $value );
+     }
+
+     /**
+      * Re-assert every config-file constant, after the stored settings have
+      * been merged.
+      *
+      * Constants must be applied EARLY -- the database credentials are among
+      * them, so load() cannot run until they exist -- but load() then merges
+      * stored values over whatever they set. Today that is handled by removing
+      * the constant-supplied keys from the losing side before the merge, which
+      * works and requires the merge to remember a rule that is not its
+      * business.
+      *
+      * Re-applying afterwards says it once: the constants are the last word on
+      * boot, whatever the store held.
+      *
+      * @return void
+      */
+     private function reapplyConfigConstants() {
+
+         foreach ( $this->config_file_constants as $module => $keys ) {
+
+             foreach ( $keys as $key => $constant ) {
+
+                 if ( defined( $constant ) ) {
+
+                     $this->set( $module, $key, constant( $constant ) );
+                 }
+             }
+         }
      }
 
      /**
@@ -557,6 +611,13 @@ namespace OWA\Module\Base\Classes;
          * reach the database.
          */
         $this->store_ready = true;
+
+        /*
+         * The last pass of boot. Constants beat stored values, and saying so
+         * here -- after the merge -- is what lets the merge stay ignorant of
+         * the rule.
+         */
+        $this->reapplyConfigConstants();
      }
 
      /**
@@ -1158,11 +1219,25 @@ namespace OWA\Module\Base\Classes;
           */
          if ( ! $this->mayPersistInstallWide( $module, $key ) ) {
 
+             $governing = $this->configFileConstantFor( $module, $key );
+
+             if ( $governing ) {
+
+                 $why = sprintf( 'it is set by %s in owa-config.php, which wins on every boot',
+                     $governing );
+
+             } elseif ( ! self::isStorable( $this->registeredField( $module, $key ) ) ) {
+
+                 $why = 'it is not declared storable, so nothing would ever read the value';
+
+             } else {
+
+                 $why = sprintf( 'it is declared for %s scope',
+                     implode( ', ', (array) $this->scopesFor( $module, $key ) ) );
+             }
+
              \OWA\Core\CoreAPI::notice( sprintf(
-                 'Refusing to persist %s.%s: %s.', $module, $key,
-                 $this->isStorable( $this->registeredField( $module, $key ) )
-                     ? 'it is declared for ' . implode( ', ', (array) $this->scopesFor( $module, $key ) ) . ' scope'
-                     : 'it is not declared storable, so nothing would ever read the value' ) );
+                 'Refusing to persist %s.%s: %s.', $module, $key, $why ) );
 
              return;
          }
@@ -1365,6 +1440,23 @@ namespace OWA\Module\Base\Classes;
 
          $id = $module . '|' . $key;
 
+         /*
+          * A constant already governs this key, so it is static here whatever
+          * the declaration says.
+          *
+          * Checked on the way IN as well as when the constant is applied,
+          * because the two can happen in either order: constants are applied
+          * during boot, but a module registering through
+          * Module::registerSettingsField() does so when it loads, which is
+          * after. Without this, that later registration would hand storability
+          * back and the constant would stop being the last word.
+          */
+         if ( $this->configFileConstantFor( $module, $key ) ) {
+
+             $args['storable'] = false;
+             $args['autoload'] = false;
+         }
+
          $this->registry[ $id ] = $args;
 
          if ( array_key_exists( 'default', $args ) && ! isset( $this->default_config[ $module ][ $key ] ) ) {
@@ -1541,6 +1633,21 @@ namespace OWA\Module\Base\Classes;
       * @return bool
       */
      public function mayPersistInstallWide( $module, $key ) {
+
+         /*
+          * Checked BEFORE registration, because a constant makes a key static
+          * whether or not anything declared it. The constant is the last pass
+          * of boot and beats the stored value, so persisting one writes a row
+          * that will never be read -- the same durable no-op that persisting a
+          * static setting is, arrived at from the other direction.
+          *
+          * This is also the rule OptionsUpdate states for itself. Having it
+          * here means a page that forgets to state it still cannot write one.
+          */
+         if ( $this->configFileConstantFor( $module, $key ) ) {
+
+             return false;
+         }
 
          $args = $this->registeredField( $module, $key );
 
