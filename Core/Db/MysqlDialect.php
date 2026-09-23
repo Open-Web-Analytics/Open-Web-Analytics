@@ -152,6 +152,36 @@ if ( ! defined( 'OWA_SQL_REBUILD_TABLE' ) ) { define('OWA_SQL_REBUILD_TABLE', 'A
  * plus a window in which the pass cannot publish.
  */
 if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_REBUILD', 'ALTER TABLE %s ADD %s %s, ALGORITHM=INPLACE'); }
+
+/*
+ * SEVERAL COLUMN CHANGES IN ONE STATEMENT, still rebuilding rather than instant.
+ *
+ * Registering ten custom dimensions costs ONE rebuild this way: ten columns in
+ * one ALTER measured 13,664ms against 13,057ms for one, a 5% margin, where ten
+ * separate statements would be ten rebuilds. INPLACE is not an optimisation
+ * here -- the default is INSTANT, and an instant column leaves row-format
+ * metadata that makes EXCHANGE PARTITION refuse the swap with error 1731, so
+ * every later cube build would fail having published nothing.
+ */
+if ( ! defined( 'OWA_SQL_ALTER_COLUMNS_REBUILD' ) ) { define('OWA_SQL_ALTER_COLUMNS_REBUILD', 'ALTER TABLE %s %s, ALGORITHM=INPLACE'); }
+
+/*
+ * Reading one value out of a JSON document.
+ *
+ * JSON_VALUE is SQL:2016 and not MySQL's alone, but the RETURNING clause and
+ * what happens on a conversion error are not uniform, so it is spelled here
+ * like everything else. Measured on 8.4: a missing key, a JSON null and a NULL
+ * document all give NULL, and so does a value that will not convert -- "abc"
+ * RETURNING SIGNED is NULL rather than an error, which is what keeps one site's
+ * bad value from failing a whole partition's build.
+ *
+ * JSON_UNQUOTE(JSON_EXTRACT(...)) is NOT equivalent and must not be substituted:
+ * it turns a stored JSON null into the four-character string "null".
+ */
+if ( ! defined( 'OWA_SQL_JSON_VALUE' ) ) { define('OWA_SQL_JSON_VALUE', "JSON_VALUE(%s, '%s')"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_SIGNED' ) ) { define('OWA_SQL_JSON_VALUE_SIGNED', "JSON_VALUE(%s, '%s' RETURNING SIGNED)"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_UNSIGNED' ) ) { define('OWA_SQL_JSON_VALUE_UNSIGNED', "JSON_VALUE(%s, '%s' RETURNING UNSIGNED)"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_DOUBLE' ) ) { define('OWA_SQL_JSON_VALUE_DOUBLE', "JSON_VALUE(%s, '%s' RETURNING DOUBLE)"); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }
@@ -212,6 +242,28 @@ if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) { define('OWA_DTD_CHARACTE
 // table keeps deciding for itself.
 if ( ! defined( 'OWA_DTD_CONNECTION_ENCODING' ) ) { define('OWA_DTD_CONNECTION_ENCODING', 'utf8mb4'); }
 if ( ! defined( 'OWA_DTD_TABLE_CHARACTER_ENCODING' ) ) { define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s'); }
+
+/*
+ * THE ROW FORMAT IS DECLARED, NOT INHERITED.
+ *
+ * It was inherited, and that is a table OWA may not be able to create at all.
+ * InnoDB caps the part of a row that lives on the page at about 8,126 bytes --
+ * half a 16KB page -- and the formats differ in how much of a long column they
+ * can move off it. DYNAMIC leaves a 20-byte pointer; COMPACT and REDUNDANT
+ * leave a 768-byte prefix of every such column inline.
+ *
+ * Measured on the reporting cube, which has ten VARCHAR(1024) columns: under
+ * DYNAMIC it is created and takes 25 custom dimensions on top, and under
+ * COMPACT or REDUNDANT the server refuses it outright with error 1118. So on
+ * an installation whose innodb_default_row_format is not dynamic -- which is a
+ * server setting nobody here chose -- v2's cube could not exist.
+ *
+ * The default has been dynamic since MySQL 5.7, so declaring it changes
+ * nothing on an ordinary server. It removes a dependency on a setting we do
+ * not control from a table we cannot do without.
+ */
+if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT' ) ) { define('OWA_DTD_TABLE_ROW_FORMAT', 'ROW_FORMAT = %s'); }
+if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_ROW_FORMAT_DEFAULT', 'DYNAMIC'); }
 
 
 /**
@@ -402,6 +454,51 @@ trait MysqlDialect
      * @param string $table_name
      * @return string[]
      */
+    /**
+     * A table's column names, optionally only those with a prefix.
+     *
+     * Introspection, so it lives in the dialect. What the custom-dimension
+     * reconcile needs is the AUTHORITY on which cd_ columns exist: a registry
+     * row is a statement of intent and this is what a build can actually read.
+     *
+     * @param string $table_name
+     * @param string $prefix
+     * @return string[]
+     */
+    function listColumns( $table_name, $prefix = '' ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
+          || ( $prefix !== '' && ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $prefix ) ) ) {
+
+            return array();
+        }
+
+        // The table name is substituted FIRST and the LIKE appended after, so
+        // the pattern's own % never reaches a format string.
+        $sql = sprintf(
+            "SELECT COLUMN_NAME AS c FROM information_schema.COLUMNS "
+          . "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'", $table_name );
+
+        if ( $prefix !== '' ) {
+
+            // The underscore is a LIKE wildcard, so an unescaped cd_ would also
+            // match cdx_something.
+            $sql .= " AND COLUMN_NAME LIKE '"
+                  . str_replace( '_', '\\_', $prefix ) . "%'";
+        }
+
+        $sql .= ' ORDER BY ORDINAL_POSITION';
+
+        $columns = array();
+
+        foreach ( (array) $this->get_results( $sql ) as $row ) {
+
+            $columns[] = (string) $row['c'];
+        }
+
+        return $columns;
+    }
+
     function getPrimaryKeyColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {

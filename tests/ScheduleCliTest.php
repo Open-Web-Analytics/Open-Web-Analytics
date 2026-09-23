@@ -138,13 +138,51 @@ final class ScheduleCliTest extends CliControllerTestCase
         // Named exactly, not counted: a job appearing here means every install
         // starts running something on a timer, which is a decision rather than
         // a detail. fetch-notifications joined rotate-partitions when the OWA
-        // News panel stopped calling api.github.com during page renders, and
+        // News panel stopped calling api.github.com during page renders,
         // rebuild-cube joined them once it could refuse cheaply on an install
-        // with no site collecting into v2.
+        // with no site collecting into v2, and apply-custom-dimensions joined
+        // them because registering a dimension cannot do its own ALTER -- that
+        // is a full table rebuild, past every request timeout there is.
         $this->assertSame(
-            ['rotate-partitions', 'rebuild-cube', 'fetch-notifications'],
+            ['rotate-partitions', 'rebuild-cube', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
+    }
+
+    /**
+     * apply-custom-dimensions is the one FREQUENT default job, and may be.
+     *
+     * Everything else here runs daily on a spread minute. This one runs every
+     * fifteen, which is only acceptable because a run with nothing pending is
+     * one indexed read for the whole installation and does no DDL at all. What
+     * it buys is the wait: a dimension registered from a screen appears in
+     * minutes rather than at the next daily build.
+     *
+     * Spread within the quarter for the same reason the daily ones are spread
+     * on the minute -- several OWA installs commonly share one database server.
+     */
+    public function testTheCustomDimensionApplyJobIsFrequentAndSpread()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertArrayHasKey('apply-custom-dimensions', $jobs);
+        $this->assertSame([], $jobs['apply-custom-dimensions']['params']);
+
+        $schedule = $jobs['apply-custom-dimensions']['schedule'];
+
+        $this->assertMatchesRegularExpression(
+            '/^\d+,\d+,\d+,\d+ \* \* \* \*$/', $schedule,
+            'four times an hour');
+
+        $minutes = array_map('intval', explode(',', explode(' ', $schedule)[0]));
+
+        $this->assertSame([15, 15, 15], [
+            $minutes[1] - $minutes[0],
+            $minutes[2] - $minutes[1],
+            $minutes[3] - $minutes[2],
+        ], 'evenly spaced, so no gap of the hour is longer than another');
+
+        $this->assertLessThan(15, $minutes[0], 'and offset within the first quarter');
     }
 
     /**

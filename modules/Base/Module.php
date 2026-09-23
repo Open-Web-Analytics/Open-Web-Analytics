@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 41;
+        $this->required_schema_version = 42;
         return parent::__construct();
     }
 
@@ -192,6 +192,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
+        $this->registerAction( 'base.customDimensionListCli',        'OWA\\Module\\Base\\Controller\\CustomDimensionListCli',      'Controller/CustomDimensionListCli.php' );
+        $this->registerAction( 'base.customDimensionApplyCli',       'OWA\\Module\\Base\\Controller\\CustomDimensionApplyCli',     'Controller/CustomDimensionApplyCli.php' );
+        $this->registerAction( 'base.customDimensionRegisterCli',    'OWA\\Module\\Base\\Controller\\CustomDimensionRegisterCli',  'Controller/CustomDimensionRegisterCli.php' );
+        $this->registerAction( 'base.customDimensionDeregisterCli',  'OWA\\Module\\Base\\Controller\\CustomDimensionDeregisterCli','Controller/CustomDimensionDeregisterCli.php' );
         $this->registerAction( 'base.rederiveDimensionIdsCli',       'OWA\\Module\\Base\\Controller\\RederiveDimensionIdsCli',    'Controller/RederiveDimensionIdsCli.php' );
         $this->registerAction( 'base.backfillVisitorAcquisitionCli', 'OWA\\Module\\Base\\Controller\\BackfillVisitorAcquisitionCli', 'Controller/BackfillVisitorAcquisitionCli.php' );
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
@@ -284,6 +288,10 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
         $this->registerCliCommand('cube-rebuild', 'base.cubeRebuildCli');
+        $this->registerCliCommand('custom-dimension-list', 'base.customDimensionListCli');
+        $this->registerCliCommand('custom-dimension-apply', 'base.customDimensionApplyCli');
+        $this->registerCliCommand('custom-dimension-register', 'base.customDimensionRegisterCli');
+        $this->registerCliCommand('custom-dimension-deregister', 'base.customDimensionDeregisterCli');
     }
 
     /**
@@ -383,6 +391,28 @@ class Module extends \OWA\Core\Module {
         $this->registerJob(
             'rebuild-cube', 'cube-rebuild',
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rebuild-cube' ) ), array() );
+
+        /*
+         * Putting registered custom-dimension columns on the cubes.
+         *
+         * FREQUENT, unlike everything else here, and cheap enough to be. On a
+         * run with nothing pending it is ONE indexed read for the whole
+         * installation -- Dimensions::propertiesWithPendingWork() -- and does
+         * no DDL at all.
+         *
+         * What it buys is the wait. Registering a dimension cannot do the ALTER
+         * inline: it is a full table rebuild, 11.3 seconds measured at 1.5M
+         * rows, well past PHP's 30-second limit and the load balancer's 65 --
+         * and a killed request does not stop it, so a screen doing this inline
+         * would time out, add the column anyway, and invite a retry that pays a
+         * second rebuild. The build reconciles too, so nothing DEPENDS on this
+         * job; without it a dimension registered from a screen would simply
+         * wait for the next daily build instead of a quarter of an hour.
+         */
+        $this->registerJob(
+            'apply-custom-dimensions', 'custom-dimension-apply',
+            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'apply-custom-dimensions' ), 15 ),
+            array() );
 
         /*
          * Daily is the right cadence for release announcements: they are not
@@ -2632,7 +2662,8 @@ class Module extends \OWA\Core\Module {
                  * to.
                  */
                 'event_raw',
-                'visitor_acquisition')
+                'visitor_acquisition',
+                'custom_dimension')
             );
 
     }

@@ -116,6 +116,88 @@ class Builder {
 
         $this->columns = new Columns();
         $this->steps   = $this->columns->steps( $this->derivedColumns() );
+
+        /*
+         * And the registered custom dimensions, which are columns of the TABLE
+         * rather than of the entity: they are this Property's, added by a
+         * registration rather than by a release, so the entity cannot know
+         * them. They arrive as ordinary Steps so the assembler needs no case
+         * for them and the joins stay demand-driven.
+         */
+        foreach ( $this->dimensionSteps() as $column => $step ) {
+
+            $this->steps[ $column ] = $step;
+        }
+    }
+
+    /**
+     * A Step per column this Property's registered dimensions own.
+     *
+     * @return Step[] keyed by column
+     */
+    protected function dimensionSteps() {
+
+        $steps = array();
+
+        /*
+         * THE TABLE IS THE AUTHORITY, NOT THE REGISTRY.
+         *
+         * A registration is recorded immediately and its column arrives at the
+         * next reconcile (Dimensions::reconcile), so a row can name a column
+         * that is not there yet -- and one whose ALTER was refused never gets
+         * one. Naming it in the INSERT regardless would fail every build with
+         * "Unknown column in field list", which is a Property's whole cube
+         * stopping because somebody registered one dimension too many.
+         *
+         * So the registry says what to fill and this says what exists, and
+         * only the intersection is built. A pending dimension is simply not
+         * filled yet.
+         */
+        $present = array_flip( Dimensions::registeredColumnsOn( $this->tables['target'] ) );
+
+        foreach ( Dimensions::forProperty( $this->property_id ) as $row ) {
+
+            $column = (string) $row['column_name'];
+            $key    = (string) $row['dimension_key'];
+
+            /*
+             * The path needs no quoting because a key had to match the
+             * tracker's own name pattern to be registered at all. That is the
+             * whole reason the pattern is enforced there: a registration taking
+             * arbitrary keys would have to build a JSON path out of user text
+             * and then put it inside a SQL string literal, escaped twice.
+             */
+            if ( ! preg_match( Dimensions::KEY_PATTERN, $key ) || ! isset( $present[ $column ] ) ) {
+
+                continue;
+            }
+
+            if ( (string) $row['scope'] === \OWA\Module\Base\Entity\CustomDimension::SCOPE_USER ) {
+
+                $steps[ $column ] = new JsonStep( $column,
+                    Context::VISITOR . '.properties', '$.' . $key . '.v',
+                    (string) $row['data_type'], (int) $row['max_length'], Context::VISITOR );
+
+                $ts = $column . \OWA\Module\Base\Entity\CustomDimension::SET_TS_SUFFIX;
+
+                // Both columns go on in one ALTER, so one without the other
+                // means a half-applied reconcile; fill what is there.
+                if ( isset( $present[ $ts ] ) ) {
+
+                    $steps[ $ts ] = new SetTimeStep( $ts,
+                        Context::VISITOR . '.properties', '$.' . $key . '.ts' );
+                }
+
+                continue;
+            }
+
+            // Event scope reads the raw row itself, so it costs no join.
+            $steps[ $column ] = new JsonStep( $column,
+                Context::RAW . '.params', '$.' . $key,
+                (string) $row['data_type'], (int) $row['max_length'] );
+        }
+
+        return $steps;
     }
 
     /** @return string the table this build writes */
@@ -657,9 +739,13 @@ class Builder {
             $select[] = Context::RAW . '.' . $column;
         }
 
-        // In the entity's order, which is the INSERT's order. Keyed lookup
-        // rather than a parallel list, so the two cannot drift apart.
-        $derived = $this->derivedColumns();
+        /*
+         * In the entity's order, then the registered dimensions'. Keyed lookup
+         * rather than a parallel list, so the two cannot drift apart -- and
+         * the INSERT names its columns, so this order need only agree with
+         * itself rather than with the table's.
+         */
+        $derived = array_merge( $this->derivedColumns(), $this->dimensionColumns() );
 
         foreach ( $derived as $column ) {
 
@@ -835,6 +921,21 @@ class Builder {
             (int) $span['less_than'],
             $this->siteFilter( 'r' )
         ) );
+    }
+
+    /**
+     * The columns this Property's registered dimensions own, in registry order.
+     *
+     * Read off the steps rather than the registry a second time, so a
+     * registration the constructor skipped cannot reappear in the INSERT's
+     * column list with no expression behind it.
+     *
+     * @return string[]
+     */
+    protected function dimensionColumns() {
+
+        return array_values( array_diff(
+            array_keys( $this->steps ), $this->derivedColumns() ) );
     }
 
     /** @return string[] owa_event_raw's columns, in declaration order */

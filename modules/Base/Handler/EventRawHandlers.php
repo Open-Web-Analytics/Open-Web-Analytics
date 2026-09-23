@@ -200,6 +200,29 @@ class EventRawHandlers extends \OWA\Core\Observer {
         $target = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'target_url' ) );
         $referer = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'HTTP_REFERER' ) );
 
+        /*
+         * THE READINGS ARE CANONICALISED; THE EVIDENCE IS NOT.
+         *
+         * page_location is stored exactly as it arrived, because it is what a
+         * corrected parse gets re-applied to. page_path and page_query are what
+         * reports group by, and a reading that varies where the page does not
+         * is a broken report -- /store, /store/ and /store/index.html are one
+         * page, and owa_state is OWA's own plumbing appearing in somebody's
+         * page report.
+         *
+         * The referrer is deliberately left alone beyond its host: it is
+         * somebody else's URL, and collapsing it against THIS site's default
+         * page would be a category error.
+         */
+        $site_id = $event->getSiteId();
+
+        $page['path'] = \OWA\Module\Base\Classes\V2Event::canonicalPath(
+            $page['path'], (string) \OWA\Core\CoreAPI::getSetting(
+                'base', 'default_page', 'profile', $site_id ) );
+
+        $page['query'] = \OWA\Module\Base\Classes\V2Event::filterQuery(
+            $page['query'], $this->droppedQueryParams( $site_id ) );
+
         $row = array(
 
             'id' => \OWA\Module\Base\Classes\V2Event::id(
@@ -984,6 +1007,66 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * @param mixed $value
      * @return string|null
      */
+    /**
+     * Query parameters that do not belong in a page report.
+     *
+     * Three lists in one: OWA's own control parameters, the installation's
+     * query_string_filters, and the site's. The same set v1 strips in
+     * makeUrlCanonical(), read the same way -- getSiteSetting() is a scoped
+     * read of the configuration already in memory, so this costs the write path
+     * nothing.
+     *
+     * NOT utm_*. Those are the site's own tagging rather than ours, v1 keeps
+     * them, and so does GA.
+     *
+     * The list is per site and settings change, so what a report shows depends
+     * on the list as it was when the row was written. Making a corrected list
+     * re-apply to history means filtering in the build instead, which is the
+     * argument the cube exists for and is deferred rather than dismissed
+     * (2.28.2).
+     *
+     * @param string $site_id
+     * @return string[]
+     */
+    protected function droppedQueryParams( $site_id ) {
+
+        $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+
+        $drop = array(
+            $ns . 'source',
+            $ns . 'medium',
+            $ns . 'campaign',
+            $ns . 'ad',
+            $ns . 'ad_type',
+            $ns . 'overlay',
+            $ns . 'state',
+            $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
+        );
+
+        foreach ( array(
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $site_id ),
+        ) as $configured ) {
+
+            if ( ! $configured ) {
+
+                continue;
+            }
+
+            foreach ( explode( ',', (string) $configured ) as $name ) {
+
+                $name = trim( $name );
+
+                if ( $name !== '' ) {
+
+                    $drop[] = $name;
+                }
+            }
+        }
+
+        return $drop;
+    }
+
     protected function text( $value ) {
 
         if ( $value === null || $value === false || $value === '' ) {

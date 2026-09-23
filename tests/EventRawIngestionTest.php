@@ -169,8 +169,32 @@ final class EventRawIngestionTest extends IngestionTestCase
             'The campaign parameter is the evidence; stripping it makes the answer unreproducible.');
 
         $this->assertSame('/v2/a', $row['page_path'], 'No scheme, host or query.');
-        $this->assertStringContainsString('keep=me', $row['page_query']);
         $this->assertSame('owa-test-site', $row['host']);
+
+        // THE READING IS CANONICALISED WHERE THE EVIDENCE IS NOT. owa_campaign
+        // is OWA's own control parameter, and a page report that groups on the
+        // raw query shows it as a different page every time a campaign changes.
+        $this->assertSame('keep=me', $row['page_query'],
+            'the site\'s own parameter survives and OWA\'s does not');
+        $this->assertStringNotContainsString('owa_campaign', (string) $row['page_query']);
+    }
+
+    /**
+     * The path collapses, so one page is one row in a page report.
+     *
+     * /store, /store/ and /store/index.html are the case v1 handles and v2 did
+     * not until this. The URL itself is still stored as it arrived.
+     */
+    public function testThePagePathIsCanonicalisedAndTheUrlIsNot(): void
+    {
+        $row = $this->firePageView([
+            'page_location' => 'https://owa-test-site/v2/store/?keep=me',
+        ])['page_view'];
+
+        $this->assertSame('/v2/store', $row['page_path'], 'the trailing slash is collapsed');
+
+        $this->assertStringContainsString('/v2/store/', $row['page_location'],
+            'and the URL still says exactly what arrived');
     }
 
     /**
