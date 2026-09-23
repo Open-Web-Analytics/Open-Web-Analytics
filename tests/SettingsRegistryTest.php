@@ -468,6 +468,60 @@ final class SettingsRegistryTest extends TestCase
         unset( $c->db_settings[ self::MODULE ] );
     }
 
+    /**
+     * A module that has not opted in keeps having ALL its rows loaded at boot.
+     *
+     * This is the adoption path, and the reason registration could land without
+     * converting anything. The boot query ends with `module NOT IN (declared)`,
+     * so a module with no settings.php behaves exactly as it did before any of
+     * this existed -- its stored overrides arrive eagerly, in the one query,
+     * and nothing about it is lazy.
+     *
+     * If this breaks, every un-migrated module silently drops to a per-key
+     * lookup, which is slower in a way nothing would report.
+     */
+    public function testAnUndeclaredModulesOverridesAreLoadedAtBoot(): void
+    {
+        $this->requireDb();
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+        $declared = array_keys(
+            (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() ) );
+
+        $rows = (array) $db->get_results( sprintf(
+            "SELECT DISTINCT module, name FROM %s WHERE scope_type = 'install'",
+            $entity->getTableName() ) );
+
+        $undeclared = array();
+
+        foreach ( $rows as $row ) {
+
+            if ( ! in_array( $row['module'], $declared, true ) ) {
+
+                $undeclared[] = $row;
+            }
+        }
+
+        if ( ! $undeclared ) {
+            $this->markTestSkipped( 'every module with stored settings has declared' );
+        }
+
+        \OWA\Core\CoreAPI::configSingleton()->load( 1 );
+
+        $before = (int) $db->num_queries;
+
+        foreach ( $undeclared as $row ) {
+
+            \OWA\Core\CoreAPI::getSetting( $row['module'], $row['name'] );
+        }
+
+        $this->assertSame( 0, (int) $db->num_queries - $before, sprintf(
+            'reading %d stored settings of modules that have not opted in must cost '
+          . 'nothing: boot already fetched them', count( $undeclared ) ) );
+    }
+
     /** 'General' is what group has always defaulted to, and it means Instance. */
     public function testTheLegacyGeneralGroupStillMeansTheInstanceMenu(): void
     {
