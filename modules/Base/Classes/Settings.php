@@ -208,7 +208,6 @@ namespace OWA\Module\Base\Classes;
       *
       * @var array<string, array<string, bool>>
       */
-     public $config_file_constants = array();
 
      /**
       * Set a value that came from a config-file constant, and remember that it
@@ -219,7 +218,7 @@ namespace OWA\Module\Base\Classes;
          // The NAME, not just a flag: the options form shows the operator which
          // constant is governing a field, and "set somewhere in owa-config.php"
          // is not an actionable thing to tell someone.
-         $this->config_file_constants[ $module ][ $key ] = $constant;
+         $this->noteConfigConstant( $module, $key, $constant );
 
          /*
           * A constant governs this key, so the key becomes STATIC for this
@@ -249,36 +248,6 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Re-assert every config-file constant, after the stored settings have
-      * been merged.
-      *
-      * Constants must be applied EARLY -- the database credentials are among
-      * them, so load() cannot run until they exist -- but load() then merges
-      * stored values over whatever they set. Today that is handled by removing
-      * the constant-supplied keys from the losing side before the merge, which
-      * works and requires the merge to remember a rule that is not its
-      * business.
-      *
-      * Re-applying afterwards says it once: the constants are the last word on
-      * boot, whatever the store held.
-      *
-      * @return void
-      */
-     private function reapplyConfigConstants() {
-
-         foreach ( $this->config_file_constants as $module => $keys ) {
-
-             foreach ( $keys as $key => $constant ) {
-
-                 if ( defined( $constant ) ) {
-
-                     $this->set( $module, $key, constant( $constant ) );
-                 }
-             }
-         }
-     }
-
-     /**
       * The config-file constant governing a setting, or '' if none is.
       *
       * Templates use this to render a field as read-only and name the constant
@@ -290,9 +259,91 @@ namespace OWA\Module\Base\Classes;
       */
      public function configFileConstantFor( $module, $key ) {
 
-         return isset( $this->config_file_constants[ $module ][ $key ] )
-             ? (string) $this->config_file_constants[ $module ][ $key ]
-             : '';
+         return (string) ( $this->registry[ $module . '|' . $key ]['constant'] ?? '' );
+     }
+
+     /**
+      * Record that a config-file constant governs this setting.
+      *
+      * ON THE REGISTRY, not in a ledger beside it, because everything that
+      * follows is a property of the setting: it becomes static, it is left OUT
+      * OF THE BOOT QUERY, and it cannot be persisted. Keeping the name
+      * somewhere else meant those three had to be kept in step by hand -- and
+      * the value was fetched, overwritten by the stored row, then set back from
+      * the constant, which is three steps to arrive where it started.
+      *
+      * The NAME, not a flag: the options form tells the operator which constant
+      * governs a field, and "set somewhere in owa-config.php" is not an
+      * actionable thing to tell someone.
+      *
+      * Creates an entry for a key nothing declared -- a constant governs it
+      * whether or not a module got round to describing it.
+      *
+      * @return void
+      */
+     public function noteConfigConstant( $module, $key, $constant ) {
+
+         $id = $module . '|' . $key;
+
+         $args = $this->registry[ $id ] ?? array();
+
+         $args['constant'] = (string) $constant;
+         $args['storable'] = false;
+         $args['autoload'] = false;
+
+         $this->registry[ $id ] = $args;
+
+         unset( $this->pending[ $id ] );
+     }
+
+     /**
+      * Forget that a constant governs this setting.
+      *
+      * The inverse of noteConfigConstant(). Nothing in production calls it --
+      * a constant does not stop existing mid-request -- but a test that
+      * records one has to be able to put things back, and without this it
+      * would leave the singleton claiming a constant that is not defined.
+      *
+      * @return void
+      */
+     public function forgetConfigConstant( $module, $key ) {
+
+         $id = $module . '|' . $key;
+
+         if ( ! isset( $this->registry[ $id ] ) ) {
+
+             return;
+         }
+
+         unset( $this->registry[ $id ]['constant'] );
+
+         if ( $this->registry[ $id ] === array() ) {
+
+             // It existed only to carry the constant.
+             unset( $this->registry[ $id ] );
+         }
+     }
+
+     /**
+      * Every setting a config-file constant governs, as module => key => name.
+      *
+      * @return array
+      */
+     public function configConstants() {
+
+         $out = array();
+
+         foreach ( $this->registry as $id => $args ) {
+
+             if ( ! empty( $args['constant'] ) ) {
+
+                 list( $module, $key ) = explode( '|', $id, 2 );
+
+                 $out[ $module ][ $key ] = $args['constant'];
+             }
+         }
+
+         return $out;
      }
 
      function applyConfigConstants() {
@@ -611,13 +662,6 @@ namespace OWA\Module\Base\Classes;
          * reach the database.
          */
         $this->store_ready = true;
-
-        /*
-         * The last pass of boot. Constants beat stored values, and saying so
-         * here -- after the merge -- is what lets the merge stay ignorant of
-         * the rule.
-         */
-        $this->reapplyConfigConstants();
      }
 
      /**
@@ -635,9 +679,10 @@ namespace OWA\Module\Base\Classes;
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
         $sql = sprintf(
-            "SELECT module, name, value FROM %s WHERE scope_type = 'install' AND ( %s )",
+            "SELECT module, name, value FROM %s WHERE scope_type = 'install' AND ( %s )%s",
             $entity->getTableName(),
-            $this->eagerPredicate( $db ) );
+            $this->eagerPredicate( $db ),
+            $this->constantExclusion( $db ) );
 
         $rows = (array) $db->get_results( $sql );
 
@@ -1302,6 +1347,45 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
+      * Keys a config-file constant governs, as a NOT clause.
+      *
+      * The constant is the last word, so fetching its key is fetching a value
+      * that is about to be discarded. Leaving it out of the query is the whole
+      * mechanism -- there is no stored value in play at any point, rather than
+      * one that is read, overwritten and then set back.
+      *
+      * This is also what makes stripSettingsSuppliedByConstants() redundant on
+      * the boot path: nothing arrives for it to strip.
+      *
+      * @param  object $db for escaping
+      * @return string a leading " AND NOT ( ... )", or ''
+      */
+     private function constantExclusion( $db ) {
+
+         $parts = array();
+
+         foreach ( $this->configConstants() as $module => $keys ) {
+
+             $quoted = array();
+
+             foreach ( array_keys( $keys ) as $key ) {
+
+                 $quoted[] = "'" . $db->prepare( (string) $key ) . "'";
+             }
+
+             $parts[] = sprintf( "( module = '%s' AND name IN ( %s ) )",
+                 $db->prepare( (string) $module ), implode( ', ', $quoted ) );
+         }
+
+         if ( ! $parts ) {
+
+             return '';
+         }
+
+         return sprintf( ' AND NOT ( %s )', implode( ' OR ', $parts ) );
+     }
+
+     /**
       * The keys boot must fetch, as module => list of names.
       *
       * Only what the registry declares eager. Everything else is resolved when
@@ -1451,8 +1535,11 @@ namespace OWA\Module\Base\Classes;
           * after. Without this, that later registration would hand storability
           * back and the constant would stop being the last word.
           */
-         if ( $this->configFileConstantFor( $module, $key ) ) {
+         $governing = $this->configFileConstantFor( $module, $key );
 
+         if ( $governing ) {
+
+             $args['constant'] = $governing;
              $args['storable'] = false;
              $args['autoload'] = false;
          }
@@ -2142,7 +2229,7 @@ namespace OWA\Module\Base\Classes;
              return $db_settings;
          }
 
-         foreach ( $this->config_file_constants as $module => $keys ) {
+         foreach ( $this->configConstants() as $module => $keys ) {
 
              if ( ! isset( $db_settings[ $module ] ) || ! is_array( $db_settings[ $module ] ) ) {
                  continue;
