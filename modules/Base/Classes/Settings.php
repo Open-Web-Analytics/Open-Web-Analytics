@@ -446,9 +446,21 @@ namespace OWA\Module\Base\Classes;
 
         $this->config_id = $id;
 
-        $db_settings = $this->legacyBlobIsAuthoritative()
+        $blob = $this->legacyBlobIsAuthoritative();
+
+        $db_settings = $blob
             ? $this->readLegacyConfigurationBlob()
             : $this->readInstallSettings( true );
+
+        // TEMPORARY PROBE -- remove before merge.
+        if ( defined( 'OWA_CLI' ) ) {
+            fwrite( STDERR, sprintf(
+                "[probe] load(%s): store=%s modules=%s base.schema_version=%s\n",
+                var_export( $id, true ),
+                $blob ? 'blob' : 'rows',
+                implode( ',', array_keys( (array) $db_settings ) ),
+                var_export( $db_settings['base']['schema_version'] ?? null, true ) ) );
+        }
 
         if (!empty($db_settings)) {
 

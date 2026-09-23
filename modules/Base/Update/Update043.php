@@ -156,6 +156,10 @@ class Update043 extends \OWA\Core\Update {
                 unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
         }
 
+        // TEMPORARY PROBE -- remove before merge.
+        fwrite( STDERR, sprintf( "[probe] 043.down: install rows=%d modules=%s\n",
+            count( $rows ), implode( ',', array_keys( $settings ) ) ) );
+
         if ( $settings && ! $this->writeBlob( $legacy, $settings ) ) {
 
             $this->e->notice( sprintf(
@@ -171,6 +175,12 @@ class Update043 extends \OWA\Core\Update {
          * to be dropped. Update::rollback() makes exactly that save.
          */
         $this->c->settingStoreRecheck();
+
+        // TEMPORARY PROBE -- remove before merge.
+        $probe = $db->get_row( sprintf(
+            'SELECT id, LENGTH(settings) AS len FROM %s', $legacy->getTableName() ) );
+        fwrite( STDERR, sprintf( "[probe] 043.down: blob row=%s\n",
+            $probe ? sprintf( 'id=%s len=%s', $probe['id'], $probe['len'] ) : 'MISSING' ) );
 
         foreach ( $rows as $row ) {
 
