@@ -207,13 +207,47 @@ return array(
             'precision'   => 2,
         ),
 
-        'engagementTime' => array(
-            'label'       => 'Engagement Time',
+        /*
+         * A NAME SAYS WHICH IT IS. This is a total and the one below is an
+         * average, and the pair is unreadable if either is called plain
+         * "Engagement Time" -- which is the defect 1.x's `visitDuration` had:
+         * an AVG whose name promised a duration, so every report showing it
+         * was showing an average nobody had been told about.
+         */
+        'totalEngagementTime' => array(
+            'label'       => 'Total Engagement Time',
             'description' => 'Time accrued on pages, in milliseconds. Includes final-page dwell, which 1.x cannot measure.',
             'group'       => 'Site Usage',
             'metric_type' => 'sum',
-            'data_type'   => 'integer',
+            'data_type'   => 'milliseconds',
             'column'      => 'engagement_msec',
+        ),
+
+        /*
+         * REPLACES 1.x's visitDuration, and measures something it could not.
+         *
+         * visitDuration was AVG(session.last_req - session.timestamp): the span
+         * between a session's first and last BEACON. So it could never see the
+         * final page -- whatever the visitor did after the last beacon was
+         * invisible -- and a single-pageview visit scored exactly 0 however long
+         * they read it. The entire bounce population contributed zero to the
+         * site's average.
+         *
+         * Engagement time is accrued on the DEVICE and sent, so the last page
+         * counts. GA does the same, and for the same reason.
+         *
+         * No ordering caveat, unlike exits: this sums over a session, so which
+         * event the pass calls last does not enter into it.
+         */
+        'averageEngagementTime' => array(
+            'label'       => 'Average Engagement Time',
+            'description' => 'Average time accrued per visit, in milliseconds.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'milliseconds',
+            'numerator'   => 'totalEngagementTime',
+            'denominator' => 'visits',
+            'precision'   => 0,
         ),
     ),
 );

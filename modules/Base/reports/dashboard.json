@@ -1,6 +1,6 @@
 {
     "title": "Dashboard",
-    "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
+    "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,averageEngagementTime",
     "widgets": [
         {
             "type": "trend-card",
@@ -10,7 +10,7 @@
             "showTitle": true,
             "chartMetric": "uniqueVisitors",
             "query": {
-                "metrics": "uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
+                "metrics": "uniqueVisitors,pageViews,bounceRate,pagesPerVisit,averageEngagementTime",
                 "dimensions": "date",
                 "sort": "date"
             }
@@ -119,7 +119,7 @@
             "container": "latest-visits",
             "title": "Latest Visits",
             "query": {
-                "metrics": "pagesPerVisit,visitDuration",
+                "metrics": "pagesPerVisit,averageEngagementTime",
                 "dimensions": "ipAddress,hostName,entryPagePath,medium,source,city,country,priorVisitCount",
                 "sort": "visits-",
                 "resultsPerPage": 10

@@ -235,12 +235,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'user_id'    => $this->text( $event->get( 'user_id' ) ),
 
             'ts'                => $ts,
-            'clock_offset_usec' => $this->clockOffset( $event, $ts ),
             'yyyymmdd'          => $event->get( 'yyyymmdd' ),
 
             'visitor_fsts'   => $this->number( $event->get( 'fsts' ) ),
             'prior_sessions' => $this->number( $event->get( 'num_prior_sessions' ) ),
-            'prev_event_ts'  => $this->previousEventTs( $event, $ts ),
+            'session_start_ts'       => $this->number( $event->get( 'sts' ) ),
+            'prior_session_start_ts' => $this->number( $event->get( 'psts' ) ),
             'event_seq'      => $this->number( $event->get( 'event_seq' ) ),
 
             'page_location' => $this->text( $location ),
@@ -299,77 +299,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
         $row += $this->taggedColumns( $event, $name );
 
         return $row;
-    }
-
-    /**
-     * Server receipt minus the client's own clock at send, in microseconds.
-     *
-     * Skew becomes a stored number instead of a silent error. 1.x subtracts a
-     * client clock from a server one -- last_req from timestamp -- and records
-     * no provenance for either, so a device whose clock is a day out produces a
-     * session length nobody can identify as wrong.
-     *
-     * NULL where the beacon carried no client time, which is not the same as
-     * zero skew.
-     *
-     * NOT GA's event_server_timestamp_offset, which its schema defines as
-     * collection time minus upload time. That is queue lag and answers a
-     * different question.
-     *
-     * @param object $event
-     * @param int    $ts  server receipt, microseconds
-     * @return int|null
-     */
-    protected function clockOffset( $event, $ts ) {
-
-        $client = $event->get( 'client_ts_usec' );
-
-        if ( ! $client || ! is_numeric( $client ) ) {
-
-            return null;
-        }
-
-        return (int) $ts - (int) $client;
-    }
-
-    /**
-     * The visitor's previous event, in server time.
-     *
-     * The tracker sends last_req -- the prior request's time, read from the
-     * session store BEFORE the session decision discards it, so the first event
-     * of a new session carries the last event of the PREVIOUS one. That is
-     * exactly what "time since last visit" means.
-     *
-     * Client-clock, so it is corrected by the same offset this row already
-     * records. Without a client clock there is nothing to correct against and
-     * the answer is NULL, which is the honest reading -- not zero, and not a
-     * value silently mixing two clocks the way 1.x does.
-     *
-     * NULL is also right when the state store is gone: nothing knows when the
-     * visitor was last here, and inventing an anchor would be worse.
-     *
-     * @param object $event
-     * @param int    $ts  server receipt, microseconds
-     * @return int|null microseconds
-     */
-    protected function previousEventTs( $event, $ts ) {
-
-        $last_req = $event->get( 'last_req' );
-
-        if ( ! $last_req || ! is_numeric( $last_req ) ) {
-
-            return null;
-        }
-
-        $offset = $this->clockOffset( $event, $ts );
-
-        if ( $offset === null ) {
-
-            return null;
-        }
-
-        // last_req is seconds on the client's clock.
-        return (int) ( $last_req * 1000000 ) + $offset;
     }
 
     /**

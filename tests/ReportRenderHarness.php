@@ -73,7 +73,7 @@ final class ReportRenderHarness
     public const METRIC_SETS = array(
         'site_usage' => array(
             'label'       => 'Site Usage',
-            'metrics'     => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
+            'metrics'     => 'visits,pagesPerVisit,averageEngagementTime,bounceRate,uniqueVisitors',
             'chartMetric' => 'visits',
         ),
         'ecommerce' => array(

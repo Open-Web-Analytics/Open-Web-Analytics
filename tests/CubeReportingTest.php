@@ -446,7 +446,7 @@ final class CubeReportingTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray(
-            'eventCount,pageViews,domClicks,visits,uniqueVisitors,newVisitors,returningVisitors,engagementTime');
+            'eventCount,pageViews,domClicks,visits,uniqueVisitors,newVisitors,returningVisitors,totalEngagementTime');
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(25);
@@ -472,7 +472,7 @@ final class CubeReportingTest extends TestCase
             'uniqueVisitors'    => 2,   // distinct visitor_id
             'newVisitors'       => 1,   // prior_sessions = 0
             'returningVisitors' => 1,   // prior_sessions > 0
-            'engagementTime'    => 1500, // 100 + 250 + 400 + 750
+            'totalEngagementTime' => 1500, // 100 + 250 + 400 + 750
         ];
 
         ksort($expected);

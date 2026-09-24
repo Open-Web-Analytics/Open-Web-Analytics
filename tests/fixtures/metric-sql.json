@@ -15,6 +15,18 @@
             "alias": "actionsValue"
         }
     ],
+    "averageEngagementTime": [
+        {
+            "kind": "ratio",
+            "numerator": "totalEngagementTime",
+            "denominator": "visits",
+            "precision": 0,
+            "children": [
+                "totalEngagementTime",
+                "visits"
+            ]
+        }
+    ],
     "bounceRate": [
         {
             "kind": "calculated",
@@ -55,14 +67,6 @@
                 "transactions",
                 "visits"
             ]
-        }
-    ],
-    "engagementTime": [
-        {
-            "kind": "aggregate",
-            "entity": "base.event",
-            "expression": "SUM(event.engagement_msec)",
-            "alias": "engagementTime"
         }
     ],
     "eventCount": [
@@ -687,6 +691,14 @@
             "alias": "taxRevenue"
         }
     ],
+    "totalEngagementTime": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "SUM(event.engagement_msec)",
+            "alias": "totalEngagementTime"
+        }
+    ],
     "transactionRevenue": [
         {
             "kind": "aggregate",
@@ -793,14 +805,6 @@
             "entity": "base.session",
             "expression": "COUNT(DISTINCT session.visitor_id)",
             "alias": "uniqueVisitors"
-        }
-    ],
-    "visitDuration": [
-        {
-            "kind": "aggregate",
-            "entity": "base.session",
-            "expression": "round(avg(session.last_req - session.timestamp))",
-            "alias": "visitDuration"
         }
     ],
     "visitors": [

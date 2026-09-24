@@ -1,6 +1,6 @@
 {
     "title": "Visitors",
-    "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration",
+    "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visits,averageEngagementTime",
     "widgets": [
         {
             "type": "trend-card",
@@ -9,7 +9,7 @@
             "colspan": 12,
             "chartMetric": "uniqueVisitors",
             "query": {
-                "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visitDuration",
+                "metrics": "uniqueVisitors,newVisitors,repeatVisitors,averageEngagementTime",
                 "dimensions": "date",
                 "sort": "date"
             },

@@ -373,7 +373,7 @@ final class CustomReportsTest extends TestCase
         $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
 
         $definition['widgets'][1]['query']['metrics'] =
-            'visits,uniqueVisitors,pageViews,bounceRate,visitDuration';
+            'visits,uniqueVisitors,pageViews,bounceRate,averageEngagementTime';
         $this->assertStringContainsString('4 is the most',
             CustomReports::validate($definition), 'five metrics is refused');
 

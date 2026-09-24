@@ -241,17 +241,8 @@ final class EventRawIngestionTest extends IngestionTestCase
     {
         $row = $this->firePageView()['page_view'];
 
-        $this->assertNull($row['clock_offset_usec']);
         $this->assertNull($row['engagement_msec']);
         $this->assertNull($row['scroll_depth']);
-    }
-
-    public function testClockSkewIsRecordedWhenTheBeaconCarriesAClientClock(): void
-    {
-        $rows = $this->firePageView(['client_ts_usec' => 1000000]);
-
-        $this->assertGreaterThan(0, (int) $rows['page_view']['clock_offset_usec'],
-            'Server receipt minus a 1970 client clock is a large positive offset.');
     }
 
     /**

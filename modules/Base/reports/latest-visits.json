@@ -1,6 +1,6 @@
 {
     "title": "Latest Visits",
-    "metrics": "visits,pagesPerVisit,visitDuration",
+    "metrics": "visits,pagesPerVisit,averageEngagementTime",
     "widgets": [
         {
             "type": "grid",

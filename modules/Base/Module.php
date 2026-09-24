@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 45;
+        $this->required_schema_version = 46;
         return parent::__construct();
     }
 
@@ -690,17 +690,18 @@ class Module extends \OWA\Core\Module {
             'column'      => 'is_bounce',
         ) );
 
-        $this->registerMetricDefinition( array(
-            'name'              => 'visitDuration',
-            'label'             => 'Visit Duration',
-            'description'       => 'The average duration of visits, measured between the first and last page view of each visit.',
-            'group'             => 'Site Usage',
-            'metric_type'       => 'avg_difference',
-            'data_type'         => 'timestamp',
-            'entity'            => 'base.session',
-            'column'            => 'last_req',
-            'subtrahend_column' => 'timestamp',
-        ) );
+        /*
+         * visitDuration was here. `averageEngagementTime` replaces it, and
+         * measures something this could not.
+         *
+         * AVG(session.last_req - session.timestamp) is the span between a
+         * session's first and last BEACON, so the final page is invisible: a
+         * single-pageview visit scored exactly 0 however long it was read, and
+         * the whole bounce population contributed zero to the average. Removed
+         * rather than left registered, because the wire no longer carries
+         * last_req -- and a metric quietly averaging NULLs is worse than one
+         * that is gone.
+         */
 
         $this->registerMetricDefinition( array(
             'name'        => 'uniquePageViews',

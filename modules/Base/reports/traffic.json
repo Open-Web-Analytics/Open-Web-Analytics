@@ -10,7 +10,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date",
-                "metrics": "visits,uniqueVisitors,visitDuration"
+                "metrics": "visits,uniqueVisitors,averageEngagementTime"
             },
             "chartMetric": "visits",
             "headline": "There were {visits.formatted} {visits|visit|visits} from all mediums."

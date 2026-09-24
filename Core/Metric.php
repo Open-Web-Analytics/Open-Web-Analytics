@@ -127,7 +127,7 @@ class Metric extends \OWA\Core\Base {
     
     var $name;
     
-    var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency');
+    var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds');
 
     var $type, $entity, $all_columns;
         

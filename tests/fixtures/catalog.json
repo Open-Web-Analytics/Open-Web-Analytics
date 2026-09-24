@@ -59,6 +59,31 @@
                 }
             }
         ],
+        "averageEngagementTime": [
+            {
+                "name": "averageEngagementTime",
+                "class": "base.configurableMetric",
+                "label": "Average Engagement Time",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "milliseconds",
+                    "denominator": "visits",
+                    "description": "Average time accrued per visit, in milliseconds.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Average Engagement Time",
+                    "metric_type": "ratio",
+                    "name": "averageEngagementTime",
+                    "numerator": "totalEngagementTime",
+                    "precision": 0,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "bounceRate": [
             {
                 "name": "bounceRate",
@@ -185,31 +210,6 @@
                     "label": "E-commerce Conversion Rate",
                     "metric_type": "calculated",
                     "name": "ecommerceConversionRate",
-                    "numerator": "",
-                    "precision": "",
-                    "subtrahend_column": ""
-                }
-            }
-        ],
-        "engagementTime": [
-            {
-                "name": "engagementTime",
-                "class": "base.configurableMetric",
-                "label": "Engagement Time",
-                "group": "Site Usage",
-                "params": {
-                    "child_metrics": [],
-                    "column": "engagement_msec",
-                    "condition": [],
-                    "data_type": "integer",
-                    "denominator": "",
-                    "description": "Time accrued on pages, in milliseconds. Includes final-page dwell, which 1.x cannot measure.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Site Usage",
-                    "label": "Engagement Time",
-                    "metric_type": "sum",
-                    "name": "engagementTime",
                     "numerator": "",
                     "precision": "",
                     "subtrahend_column": ""
@@ -1512,6 +1512,31 @@
                 }
             }
         ],
+        "totalEngagementTime": [
+            {
+                "name": "totalEngagementTime",
+                "class": "base.configurableMetric",
+                "label": "Total Engagement Time",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "engagement_msec",
+                    "condition": [],
+                    "data_type": "milliseconds",
+                    "denominator": "",
+                    "description": "Time accrued on pages, in milliseconds. Includes final-page dwell, which 1.x cannot measure.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Total Engagement Time",
+                    "metric_type": "sum",
+                    "name": "totalEngagementTime",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "transactionRevenue": [
             {
                 "name": "transactionRevenue",
@@ -1889,31 +1914,6 @@
                     "numerator": "",
                     "precision": "",
                     "subtrahend_column": ""
-                }
-            }
-        ],
-        "visitDuration": [
-            {
-                "name": "visitDuration",
-                "class": "base.configurableMetric",
-                "label": "Visit Duration",
-                "group": "Site Usage",
-                "params": {
-                    "child_metrics": [],
-                    "column": "last_req",
-                    "condition": [],
-                    "data_type": "timestamp",
-                    "denominator": "",
-                    "description": "The average duration of visits, measured between the first and last page view of each visit.",
-                    "entity": "base.session",
-                    "formula": "",
-                    "group": "Site Usage",
-                    "label": "Visit Duration",
-                    "metric_type": "avg_difference",
-                    "name": "visitDuration",
-                    "numerator": "",
-                    "precision": "",
-                    "subtrahend_column": "timestamp"
                 }
             }
         ],

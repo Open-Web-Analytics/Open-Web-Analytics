@@ -79,11 +79,6 @@ class EventRaw extends \OWA\Core\Entity {
         // session colliding on the derived id.
         $this->setProperty( $this->column( 'ts', OWA_DTD_BIGINT, false ) );
 
-        // Server ts minus the client's own clock at send. Skew becomes visible
-        // instead of silently wrong. NULL where the beacon carried no client
-        // time.
-        $this->setProperty( $this->column( 'clock_offset_usec', OWA_DTD_BIGINT ) );
-
         $this->setProperty( $this->column( 'yyyymmdd', OWA_DTD_INT, false ) );
         $this->setPartitionColumn( 'yyyymmdd' );
 
@@ -91,21 +86,22 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'prior_sessions', OWA_DTD_INT ) );
 
         /*
-         * The visitor's previous event, in server time. Carried, not derived:
-         * the tracker keeps last_req for its own session decision, so 1.5.3's
-         * rule applies -- an anchor the client already maintains is sent.
+         * The session's start, and the PREVIOUS session's start.
          *
-         * It was a window function in a build until that was measured. The
-         * window partitions by visitor where the other partitions by session,
-         * so it cannot share a sort, and it cost 128 of 195 seconds at a
-         * million rows.
+         * Anchors, both of them: GA ships raw anchors and derives offsets from
+         * them, and an offset computed at collection cannot be re-derived when
+         * the rule for it changes. `psts` is what daysSinceLastVisit reads --
+         * the tracker's own comment says so, and says why the seconds interval
+         * it replaced was wrong ("a continuous seconds value gives one bucket
+         * per distinct second, so it was a metric wearing a dimension's
+         * clothes. Days bucket; seconds do not").
          *
-         * Corrected to server time at ingest with clock_offset_usec, which is
-         * what makes carrying it acceptable -- the objection to the client's
-         * value was provenance, and that column did not exist when the window
-         * was chosen.
+         * Both were already on the wire and reached NO column, while
+         * prev_event_ts was written to a column nothing read. The value that
+         * was stored was not the one anybody wanted.
          */
-        $this->setProperty( $this->column( 'prev_event_ts', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'session_start_ts', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'prior_session_start_ts', OWA_DTD_BIGINT ) );
 
         /*
          * The event's position in its session, counted on the DEVICE.

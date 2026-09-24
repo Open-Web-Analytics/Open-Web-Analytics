@@ -42,7 +42,7 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(57, $columns);
+        $this->assertCount(58, $columns);
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
@@ -50,9 +50,12 @@ final class EventRawEntityTest extends TestCase
             'yyyymmdd', 'page_location', 'page_path', 'page_query',
             'tagged_source', 'tagged_medium', 'tagged_campaign',
             'engagement_msec', 'scroll_depth', 'element_path', 'consent_state',
-            'user_id', 'content_group', 'currency', 'clock_offset_usec',
+            'user_id', 'content_group', 'currency', 'session_start_ts',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
-            'referer_host', 'referer_query', 'prev_event_ts',
+            'referer_host', 'referer_query', 'prior_session_start_ts',
+            // Device order, so a late beacon does not sort after events that
+            // happened after it.
+            'event_seq',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }
@@ -113,7 +116,7 @@ final class EventRawEntityTest extends TestCase
         foreach (['user_id', 'page_query', 'content_group', 'tagged_source',
                   'city', 'region', 'country_code', 'ip_address', 'consent_state',
                   'click_x', 'engagement_msec', 'scroll_depth', 'revenue',
-                  'currency', 'params', 'clock_offset_usec', 'language',
+                  'currency', 'params', 'session_start_ts', 'language',
                   'host', 'page_title'] as $name) {
             $this->assertNotEmpty($entity->getColumn($name)->nullable,
                 "$name must be nullable: absence is stored as NULL in v2.");

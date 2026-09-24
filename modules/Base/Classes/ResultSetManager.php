@@ -135,6 +135,7 @@ class ResultSetManager extends \OWA\Core\Base {
             'percentage'     => array($this, 'formatPercentage'),
             'integer'         => array($this, 'numberFormatter'),
             'boolean'         => array($this, 'booleanFormatter'),
+            'milliseconds'    => array($this, 'formatMilliseconds'),
             'currency'        => array($this, 'formatCurrency')
         );
         
@@ -1570,6 +1571,51 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function formatSeconds($value) {
 
         return date("G:i:s",mktime(0,0,($value)));
+    }
+
+    /**
+     * Milliseconds as a duration.
+     *
+     * THE STORED VALUE STAYS MILLISECONDS, which is what the beacon carries --
+     * `engagement_msec`, accrued on the device, the same field and unit GA
+     * collects as engagement_time_msec. Only the display converts, so this is
+     * the same rule "(not set)" follows: the row holds the observation and the
+     * renderer decides how to say it.
+     *
+     * NOT formatSeconds(). That is date("G:i:s", mktime(0,0,$s)), which reads
+     * an hour-of-day back out and therefore WRAPS at 24 hours -- a total
+     * engagement time of 25 hours renders as 1:00:00. Fine for the per-visit
+     * averages it was written for, wrong for a sum across a reporting period,
+     * and this type carries both.
+     *
+     * @param int|null $value milliseconds
+     * @return string
+     */
+    function formatMilliseconds($value) {
+
+        if ( $value === null || $value === '' ) {
+
+            return $value;
+        }
+
+        $seconds = (int) round( $value / 1000 );
+
+        $days    = intdiv( $seconds, 86400 );
+        $hours   = intdiv( $seconds % 86400, 3600 );
+        $minutes = intdiv( $seconds % 3600, 60 );
+        $rest    = $seconds % 60;
+
+        if ( $days ) {
+
+            return sprintf( '%dd %d:%02d:%02d', $days, $hours, $minutes, $rest );
+        }
+
+        if ( $hours ) {
+
+            return sprintf( '%d:%02d:%02d', $hours, $minutes, $rest );
+        }
+
+        return sprintf( '%d:%02d', $minutes, $rest );
     }
 
     function formatPercentage($value) {
