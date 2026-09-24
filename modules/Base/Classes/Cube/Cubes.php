@@ -48,6 +48,9 @@ class Cubes {
      */
     const PREFIX = 'event_';
 
+    /** @var array<string,string> site id => Property id, for this request */
+    private static $property_of_site = array();
+
     /**
      * The cube table for a Property.
      *
@@ -217,6 +220,45 @@ class Cubes {
         }
 
         return $ids;
+    }
+
+    /**
+     * The Property a Profile reports into, or '' when it has none.
+     *
+     * The reverse of siteIds(), and the direction reporting needs: a query
+     * names a site, and the cube it must read belongs to that site's Property.
+     * Memoised for the request because every metric and dimension of one report
+     * asks the same question, and the answer cannot change under a request.
+     *
+     * A Profile with no Property has no cube to read, and says so with '' --
+     * the caller then leaves the entity unbound, and getTableName() throws
+     * rather than inventing a table.
+     *
+     * @param string $site_id
+     * @return string the Property id, or ''
+     */
+    public static function propertyIdForSite( $site_id ) {
+
+        $site_id = (string) $site_id;
+
+        if ( $site_id === '' ) {
+
+            return '';
+        }
+
+        if ( isset( self::$property_of_site[ $site_id ] ) ) {
+
+            return self::$property_of_site[ $site_id ];
+        }
+
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
+
+        $row = $db->get_row( sprintf( "SELECT property_id FROM %s WHERE site_id = '%s'",
+            $site, $db->prepare( $site_id ) ) );
+
+        return self::$property_of_site[ $site_id ] =
+            ( $row && ! empty( $row['property_id'] ) ) ? (string) $row['property_id'] : '';
     }
 
     /**

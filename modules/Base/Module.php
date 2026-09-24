@@ -1083,15 +1083,32 @@ class Module extends \OWA\Core\Module {
             'entity'      => 'base.click',
             'column'      => 'id',
         ) );
+        $this->registerCubeMetrics();
     }
 
     /**
-     * Register Dimensions
+     * The metrics that read a Property's reporting cube.
      *
-     * The following lines register various data dimensions.
-     * To register a dimenison use the registerDimension method.
-     * See owa_module class for documentation on this method.
+     * `eventCount` is every row, which is what the cube makes cheap and what
+     * 1.x could not express -- its `actions` counted one fact table. A name v1
+     * does not register, so nothing existing resolves differently: an entity
+     * reaches a query only by computing one of its metrics, and until a metric
+     * names the cube the cube is unreachable.
      */
+    protected function registerCubeMetrics() {
+
+        $this->registerMetricDefinition( array(
+            'name'        => 'eventCount',
+            'label'       => 'Events',
+            'description' => 'The total number of events.',
+            'group'       => 'Site Usage',
+            'entity'      => 'base.event',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+        ) );
+    }
+
     function registerDimensions() {
 
         // fact table entity names used by a number of dimensions.
@@ -2296,6 +2313,77 @@ class Module extends \OWA\Core\Module {
                     'string'
             );
         }
+
+        $this->registerCubeDimensions();
+    }
+
+    /**
+     * The dimensions that read a Property's reporting cube.
+     *
+     * EVERY ONE IS DENORMALISED, and that is structural rather than a choice:
+     * the cube carries its values as columns on the event row, so there is no
+     * dimension table to join and no foreign key to name. Two things follow.
+     *
+     * The join disappears -- `denormalized` is what tells ResultSetManager to
+     * group by a column instead of joining a satellite -- and so does the
+     * name-collision problem, because `registerDimension()` keys a denormalised
+     * entry by ENTITY (`[$name][$entity]`) while a normalised one is keyed by
+     * name alone and the last write wins. A cube dimension sharing a name with
+     * a v1 one therefore sits beside it rather than replacing it.
+     *
+     * These are inert until something asks for them: an entity reaches a query
+     * only by being able to compute one of its metrics, and no v1 metric is
+     * registered against the cube.
+     */
+    protected function registerCubeDimensions() {
+
+        $cube = 'base.event';
+
+        /*
+         * `date` and `siteId` first, because the engine requires them rather
+         * than a report asking for them: every query constrains on the site and
+         * the period, and applyConstraints() resolves both through the
+         * dimension registry. Without them the cube refuses every query with
+         * "date is not a registered dimension".
+         *
+         * NOT by appending the cube to $fact_table_entities, which is the
+         * one-line version of this and is wrong: every dimension registered
+         * against that array would then claim to work on the cube while still
+         * naming v1's columns.
+         */
+        $this->registerDimension(
+            'date', $cube, 'yyyymmdd', 'Date', 'time',
+            'The day the event was recorded, in the configured timezone.',
+            '', true, 'yyyymmdd' );
+
+        $this->registerDimension(
+            'siteId', $cube, 'site_id', 'Site ID', 'site',
+            'The Profile the event was collected for.',
+            '', true );
+
+        $this->registerDimension(
+            'eventName', $cube, 'event_type', 'Event Name', 'event',
+            'The name of the event -- page_view, click, session_start.',
+            '', true );
+
+        /*
+         * `pagePath` is a name v1 also registers, and the cube takes it.
+         *
+         * v1 registers it NORMALISED against base.document -- a join to a
+         * document table keyed by `uri`. The cube's is DENORMALISED, because
+         * the path is a column on the event row. So the name is registered in
+         * both shapes at once, and getAllDimensions(), which flattens to one
+         * entry per name for the custom-report picker, answers with the cube's.
+         *
+         * That is the intended direction: v2's dimensions REPLACE v1's rather
+         * than sitting beside them (PLAN 2.23), because v1's history is
+         * migrated into v2's raw store and no v1 reporting path survives it.
+         * There is no v1 registry to keep working.
+         */
+        $this->registerDimension(
+            'pagePath', $cube, 'page_path', 'Page Path', 'content',
+            'The path of the web page, without its host or query string.',
+            '', true );
     }
 
     /**

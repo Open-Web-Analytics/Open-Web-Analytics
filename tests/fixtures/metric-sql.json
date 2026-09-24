@@ -51,6 +51,14 @@
             ]
         }
     ],
+    "eventCount": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(event.id)",
+            "alias": "eventCount"
+        }
+    ],
     "feedReaders": [
         {
             "kind": "aggregate",

@@ -57,6 +57,13 @@ class Event extends EventRaw {
      *
      * @var bool
      */
+    /**
+     * The SQL alias every cube is read under, whatever Property it belongs to.
+     * See the constructor: column references are built before a Property is
+     * known, so the alias cannot depend on one.
+     */
+    const ALIAS = 'event';
+
     private $bound = false;
 
     function __construct() {
@@ -75,7 +82,28 @@ class Event extends EventRaw {
          * unbound instance would otherwise answer with a real table, and a
          * caller that forgot to bind would write the cube's rows into raw.
          */
-        unset( $this->_tableProperties['name'], $this->_tableProperties['alias'] );
+        unset( $this->_tableProperties['name'] );
+
+        /*
+         * THE ALIAS STAYS, and is the same for every Property.
+         *
+         * A table name and a table alias are not the same kind of thing. The
+         * name says which table to read, and an unbound instance must refuse to
+         * answer that. The alias is a label local to one query -- `FROM
+         * owa_event_<property> AS event` -- and every column reference in that
+         * query is written against it.
+         *
+         * Metrics and dimensions build their column references at REGISTRATION
+         * time, from their own entity instance, long before anything knows
+         * which Property a query is about (Core\Metric::setColumn prefixes with
+         * getTableAlias()). Unsetting the alias made that a warning and an
+         * unprefixed column; making it vary per Property would be worse still,
+         * since a column reference built against one Property's alias would be
+         * wrong for every other.
+         *
+         * So the alias is fixed. Only the FROM clause needs binding.
+         */
+        $this->_tableProperties['alias'] = self::ALIAS;
 
         // And the flag that name set on the way past: setTableName() is what
         // records a binding, and raw's constructor has just called it.
@@ -261,6 +289,13 @@ class Event extends EventRaw {
     public function setTableName( $name, $namespace = 'owa_' ) {
 
         parent::setTableName( $name, $namespace );
+
+        /*
+         * parent::setTableName() sets the alias to the table's own name, which
+         * for a cube is per-Property. Put it back: see the constructor for why
+         * the alias must not vary.
+         */
+        $this->_tableProperties['alias'] = self::ALIAS;
 
         $this->bound = true;
     }

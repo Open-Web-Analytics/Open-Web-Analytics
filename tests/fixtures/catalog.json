@@ -1,12 +1,12 @@
 {
     "counts": {
-        "metricNames": 78,
-        "metricImplementations": 99,
+        "metricNames": 79,
+        "metricImplementations": 100,
         "dimensionNamesNormalized": 46,
         "dimensionEntriesNormalized": 46,
-        "dimensionNamesDenormalized": 60,
-        "dimensionEntriesDenormalized": 230,
-        "accessorDimensionNames": 106
+        "dimensionNamesDenormalized": 62,
+        "dimensionEntriesDenormalized": 234,
+        "accessorDimensionNames": 107
     },
     "metrics": {
         "actions": [
@@ -137,6 +137,27 @@
                     "label": "E-commerce Conversion Rate",
                     "metric_type": "calculated",
                     "name": "ecommerceConversionRate",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "eventCount": [
+            {
+                "name": "eventCount",
+                "class": "base.configurableMetric",
+                "label": "Events",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "data_type": "integer",
+                    "description": "The total number of events.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Events",
+                    "metric_type": "count",
+                    "name": "eventCount",
                     "subtrahend_column": ""
                 }
             }
@@ -3120,6 +3141,17 @@
                 "data_type": "yyyymmdd",
                 "denormalized": true
             },
+            "base.event": {
+                "name": "date",
+                "entity": "base.event",
+                "column": "yyyymmdd",
+                "family": "time",
+                "label": "Date",
+                "description": "The day the event was recorded, in the configured timezone.",
+                "foreign_key_name": "",
+                "data_type": "yyyymmdd",
+                "denormalized": true
+            },
             "base.feed_request": {
                 "name": "date",
                 "entity": "base.feed_request",
@@ -3681,6 +3713,19 @@
                 "family": "dom",
                 "label": "Dom Value",
                 "description": "The value of the dom element.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "eventName": {
+            "base.event": {
+                "name": "eventName",
+                "entity": "base.event",
+                "column": "event_type",
+                "family": "event",
+                "label": "Event Name",
+                "description": "The name of the event -- page_view, click, session_start.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4262,6 +4307,19 @@
                 "denormalized": true
             }
         },
+        "pagePath": {
+            "base.event": {
+                "name": "pagePath",
+                "entity": "base.event",
+                "column": "page_path",
+                "family": "content",
+                "label": "Page Path",
+                "description": "The path of the web page, without its host or query string.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "pagesViewsInVisit": {
             "base.session": {
                 "name": "pagesViewsInVisit",
@@ -4471,6 +4529,17 @@
                 "family": "site",
                 "label": "Site ID",
                 "description": "The ID of the the web site.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.event": {
+                "name": "siteId",
+                "entity": "base.event",
+                "column": "site_id",
+                "family": "site",
+                "label": "Site ID",
+                "description": "The Profile the event was collected for.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -5171,11 +5240,11 @@
         },
         "date": {
             "name": "date",
-            "entity": "base.feed_request",
+            "entity": "base.event",
             "column": "yyyymmdd",
             "family": "time",
             "label": "Date",
-            "description": "A date string in YYYYMMDD format (e.g. 20200415).",
+            "description": "The day the event was recorded, in the configured timezone.",
             "foreign_key_name": "",
             "data_type": "yyyymmdd",
             "denormalized": true
@@ -5366,6 +5435,17 @@
             "foreign_key_name": "first_page_id",
             "data_type": "string",
             "denormalized": false
+        },
+        "eventName": {
+            "name": "eventName",
+            "entity": "base.event",
+            "column": "event_type",
+            "family": "event",
+            "label": "Event Name",
+            "description": "The name of the event -- page_view, click, session_start.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "exitPagePath": {
             "name": "exitPagePath",
@@ -5611,14 +5691,14 @@
         },
         "pagePath": {
             "name": "pagePath",
-            "entity": "base.document",
-            "column": "uri",
+            "entity": "base.event",
+            "column": "page_path",
             "family": "content",
             "label": "Page Path",
-            "description": "The path of the web page.",
-            "foreign_key_name": "document_id",
+            "description": "The path of the web page, without its host or query string.",
+            "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
         },
         "pageTitle": {
             "name": "pageTitle",
@@ -5853,11 +5933,11 @@
         },
         "siteId": {
             "name": "siteId",
-            "entity": "base.feed_request",
+            "entity": "base.event",
             "column": "site_id",
             "family": "site",
             "label": "Site ID",
-            "description": "The ID of the the web site.",
+            "description": "The Profile the event was collected for.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
