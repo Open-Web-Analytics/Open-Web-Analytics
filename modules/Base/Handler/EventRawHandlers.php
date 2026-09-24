@@ -174,13 +174,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * gaps, because the id is derived from exactly these and a missing one
          * would silently collide every such event onto one id.
          */
-        if ( ! $site_id || ! $visitor_id || ! $session_id || ! $ts ) {
+        if ( ! $site_id || ! $visitor_id || ! $session_id || ! $ts || ! $name ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'v2 ingest: dropping %s, it carries no %s.',
-                $name,
+                'v2 ingest: dropping an event, it carries no %s.',
                 ! $site_id ? 'site id' : ( ! $visitor_id ? 'visitor id'
-                    : ( ! $session_id ? 'session id' : 'timestamp' ) ) ) );
+                    : ( ! $session_id ? 'session id'
+                    : ( ! $ts ? 'timestamp' : 'event name' ) ) ) ) );
 
             return null;
         }

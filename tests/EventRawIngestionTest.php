@@ -112,6 +112,46 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * An event with no NAME is refused, like one with no visitor.
+     *
+     * The id is derived from five things -- site, visitor, session, ts and the
+     * event name -- and the guard checked four. The column does not catch it
+     * either: event_type is NOT NULL, and '' satisfies that. So every nameless
+     * event of one visitor in one microsecond would derive the SAME id and
+     * collide onto one row, which is what the guard's own comment says it
+     * exists to prevent.
+     *
+     * DRIVEN AT row() RATHER THAN THROUGH A BEACON, deliberately. Dispatch will
+     * not route an event with no type to a handler, so the public path cannot
+     * reach this line -- a test that fired a nameless beacon would pass with
+     * the guard REMOVED, proving only that dispatch drops it. Measured: it did.
+     * This is a backstop against a caller passing an empty name, and the only
+     * honest way to test a backstop is to call it.
+     */
+    public function testAnEventWithNoNameIsRefused(): void
+    {
+        $handler = new \OWA\Module\Base\Handler\EventRawHandlers;
+
+        $method = new ReflectionMethod($handler, 'row');
+        $method->setAccessible(true);
+
+        $event = new \OWA\Module\Base\Classes\Event;
+        $event->setProperties([
+            'site_id'    => $this->site,
+            'visitor_id' => $this->uniqueGuid(),
+            'session_id' => $this->uniqueSessionId(),
+            'ts'         => (int) (microtime(true) * 1000000),
+        ]);
+
+        $this->assertNull($method->invoke($handler, $event, ''),
+            'an event that cannot name itself is not an observation');
+
+        // And the same event WITH a name is accepted, so the assertion above
+        // is not passing because the fixture is malformed.
+        $this->assertNotNull($method->invoke($handler, $event, 'page_view'));
+    }
+
+    /**
      * One beacon carrying both flags becomes three rows, written together.
      *
      * The client sends one page_view; the server raises session_start and
