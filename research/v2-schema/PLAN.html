@@ -210,11 +210,23 @@ also writes the visitor store (<a href="#s29">&sect;2.9</a>).</p>
 <h3 id="s12"><span class="num">1.2</span>Sessions <span class="chip c-dec">Decided</span></h3>
 <p><strong>A session is not a table and not a row.</strong> Session context is stamped on every
 event, so a session is counted from the denormalised table &mdash; as a distinct count of
-<code>(visitor_id, session_id)</code>, not of <code>session_id</code> alone. The session id embeds
-its creation timestamp (<a href="#s21">&sect;2.1</a>), so two visitors starting in the same second
-can share one; pairing it with the visitor id makes the count depend only on visitor-id uniqueness,
-which <a href="#s14">&sect;1.4</a> bounds. A rollup, if one is ever added, precomputes the same
-thing rather than becoming a second authority.</p>
+<code>session_id</code>. A rollup, if one is ever added, precomputes the same thing rather than
+becoming a second authority.</p>
+<div class="flag"><strong>Corrected 24&nbsp;Sep: count <code>session_id</code> alone, not the pair.</strong>
+This section said to count distinct <code>(visitor_id, session_id)</code> because &ldquo;the session
+id embeds its creation timestamp, so two visitors starting in the same second can share one&rdquo;.
+That is GA&rsquo;s situation, not ours, and it was reasoned from GA rather than from the code.
+<p><code>Util.generateRandomGuid()</code> builds a session id as a unix timestamp
+<em>plus nine random digits</em> &mdash; the same construction as the visitor id
+(<a href="#s14">&sect;1.4</a>), so it carries the same ~30 bits inside any one second and is already
+as unique as the visitor id is. GA&rsquo;s <code>ga_session_id</code> is the session-start timestamp
+in seconds with <em>no randomness at all</em>, which is why Google documents pairing it with the
+user id (<a href="#nA131">A.1.31</a>). We are not in that position.</p>
+<p><span class="chip c-meas">Measured</span> Across <strong>15,643 sessions</strong> of real history
+on this install: <strong>zero</strong> session ids shared by more than one visitor. And pairing is
+actively worse &mdash; <code>COUNT(DISTINCT a, b)</code> ignores any row where either column is
+NULL, and <strong>48</strong> of those sessions carry a NULL <code>visitor_id</code>, so the pair
+under-counts by exactly 48 to guard against a one-in-a-billion collision.</p></div>
 <p><strong>A session starts on a page view, and restarts when attribution changes.</strong> Only
 page-view events create one; a session spanning midnight is split; the store is withheld until
 <code>sendAccepted</code>; and a new set of attribution tags starts a new session &mdash; so the
@@ -877,7 +889,7 @@ expects that 1.x never had. <em>Scope</em> is what the combination guard in
 <div class="scroll"><table>
 <thead><tr><th>Group</th><th>Metric</th><th>Scope</th><th>Kind</th><th>Computed from</th><th>Note</th></tr></thead>
 <tbody>
-<tr><td>Audience</td><td><code>visits</code></td><td>session</td><td>distinct_count</td><td><code>(visitor_id, session_id)</code></td><td>not <code>session_id</code> alone (<a href="#s12">&sect;1.2</a>)</td></tr>
+<tr><td>Audience</td><td><code>visits</code></td><td>session</td><td>distinct_count</td><td><code>session_id</code></td><td><code>session_id</code> alone &mdash; it carries nine random digits of its own, and pairing drops rows with a NULL visitor (<a href="#s12">&sect;1.2</a>, corrected 24&nbsp;Sep)</td></tr>
 <tr><td></td><td><code>uniqueVisitors</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code></td><td>does not sum across rows, which is why no rollup can serve it</td></tr>
 <tr><td></td><td><code>newVisitors</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code> where <code>prior_sessions&nbsp;=&nbsp;0</code></td><td></td></tr>
 <tr><td></td><td><code>returningVisitors</code></td><td>user</td><td>distinct_count</td><td><code>visitor_id</code> where <code>prior_sessions&nbsp;&gt;&nbsp;0</code></td><td>replaces <code>repeatVisitors</code>, 1.x&rsquo;s one bespoke expression</td></tr>
