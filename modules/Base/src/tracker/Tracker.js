@@ -3800,6 +3800,10 @@ class OWATracker  {
         // position any more than they share a last-request time.
         this.stampEventSequence( event );
 
+        // Which beacon format this is. Every event, because a row is what the
+        // question gets asked of, not a session.
+        event.set( 'beacon_version', OWATracker.BEACON_FORMAT_VERSION );
+
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
         }
@@ -3854,6 +3858,30 @@ class OWATracker  {
      * arbitrarily, and the pair is still ordered correctly against every other
      * event of the session. A lock would cost more than the collision does.
      */
+    /**
+     * The beacon FORMAT generation this tracker speaks.
+     *
+     * Bumped when the shape of a beacon changes in a way a server has to bridge
+     * -- a renamed token, a changed unit, a re-encoded value -- and not for
+     * ordinary releases. One integer for the whole message, the way GA's
+     * collect carries `v=2` (and `v=1` for Universal), rather than a flag per
+     * field.
+     *
+     * IT IS NOT CONSULTED TO DECIDE WHETHER A BEACON IS ACCEPTABLE. Whether one
+     * beacon can become a row is the server's identity guard, which knows
+     * nothing of versions. This exists so that "has generation N died out yet"
+     * is a query against stored rows instead of a guess about how long a
+     * customer's cache policy lets an old tracker live -- and OWA, unlike GA,
+     * does not control that policy.
+     *
+     * 1 is the first VERSIONED generation. Everything already cached in the
+     * wild sends nothing, lands as NULL, and is generation 0.
+     */
+    static get BEACON_FORMAT_VERSION() {
+
+        return 1;
+    }
+
     stampEventSequence( event ) {
 
         var store = this.storeName( 's' );

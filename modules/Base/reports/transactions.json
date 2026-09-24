@@ -19,12 +19,12 @@
             "container": "transactions",
             "query": {
                 "metrics": "transactionRevenue,shippingRevenue,taxRevenue",
-                "dimensions": "timestamp,transactionId",
+                "dimensions": "date,transactionId",
                 "sort": "timestamp-",
                 "resultsPerPage": 25
             },
             "excludeColumns": [
-                "timestamp"
+                "date"
             ],
             "title": "Transaction Roster"
         }

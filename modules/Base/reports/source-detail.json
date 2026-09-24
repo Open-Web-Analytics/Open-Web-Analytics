@@ -2,7 +2,7 @@
     "title": "Source Detail: ",
     "titleSuffix": "{source}",
     "params": {
-        "source": {}
+        "sessionSource": {}
     },
     "widgets": [
         {
@@ -19,8 +19,8 @@
     "settings": {
         "constraints": [
             {
-                "dimension": "source",
-                "fromParam": "source"
+                "dimension": "sessionSource",
+                "fromParam": "sessionSource"
             }
         ]
     }

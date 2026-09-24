@@ -16,18 +16,18 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "campaign",
+                "dimensions": "sessionCampaign",
                 "sort": "visits-",
                 "resultsPerPage": 30
             },
             "link": {
-                "linkColumn": "campaign",
+                "linkColumn": "sessionCampaign",
                 "template": {
                     "do": "base.report",
                     "reportId": "campaign-detail",
-                    "campaign": "%s"
+                    "sessionCampaign": "%s"
                 },
-                "valueColumns": "campaign"
+                "valueColumns": "sessionCampaign"
             }
         }
     ],

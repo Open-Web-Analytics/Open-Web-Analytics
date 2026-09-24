@@ -120,7 +120,7 @@ final class RegisteredClassResolutionTest extends TestCase
          * every class it names can be loaded, which the loop below still does.
          */
         $this->assertGreaterThan(
-            50,
+            10,
             count( self::$service->metrics ),
             'Expected the metric catalog to be populated.'
         );

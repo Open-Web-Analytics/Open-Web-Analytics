@@ -16,18 +16,18 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "source,medium",
+                "dimensions": "sessionSource,sessionMedium",
                 "sort": "visits",
                 "resultsPerPage": 30
             },
             "link": {
-                "linkColumn": "source",
+                "linkColumn": "sessionSource",
                 "template": {
                     "do": "base.report",
                     "reportId": "source-detail",
-                    "source": "%s"
+                    "sessionSource": "%s"
                 },
-                "valueColumns": "source"
+                "valueColumns": "sessionSource"
             }
         }
     ]

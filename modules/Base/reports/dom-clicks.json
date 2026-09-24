@@ -34,7 +34,7 @@
             "container": "topDomNames",
             "title": "Name Attributes",
             "query": {
-                "dimensions": "domElementName",
+                "dimensions": "domElementId",
                 "sort": "domClicks-",
                 "resultsPerPage": 5
             }

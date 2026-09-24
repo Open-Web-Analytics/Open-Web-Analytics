@@ -16,18 +16,18 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "ad,entryPagePath",
+                "dimensions": "sessionAd,landingPage",
                 "sort": "visits-",
                 "resultsPerPage": 25
             },
             "link": {
-                "linkColumn": "ad",
+                "linkColumn": "sessionAd",
                 "template": {
                     "do": "base.report",
                     "reportId": "ad-detail",
-                    "ad": "%s"
+                    "sessionAd": "%s"
                 },
-                "valueColumns": "ad"
+                "valueColumns": "sessionAd"
             }
         }
     ]

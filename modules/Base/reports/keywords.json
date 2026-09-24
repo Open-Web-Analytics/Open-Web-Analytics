@@ -16,7 +16,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "referralSearchTerms",
+                "dimensions": "sessionSearchTerms",
                 "sort": "visits-",
                 "resultsPerPage": 30
             }

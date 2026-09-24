@@ -385,7 +385,7 @@ final class CustomReportsTest extends TestCase
         $this->assertSame('', CustomReports::validate($definition), 'four dimensions is allowed');
 
         $definition['widgets'][1]['query']['dimensions'] =
-            'pagePath,browserType,city,country,medium';
+            'pagePath,browserType,city,country,sessionMedium';
         $this->assertStringContainsString('4 is the most',
             CustomReports::validate($definition), 'five dimensions is refused');
     }
@@ -460,7 +460,7 @@ final class CustomReportsTest extends TestCase
     {
         return array(
             'two metrics' => array(
-                array('metrics' => 'pageViews,uniquePageViews', 'dimensions' => 'pagePath'),
+                array('metrics' => 'pageViews,pageViews', 'dimensions' => 'pagePath'),
                 '2 metrics',
             ),
             'no metric' => array(
@@ -486,7 +486,7 @@ final class CustomReportsTest extends TestCase
     {
         $definition = $this->definition();
         $definition['widgets'][1]['query'] = array(
-            'metrics'    => 'pageViews,uniquePageViews',
+            'metrics'    => 'pageViews,pageViews',
             'dimensions' => 'pagePath,pageTitle',
         );
 
@@ -566,15 +566,15 @@ final class CustomReportsTest extends TestCase
     {
         $targets = CustomReports::linkTargetsByDimension();
 
-        $this->assertArrayHasKey('source', $targets);
+        $this->assertArrayHasKey('sessionSource', $targets);
 
-        $ids = array_column($targets['source'], 'id');
+        $ids = array_column($targets['sessionSource'], 'id');
 
         $this->assertContains('source-detail', $ids);
 
-        $target = $targets['source'][array_search('source-detail', $ids, true)];
+        $target = $targets['sessionSource'][array_search('source-detail', $ids, true)];
 
-        $this->assertSame('source', $target['param'],
+        $this->assertSame('sessionSource', $target['param'],
             'the link carries the parameter the destination is read under');
 
         // The name without the value it is about: the title is
@@ -911,19 +911,19 @@ final class CustomReportsTest extends TestCase
                 'notADimension==direct', 'not a dimension or a metric'),
 
             'unknown name beside a good one' => array(
-                'medium==organic-search,notADimension==x', 'notADimension'),
+                'sessionMedium==organic-search,notADimension==x', 'notADimension'),
 
             // Parseable, but no value. "A missing value is not a request for
             // everything" -- ResultSetManager's own words.
             'no value' => array(
-                'medium==', 'gives no value'),
+                'sessionMedium==', 'gives no value'),
 
             /*
              * NOT PARSEABLE AT ALL. Each of these contributes no constraint and
              * raises no error, so the widget silently answers unfiltered.
              */
             'no operator' => array(
-                'medium', 'names no operator'),
+                'sessionMedium', 'names no operator'),
 
             'operator but no name' => array(
                 '==direct', 'names nothing to constrain on'),
@@ -957,12 +957,12 @@ final class CustomReportsTest extends TestCase
     public static function goodConstraintProvider(): array
     {
         return array(
-            'equality'                 => array('medium==organic-search'),
+            'equality'                 => array('sessionMedium==organic-search'),
             'a metric'                 => array('pageViews>5'),
-            'contains, not in the UI'  => array('medium=@news'),
+            'contains, not in the UI'  => array('sessionMedium=@news'),
             'gte, not in the UI'       => array('pageViews>=5'),
-            'two of them'              => array('medium==organic-search,browserType=@Chrome'),
-            'a trailing comma'         => array('medium==organic-search,'),
+            'two of them'              => array('sessionMedium==organic-search,browserType=@Chrome'),
+            'a trailing comma'         => array('sessionMedium==organic-search,'),
         );
     }
 
@@ -981,7 +981,7 @@ final class CustomReportsTest extends TestCase
 
             $definition = $this->definition();
 
-            $definition['widgets'][1]['constraints'] = 'medium' . $operator . 'organic-search';
+            $definition['widgets'][1]['constraints'] = 'sessionMedium' . $operator . 'organic-search';
 
             $this->assertSame('', CustomReports::validate($definition),
                 sprintf('the engine parses "%s", so validation must accept it', $operator));
@@ -1097,7 +1097,7 @@ final class CustomReportsTest extends TestCase
         $definition['metrics'] = 'visits,uniqueVisitors';
         $definition['widgets'][1] = array(
             'type' => 'pie', 'id' => 'p', 'container' => 'p',
-            'query' => array('dimensions' => 'medium'),
+            'query' => array('dimensions' => 'sessionMedium'),
         );
 
         $this->assertStringContainsString('0 metrics', CustomReports::validate($definition));
@@ -1184,7 +1184,7 @@ final class CustomReportsTest extends TestCase
         $definition['widgets'][1] = array(
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
             'chartMetric' => 'visits',
-            'query' => array('metrics' => 'visits', 'dimensions' => 'date,medium'),
+            'query' => array('metrics' => 'visits', 'dimensions' => 'date,sessionMedium'),
         );
 
         $this->assertStringContainsString('Trend card',

@@ -53,7 +53,7 @@
             "title": "Entry Pages",
             "query": {
                 "metrics": "visits",
-                "dimensions": "entryPagePath",
+                "dimensions": "landingPage",
                 "sort": "visits-"
             },
             "more": {

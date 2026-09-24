@@ -80,12 +80,41 @@ return array(
          * from one that was never sent, and the fallback would fire on it. That
          * is why the flag fallbacks below are open-coded instead.
          */
-        array( 'kind' => 'rename', 'from' => 'dsfs',          'to' => 'days_since_first_session', 'in' => 'registry' ),
-        array( 'kind' => 'rename', 'from' => 'dsps',          'to' => 'days_since_prior_session', 'in' => 'registry' ),
-        array( 'kind' => 'rename', 'from' => 'seq',           'to' => 'event_seq',                'in' => 'registry' ),
-        array( 'kind' => 'rename', 'from' => 'sid',           'to' => 'feed_subscription_id',     'in' => 'registry' ),
-        array( 'kind' => 'rename', 'from' => 'nps',           'to' => 'num_prior_sessions',       'in' => 'registry' ),
-        array( 'kind' => 'rename', 'from' => 'email_address', 'to' => 'user_email',               'in' => 'registry' ),
+        /*
+         * `role` SEPARATES TWO THINGS alternative_key was doing at once, which
+         * is only visible once they are listed together:
+         *
+         *   wire   the short name the CURRENT tracker sends. Not a bridge at
+         *          all -- the registry's canonical name is simply longer than
+         *          the one on the wire. Deleting it breaks today's tracker.
+         *   legacy the name an OLDER tracker sent. A real bridge, and a
+         *          candidate for deletion once beacon_version says nothing is
+         *          sending it.
+         *
+         * Indexing them as one kind made every entry look permanent. Most of
+         * them are not.
+         *
+         * beacon_version deliberately has NO short name: the tracker sends the
+         * canonical one. Ten bytes a beacon against a wire/canonical split that
+         * has to be remembered forever is not a trade worth making, and the new
+         * field was the one chance to not make it.
+         */
+        array( 'kind' => 'rename', 'role' => 'wire',   'from' => 'nps',  'to' => 'num_prior_sessions', 'in' => 'registry' ),
+
+        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'dsfs',          'to' => 'days_since_first_session', 'in' => 'registry' ),
+        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'dsps',          'to' => 'days_since_prior_session', 'in' => 'registry' ),
+        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'email_address', 'to' => 'user_email',               'in' => 'registry' ),
+
+        /*
+         * A COLLISION, indexed so it is not rediscovered. `sid` is also the
+         * tracker's store key for the SESSION id -- sent on the wire as
+         * session_id, so the two do not meet today. A beacon carrying a literal
+         * `sid` would resolve it into feed_subscription_id, which is a value
+         * from a retired feature: nothing has written a feed request since
+         * 2021. Left alone rather than removed, because removing it is a
+         * behaviour change on a path nobody can currently observe.
+         */
+        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'sid', 'to' => 'feed_subscription_id', 'in' => 'registry' ),
 
         /*
          * The page-scoped flag standing in for the request-scoped one, on

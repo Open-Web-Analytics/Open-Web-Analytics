@@ -31,24 +31,24 @@
         },
         {
             "type": "grid",
-            "id": "source",
+            "id": "sessionSource",
             "container": "sourceExplorer",
             "title": "Revenue by Source",
             "colspan": 6,
             "query": {
                 "metrics": "transactions,transactionRevenue",
-                "dimensions": "source",
+                "dimensions": "sessionSource",
                 "sort": "transactionRevenue-",
                 "resultsPerPage": 5
             },
             "link": {
-                "linkColumn": "source",
+                "linkColumn": "sessionSource",
                 "template": {
                     "do": "base.report",
                     "reportId": "sources",
-                    "source": "%s"
+                    "sessionSource": "%s"
                 },
-                "valueColumns": "source"
+                "valueColumns": "sessionSource"
             }
         }
     ]

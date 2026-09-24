@@ -100,20 +100,55 @@ final class DimensionResolutionTest extends TestCase
     /**
      * The guard must not swallow the real answer. Without this, replacing the
      * body with `return false;` would pass every other test in this file.
+     *
+     * THE POSITIVE CASE IS BUILT, not found. It used to read pageTitle against
+     * base.request -- a normalized dimension joining a v1 dimension table --
+     * and there are none left: every v2 dimension is a column on the cube, so
+     * `related` is now false for everything that exists. Looking for the
+     * condition instead of creating it would make this pass for the wrong
+     * reason, which is exactly the failure it guards against.
+     *
+     * So it registers one. isDimensionRelated() is still live machinery -- the
+     * entity-selection loops call it -- and a renderer for normalized
+     * dimensions is how a second store would arrive, so the path has to keep
+     * answering truthfully.
      */
     public function testAResolvableDimensionIsStillRelated(): void
     {
-        $rsm = $this->manager();
-        $result = null;
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $restore = $service->dimensions;
 
-        $diags = $this->diagnosticsFrom(
-            fn() => $rsm->isDimensionRelated('pageTitle', 'base.request'),
-            $result
+        $service->dimensions['relatedProbe'] = array(
+            'base.request' => array(
+                'name'             => 'relatedProbe',
+                'entity'           => 'base.document',
+                'column'           => 'page_title',
+                'label'            => 'Related Probe',
+                'family'           => 'test',
+                'description'      => '',
+                'foreign_key_name' => 'document_id',
+                'data_type'        => 'string',
+                'denormalized'     => false,
+            ),
         );
 
-        $this->assertSame([], $diags);
-        $this->assertTrue($result,
-            'pageTitle resolves via the global registry and has a foreign key to base.request');
+        try {
+            $rsm = $this->manager();
+            $result = null;
+
+            $diags = $this->diagnosticsFrom(
+                fn() => $rsm->isDimensionRelated('relatedProbe', 'base.request'),
+                $result
+            );
+
+            $this->assertSame([], $diags);
+            $this->assertTrue($result,
+                'a normalized dimension with a foreign key to the entity IS related');
+        } finally {
+            // The registry is a singleton; a probe left in it leaks into every
+            // later test in the run.
+            $service->dimensions = $restore;
+        }
     }
 
     /**

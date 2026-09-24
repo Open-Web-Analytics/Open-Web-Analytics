@@ -117,6 +117,26 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'event_seq', OWA_DTD_INT ) );
 
         /*
+         * Which BEACON FORMAT generation wrote this row.
+         *
+         * Stored rather than merely sniffed, and that is the whole point: the
+         * compat bridges between an old beacon and the current one can only be
+         * deleted on evidence that nothing is still sending the old shape, and
+         * the only place that evidence can come from is the rows themselves.
+         * GA can reason about this from its own cache TTL because it serves
+         * gtag.js; OWA hands a static file to the customer's origin and loses
+         * sight of it, so counting is the only way to know.
+         *
+         *     SELECT beacon_version, COUNT(*) ... GROUP BY 1
+         *
+         * NULL is generation 0 -- a tracker from before versioning, which is
+         * every tracker in the wild on the day this shipped. Nullable for
+         * exactly that reason, and it must stay nullable while any of them can
+         * still be cached.
+         */
+        $this->setProperty( $this->column( 'beacon_version', OWA_DTD_INT ) );
+
+        /*
          * The page. page_location is the evidence; every reading of it is its
          * own column, parsed at ingest. A GROUP BY over a parsing expression
          * cannot use an index, and the expression would have to be written once

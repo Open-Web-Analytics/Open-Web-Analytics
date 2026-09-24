@@ -150,11 +150,16 @@
             "default_value": false,
             "alternative_key": "dsps"
         },
+        "beacon_version": {
+            "required": false,
+            "callbacks": [],
+            "data_type": "integer",
+            "note": "The tracker's BEACON FORMAT generation, sent on every beacon and stored on the row. Not a contract and not consulted at ingest: it is the evidence for deciding when a compat bridge can be deleted, which is otherwise a guess about how long a customer's cache policy lets an old tracker live. NULL means a tracker from before versioning -- generation 0 -- which is every tracker in the wild at the time this shipped."
+        },
         "event_seq": {
             "required": false,
             "callbacks": [],
             "data_type": "integer",
-            "alternative_key": "seq",
             "note": "REQUEST scoped: the event's position in its session, counted on the device and stamped when the event is built. The cube sorts a session on this rather than on ts, because ts is edge receipt and a late beacon would otherwise sort after events that happened after it. Not required -- a tracker cached from before this sends nothing and the row keeps NULL, which the sort reads as 'no device order' rather than as position zero."
         },
         "num_prior_sessions": {

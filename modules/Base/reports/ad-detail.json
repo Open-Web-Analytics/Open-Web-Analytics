@@ -2,7 +2,7 @@
     "title": "Ad: ",
     "titleSuffix": "{ad}",
     "params": {
-        "ad": {
+        "sessionAd": {
             "lowercase": true
         }
     },
@@ -21,8 +21,8 @@
     "settings": {
         "constraints": [
             {
-                "dimension": "ad",
-                "fromParam": "ad"
+                "dimension": "sessionAd",
+                "fromParam": "sessionAd"
             }
         ]
     }

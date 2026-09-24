@@ -78,12 +78,23 @@ class Update046 extends \OWA\Core\Update {
      */
     function down() {
 
-        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
+        /*
+         * THE TYPES ARE SPELLED OUT HERE, and they have to be.
+         *
+         * addColumnIfMissing() and the CubeColumn trait both ask the ENTITY for
+         * a column's definition -- and the entity no longer declares these two,
+         * because removing them is what up() did. Asking it yields "Undefined
+         * array key" and a down() that cannot restore what it removed.
+         *
+         * That is general to any update that DROPS a column: its down() is the
+         * one direction the entity cannot describe, so the definition has to
+         * live in the update. Update039 spells its types out for the same
+         * reason.
+         */
+        foreach ( array( 'prev_event_ts' => OWA_DTD_BIGINT,
+                         'clock_offset_usec' => OWA_DTD_BIGINT ) as $column => $type ) {
 
-        foreach ( $this->removed() as $column ) {
-
-            if ( $this->addColumnIfMissing( $raw, $column ) === false
-              || $this->addCubeColumn( $column ) === false ) {
+            if ( ! $this->restoreColumn( $column, $type ) ) {
 
                 $this->e->notice( sprintf( 'Restoring %s failed', $column ) );
 
@@ -92,6 +103,51 @@ class Update046 extends \OWA\Core\Update {
         }
 
         return $this->dropColumns( $this->added() );
+    }
+
+    /**
+     * Add a column back to raw and to every cube, by an EXPLICIT definition.
+     *
+     * Empty, and that is the contract: the values were derived from a beacon
+     * at ingest and nothing stored can reproduce them. A rollback lands on the
+     * schema it left, not on the data.
+     *
+     * @param string $column
+     * @param string $type   an OWA_DTD_* value
+     * @return bool
+     */
+    private function restoreColumn( $column, $type ) {
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+
+        foreach ( array_merge( array( $raw ),
+                  \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) as $table ) {
+
+            $existing = (array) $db->get_results( sprintf(
+                "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
+
+            if ( $existing ) {
+
+                continue;
+            }
+
+            /*
+             * A cube is rebuilt rather than taking the column instantly: an
+             * instant column leaves row-format metadata that makes EXCHANGE
+             * PARTITION refuse the swap on the NEXT build. Raw is never a swap
+             * target, so an ordinary add is right for it -- and harmless if the
+             * rebuilding form is used instead, which is why one loop covers
+             * both.
+             */
+            if ( ! $db->addColumnRebuilding( $table, $column, $type )
+              && ! $db->query( sprintf( OWA_SQL_ADD_COLUMN, $table, $column, $type ) ) ) {
+
+                return false;
+            }
+        }
+
+        return $this->clearCubeInstantColumns();
     }
 
     /**

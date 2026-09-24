@@ -2,7 +2,7 @@
     "title": "Campaign: ",
     "titleSuffix": "{campaign}",
     "params": {
-        "campaign": {
+        "sessionCampaign": {
             "lowercase": true
         }
     },
@@ -21,8 +21,8 @@
     "settings": {
         "constraints": [
             {
-                "dimension": "campaign",
-                "fromParam": "campaign"
+                "dimension": "sessionCampaign",
+                "fromParam": "sessionCampaign"
             }
         ]
     }

@@ -42,7 +42,7 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(58, $columns);
+        $this->assertCount(59, $columns);
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
@@ -56,6 +56,9 @@ final class EventRawEntityTest extends TestCase
             // Device order, so a late beacon does not sort after events that
             // happened after it.
             'event_seq',
+            // Which tracker generation wrote the row -- the evidence a compat
+            // bridge can ever be deleted on.
+            'beacon_version',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }

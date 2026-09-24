@@ -295,31 +295,12 @@ final class VisitorAcquisitionTest extends IngestionTestCase
         $db->query(sprintf('DELETE FROM owa_source_dim WHERE id = %d', $sourceId));
     }
 
-    /**
-     * Registered against base.visitor, and NOT against the fact tables.
-     *
-     * Registering them on the fact row would make them look like the session's
-     * own source/medium and let the two be combined in ways that mean nothing.
-     * Visitor scope is what makes "revenue by acquisition source" a different
-     * question from "revenue by source".
+    /*
+     * testAcquisitionDimensionsAreRegisteredAgainstTheVisitor was here. It
+     * asserted acquisitionSource/Medium were registered against base.visitor --
+     * a v1 dimension on a v1 entity, and both are gone. v2 exposes the same
+     * readings as firstSource/firstMedium, columns on the cube, covered by
+     * CubeReportingTest.
      */
-    public function testAcquisitionDimensionsAreRegisteredAgainstTheVisitor(): void
-    {
-        $expected = [
-            'acquisitionSource'      => 'first_session_source',
-            'acquisitionMedium'      => 'first_session_medium',
-            'acquisitionCampaign'    => 'first_session_campaign',
-            'acquisitionAd'          => 'first_session_ad',
-            'acquisitionSearchTerms' => 'first_session_search_terms',
-        ];
 
-        foreach ($expected as $name => $column) {
-
-            $dim = \OWA\Core\CoreAPI::serviceSingleton()->getDimension($name, 'base.visitor');
-
-            $this->assertNotEmpty($dim, "$name must be registered against base.visitor");
-            $this->assertSame($column, $dim['column'], "$name must read $column");
-            $this->assertSame('base.visitor', $dim['entity']);
-        }
-    }
 }
