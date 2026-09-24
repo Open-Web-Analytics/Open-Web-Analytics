@@ -77,6 +77,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         $lines = array_merge( $lines, $this->section( 'Fact tables',  $this->factTables() ) );
         $lines = array_merge( $lines, $this->section( 'Freshness',    $this->freshness() ) );
         $lines = array_merge( $lines, $this->section( 'Event queue',  $this->queue() ) );
+        $lines = array_merge( $lines, $this->section( 'Settings',     $this->settings() ) );
         $lines = array_merge( $lines, $this->section( 'Contents',     $this->contents() ) );
         $lines = array_merge( $lines, $this->summary() );
 
@@ -239,23 +240,21 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             /*
              * Active, but never installed.
              *
-             * install() is what creates a module's tables and records its
-             * version; activate() only sets is_active. A module enabled by the
-             * older cmd=activate therefore runs with no tables and no version,
-             * and nothing says so -- the default of 1 makes it read as current.
-             * Harmless while a module has no updates and no entities, which is
-             * why it has gone unnoticed; the first update such a module ships
-             * will run against tables that were never created.
+             * A RECORDED VERSION MEANS install() RAN. It is not a description
+             * of the tables: install() writes it for a module with no entities
+             * too, because the table loop simply never runs and every table it
+             * owns is therefore trivially current (see Module::install). What
+             * writes nothing is activate(), which sets is_active alone -- so an
+             * absent version means the module was switched on by the older
+             * cmd=activate and install() has not run since.
+             *
+             * That is worth saying for any module. How much it matters depends
+             * on whether there are tables that were not created, which is what
+             * separates the two lines below.
              */
             if ( ! $stored ) {
 
-                $rows[] = $this->row( self::WARN, '  ' . $name,
-                    'active, but never installed',
-                    sprintf( 'No schema version was recorded, so this module was activated '
-                           . 'without being installed and its tables may never have been '
-                           . "created. Run 'php cli.php cmd=activate module=%s' to install "
-                           . 'it properly; that is safe to run on an installed module.',
-                             $name ) );
+                $rows[] = $this->neverInstalled( $name, $this->hasSchema( $name ) );
             }
         }
 
@@ -269,6 +268,77 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         }
 
         return $rows;
+    }
+
+    /**
+     * What to say about an active module with no recorded schema version.
+     *
+     * Two very different situations behind one absence, and reporting them
+     * alike gets one of them wrong. With tables, install() never created them
+     * and the module is running against a schema that does not exist. Without
+     * tables, nothing is missing YET -- the remedy is the same, and it becomes
+     * urgent the day the module ships its first entity or update, because
+     * getSchemaVersion() reads an absent value as 1 and cmd=update migrates
+     * from there rather than creating anything.
+     *
+     * A module that owns no tables gets a plain fact line: no status mark, and
+     * no contribution to the tally. Most of the modules in this repository own
+     * none, and a permanent warning with no action attached is one an operator
+     * learns to scroll past.
+     *
+     * @param  string $name
+     * @param  bool   $has_schema  owns entities or ships updates
+     * @return string
+     */
+    private function neverInstalled( $name, $has_schema ) {
+
+        if ( ! $has_schema ) {
+
+            return $this->fact( '  ' . $name,
+                'never installed; it owns no tables, so nothing is missing yet' );
+        }
+
+        return $this->row( self::WARN, '  ' . $name,
+            'active, but never installed',
+            sprintf( 'No schema version was recorded, so this module was activated '
+                   . 'without being installed and its tables may never have been '
+                   . "created. Run 'php cli.php cmd=activate module=%s' to install "
+                   . 'it properly -- that calls install(), not activate(), and is '
+                   . 'safe to run on an installed module.',
+                     $name ) );
+    }
+
+    /**
+     * Whether a module has anything to version.
+     *
+     * Entities are the tables it owns and updates are the migrations that
+     * change them; a module with neither -- a cache backend, a queue transport,
+     * the example module -- never calls install() for a schema and never
+     * records a version.
+     *
+     * Unknown modules answer true, so a module that cannot be loaded is
+     * reported rather than quietly excused.
+     *
+     * @param  string $name
+     * @return bool
+     */
+    private function hasSchema( $name ) {
+
+        try {
+
+            $module = \OWA\Core\CoreAPI::serviceSingleton()->getModule( $name );
+
+        } catch ( \Throwable $e ) {
+
+            return true;
+        }
+
+        if ( ! is_object( $module ) ) {
+
+            return true;
+        }
+
+        return (bool) ( (array) $module->getEntities() ) || (bool) ( (array) $module->updates );
     }
 
     /**
@@ -444,6 +514,84 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         if ( $total && $oldest ) {
 
             $rows[] = $this->fact( '  oldest', date( 'Y-m-d H:i', (int) $oldest ) );
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The settings registry, and the mistakes in it that fail silently.
+     *
+     * Every problem here has the same shape: something LOOKS configured and is
+     * not. A stored value for a setting nobody declared is loaded and then
+     * ignored, so an administrator who saved it sees the code default and no
+     * error. A fieldset naming an unregistered setting renders an empty row; one
+     * naming a static setting renders a form whose save writes nothing. None of
+     * these raise, and none of them are visible from the screens themselves --
+     * which is the argument for reporting them somewhere an operator looks.
+     *
+     * The counts above them are the other half: what boot costs. Eager keys are
+     * the ones fetched on every request, and a module that has not declared has
+     * ALL of its rows fetched, because nothing says which ones it needs.
+     */
+    private function settings() {
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        if ( ! method_exists( $c, 'declarationProblems' ) ) {
+
+            return array();
+        }
+
+        $rows = array();
+
+        $declared = (array) $c->declaredModules();
+        $fields   = (array) $c->registeredFields();
+
+        $eager = 0;
+
+        foreach ( (array) $c->eagerSettings() as $keys ) {
+
+            $eager += count( (array) $keys );
+        }
+
+        $rows[] = $this->fact( 'Declared',
+            sprintf( '%d setting(s) across %d module(s)', count( $fields ), count( $declared ) ) );
+
+        $rows[] = $this->fact( 'Fetched at boot', sprintf( '%d', $eager ) );
+
+        /*
+         * Not a fault. It is the compatibility clause working as intended, and
+         * a third-party module is entitled to rely on it -- but it is also the
+         * only way to know which modules still are, and the clause is going to
+         * be removed.
+         */
+        $undeclared = (array) $c->undeclaredModules();
+
+        $rows[] = $this->row(
+            $undeclared ? self::WARN : self::OK,
+            'Modules declaring',
+            $undeclared
+                ? sprintf( 'all but %s', implode( ', ', $undeclared ) )
+                : 'all of them',
+            'Those modules store settings but ship no settings.php, so every row they own '
+          . 'is loaded at boot. That fallback is temporary: when it is removed their '
+          . 'stored values will revert to code defaults. Declare their settings in '
+          . 'modules/<Module>/settings.php.' );
+
+        foreach ( (array) $c->declarationProblems() as $problem ) {
+
+            $rows[] = $this->row( self::WARN, '  stored', $problem,
+                'The row is in the database and the value is not used. Either declare the '
+              . "setting storable, or delete the row -- right now it reads as configured "
+              . 'and is not.' );
+        }
+
+        foreach ( (array) $c->fieldSetProblems() as $problem ) {
+
+            $rows[] = $this->row( self::FAIL, '  fieldset', $problem,
+                'The settings screen builds from the registry, so this field renders as an '
+              . 'empty row or as a control whose save does nothing.' );
         }
 
         return $rows;

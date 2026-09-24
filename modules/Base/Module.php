@@ -481,8 +481,43 @@ class Module extends \OWA\Core\Module {
                 'do'             => 'base.optionsGeneral',
                 'title'          => 'Main Configuration',
                 'group'          => 'General',
-                'order'          => 1)
+                'order'          => 1,
+                'fieldsets'      => array(
+                    'base.tracking', 'base.announcements', 'base.reporting' ) )
         );
+
+        /*
+         * The general options page, as three fieldsets rather than as HTML.
+         *
+         * What each control looks like is already in the declaration -- `type`
+         * says select or text, `label` and `description` say what to call it --
+         * so the screen no longer spells any of that out a second time. The
+         * order here is the order they render in.
+         */
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.tracking',
+            'legend'   => 'Tracking Request Processing',
+            'settings' => array(
+                'resolve_hosts',
+                'log_robots',
+                'log_named_users',
+                'excluded_ips',
+                'anonymize_ips',
+                'query_string_filters',
+            ),
+        ) );
+
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.announcements',
+            'legend'   => 'Visitor Announcements',
+            'settings' => array( 'announce_visitors', 'notice_email' ),
+        ) );
+
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.reporting',
+            'legend'   => 'Reporting',
+            'settings' => array( 'timezone' ),
+        ) );
 
 
 

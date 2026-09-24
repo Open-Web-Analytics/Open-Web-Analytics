@@ -34,11 +34,18 @@ final class InstallTimezoneTest extends TestCase
         );
     }
 
+    /**
+     * The timezone field as the settings page RENDERS it.
+     *
+     * This used to read the template file, which worked while the field was
+     * written out there by hand. It is built from the declaration now, so the
+     * source of that template says nothing about what a user sees -- and
+     * rendering it is the stronger assertion either way: it goes through the
+     * same path the page does.
+     */
     private function optionsForm(): string
     {
-        return (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/options_general.php'
-        );
+        return \OWA\Module\Base\Classes\SettingsForm::field( 'base', 'timezone', 'owa_' );
     }
 
     public function testTheInstallWizardAsksForATimezone(): void
@@ -299,13 +306,41 @@ final class InstallTimezoneTest extends TestCase
      */
     public function testTheFieldRendersDisabledAndNamesTheConstant(): void
     {
-        $form = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/options_general.php'
-        );
+        $c = \OWA\Core\CoreAPI::configSingleton();
 
-        $this->assertStringContainsString("configFileConstantFor( 'base', 'timezone' )", $form);
-        $this->assertStringContainsString('disabled="disabled"', $form);
-        $this->assertMatchesRegularExpression('/Set by .*tz_constant/s', $form);
+        $already = $c->configFileConstantFor('base', 'timezone');
+
+        if (!$already) {
+            $c->noteConfigConstant('base', 'timezone', 'OWA_TIMEZONE');
+        }
+
+        try {
+            $form = $this->optionsForm();
+
+            $this->assertStringContainsString('disabled="disabled"', $form,
+                'a field a constant supplies must not invite an edit that cannot take effect');
+
+            $this->assertStringContainsString('OWA_TIMEZONE', $form,
+                'and it must name the constant, or there is nowhere to go and change it');
+
+            $this->assertMatchesRegularExpression('/Set by/', $form);
+
+        } finally {
+
+            if (!$already) {
+                $c->forgetConfigConstant('base', 'timezone');
+            }
+        }
+
+        /*
+         * Not hand-written for this one field any more. That was the bug: the
+         * check existed only in the timezone block, so every other setting on
+         * the page accepted an edit the next boot discarded.
+         */
+        $this->assertStringNotContainsString(
+            'configFileConstantFor',
+            php_strip_whitespace(OWA_DIR . 'modules/Base/templates/options_general.php'),
+            'the check belongs to the renderer, so it applies to every field');
     }
 
     /**

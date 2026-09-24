@@ -354,9 +354,29 @@ class CoreAPI {
             return $s->get($module, $name);
         }
 
-        $chain = \OWA\Core\CoreAPI::settingScopeChain( $scopeType, $scopeId );
-        $rows  = \OWA\Core\CoreAPI::settingRowsForChain( $chain );
-        $key   = $module . '|' . $name;
+        /*
+         * A Profile resolves in one query rather than three -- the walk to its
+         * Property and Organization and the settings themselves come back
+         * together. Every other scope takes the generic path; only the Profile
+         * has a hierarchy to walk.
+         */
+        $resolved = $scopeType === 'profile'
+            && ! isset( self::$setting_chain_cache[ 'profile:' . $scopeId ] )
+                ? \OWA\Core\CoreAPI::resolveProfileChain( $scopeId )
+                : null;
+
+        if ( $resolved ) {
+
+            $chain = $resolved['chain'];
+            $rows  = $resolved['rows'];
+
+        } else {
+
+            $chain = \OWA\Core\CoreAPI::settingScopeChain( $scopeType, $scopeId );
+            $rows  = \OWA\Core\CoreAPI::settingRowsForChain( $chain );
+        }
+
+        $key = $module . '|' . $name;
 
         if ( ! $inherit ) {
 
@@ -399,6 +419,37 @@ class CoreAPI {
      * @param  array $chain from settingScopeChain()
      * @return array{effective: array, own: array}
      */
+    /**
+     * An entity's table name.
+     *
+     * One place rather than a factory call at each use. entityFactory() builds
+     * a class name at runtime, so static analysis cannot know what comes back
+     * and every caller is an unresolvable method call on an unknown class --
+     * which is noise wherever it appears and would be repeated per query
+     * otherwise.
+     *
+     * @param  string $entity e.g. base.setting
+     * @return string
+     */
+    protected static function tableOf( $entity ) {
+
+        return \OWA\Core\CoreAPI::entityFactory( $entity )->getTableName();
+    }
+
+    /**
+     * Rows for a statement, as arrays.
+     *
+     * get_results() lives on the driver rather than on Db, so the same applies
+     * here: one call site instead of one per query.
+     *
+     * @param  string $sql
+     * @return array
+     */
+    protected static function rowsFor( $sql ) {
+
+        return (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql );
+    }
+
     public static function settingRowsForChain( $chain ) {
 
         $cache_key = '';
@@ -413,8 +464,7 @@ class CoreAPI {
             return self::$setting_row_cache[ $cache_key ];
         }
 
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $predicates = array();
         $ranks      = array();
@@ -440,9 +490,28 @@ class CoreAPI {
         $sql = sprintf(
             'SELECT scope_type, module, name, value FROM %s WHERE %s'
           . ' ORDER BY CASE scope_type%s ELSE 0 END DESC',
-            $entity->getTableName(),
+            self::tableOf( 'base.setting' ),
             implode( ' OR ', $predicates ),
             $when );
+
+        return self::$setting_row_cache[ $cache_key ] =
+            self::indexSettingRows( $chain, self::rowsFor( $sql ) );
+    }
+
+    /**
+     * Turn rows into the two answers a chain can be asked for, and fill the
+     * caches.
+     *
+     * Shared by the generic chain query and the joined Profile one, so the two
+     * cannot disagree about what a row means or which caches it populates.
+     * Rows must arrive ordered by scope rank, narrowest first: the first row
+     * seen for a module|name is the effective one.
+     *
+     * @param  array $chain from settingScopeChain()
+     * @param  array $rows  scope_type, module, name, value
+     * @return array{effective: array, own: array}
+     */
+    protected static function indexSettingRows( $chain, $rows ) {
 
         $result = array( 'effective' => array(), 'own' => array() );
 
@@ -462,7 +531,14 @@ class CoreAPI {
             }
         }
 
-        foreach ( (array) $db->get_results( $sql ) as $row ) {
+        foreach ( $rows as $row ) {
+
+            if ( ! isset( $row['name'] ) || $row['name'] === null ) {
+
+                // A LEFT JOIN row for a Profile with no settings at all.
+                continue;
+            }
+
 
             $key = $row['module'] . '|' . $row['name'];
 
@@ -489,11 +565,113 @@ class CoreAPI {
             }
         }
 
-        self::$setting_row_cache[ $cache_key ] = $result;
-
         return $result;
     }
 
+
+    /**
+     * A Profile's whole chain AND its settings, in ONE query.
+     *
+     * settingScopeChain() finds the parents by loading the site row and then
+     * the property row -- two queries to fetch two foreign keys -- and
+     * settingRowsForChain() then makes a third for the settings themselves.
+     * Three queries on the first scoped read of every request that touches a
+     * site, which is every tracking hit and every report.
+     *
+     * The join does the walk and the fetch together. LEFT JOINs throughout, so
+     * a Profile with no Property, no Organization or no stored settings still
+     * comes back with its chain -- an unparented Profile is a real thing, and
+     * treating one as an error would be worse than the query being longer.
+     *
+     * Falls back to the generic path if the site is not found, because then
+     * there is no chain to build and the caller should see the same answer it
+     * saw before.
+     *
+     * @param  string $siteId
+     * @return array{chain: array, rows: array}|null null when the site is unknown
+     */
+    protected static function resolveProfileChain( $siteId ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $rank = 'CASE st.scope_type';
+
+        foreach ( self::$setting_scope_rank as $type => $value ) {
+
+            $rank .= sprintf( " WHEN '%s' THEN %d", $db->prepare( (string) $type ), $value );
+        }
+
+        $rank .= ' ELSE 0 END';
+
+        $sql = sprintf(
+            'SELECT s.property_id, p.organization_id,'
+          . ' st.scope_type, st.module, st.name, st.value'
+          . ' FROM %s s'
+          . ' LEFT JOIN %s p ON p.id = s.property_id'
+          . ' LEFT JOIN %s st ON ('
+          . "     ( st.scope_type = 'profile'      AND st.scope_id = s.site_id )"
+          . "  OR ( st.scope_type = 'property'     AND st.scope_id = s.property_id )"
+          . "  OR ( st.scope_type = 'organization' AND st.scope_id = p.organization_id ) )"
+          . " WHERE s.site_id = '%s'"
+          . ' ORDER BY %s DESC',
+            self::tableOf( 'base.site' ),
+            self::tableOf( 'base.property' ),
+            self::tableOf( 'base.setting' ),
+            $db->prepare( (string) $siteId ), $rank );
+
+        $rows = self::rowsFor( $sql );
+
+        if ( ! $rows ) {
+
+            /*
+             * No Profile row, so no Property and no Organization either -- the
+             * foreign key lives on the Profile. The chain is therefore known
+             * already, and memoizing it here stops the fallback re-asking for a
+             * site that is not there.
+             *
+             * The fallback still runs, because settings stored against a
+             * site_id whose Profile has since been deleted are unreachable from
+             * a join that starts at the Profile, and the generic query reads
+             * them directly. Returning an empty result here instead would
+             * change what those installs see.
+             */
+            self::$setting_chain_cache[ 'profile:' . $siteId ] =
+                array( array( 'type' => 'profile', 'id' => (string) $siteId ) );
+
+            return null;
+        }
+
+        $chain = array( array( 'type' => 'profile', 'id' => (string) $siteId ) );
+
+        $propertyId = (string) ( $rows[0]['property_id'] ?? '' );
+
+        if ( $propertyId !== '' ) {
+
+            $chain[] = array( 'type' => 'property', 'id' => $propertyId );
+
+            $organizationId = (string) ( $rows[0]['organization_id'] ?? '' );
+
+            if ( $organizationId !== '' ) {
+
+                $chain[] = array( 'type' => 'organization', 'id' => $organizationId );
+            }
+        }
+
+        $cache_key = '';
+
+        foreach ( $chain as $scope ) {
+
+            $cache_key .= $scope['type'] . ':' . $scope['id'] . '|';
+        }
+
+        self::$setting_chain_cache[ 'profile:' . $siteId ] = $chain;
+
+        return array(
+            'chain' => $chain,
+            'rows'  => self::$setting_row_cache[ $cache_key ]
+                = self::indexSettingRows( $chain, $rows ),
+        );
+    }
 
     /**
      * The scopes to consult, most specific first.

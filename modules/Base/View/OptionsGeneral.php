@@ -40,5 +40,12 @@ class OptionsGeneral extends \OWA\Core\View\AdminPage {
         //print_r($data['config']);
         // assign config data
         $this->body->set( 'config', $this->get( 'configuration' ) ) ;
+
+        /*
+         * What the page renders, from the page's own registration. The template
+         * loops over these; it does not know which settings it is showing.
+         */
+        $this->body->set( 'settings_fieldsets',
+            \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'base.optionsGeneral' ) );
     }
 }

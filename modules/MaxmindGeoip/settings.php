@@ -10,7 +10,8 @@
  * 'maxmind_geoip' and 'maxmindGeoip' onto this directory, and the stored rows
  * use the first.
  *
- * is_active and schema_version are NOT here. Core adds those to every module.
+ * is_active and schema_version are NOT here. Core\Module::settingsRegistry()
+ * adds those to every module, from mechanicalSettings().
  */
 return array(
 
@@ -27,8 +28,12 @@ return array(
             'storable'    => true,
             'autoload'    => true,
             'type'        => 'select',
-            'label'       => 'GeoIP Database Edition',
-            'description' => 'Which MaxMind database this installation resolves locations against.',
+            'label'       => 'Database Edition',
+            'description' =>
+                'City resolves city, region and country. Country resolves only the '
+              . 'country and is a fraction of the size, which is the better trade if '
+              . 'your reports never go below country level. Changing this changes '
+              . 'which file is downloaded and which one is read, together.',
             'options'     => array( 'GeoLite2-City', 'GeoLite2-Country' ),
         ),
 
@@ -65,8 +70,11 @@ return array(
             'default'     => '',
             'storable'    => true,
             'type'        => 'text',
-            'label'       => 'MaxMind License Key',
-            'description' => 'Required to download database updates from MaxMind.',
+            'label'       => 'Licence Key',
+            'description' =>
+                'The GeoLite2 databases are free, but MaxMind stopped allowing '
+              . 'anonymous downloads at the end of 2019, so fetching one needs a key. '
+              . 'Creating a MaxMind account and a key costs nothing.',
         ),
     ),
 );

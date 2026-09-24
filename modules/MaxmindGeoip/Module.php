@@ -117,10 +117,26 @@ class Module extends \OWA\Core\Module {
     function registerAdminPanels() {
 
         $this->registerSettingsPage( array(
-            'do'    => 'maxmind_geoip.optionsGeoip',
-            'title' => 'GeoIP',
-            'group' => 'Modules',
-            'order' => 10,
+            'do'        => 'maxmind_geoip.optionsGeoip',
+            'title'     => 'GeoIP',
+            'group'     => 'Modules',
+            'order'     => 10,
+            'fieldsets' => array( 'maxmind_geoip.account' ),
+        ) );
+
+        /*
+         * The two editable settings. What they are called and what they offer
+         * is in settings.php; this says only that they appear together on this
+         * page, under this legend, in this order.
+         *
+         * The Status block above them on that page is NOT a fieldset: it
+         * reports whether the database is present and how to refresh it, which
+         * is not a setting anyone edits.
+         */
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'maxmind_geoip.account',
+            'legend'   => 'MaxMind Account',
+            'settings' => array( 'db_license_key', 'db_edition' ),
         ) );
     }
 

@@ -22,6 +22,42 @@ final class SettingsRegistryTest extends TestCase
 {
     private const MODULE = 'zz_registry_test';
 
+    /** @var array<string,mixed> the singleton's registry state before this test */
+    private array $snapshot = array();
+
+    /**
+     * These tests register probe fields and fieldsets into the SINGLETON,
+     * because that is the object the code under test consults. Left behind,
+     * they are then real entries as far as anything else is concerned --
+     * fieldSetProblems() reported three of them to a later test in the same
+     * process, which passed or failed on file order alone.
+     *
+     * Snapshot and restore rather than delete: there is no deregistration API,
+     * and there should not be one just so a test can tidy up.
+     */
+    protected function setUp(): void
+    {
+        $this->snapshot = array();
+
+        foreach ( array( 'registry', 'fieldsets' ) as $property ) {
+
+            $p = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, $property );
+            $p->setAccessible( true );
+
+            $this->snapshot[ $property ] = $p->getValue( $this->settings() );
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ( $this->snapshot as $property => $value ) {
+
+            $p = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, $property );
+            $p->setAccessible( true );
+            $p->setValue( $this->settings(), $value );
+        }
+    }
+
     private function settings()
     {
         return \OWA\Core\CoreAPI::configSingleton();
@@ -487,39 +523,50 @@ final class SettingsRegistryTest extends TestCase
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
-        $declared = array_keys(
+        /*
+         * The row is CREATED here rather than looked for.
+         *
+         * Every module in this repository declares now, so on a healthy install
+         * there is no undeclared module left to observe -- and a test that
+         * skips when the clause is unexercised is exactly the test that stops
+         * noticing when the clause breaks. A third-party module is the case
+         * this protects, so the test fabricates one.
+         */
+        $module = 'third_party_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
+
+        $this->assertArrayNotHasKey( $module,
             (array) ( \OWA\Core\Module::settingsRegistry()['declared'] ?? array() ) );
 
-        $rows = (array) $db->get_results( sprintf(
-            "SELECT DISTINCT module, name FROM %s WHERE scope_type = 'install'",
-            $entity->getTableName() ) );
+        $db->query( sprintf(
+            "INSERT INTO %s ( id, scope_type, scope_id, module, name, value )"
+          . " VALUES ( %d, 'install', '1', '%s', 'some_option', '%s' )",
+            $entity->getTableName(),
+            crc32( $module ),
+            $db->prepare( $module ),
+            $db->prepare( serialize( 'stored-by-a-module-that-never-declared' ) ) ) );
 
-        $undeclared = array();
+        try {
 
-        foreach ( $rows as $row ) {
+            \OWA\Core\CoreAPI::configSingleton()->load( 1 );
 
-            if ( ! in_array( $row['module'], $declared, true ) ) {
+            $before = (int) $db->num_queries;
 
-                $undeclared[] = $row;
-            }
+            $value = \OWA\Core\CoreAPI::getSetting( $module, 'some_option' );
+
+            $this->assertSame( 0, (int) $db->num_queries - $before,
+                'reading a stored setting of a module that has not opted in must cost '
+              . 'nothing: boot already fetched it' );
+
+            $this->assertSame( 'stored-by-a-module-that-never-declared', $value,
+                'the wholesale clause must actually deliver the value, not just avoid a query' );
+
+        } finally {
+
+            $db->query( sprintf( "DELETE FROM %s WHERE module = '%s'",
+                $entity->getTableName(), $db->prepare( $module ) ) );
+
+            \OWA\Core\CoreAPI::configSingleton()->load( 1 );
         }
-
-        if ( ! $undeclared ) {
-            $this->markTestSkipped( 'every module with stored settings has declared' );
-        }
-
-        \OWA\Core\CoreAPI::configSingleton()->load( 1 );
-
-        $before = (int) $db->num_queries;
-
-        foreach ( $undeclared as $row ) {
-
-            \OWA\Core\CoreAPI::getSetting( $row['module'], $row['name'] );
-        }
-
-        $this->assertSame( 0, (int) $db->num_queries - $before, sprintf(
-            'reading %d stored settings of modules that have not opted in must cost '
-          . 'nothing: boot already fetched them', count( $undeclared ) ) );
     }
 
     /**
