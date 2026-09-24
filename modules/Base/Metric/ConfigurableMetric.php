@@ -63,6 +63,16 @@ class ConfigurableMetric extends \OWA\Core\Metric {
 
                 $this->setSubtrahendColumn( $params['subtrahend_column'] );
             }
+
+            /*
+             * What the metric counts, when it counts only some rows. Absent
+             * means every row, which is what every definition meant before
+             * conditions existed.
+             */
+            if ( ! empty( $params['condition'] ) ) {
+
+                $this->setCondition( (array) $params['condition'] );
+            }
         }
         
         return parent::__construct();

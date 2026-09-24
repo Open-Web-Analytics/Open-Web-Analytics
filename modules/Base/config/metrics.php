@@ -21,6 +21,7 @@ return array(
 
     'metrics' => array(
 
+        // ---- every row --------------------------------------------------
         'eventCount' => array(
             'label'       => 'Events',
             'description' => 'The total number of events.',
@@ -28,6 +29,111 @@ return array(
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
+        ),
+
+        /*
+         * ---- counting SOME rows ----------------------------------------
+         *
+         * A `condition` restricts what is counted to the rows matching one
+         * test, and it is the same scan: `sum(CASE WHEN ... THEN 1 ELSE 0
+         * END)`, no subquery. Most of this vocabulary is "count the rows that
+         * are X", which is what an event table makes cheap and what 1.x could
+         * not express -- its `actions` counted one fact table.
+         */
+        'pageViews' => array(
+            'label'       => 'Page Views',
+            'description' => 'The total number of pages viewed.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'page_view' ),
+        ),
+
+        'domClicks' => array(
+            'label'       => 'Clicks',
+            'description' => 'The number of clicks on page elements.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'click' ),
+        ),
+
+        'keyEvents' => array(
+            'label'       => 'Key Events',
+            'description' => 'Conversions, counted from the rows the server materialised for them.',
+            'group'       => 'Goals',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'is_goal_event', 'value' => 1 ),
+        ),
+
+        // ---- counting distinct things -----------------------------------
+        /*
+         * `session_id` ALONE, not paired with the visitor.
+         *
+         * Util.generateRandomGuid() builds it as a unix timestamp plus nine
+         * random digits -- the same construction as the visitor id, so it is
+         * already as unique as the visitor id is. Measured across 15,643
+         * sessions of real history: zero session ids shared by more than one
+         * visitor.
+         *
+         * Pairing is also actively worse here. COUNT(DISTINCT a, b) drops any
+         * row where either column is NULL, and 48 of those sessions carry a
+         * NULL visitor id -- so the pair under-counts by exactly 48 to guard
+         * against a one-in-a-billion collision.
+         *
+         * GA pairs because GA must: its `ga_session_id` is the session-start
+         * timestamp in seconds with no randomness at all. Ours is not that.
+         */
+        'visits' => array(
+            'label'       => 'Visits',
+            'description' => 'The number of sessions.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'session_id',
+        ),
+
+        'uniqueVisitors' => array(
+            'label'       => 'Unique Visitors',
+            'description' => 'The number of distinct visitors.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'visitor_id',
+        ),
+
+        'newVisitors' => array(
+            'label'       => 'New Visitors',
+            'description' => 'Visitors whose first session this is.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'visitor_id',
+            'condition'   => array( 'column' => 'prior_sessions', 'value' => 0 ),
+        ),
+
+        'returningVisitors' => array(
+            'label'       => 'Returning Visitors',
+            'description' => 'Visitors who had been here before.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'visitor_id',
+            'condition'   => array( 'column' => 'prior_sessions', 'operator' => '>', 'value' => 0 ),
+        ),
+
+        // ---- summing ------------------------------------------------------
+        'engagementTime' => array(
+            'label'       => 'Engagement Time',
+            'description' => 'Time accrued on pages, in milliseconds. Includes final-page dwell, which 1.x cannot measure.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'sum',
+            'data_type'   => 'integer',
+            'column'      => 'engagement_msec',
         ),
     ),
 );

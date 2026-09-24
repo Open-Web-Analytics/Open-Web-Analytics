@@ -33,6 +33,16 @@ namespace OWA\Core;
 class Metric extends \OWA\Core\Base {
 
     /**
+     * The rows this metric counts, when it counts some of them.
+     *
+     * ['column' => ..., 'value' => ..., 'operator' => '=']. Empty means every
+     * row, which is what every metric did before conditions existed.
+     *
+     * @var array
+     */
+    protected $condition = array();
+
+    /**
      * Current Time
      *
      * @var array
@@ -262,12 +272,38 @@ class Metric extends \OWA\Core\Base {
             switch ( $this->type ) {
                 
                 case 'count':
-                    
-                    $statement = $db->count( $this->getColumn() );
+
+                    /*
+                     * A CONDITION IS THE SAME SCAN, not a subquery. Most of the
+                     * v2 vocabulary is "count the rows that are X" --
+                     * pageViews, domClicks, downloads, transactions, keyEvents
+                     * -- and an event table answers that by testing a column on
+                     * each row it is already reading. Measured on this box:
+                     * EXPLAIN says select_type=SIMPLE, Using where; Using index.
+                     *
+                     * `sum(CASE ...)` rather than a FILTER clause or COUNTIF.
+                     * CASE is SQL-92 and renders on every engine; FILTER is
+                     * SQL:2003 and absent from MySQL, COUNTIF is BigQuery's and
+                     * ClickHouse's. It is also what boolean_true_count below
+                     * already does, so this follows the house pattern.
+                     */
+                    $statement = $this->hasCondition()
+                        ? sprintf( 'sum(CASE WHEN %s THEN 1 ELSE 0 END)', $this->renderCondition() )
+                        : $db->count( $this->getColumn() );
                     break;
-                
+
                 case 'distinct_count':
-                    $statement = $db->count( $db->distinct( $this->getColumn() ) );
+
+                    /*
+                     * The CASE goes INSIDE the distinct, not around it: rows
+                     * failing the test contribute NULL, which a distinct count
+                     * ignores. Wrapping the aggregate instead would count the
+                     * NULL group as a value.
+                     */
+                    $statement = $this->hasCondition()
+                        ? $db->count( $db->distinct( sprintf( 'CASE WHEN %s THEN %s END',
+                              $this->renderCondition(), $this->getColumn() ) ) )
+                        : $db->count( $db->distinct( $this->getColumn() ) );
                     break;
                 
                 case 'sum':
@@ -455,6 +491,84 @@ class Metric extends \OWA\Core\Base {
         return $this->is_aggregate;
     }
     
+    /**
+     * Restrict what this metric counts to the rows matching one test.
+     *
+     * A definition names a column, an operator and a value; it never carries
+     * SQL. The same rule as a derived dimension naming a shape (PLAN 2.4), and
+     * for the same reason -- a metric carrying an expression has to be rewritten
+     * by hand if the reporting store ever changes.
+     *
+     * @param array $condition ['column' => ..., 'value' => ..., 'operator' => '=']
+     * @return void
+     */
+    function setCondition( array $condition ) {
+
+        $this->condition = $condition;
+    }
+
+    /** @return bool */
+    function hasCondition() {
+
+        return ! empty( $this->condition['column'] )
+            && array_key_exists( 'value', (array) $this->condition );
+    }
+
+    /**
+     * The condition as SQL.
+     *
+     * The OPERATOR IS NOT INTERPOLATED. It is matched against a fixed list and
+     * the match is what reaches the statement, so a definition cannot put
+     * anything else there -- these files are repository-controlled, but a
+     * comparison operator is exactly the sort of thing that later gets wired to
+     * something that is not.
+     *
+     * @return string
+     */
+    protected function renderCondition() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $allowed = array( '=', '!=', '<>', '>', '<', '>=', '<=' );
+
+        $asked = isset( $this->condition['operator'] )
+            ? (string) $this->condition['operator'] : '=';
+
+        $operator = in_array( $asked, $allowed, true ) ? $asked : '=';
+
+        if ( $operator !== $asked ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                'Metric "%s" asked for comparison operator "%s", which is not one of %s. '
+              . 'Using "=" instead.',
+                (string) $this->getName(), $asked, implode( ' ', $allowed ) ) );
+        }
+
+        $value = $this->condition['value'];
+
+        return sprintf( "%s %s %s",
+            $this->qualify( $this->condition['column'] ),
+            $operator,
+            is_int( $value ) || is_float( $value )
+                ? $value
+                : "'" . $db->prepare( (string) $value ) . "'" );
+    }
+
+    /**
+     * A column, qualified by this metric's entity alias.
+     *
+     * setColumn() does this for the counted column; a condition column needs
+     * the same treatment or it is ambiguous the moment the query joins
+     * anything.
+     *
+     * @param  string $column
+     * @return string
+     */
+    protected function qualify( $column ) {
+
+        return $this->entity->getTableAlias() . '.' . $column;
+    }
+
     function setMetricType( $type ) {
         $this->type = $type;
         

@@ -236,17 +236,46 @@ final class CustomReportsTest extends TestCase
      */
     public function testMetricsFromDifferentFactTablesAreRefused(): void
     {
+        /*
+         * `visits,uniqueVisitors,domClicks` USED TO BE the example here, and it
+         * is not impossible any more: the reporting cube carries all three, so
+         * one table serves the set. That is the gain PLAN 2.13 predicted --
+         * "every overlapping pair nobody hand-wrote a bridge for" -- and it is
+         * asserted below rather than left as a silently weakened test.
+         *
+         * The guard still has work to do, so it is exercised with a set that
+         * genuinely has no common table.
+         */
         $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,domClicks';
+        $definition['widgets'][1]['query']['metrics'] = 'visits,feedRequests';
 
         $error = CustomReports::validate($definition);
 
-        $this->assertNotSame('', $error, 'clicks and visits cannot be counted together');
+        $this->assertNotSame('', $error, 'visits and feed requests share no table');
 
         // BOTH SIDES named: which field broke it, and what it clashed with.
         // Listing everything asked for tells an author nothing to act on.
-        $this->assertStringContainsString('domClicks', $error);
+        $this->assertStringContainsString('feedRequests', $error);
         $this->assertStringContainsString('visits', $error);
+    }
+
+    /**
+     * And the combination the cube GAINED, recorded so the widening is
+     * deliberate rather than a guard quietly going slack.
+     */
+    public function testACombinationV1CouldNotServeIsNowAnswerable(): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,domClicks';
+
+        $this->assertSame('', CustomReports::validate($definition),
+            'the cube carries sessions, visitors and clicks, so one table serves all three');
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $this->assertSame(array('base.event'),
+            $rsm->compatibleEntities(array('visits', 'uniqueVisitors', 'domClicks'), array()),
+            'and it is the cube that serves it');
     }
 
     /** ...and a combination that IS askable is left alone. */
@@ -266,10 +295,19 @@ final class CustomReportsTest extends TestCase
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        // pagePath is on the request but not the session, so it decides which
-        // of the two tables answers -- it does not make the query impossible.
-        $this->assertSame(array('base.request'),
-            $rsm->compatibleEntities(array('visits'), array('pagePath')));
+        /*
+         * pagePath is on the request but not the session, so it decides which
+         * table answers -- it does not make the query impossible. The cube
+         * carries both, so it qualifies too: the assertion is what is IN the
+         * set, not that the set has one member, because the set grows as the
+         * cube takes over the vocabulary.
+         */
+        $entities = $rsm->compatibleEntities(array('visits'), array('pagePath'));
+
+        $this->assertContains('base.request', $entities);
+        $this->assertContains('base.event', $entities);
+        $this->assertNotContains('base.session', $entities,
+            'the session has no pagePath, which is the point of the reduction');
 
         // ...and a dimension no fact table carries leaves nothing.
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
@@ -283,10 +321,16 @@ final class CustomReportsTest extends TestCase
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $clash = $rsm->firstIncompatible(array('visits', 'uniqueVisitors', 'domClicks'));
+        /*
+         * `domClicks` was the offender here until the cube carried it beside
+         * visits. A set that still has no common table exercises the same
+         * reporting: it is the LAST name added that emptied the set, and the
+         * message names what it clashed with.
+         */
+        $clash = $rsm->firstIncompatible(array('visits', 'uniqueVisitors', 'feedRequests'));
 
         $this->assertNotNull($clash);
-        $this->assertSame('domClicks', $clash['name'], 'the LAST one added is what broke it');
+        $this->assertSame('feedRequests', $clash['name'], 'the LAST one added is what broke it');
         $this->assertSame('metric', $clash['kind']);
         $this->assertContains('visits', $clash['with']);
     }
