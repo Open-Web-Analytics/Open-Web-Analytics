@@ -874,9 +874,14 @@ class TrackingEventHelpers {
      * visitor's session stored NULL rather than 0.
      *
      * That is not merely untidy. NULL and 0 are two distinct values for a
-     * two-state fact, so anything GROUPing on the column -- the isRepeatVisitor
-     * dimension, and any pie or grid built on it -- gets three buckets and
-     * reports "No" twice.
+     * two-state fact, so anything GROUPing on the column got three buckets and
+     * reported "No" twice.
+     *
+     * v2 does not group on it at all: the cube stamps a `new_vs_returning`
+     * label and `newVsReturning` reads that column, so the three-bucket problem
+     * has no reader left. This flag is still written -- it is v1's session
+     * column and the migrator will read it -- so it still has to be a boolean
+     * both ways.
      */
     static function setRepeatVisitorFlag( $flag, $event ) {
 

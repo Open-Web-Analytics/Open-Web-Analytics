@@ -47,15 +47,10 @@
             "colspan": 3,
             "query": {
                 "metrics": "visits",
-                "dimensions": "isRepeatVisitor",
+                "dimensions": "newVsReturning",
                 "sort": "visits-"
             },
-            "chartMetric": "visits",
-            "valueLabels": {
-                "1": "Repeat",
-                "0": "New",
-                "": "New"
-            }
+            "chartMetric": "visits"
         },
         {
             "type": "pie",

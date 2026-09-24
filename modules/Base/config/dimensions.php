@@ -118,6 +118,24 @@ return array(
             'priorVisitCount' => array( 'column' => 'prior_sessions', 'label' => 'Prior Visits',
                 'family' => 'visitor', 'description' => 'How many sessions the visitor had before this one.',
                 'data_type' => 'integer' ),
+
+            /*
+             * REPLACES v1's isNewVisitor AND isRepeatVisitor, which were two
+             * dimensions partitioning one population over a nullable tinyint --
+             * three values, three GROUP BY buckets, and a valueLabels map in
+             * dashboard.json folding them back onto two names. That is what drew
+             * a pie with two slices both labelled New. GA has one
+             * `New / returning` dimension and no boolean twins, for the same
+             * reason.
+             *
+             * The cube stores the label, so this is a plain column read like
+             * every other line in this file -- see Classes\Cube\NewVsReturningStep
+             * for why a stored code could not have been grouped into named
+             * buckets at all.
+             */
+            'newVsReturning' => array( 'column' => 'new_vs_returning', 'label' => 'New vs Returning',
+                'family' => 'visitor',
+                'description' => 'Whether the session was the visitor\'s first.' ),
             'sessionId' => array( 'column' => 'session_id', 'label' => 'Session ID',
                 'family' => 'visit', 'description' => 'The identifier of the session the event belongs to.' ),
 

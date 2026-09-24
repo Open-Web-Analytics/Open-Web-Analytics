@@ -1147,7 +1147,7 @@
             {
                 "var": "visitorTypesurl",
                 "query": {
-                    "dimensions": "isRepeatVisitor",
+                    "dimensions": "newVsReturning",
                     "do": "reports",
                     "format": "json",
                     "metrics": "visits",

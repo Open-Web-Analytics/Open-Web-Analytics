@@ -299,11 +299,16 @@ OWA.pieChart.prototype = {
                      * It is valueLabels that makes this happen, and by design:
                      * a boolean column holds three values, not two. 1, 0 and
                      * NULL each group separately in SQL, so `isRepeatVisitor`
-                     * comes back as three rows on any site with history, and
-                     * the report folds 0 and NULL together because they mean
-                     * the same thing -- this visitor had not been here before.
+                     * came back as three rows on any site with history, and the
+                     * report folded 0 and NULL together because they meant the
+                     * same thing -- this visitor had not been here before.
                      * Folding is a statement about MEANING, so the slices have
                      * to fold too; a label map cannot merge rows on its own.
+                     *
+                     * That dimension is gone -- v2 stores the label, so there
+                     * is nothing to fold and no shipped report sets valueLabels
+                     * any more. This stays because the option is still part of
+                     * the widget, and the merge is what makes setting it safe.
                      *
                      * Kept in first-seen order, which is the query's order, so
                      * the largest slice is still first.

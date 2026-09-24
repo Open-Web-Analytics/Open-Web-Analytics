@@ -49,6 +49,8 @@ final class CubeBuildTest extends TestCase
     const VISITOR_LONG_HOST = 7771000000000006;
     const VISITOR_SEARCHER  = 7771000000000007;
     const VISITOR_TAGGED_SEARCH = 7771000000000008;
+    const VISITOR_FIRST_SESSION  = 7771000000000012;
+    const VISITOR_RETURNING      = 7771000000000013;
     const VISITOR_SECOND_PROFILE = 7771000000000010;
     const VISITOR_FOREIGN        = 7771000000000011;
 
@@ -335,6 +337,22 @@ final class CubeBuildTest extends TestCase
             'page_location' => 'https://example.test/open',
             'page_path'     => '/open',
             'page_title'    => 'Open',
+        ]);
+
+        // The two new_vs_returning cases that have an answer. Every other row
+        // in this fixture leaves prior_sessions unset, which is the third.
+        $this->seed('page_view', self::VISITOR_FIRST_SESSION, 8881000000000012, $t, [
+            'page_location'  => 'https://example.test/first',
+            'page_path'      => '/first',
+            'page_title'     => 'First',
+            'prior_sessions' => 0,
+        ]);
+
+        $this->seed('page_view', self::VISITOR_RETURNING, 8881000000000013, $t, [
+            'page_location'  => 'https://example.test/again',
+            'page_path'      => '/again',
+            'page_title'     => 'Again',
+            'prior_sessions' => 4,
         ]);
 
         // The SAME Property's second profile. Its rows belong in this cube.
@@ -675,9 +693,75 @@ final class CubeBuildTest extends TestCase
         $out = $db->get_row(sprintf("SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
             $this->cube(), $db->prepare(self::SITE), $this->yyyymmdd));
 
-        $this->assertSame(10, (int) $in['n']);
+        $this->assertSame(12, (int) $in['n']);
         $this->assertSame((int) $in['n'], (int) $out['n'],
             'A build enriches. It creates nothing and drops nothing.');
+    }
+
+    /**
+     * new_vs_returning is stamped as the LABEL a report groups by.
+     *
+     * Asserted on the stored strings rather than on a flag, because the label
+     * IS the contract: the reporting engine emits `GROUP BY <column>` and
+     * nothing else, and the dimension registry has no slot for value labels --
+     * so anything but a label here cannot be grouped into named buckets at all.
+     * v1 spelled it as two booleans over a nullable tinyint and the dashboard
+     * pie drew two slices both called New.
+     */
+    public function testNewVsReturningIsStampedAsTheLabelAReportGroupsBy(): void
+    {
+        $t = $this->t0;
+
+        $this->assertSame('New',
+            $this->built('page_view', self::VISITOR_FIRST_SESSION, 8881000000000012, $t)['new_vs_returning'],
+            'prior_sessions = 0 is the visitor\'s first session');
+
+        $this->assertSame('Returning',
+            $this->built('page_view', self::VISITOR_RETURNING, 8881000000000013, $t)['new_vs_returning'],
+            'prior_sessions > 0 is any session after it');
+    }
+
+    /**
+     * A row whose prior_sessions never arrived is UNKNOWN, not New.
+     *
+     * ingest writes NULL when the tracker sent nothing numeric for it
+     * (Handler\EventRawHandlers::number()). Reading that as a first visit would
+     * turn a gap in the beacon into a claim about the visitor, and it would do
+     * it silently -- the New bucket would just be bigger. The acquisition
+     * columns answer an unknown with the same sentinel.
+     */
+    public function testAMissingPriorSessionsIsUnknownRatherThanNew(): void
+    {
+        $row = $this->built('page_view', self::VISITOR_DIRECT, 8881000000000003, $this->t0);
+
+        $this->assertSame(\OWA\Module\Base\Classes\V2Event::UNRESOLVED, $row['new_vs_returning'],
+            'NULL prior_sessions is an unknown, and an unknown is the sentinel');
+
+        $this->assertNotSame('New', $row['new_vs_returning']);
+    }
+
+    /**
+     * And the column holds nothing else. Three values, so a GROUP BY has three
+     * buckets and a chart needs no map folding them together.
+     */
+    public function testNewVsReturningHoldsOnlyTheThreeKnownValues(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $found = array();
+
+        foreach ((array) $db->get_results(sprintf(
+                'SELECT DISTINCT new_vs_returning AS v FROM %s', $this->cube())) as $row) {
+
+            $found[] = $row['v'];
+        }
+
+        sort($found);
+
+        $expected = array('New', 'Returning', \OWA\Module\Base\Classes\V2Event::UNRESOLVED);
+        sort($expected);
+
+        $this->assertSame($expected, $found);
     }
 
     public function testTheSessionsTagsAreStampedOnEveryRowOfIt(): void

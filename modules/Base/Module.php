@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 43;
+        $this->required_schema_version = 44;
         return parent::__construct();
     }
 
@@ -1397,31 +1397,18 @@ class Module extends \OWA\Core\Module {
             );
         }
 
-        $this->registerDimension(
-            'isRepeatVisitor',
-            $fact_table_entities,
-            'is_repeat_visitor',
-            'Repeat Visitor',
-            'visitor',
-            'A boolean indicating whether the visitor has had two or more visits.',
-            '',
-            true,
-            // Declared boolean so it FORMATS as Yes/No wherever it is shown.
-            // The column stores 1 for true and NULL for false, so without this
-            // a pie slice is labelled with an empty string.
-            'boolean'
-        );
-
-        $this->registerDimension(
-            'isNewVisitor',
-            $fact_table_entities,
-            'is_new_visitor',
-            'New Visitor',
-            'visitor',
-            'A boolean indicating whether the visitor has had only one visit.',
-            '',
-            true
-        );
+        /*
+         * isRepeatVisitor and isNewVisitor were here. v2's `newVsReturning`
+         * replaces both -- one dimension over a cube column holding the label,
+         * registered from modules/Base/config/dimensions.php.
+         *
+         * They are removed rather than kept alongside it because two dimensions
+         * partitioning one population over a NULLABLE tinyint is the defect, not
+         * the spelling of it: 1, 0 and NULL group separately, so the dashboard
+         * pie needed a valueLabels map folding three buckets onto two names and
+         * still drew two slices called New. GA exposes one New/returning
+         * dimension and no boolean twins.
+         */
 
         // Visit/Session Dimensions
         $this->registerDimension(

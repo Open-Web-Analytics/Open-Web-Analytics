@@ -4,9 +4,9 @@
         "metricImplementations": 111,
         "dimensionNamesNormalized": 46,
         "dimensionEntriesNormalized": 46,
-        "dimensionNamesDenormalized": 105,
-        "dimensionEntriesDenormalized": 282,
-        "accessorDimensionNames": 139
+        "dimensionNamesDenormalized": 104,
+        "dimensionEntriesDenormalized": 269,
+        "accessorDimensionNames": 138
     },
     "metrics": {
         "actions": [
@@ -4637,164 +4637,6 @@
                 "denormalized": true
             }
         },
-        "isNewVisitor": {
-            "base.action_fact": {
-                "name": "isNewVisitor",
-                "entity": "base.action_fact",
-                "column": "is_new_visitor",
-                "family": "visitor",
-                "label": "New Visitor",
-                "description": "A boolean indicating whether the visitor has had only one visit.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            },
-            "base.click": {
-                "name": "isNewVisitor",
-                "entity": "base.click",
-                "column": "is_new_visitor",
-                "family": "visitor",
-                "label": "New Visitor",
-                "description": "A boolean indicating whether the visitor has had only one visit.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            },
-            "base.commerce_line_item_fact": {
-                "name": "isNewVisitor",
-                "entity": "base.commerce_line_item_fact",
-                "column": "is_new_visitor",
-                "family": "visitor",
-                "label": "New Visitor",
-                "description": "A boolean indicating whether the visitor has had only one visit.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            },
-            "base.commerce_transaction_fact": {
-                "name": "isNewVisitor",
-                "entity": "base.commerce_transaction_fact",
-                "column": "is_new_visitor",
-                "family": "visitor",
-                "label": "New Visitor",
-                "description": "A boolean indicating whether the visitor has had only one visit.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            },
-            "base.domstream": {
-                "name": "isNewVisitor",
-                "entity": "base.domstream",
-                "column": "is_new_visitor",
-                "family": "visitor",
-                "label": "New Visitor",
-                "description": "A boolean indicating whether the visitor has had only one visit.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            },
-            "base.request": {
-                "name": "isNewVisitor",
-                "entity": "base.request",
-                "column": "is_new_visitor",
-                "family": "visitor",
-                "label": "New Visitor",
-                "description": "A boolean indicating whether the visitor has had only one visit.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            },
-            "base.session": {
-                "name": "isNewVisitor",
-                "entity": "base.session",
-                "column": "is_new_visitor",
-                "family": "visitor",
-                "label": "New Visitor",
-                "description": "A boolean indicating whether the visitor has had only one visit.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            }
-        },
-        "isRepeatVisitor": {
-            "base.action_fact": {
-                "name": "isRepeatVisitor",
-                "entity": "base.action_fact",
-                "column": "is_repeat_visitor",
-                "family": "visitor",
-                "label": "Repeat Visitor",
-                "description": "A boolean indicating whether the visitor has had two or more visits.",
-                "foreign_key_name": "",
-                "data_type": "boolean",
-                "denormalized": true
-            },
-            "base.click": {
-                "name": "isRepeatVisitor",
-                "entity": "base.click",
-                "column": "is_repeat_visitor",
-                "family": "visitor",
-                "label": "Repeat Visitor",
-                "description": "A boolean indicating whether the visitor has had two or more visits.",
-                "foreign_key_name": "",
-                "data_type": "boolean",
-                "denormalized": true
-            },
-            "base.commerce_line_item_fact": {
-                "name": "isRepeatVisitor",
-                "entity": "base.commerce_line_item_fact",
-                "column": "is_repeat_visitor",
-                "family": "visitor",
-                "label": "Repeat Visitor",
-                "description": "A boolean indicating whether the visitor has had two or more visits.",
-                "foreign_key_name": "",
-                "data_type": "boolean",
-                "denormalized": true
-            },
-            "base.commerce_transaction_fact": {
-                "name": "isRepeatVisitor",
-                "entity": "base.commerce_transaction_fact",
-                "column": "is_repeat_visitor",
-                "family": "visitor",
-                "label": "Repeat Visitor",
-                "description": "A boolean indicating whether the visitor has had two or more visits.",
-                "foreign_key_name": "",
-                "data_type": "boolean",
-                "denormalized": true
-            },
-            "base.domstream": {
-                "name": "isRepeatVisitor",
-                "entity": "base.domstream",
-                "column": "is_repeat_visitor",
-                "family": "visitor",
-                "label": "Repeat Visitor",
-                "description": "A boolean indicating whether the visitor has had two or more visits.",
-                "foreign_key_name": "",
-                "data_type": "boolean",
-                "denormalized": true
-            },
-            "base.request": {
-                "name": "isRepeatVisitor",
-                "entity": "base.request",
-                "column": "is_repeat_visitor",
-                "family": "visitor",
-                "label": "Repeat Visitor",
-                "description": "A boolean indicating whether the visitor has had two or more visits.",
-                "foreign_key_name": "",
-                "data_type": "boolean",
-                "denormalized": true
-            },
-            "base.session": {
-                "name": "isRepeatVisitor",
-                "entity": "base.session",
-                "column": "is_repeat_visitor",
-                "family": "visitor",
-                "label": "Repeat Visitor",
-                "description": "A boolean indicating whether the visitor has had two or more visits.",
-                "foreign_key_name": "",
-                "data_type": "boolean",
-                "denormalized": true
-            }
-        },
         "itemQuantityInVisit": {
             "base.session": {
                 "name": "itemQuantityInVisit",
@@ -5168,6 +5010,19 @@
                 "description": "The month, as yyyymm.",
                 "foreign_key_name": "",
                 "data_type": "yyyymm",
+                "denormalized": true
+            }
+        },
+        "newVsReturning": {
+            "base.event": {
+                "name": "newVsReturning",
+                "entity": "base.event",
+                "column": "new_vs_returning",
+                "family": "visitor",
+                "label": "New vs Returning",
+                "description": "Whether the session was the visitor's first.",
+                "foreign_key_name": "",
+                "data_type": "string",
                 "denormalized": true
             }
         },
@@ -6809,28 +6664,6 @@
             "data_type": "string",
             "denormalized": true
         },
-        "isNewVisitor": {
-            "name": "isNewVisitor",
-            "entity": "base.commerce_line_item_fact",
-            "column": "is_new_visitor",
-            "family": "visitor",
-            "label": "New Visitor",
-            "description": "A boolean indicating whether the visitor has had only one visit.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": true
-        },
-        "isRepeatVisitor": {
-            "name": "isRepeatVisitor",
-            "entity": "base.commerce_line_item_fact",
-            "column": "is_repeat_visitor",
-            "family": "visitor",
-            "label": "Repeat Visitor",
-            "description": "A boolean indicating whether the visitor has had two or more visits.",
-            "foreign_key_name": "",
-            "data_type": "boolean",
-            "denormalized": true
-        },
         "isSearchEngine": {
             "name": "isSearchEngine",
             "entity": "base.referer",
@@ -6992,6 +6825,17 @@
             "family": "time",
             "label": "Month",
             "description": "The month, as yyyymm.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "newVsReturning": {
+            "name": "newVsReturning",
+            "entity": "base.event",
+            "column": "new_vs_returning",
+            "family": "visitor",
+            "label": "New vs Returning",
+            "description": "Whether the session was the visitor's first.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -7661,8 +7505,6 @@
                 "acquisitionMedium",
                 "acquisitionSearchTerms",
                 "acquisitionSource",
-                "isNewVisitor",
-                "isRepeatVisitor",
                 "userEmail",
                 "userName",
                 "visitorId"
@@ -7750,8 +7592,6 @@
                 "acquisitionMedium",
                 "acquisitionSearchTerms",
                 "acquisitionSource",
-                "isNewVisitor",
-                "isRepeatVisitor",
                 "userEmail",
                 "userName",
                 "visitorId"
@@ -7840,8 +7680,6 @@
                 "acquisitionMedium",
                 "acquisitionSearchTerms",
                 "acquisitionSource",
-                "isNewVisitor",
-                "isRepeatVisitor",
                 "userEmail",
                 "userName",
                 "visitorId"
@@ -7935,8 +7773,6 @@
                 "acquisitionMedium",
                 "acquisitionSearchTerms",
                 "acquisitionSource",
-                "isNewVisitor",
-                "isRepeatVisitor",
                 "userEmail",
                 "userName",
                 "visitorId"
@@ -8020,8 +7856,6 @@
                 "acquisitionMedium",
                 "acquisitionSearchTerms",
                 "acquisitionSource",
-                "isNewVisitor",
-                "isRepeatVisitor",
                 "userEmail",
                 "userName",
                 "visitorId"
