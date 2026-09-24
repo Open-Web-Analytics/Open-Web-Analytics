@@ -419,6 +419,37 @@ class CoreAPI {
      * @param  array $chain from settingScopeChain()
      * @return array{effective: array, own: array}
      */
+    /**
+     * An entity's table name.
+     *
+     * One place rather than a factory call at each use. entityFactory() builds
+     * a class name at runtime, so static analysis cannot know what comes back
+     * and every caller is an unresolvable method call on an unknown class --
+     * which is noise wherever it appears and would be repeated per query
+     * otherwise.
+     *
+     * @param  string $entity e.g. base.setting
+     * @return string
+     */
+    protected static function tableOf( $entity ) {
+
+        return \OWA\Core\CoreAPI::entityFactory( $entity )->getTableName();
+    }
+
+    /**
+     * Rows for a statement, as arrays.
+     *
+     * get_results() lives on the driver rather than on Db, so the same applies
+     * here: one call site instead of one per query.
+     *
+     * @param  string $sql
+     * @return array
+     */
+    protected static function rowsFor( $sql ) {
+
+        return (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql );
+    }
+
     public static function settingRowsForChain( $chain ) {
 
         $cache_key = '';
@@ -433,8 +464,7 @@ class CoreAPI {
             return self::$setting_row_cache[ $cache_key ];
         }
 
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $predicates = array();
         $ranks      = array();
@@ -460,12 +490,12 @@ class CoreAPI {
         $sql = sprintf(
             'SELECT scope_type, module, name, value FROM %s WHERE %s'
           . ' ORDER BY CASE scope_type%s ELSE 0 END DESC',
-            $entity->getTableName(),
+            self::tableOf( 'base.setting' ),
             implode( ' OR ', $predicates ),
             $when );
 
         return self::$setting_row_cache[ $cache_key ] =
-            self::indexSettingRows( $chain, (array) $db->get_results( $sql ) );
+            self::indexSettingRows( $chain, self::rowsFor( $sql ) );
     }
 
     /**
@@ -564,10 +594,6 @@ class CoreAPI {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $setting  = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
-        $site     = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-
         $rank = 'CASE st.scope_type';
 
         foreach ( self::$setting_scope_rank as $type => $value ) {
@@ -588,10 +614,12 @@ class CoreAPI {
           . "  OR ( st.scope_type = 'organization' AND st.scope_id = p.organization_id ) )"
           . " WHERE s.site_id = '%s'"
           . ' ORDER BY %s DESC',
-            $site->getTableName(), $property->getTableName(), $setting->getTableName(),
+            self::tableOf( 'base.site' ),
+            self::tableOf( 'base.property' ),
+            self::tableOf( 'base.setting' ),
             $db->prepare( (string) $siteId ), $rank );
 
-        $rows = (array) $db->get_results( $sql );
+        $rows = self::rowsFor( $sql );
 
         if ( ! $rows ) {
 

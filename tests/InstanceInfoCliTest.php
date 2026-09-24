@@ -254,35 +254,70 @@ final class InstanceInfoCliTest extends TestCase
         $this->assertTrue($m->invoke($controller, 'base'),
             'base owns tables and ships updates, so its version is required');
 
+        /*
+         * Both probes are BUILT rather than looked for.
+         *
+         * Which modules are active is a fact about the install: on a developer's
+         * box several schemaless ones are switched on, and in CI's scratch
+         * database only base is -- so a test that goes looking for one passes
+         * here and fails there, which is exactly what happened. The rule is
+         * about entities and updates, so the probes carry those and nothing
+         * else.
+         */
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
-        $schemaless = null;
+        $modules = new ReflectionProperty($service, 'modules');
+        $modules->setAccessible(true);
 
-        foreach ((array) \OWA\Core\CoreAPI::getActiveModules() as $name) {
+        $before = $modules->getValue($service);
 
-            $module = $service->getModule($name);
+        try {
+            $this->assertFalse(
+                $m->invoke($controller, $this->probeModule($service, 'zz_no_tables', array())),
+                'a module that owns no tables and ships no updates has no schema '
+              . 'version to be missing');
 
-            if (is_object($module)
-                && !(array) $module->getEntities() && !(array) $module->updates) {
+            $this->assertTrue(
+                $m->invoke($controller, $this->probeModule($service, 'zz_has_tables',
+                    array('base.session'))),
+                'a module that owns a table does need its version recorded');
 
-                $schemaless = $name;
-                break;
-            }
+        } finally {
+
+            $modules->setValue($service, $before);
         }
-
-        $this->assertNotNull($schemaless,
-            'this repository ships modules that own no tables; if none is active '
-          . 'the rule below is untested');
-
-        $this->assertFalse($m->invoke($controller, $schemaless),
-            $schemaless . ' owns no tables and ships no updates, so it has no '
-          . 'schema version to be missing');
 
         /*
          * An unknown module answers true, so a module that cannot be loaded is
          * reported rather than quietly excused.
          */
         $this->assertTrue($m->invoke($controller, 'no_such_module_at_all'));
+    }
+
+    /**
+     * A module carrying nothing but the fields hasSchema() reads.
+     *
+     * newInstanceWithoutConstructor() because a real Module constructor
+     * registers metrics, dimensions, entities and actions -- none of which this
+     * is asking about, and all of which would leak into the rest of the run.
+     *
+     * @param  object $service
+     * @param  string $name
+     * @param  array  $entities
+     * @return string the name, so a caller can pass it straight on
+     */
+    private function probeModule($service, string $name, array $entities): string
+    {
+        $probe = (new ReflectionClass(\OWA\Module\Hello\Module::class))
+            ->newInstanceWithoutConstructor();
+
+        $probe->name     = $name;
+        $probe->entities = $entities;
+        $probe->updates  = array();
+
+        $service->addModule($probe);
+
+        return $name;
     }
 
     /**
