@@ -2858,26 +2858,44 @@ class OWATracker  {
         }
     }
 
+    /**
+     * How many sessions this visitor had BEFORE this one.
+     *
+     * Counts from zero, which is the whole difficulty: a visitor's first
+     * session stores 0, so "never counted" and "counted once" are not
+     * distinguishable by truthiness. This used to write the STRING "0" the
+     * first time and a NUMBER every time after, and read it back with
+     * `! nps` -- which worked only because "0" is truthy in JavaScript while
+     * 0 is not. The value's type was carrying the distinction, and anything
+     * that normalised the store -- a JSON round-trip, a store that coerces
+     * numeric-looking strings -- would have turned the first session's 0 back
+     * into "absent" and reset the count on every visit. Every session would
+     * then report prior_sessions = 0, and newVsReturning would read New
+     * forever, with nothing anywhere saying so.
+     *
+     * Absence is now tested for directly and the value is a number both ways.
+     * A store still holding the old "0" reads as seen and increments to 1,
+     * which is the right answer for it.
+     *
+     * Reading 0 back out is safe on the wire: collectStateProperties() omits a
+     * property only when it is undefined or '', never when it is falsy.
+     */
     setNumberPriorSessions( event, callback ) {
 
         OWA.debug('setting number of prior sessions');
-        // if check for nps value in vistor cookie.
-        var nps = OWA.getState( 'v', 'nps' );
-        // set value to 1 if not found as it means its he first session.
+
+        var store = this.storeName( 'v' );
+        var nps   = OWA.getState( store, 'nps' );
 
         if ( this.isNewSessionFlag ) {
 
-            if ( ! nps ) {
-                nps = "0";
-            } else {
-                // increment visit count and persist to state store
-                nps = nps * 1;
-                nps++;
-            }
+            var counted = nps !== undefined && nps !== null && nps !== ''
+                       && ! isNaN( nps * 1 );
 
-            OWA.setState( 'v', 'nps', nps, true );
+            nps = counted ? ( nps * 1 ) + 1 : 0;
+
+            OWA.setState( store, 'nps', nps, true );
         }
-
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -3410,8 +3428,8 @@ class OWATracker  {
             // a site-scoped one lives under '<name>_<siteId>'
             var value = OWA.getState( this.storeName( map[i].store ), map[i].key );
 
-            // Defined rather than truthy: nps is legitimately the string "0"
-            // on a visitor's first session, and dsfs is 0 on their first day.
+            // Defined rather than truthy: nps is legitimately 0 on a
+            // visitor's first session, and dsfs is 0 on their first day.
             if ( value !== undefined && value !== '' ) {
                 collected[ map[i].name ] = value;
             }

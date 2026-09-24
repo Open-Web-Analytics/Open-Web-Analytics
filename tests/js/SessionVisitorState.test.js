@@ -27,8 +27,8 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *     then hydrated into memory. A fail-safe mints one if somehow still empty.
  *
  *   - setNumberPriorSessions(): only touches nps on a new session. Existing nps
- *     is incremented and persisted; a first-ever session leaves nps unset in the
- *     store (the "0" branch) but still stamps the property.
+ *     is incremented and persisted; a first-ever session stores 0, which is a
+ *     count and not an absence.
  *
  *   - setFirstSessionTimestamp(): stamps v.fsts once (first visit) and always
  *     recomputes dsfs (days since first session) against the event timestamp.
@@ -552,6 +552,66 @@ describe('setNumberPriorSessions', () => {
         // Not a new session: the stored value rides along unchanged.
         expect(OWA.getState('v', 'nps')).toBe('4');
         expect(OWA.getState('v', 'nps')).toBe('4');
+    });
+
+    /*
+     * A first-ever session stores 0, as a NUMBER.
+     *
+     * It used to store the string "0", and the absence test was `! nps` --
+     * so the string's truthiness was the only thing keeping a first session
+     * from being read back as "never counted". Storing a number under that
+     * test would have reset the count on every visit.
+     */
+    test('a first-ever session stores zero, not an absence', () => {
+        const t = newTracker();
+        t.isNewSessionFlag = true;
+
+        t.setNumberPriorSessions(eventAt(NOW), null);
+
+        expect(OWA.getState('v', 'nps')).toBe(0);
+    });
+
+    /*
+     * ...and the session after it counts 1. This is the regression: with a
+     * truthiness test, 0 reads as absent and this answers 0 forever, so every
+     * visitor stays New and nothing anywhere reports a fault.
+     */
+    test('the session after a first one counts it', () => {
+        const t = newTracker();
+        t.isNewSessionFlag = true;
+
+        t.setNumberPriorSessions(eventAt(NOW), null);
+        expect(OWA.getState('v', 'nps')).toBe(0);
+
+        const second = newTracker();
+        second.isNewSessionFlag = true;
+
+        second.setNumberPriorSessions(eventAt(NOW + 3600), null);
+
+        expect(OWA.getState('v', 'nps')).toBe(1);
+    });
+
+    /* A store written by the old code holds the STRING "0". It counts too. */
+    test('a legacy string zero is a count, not an absence', () => {
+        const t = newTracker();
+        OWA.setState('v', 'nps', '0', true);
+        t.isNewSessionFlag = true;
+
+        t.setNumberPriorSessions(eventAt(NOW), null);
+
+        expect(OWA.getState('v', 'nps')).toBe(1);
+    });
+
+    /* Junk in the store is an absence, and restarts the count rather than
+     * producing NaN and riding every later beacon as one. */
+    test('an unparseable stored value restarts the count', () => {
+        const t = newTracker();
+        OWA.setState('v', 'nps', 'xyzzy', true);
+        t.isNewSessionFlag = true;
+
+        t.setNumberPriorSessions(eventAt(NOW), null);
+
+        expect(OWA.getState('v', 'nps')).toBe(0);
     });
 });
 
