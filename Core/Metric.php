@@ -287,9 +287,21 @@ class Metric extends \OWA\Core\Base {
                      * ClickHouse's. It is also what boolean_true_count below
                      * already does, so this follows the house pattern.
                      */
-                    $statement = $this->hasCondition()
-                        ? sprintf( 'sum(CASE WHEN %s THEN 1 ELSE 0 END)', $this->renderCondition() )
-                        : $db->count( $this->getColumn() );
+                    if ( $this->hasCondition() ) {
+
+                        $where = $this->renderCondition();
+
+                        // '' means the condition could not be rendered, and
+                        // counting every row instead would be a metric quietly
+                        // answering a different question.
+                        $statement = $where === ''
+                            ? null
+                            : sprintf( 'sum(CASE WHEN %s THEN 1 ELSE 0 END)', $where );
+
+                    } else {
+
+                        $statement = $db->count( $this->getColumn() );
+                    }
                     break;
 
                 case 'distinct_count':
@@ -300,10 +312,19 @@ class Metric extends \OWA\Core\Base {
                      * ignores. Wrapping the aggregate instead would count the
                      * NULL group as a value.
                      */
-                    $statement = $this->hasCondition()
-                        ? $db->count( $db->distinct( sprintf( 'CASE WHEN %s THEN %s END',
-                              $this->renderCondition(), $this->getColumn() ) ) )
-                        : $db->count( $db->distinct( $this->getColumn() ) );
+                    if ( $this->hasCondition() ) {
+
+                        $where = $this->renderCondition();
+
+                        $statement = $where === ''
+                            ? null
+                            : $db->count( $db->distinct( sprintf( 'CASE WHEN %s THEN %s END',
+                                  $where, $this->getColumn() ) ) );
+
+                    } else {
+
+                        $statement = $db->count( $db->distinct( $this->getColumn() ) );
+                    }
                     break;
                 
                 case 'sum':
@@ -527,8 +548,6 @@ class Metric extends \OWA\Core\Base {
      */
     protected function renderCondition() {
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
         $allowed = array( '=', '!=', '<>', '>', '<', '>=', '<=' );
 
         $asked = isset( $this->condition['operator'] )
@@ -544,14 +563,69 @@ class Metric extends \OWA\Core\Base {
                 (string) $this->getName(), $asked, implode( ' ', $allowed ) ) );
         }
 
+        $literal = $this->conditionLiteral();
+
+        if ( $literal === null ) {
+
+            return '';
+        }
+
+        return sprintf( '%s %s %s',
+            $this->qualify( $this->condition['column'] ), $operator, $literal );
+    }
+
+    /**
+     * The condition's value as a SQL literal, or null if it may not be one.
+     *
+     * VALIDATED, NOT ESCAPED, and the difference is the point.
+     *
+     * A driver's escaper needs a live connection -- Mysql::prepare() calls
+     * mysqli_real_escape_string( $this->connection, ... ) -- so escaping here
+     * made a metric's SELECT expression depend on the database being connected.
+     * That is wrong on its own terms: the expression is a property of the
+     * definition, built once at registration, and CI's unit job has no database
+     * at all. It rendered `event_type = ''` there, which is a metric that
+     * silently counts nothing.
+     *
+     * Escaping is also the wrong tool for the input. These values come from a
+     * repository-controlled config file, so the risk is a typo that breaks the
+     * statement rather than a visitor injecting one. A value that could not be
+     * a literal is REFUSED and said out loud, which is a better answer than
+     * quietly quoting something unexpected -- and the caller then renders no
+     * statement at all, so the metric is missing rather than wrong.
+     *
+     * @return string|null
+     */
+    protected function conditionLiteral() {
+
         $value = $this->condition['value'];
 
-        return sprintf( "%s %s %s",
-            $this->qualify( $this->condition['column'] ),
-            $operator,
-            is_int( $value ) || is_float( $value )
-                ? $value
-                : "'" . $db->prepare( (string) $value ) . "'" );
+        if ( is_int( $value ) || is_float( $value ) ) {
+
+            return (string) $value;
+        }
+
+        if ( is_bool( $value ) ) {
+
+            return $value ? '1' : '0';
+        }
+
+        $value = (string) $value;
+
+        // Letters, digits, underscore, dot, hyphen and space: enough for an
+        // event type, a state name or a short token, and nothing that can end
+        // a quoted literal or start a comment.
+        if ( ! preg_match( '/^[A-Za-z0-9_.\- ]*$/', $value ) ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                'Metric "%s" has a condition value (%s) that cannot be a SQL literal. '
+              . 'Its column will be missing from the query.',
+                (string) $this->getName(), $value ) );
+
+            return null;
+        }
+
+        return "'" . $value . "'";
     }
 
     /**

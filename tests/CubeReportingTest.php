@@ -486,6 +486,54 @@ final class CubeReportingTest extends TestCase
             'the condition on one metric must not narrow the rows the others see');
     }
 
+    /**
+     * The expression does NOT need a database connection.
+     *
+     * A metric's SELECT is a property of its definition, built once at
+     * registration. Escaping the condition's value through the driver made it
+     * depend on a live connection -- Mysql::prepare() calls
+     * mysqli_real_escape_string( $this->connection, ... ) -- so with no
+     * database it rendered `event_type = ''`: a metric that silently counts
+     * nothing. CI's unit job has no database, which is where it surfaced.
+     */
+    public function testTheConditionRendersWithoutADatabaseConnection(): void
+    {
+        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+            'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
+            'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
+            'condition' => ['column' => 'event_type', 'value' => 'page_view'],
+        ]);
+
+        $m = new ReflectionMethod($metric, 'renderCondition');
+        $m->setAccessible(true);
+
+        $this->assertStringContainsString("= 'page_view'", $m->invoke($metric),
+            'the value must reach the statement without being escaped against a connection');
+    }
+
+    /**
+     * A value that cannot be a literal is refused, and the metric goes MISSING
+     * rather than counting every row.
+     */
+    public function testAValueThatCannotBeALiteralIsRefused(): void
+    {
+        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+            'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
+            'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
+            'condition' => ['column' => 'event_type', 'value' => "x' OR '1'='1"],
+        ]);
+
+        $m = new ReflectionMethod($metric, 'renderCondition');
+        $m->setAccessible(true);
+
+        $this->assertSame('', $m->invoke($metric));
+
+        [$statement] = $metric->getSelect();
+
+        $this->assertNull($statement,
+            'counting every row instead would be a metric answering a different question');
+    }
+
     /** An operator that is not a comparison never reaches the statement. */
     public function testAnUnknownOperatorIsRefusedRatherThanInterpolated(): void
     {
