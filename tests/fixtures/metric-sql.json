@@ -73,6 +73,18 @@
             "alias": "eventCount"
         }
     ],
+    "eventsPerSession": [
+        {
+            "kind": "ratio",
+            "numerator": "eventCount",
+            "denominator": "visits",
+            "precision": 2,
+            "children": [
+                "eventCount",
+                "visits"
+            ]
+        }
+    ],
     "feedReaders": [
         {
             "kind": "aggregate",
@@ -579,6 +591,16 @@
                 "pageViews",
                 "visits"
             ]
+        },
+        {
+            "kind": "ratio",
+            "numerator": "pageViews",
+            "denominator": "visits",
+            "precision": 2,
+            "children": [
+                "pageViews",
+                "visits"
+            ]
         }
     ],
     "repeatVisitors": [
@@ -613,6 +635,18 @@
             "formula": "transactionRevenue / visits",
             "children": [
                 "transactionRevenue",
+                "visits"
+            ]
+        }
+    ],
+    "sessionsPerUser": [
+        {
+            "kind": "ratio",
+            "numerator": "visits",
+            "denominator": "uniqueVisitors",
+            "precision": 2,
+            "children": [
+                "uniqueVisitors",
                 "visits"
             ]
         }

@@ -44,11 +44,29 @@ class ConfigurableMetric extends \OWA\Core\Metric {
         $this->setDataType( $params['data_type'] );
         
         if ( $this->isCalculated() ) {
-            foreach ( $params['child_metrics'] as $child ) {
-                $this->setChildMetric( $child );
+
+            /*
+             * A ratio names its two sides; a formula names an expression and
+             * the children in it separately. Both are calculated metrics as far
+             * as everything else is concerned -- the ratio just has nothing to
+             * substitute.
+             */
+            if ( ! empty( $params['numerator'] ) ) {
+
+                $this->setRatio(
+                    $params['numerator'],
+                    $params['denominator'],
+                    isset( $params['precision'] ) && $params['precision'] !== ''
+                        ? $params['precision'] : null );
+
+            } else {
+
+                foreach ( $params['child_metrics'] as $child ) {
+                    $this->setChildMetric( $child );
+                }
+
+                $this->setFormula( $params['formula']);
             }
-            
-            $this->setFormula( $params['formula']);
         } else {
             $this->setEntity( $params['entity'] );
             $this->setColumn( $params['column'] );

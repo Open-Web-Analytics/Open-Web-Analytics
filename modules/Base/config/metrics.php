@@ -127,6 +127,53 @@ return array(
         ),
 
         // ---- summing ------------------------------------------------------
+        /*
+         * ---- ratios --------------------------------------------------------
+         *
+         * `ratio` rather than a formula: every calculated metric in 1.x is a
+         * division, and a formula string costs an eval, a substitution by
+         * metric name that collides when one name contains another, and a
+         * child list restating what the formula already names. A ratio names
+         * its two sides, so the children are derived and nothing is
+         * substituted.
+         *
+         * A zero denominator gives NULL, not 0 -- "no visits, so pages per
+         * visit is not a number" is a different answer from "pages per visit is
+         * zero", and the formatter renders the first as absent.
+         */
+        'pagesPerVisit' => array(
+            'label'       => 'Pages Per Visit',
+            'description' => 'The average number of pages viewed per session.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'decimal',
+            'numerator'   => 'pageViews',
+            'denominator' => 'visits',
+            'precision'   => 2,
+        ),
+
+        'sessionsPerUser' => array(
+            'label'       => 'Sessions Per Visitor',
+            'description' => 'The average number of sessions per visitor.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'decimal',
+            'numerator'   => 'visits',
+            'denominator' => 'uniqueVisitors',
+            'precision'   => 2,
+        ),
+
+        'eventsPerSession' => array(
+            'label'       => 'Events Per Visit',
+            'description' => 'The average number of events recorded per session.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'decimal',
+            'numerator'   => 'eventCount',
+            'denominator' => 'visits',
+            'precision'   => 2,
+        ),
+
         'engagementTime' => array(
             'label'       => 'Engagement Time',
             'description' => 'Time accrued on pages, in milliseconds. Includes final-page dwell, which 1.x cannot measure.',

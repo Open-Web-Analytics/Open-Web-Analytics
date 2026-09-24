@@ -90,10 +90,36 @@ final class MetricSqlTest extends TestCase
          * the plan.
          */
         $calculated = 0;
+        $ratios     = 0;
 
         foreach ( Harness::snapshot() as $name => $implementations ) {
 
             foreach ( $implementations as $implementation ) {
+
+                if ( $implementation['kind'] === 'ratio' ) {
+
+                    $ratios++;
+
+                    /*
+                     * A ratio names its two sides rather than an expression
+                     * containing them, so it carries even less than a formula
+                     * does: no SQL, and nothing to substitute by name either.
+                     */
+                    $this->assertArrayNotHasKey( 'expression', $implementation );
+                    $this->assertNotEmpty( $implementation['numerator'], "'$name' has no numerator." );
+                    $this->assertNotEmpty( $implementation['denominator'], "'$name' has no denominator." );
+
+                    // Sorted, because the recording sorts children so that a
+                    // reordering is not a diff.
+                    $sides = array( $implementation['numerator'], $implementation['denominator'] );
+                    sort( $sides );
+
+                    $this->assertSame(
+                        $sides, $implementation['children'],
+                        "'$name' must derive its children from its two sides, not declare them." );
+
+                    continue;
+                }
 
                 if ( $implementation['kind'] !== 'calculated' ) {
 
@@ -111,6 +137,10 @@ final class MetricSqlTest extends TestCase
         $this->assertGreaterThan(
             0, $calculated,
             'No calculated metric was found, so this test proves nothing.' );
+
+        $this->assertGreaterThan(
+            0, $ratios,
+            'No ratio was found, so the branch above proves nothing.' );
     }
 
     public function testTheRecordingIsSubstantial(): void

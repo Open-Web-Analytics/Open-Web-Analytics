@@ -1098,7 +1098,30 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                 if ( $this->isMetric( $sort[0] ) ) {
                     $sort_metric = $this->getMetricImplementation($sort[0]);
-                    if ( $sort_metric->isCalculated() ) {
+                    if ( $sort_metric->isRatio() ) {
+
+                        /*
+                         * Rendered into SQL, because a sort has to happen on
+                         * the server: computing the value in PHP and sorting
+                         * that would order the page rather than the result.
+                         *
+                         * NULLIF, so a zero denominator is NULL rather than an
+                         * error -- the same answer the value gets, and standard
+                         * SQL on every engine.
+                         */
+                        $numerator   = $this->getMetricImplementation( $sort_metric->getNumerator() )->getSelect();
+                        $denominator = $this->getMetricImplementation( $sort_metric->getDenominator() )->getSelect();
+
+                        $sort_col = sprintf( '(%s) / NULLIF((%s), 0)',
+                            $numerator[0], $denominator[0] );
+
+                        if ( $sort_metric->getPrecision() !== null ) {
+
+                            $sort_col = sprintf( 'round(%s, %d)',
+                                $sort_col, $sort_metric->getPrecision() );
+                        }
+
+                    } elseif ( $sort_metric->isCalculated() ) {
 
                         $child_metrics = $sort_metric->getChildMetrics();
                         $formula = $sort_metric->getFormula();
@@ -2305,6 +2328,20 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         foreach ($this->calculatedMetrics as $cm) {
 
             // add aggregate metric
+            if ( $cm->isRatio() ) {
+
+                $value = $cm->computeRatio(
+                    $rs->getAggregateMetric( $cm->getNumerator() ),
+                    $rs->getAggregateMetric( $cm->getDenominator() ) );
+
+                $rs->setAggregateMetric( $cm->getName(), $value, $cm->getLabel(),
+                    $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
+
+                $this->appendRatioRows( $rs, $cm );
+
+                continue;
+            }
+
             $formula = $cm->getFormula();
             $div_by_zero = false;
 
@@ -2373,6 +2410,38 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
 
         return $rs;
+    }
+
+    /**
+     * A ratio's value on every row of a breakdown.
+     *
+     * The same division as the aggregate, per row. A row missing either side
+     * has no ratio rather than a zero -- absent and zero are different answers
+     * (PLAN 2.11), and computeRatio() says which is which.
+     *
+     * @param  object $rs
+     * @param  object $cm
+     * @return void
+     */
+    protected function appendRatioRows( $rs, $cm ) {
+
+        if ( $rs->getRowCount() < 1 ) {
+
+            return;
+        }
+
+        $numerator   = $cm->getNumerator();
+        $denominator = $cm->getDenominator();
+
+        foreach ( $rs->resultsRows as $k => $row ) {
+
+            $value = $cm->computeRatio(
+                array_key_exists( $numerator, $row )   ? $row[ $numerator ]['value']   : null,
+                array_key_exists( $denominator, $row ) ? $row[ $denominator ]['value'] : null );
+
+            $rs->appendRow( $k, 'metric', $cm->getName(), $value, $cm->getLabel(),
+                $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
+        }
     }
 
     function evalFormula($formula) {

@@ -86,6 +86,25 @@ final class MetricSqlHarness
 
             sort( $children );
 
+            /*
+             * A RATIO IS RECORDED AS ITSELF. It is a calculated metric -- it is
+             * computed from other metrics rather than aggregated from a column
+             * -- but it has no formula to record, because it names its two
+             * sides instead of an expression containing them. Recording it as
+             * 'calculated' with an empty formula would describe it as a broken
+             * one.
+             */
+            if ( $metric->isRatio() ) {
+
+                return array(
+                    'kind'        => 'ratio',
+                    'numerator'   => (string) $metric->getNumerator(),
+                    'denominator' => (string) $metric->getDenominator(),
+                    'precision'   => $metric->getPrecision(),
+                    'children'    => $children,
+                );
+            }
+
             return array(
                 'kind'     => 'calculated',
                 'formula'  => (string) $metric->getFormula(),

@@ -573,6 +573,149 @@ final class CubeReportingTest extends TestCase
         $this->assertStringContainsString('=', $sql);
     }
 
+    /**
+     * A ratio divides two metrics, and says so without an expression.
+     *
+     * Six pageviews over two sessions and two visitors, so the three ratios
+     * differ from each other and from 1 -- a fixture where they agreed would
+     * prove none of them.
+     */
+    public function testARatioDividesItsTwoSides(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray(
+            'pageViews,visits,uniqueVisitors,eventCount,pagesPerVisit,sessionsPerUser,eventsPerSession');
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        // 4 page views, 2 sessions, 2 visitors, 6 events
+        $this->assertSame(2.0, (float) $rs->aggregates['pagesPerVisit']['value'],  '4 / 2');
+        $this->assertSame(1.0, (float) $rs->aggregates['sessionsPerUser']['value'], '2 / 2');
+        $this->assertSame(3.0, (float) $rs->aggregates['eventsPerSession']['value'], '6 / 2');
+    }
+
+    /**
+     * Precision rounds, and a ratio without one does not.
+     *
+     * Driven directly because the fixture's ratios divide exactly -- 4/2 and
+     * 6/2 round to themselves, so a declared precision that was being ignored
+     * would change none of them. A value that needs rounding is the only thing
+     * that tests rounding.
+     */
+    public function testPrecisionRoundsAndItsAbsenceDoesNot(): void
+    {
+        $rounded = owa_coreAPI::metricFactory('base.configurableMetric', [
+            'name' => 'zzRounded', 'label' => 'R', 'data_type' => 'decimal',
+            'metric_type' => 'ratio', 'entity' => 'base.event',
+            'numerator' => 'eventCount', 'denominator' => 'visits', 'precision' => 2,
+        ]);
+
+        $this->assertSame(0.33, $rounded->computeRatio(1, 3));
+        $this->assertSame(66.67, $rounded->computeRatio(200, 3));
+
+        $exact = owa_coreAPI::metricFactory('base.configurableMetric', [
+            'name' => 'zzExact', 'label' => 'E', 'data_type' => 'decimal',
+            'metric_type' => 'ratio', 'entity' => 'base.event',
+            'numerator' => 'eventCount', 'denominator' => 'visits',
+        ]);
+
+        $this->assertEqualsWithDelta(1 / 3, $exact->computeRatio(1, 3), 0.0000001,
+            'without a declared precision the division is not rounded at all');
+
+        // And a zero numerator is an ordinary zero, not the absent case.
+        $this->assertSame(0.0, $rounded->computeRatio(0, 3));
+    }
+
+    /**
+     * A zero denominator is NULL, not zero.
+     *
+     * "No sessions, so pages-per-session is not a number" and "pages-per-session
+     * is zero" are different answers, and only one of them is true. The formula
+     * path returns 0 for both, which is the behaviour this kind exists to stop
+     * inheriting.
+     */
+    public function testAZeroDenominatorIsAbsentRatherThanZero(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray('visits,pagesPerVisit');
+        // A day the fixture wrote nothing on.
+        $rsm->setTimePeriod('date_range', '20200101', '20200101');
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(5);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame(0, (int) $rs->aggregates['visits']['value']);
+
+        $this->assertNull($rs->aggregates['pagesPerVisit']['value'],
+            'a ratio with nothing to divide by has no value, and 0 would be a claim');
+    }
+
+    /**
+     * The SORT is rendered in SQL, because it has to be.
+     *
+     * Computing the value in PHP and sorting that would order the page rather
+     * than the result -- LIMIT is applied by the server, before PHP sees a row.
+     */
+    public function testARatioSortsInSqlRatherThanInPhp(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray('pagesPerVisit');
+        $rsm->setDimensions($rsm->dimensionsStringToArray('pagePath'));
+        $rsm->setSorts($rsm->sortStringToArray('pagesPerVisit-'));
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(5);
+
+        /*
+         * Generating the set is what chooses the entity the children resolve
+         * against; applySorts() is then called explicitly because the query
+         * builder clears its parameters once it has produced a statement, so
+         * there is nothing left to read afterwards.
+         */
+        $rsm->getResults();
+
+        $sorts = new ReflectionMethod($rsm, 'applySorts');
+        $sorts->setAccessible(true);
+        $sorts->invoke($rsm);
+
+        $db = new ReflectionProperty(\OWA\Module\Base\Classes\ResultSetManager::class, 'db');
+        $db->setAccessible(true);
+
+        $params = new ReflectionProperty(\OWA\Core\Db::class, '_sqlParams');
+        $params->setAccessible(true);
+
+        $orderBy = (array) ($params->getValue($db->getValue($rsm))['orderby'] ?? []);
+
+        $this->assertNotEmpty($orderBy, 'the sort never reached the query');
+
+        $column = (string) $orderBy[0][0];
+
+        /*
+         * The division itself is in the ORDER BY -- not the metric's alias, and
+         * not a value PHP computed afterwards.
+         */
+        $this->assertStringContainsString('NULLIF', $column,
+            'a zero denominator must be NULL in SQL too, or the sort errors where the value does not');
+
+        $this->assertStringContainsString('COUNT', $column,
+            "the children's own expressions must be rendered into the sort");
+
+        $this->assertStringContainsString('round(', $column,
+            'and the declared precision with them');
+
+        $this->assertStringNotContainsString('pagesPerVisit', $column,
+            'sorting by the alias would sort on a column the query does not select');
+    }
+
     /** The site-to-Property lookup, which is what the binding rests on. */
     public function testThePropertyLookupAnswersAndRefuses(): void
     {

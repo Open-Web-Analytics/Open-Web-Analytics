@@ -33,6 +33,23 @@ namespace OWA\Core;
 class Metric extends \OWA\Core\Base {
 
     /**
+     * A ratio's two children and its rounding, when it is one.
+     *
+     * Named rather than written into a formula string, so nothing has to be
+     * substituted by name into an expression -- see setFormula() for what that
+     * costs.
+     *
+     * @var string
+     */
+    protected $numerator = '';
+
+    /** @var string */
+    protected $denominator = '';
+
+    /** @var int|null  decimal places, or null to round to none */
+    protected $precision = null;
+
+    /**
      * The rows this metric counts, when it counts some of them.
      *
      * ['column' => ..., 'value' => ..., 'operator' => '=']. Empty means every
@@ -643,10 +660,104 @@ class Metric extends \OWA\Core\Base {
         return $this->entity->getTableAlias() . '.' . $column;
     }
 
+    /**
+     * Declare this metric as one number divided by another.
+     *
+     * WHY THIS EXISTS RATHER THAN A FORMULA. Every calculated metric in this
+     * codebase is a division -- six are `a / b` and the seventh is that
+     * rounded -- and a formula string costs three things a ratio does not:
+     * PHP `eval()` to compute one division; substitution of metric NAMES into
+     * an expression, which collides when one name contains another (`actions`
+     * is inside `transactions`); and a `child_metrics` list restating what the
+     * formula already names, so the two can disagree.
+     *
+     * A ratio names its two children directly, which makes the child list
+     * derivable rather than declared, removes the substitution entirely, and
+     * lets the division be rendered in SQL for sorting and done in PHP for the
+     * value -- the same split a formula gets, without the string handling.
+     *
+     * @param string   $numerator   a metric name
+     * @param string   $denominator a metric name
+     * @param int|null $precision   decimal places
+     * @return void
+     */
+    function setRatio( $numerator, $denominator, $precision = null ) {
+
+        $this->numerator   = (string) $numerator;
+        $this->denominator = (string) $denominator;
+        $this->precision   = $precision === null ? null : (int) $precision;
+
+        /*
+         * The children ARE the two sides, so they are recorded where every
+         * other reader already looks for them. Nothing else in the manager has
+         * to learn what a ratio is: it resolves children, excludes them from
+         * the output and reduces entities exactly as it does for a formula.
+         */
+        $this->setChildMetric( $this->numerator );
+        $this->setChildMetric( $this->denominator );
+    }
+
+    /** @return bool */
+    function isRatio() {
+
+        return $this->numerator !== '' && $this->denominator !== '';
+    }
+
+    /** @return string */
+    function getNumerator() {
+
+        return $this->numerator;
+    }
+
+    /** @return string */
+    function getDenominator() {
+
+        return $this->denominator;
+    }
+
+    /** @return int|null */
+    function getPrecision() {
+
+        return $this->precision;
+    }
+
+    /**
+     * A ratio of two already-computed numbers.
+     *
+     * NULL WHEN THE DENOMINATOR IS ZERO, not 0. "No visits, so pages-per-visit
+     * is not a number" and "pages-per-visit is zero" are different answers, and
+     * a formatter renders the first as absent (PLAN 2.11). The formula path
+     * returns 0 for both.
+     *
+     * A zero NUMERATOR is an ordinary zero and says so.
+     *
+     * @param  int|float $numerator
+     * @param  int|float $denominator
+     * @return float|int|null
+     */
+    function computeRatio( $numerator, $denominator ) {
+
+        if ( ! is_numeric( $denominator ) || (float) $denominator == 0.0 ) {
+
+            return null;
+        }
+
+        $value = (float) $numerator / (float) $denominator;
+
+        return $this->precision === null ? $value : round( $value, $this->precision );
+    }
+
     function setMetricType( $type ) {
         $this->type = $type;
-        
-        if ( $type === 'calculated' ) {
+
+        /*
+         * A ratio IS a calculated metric: it is computed from other metrics
+         * rather than aggregated from a column, which is what everything else
+         * in the manager keys off. Saying so here means entity reduction,
+         * child resolution and the cleanup that removes children from the
+         * output all work unchanged.
+         */
+        if ( $type === 'calculated' || $type === 'ratio' ) {
              $this->is_calculated = true;
         }
     }
