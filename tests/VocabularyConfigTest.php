@@ -121,31 +121,20 @@ final class VocabularyConfigTest extends TestCase
     /**
      * The FILE is the only place the cube's vocabulary is declared.
      *
-     * Both mechanisms are live: v1's 148 registrations are still inline calls
-     * in Module.php, because they will be DELETED rather than migrated -- once
-     * the migrator has run and v1's tables go, moving them first would be churn
-     * ending in a `git rm`. Meanwhile they are still the only working reporting
-     * path.
-     *
-     * The cost of two mechanisms is that either would work, so the file could
-     * quietly stop being the source of truth. This is the line: a cube
-     * dimension or metric added the old way fails here.
+     * v1's registrations are still inline in Module.php, but they are residue
+     * being deleted as each is replaced -- NOT a path being maintained. Nothing
+     * uses v1 reporting on this branch; that is what the branch is for. So this
+     * asserts one direction only: a cube dimension or metric added the old way
+     * fails here. It says nothing about what else Module.php still contains,
+     * because that number should only ever go down.
      */
     public function testTheCubesVocabularyIsDeclaredOnlyInTheFile(): void
     {
-        $source = (string) file_get_contents(OWA_DIR . 'modules/Base/Module.php');
-
-        $this->assertStringNotContainsString("'base.event'", $source,
+        $this->assertStringNotContainsString(
+            "'base.event'",
+            (string) file_get_contents(OWA_DIR . 'modules/Base/Module.php'),
             'the cube\'s vocabulary belongs in config/dimensions.php and '
           . 'config/metrics.php, not in a registration call');
-
-        /*
-         * And the check is discriminating rather than a blanket ban on the
-         * file mentioning anything: v1's entities are still registered inline,
-         * deliberately.
-         */
-        $this->assertStringContainsString("'base.session'", $source,
-            "v1's registrations are expected to still be here");
     }
 
     /** No file is not an error -- most modules have no vocabulary. */
