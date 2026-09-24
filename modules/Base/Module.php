@@ -188,7 +188,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.passwordResetRequest',          'OWA\\Module\\Base\\Controller\\PasswordResetRequest',         'Controller/PasswordResetRequest.php' );
         $this->registerAction( 'base.processEvent',                  'OWA\\Module\\Base\\Controller\\ProcessEvent',                 'Controller/ProcessEvent.php' );
         $this->registerAction( 'base.processEventQueue',             'OWA\\Module\\Base\\Controller\\ProcessEventQueue',            'Controller/ProcessEventQueue.php' );
-        $this->registerAction( 'base.processFirstRequest',           'OWA\\Module\\Base\\Controller\\ProcessFirstRequest',          'Controller/ProcessFirstRequest.php' );
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
@@ -2437,9 +2436,9 @@ class Module extends \OWA\Core\Module {
     function _registerEventHandlers() {
 
         // Page Requests
-        $this->registerEventHandler(array('base.page_request', 'base.first_page_request'), 'requestHandlers');
+        $this->registerEventHandler(array('base.page_request'), 'requestHandlers');
         // Sessions
-        $this->registerEventHandler(array('base.page_request_logged', 'base.first_page_request_logged'), 'sessionHandlers');
+        $this->registerEventHandler(array('base.page_request_logged'), 'sessionHandlers');
         // Clicks
         $this->registerEventHandler('dom.click', 'clickHandlers');
         // Feed requests
@@ -2471,7 +2470,6 @@ class Module extends \OWA\Core\Module {
         // from a previously persisted session entity
         $fact_events = array(
             'base.page_request_logged',
-            'base.first_page_request_logged',
             'base.new_session',
             'dom.stream_logged',
             'dom.click_logged',
@@ -2501,7 +2499,6 @@ class Module extends \OWA\Core\Module {
         $this->registerEventHandler(
             array(
                 'base.page_request_logged',
-                'base.first_page_request_logged',
                 'base.feed_request_logged',
                 'track.action',
                 'dom.stream',
@@ -2558,7 +2555,6 @@ class Module extends \OWA\Core\Module {
             array_merge(
                 array(
                     'base.page_request',
-                    'base.first_page_request',
                     'dom.click',
                     'track.action',
                     'ecommerce.transaction',
@@ -2607,7 +2603,6 @@ class Module extends \OWA\Core\Module {
         $this->addEventProcessor( \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' ), 'base.processRequest');
         
         // @todo still needed?
-        $this->addEventProcessor('base.first_page_request', 'base.processFirstRequest');
     }
 
     function _registerEntities() {

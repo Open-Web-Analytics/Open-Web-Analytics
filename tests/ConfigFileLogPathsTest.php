@@ -91,27 +91,40 @@ final class ConfigFileLogPathsTest extends TestCase
     }
 
     /**
-     * Pins why the config file is the only channel: a stored value is dropped on
-     * load. If these ever stopped being config-file-only, a stale path could
-     * arrive from the database and the tests above would be guarding nothing.
+     * Pins why the config file is the only channel.
+     *
+     * A stored value used to be dropped on load, by a strip that ran over
+     * whatever had been fetched. Base declares both of these STATIC now, so
+     * the boot query never asks for them and persistSetting() refuses to
+     * create one -- there is nothing arriving to drop. If they ever stopped
+     * being static, a stale path could arrive from the database and the tests
+     * above would be guarding nothing.
+     *
+     * Two real installs carried async_log_dir values pointing at a previous
+     * server's /home/padams/... paths, which is how this came to be pinned.
      */
     public function testBothPathsRemainConfigFileOnly(): void
     {
-        $only = \OWA\Module\Base\Classes\Settings::configFileOnlySettings();
+        $c = \OWA\Core\CoreAPI::configSingleton();
 
-        $this->assertArrayHasKey('async_log_dir', $only['base']);
-        $this->assertArrayHasKey('error_log_file', $only['base']);
+        $only = \OWA\Module\Base\Classes\Settings::staticSettings();
 
-        $stripped = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings([
-            'base' => [
-                'async_log_dir'  => '/some/previous/server/logs/',
-                'error_log_file' => '/some/previous/server/errors.txt',
-                'site_id'        => 'kept',
-            ],
-        ]);
+        foreach (['async_log_dir', 'error_log_file'] as $key) {
 
-        $this->assertArrayNotHasKey('async_log_dir', $stripped['base']);
-        $this->assertArrayNotHasKey('error_log_file', $stripped['base']);
-        $this->assertSame('kept', $stripped['base']['site_id']);
+            $this->assertArrayHasKey($key, $only['base']);
+
+            $this->assertTrue($c->isRegistered('base', $key),
+                sprintf('base.%s must be declared, or nothing constrains it', $key));
+
+            $this->assertFalse($c->mayPersistInstallWide('base', $key),
+                sprintf('base.%s must not be storable: a stale path from another '
+                      . 'server would override a correct config file', $key));
+
+            $this->assertNotContains($key, (array) ($c->eagerSettings()['base'] ?? []),
+                sprintf('base.%s must not be fetched at boot', $key));
+        }
+
+        // Discriminating, not a blanket refusal of the module.
+        $this->assertTrue($c->mayPersistInstallWide('base', 'log_robots'));
     }
 }

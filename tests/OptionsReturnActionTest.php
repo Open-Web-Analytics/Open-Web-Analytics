@@ -184,15 +184,36 @@ final class OptionsReturnActionTest extends TestCase {
      */
     public function testRestrictedSettingsAreStillRefusedForTheModuleThatOwnsThem(): void {
 
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        /*
+         * Two protections, two sources, and the test follows each to its own.
+         *
+         * A STATIC setting is refused by the registry: OptionsUpdate asks
+         * mayPersistInstallWide() before persisting anything, so a posted field
+         * naming one is dropped. That used to be the denylist's job and is not
+         * any more -- the declaration says it once.
+         */
+        $static = \OWA\Module\Base\Classes\Settings::staticSettings();
+        $module = array_key_first( $static );
+        $key    = array_key_first( $static[ $module ] );
+
+        $this->assertFalse( $c->mayPersistInstallWide( $module, $key ),
+            sprintf( '%s.%s must stay unwritable from any settings form', $module, $key ) );
+
+        /*
+         * DATABASE STATE is the half the registry cannot express yet: code
+         * stores schema_version, a person must not. That is still the denylist.
+         */
         $m = new ReflectionMethod( \OWA\Module\Base\Controller\OptionsUpdate::class, 'isSensitiveSettingKey' );
         $m->setAccessible( true );
 
-        $denied = \OWA\Module\Base\Classes\Settings::configFileOnlySettings();
+        $state = \OWA\Module\Base\Classes\Settings::databaseStateSettings();
+        $state_module = array_key_first( $state );
+        $state_key    = array_key_first( $state[ $state_module ] );
 
-        $module = array_key_first( $denied );
-        $key    = array_key_first( $denied[ $module ] );
-
-        $this->assertTrue( $m->invoke( null, $module, $key ),
-            sprintf( '%s.%s must stay unwritable from any settings form', $module, $key ) );
+        $this->assertTrue( $m->invoke( null, $state_module, $state_key ),
+            sprintf( '%s.%s is database state and must stay off every form',
+                $state_module, $state_key ) );
     }
 }

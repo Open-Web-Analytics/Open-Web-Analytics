@@ -197,8 +197,8 @@ final class InstallTimezoneTest extends TestCase
     {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
-        $ledger = $c->config_file_constants;
-        $c->config_file_constants = array( 'base' => array( 'timezone' => true ) );
+        $had = $c->configFileConstantFor( 'base', 'timezone' );
+        $c->noteConfigConstant( 'base', 'timezone', 'OWA_TIMEZONE' );
 
         try {
             $stored = array( 'base' => array( 'timezone' => 'Europe/London', 'other' => 'kept' ) );
@@ -209,7 +209,11 @@ final class InstallTimezoneTest extends TestCase
             $this->assertSame('kept', $result['base']['other'],
                 'only the declared key is removed');
         } finally {
-            $c->config_file_constants = $ledger;
+            if ( $had ) {
+                $c->noteConfigConstant( 'base', 'timezone', $had );
+            } else {
+                $c->forgetConfigConstant( 'base', 'timezone' );
+            }
         }
     }
 
@@ -223,15 +227,28 @@ final class InstallTimezoneTest extends TestCase
     {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
-        $ledger = $c->config_file_constants;
-        $c->config_file_constants = array();
+        // Simulate an installation that declares none: forget every recorded
+        // constant, then put them all back. This install declares eleven, so
+        // without the forget this asserts nothing -- it passed only where no
+        // config file exists and the ledger was empty anyway.
+        $ledger = $c->configConstants();
+
+        foreach ( $ledger as $module => $keys ) {
+            foreach ( array_keys( $keys ) as $key ) {
+                $c->forgetConfigConstant( $module, $key );
+            }
+        }
 
         try {
             $stored = array( 'base' => array( 'timezone' => 'Europe/London' ) );
 
             $this->assertSame( $stored, $c->stripSettingsSuppliedByConstants( $stored ) );
         } finally {
-            $c->config_file_constants = $ledger;
+            foreach ( $ledger as $module => $keys ) {
+                foreach ( $keys as $key => $constant ) {
+                    $c->noteConfigConstant( $module, $key, $constant );
+                }
+            }
         }
     }
 
@@ -306,7 +323,7 @@ final class InstallTimezoneTest extends TestCase
          * install on the author's box defines and CI does not -- so the test
          * encoded a fact about one machine.
          */
-        $ledger = $c->config_file_constants['base'] ?? array();
+        $ledger = $c->configConstants()['base'] ?? array();
 
         if ( ! $ledger ) {
             $this->markTestSkipped( 'this environment defines no config constants' );
@@ -328,7 +345,7 @@ final class InstallTimezoneTest extends TestCase
     /**
      * The ledger is populated by a REAL boot, not just by the tests that poke it.
      *
-     * The two tests above set config_file_constants by hand, which exercises the
+     * The two tests above record a constant through noteConfigConstant(), which exercises the
      * stripper but proves nothing about whether anything ever records into it.
      * This install defines OWA_DB_NAME among others, so after boot the ledger
      * must contain the settings those constants supplied.
@@ -338,7 +355,7 @@ final class InstallTimezoneTest extends TestCase
         $c = \OWA\Core\CoreAPI::configSingleton();
 
         $this->assertNotEmpty(
-            $c->config_file_constants,
+            $c->configConstants(),
             'applyConfigConstants() records nothing, so no constant can ever win'
         );
 
@@ -347,10 +364,10 @@ final class InstallTimezoneTest extends TestCase
          * code, so assert the SHAPE of the ledger rather than a particular key.
          * Every install that boots has defined at least the database ones.
          */
-        $this->assertArrayHasKey( 'base', $c->config_file_constants );
-        $this->assertNotEmpty( $c->config_file_constants['base'] );
+        $this->assertArrayHasKey( 'base', $c->configConstants() );
+        $this->assertNotEmpty( $c->configConstants()['base'] );
 
-        foreach ( $c->config_file_constants['base'] as $key => $constant ) {
+        foreach ( $c->configConstants()['base'] as $key => $constant ) {
             $this->assertIsString( $key );
             $this->assertNotSame( '', $constant,
                 "$key is recorded with no constant name, which makes the ledger useless" );
@@ -382,13 +399,21 @@ final class InstallTimezoneTest extends TestCase
         $load = substr($src, strpos($src, 'function load('), 4000);
 
         $strip  = strpos($load, 'stripSettingsSuppliedByConstants(');
-        $secure = strpos($load, 'stripConfigFileOnlySettings(');
         $merge  = strpos($load, 'array_merge($default[$k]');
 
         $this->assertNotFalse($strip, 'load() never applies the constant precedence rule');
         $this->assertNotFalse($merge, 'the merge moved; this test needs updating');
-        $this->assertGreaterThan($secure, $strip, 'must run after the security strip');
         $this->assertLessThan($merge, $strip, 'must run before the database is merged in');
+
+        /*
+         * There is no security strip to run after any more. The
+         * config-file-only settings are declared static, so the boot query does
+         * not fetch them and nothing arrives for a strip to remove -- see
+         * BaseDeclarationPresentTest, which is what guarantees the declaration
+         * is there to do it.
+         */
+        $this->assertFalse(strpos($load, 'stripConfigFileOnlySettings('),
+            'the strip is gone; the declaration states the rule once');
     }
 
     /**

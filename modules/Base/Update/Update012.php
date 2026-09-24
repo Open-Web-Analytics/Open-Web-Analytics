@@ -112,7 +112,31 @@ class Update012 extends \OWA\Core\Update {
                 if ( is_string( $value ) && substr( $value, -4 ) === '.tpl' ) {
 
                     $new = substr( $value, 0, -4 ) . '.php';
-                    $config->persistSetting( $module, $key, $new );
+
+                    if ( $config->mayPersistInstallWide( $module, $key ) ) {
+
+                        $config->persistSetting( $module, $key, $new );
+
+                    } else {
+
+                        /*
+                         * Written straight into db_settings, because the
+                         * setting is one nothing may newly store -- report_wrapper
+                         * is config-file-only, and Settings refuses it.
+                         *
+                         * That policy is about what application code and the
+                         * settings screens may put there. This is a migration
+                         * REPAIRING a row that already exists, which is the
+                         * opposite act: the row is why this update exists, and
+                         * refusing to touch it would leave the stale .tpl in
+                         * place forever.
+                         *
+                         * In place is how this function already works -- see
+                         * the note above; the caller decides whether to save.
+                         */
+                        $config->db_settings[ $module ][ $key ] = $new;
+                    }
+
                     $retargeted[] = sprintf( '%s.%s (%s -> %s)', $module, $key, $value, $new );
                 }
             }

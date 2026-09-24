@@ -55,13 +55,13 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $default = $c->default_config['base']['report_wrapper'] ?? null;
-        $this->assertNotNull($default, 'expected a code default for base.report_wrapper');
+        $default = $c->default_config['base']['log_robots'] ?? null;
+        $this->assertNotNull($default, 'expected a code default for base.log_robots');
 
-        $c->persistSetting('base', 'report_wrapper', $default);
+        $c->persistSetting('base', 'log_robots', $default);
 
         $this->assertArrayNotHasKey(
-            'report_wrapper',
+            'log_robots',
             $c->db_settings['base'] ?? [],
             'A value identical to the code default was persisted. That pins the '
             . 'default forever and breaks silently when the default later changes.'
@@ -72,11 +72,11 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->persistSetting('base', 'report_wrapper', 'wrapper_public.php');
+        $c->persistSetting('base', 'log_robots', 'customised');
 
         $this->assertSame(
-            'wrapper_public.php',
-            $c->db_settings['base']['report_wrapper'] ?? null,
+            'customised',
+            $c->db_settings['base']['log_robots'] ?? null,
             'A genuine customisation must still be stored.'
         );
     }
@@ -89,15 +89,15 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $default = $c->default_config['base']['report_wrapper'];
+        $default = $c->default_config['base']['log_robots'];
 
-        $c->persistSetting('base', 'report_wrapper', 'wrapper_public.php');
-        $this->assertArrayHasKey('report_wrapper', $c->db_settings['base']);
+        $c->persistSetting('base', 'log_robots', 'customised');
+        $this->assertArrayHasKey('log_robots', $c->db_settings['base']);
 
-        $c->persistSetting('base', 'report_wrapper', $default);
+        $c->persistSetting('base', 'log_robots', $default);
 
         $this->assertArrayNotHasKey(
-            'report_wrapper',
+            'log_robots',
             $c->db_settings['base'],
             'Re-persisting the default should remove the stored override.'
         );
@@ -203,7 +203,7 @@ final class SettingsPersistenceTest extends TestCase
     public function testFormDenylistStillCoversEveryOriginalKey(): void
     {
         $union = array_merge(
-            \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'],
+            \OWA\Module\Base\Classes\Settings::staticSettings()['base'],
             \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']
         );
 
@@ -226,21 +226,33 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * The two categories must stay disjoint, and the ones that are real
-     * database state must NOT be in the config-file-only list -- dropping
-     * schema_version or install_complete makes a working install look
-     * uninstalled and re-run every update.
+     * Real database state must stay READABLE from the store.
+     *
+     * The old form of this asserted those keys were absent from the
+     * config-file-only list, because being on it meant being dropped on load.
+     * The mechanism is the declaration now, and the equivalent hazard is being
+     * declared STATIC: a static setting is never fetched, so a stored
+     * schema_version would be invisible and every update would re-run.
+     *
+     * configuration_id is deliberately not in this list any more. It named the
+     * blob row Update043 retired, so it is vestigial rather than state, and
+     * its default of '1' is the whole of it.
      */
-    public function testDatabaseStateKeysAreNotTreatedAsConfigFileOnly(): void
+    public function testDatabaseStateKeysAreStillReadFromTheStore(): void
     {
-        $cfo = \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'];
+        $c = $this->settings();
 
-        foreach (['schema_version', 'install_complete', 'configuration_id', 'is_active'] as $key) {
-            $this->assertArrayNotHasKey(
-                $key,
-                $cfo,
-                "$key is real database state; dropping it on load would break the install."
-            );
+        $static = \OWA\Module\Base\Classes\Settings::staticSettings()['base'];
+
+        foreach (['schema_version', 'install_complete', 'is_active'] as $key) {
+
+            $this->assertArrayNotHasKey($key, $static,
+                "$key is real database state; declaring it static would make the "
+                . 'stored value invisible and the install look uninstalled.');
+
+            $this->assertTrue($c->mayPersistInstallWide('base', $key),
+                "$key must remain storable: code writes it to record what has "
+                . 'happened to this installation.');
         }
     }
 
@@ -257,31 +269,47 @@ final class SettingsPersistenceTest extends TestCase
      */
     public function testConfigFileOnlySettingsAreStrippedRegardlessOfValue($value): void
     {
-        $stripped = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings([
-            'base' => [
-                'async_log_dir'  => $value,
-                'report_wrapper' => $value,
-                'error_log_file' => $value,
-                // must survive: not config-file-only
-                'notice_email'   => 'peter@example.com',
-            ],
-        ]);
-
-        foreach (['async_log_dir', 'report_wrapper', 'error_log_file'] as $key) {
-            $this->assertArrayNotHasKey(
-                $key,
-                $stripped['base'],
-                "base.$key must never be sourced from the database -- its value is "
-                . 'irrelevant, because neither the form nor the config file can '
-                . 'override a stored copy.'
-            );
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('writes real rows and reloads');
         }
 
-        $this->assertSame(
-            'peter@example.com',
-            $stripped['base']['notice_email'] ?? null,
-            'a normal setting must pass through untouched'
-        );
+        $c      = $this->settings();
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.setting');
+        $table  = $entity->getTableName();
+
+        $keys = ['async_log_dir', 'report_wrapper', 'error_log_file'];
+
+        $before = [];
+
+        foreach ($keys as $key) {
+            $before[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
+
+            $id = $db->prepare((string) $entity->makeId('install', '1', 'base', $key));
+            $db->query(sprintf("DELETE FROM %s WHERE id = '%s'", $table, $id));
+            $db->query(sprintf(
+                "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)"
+                . " VALUES ('%s', 'install', '1', 'base', '%s', '%s', 1, '0')",
+                $table, $id, $db->prepare($key), $db->prepare(serialize($value))));
+        }
+
+        $c->load(1);
+
+        $after = [];
+        foreach ($keys as $key) {
+            $after[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
+        }
+
+        $db->query(sprintf("DELETE FROM %s WHERE scope_type = 'install' AND module = 'base'"
+            . " AND name IN ('%s')", $table, implode("', '", $keys)));
+        $c->load(1);
+
+        foreach ($keys as $key) {
+            $this->assertSame($before[$key], $after[$key],
+                "base.$key must never be sourced from the database -- its value is "
+                . 'irrelevant, because neither the form nor the config file can '
+                . 'override a stored copy.');
+        }
     }
 
     public static function configFileOnlyValueProvider(): array
@@ -296,38 +324,50 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * The strip must not touch other modules. What they store is their own
-     * schema_version and is_active -- dropping fileCache.is_active=false would
-     * silently re-enable a module that was deliberately disabled, and dropping
-     * a module's schema_version would re-run its updates.
+     * Base's declaration says nothing about other modules.
+     *
+     * What they store is their own schema_version and is_active -- losing
+     * fileCache.is_active=false would silently re-enable a module that was
+     * deliberately disabled, and losing a module's schema_version would re-run
+     * its updates. A key named identically to one of Base's static settings is
+     * not covered by Base's declaration.
      */
-    public function testStripLeavesOtherModulesAlone(): void
+    public function testBasesDeclarationLeavesOtherModulesAlone(): void
     {
-        $stripped = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings([
-            'base'      => ['async_log_dir' => '/gone/', 'notice_email' => 'a@b.c'],
-            'domstream' => ['schema_version' => 1, 'is_active' => true],
-            'fileCache' => ['is_active' => false],
-            // a module that happens to use a name from the base list
-            'hello'     => ['report_wrapper' => 'something.php', 'is_active' => true],
-        ]);
+        $c = $this->settings();
 
-        $this->assertArrayNotHasKey('async_log_dir', $stripped['base']);
+        $static = \OWA\Module\Base\Classes\Settings::staticSettings();
 
-        $this->assertSame(['schema_version' => 1, 'is_active' => true], $stripped['domstream']);
-        $this->assertSame(['is_active' => false], $stripped['fileCache'],
-            'a deliberately disabled module must stay disabled');
-        $this->assertSame(
-            ['report_wrapper' => 'something.php', 'is_active' => true],
-            $stripped['hello'],
-            'the base list is scoped to base; an identically named key in another '
-            . 'module is not covered by it'
-        );
+        $this->assertArrayHasKey('report_wrapper', $static['base'],
+            'base.report_wrapper is static');
+
+        $this->assertArrayNotHasKey('report_wrapper', $static['hello'] ?? [],
+            'an identically named key in another module is not covered by Base');
+
+        foreach (['domstream' => 'is_active', 'fileCache' => 'is_active'] as $module => $key) {
+
+            $this->assertTrue($c->mayPersistInstallWide($module, $key),
+                "$module.$key must stay storable, or a disabled module cannot "
+                . 'record that it is disabled');
+        }
     }
 
+
     /**
-     * The prune is likewise confined to modules whose defaults are known.
-     * default_config holds only 'base', so every other module is skipped -- the
-     * guard that keeps their schema_version / is_active intact.
+     * The prune is confined to modules whose defaults are known.
+     *
+     * That used to mean base alone, because default_config held nothing else.
+     * A module that ships settings.php now contributes its defaults too, and
+     * pruning those is correct -- a stored value equal to its declared default
+     * is exactly what the rule exists to drop.
+     *
+     * Two things must still hold, and they are what this asserts. A module that
+     * has declared NOTHING is untouched, as before. And is_active /
+     * schema_version are never pruned for anyone, declared or not: they carry
+     * database state rather than configuration, and core registers them with
+     * eagerness but no default precisely so they can never look like a value
+     * restating one. Dropping them makes a module look uninstalled and re-run
+     * its updates.
      */
     public function testPruneSkipsModulesWithNoKnownDefaults(): void
     {
@@ -336,26 +376,27 @@ final class SettingsPersistenceTest extends TestCase
         $this->assertArrayNotHasKey(
             'domstream',
             $c->default_config,
-            'default_config is expected to hold only base; if a module now '
-            . 'contributes defaults, re-check that pruning it is safe'
+            'domstream declares nothing, so its defaults must stay unknown'
         );
 
-        $c->db_settings['domstream'] = ['schema_version' => 1, 'is_active' => true];
-        $c->db_settings['fileCache'] = ['is_active' => false];
+        $c->db_settings['domstream']     = ['schema_version' => 1, 'is_active' => true];
+        $c->db_settings['fileCache']     = ['is_active' => false];
+        $c->db_settings['maxmind_geoip'] = ['schema_version' => 1, 'is_active' => false];
 
         $removed = $c->pruneRedundantPersistedSettings();
 
         foreach ($removed as $entry) {
-            $this->assertStringStartsWith(
-                'base.',
-                $entry,
-                "prune touched $entry; it must only ever act on modules whose "
-                . 'defaults it actually knows'
-            );
+            $this->assertStringEndsNotWith('.is_active', $entry,
+                "prune removed $entry; is_active is database state and must never be dropped");
+            $this->assertStringEndsNotWith('.schema_version', $entry,
+                "prune removed $entry; schema_version is database state and must never be dropped");
         }
 
-        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['domstream']);
+        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['domstream'],
+            'a module that declares nothing is left alone entirely');
         $this->assertSame(['is_active' => false], $c->db_settings['fileCache']);
+        $this->assertSame(['schema_version' => 1, 'is_active' => false], $c->db_settings['maxmind_geoip'],
+            'and a module that DOES declare still keeps its bootstrap state');
     }
 
     public static function differsFromDefaultProvider(): array
@@ -368,5 +409,85 @@ final class SettingsPersistenceTest extends TestCase
             // different notation are == but are NOT the same stored value.
             "'1e2' vs '100'"    => ['1e2', '100', "numeric strings in different notation must not be collapsed"],
         ];
+    }
+
+    /**
+     * Writing '' is not a removal, and there has to be something that is.
+     *
+     * persistSetting('') stores an empty string -- a row that overrides the
+     * code default with emptiness, forever. SettingsShutdownSaveTest used it as
+     * a cleanup and left `base.owa_settings_shutdown_probe` behind in the
+     * config of every install it ever ran against, this box included, since
+     * long before settings became rows. Nobody noticed because an empty string
+     * reads like an absent one until you look at the table.
+     */
+    /**
+     * And the setting these three USED to demonstrate cannot be persisted.
+     *
+     * They were written around base.report_wrapper, which is convenient -- a
+     * code default and a documented history of being pinned -- and is also
+     * config-file-only: a stored value there is an arbitrary file include.
+     * Base declares all 21 of those static now, so persistSetting refuses
+     * them, and the pruning rule is shown on a setting that can legitimately
+     * hold a stored value.
+     */
+    public function testAConfigFileOnlySettingCannotBePersistedAtAll(): void
+    {
+        $c = $this->settings();
+
+        foreach ( array_keys(
+            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array() ) )
+            as $key ) {
+
+            $this->assertFalse( $c->mayPersistInstallWide( 'base', $key ),
+                sprintf( 'base.%s must never be storable: it is config-file-only, and for '
+                       . 'report_wrapper and error_log_file a stored value is an RCE '
+                       . 'primitive', $key ) );
+        }
+    }
+
+    public function testWritingAnEmptyStringStoresItRatherThanRemovingTheKey(): void
+    {
+        $c = $this->settings();
+
+        $c->persistSetting('base', 'zz_removal_probe', '');
+
+        $this->assertArrayHasKey('zz_removal_probe', $c->db_settings['base'],
+            "'' is a value: persistSetting stores it, which is why it cannot express a removal");
+        $this->assertSame('', $c->db_settings['base']['zz_removal_probe']);
+    }
+
+    /** removeSetting() is the one that removes it. */
+    public function testRemoveSettingDropsTheStoredValue(): void
+    {
+        $c = $this->settings();
+
+        $c->persistSetting('base', 'zz_removal_probe', 'stored');
+
+        $this->assertSame('stored', $c->get('base', 'zz_removal_probe'));
+
+        $c->removeSetting('base', 'zz_removal_probe');
+
+        $this->assertArrayNotHasKey('zz_removal_probe', $c->db_settings['base'] ?? [],
+            'the key is gone from what save() writes back, so the row is pruned');
+        $this->assertFalse($c->get('base', 'zz_removal_probe'),
+            'and the live array no longer answers with the value just removed');
+    }
+
+    /** A key WITH a code default goes back to that default, not to nothing. */
+    public function testRemoveSettingFallsBackToTheCodeDefault(): void
+    {
+        $c = $this->settings();
+
+        $default = $c->default_config['base']['log_robots'] ?? null;
+        $this->assertNotNull($default, 'expected a code default for base.log_robots');
+
+        $c->persistSetting('base', 'log_robots', 'not-the-default');
+        $this->assertSame('not-the-default', $c->get('base', 'log_robots'));
+
+        $c->removeSetting('base', 'log_robots');
+
+        $this->assertSame($default, $c->get('base', 'log_robots'),
+            'removing a stored value restores the default, it does not blank the setting');
     }
 }

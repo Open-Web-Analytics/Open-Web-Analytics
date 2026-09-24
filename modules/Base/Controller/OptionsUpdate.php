@@ -96,6 +96,26 @@ class OptionsUpdate extends \OWA\Core\AdminController {
                         continue;
                     }
 
+                    /*
+                     * THE REGISTRY DECIDES. A form may only write a setting the
+                     * module declared storable.
+                     *
+                     * A posted field names its own key, so without this the
+                     * form's reach is whatever a browser chooses to send. The
+                     * checks above are specific refusals -- a module it may not
+                     * write, a constant that governs it, a key on the denylist
+                     * -- and each had to be thought of in advance. This one is
+                     * the opposite shape: nothing is writable unless something
+                     * said it was.
+                     */
+                    if ( ! $c->mayPersistInstallWide( $module, $name ) ) {
+
+                        \OWA\Core\CoreAPI::notice( sprintf(
+                            'Refusing to persist %s.%s: %s does not declare it as a setting '
+                          . 'that can be stored.', $module, $name, $module ) );
+                        continue;
+                    }
+
                     $c->persistSetting($module, $name, $v);
                 }
             }
@@ -182,19 +202,24 @@ class OptionsUpdate extends \OWA\Core\AdminController {
         // Composed from the two lists on Settings so there is a single source
         // of truth, and so the REASON a key is denylisted stays visible:
         //
-        //   configFileOnlySettings() - must never live in the database at all;
-        //                              load() drops them, Update012 clears them.
         //   databaseStateSettings()  - legitimate database state that the form
         //                              simply must not edit (schema_version,
-        //                              install_complete, ...).
+        //                              install_complete, ...). Code writes
+        //                              these; a person must not, and the
+        //                              registry cannot yet say that -- it says
+        //                              whether a value can be STORED, not who
+        //                              may store it. When fieldsets drive the
+        //                              screens, "listed in a fieldset of this
+        //                              page" becomes that test and this goes.
         //
-        // The union is identical to the previous hard-coded denylist; a test
-        // pins that so the form's protection cannot narrow by accident.
+        // The config-file-only half is GONE. Those settings are declared
+        // static, so the registry check above refuses them and no query asks
+        // for them: one statement of the rule instead of two kept in step.
         static $denylist = null;
 
         if ( $denylist === null ) {
 
-            $denylist = \OWA\Module\Base\Classes\Settings::configFileOnlySettings();
+            $denylist = array();
 
             foreach ( \OWA\Module\Base\Classes\Settings::databaseStateSettings() as $m => $keys ) {
 

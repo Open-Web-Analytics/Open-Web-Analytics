@@ -11,14 +11,18 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * `base.capabilities` maps each role to what it may do, and
  * `capabilitiesThatRequireSiteAccess` says which of those additionally require
  * access to the specific site. Both are shipped with the code and customised
- * from owa-config.php, which is where the rest of configFileOnlySettings()
- * lives too.
+ * from owa-config.php.
  *
- * The contract has two sides and both need pinning. A value read back out of
- * the data store is dropped on load. A value established from the config file
- * is not: owa-config.php is included from inside the settings object before the
- * configuration entity exists, so it writes the defaults array, and the
- * stripper only ever operates on settings read from the store.
+ * This used to be enforced by a strip: the keys were removed from whatever
+ * load() had fetched. Base declares them STATIC now, so the boot query never
+ * asks for them and persistSetting() refuses to create one -- there is nothing
+ * arriving to strip. The property to assert therefore changed from "it was
+ * removed" to "it is never stored and never read", which is what these check.
+ *
+ * The contract has two sides and both need pinning. A value in the data store
+ * does not reach the running config. A value established from the config file
+ * does: owa-config.php is included from inside the settings object before the
+ * configuration entity exists, so it writes the defaults array.
  *
  * The second half is the one worth guarding. The demo installation opens its
  * reports to unauthenticated visitors with a single config-file call, and a
@@ -27,104 +31,116 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class CapabilitiesConfigFileOnlyTest extends TestCase
 {
-    private function denylist(): array
+    private const KEYS = array( 'capabilities', 'capabilitiesThatRequireSiteAccess' );
+
+    private function settings()
     {
-        return \OWA\Module\Base\Classes\Settings::configFileOnlySettings()['base'];
+        return \OWA\Core\CoreAPI::configSingleton();
     }
 
-    public function testBothHalvesOfTheModelAreConfigFileOnly(): void
+    private function staticBaseSettings(): array
     {
-        $d = $this->denylist();
+        return \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array();
+    }
 
-        $this->assertArrayHasKey( 'capabilities', $d );
-        $this->assertArrayHasKey( 'capabilitiesThatRequireSiteAccess', $d );
+    public function testBothHalvesOfTheModelAreStatic(): void
+    {
+        $d = $this->staticBaseSettings();
 
         // Listed together on purpose. Freezing the role map while leaving the
         // site-access list writable would split one authorization model across
         // two storage rules, which is worse than either choice made
         // consistently.
-        $this->assertTrue( $d['capabilities'] );
-        $this->assertTrue( $d['capabilitiesThatRequireSiteAccess'] );
+        foreach ( self::KEYS as $key ) {
+
+            $this->assertArrayHasKey( $key, $d );
+            $this->assertTrue( $this->settings()->isRegistered( 'base', $key ),
+                sprintf( 'base.%s must be declared, or nothing constrains it', $key ) );
+        }
     }
 
-    public function testAStoredCapabilityMapIsStrippedOnLoad(): void
+    /** Neither may be written, by the form or by anything else. */
+    public function testNeitherCanBePersisted(): void
     {
-        $stored = array(
-            'base' => array(
-                'capabilities' => array(
-                    'everyone' => array( 'edit_users', 'edit_settings', 'edit_modules' ),
-                ),
-                'capabilitiesThatRequireSiteAccess' => array(),
-                // An ordinary setting alongside it, which must survive.
-                'default_reporting_period' => 'last_thirty_days',
-            ),
-        );
+        foreach ( self::KEYS as $key ) {
 
-        $clean = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings( $stored );
-
-        $this->assertArrayNotHasKey( 'capabilities', $clean['base'],
-            'a stored capability map does not reach the running config' );
-        $this->assertArrayNotHasKey( 'capabilitiesThatRequireSiteAccess', $clean['base'] );
-
-        // The stripper is surgical, not a blanket refusal of the module.
-        $this->assertSame( 'last_thirty_days', $clean['base']['default_reporting_period'] );
+            $this->assertFalse( $this->settings()->mayPersistInstallWide( 'base', $key ),
+                sprintf( 'base.%s must be unstorable; a stored role map is an '
+                       . 'authorization bypass', $key ) );
+        }
     }
 
-    public function testOtherModulesSettingsAreUntouched(): void
+    /** Neither is fetched at boot. */
+    public function testNeitherIsInTheBootQuery(): void
     {
-        // Only the modules named in the denylist are considered. A third-party
-        // module with its own 'capabilities' key keeps it.
-        $stored = array(
-            'base'    => array( 'capabilities' => array( 'everyone' => array( 'edit_users' ) ) ),
-            'ecommerce' => array( 'capabilities' => array( 'anything' ) ),
-        );
+        $eager = (array) ( $this->settings()->eagerSettings()['base'] ?? array() );
 
-        $clean = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings( $stored );
+        foreach ( self::KEYS as $key ) {
 
-        $this->assertArrayNotHasKey( 'capabilities', $clean['base'] );
-        $this->assertArrayHasKey( 'capabilities', $clean['ecommerce'] );
-    }
-
-    public function testTheOptionsFormRefusesTheKey(): void
-    {
-        // The other half of the guard: the options form consults the same list,
-        // so the key cannot be written back through the admin UI either.
-        $source = file_get_contents(
-            OWA_BASE_DIR . '/modules/Base/Controller/OptionsUpdate.php' );
-
-        $this->assertStringContainsString( 'configFileOnlySettings', $source,
-            'the options form must consult the same list as the loader' );
+            $this->assertNotContains( $key, $eager,
+                sprintf( 'base.%s must not be fetched at boot', $key ) );
+        }
     }
 
     /**
-     * The supported route, which this change must not break.
+     * And a row in the table does not reach the running config.
+     *
+     * The end-to-end version of what the strip used to prove with a pure
+     * function call. A real row, a real reload, and the shipped policy still
+     * standing.
+     */
+    public function testARowInTheTableDoesNotReachTheRunningConfig(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'writes a row and reloads' );
+        }
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+        $table  = $entity->getTableName();
+        $id     = $db->prepare( (string) $entity->makeId( 'install', '1', 'base', 'capabilities' ) );
+
+        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
+        $db->query( sprintf(
+            "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)"
+          . " VALUES ('%s', 'install', '1', 'base', 'capabilities', '%s', 1, '0')",
+            $table, $id,
+            $db->prepare( serialize( array( 'everyone' => array( 'edit_users', 'edit_settings' ) ) ) ) ) );
+
+        $this->settings()->load( 1 );
+
+        $live = \OWA\Core\CoreAPI::getSetting( 'base', 'capabilities' );
+
+        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
+        $this->settings()->load( 1 );
+
+        $this->assertIsArray( $live );
+
+        /*
+         * The GRANT, not the role. `everyone` exists in the shipped policy
+         * too -- it holds install_schema -- so asserting the key is absent
+         * would pass against a total leak. What must not survive is the
+         * stored map's contents.
+         */
+        $this->assertNotContains( 'edit_users', $live['everyone'] ?? array(),
+            'a stored role map reached the running config: it would grant '
+          . 'edit_users to every visitor' );
+        $this->assertSame( array( 'install_schema' ), $live['everyone'] ?? null,
+            'the shipped grant for everyone stands unchanged' );
+        $this->assertArrayHasKey( 'admin', $live, 'the shipped policy still stands' );
+    }
+
+    /**
+     * The supported route, which none of this may break.
      *
      * owa-config.php runs at constructor step 2 -- after the defaults are
      * built, BEFORE the configuration entity exists at step 3. set() branches
      * on whether that entity is present, so a call from the config file lands
-     * in the defaults array. Defaults are not database state and are never
-     * stripped.
+     * in the defaults array, which is not database state and is not subject to
+     * any of the above.
      */
     public function testAConfigFileGrantStillReachesTheRunningConfig(): void
     {
-        $defaults_only_write = array(
-            'base' => array(
-                'capabilities' => array( 'everyone' => array( 'view_reports' ) ),
-            ),
-        );
-
-        // Whatever the config file put in the DEFAULTS is not what the stripper
-        // operates on -- it only ever sees settings read from the store. Prove
-        // the two are different inputs by showing the strip is a pure function
-        // of what it is handed.
-        $from_database = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings(
-            $defaults_only_write );
-
-        $this->assertArrayNotHasKey( 'capabilities', $from_database['base'],
-            'the same array, when it comes from the database, is refused' );
-
-        // ...and the live installation, whose defaults are seeded from
-        // owa-config.php, still resolves a usable map.
         $live = \OWA\Core\CoreAPI::getSetting( 'base', 'capabilities' );
 
         $this->assertIsArray( $live );
@@ -136,21 +152,21 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
     /**
      * Vacuity guard.
      *
-     * Every assertion above would also pass against a stripper that removed
-     * everything, or a denylist that listed every key. Prove the list is
-     * discriminating.
+     * Every assertion above would also pass if EVERYTHING were static. Prove
+     * the declaration discriminates: the settings the admin UI is meant to
+     * edit are storable.
      */
-    public function testTheDenylistIsNotABlanketRefusal(): void
+    public function testStaticIsNotABlanketRefusal(): void
     {
-        $d = $this->denylist();
+        $d = $this->staticBaseSettings();
 
-        $this->assertArrayNotHasKey( 'default_reporting_period', $d );
-        $this->assertArrayNotHasKey( 'timezone', $d,
-            'timezone is deliberately editable from the admin UI' );
+        foreach ( array( 'timezone', 'log_robots', 'anonymize_ips' ) as $editable ) {
 
-        $kept = \OWA\Module\Base\Classes\Settings::stripConfigFileOnlySettings(
-            array( 'base' => array( 'timezone' => 'Europe/London' ) ) );
+            $this->assertArrayNotHasKey( $editable, $d,
+                sprintf( 'base.%s is meant to be editable from the admin UI', $editable ) );
 
-        $this->assertSame( 'Europe/London', $kept['base']['timezone'] );
+            $this->assertTrue( $this->settings()->mayPersistInstallWide( 'base', $editable ),
+                sprintf( 'base.%s must be storable', $editable ) );
+        }
     }
 }

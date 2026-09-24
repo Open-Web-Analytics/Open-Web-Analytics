@@ -75,6 +75,37 @@ final class LegacyClassNameContractTest extends TestCase
     /** Size of the name set frozen from the untouched tree at stage 0. */
     private const STAGE0_COUNT = 406;
 
+    /**
+     * Names whose CLASS IS GONE, as opposed to names we stopped promising.
+     *
+     * RETIRED below means the class still exists under its PSR-4 name and only
+     * the legacy alias was dropped -- "nothing needs these" is a statement
+     * about the alias. These are not that: the file was deleted, so the name
+     * cannot resolve however anyone asks for it.
+     *
+     * Kept apart because the difference is what a reader needs. A retired name
+     * is a compatibility decision that could in principle be revisited; a
+     * removed one is a feature that is gone, and reviving the alias would mean
+     * reviving the code.
+     */
+    private const REMOVED = [
+        /*
+         * REMOVED 2026-09-23 with the whole first-hit pipeline.
+         *
+         * delay_first_hit was banished in 3ab5b7ce (2016-12-17), which deleted
+         * its two settings, the processRequest branch, the options field and
+         * the plugin hooks -- and left ProcessFirstRequest behind, reading a
+         * first_hit_param that the same commit had just deleted. It has
+         * resolved to false ever since.
+         *
+         * Unreachable three ways over: no version of the tracker has ever
+         * emitted base.first_page_request, the controller was registered as
+         * the processor FOR the one event type it alone produced, and its
+         * pre() returns false.
+         */
+        'owa_processFirstRequestController',
+    ];
+
     private const RETIRED = [
         /*
          * RETIRED 2026-09-13: 132 concrete controllers, views and entities.
@@ -189,7 +220,6 @@ final class LegacyClassNameContractTest extends TestCase
         'owa_passwordResetRequestController',
         'owa_pixelView',
         'owa_processEventQueueController',
-        'owa_processFirstRequestController',
         'owa_processRequestController',
         'owa_pruneEventQueueArchivesCliController',
         'owa_queue_item',
@@ -493,7 +523,7 @@ final class LegacyClassNameContractTest extends TestCase
     {
         $stillThere = [];
 
-        foreach (self::RETIRED as $name) {
+        foreach (array_merge(self::RETIRED, self::REMOVED) as $name) {
             if (class_exists($name) || interface_exists($name) || trait_exists($name)) {
                 $stillThere[] = $name;
             }
@@ -509,7 +539,8 @@ final class LegacyClassNameContractTest extends TestCase
      */
     public function testRetiredNamesAreNotInTheFrozenSet(): void
     {
-        $overlap = array_intersect($this->legacyNames(), self::RETIRED);
+        $overlap = array_intersect($this->legacyNames(),
+            array_merge(self::RETIRED, self::REMOVED));
 
         $this->assertSame([], array_values($overlap),
             'a retired name is still listed as one that must resolve');
@@ -525,14 +556,15 @@ final class LegacyClassNameContractTest extends TestCase
          * classes only ever push it up, so the floor is the stage-0 set less
          * what has been deliberately retired.
          */
-        $floor = self::STAGE0_COUNT - count(self::RETIRED);
+        $floor = self::STAGE0_COUNT - count(self::RETIRED) - count(self::REMOVED);
 
         $this->assertGreaterThanOrEqual(
             $floor,
             count($names),
             'Legacy class-name snapshot looks truncated: expected at least the '
-            . "stage-0 set of " . self::STAGE0_COUNT . ' less the ' . count(self::RETIRED)
-            . ' deliberately retired names.'
+            . "stage-0 set of " . self::STAGE0_COUNT . ' less the '
+            . count(self::RETIRED) . ' retired and ' . count(self::REMOVED)
+            . ' removed names.'
         );
 
         $missing = [];

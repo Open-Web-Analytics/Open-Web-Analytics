@@ -59,6 +59,54 @@ namespace OWA\Module\Base\Classes;
      /** @var bool|null  whether owa_configuration still exists; see legacyBlobIsAuthoritative(). */
      private $legacy_blob_present = null;
 
+     /** @var array  "module|key" => registration args. The catalogue. */
+     private $registry = array();
+
+     /** @var array  id => fieldset declaration. Chrome only; see registerFieldSet(). */
+     private $fieldsets = array();
+
+     /**
+      * @var array  module => true for modules that ship a settings.php.
+      *
+      * Adoption is per module. A module that has declared nothing keeps having
+      * ALL of its stored settings loaded at boot, exactly as before registration
+      * existed, so nothing has to be converted in one go.
+      */
+     private $declared_modules = array();
+
+     /** @var bool  whether a read may consult the store on its own. See load(). */
+     private $store_ready = false;
+
+     /** @var bool  the undeclared-module warning is once per process, not per boot. */
+     private $warned_about_undeclared = false;
+
+     /** @var array  "module|key" => true for rows the BOOT query already applied. */
+     private $loaded_at_boot = array();
+
+     /**
+      * @var bool  guards re-entry.
+      *
+      * resolveFromStore() calls dbSingleton(), which reads db_type back out of
+      * here. Without this, that read would be an unresolved key, which would
+      * resolve, which would call dbSingleton() again.
+      */
+     private $resolving = false;
+
+     /** @var array  "module|key" => true for registered keys not yet resolved. */
+     private $pending = array();
+
+     /**
+      * "module|key" => true once the store has been consulted for this key.
+      *
+      * Set whether or not a row came back. "Nothing is stored" is an answer,
+      * and remembering it is what keeps a key with no row from being queried
+      * on every read.
+      *
+      * @var array
+      */
+     private $loaded = array();
+
+
      /**
       * Constructor
       *
@@ -80,6 +128,16 @@ namespace OWA\Module\Base\Classes;
         $this->config = \OWA\Core\CoreAPI::entityFactory('base.configuration');
         // load entity with the default settings
         $this->config->set('settings', $this->default_config);
+
+        /*
+         * The settings catalogue, before anything is read from the database.
+         *
+         * Here rather than later because load() builds its query from it, and
+         * BEFORE applyConfigConstants() because a registered default is a
+         * default -- the lowest precedence there is. A constant in
+         * owa-config.php still beats it, as it beats a stored value.
+         */
+        $this->applyRegistry();
         
         // set mailer domain (must be after config file is loaded)
         $this->setMailerDomain();
@@ -153,7 +211,6 @@ namespace OWA\Module\Base\Classes;
       *
       * @var array<string, array<string, bool>>
       */
-     public $config_file_constants = array();
 
      /**
       * Set a value that came from a config-file constant, and remember that it
@@ -164,7 +221,31 @@ namespace OWA\Module\Base\Classes;
          // The NAME, not just a flag: the options form shows the operator which
          // constant is governing a field, and "set somewhere in owa-config.php"
          // is not an actionable thing to tell someone.
-         $this->config_file_constants[ $module ][ $key ] = $constant;
+         $this->noteConfigConstant( $module, $key, $constant );
+
+         /*
+          * A constant governs this key, so the key becomes STATIC for this
+          * install: nothing may store a value for it, and nothing goes looking
+          * for one.
+          *
+          * That is what makes the constant's precedence structural rather than
+          * something every read has to remember. A stored row for a static key
+          * is never queried, and persistSetting() refuses to create one -- so
+          * the options form's disabled field stops being a courtesy backed by a
+          * special case in OptionsUpdate and becomes the ordinary consequence
+          * of the declaration.
+          *
+          * Declared storability is what a setting CAN be; a constant narrows it
+          * for one installation. Only ever narrower -- a constant cannot make
+          * something storable that was not.
+          */
+         if ( isset( $this->registry[ $module . '|' . $key ] ) ) {
+
+             $this->registry[ $module . '|' . $key ]['storable'] = false;
+             $this->registry[ $module . '|' . $key ]['autoload'] = false;
+         }
+
+         unset( $this->pending[ $module . '|' . $key ] );
 
          return $this->set( $module, $key, $value );
      }
@@ -181,9 +262,95 @@ namespace OWA\Module\Base\Classes;
       */
      public function configFileConstantFor( $module, $key ) {
 
-         return isset( $this->config_file_constants[ $module ][ $key ] )
-             ? (string) $this->config_file_constants[ $module ][ $key ]
-             : '';
+         return (string) ( $this->registry[ $module . '|' . $key ]['constant'] ?? '' );
+     }
+
+     /**
+      * Record that a config-file constant governs this setting.
+      *
+      * ON THE REGISTRY, not in a ledger beside it, because everything that
+      * follows is a property of the setting: it becomes static, it is left OUT
+      * OF THE BOOT QUERY, and it cannot be persisted. Keeping the name
+      * somewhere else meant those three had to be kept in step by hand -- and
+      * the value was fetched, overwritten by the stored row, then set back from
+      * the constant, which is three steps to arrive where it started.
+      *
+      * The NAME, not a flag: the options form tells the operator which constant
+      * governs a field, and "set somewhere in owa-config.php" is not an
+      * actionable thing to tell someone.
+      *
+      * Creates an entry for a key nothing declared -- a constant governs it
+      * whether or not a module got round to describing it.
+      *
+      * @return void
+      */
+     public function noteConfigConstant( $module, $key, $constant ) {
+
+         $id = $module . '|' . $key;
+
+         $args = $this->registry[ $id ] ?? array();
+
+         /*
+          * Records the constant and NOTHING ELSE. Being static follows from
+          * it -- see isStorable() -- rather than being written into the entry,
+          * because a written demotion has to be undone and forgetConfigConstant()
+          * could not know what to put back. Derived state needs no inverse.
+          */
+         $args['constant'] = (string) $constant;
+
+         $this->registry[ $id ] = $args;
+
+         unset( $this->pending[ $id ] );
+     }
+
+     /**
+      * Forget that a constant governs this setting.
+      *
+      * The inverse of noteConfigConstant(). Nothing in production calls it --
+      * a constant does not stop existing mid-request -- but a test that
+      * records one has to be able to put things back, and without this it
+      * would leave the singleton claiming a constant that is not defined.
+      *
+      * @return void
+      */
+     public function forgetConfigConstant( $module, $key ) {
+
+         $id = $module . '|' . $key;
+
+         if ( ! isset( $this->registry[ $id ] ) ) {
+
+             return;
+         }
+
+         unset( $this->registry[ $id ]['constant'] );
+
+         if ( $this->registry[ $id ] === array() ) {
+
+             // It existed only to carry the constant.
+             unset( $this->registry[ $id ] );
+         }
+     }
+
+     /**
+      * Every setting a config-file constant governs, as module => key => name.
+      *
+      * @return array
+      */
+     public function configConstants() {
+
+         $out = array();
+
+         foreach ( $this->registry as $id => $args ) {
+
+             if ( ! empty( $args['constant'] ) ) {
+
+                 list( $module, $key ) = explode( '|', $id, 2 );
+
+                 $out[ $module ][ $key ] = $args['constant'];
+             }
+         }
+
+         return $out;
      }
 
      function applyConfigConstants() {
@@ -205,11 +372,6 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'cache_dir', OWA_CACHE_DIR, 'OWA_CACHE_DIR');
         }
 
-         // Looks for log level constant
-        if (defined('OWA_ERROR_LOG_LEVEL')) {
-            $this->setFromConfigConstant( 'base', 'error_log_level', OWA_ERROR_LOG_LEVEL, 'OWA_ERROR_LOG_LEVEL');
-        }
-
         /* FACT-TABLE PARTITIONING */
 
         // These describe the shape of an installation -- how much history stays
@@ -222,7 +384,6 @@ namespace OWA\Module\Base\Classes;
         // See the Partitioning Fact Tables page in the wiki.
         foreach (array(
             'OWA_PARTITION_DETAIL_MONTHS'       => 'partition_detail_months',
-            'OWA_PARTITION_MAX_YEARS_PER_BLOCK' => 'partition_max_years_per_block',
             'OWA_PARTITION_MAX_PARTITIONS'      => 'partition_max_partitions',
         ) as $constant => $key) {
 
@@ -364,22 +525,6 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'queue_events', OWA_QUEUE_EVENTS, 'OWA_QUEUE_EVENTS');
         }
 
-        if (defined('OWA_EVENT_QUEUE_TYPE')) {
-            $this->setFromConfigConstant( 'base', 'event_queue_type', OWA_EVENT_QUEUE_TYPE, 'OWA_EVENT_QUEUE_TYPE');
-        }
-
-        if (defined('OWA_EVENT_SECONDARY_QUEUE_TYPE')) {
-            $this->setFromConfigConstant( 'base', 'event_secondary_queue_type', OWA_EVENT_SECONDARY_QUEUE_TYPE, 'OWA_EVENT_SECONDARY_QUEUE_TYPE');
-        }
-
-        if (defined('OWA_USE_REMOTE_EVENT_QUEUE')) {
-            $this->setFromConfigConstant( 'base', 'use_remote_event_queue', OWA_USE_REMOTE_EVENT_QUEUE, 'OWA_USE_REMOTE_EVENT_QUEUE');
-        }
-
-        if (defined('OWA_REMOTE_EVENT_QUEUE_TYPE')) {
-            $this->setFromConfigConstant( 'base', 'remote_event_queue_type', OWA_REMOTE_EVENT_QUEUE_TYPE, 'OWA_REMOTE_EVENT_QUEUE_TYPE');
-        }
-
         if (defined('OWA_REMOTE_EVENT_QUEUE_ENDPOINT')) {
             $this->setFromConfigConstant( 'base', 'remote_event_queue_endpoint', OWA_REMOTE_EVENT_QUEUE_ENDPOINT, 'OWA_REMOTE_EVENT_QUEUE_ENDPOINT');
         }
@@ -448,7 +593,7 @@ namespace OWA\Module\Base\Classes;
 
         $db_settings = $this->legacyBlobIsAuthoritative()
             ? $this->readLegacyConfigurationBlob()
-            : $this->readInstallSettings( true );
+            : $this->readInstallSettings();
 
         if (!empty($db_settings)) {
 
@@ -459,23 +604,35 @@ namespace OWA\Module\Base\Classes;
                 unset($db_settings['base']['error_handler']);
             }
 
-            // Same treatment, generalised -- see stripConfigFileOnlySettings().
-            $db_settings = self::stripConfigFileOnlySettings( $db_settings );
+            /*
+             * No config-file-only strip. Base declares all 21 of these static,
+             * so the boot query never asks for them and persistSetting()
+             * refuses to create one.
+             *
+             * The route this used to guard -- modules/Base/settings.php missing,
+             * so Base falls back into the wholesale sweep and its rows load
+             * again -- is guarded where it belongs now:
+             * BaseDeclarationPresentTest fails if the file is not there, and
+             * OptionsUpdate refuses to save a setting the registry does not
+             * describe. A rule enforced in two places acquires two slightly
+             * different definitions.
+             */
 
             /*
              * A constant declared in owa-config.php wins over the database.
              *
-             * Implemented the same way the config-file-only settings are -- by
-             * removing the key from the LOSING side before the merge -- because
-             * load() array_merges the database over everything applyConfigConstants()
-             * put in place, so precedence here can only be expressed as absence.
+             * Implemented by removing the key from the LOSING side before the
+             * merge, because load() array_merges the database over everything
+             * applyConfigConstants() put in place -- so precedence here can
+             * only be expressed as absence.
              *
-             * Distinct from stripConfigFileOnlySettings() on purpose. That list is
-             * a SECURITY denylist: keys an authenticated web request must never be
-             * able to write, because doing so is an RCE primitive (error_log_file
-             * + report_wrapper). This is a precedence rule about what the operator
-             * explicitly declared. Same mechanism, different reason, and merging
-             * the two would lose the reason.
+             * A precedence rule about what the operator declared, and nothing
+             * more. The security half of this used to live beside it as a
+             * denylist of keys an authenticated request must never write, an
+             * RCE primitive in the case of error_log_file and report_wrapper.
+             * That is the declaration's job now: those settings are declared
+             * static, so no query asks for them and persistSetting() refuses
+             * them.
              */
             $db_settings = $this->stripSettingsSuppliedByConstants( $db_settings );
 
@@ -515,28 +672,36 @@ namespace OWA\Module\Base\Classes;
         }
 
         $this->config->set('id', $id);
+
+        /*
+         * Only now may a read go to the database on its own. Before this,
+         * settings are being assembled -- the config file is loading, entities
+         * are being built, dbSingleton() itself is reading db_type out of here
+         * -- and a lookup that queried would be asking the database how to
+         * reach the database.
+         */
+        $this->store_ready = true;
      }
 
      /**
       * Every install-scope setting, as [module][key] => value.
       *
-      * ONE query, which is the whole point of the autoload column: the blob
-      * this replaced was read whole because a blob cannot be read in part, and
-      * rows would otherwise cost a query each.
+      * ONE query: the blob this replaced was read whole because a blob cannot
+      * be read in part, and rows would otherwise cost a query each.
       *
-      * @param  bool $autoload_only restrict to rows wanted at boot
       * @return array
       */
-     private function readInstallSettings( $autoload_only = false ) {
+     private function readInstallSettings() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
         $sql = sprintf(
-            "SELECT module, name, value FROM %s WHERE scope_type = 'install'%s",
+            "SELECT module, name, value FROM %s WHERE scope_type = 'install' AND ( %s )%s",
             $entity->getTableName(),
-            $autoload_only ? ' AND autoload = 1' : '' );
+            $this->eagerPredicate( $db ),
+            $this->constantExclusion( $db ) );
 
         $rows = (array) $db->get_results( $sql );
 
@@ -545,13 +710,31 @@ namespace OWA\Module\Base\Classes;
         foreach ( $rows as $row ) {
 
             /*
+             * Recorded BEFORE the value is used, and for every row -- including
+             * ones the filters below will drop. The question this answers is
+             * "has the store been consulted for this key", not "did it yield a
+             * value", and a key dropped by the config-file-only filter has
+             * still been consulted.
+             */
+            $this->loaded[ $row['module'] . '|' . $row['name'] ] = true;
+            $this->loaded_at_boot[ $row['module'] . '|' . $row['name'] ] = true;
+
+            /*
+             * And it is no longer pending. Registration runs in the
+             * constructor, before load(), so a key the registry marked pending
+             * may well be one boot then fetched -- leaving it pending would
+             * send get() to the database for a value already in hand.
+             */
+            unset( $this->pending[ $row['module'] . '|' . $row['name'] ] );
+
+            /*
              * Array data only, as the blob read was. A row is written by
              * save() and holds a scalar or an array of them; refusing objects
              * costs nothing and means a tampered-with row cannot instantiate a
              * class during unserialize.
              */
             $settings[ $row['module'] ][ $row['name'] ] =
-                unserialize( $row['value'], array( 'allowed_classes' => false ) );
+                unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
         }
 
         return $settings;
@@ -765,10 +948,9 @@ namespace OWA\Module\Base\Classes;
       *
       * While owa_configuration still exists this writes the blob instead, by
       * the rule in legacyBlobIsAuthoritative(). It matters in both directions:
-      * a rollback of Update043 restores that table and drops the autoload
-      * column, and Update::rollback() then persists the reverted schema_version
-      * and calls save() -- which must land in the store the rollback just
-      * restored, not in rows whose column has gone.
+      * a rollback of Update043 restores that table, and Update::rollback() then
+      * persists the reverted schema_version and calls save() -- which must land
+      * in the store the rollback just restored.
       *
       * @return boolean
       */
@@ -893,6 +1075,12 @@ namespace OWA\Module\Base\Classes;
         }
 
         $setting->set( 'id', $id );
+        /*
+         * Set explicitly although the column defaults to 1: the column is NOT
+         * NULL, and an entity that omits it is one behaviour change away from
+         * sending NULL into it, which under STRICT_ALL_TABLES aborts the whole
+         * statement rather than falling back to the default.
+         */
         $setting->set( 'autoload', 1 );
         $setting->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
 
@@ -918,7 +1106,20 @@ namespace OWA\Module\Base\Classes;
       * @return mixed
       */
      function get(string $module, string $key) {
-        
+
+         $id = $module . '|' . $key;
+
+         /*
+          * Registered, and the store has not been consulted for it yet. One
+          * query settles it: a row is applied over the default, no row leaves
+          * the default standing, and either way the key is marked resolved so
+          * this never runs twice.
+          */
+         if ( isset( $this->pending[ $id ] ) ) {
+
+             $this->resolveAllPending();
+         }
+
         if ( $this->config ) {
             
             $values = $this->config->get('settings');          
@@ -931,10 +1132,26 @@ namespace OWA\Module\Base\Classes;
 
          if ( isset( $values[$module] ) && array_key_exists($key, $values[$module])) {
              return $values[$module][$key];
-         } else {
-             return false;
          }
 
+         /*
+          * No last-ditch lookup, deliberately.
+          *
+          * It used to query for any key that was neither declared nor in the
+          * array, justified as keeping un-adopted modules working. That
+          * justification was wrong: a module with no settings.php is swept up
+          * wholesale by the boot query's `module NOT IN (declared)` clause, and
+          * so is one whose files were deleted but whose rows remain. The only
+          * case that ever reached the fallback was a DECLARED module with a row
+          * for a key its declaration does not mention -- which is a bug in the
+          * declaration, and papering over it at one query per key per request
+          * hid the exact condition someone needed to be told about.
+          *
+          * A declaration is now the complete list of what a module stores.
+          * Anything else is reported by declarationProblems() and ignored, the
+          * same way a key declared static already ignored its row.
+          */
+         return false;
      }
 
      /**
@@ -946,7 +1163,63 @@ namespace OWA\Module\Base\Classes;
       * @return boolean
       */
      function set($module, $key, $value) {
-        
+
+         /*
+          * A value set in memory is RESOLVED. Nothing may go to the store for
+          * it afterwards.
+          *
+          * get() consults the pending map before it reads the array, so
+          * without this a key that had not been resolved yet would be fetched
+          * on the next read and the stored row would overwrite what was just
+          * set. That is not hypothetical: persistSetting() sets before it
+          * queues the write, so an admin saving a new MaxMind licence key and
+          * a screen re-reading it to redisplay got the OLD key back -- and
+          * re-saving what it displayed would have discarded the new one.
+          *
+          * It applies just as much to an in-memory override with no intention
+          * to persist, which overloadConfig() makes: an explicit set must not
+          * be silently replaced by a lazy read that happens later.
+          */
+         $this->loaded[ $module . '|' . $key ] = true;
+
+         unset( $this->pending[ $module . '|' . $key ] );
+
+         $this->writeValue( $module, $key, $value );
+     }
+
+     /**
+      * Seed a declared default.
+      *
+      * ITS OWN PATH, deliberately, because seeding a default is not the same
+      * act as setting a value and the two must not share a method.
+      *
+      * set() means "this is the value now", and therefore resolves the key:
+      * nothing may go to the store for it afterwards. Seeding means "this is
+      * what it falls back to", and must leave the key pending so the stored
+      * value can still be read and applied over it.
+      *
+      * registerField() went through set() for one commit. Every registered
+      * field was marked resolved the moment it was declared, so nothing was
+      * ever pending and no stored value would ever have been read again. The
+      * test that counts the batch query caught it on the first run.
+      *
+      * @return void
+      */
+     private function seedDefault( $module, $key, $value ) {
+
+         $this->writeValue( $module, $key, $value );
+     }
+
+     /**
+      * Write a value into the settings array, and claim nothing about it.
+      *
+      * The shared mechanism under set() and seedDefault(). It exists so those
+      * two can differ in what they RECORD while agreeing on what they store.
+      *
+      * @return void
+      */
+     private function writeValue( $module, $key, $value ) {
+
         if ( $this->config ) {
             
             $values = $this->config->get('settings');
@@ -992,6 +1265,47 @@ namespace OWA\Module\Base\Classes;
       */
      public function persistSetting($module, $key, $value) {
 
+         /*
+          * A setting that cannot be read back must not be written.
+          *
+          * A static setting is never queried -- that is what not declaring
+          * `storable` means -- so persisting one writes a durable row that
+          * nothing will ever look at. The write succeeds, save() reports
+          * success, and the value has no effect for the life of the install.
+          * Demonstrated across two processes: the row is there, and getSetting
+          * answers with the default.
+          *
+          * The same applies to a setting whose declared scopes do not include
+          * install: storing it here puts it at a level nothing resolves from.
+          *
+          * Unregistered settings are unconstrained, as everywhere else -- base
+          * has not declared yet and OptionsUpdate writes its keys through here.
+          */
+         if ( ! $this->mayPersistInstallWide( $module, $key ) ) {
+
+             $governing = $this->configFileConstantFor( $module, $key );
+
+             if ( $governing ) {
+
+                 $why = sprintf( 'it is set by %s in owa-config.php, which wins on every boot',
+                     $governing );
+
+             } elseif ( ! self::isStorable( $this->registeredField( $module, $key ) ) ) {
+
+                 $why = 'it is not declared storable, so nothing would ever read the value';
+
+             } else {
+
+                 $why = sprintf( 'it is declared for %s scope',
+                     implode( ', ', (array) $this->scopesFor( $module, $key ) ) );
+             }
+
+             \OWA\Core\CoreAPI::notice( sprintf(
+                 'Refusing to persist %s.%s: %s.', $module, $key, $why ) );
+
+             return;
+         }
+
          $this->set($module, $key, $value);
 
          // Do not store a value that merely restates the code default.
@@ -1029,81 +1343,969 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Settings that must come from the config file or the installer, and must
-      * NEVER be read from the database.
+      * Take the catalogue Module::settingsRegistry() assembled and record it.
       *
-      * These name filesystem paths, stream targets, credentials and template
-      * files. Two rules combine to make a stored copy unreachable:
+      * Separated from building it so that the scan lives with modules and the
+      * consequences live here: defaults, the pending map, and which modules
+      * have narrowed their own boot cost.
       *
-      *   1. the options form refuses to write them (see
-      *      OptionsUpdate::isSensitiveSettingKey -- allowing it is an RCE
-      *      primitive), and
-      *   2. load() merges the DB array OVER the config-file array, so a stored
-      *      value WINS against owa-config.php.
-      *
-      * So once one is persisted there is no supported way to change it: not the
-      * form, not the config file. Observed in the wild -- two installs carried
-      * async_log_dir values pointing at a previous server's /home/padams/...
-      * paths that do not exist, silently overriding a correct config file.
-      *
-      * Value is irrelevant here. Whatever it holds, it must not come from the
-      * database, so it is dropped on load regardless -- the same treatment
-      * error_handler already gets in load().
-      *
-      * NOT included: configuration_id, schema_version, install_complete and
-      * is_active. Those are denylisted from the FORM but are legitimate
-      * database state -- schema_version and install_complete have no code
-      * default at all, so dropping them would make a working install look
-      * uninstalled and re-run every update from scratch.
-      *
-      * @return array<string, array<string, bool>> module => key => true
+      * @return void
       */
-     public static function configFileOnlySettings() {
+     private function applyRegistry() {
 
-         return array(
-             'base' => array(
-                 'error_log_file'       => true,
-                 'async_error_log_file' => true,
-                 'async_log_file'       => true,
-                 'async_log_dir'        => true,
-                 'async_lock_file'      => true,
-                 'report_wrapper'       => true,
-                 'db_type'              => true,
-                 'db_host'              => true,
-                 'db_port'              => true,
-                 'db_name'              => true,
-                 'db_user'              => true,
-                 'db_password'          => true,
-                 'db_class_dir'         => true,
-                 'plugin_dir'           => true,
-                 'module_dir'           => true,
-                 'templates_dir'        => true,
-                 'public_path'          => true,
-                 'search_engines.ini'   => true,
-                 'query_strings.ini'    => true,
+         $registry = \OWA\Core\Module::settingsRegistry();
 
-                 /*
-                  * The role-to-capability model is configuration, not stored
-                  * state. It ships with the code and is customised the same way
-                  * the other entries here are -- from owa-config.php, which is
-                  * included from inside this object before the configuration
-                  * entity exists, so a call like
-                  *
-                  *     $this->addCapabilityToRole( 'everyone', ['view_reports'] );
-                  *
-                  * writes the defaults array and is re-applied on every request.
-                  * That route is unaffected by this listing; only a copy read
-                  * back out of the data store is dropped.
-                  *
-                  * Both keys are listed together because they are two halves of
-                  * one model, and splitting them across two storage rules would
-                  * be worse than either choice made consistently.
-                  */
-                 'capabilities'                      => true,
-                 'capabilitiesThatRequireSiteAccess' => true,
-             ),
-         );
+         $this->declared_modules = (array) $registry['declared'];
+
+         foreach ( (array) $registry['fields'] as $id => $args ) {
+
+             list( $module, $key ) = explode( '|', $id, 2 );
+
+             $this->registerField( $module, $key, (array) $args );
+         }
      }
+
+     /**
+      * Tell whoever is looking that a module is still being resolved
+      * wholesale.
+      *
+      * The sweep is a compatibility clause with an end (see eagerPredicate()),
+      * and a module author who never hears about it will find out when it goes
+      * -- by their settings quietly reverting to code defaults. A warning
+      * during the grace period is the whole point of having one.
+      *
+      * NOT ON EVERY REQUEST. load() runs on every tracking beacon, and OWA's
+      * error log is not rotated, so a line per request per module is a
+      * log-growth problem rather than a message. Limited to the contexts where
+      * somebody is reading: the CLI -- so `cmd=update` and the cron jobs show
+      * it -- and development mode, which is this project's existing signal for
+      * verbose output.
+      *
+      * Once per process either way: the second boot of the same request would
+      * have nothing new to say.
+      *
+      * @return void
+      */
+     private function warnAboutUndeclaredModules() {
+
+         if ( $this->warned_about_undeclared ) {
+
+             return;
+         }
+
+         $this->warned_about_undeclared = true;
+
+         if ( ! defined( 'OWA_CLI' )
+              && \OWA\Core\CoreAPI::getSetting( 'base', 'error_handler' ) !== 'development' ) {
+
+             return;
+         }
+
+         $db = \OWA\Core\CoreAPI::dbSingleton();
+
+         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+         $rows = (array) $db->get_results( sprintf(
+             "SELECT DISTINCT module FROM %s WHERE scope_type = 'install'",
+             $entity->getTableName() ) );
+
+         $undeclared = array();
+
+         foreach ( $rows as $row ) {
+
+             if ( ! isset( $this->declared_modules[ $row['module'] ] ) ) {
+
+                 $undeclared[] = $row['module'];
+             }
+         }
+
+         if ( ! $undeclared ) {
+
+             return;
+         }
+
+         \OWA\Core\CoreAPI::notice( sprintf(
+             'These modules store settings but ship no settings.php, so every row they '
+           . 'own is still loaded at boot: %s. That fallback is temporary -- declare '
+           . 'their settings before it is removed, or their stored values will revert '
+           . 'to code defaults.',
+             implode( ', ', $undeclared ) ) );
+     }
+
+     /**
+      * Keys a config-file constant governs, as a NOT clause.
+      *
+      * The constant is the last word, so fetching its key is fetching a value
+      * that is about to be discarded. Leaving it out is the whole mechanism --
+      * there is no stored value in play at any point, rather than one read,
+      * overwritten and then set back. It is also what leaves
+      * stripSettingsSuppliedByConstants() nothing to strip on the boot path.
+      *
+      * ONLY for modules that have not declared, because that is the only
+      * clause this compensates for. A declared module's constant-governed key
+      * is already absent from the query: noteConfigConstant() clears its
+      * autoload, so it never reaches the eager list. What needs carving out is
+      * the wholesale `module NOT IN (declared)` sweep, which takes every row a
+      * module has whether anyone asked for it or not.
+      *
+      * That sweep is PERMANENT, not transitional. Third-party modules will not
+      * ship declarations, so there will always be modules resolved wholesale --
+      * and this will always have to hold their constants out of it.
+      *
+      * @param  object $db for escaping
+      * @return string a leading " AND NOT ( ... )", or ''
+      */
+     private function constantExclusion( $db ) {
+
+         $parts = array();
+
+         foreach ( $this->configConstants() as $module => $keys ) {
+
+             if ( isset( $this->declared_modules[ $module ] ) ) {
+
+                 continue;
+             }
+
+             $quoted = array();
+
+             foreach ( array_keys( $keys ) as $key ) {
+
+                 $quoted[] = "'" . $db->prepare( (string) $key ) . "'";
+             }
+
+             $parts[] = sprintf( "( module = '%s' AND name IN ( %s ) )",
+                 $db->prepare( (string) $module ), implode( ', ', $quoted ) );
+         }
+
+         if ( ! $parts ) {
+
+             return '';
+         }
+
+         return sprintf( ' AND NOT ( %s )', implode( ' OR ', $parts ) );
+     }
+
+     /**
+      * The keys boot must fetch, as module => list of names.
+      *
+      * Only what the registry declares eager. Everything else is resolved when
+      * something asks for it.
+      *
+      * @return array
+      */
+     public function eagerSettings() {
+
+         $eager = array();
+
+         foreach ( $this->registry as $id => $args ) {
+
+             // A governed key is static, so boot has nothing to fetch for it.
+             if ( empty( $args['autoload'] ) || ! empty( $args['constant'] ) ) {
+
+                 continue;
+             }
+
+
+             list( $module, $key ) = explode( '|', $id, 2 );
+
+             $eager[ $module ][] = $key;
+         }
+
+         return $eager;
+     }
+
+     /**
+      * What boot fetches, as a WHERE fragment.
+      *
+      * Three parts, and the third is the one that makes this safe to land:
+      *
+      *   1. the mechanical names, for every module including ones core has
+      *      never heard of;
+      *   2. what each module that HAS declared says boot needs;
+      *   3. EVERYTHING belonging to a module that has declared nothing.
+      *
+      * Part 3 is the adoption path. Before registration existed every stored
+      * setting was loaded at boot, and a module that has not adopted keeps
+      * exactly that behaviour -- so this can ship without converting anything,
+      * and each module narrows its own boot cost when it declares.
+      *
+      * PART 3 IS MEANT TO BE REMOVED. It is a compatibility clause, not a
+      * permanent feature: every module in this repository can declare, and a
+      * third-party module needs a few releases' notice to do the same. Once
+      * that notice has been given and taken, delete it and the boot query
+      * becomes a plain statement of what boot wants -- the mechanical names
+      * plus each module's declared eager keys, and nothing else.
+      *
+      * Know what removal does before doing it: an undeclared module's stored
+      * settings stop being read. Not an error, not a warning -- its values
+      * quietly revert to whatever its code defaults say, which for `is_active`
+      * and `schema_version` is covered by part 1, and for everything else is
+      * not. So it wants a release note and a version to land in, not a quiet
+      * commit. declarationProblems() already reports the same condition for
+      * modules that HAVE declared, and is the right place to surface the
+      * warning for those that have not.
+      *
+      * @param  object $db for escaping
+      * @return string
+      */
+     private function eagerPredicate( $db ) {
+
+         $parts = array();
+
+         $names = array();
+
+         foreach ( self::mechanicalSettingNames() as $name ) {
+
+             $names[] = "'" . $db->prepare( $name ) . "'";
+         }
+
+         $parts[] = sprintf( 'name IN ( %s )', implode( ', ', $names ) );
+
+         foreach ( $this->eagerSettings() as $module => $keys ) {
+
+             $quoted = array();
+
+             foreach ( $keys as $key ) {
+
+                 $quoted[] = "'" . $db->prepare( $key ) . "'";
+             }
+
+             $parts[] = sprintf( "( module = '%s' AND name IN ( %s ) )",
+                 $db->prepare( $module ), implode( ', ', $quoted ) );
+         }
+
+         if ( $this->declared_modules ) {
+
+             $declared = array();
+
+             foreach ( array_keys( $this->declared_modules ) as $module ) {
+
+                 $declared[] = "'" . $db->prepare( $module ) . "'";
+             }
+
+             $parts[] = sprintf( 'module NOT IN ( %s )', implode( ', ', $declared ) );
+
+         } else {
+
+             // Nothing has declared, so nothing is narrowed: load it all.
+             $parts[] = '1 = 1';
+         }
+
+         $this->warnAboutUndeclaredModules();
+
+         return implode( ' OR ', $parts );
+     }
+
+     /**
+      * Keys that are eager for EVERY module, matched by name alone.
+      *
+      * is_active and schema_version mean the same thing wherever they appear,
+      * and boot needs all of them -- getActiveModules() decides what loads by
+      * scanning the settings array for is_active, so a module missing from that
+      * scan simply does not load.
+      *
+      * Matched by name rather than per module because core cannot name the
+      * modules: the directory-to-runtime-name mapping is lossy (see
+      * buildRegistry()). `name IN (...)` needs no module names at all, and is
+      * exactly right -- these are eager wherever they occur, including for a
+      * third-party module core has never heard of.
+      *
+      * @return array
+      */
+     public static function mechanicalSettingNames() {
+
+         return array_keys( \OWA\Core\Module::mechanicalSettings() );
+     }
+
+
+     /**
+      * Declare a setting: what it defaults to, whether boot needs it, and --
+      * only if the UI should render it -- how to draw it.
+      *
+      * Registration is the catalogue. Every setting is declared, including the
+      * ones only code ever writes; those simply carry no chrome, which is what
+      * keeps them off the settings screens without a second list to maintain.
+      * schema_version is the shape: boot cannot start without it, the UI must
+      * never offer it, and both of those are said here rather than in a
+      * denylist that fails open.
+      *
+      * Registering does NOT read the database. It records that the key MIGHT
+      * have a stored value, and the read happens when someone asks for it --
+      * unless boot already resolved it, in which case there is nothing left to
+      * do and the key is never marked pending at all.
+      *
+      * @param string $module
+      * @param string $key
+      * @param array  $args  default, autoload, and optional chrome
+      * @return void
+      */
+     public function registerField( $module, $key, array $args = array() ) {
+
+         $id = $module . '|' . $key;
+
+         /*
+          * A constant already governs this key, so it is static here whatever
+          * the declaration says.
+          *
+          * Checked on the way IN as well as when the constant is applied,
+          * because the two can happen in either order: constants are applied
+          * during boot, but a module registering through
+          * Module::registerSettingsField() does so when it loads, which is
+          * after. Without this, that later registration would hand storability
+          * back and the constant would stop being the last word.
+          */
+         /*
+          * Carried across a later declaration. Constants are applied during
+          * boot and a module registers when it loads, which is after -- so
+          * without this, that registration would drop the constant and the
+          * setting would stop being static.
+          */
+         $governing = $this->configFileConstantFor( $module, $key );
+
+         if ( $governing ) {
+
+             $args['constant'] = $governing;
+         }
+
+         $this->registry[ $id ] = $args;
+
+         if ( array_key_exists( 'default', $args ) && ! isset( $this->default_config[ $module ][ $key ] ) ) {
+
+             $this->default_config[ $module ][ $key ] = $args['default'];
+
+             if ( ! $this->isLoaded( $module, $key ) ) {
+
+                 $this->seedDefault( $module, $key, $args['default'] );
+             }
+         }
+
+         /*
+          * Only a STORABLE setting is ever looked up.
+          *
+          * The vast majority of registered settings are static: a code
+          * constant with a default and no way to persist one, which will never
+          * have a row no matter how long the install runs. Marking those
+          * pending would mean going to the database to discover an absence
+          * that is guaranteed by the declaration itself.
+          *
+          * Boot already resolved the eager set, so those are not pending
+          * either. What is left -- storable, not eager -- is the only thing
+          * the batch has to ask about.
+          */
+         if ( self::isStorable( $args ) && ! $this->isLoaded( $module, $key ) ) {
+
+             $this->pending[ $id ] = true;
+         }
+     }
+
+     /**
+      * Record a fieldset: a group of settings that render together.
+      *
+      * Chrome only. Nothing here affects what is read from the database --
+      * a fieldset listing a setting does not make it storable, and a fieldset
+      * that lists a setting which is NOT storable is a page promising to save
+      * something that cannot be saved. See fieldSetProblems().
+      *
+      * @param array $set
+      * @return void
+      */
+     public function registerFieldSet( array $set ) {
+
+         $this->fieldsets[ (string) $set['id'] ] = $set;
+     }
+
+     /** Every registered fieldset, as id => declaration. */
+     public function registeredFieldSets() {
+
+         return $this->fieldsets;
+     }
+
+     /**
+      * Stored values a declaration has orphaned.
+      *
+      * A declaration is the complete list of what a module stores. Two ways a
+      * stored row can fall outside it, and BOTH mean the value is ignored:
+      *
+      *   - the key is not in the declaration at all;
+      *   - the key is declared without `storable`, so it is never queried.
+      *
+      * Neither is visible otherwise. The row sits in the table, the setting
+      * answers with its default, and nothing reports the disagreement -- which
+      * is the whole reason the read path stopped quietly querying for the first
+      * case rather than continuing to mask it.
+      *
+      * Only DECLARED modules are examined. A module with no settings.php has
+      * all its rows loaded at boot and has made no claim to contradict.
+      *
+      * This QUERIES. It is for an operator asking what is wrong, not for a
+      * request path.
+      *
+      * @return array human-readable strings
+      */
+     public function declarationProblems() {
+
+         if ( ! $this->declared_modules ) {
+
+             return array();
+         }
+
+         $db = \OWA\Core\CoreAPI::dbSingleton();
+
+         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+         $quoted = array();
+
+         foreach ( array_keys( $this->declared_modules ) as $module ) {
+
+             $quoted[] = "'" . $db->prepare( (string) $module ) . "'";
+         }
+
+         $rows = (array) $db->get_results( sprintf(
+             "SELECT module, name FROM %s WHERE scope_type = 'install' AND module IN ( %s )",
+             $entity->getTableName(), implode( ', ', $quoted ) ) );
+
+         $problems = array();
+
+         foreach ( $rows as $row ) {
+
+             $args = $this->registeredField( $row['module'], $row['name'] );
+
+             if ( ! $args ) {
+
+                 $problems[] = sprintf(
+                     '%s stores %s but does not declare it, so the stored value is ignored',
+                     $row['module'], $row['name'] );
+
+                 continue;
+             }
+
+             if ( ! self::isStorable( $args ) ) {
+
+                 $problems[] = sprintf(
+                     '%s stores %s but declares it static, so the stored value is ignored',
+                     $row['module'], $row['name'] );
+             }
+         }
+
+         return $problems;
+     }
+
+     /**
+      * Declarations that cannot work, as human-readable strings.
+      *
+      * Reported rather than thrown. A settings screen with one bad field
+      * should render its other fields, and an install should not fail to boot
+      * over a third-party module's typo -- but the mistake has to be visible,
+      * because both of these fail silently otherwise: a fieldset naming a
+      * setting nobody registered renders an empty row, and one naming a
+      * setting that is not storable renders a form whose save does nothing.
+      *
+      * @return array
+      */
+     public function fieldSetProblems() {
+
+         $problems = array();
+
+         foreach ( $this->fieldsets as $id => $set ) {
+
+             $module = (string) ( $set['module'] ?? '' );
+
+             foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+
+                 $args = $this->registeredField( $module, $key );
+
+                 if ( ! $args ) {
+
+                     $problems[] = sprintf(
+                         'fieldset %s lists %s.%s, which no module registered', $id, $module, $key );
+
+                     continue;
+                 }
+
+                 if ( ! self::isStorable( $args ) ) {
+
+                     $problems[] = sprintf(
+                         'fieldset %s renders %s.%s, which is not storable: the form would save nothing',
+                         $id, $module, $key );
+                 }
+             }
+         }
+
+         return $problems;
+     }
+
+     /**
+      * Whether this setting may be stored install-wide.
+      *
+      * True for anything unregistered. Only a setting that HAS declared is
+      * held to what it declared.
+      *
+      * @return bool
+      */
+     public function mayPersistInstallWide( $module, $key ) {
+
+         /*
+          * Checked BEFORE registration, because a constant makes a key static
+          * whether or not anything declared it. The constant is the last pass
+          * of boot and beats the stored value, so persisting one writes a row
+          * that will never be read -- the same durable no-op that persisting a
+          * static setting is, arrived at from the other direction.
+          *
+          * This is also the rule OptionsUpdate states for itself. Having it
+          * here means a page that forgets to state it still cannot write one.
+          */
+         if ( $this->configFileConstantFor( $module, $key ) ) {
+
+             return false;
+         }
+
+         if ( ! $this->isRegistered( $module, $key ) ) {
+
+             return true;
+         }
+
+         $args = $this->registeredField( $module, $key );
+
+         if ( ! self::isStorable( $args ) ) {
+
+             return false;
+         }
+
+         return in_array( 'install', (array) $this->scopesFor( $module, $key ), true );
+     }
+
+     /**
+      * The scopes a setting may be stored at, or null when nothing declared it.
+      *
+      * null is not "no scopes" -- it means UNKNOWN, and the caller must treat
+      * it as unconstrained. Base has not adopted a declaration file yet, so
+      * every one of its scoped settings is unregistered, and a rule that read
+      * null as "install only" would refuse the writes the Observation Settings
+      * screen has always made.
+      *
+      * @return array|null
+      */
+     public function scopesFor( $module, $key ) {
+
+         if ( ! $this->isRegistered( $module, $key ) ) {
+
+             return null;
+         }
+
+         $args = $this->registeredField( $module, $key );
+
+         /*
+          * Install-only unless the declaration says otherwise. A setting that
+          * has not thought about the hierarchy should not silently acquire
+          * per-Property overrides -- schema_version is the case that matters,
+          * and it is why the default is the narrow one.
+          */
+         return array_values( (array) ( $args['scopes'] ?? array( 'install' ) ) );
+     }
+
+     /**
+      * Whether this setting may be written at this scope.
+      *
+      * True for anything unregistered, which is the adoption path: a
+      * third-party module, or base before it declares, keeps working exactly
+      * as it did. Only a setting that HAS declared its scopes is held to them.
+      *
+      * @return bool
+      */
+     public function mayWriteAtScope( $module, $key, $scopeType ) {
+
+         $scopes = $this->scopesFor( $module, $key );
+
+         if ( $scopes === null ) {
+
+             return true;
+         }
+
+         return in_array( (string) $scopeType, $scopes, true );
+     }
+
+     /**
+      * Whether a value for this setting can be persisted.
+      *
+      * ONE flag, said explicitly. It decides whether the code ever goes
+      * looking for a stored value, which is too load-bearing to infer from
+      * something else -- an earlier version read it off the presence of a
+      * `type` key, so one rule was stated in two places and a field could
+      * become queryable by acquiring a label.
+      *
+      * Without it a setting is static: a code constant with a default, in the
+      * catalogue so the UI layer knows it exists and refuses to write it, and
+      * never queried however long the install runs. That is the vast majority
+      * of them.
+      *
+      * `autoload` implies it. Declaring that boot must fetch a value only
+      * means anything if a value can exist.
+      *
+      * @param  array $args
+      * @return bool
+      */
+     public static function isStorable( array $args ) {
+
+         /*
+          * A config-file constant makes the setting static, whatever it
+          * declared. The constant is the last word on boot, so a stored value
+          * could never be read -- and this is where that is said, once, rather
+          * than by rewriting the declaration when the constant is applied.
+          */
+         if ( ! empty( $args['constant'] ) ) {
+
+             return false;
+         }
+
+         return ! empty( $args['storable'] ) || ! empty( $args['autoload'] );
+     }
+
+     /** Whatever was registered for a key, or an empty array. */
+     public function registeredField( $module, $key ) {
+
+         return $this->registry[ $module . '|' . $key ] ?? array();
+     }
+
+     /**
+      * Whether anything declared this key at all.
+      *
+      * Distinct from registeredField() being non-empty, and the distinction is
+      * load-bearing: a setting can be declared with NOTHING -- static, no
+      * default, no chrome -- which is exactly what a config-file-only setting
+      * whose default is derived from OWA_DIR looks like. Reading the empty
+      * array as "not registered" made those unconstrained, so persistSetting()
+      * would have accepted a stored db_class_dir. Caught by the contract test
+      * the moment the baked-in paths were removed.
+      */
+     public function isRegistered( $module, $key ) {
+
+         return isset( $this->registry[ $module . '|' . $key ] );
+     }
+
+     /** Every registered key, as "module|key" => args. */
+     public function registeredFields() {
+
+         return $this->registry;
+     }
+
+     /** Whether this key has already been resolved against the database. */
+     private function isLoaded( $module, $key ) {
+
+         return isset( $this->loaded[ $module . '|' . $key ] );
+     }
+
+     /**
+      * Resolve several settings in ONE query.
+      *
+      * The batch exists because a settings screen reads a whole page of keys
+      * at once, and resolving them one at a time would be a query each. Keys
+      * already resolved are dropped before the query, so calling this twice
+      * costs one query and then none.
+      *
+      * A key with NO ROW is resolved too. "There is nothing stored" is an
+      * answer -- the default stands -- and recording it is what stops the next
+      * read asking again.
+      *
+      * @param  array $pairs  list of array($module, $key)
+      * @return array "module|key" => effective value
+      */
+     public function getSettings( array $pairs ) {
+
+         $wanted = array();
+
+         foreach ( $pairs as $pair ) {
+
+             list( $module, $key ) = $pair;
+
+             $id = $module . '|' . $key;
+
+             if ( ! $this->isLoaded( $module, $key ) ) {
+
+                 $wanted[ $id ] = array( $module, $key );
+             }
+         }
+
+         if ( $wanted ) {
+
+             $this->resolveFromStore( $wanted );
+         }
+
+         $out = array();
+
+         foreach ( $pairs as $pair ) {
+
+             list( $module, $key ) = $pair;
+
+             $out[ $module . '|' . $key ] = $this->get( $module, $key );
+         }
+
+         return $out;
+     }
+
+     /**
+      * Resolve EVERY pending key at once, in one query.
+      *
+      * Registering a setting says "there might be a row for this". Asking the
+      * database once per key would make registration expensive in proportion
+      * to how many settings exist -- base alone has 159, and about six of them
+      * have ever been stored, so that would be ~150 queries to discover ~150
+      * absences.
+      *
+      * Collectively it is one query, and it does not enumerate the keys: the
+      * rows not already in hand ARE the answer, and there are only ever as many
+      * as someone has actually stored. Every pending key is then marked
+      * resolved, including the overwhelming majority that had no row, because
+      * "nothing is stored" is an answer and recording it is what stops this
+      * running again.
+      *
+      * The result: a request that only reads eager settings never runs this at
+      * all, and one that reads any non-eager setting runs it exactly once.
+      *
+      * @return void
+      */
+     private function resolveAllPending() {
+
+         if ( ! $this->pending || ! $this->store_ready || $this->resolving ) {
+
+             return;
+         }
+
+         $this->resolving = true;
+
+         /*
+          * Kept, because only these keys may be APPLIED.
+          *
+          * The query below asks for the rows it does not already have, which
+          * is cheaper than enumerating a hundred names -- but that means it
+          * also brings back rows for keys nobody asked about: static ones, and
+          * the config-file-only ones whose whole point is never to come from
+          * the database. Applying what arrived rather than what was wanted
+          * made a static setting's stored value take effect whenever something
+          * else happened to trigger the batch, and do nothing when it did not.
+          */
+         $wanted = $this->pending;
+
+         foreach ( array_keys( $this->pending ) as $id ) {
+
+             $this->loaded[ $id ] = true;
+         }
+
+         $this->pending = array();
+
+         $db = \OWA\Core\CoreAPI::dbSingleton();
+
+         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+         $rows = (array) $db->get_results( sprintf(
+             "SELECT module, name, value FROM %s WHERE scope_type = 'install'",
+             $entity->getTableName() ) );
+
+         $stored = array();
+
+         foreach ( $rows as $row ) {
+
+             $id = $row['module'] . '|' . $row['name'];
+
+             /*
+              * Rows boot already applied are skipped rather than re-applied:
+              * load() ran its two filters over them, and re-applying the raw
+              * value here would put back a config-file-only setting that was
+              * deliberately dropped.
+              */
+             if ( isset( $this->loaded_at_boot[ $id ] ) || ! isset( $wanted[ $id ] ) ) {
+
+                 continue;
+             }
+
+             $stored[ $row['module'] ][ $row['name'] ] =
+                 unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+         }
+
+         /*
+          * No config-file-only strip here, and no constant strip either. Both
+          * are redundant on this path now: only keys that were PENDING are
+          * applied, a config-file-only setting is declared static so is never
+          * pending, and a constant-governed key is made static the moment the
+          * constant is applied.
+          *
+          * The strip stays in load(), which is not redundant -- see there.
+          */
+
+         foreach ( $stored as $module => $values ) {
+
+             foreach ( $values as $key => $value ) {
+
+                 $this->set( $module, $key, $value );
+             }
+         }
+
+         $this->resolving = false;
+     }
+
+     /**
+      * One query for a set of keys, applied over whatever the defaults say.
+      *
+      * Marks every key asked for as resolved, not merely the ones a row came
+      * back for. That is the whole reason this can be called from get()
+      * without turning every miss into a query.
+      *
+      * @param array $wanted "module|key" => array(module, key)
+      * @return void
+      */
+     private function resolveFromStore( array $wanted ) {
+
+         if ( ! $this->store_ready || $this->resolving ) {
+
+             return;
+         }
+
+         $this->resolving = true;
+
+         foreach ( $wanted as $id => $pair ) {
+
+             $this->loaded[ $id ] = true;
+
+             unset( $this->pending[ $id ] );
+         }
+
+         $db = \OWA\Core\CoreAPI::dbSingleton();
+
+         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
+
+         $predicates = array();
+
+         foreach ( $wanted as $pair ) {
+
+             $predicates[] = sprintf( "( module = '%s' AND name = '%s' )",
+                 $db->prepare( (string) $pair[0] ), $db->prepare( (string) $pair[1] ) );
+         }
+
+         $rows = (array) $db->get_results( sprintf(
+             "SELECT module, name, value FROM %s WHERE scope_type = 'install' AND ( %s )",
+             $entity->getTableName(), implode( ' OR ', $predicates ) ) );
+
+         if ( ! $rows ) {
+
+             $this->resolving = false;
+
+             return;
+         }
+
+         $stored = array();
+
+         foreach ( $rows as $row ) {
+
+             $stored[ $row['module'] ][ $row['name'] ] =
+                 unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+         }
+
+         /*
+          * The same two filters the boot load applies. A stored value is a
+          * stored value whenever it is read: a config-file constant still beats
+          * it, and a config-file-only key must still never come from the
+          * database, which is a security rule rather than a precedence one.
+          */
+         /*
+          * No config-file-only strip here, and no constant strip either. Both
+          * are redundant on this path now: only keys that were PENDING are
+          * applied, a config-file-only setting is declared static so is never
+          * pending, and a constant-governed key is made static the moment the
+          * constant is applied.
+          *
+          * The strip stays in load(), which is not redundant -- see there.
+          */
+
+         foreach ( $stored as $module => $values ) {
+
+             foreach ( $values as $key => $value ) {
+
+                 $this->set( $module, $key, $value );
+             }
+         }
+
+         $this->resolving = false;
+     }
+
+     /**
+      * Remove a stored install setting, so the key falls back to its code
+      * default.
+      *
+      * persistSetting() cannot express this. Writing '' or false STORES that
+      * value -- a row holding an empty string is not the same as no row, and
+      * the caller who meant "unset this" gets a setting that overrides the
+      * default with emptiness forever. SettingsShutdownSaveTest did exactly
+      * that and left `base.owa_settings_shutdown_probe` in the config of every
+      * install it ever ran against, including this one.
+      *
+      * The row goes on the next save(), through the pruning that already
+      * removes stored keys db_settings no longer holds.
+      *
+      * @return void
+      */
+     public function removeSetting( $module, $key ) {
+
+         unset( $this->db_settings[ $module ][ $key ] );
+
+         /*
+          * And out of the live array, or this request keeps answering with the
+          * value it just removed.
+          */
+         if ( array_key_exists( $module, $this->default_config )
+              && array_key_exists( $key, $this->default_config[ $module ] ) ) {
+
+             $this->set( $module, $key, $this->default_config[ $module ][ $key ] );
+
+         } else {
+
+             $values = $this->config ? $this->config->get('settings') : $this->default_config;
+
+             unset( $values[ $module ][ $key ] );
+
+             if ( $this->config ) {
+                 $this->config->set( 'settings', $values );
+             } else {
+                 $this->default_config = $values;
+             }
+         }
+
+         $this->markDirty();
+     }
+
+     /**
+      * Settings that cannot hold a stored value, DERIVED from the registry.
+      *
+      * The replacement for configFileOnlySettings(), which was a
+      * hand-maintained list of 21 keys saying what the declaration now says:
+      * not storable. Two statements of one rule are two things to keep in
+      * step, and the list is the one that goes.
+      *
+      * A setting is here because its module declared it without `storable`, or
+      * because a config-file constant governs it. Nothing to update when a
+      * setting is added -- the declaration is the source.
+      *
+      * @return array module => key => true
+      */
+     public static function staticSettings() {
+
+         $c = \OWA\Core\CoreAPI::configSingleton();
+
+         $out = array();
+
+         foreach ( $c->registeredFields() as $id => $args ) {
+
+             if ( self::isStorable( (array) $args ) ) {
+
+                 continue;
+             }
+
+             list( $module, $key ) = explode( '|', $id, 2 );
+
+             $out[ $module ][ $key ] = true;
+         }
+
+         return $out;
+     }
+
 
      /**
       * Form-denylisted settings that ARE legitimate database state. Listed
@@ -1163,7 +2365,7 @@ namespace OWA\Module\Base\Classes;
              return $db_settings;
          }
 
-         foreach ( $this->config_file_constants as $module => $keys ) {
+         foreach ( $this->configConstants() as $module => $keys ) {
 
              if ( ! isset( $db_settings[ $module ] ) || ! is_array( $db_settings[ $module ] ) ) {
                  continue;
@@ -1185,26 +2387,6 @@ namespace OWA\Module\Base\Classes;
          return $db_settings;
      }
 
-     public static function stripConfigFileOnlySettings( $db_settings ) {
-
-         if ( ! is_array( $db_settings ) ) {
-             return $db_settings;
-         }
-
-         foreach ( self::configFileOnlySettings() as $module => $keys ) {
-
-             if ( ! isset( $db_settings[ $module ] ) || ! is_array( $db_settings[ $module ] ) ) {
-                 continue;
-             }
-
-             foreach ( array_keys( $keys ) as $key ) {
-
-                 unset( $db_settings[ $module ][ $key ] );
-             }
-         }
-
-         return $db_settings;
-     }
 
      /**
       * Is a stored value equivalent to the code default, such that dropping it
@@ -1391,34 +2573,11 @@ namespace OWA\Module\Base\Classes;
                  */
                 'ns'                                => 'owa_',
                 'app_ns'                            => '',
-                'visitor_param'                        => 'v',
-                'session_param'                        => 's',
-                'site_session_param'                => 'ss', //sdk
-                'last_request_param'                => 'last_req',
                 'feed_subscription_param'            => 'sid',
                 'source_param'                        => 'source',
-                'graph_param'                        => 'graph',
-                'period_param'                        => 'period',
-                'document_param'                    => 'document',
-                'referer_param'                        => 'referer',
                 'site_id'                            => '',
                 'configuration_id'                    => '1',
                 'session_length'                    => 1800, //sdk
-                'requests_table'                    => 'request',
-                'sessions_table'                    => 'session',
-                'referers_table'                    => 'referer',
-                'ua_table'                            => 'ua',
-                'os_table'                            => 'os',
-                'documents_table'                    => 'document',
-                'sites_table'                        => 'site',
-                'hosts_table'                        => 'host',
-                'config_table'                        => 'configuration',
-                'version_table'                        => 'version',
-                'feed_requests_table'                => 'feed_request',
-                'visitors_table'                    => 'visitor',
-                'impressions_table'                    => 'impression',
-                'clicks_table'                        => 'click',
-                'users_table'                        => 'user',
                 'db_type'                            => '',
                 'db_name'                            => '',
                 'db_host'                            => '',
@@ -1428,11 +2587,7 @@ namespace OWA\Module\Base\Classes;
                 'db_force_new_connections'            => true,
                 'db_make_persistant_connections'    => false,
                 'resolve_hosts'                        => true,
-                'log_feedreaders'                    => true,
                 'log_robots'                        => false,
-                'log_sessions'                        => true,
-                'log_dom_clicks'                    => true,
-                'async_db'                            => false,
                 'clean_query_string'                => true,
                 'query_string_filters'                => '', // move to site settings
                 'async_log_dir'                        => '', //OWA_DATA_DIR . 'logs/',
@@ -1440,9 +2595,7 @@ namespace OWA\Module\Base\Classes;
                 'async_lock_file'                    => 'owa.lock',
                 'async_error_log_file'                => 'events_error.txt',
                 'notice_email'                        => '',
-                'log_php_errors'                    => false,
                 'error_handler'                        => 'production',
-                'error_log_level'                    => 0,
                 'error_log_file'                    => '', //OWA_DATA_DIR . 'logs/errors.txt',
                 'ua-regexes'                        => '',
                 'search_engines.ini'                => OWA_BASE_DIR . '/conf/search_engines.ini',
@@ -1461,19 +2614,11 @@ namespace OWA\Module\Base\Classes;
                 'action_url'                        => '',
                 'images_url'                        => '',
                 'assets_url'                        => '',
-                'reporting_url'                        => '',
                 'p3p_policy'                        => 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
-                'graph_link_template'                => '%s?owa_action=graph&name=%s&%s', //action_url?...
                 'link_template'                        => '%s?%s', // main_url?key=value....
                 'owa_user_agent'                    => 'Open Web Analytics Bot '.OWA_VERSION,
-                'fetch_owa_news'                    => true,
                 'owa_news_url'                        => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5',
-                'use_summary_tables'                => false,
-                'summary_framework'                    => '',
-                'click_drawing_mode'                => 'center_on_page', // remove
-                'log_clicks'                        => true,
                 'timezone'                            => 'America/Los_Angeles',
-                'log_dom_stream_percentage'            => 50,
                 'wiki_url'                            => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
                 'password_length'                    => 4,
                 'modules'                            => array('base'),
@@ -1502,7 +2647,6 @@ namespace OWA\Module\Base\Classes;
                 // partition. A cap: without it, an unreachable budget would drive
                 // everything into one partition, which fits no better and means
                 // all of history ages out at once.
-                'partition_max_years_per_block'      => 5,
                 // Set to a positive integer to state the per-table partition
                 // budget outright instead of deriving it from innodb_open_files.
                 'partition_max_partitions'           => 0,
@@ -1521,35 +2665,23 @@ namespace OWA\Module\Base\Classes;
                 // retried forever. Set either to 0 to disable that check.
                 'queue_max_retry_count'                => 25,          // attempts before giving up
                 'queue_max_retry_age'                => 86400,       // seconds (24h) since first queued
-                'event_queue_type'                    => 'file',
-                'event_secondary_queue_type'        => '',
-                'use_remote_event_queue'            => true,
-                'remote_event_queue_type'            => 'http',
                 'remote_event_queue_endpoint'        => '',
                 'allowed_queued_event_types'        => [],
                 'cookie_domain'                        => false,
                 'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
-                'ws_timeout'                        => 10,
                 'is_active'                            => true,
-                'per_site_visitors'                    => false, // remove
                 'cache_objects'                        => false,
                 'log_named_users'                    => true,
                 'log_visitor_pii'                    => true,
                 'excluded_ips'                        => '',
                 'anonymize_ips'                        => false,
-                'track_feed_links'                    => true,
                 'theme'                                => '',
                 'reserved_words'                    => array('do' => 'action'),
-                'login_view'                        => 'base.login',
-                'not_capable_view'                    => 'base.error',
                 'start_page'                        => 'base.reportingHome',
-                'default_action'                    => 'base.loginForm',
                 'default_page'                        => '', // move to site settings
                 'default_cache_expiration_period'    => 604800,
                 'nonce_expiration_period'            => 7200,
-                'max_prior_campaigns'                => 5, //sdk
                 'default_reporting_period'            => 'last_seven_days',
-                'trafficAttributionMode'            => 'direct', //sdk
                 /*
                  * campaignAttributionWindow stood here, 60 days, and was inert
                  * for its whole life: StateManager::set() overwrote its own
@@ -1637,7 +2769,6 @@ namespace OWA\Module\Base\Classes;
                 'allow_slowly_changing_dimensions'	=> true,
                 'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
-                'instance_mode'                     => '',
                 /*
                  * v2's event names. Kept as their own list rather than merged
                  * into tracking_event_types, so that what v1 collects and what
