@@ -288,6 +288,64 @@ class ResultSetManager extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * An entity, bound to the Property this request names when it needs to be.
+     *
+     * THE CUBE HAS NO ONE TABLE. There is one per Property (Cube\Cubes), so
+     * `Entity\Event` is a shape rather than a table and its getTableName()
+     * throws until something says which Property. This is the place that knows:
+     * a query carries a siteId, and a site belongs to a Property.
+     *
+     * Every entity in a query goes through here, so the binding cannot be
+     * forgotten at one of the seven places an entity is built. An entity that
+     * is not the cube is returned exactly as entityFactory() made it.
+     *
+     * An unresolvable Property leaves the entity UNBOUND on purpose: the next
+     * getTableName() throws, which is a loud failure rather than a query
+     * against the wrong Property's cube.
+     *
+     * @param  string $entity_name
+     * @return object
+     */
+    protected function entityFor( $entity_name ) {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( $entity_name );
+
+        if ( ! method_exists( $entity, 'bindToProperty' ) ) {
+
+            return $entity;
+        }
+
+        $property_id = $this->propertyIdForRequest();
+
+        if ( $property_id !== '' ) {
+
+            $entity->bindToProperty( $property_id );
+        }
+
+        return $entity;
+    }
+
+    /**
+     * The Property behind this query's siteId.
+     *
+     * Read from the CONSTRAINT rather than from getSiteId(): setSiteId() writes
+     * a constraint and a query param, and getSiteId() reads $params['siteId'],
+     * which a caller that only set the constraint never populates.
+     *
+     * @return string the Property id, or ''
+     */
+    protected function propertyIdForRequest() {
+
+        $constraint = $this->getConstraint( 'siteId' );
+
+        $site_id = is_array( $constraint )
+            ? (string) ( $constraint['value'] ?? '' )
+            : (string) $this->getSiteId();
+
+        return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id );
+    }
+
     function applyConstraints( $constraints = '', $db = '', $entity = '') {
 
         if ( !$db ) {
@@ -499,7 +557,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         foreach ($entities as $entity) {
 
-            $niceness[$entity] = \OWA\Core\CoreAPI::entityFactory($entity)->getSummaryLevel();
+            $niceness[$entity] = $this->entityFor($entity)->getSummaryLevel();
         }
 
         // sort the fact table list by summary level
@@ -564,7 +622,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             // is no error then everythig is related and we are good to go.
             if (!$error) {
                 \OWA\Core\CoreAPI::debug('optimal base entity is: '.$entity_name);
-                $this->baseEntity = \OWA\Core\CoreAPI::entityFactory($entity_name);
+                $this->baseEntity = $this->entityFor($entity_name);
                 return $this->baseEntity;
             }
 
@@ -629,7 +687,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function isDimensionRelated($dimension_name, $entity_name) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory($entity_name);
+        $entity = $this->entityFor($entity_name);
 
         $dimension = $this->lookupDimension($dimension_name, $entity);
 
@@ -940,7 +998,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function getDimensionByEntityName($dim_name, $entity_name) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory($entity_name);
+        $entity = $this->entityFor($entity_name);
         return $this->lookupDimension($dim_name, $entity);
     }
 
@@ -970,7 +1028,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $dim = $service->getDimension($name);
 
                 if ($dim) {
-                    $dimEntity = \OWA\Core\CoreAPI::entityFactory($dim['entity']);
+                    $dimEntity = $this->entityFor($dim['entity']);
                     // alias needs to use fk name in case there are two joins on the
                     // same table. This is also used in addRelation method
                     $alias = $dimEntity->getTableAlias().'_via_'.$dim['foreign_key_name'];
@@ -1639,7 +1697,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             if ($fk) {
 
                 // create dimension entity
-                $dimEntity = \OWA\Core\CoreAPI::entityFactory($dim['entity']);
+                $dimEntity = $this->entityFor($dim['entity']);
                 // get foreign key column
                 //$bm = $this->getBaseMetric();
                 //$fpk_col = $bm->entity->getProperty($fk);
@@ -2190,7 +2248,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function generateSegmentQuery( $base_entity ) {
 
         $segment = $this->getSegment();
-        $segment_entity = \OWA\Core\CoreAPI::entityFactory($base_entity->getName());
+        $segment_entity = $this->entityFor($base_entity->getName());
         $segment_entity->setTableAlias( $segment_entity->getTableAlias() . '_segment');
 
         if ( $segment ) {

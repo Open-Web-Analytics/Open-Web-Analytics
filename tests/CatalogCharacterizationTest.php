@@ -196,12 +196,22 @@ final class CatalogCharacterizationTest extends TestCase
          * getAllDimensions() flattens by letting the last entity win. That was
          * DEFECT 2 while it was the only thing on offer; it is now the
          * deliberate unscoped behaviour, kept because the picker and its
-         * validation are written against one entry per name. The scoped call
-         * below is what a second generation will use.
+         * validation are written against one entry per name.
+         *
+         * The UNION of the two registries, not the sum. A name may be
+         * registered in both shapes at once -- v1 normalised against a
+         * dimension table, v2 denormalised against the cube -- while v2's
+         * dimensions replace v1's, and the sum would count such a name twice.
+         * What the accessor owes is one entry per NAME, which is what this
+         * says.
          */
-        $this->assertSame(
-            $counts['dimensionNamesNormalized'] + $counts['dimensionNamesDenormalized'],
-            $counts['accessorDimensionNames'] );
+        $snapshot = Harness::snapshot();
+
+        $names = array_unique( array_merge(
+            array_keys( (array) $snapshot['dimensionsNormalized'] ),
+            array_keys( (array) $snapshot['dimensionsDenormalized'] ) ) );
+
+        $this->assertSame( count( $names ), $counts['accessorDimensionNames'] );
 
         $entry = \OWA\Core\CoreAPI::getAllDimensions()['userName'];
 
