@@ -462,8 +462,86 @@ function seed(): array
     $out['clicks_seeded']  = seedClicks();
     $out['actions_seeded'] = seedActions();
 
+    // 12. The Property's reporting cube, built from the raw rows the seeding
+    //     above just produced. Without it every v2 dimension resolves to a
+    //     table that does not exist, and a widget reading one draws NOTHING --
+    //     silently, because a cube query that cannot name its table fails
+    //     before it returns rows. The dashboard's Visitor Types pie was the
+    //     first widget to move, and it simply vanished.
+    $out['cube'] = seedCube();
+
     $out['status']            = 'seeded';
     return $out;
+}
+
+/**
+ * Build the fixture Property's cube.
+ *
+ * A PROPERTY ALREADY EXISTS -- createNewSite() mints one, because a site is an
+ * Observation Profile (see unseedPropertyIfEmpty). What does not exist is the
+ * TABLE: a cube is created by the build job on a Property's first data, and
+ * nothing in this fixture ran one. So v2 reporting had no end-to-end coverage
+ * at all, and the first report to read the cube failed in a way no spec could
+ * see until it counted the things on the page.
+ *
+ * Built from whatever raw rows the seeding produced rather than from seeded
+ * ones of its own: ingest writes owa_event_raw alongside the v1 tables on the
+ * same logEvent() call, so the cube is derived from the same traffic the v1
+ * reports are, and the two cannot disagree about what happened.
+ */
+function seedCube(): array
+{
+    $site = owa_coreAPI::entityFactory('base.site');
+    $site->load(E2E_SITE_ID, 'site_id');
+
+    $property_id = (string) $site->get('property_id');
+
+    if (! $property_id) {
+
+        return array('status' => 'no property on the fixture site');
+    }
+
+    $db  = owa_coreAPI::dbSingleton();
+    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+
+    $span = $db->get_row(sprintf(
+        "SELECT MIN(yyyymmdd) AS lo, MAX(yyyymmdd) AS hi FROM %s WHERE site_id = '%s'",
+        $raw, $db->prepare(E2E_SITE_ID)));
+
+    if (empty($span['lo'])) {
+
+        return array('status' => 'no raw rows to build from');
+    }
+
+    if (! $db->tableExists(\OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id))
+        && ! \OWA\Module\Base\Classes\Cube\Cubes::create($property_id)) {
+
+        return array('status' => 'could not create the cube');
+    }
+
+    $builder = new \OWA\Module\Base\Classes\Cube\Builder($property_id);
+    $rows    = 0;
+    $failed  = array();
+
+    foreach ($builder->partitions((int) $span['lo'], (int) $span['hi']) as $partition) {
+
+        $result = $builder->rebuild($partition);
+
+        if (empty($result['ok'])) {
+
+            $failed[] = $partition['name'];
+            continue;
+        }
+
+        $rows += (int) $result['rows'];
+    }
+
+    return array(
+        'property'   => $property_id,
+        'days'       => $span['lo'] . '-' . $span['hi'],
+        'rows_built' => $rows,
+        'failed'     => $failed,
+    );
 }
 
 /**
@@ -1107,6 +1185,33 @@ function teardown(): array
             $removed['owa_site_user'] = 'cleared';
         }
     } catch (\Throwable $e) { $removed['owa_site_user'] = 'skip: ' . $e->getMessage(); }
+
+    /*
+     * The Property's cube, before the site goes -- unseedPropertyIfEmpty()
+     * runs off the site's property_id, so once the site is gone there is
+     * nothing left to name the table with and it would survive every later
+     * run holding the previous one's rows.
+     */
+    try {
+        $cubeSite = owa_coreAPI::entityFactory('base.site');
+        $cubeSite->load(E2E_SITE_ID, 'site_id');
+        $property = (string) $cubeSite->get('property_id');
+
+        if ($property) {
+            $db    = owa_coreAPI::dbSingleton();
+            $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property);
+
+            // The staging and side tables too: a build that died between
+            // creating one and swapping it leaves them behind, and the next
+            // build derives staging from the live cube's DDL rather than from
+            // whatever is sitting there.
+            foreach (array('', '_rebuild', '_computed') as $suffix) {
+                $db->query(sprintf('DROP TABLE IF EXISTS %s%s', $table, $suffix));
+            }
+
+            $removed['cube'] = $table . ' dropped';
+        }
+    } catch (\Throwable $e) { $removed['cube'] = 'skip: ' . $e->getMessage(); }
 
     // Remove the fixture users (analyst + admin) and site.
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_USER_ID, 'user_id'); } catch (\Throwable $e) {}
