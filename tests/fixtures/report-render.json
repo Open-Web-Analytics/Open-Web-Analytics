@@ -971,16 +971,16 @@
             {
                 "var": "exitpagesurl",
                 "query": {
-                    "dimensions": "exitPagePath",
+                    "dimensions": "pagePath",
                     "do": "reports",
                     "format": "json",
-                    "metrics": "visits",
+                    "metrics": "exits",
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
                     "resultsPerPage": "10",
                     "siteId": "1",
-                    "sort": "visits-",
+                    "sort": "exits-",
                     "version": "v1"
                 }
             },
@@ -1776,16 +1776,16 @@
             {
                 "var": "site_usage_dimurl",
                 "query": {
-                    "dimensions": "exitPagePath,exitPageTitle",
+                    "dimensions": "pagePath,pageTitle",
                     "do": "reports",
                     "format": "json",
-                    "metrics": "visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors",
+                    "metrics": "pageViews,exits,exitRate",
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
                     "resultsPerPage": "30",
                     "siteId": "1",
-                    "sort": "visits-",
+                    "sort": "exits-",
                     "version": "v1"
                 }
             }

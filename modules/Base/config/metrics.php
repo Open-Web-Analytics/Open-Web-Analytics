@@ -60,6 +60,36 @@ return array(
             'condition'   => array( 'column' => 'event_type', 'value' => 'click' ),
         ),
 
+        /*
+         * Exits: the last event of a session, counted on the page it happened
+         * on. A METRIC, not a dimension, which is the whole point of it.
+         *
+         * 1.x spelled this as exitPagePath / exitPageUrl / exitPageTitle --
+         * dimensions that resolve to a page only on the session's last row.
+         * Grouping by one puts every OTHER view of that page into a single
+         * anonymous bucket, so the report loses the denominator and cannot
+         * state an exit rate at all -- the only number anyone wants exits for.
+         * Measured on three sessions (/a then /b, /a then /c, /a alone) the
+         * dimension reports /a once; /a was viewed three times and exited from
+         * once.
+         *
+         * GA4 reached the same shape: Exits is a metric there, paired with the
+         * ordinary page dimension, and GA ships no exit-page dimension at all.
+         *
+         * exitRate goes further than GA, which leaves you to divide Exits by
+         * Views yourself in an Exploration. It costs one entry here now that
+         * `ratio` exists, and 1.x did report it.
+         */
+        'exits' => array(
+            'label'       => 'Exits',
+            'description' => 'The number of times a session ended on this page.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'is_exit', 'value' => 1 ),
+        ),
+
         'keyEvents' => array(
             'label'       => 'Key Events',
             'description' => 'Conversions, counted from the rows the server materialised for them.',
@@ -150,6 +180,22 @@ return array(
             'numerator'   => 'pageViews',
             'denominator' => 'visits',
             'precision'   => 2,
+        ),
+
+        /*
+         * Exits over page views. NULL where a page was never viewed, which a
+         * page with exits cannot be -- so the guard is for the empty grouping
+         * rather than for a real page.
+         */
+        'exitRate' => array(
+            'label'       => 'Exit Rate',
+            'description' => 'The share of views of this page that ended the session.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'exits',
+            'denominator' => 'pageViews',
+            'precision'   => 4,
         ),
 
         'sessionsPerUser' => array(

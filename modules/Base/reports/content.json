@@ -67,9 +67,9 @@
             "container": "exit-pages",
             "title": "Exit Pages",
             "query": {
-                "metrics": "visits",
-                "dimensions": "exitPagePath",
-                "sort": "visits-"
+                "metrics": "exits",
+                "dimensions": "pagePath",
+                "sort": "exits-"
             },
             "more": {
                 "reportId": "exit-pages",

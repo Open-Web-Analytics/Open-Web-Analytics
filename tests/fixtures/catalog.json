@@ -1,12 +1,12 @@
 {
     "counts": {
-        "metricNames": 84,
-        "metricImplementations": 111,
-        "dimensionNamesNormalized": 46,
-        "dimensionEntriesNormalized": 46,
+        "metricNames": 86,
+        "metricImplementations": 113,
+        "dimensionNamesNormalized": 42,
+        "dimensionEntriesNormalized": 42,
         "dimensionNamesDenormalized": 104,
         "dimensionEntriesDenormalized": 269,
-        "accessorDimensionNames": 138
+        "accessorDimensionNames": 134
     },
     "metrics": {
         "actions": [
@@ -262,6 +262,59 @@
                     "name": "eventsPerSession",
                     "numerator": "eventCount",
                     "precision": 2,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "exitRate": [
+            {
+                "name": "exitRate",
+                "class": "base.configurableMetric",
+                "label": "Exit Rate",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "pageViews",
+                    "description": "The share of views of this page that ended the session.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Exit Rate",
+                    "metric_type": "ratio",
+                    "name": "exitRate",
+                    "numerator": "exits",
+                    "precision": 4,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "exits": [
+            {
+                "name": "exits",
+                "class": "base.configurableMetric",
+                "label": "Exits",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "condition": [
+                        1,
+                        "is_exit"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of times a session ended on this page.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Exits",
+                    "metric_type": "count",
+                    "name": "exits",
+                    "numerator": "",
+                    "precision": "",
                     "subtrahend_column": ""
                 }
             }
@@ -2342,58 +2395,6 @@
                 "label": "Entry Page URL",
                 "description": "The url of the page first viewed during a visit.",
                 "foreign_key_name": "first_page_id",
-                "data_type": "string",
-                "denormalized": false
-            }
-        },
-        "exitPagePath": {
-            "base.document": {
-                "name": "exitPagePath",
-                "entity": "base.document",
-                "column": "uri",
-                "family": "visit",
-                "label": "Exit Page Path",
-                "description": "The path of the page last viewed during a visit.",
-                "foreign_key_name": "last_page_id",
-                "data_type": "string",
-                "denormalized": false
-            }
-        },
-        "exitPageTitle": {
-            "base.document": {
-                "name": "exitPageTitle",
-                "entity": "base.document",
-                "column": "page_title",
-                "family": "visit",
-                "label": "Exit Page Title",
-                "description": "The title of the page last viewed during a visit.",
-                "foreign_key_name": "last_page_id",
-                "data_type": "string",
-                "denormalized": false
-            }
-        },
-        "exitPageType": {
-            "base.document": {
-                "name": "exitPageType",
-                "entity": "base.document",
-                "column": "page_type",
-                "family": "visit",
-                "label": "Exit Page Type",
-                "description": "The page type of the page last viewed during a visit.",
-                "foreign_key_name": "last_page_id",
-                "data_type": "string",
-                "denormalized": false
-            }
-        },
-        "exitPageUrl": {
-            "base.document": {
-                "name": "exitPageUrl",
-                "entity": "base.document",
-                "column": "url",
-                "family": "visit",
-                "label": "Exit Page URL",
-                "description": "The url of the page last viewed during a visit.",
-                "foreign_key_name": "last_page_id",
                 "data_type": "string",
                 "denormalized": false
             }
@@ -6499,50 +6500,6 @@
             "data_type": "string",
             "denormalized": true
         },
-        "exitPagePath": {
-            "name": "exitPagePath",
-            "entity": "base.document",
-            "column": "uri",
-            "family": "visit",
-            "label": "Exit Page Path",
-            "description": "The path of the page last viewed during a visit.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
-        },
-        "exitPageTitle": {
-            "name": "exitPageTitle",
-            "entity": "base.document",
-            "column": "page_title",
-            "family": "visit",
-            "label": "Exit Page Title",
-            "description": "The title of the page last viewed during a visit.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
-        },
-        "exitPageType": {
-            "name": "exitPageType",
-            "entity": "base.document",
-            "column": "page_type",
-            "family": "visit",
-            "label": "Exit Page Type",
-            "description": "The page type of the page last viewed during a visit.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
-        },
-        "exitPageUrl": {
-            "name": "exitPageUrl",
-            "entity": "base.document",
-            "column": "url",
-            "family": "visit",
-            "label": "Exit Page URL",
-            "description": "The url of the page last viewed during a visit.",
-            "foreign_key_name": "last_page_id",
-            "data_type": "string",
-            "denormalized": false
-        },
         "feedType": {
             "name": "feedType",
             "entity": "base.feed_request",
@@ -7483,10 +7440,6 @@
                 "entryPageTitle",
                 "entryPageType",
                 "entryPageUrl",
-                "exitPagePath",
-                "exitPageTitle",
-                "exitPageType",
-                "exitPageUrl",
                 "goalStartsInVisit",
                 "goalValueInVisit",
                 "goalsInVisit",

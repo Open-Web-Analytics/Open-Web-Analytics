@@ -126,6 +126,63 @@ final class NewVsReturningTest extends TestCase
         $this->assertArrayNotHasKey('valueLabels', $widget);
     }
 
+    /**
+     * Exits are a metric over the ordinary page dimension.
+     *
+     * The same rule as newVsReturning, applied to the other end of a session:
+     * a dimension resolving to a page only on the session's LAST row has no
+     * denominator, so it can count exits and never state a rate. Pinned here
+     * because the tempting fix is to bring the dimension back.
+     */
+    public function testExitsAreAMetricAndNotADimension(): void
+    {
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        foreach (['exitPagePath', 'exitPageLocation', 'exitPageTitle', 'exitPageUrl'] as $name) {
+
+            $this->assertArrayNotHasKey($name, $service->dimensions, $name . ' is back');
+            $this->assertArrayNotHasKey($name, $service->denormalizedDimensions, $name . ' is back');
+        }
+
+        // The replacements exist, so the assertions above are not passing on an
+        // empty registry.
+        $this->assertArrayHasKey('exits', $service->metrics,
+            'exits must exist for the dimensions to be removable');
+
+        $declaration = include OWA_DIR . 'modules/Base/config/metrics.php';
+        $metrics     = (array) $declaration['metrics'];
+
+        $this->assertSame('ratio', $metrics['exitRate']['metric_type']);
+        $this->assertSame('exits', $metrics['exitRate']['numerator']);
+
+        // The denominator is the whole point -- it is what the dimension form
+        // could not carry.
+        $this->assertSame('pageViews', $metrics['exitRate']['denominator']);
+
+        $this->assertSame(array('column' => 'is_exit', 'value' => 1),
+            $metrics['exits']['condition']);
+    }
+
+    /** And no shipped report groups by one. */
+    public function testNoShippedReportGroupsByAnExitPage(): void
+    {
+        $files = glob(OWA_DIR . 'modules/*/reports/*.json');
+
+        $this->assertNotEmpty($files, 'no report configs found; this assertion would be vacuous');
+
+        foreach ($files as $file) {
+
+            $json = json_decode((string) file_get_contents($file), true);
+
+            foreach ((array) ($json['widgets'] ?? []) as $w) {
+
+                $this->assertStringNotContainsString('exitPage',
+                    (string) ($w['query']['dimensions'] ?? ''),
+                    basename($file) . ' still groups by an exit page dimension');
+            }
+        }
+    }
+
     /** The cube config fills the column, and with this kind. */
     public function testTheCubeConfigFillsTheColumnWithThisStep(): void
     {

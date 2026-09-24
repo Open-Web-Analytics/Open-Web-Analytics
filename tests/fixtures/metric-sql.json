@@ -85,6 +85,26 @@
             ]
         }
     ],
+    "exitRate": [
+        {
+            "kind": "ratio",
+            "numerator": "exits",
+            "denominator": "pageViews",
+            "precision": 4,
+            "children": [
+                "exits",
+                "pageViews"
+            ]
+        }
+    ],
+    "exits": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.is_exit = 1 THEN 1 ELSE 0 END)",
+            "alias": "exits"
+        }
+    ],
     "feedReaders": [
         {
             "kind": "aggregate",

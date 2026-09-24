@@ -16,18 +16,19 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "exitPagePath,exitPageTitle",
-                "sort": "visits-",
+                "metrics": "pageViews,exits,exitRate",
+                "dimensions": "pagePath,pageTitle",
+                "sort": "exits-",
                 "resultsPerPage": 30
             },
             "link": {
-                "linkColumn": "exitPagePath",
+                "linkColumn": "pagePath",
                 "template": {
                     "do": "base.report",
                     "reportId": "document",
                     "pagePath": "%s"
                 },
-                "valueColumns": "exitPagePath"
+                "valueColumns": "pagePath"
             }
         }
     ]

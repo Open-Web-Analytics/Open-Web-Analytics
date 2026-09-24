@@ -1460,45 +1460,21 @@ class Module extends \OWA\Core\Module {
             'first_page_id'
         );
 
-        $this->registerDimension(
-            'exitPageUrl',
-            'base.document',
-            'url',
-            'Exit Page URL',
-            'visit',
-            'The url of the page last viewed during a visit.',
-            'last_page_id'
-        );
-
-        $this->registerDimension(
-            'exitPagePath',
-            'base.document',
-            'uri',
-            'Exit Page Path',
-            'visit',
-            'The path of the page last viewed during a visit.',
-            'last_page_id'
-        );
-
-        $this->registerDimension(
-            'exitPageTitle',
-            'base.document',
-            'page_title',
-            'Exit Page Title',
-            'visit',
-            'The title of the page last viewed during a visit.',
-            'last_page_id'
-        );
-
-        $this->registerDimension(
-            'exitPageType',
-            'base.document',
-            'page_type',
-            'Exit Page Type',
-            'visit',
-            'The page type of the page last viewed during a visit.',
-            'last_page_id'
-        );
+        /*
+         * The exitPage* dimensions were here. `exits` and `exitRate` replace
+         * them -- metrics over the ordinary page dimension, not dimensions of
+         * their own.
+         *
+         * A dimension that resolves to a page only on a session's LAST row
+         * cannot carry a denominator: every other view of that page lands in
+         * one anonymous bucket, so the report can say how many sessions ended
+         * on /a but never what share of /a's views that was. GA4 settled on
+         * the same shape -- Exits is a metric there, paired with the ordinary
+         * page dimension, and it ships no exit-page dimension at all.
+         *
+         * exitPageType goes with them for the separate reason contentGroup
+         * supersedes every *PageType dimension.
+         */
 
         $this->registerDimension(
             'daysSinceLastVisit',
