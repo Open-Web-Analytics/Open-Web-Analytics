@@ -1320,7 +1320,15 @@ abstract class Module {
              */
             'condition'         => array(),
             'child_metrics'    => array(),
-            'formula'        => ''
+            'formula'        => '',
+            /*
+             * A ratio's declaration. Same reason as subtrahend_column and
+             * condition: array_intersect_key() below filters params down to
+             * THIS map, so a key missing from it is dropped in silence.
+             */
+            'numerator'        => '',
+            'denominator'      => '',
+            'precision'        => ''
         );
 
         $map = array_intersect_key( array_merge( $map, $params ), $map );
