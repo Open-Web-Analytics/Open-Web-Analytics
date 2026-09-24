@@ -226,149 +226,29 @@ final class InstanceInfoCliTest extends TestCase
     }
 
     /**
-     * A schema version records what a module's TABLES look like. A module that
-     * owns none and ships no updates has nothing to record, so its missing
-     * version is not a finding -- warning about it would put a permanent,
-     * unactionable line against most of the modules in this repository.
+     * Every module records a version on its FIRST activation -- with tables or
+     * without -- so an active module missing one is an anomaly whatever it owns.
      *
-     * The predicate is tested directly rather than by looking for the absence
-     * of a warning in the output: on a healthy install there is no module in
-     * that state to observe, and a test that skips when the condition is not
-     * lying around is the test that stops noticing when the rule breaks.
+     * install() writes a version whenever none is recorded and every table is
+     * new, and for a module with no entities the table loop never runs, so that
+     * is trivially true. activate() alone writes nothing. A report that excused
+     * schemaless modules would be saying they are expected to have no version,
+     * which is not what install() does.
      *
-     * @group needs-db
+     * Asserted against the source because the state does not exist on a healthy
+     * install -- every active module here and on both production installs has a
+     * recorded version -- so there is nothing to render and nothing to observe.
      */
-    public function testOnlyAModuleWithTablesCanBeMissingASchemaVersion(): void
+    public function testAMissingSchemaVersionIsAWarningForEveryModule(): void
     {
-        if (!owa_test_db_available()) {
-            $this->markTestSkipped('needs a database to boot the CLI');
-        }
+        $src = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/Controller/InstanceInfoCli.php');
 
-        $m = new ReflectionMethod(
-            \OWA\Module\Base\Controller\InstanceInfoCli::class, 'hasSchema');
-        $m->setAccessible(true);
+        $this->assertStringContainsString('active, but never installed', $src);
 
-        $controller = (new ReflectionClass(
-            \OWA\Module\Base\Controller\InstanceInfoCli::class))->newInstanceWithoutConstructor();
-
-        $this->assertTrue($m->invoke($controller, 'base'),
-            'base owns tables and ships updates, so its version is required');
-
-        /*
-         * Both probes are BUILT rather than looked for.
-         *
-         * Which modules are active is a fact about the install: on a developer's
-         * box several schemaless ones are switched on, and in CI's scratch
-         * database only base is -- so a test that goes looking for one passes
-         * here and fails there, which is exactly what happened. The rule is
-         * about entities and updates, so the probes carry those and nothing
-         * else.
-         */
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $modules = new ReflectionProperty($service, 'modules');
-        $modules->setAccessible(true);
-
-        $before = $modules->getValue($service);
-
-        try {
-            $this->assertFalse(
-                $m->invoke($controller, $this->probeModule($service, 'zz_no_tables', array())),
-                'a module that owns no tables and ships no updates has no schema '
-              . 'version to be missing');
-
-            $this->assertTrue(
-                $m->invoke($controller, $this->probeModule($service, 'zz_has_tables',
-                    array('base.session'))),
-                'a module that owns a table does need its version recorded');
-
-        } finally {
-
-            $modules->setValue($service, $before);
-        }
-
-        /*
-         * An unknown module answers true, so a module that cannot be loaded is
-         * reported rather than quietly excused.
-         */
-        $this->assertTrue($m->invoke($controller, 'no_such_module_at_all'));
-    }
-
-    /**
-     * A module carrying nothing but the fields hasSchema() reads.
-     *
-     * newInstanceWithoutConstructor() because a real Module constructor
-     * registers metrics, dimensions, entities and actions -- none of which this
-     * is asking about, and all of which would leak into the rest of the run.
-     *
-     * @param  object $service
-     * @param  string $name
-     * @param  array  $entities
-     * @return string the name, so a caller can pass it straight on
-     */
-    private function probeModule($service, string $name, array $entities): string
-    {
-        $probe = (new ReflectionClass(\OWA\Module\Hello\Module::class))
-            ->newInstanceWithoutConstructor();
-
-        $probe->name     = $name;
-        $probe->entities = $entities;
-        $probe->updates  = array();
-
-        $service->addModule($probe);
-
-        return $name;
-    }
-
-    /**
-     * An absent schema version is reported either way, at two weights.
-     *
-     * A recorded version means install() RAN -- it is not a description of the
-     * tables, since install() writes one for a module with no entities too.
-     * activate() writes nothing, so an absence means the module was switched on
-     * without being installed, and that is worth saying whether or not there
-     * are tables. What differs is the consequence, so what differs is the
-     * weight.
-     *
-     * Driven directly, because on a healthy install every active module HAS a
-     * recorded version and neither branch renders -- a test that waited for one
-     * to appear would assert nothing and say nothing about it.
-     */
-    public function testAMissingSchemaVersionIsReportedAtTwoWeights(): void
-    {
-        $m = new ReflectionMethod(
-            \OWA\Module\Base\Controller\InstanceInfoCli::class, 'neverInstalled');
-        $m->setAccessible(true);
-
-        $controller = (new ReflectionClass(
-            \OWA\Module\Base\Controller\InstanceInfoCli::class))->newInstanceWithoutConstructor();
-
-        $tally = new ReflectionProperty(
-            \OWA\Module\Base\Controller\InstanceInfoCli::class, 'tally');
-        $tally->setAccessible(true);
-        $tally->setValue($controller, array('ok' => 0, 'warn' => 0, 'fail' => 0));
-
-        /* With tables: a warning, and the remedy names the command. */
-        $withTables = $m->invoke($controller, 'zz_mod', true);
-
-        $this->assertStringContainsString('active, but never installed', $withTables);
-        $this->assertStringContainsString('cmd=activate module=zz_mod', $withTables);
-        $this->assertSame(1, $tally->getValue($controller)['warn'],
-            'a module whose tables were never created is a warning');
-
-        /* Without tables: said, but not as a fault and not in the tally. */
-        $withoutTables = $m->invoke($controller, 'zz_mod', false);
-
-        $this->assertStringContainsString('never installed', $withoutTables,
-            'the absence still means install() has not run, and that is worth saying');
-
-        $this->assertStringContainsString('nothing is missing yet', $withoutTables,
-            'and the line must say why it is not urgent');
-
-        $this->assertSame(
-            array('ok' => 0, 'warn' => 1, 'fail' => 0), $tally->getValue($controller),
-            'a module that owns no tables must not add to any count -- it is neither a '
-          . 'pass to celebrate nor a problem to fix');
+        $this->assertStringNotContainsString('hasSchema', $src,
+            'the warning must not be gated on whether the module owns tables: '
+          . 'install() records a version for a schemaless module too');
     }
 
     /**
