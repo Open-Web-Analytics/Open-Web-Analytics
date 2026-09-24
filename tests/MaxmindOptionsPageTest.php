@@ -35,9 +35,15 @@ final class MaxmindOptionsPageTest extends TestCase {
         $template->setTemplateFile( 'maxmind_geoip', 'options_geoip.php' );
 
         $data = array_merge( array(
-            'configuration' => array( 'db_license_key' => 'test-key-value' ),
-            'editions'      => \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS,
-            'edition'       => 'GeoLite2-City',
+            /*
+             * The two editable settings are NOT passed in any more. They are
+             * built from the registry -- what they are called, what the edition
+             * list holds and what is stored are all in settings.php now -- so a
+             * test that injected them would be asserting against its own
+             * fixture rather than against what the page shows.
+             */
+            'settings_fieldsets' => owa_test_page_fieldsets(
+                'maxmind_geoip.optionsGeoip', \OWA\Module\MaxmindGeoip\Module::class ),
             'db_file'       => '/tmp/GeoLite2-City.mmdb',
             'db_present'    => false,
             'db_updated'    => 0,
@@ -89,17 +95,51 @@ final class MaxmindOptionsPageTest extends TestCase {
 
     public function testEveryReadableEditionIsOfferedAndTheCurrentOneSelected(): void {
 
-        $html = $this->render( array( 'edition' => 'GeoLite2-Country' ) );
+        $html = $this->withSetting( 'db_edition', 'GeoLite2-Country',
+            fn() => $this->render() );
 
         foreach ( \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS as $edition ) {
             $this->assertStringContainsString( $edition, $html );
         }
 
-        $this->assertMatchesRegularExpression(
-            '/GeoLite2-Country"\s*\n?\s*SELECTED/i',
-            $html,
+        /*
+         * The list the module can actually read, against the list the
+         * declaration offers. Two places, and a reader that offered an edition
+         * the code cannot load would save a value that breaks lookups.
+         */
+        $declared = (array) \OWA\Core\CoreAPI::configSingleton()
+            ->registeredField( 'maxmind_geoip', 'db_edition' )['options'];
+
+        $this->assertSame(
+            \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS, $declared,
+            'the declaration must offer exactly the editions the module can read' );
+
+        $this->assertStringContainsString(
+            '<option value="GeoLite2-Country" selected="selected">', $html,
             'the edition in use must come back selected, or saving would silently change it'
         );
+    }
+
+    /**
+     * Render with one setting temporarily changed.
+     *
+     * The page reads the registry now, so a fixture has to be a real setting
+     * rather than a value handed to the template.
+     */
+    private function withSetting( string $key, $value, callable $render ): string {
+
+        $c   = \OWA\Core\CoreAPI::configSingleton();
+        $was = $c->get( 'maxmind_geoip', $key );
+
+        try {
+            $c->set( 'maxmind_geoip', $key, $value );
+
+            return (string) $render();
+
+        } finally {
+
+            $c->set( 'maxmind_geoip', $key, $was );
+        }
     }
 
     /**
@@ -110,6 +150,11 @@ final class MaxmindOptionsPageTest extends TestCase {
 
         $html = $this->render( array( 'has_key' => false, 'db_present' => false ) );
 
+        /*
+         * Both of these are STATUS, and they stayed hand-written when the
+         * editable fields became generated: whether a key is set is the answer
+         * to "why are locations blank", not a control anyone edits.
+         */
         $this->assertStringContainsString( 'No key is set', $html );
         $this->assertStringContainsString( 'No database is installed', $html );
     }
@@ -132,9 +177,8 @@ final class MaxmindOptionsPageTest extends TestCase {
      */
     public function testTheLicenceKeyIsEscapedIntoTheField(): void {
 
-        $html = $this->render( array(
-            'configuration' => array( 'db_license_key' => 'a"><script>x</script>' ),
-        ) );
+        $html = $this->withSetting( 'db_license_key', 'a"><script>x</script>',
+            fn() => $this->render() );
 
         $this->assertStringNotContainsString( '<script>x</script>', $html,
             'the stored key must not be able to break out of the value attribute' );
@@ -163,9 +207,6 @@ final class MaxmindOptionsPageTest extends TestCase {
         $view = new \OWA\Module\MaxmindGeoip\View\OptionsGeoip();
 
         $view->render( array(
-            'configuration' => array(),
-            'editions'      => \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS,
-            'edition'       => 'GeoLite2-City',
             'db_file'       => '/tmp/GeoLite2-City.mmdb',
             'db_present'    => false,
             'db_updated'    => 0,

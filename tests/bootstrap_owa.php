@@ -71,3 +71,32 @@ function owa_test_db_available(): bool
         restore_error_handler();
     }
 }
+
+/**
+ * A module's settings-page fieldsets, whether or not the module is switched on.
+ *
+ * registerAdminPanels() runs only for an ACTIVE module, and is_active lives in
+ * the database -- so on an install with no database (CI's unit job) the page is
+ * not registered and a test asserting what it renders has nothing to look at.
+ * Registering the module directly exercises the real registration code without
+ * needing an activated install, which keeps those tests RUNNING in CI rather
+ * than skipping there and only ever being checked on a developer's box.
+ *
+ * @param  string $do    the page's action name
+ * @param  string $class the module class to fall back to
+ * @return array ordered fieldset declarations
+ */
+function owa_test_page_fieldsets( string $do, string $class ): array
+{
+    $sets = \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( $do );
+
+    if ( $sets ) {
+        return $sets;
+    }
+
+    $module = new $class();
+    $module->registerAdminPanels();
+
+    return \OWA\Module\Base\Classes\SettingsForm::pageFieldSets(
+        $do, array( $module->getAdminPanels() ) );
+}

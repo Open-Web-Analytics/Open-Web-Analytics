@@ -58,8 +58,29 @@ return array(
         'action_url' => array( 'default' => '' ),
         'allow_slowly_changing_dimensions' => array( 'default' => true ),
         'allowed_queued_event_types' => array( 'default' => array() ),
-        'announce_visitors' => array( 'default' => false, 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
-        'anonymize_ips' => array( 'default' => false, 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'announce_visitors' => array(
+            'default'  => false,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'Announce New Visitors Via E-mail',
+            'description' =>
+                'Announces each new visitor to your web site via e-mail. If you have '
+                . 'a lot of visitors then you probably want to keep this feature turned '
+                . 'off.',
+        ),
+        'anonymize_ips' => array(
+            'default'  => false,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'Anonymize IP Addresses',
+            'description' =>
+                'Anonymizes the IP addresses of visitors by removing the last octet '
+                . 'from their IP address.',
+        ),
         'app_ns' => array( 'default' => '' ),
         'archive_old_events' => array( 'default' => true ),
         'assets_url' => array( 'default' => '' ),
@@ -85,7 +106,14 @@ return array(
         'db_host' => array( 'default' => '' ),
         'db_make_persistant_connections' => array( 'default' => false ),
         'db_name' => array( 'default' => '' ),
-        'db_password' => array( 'default' => '' ),
+        /*
+         * 'secret' so that no screen can print it. It is static and governed by
+         * OWA_DB_PASSWORD, so it should never appear on a settings page at all
+         * -- but a governed field renders read-only by design, and this is the
+         * one governed value where showing what is in force would be a leak
+         * rather than a courtesy.
+         */
+        'db_password' => array( 'default' => '', 'secret' => true ),
         'db_port' => array( 'default' => 3306 ),
         'db_supported_types' => array( 'default' => array( 'mysql' => 'MySQL' ) ),
         'db_type' => array( 'default' => '' ),
@@ -99,7 +127,17 @@ return array(
         'enableEcommerceReporting' => array( 'default' => false, 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'error_handler' => array( 'default' => 'production' ),
         'error_log_file' => array( 'default' => '' ),
-        'excluded_ips' => array( 'default' => '', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'excluded_ips' => array(
+            'default'  => '',
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'text',
+            'label'    => 'Excluded IP Addresses',
+            'description' =>
+                'Enter a comma seperated list of the IP addresses that you wish to '
+                . 'exclude from tracking.',
+        ),
         'feed_subscription_param' => array( 'default' => 'sid' ),
         'geolocation_lookup' => array( 'default' => false ),
         'geolocation_service' => array( 'default' => '' ),
@@ -109,9 +147,29 @@ return array(
         'install_complete' => array( 'storable' => true, 'autoload' => true ),
         'is_embedded_admin_user_password_reset' => array( 'storable' => true ),
         'link_template' => array( 'default' => '%s?%s' ),
-        'log_named_users' => array( 'default' => true, 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'log_named_users' => array(
+            'default'  => true,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'Log Requests From Named Users',
+            'description' =>
+                'Controls the logging of requests made by named users.',
+        ),
         'log_owa_user_names' => array( 'default' => true ),
-        'log_robots' => array( 'default' => false, 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'log_robots' => array(
+            'default'  => false,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'Log Requests From Known Robots',
+            'description' =>
+                'Controls the logging of page requests made by known robots and '
+                . 'spiders. Turning this feature on will dramatically increase the '
+                . 'number of requests that are processed and logged.',
+        ),
         'log_visitor_pii' => array( 'default' => true ),
         'logo_image_path' => array( 'default' => 'base/i/owa-logo-100w.png' ),
         'mailer-from' => array( 'default' => '' ),
@@ -128,7 +186,16 @@ return array(
         'module_dir' => array(),
         'modules' => array( 'default' => array( 'base' ) ),
         'nonce_expiration_period' => array( 'default' => 7200 ),
-        'notice_email' => array( 'default' => '', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'notice_email' => array(
+            'default'  => '',
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'text',
+            'label'    => 'Notice E-mail Address',
+            'description' =>
+                'This is the e-mail address that new visitor e-mails will be sent to.',
+        ),
         'ns' => array( 'default' => 'owa_' ),
         'numGoalGroups' => array( 'default' => 5 ),
         'numGoals' => array( 'default' => 15 ),
@@ -141,7 +208,19 @@ return array(
         'plugin_dir' => array(),
         'public_path' => array( 'default' => '' ),
         'public_url' => array( 'default' => '' ),
-        'query_string_filters' => array( 'default' => '', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'query_string_filters' => array(
+            'default'  => '',
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'text',
+            'label'    => 'URL Parameters',
+            'description' =>
+                'This setting controls the URL parameters that OWA should ignore when '
+                . 'processing requests. This is useful for avoiding duplicate URLs due '
+                . 'to the use of tracking or others state parameters in your URLs. '
+                . 'Parameter names should be separated by comma.',
+        ),
         'query_strings.ini' => array(),
         /*
          * COMPUTED AT BOOT, never stored, and declared anyway.
@@ -184,7 +263,17 @@ return array(
         'report_wrapper' => array( 'default' => 'wrapper_default.php' ),
         'request_mode' => array( 'default' => 'web_app' ),
         'reserved_words' => array( 'default' => array( 'do' => 'action' ) ),
-        'resolve_hosts' => array( 'default' => true, 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'resolve_hosts' => array(
+            'default'  => true,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'Resolve Host Names',
+            'description' =>
+                'Controls the resolution of host names (e.g. verizon.com) from '
+                . 'visitor\'s raw IP addresses.',
+        ),
         'scheduled_jobs' => array( 'default' => array() ),
         'scheduler_enabled' => array( 'default' => true ),
         'search_engines.ini' => array(),
@@ -195,7 +284,29 @@ return array(
         'start_page' => array( 'default' => 'base.reportingHome' ),
         'templates_dir' => array(),
         'theme' => array( 'default' => '' ),
-        'timezone' => array( 'default' => 'America/Los_Angeles', 'storable' => true, 'autoload' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        /*
+         * 'timezone' is a type of its own, not a select with 400 options in the
+         * declaration. The list is the IANA zones grouped by country, built from
+         * conf/country2Timezones.php at render time -- a declaration is a data
+         * file and has no business carrying that.
+         */
+        'timezone' => array(
+            'default'  => 'America/Los_Angeles',
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'timezone',
+            'label'    => 'Reporting Timezone',
+            'description' =>
+                'This is the timezone that should be used to generate statistics for '
+                . 'a specific time period.<br><br><strong>Changing this is not '
+                . 'retroactive.</strong> Each request is filed under a calendar day '
+                . 'when it is recorded, using the timezone set at that moment. Data '
+                . 'already collected keeps the day boundaries it was recorded with, so '
+                . 'a change applies only to traffic from this point on &mdash; and '
+                . 'reports spanning the change will mix the two. Depending on how far '
+                . 'the zones are apart, a day boundary can move by up to 21 hours.',
+        ),
         'tracking_event_types' => array( 'default' => array( 'dom.click', 'ecommerce.transaction', 'base.page_request', 'dom.stream', 'base.feed_request', 'track.action' ) ),
         'ua-regexes' => array( 'default' => '' ),
         'update_session_user_name' => array( 'default' => true ),

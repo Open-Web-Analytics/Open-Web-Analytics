@@ -29,6 +29,18 @@
         </div>
     </div>
 
+    <div class="setting" id="geoip_key">
+        <div class="title">Licence key</div>
+        <div class="description">
+        <?php if ( $view->has_key ): ?>
+            A key is set, so the database can be downloaded and refreshed.
+        <?php else: ?>
+            <strong>No key is set</strong>, so the database cannot be downloaded. The field
+            below is where it goes.
+        <?php endif; ?>
+        </div>
+    </div>
+
     <div class="setting" id="geoip_refresh">
         <div class="title">Updating</div>
         <div class="description">
@@ -43,47 +55,18 @@
 
 <form method="post" name="owa_options">
 
-    <fieldset name="owa-geoip-options" class="options">
-    <legend>MaxMind Account</legend>
+<?php
+/*
+ * Built from the registry, not written out here. What each control is, what it
+ * is called and what it offers are all in modules/MaxmindGeoip/settings.php,
+ * and registerSettingsFieldSet() in Module.php says which appear here and in
+ * what order.
+ */
+foreach ( $view->settings_fieldsets as $set ) {
 
-    <div class="setting" id="db_license_key">
-        <div class="title">Licence Key</div>
-        <div class="description">
-            The GeoLite2 databases are free, but MaxMind stopped allowing anonymous downloads at the
-            end of 2019, so fetching one needs a key. Creating a MaxMind account and a key costs
-            nothing.
-            <?php if ( ! $view->has_key ): ?>
-                <br><strong>No key is set</strong>, so the database cannot be downloaded.
-            <?php endif; ?>
-        </div>
-        <div class="field">
-            <input type="text" size="50"
-                   name="<?php echo $view->getNs(); ?>config[maxmind_geoip.db_license_key]"
-                   value="<?php echo htmlspecialchars(
-                       (string) ( $view->configuration['db_license_key'] ?? '' ), ENT_QUOTES, 'UTF-8' ); ?>">
-        </div>
-    </div>
-
-    <div class="setting" id="db_edition">
-        <div class="title">Database Edition</div>
-        <div class="description">
-            City resolves city, region and country. Country resolves only the country and is a
-            fraction of the size, which is the better trade if your reports never go below country
-            level. Changing this changes which file is downloaded and which one is read, together.
-        </div>
-        <div class="field">
-            <select name="<?php echo $view->getNs(); ?>config[maxmind_geoip.db_edition]">
-            <?php foreach ( (array) $view->editions as $edition ): ?>
-                <option value="<?php echo htmlspecialchars( $edition, ENT_QUOTES, 'UTF-8' ); ?>"
-                    <?php if ( $view->edition === $edition ): ?>SELECTED<?php endif; ?>>
-                    <?php echo htmlspecialchars( $edition, ENT_QUOTES, 'UTF-8' ); ?>
-                </option>
-            <?php endforeach; ?>
-            </select>
-        </div>
-    </div>
-
-    </fieldset>
+    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set, $view->getNs() );
+}
+?>
 
     <BR>
 

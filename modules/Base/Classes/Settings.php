@@ -1850,6 +1850,18 @@ namespace OWA\Module\Base\Classes;
                      continue;
                  }
 
+                 /*
+                  * A setting a config-file constant supplies is not storable
+                  * either, and listing one is not a mistake: it renders
+                  * read-only, showing the value in force and naming the
+                  * constant. Reporting it would be telling an operator to fix
+                  * something that is working as intended.
+                  */
+                 if ( $this->configFileConstantFor( $module, $key ) ) {
+
+                     continue;
+                 }
+
                  if ( ! self::isStorable( $args ) ) {
 
                      $problems[] = sprintf(
