@@ -4,9 +4,9 @@
         "metricImplementations": 100,
         "dimensionNamesNormalized": 46,
         "dimensionEntriesNormalized": 46,
-        "dimensionNamesDenormalized": 62,
-        "dimensionEntriesDenormalized": 234,
-        "accessorDimensionNames": 107
+        "dimensionNamesDenormalized": 105,
+        "dimensionEntriesDenormalized": 282,
+        "accessorDimensionNames": 139
     },
     "metrics": {
         "actions": [
@@ -2269,6 +2269,58 @@
                 "denormalized": true
             }
         },
+        "browserType": {
+            "base.event": {
+                "name": "browserType",
+                "entity": "base.event",
+                "column": "browser_type",
+                "family": "device",
+                "label": "Browser",
+                "description": "The browser, as a name without its version.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "browserVersion": {
+            "base.event": {
+                "name": "browserVersion",
+                "entity": "base.event",
+                "column": "browser_version",
+                "family": "device",
+                "label": "Browser Version",
+                "description": "The version of that browser.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "city": {
+            "base.event": {
+                "name": "city",
+                "entity": "base.event",
+                "column": "city",
+                "family": "geography",
+                "label": "City",
+                "description": "The city resolved from the visitor's address.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "clickTarget": {
+            "base.event": {
+                "name": "clickTarget",
+                "entity": "base.event",
+                "column": "target_url",
+                "family": "event",
+                "label": "Click Target",
+                "description": "Where the click led.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "clickX": {
             "base.click": {
                 "name": "clickX",
@@ -2290,6 +2342,71 @@
                 "family": "dom",
                 "label": "Click Y",
                 "description": "The vertical position of the click on the page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "consentState": {
+            "base.event": {
+                "name": "consentState",
+                "entity": "base.event",
+                "column": "consent_state",
+                "family": "device",
+                "label": "Consent State",
+                "description": "What the page declared about consent when the event was sent.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "contentGroup": {
+            "base.event": {
+                "name": "contentGroup",
+                "entity": "base.event",
+                "column": "content_group",
+                "family": "content",
+                "label": "Content Group",
+                "description": "The grouping the author assigned to the page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "country": {
+            "base.event": {
+                "name": "country",
+                "entity": "base.event",
+                "column": "country",
+                "family": "geography",
+                "label": "Country",
+                "description": "The country resolved from the visitor's address.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "countryCode": {
+            "base.event": {
+                "name": "countryCode",
+                "entity": "base.event",
+                "column": "country_code",
+                "family": "geography",
+                "label": "Country Code",
+                "description": "The ISO 3166-1 alpha-2 code of that country.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "currencyCode": {
+            "base.event": {
+                "name": "currencyCode",
+                "entity": "base.event",
+                "column": "currency",
+                "family": "commerce",
+                "label": "Currency",
+                "description": "The ISO 4217 currency the revenue on this row is denominated in.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3627,6 +3744,45 @@
                 "denormalized": true
             }
         },
+        "deviceBrand": {
+            "base.event": {
+                "name": "deviceBrand",
+                "entity": "base.event",
+                "column": "device_brand",
+                "family": "device",
+                "label": "Device Brand",
+                "description": "The maker of the device.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "deviceModel": {
+            "base.event": {
+                "name": "deviceModel",
+                "entity": "base.event",
+                "column": "device_model",
+                "family": "device",
+                "label": "Device Model",
+                "description": "The model of the device.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "deviceType": {
+            "base.event": {
+                "name": "deviceType",
+                "entity": "base.event",
+                "column": "device_type",
+                "family": "device",
+                "label": "Device Type",
+                "description": "Desktop, mobile or tablet.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "distinctItemsInVisit": {
             "base.session": {
                 "name": "distinctItemsInVisit",
@@ -3664,6 +3820,17 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
+            },
+            "base.event": {
+                "name": "domElementId",
+                "entity": "base.event",
+                "column": "element_id",
+                "family": "event",
+                "label": "Element ID",
+                "description": "The id attribute of the element that was clicked.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
             }
         },
         "domElementName": {
@@ -3687,6 +3854,17 @@
                 "family": "dom",
                 "label": "Dom Tag",
                 "description": "The html tag of the dom element.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.event": {
+                "name": "domElementTag",
+                "entity": "base.event",
+                "column": "element_tag",
+                "family": "event",
+                "label": "Element Tag",
+                "description": "The tag name of the element that was clicked.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3718,6 +3896,19 @@
                 "denormalized": true
             }
         },
+        "elementPath": {
+            "base.event": {
+                "name": "elementPath",
+                "entity": "base.event",
+                "column": "element_path",
+                "family": "event",
+                "label": "Element Path",
+                "description": "The selector locating the element that was clicked.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "eventName": {
             "base.event": {
                 "name": "eventName",
@@ -3739,6 +3930,71 @@
                 "family": "feed",
                 "label": "Feed Type",
                 "description": "The type or format of the feed.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "firstAd": {
+            "base.event": {
+                "name": "firstAd",
+                "entity": "base.event",
+                "column": "acq_ad",
+                "family": "traffic source",
+                "label": "First Ad",
+                "description": "The ad that acquired the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "firstCampaign": {
+            "base.event": {
+                "name": "firstCampaign",
+                "entity": "base.event",
+                "column": "acq_campaign",
+                "family": "traffic source",
+                "label": "First Campaign",
+                "description": "The campaign that acquired the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "firstMedium": {
+            "base.event": {
+                "name": "firstMedium",
+                "entity": "base.event",
+                "column": "acq_medium",
+                "family": "traffic source",
+                "label": "First Medium",
+                "description": "How the visitor arrived on the visit that acquired them.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "firstSearchTerms": {
+            "base.event": {
+                "name": "firstSearchTerms",
+                "entity": "base.event",
+                "column": "acq_search_terms",
+                "family": "traffic source",
+                "label": "First Search Terms",
+                "description": "The terms the visitor searched for before the visit that acquired them.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "firstSource": {
+            "base.event": {
+                "name": "firstSource",
+                "entity": "base.event",
+                "column": "acq_source",
+                "family": "traffic source",
+                "label": "First Source",
+                "description": "Where the visitor came from on the visit that acquired them.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3778,6 +4034,19 @@
                 "family": "visit",
                 "label": "Goals in Visit",
                 "description": "Goals completed in a visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "hostName": {
+            "base.event": {
+                "name": "hostName",
+                "entity": "base.event",
+                "column": "host",
+                "family": "content",
+                "label": "Host Name",
+                "description": "The host the page was served from.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3835,6 +4104,17 @@
                 "family": "network",
                 "label": "IP Address",
                 "description": "The IP address of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
+            "base.event": {
+                "name": "ipAddress",
+                "entity": "base.event",
+                "column": "ip_address",
+                "family": "device",
+                "label": "IP Address",
+                "description": "The visitor's address, where the install stores one.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4046,6 +4326,71 @@
                 "denormalized": true
             }
         },
+        "keyEvent": {
+            "base.event": {
+                "name": "keyEvent",
+                "entity": "base.event",
+                "column": "is_goal_event",
+                "family": "event",
+                "label": "Key Event",
+                "description": "Whether this row is a conversion the author named.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true
+            }
+        },
+        "landingPage": {
+            "base.event": {
+                "name": "landingPage",
+                "entity": "base.event",
+                "column": "landing_page_path",
+                "family": "content",
+                "label": "Landing Page",
+                "description": "The path of the session's first page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "landingPageLocation": {
+            "base.event": {
+                "name": "landingPageLocation",
+                "entity": "base.event",
+                "column": "landing_page_location",
+                "family": "content",
+                "label": "Landing Page URL",
+                "description": "The complete URL of the session's first page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "landingPageQuery": {
+            "base.event": {
+                "name": "landingPageQuery",
+                "entity": "base.event",
+                "column": "landing_page_query",
+                "family": "content",
+                "label": "Landing Page Query",
+                "description": "The query string of the session's first page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "landingPageTitle": {
+            "base.event": {
+                "name": "landingPageTitle",
+                "entity": "base.event",
+                "column": "landing_page_title",
+                "family": "content",
+                "label": "Landing Page Title",
+                "description": "The title of the session's first page.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "language": {
             "base.action_fact": {
                 "name": "language",
@@ -4102,6 +4447,17 @@
                 "data_type": "string",
                 "denormalized": true
             },
+            "base.event": {
+                "name": "language",
+                "entity": "base.event",
+                "column": "language",
+                "family": "device",
+                "label": "Language",
+                "description": "The language the browser declared.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            },
             "base.request": {
                 "name": "language",
                 "entity": "base.request",
@@ -4133,6 +4489,19 @@
                 "family": "campaign-special",
                 "label": "Latest Attributions",
                 "description": "The latest campaign attributions.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "linkDomain": {
+            "base.event": {
+                "name": "linkDomain",
+                "entity": "base.event",
+                "column": "target_host",
+                "family": "event",
+                "label": "Link Domain",
+                "description": "The host the click led to.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4307,6 +4676,45 @@
                 "denormalized": true
             }
         },
+        "osType": {
+            "base.event": {
+                "name": "osType",
+                "entity": "base.event",
+                "column": "os",
+                "family": "device",
+                "label": "Operating System",
+                "description": "The operating system, as a name without its version.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "osVersion": {
+            "base.event": {
+                "name": "osVersion",
+                "entity": "base.event",
+                "column": "os_version",
+                "family": "device",
+                "label": "Operating System Version",
+                "description": "The version of that operating system.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "pageLocation": {
+            "base.event": {
+                "name": "pageLocation",
+                "entity": "base.event",
+                "column": "page_location",
+                "family": "content",
+                "label": "Page URL",
+                "description": "The complete URL of the page, query string included.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "pagePath": {
             "base.event": {
                 "name": "pagePath",
@@ -4314,7 +4722,46 @@
                 "column": "page_path",
                 "family": "content",
                 "label": "Page Path",
-                "description": "The path of the web page, without its host or query string.",
+                "description": "The path of the page, without its host or query string.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "pageQuery": {
+            "base.event": {
+                "name": "pageQuery",
+                "entity": "base.event",
+                "column": "page_query",
+                "family": "content",
+                "label": "Page Query",
+                "description": "The query string of the page, without its leading question mark.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "pageReferrer": {
+            "base.event": {
+                "name": "pageReferrer",
+                "entity": "base.event",
+                "column": "referer_url",
+                "family": "content",
+                "label": "Page Referrer",
+                "description": "The page the visitor arrived from.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "pageTitle": {
+            "base.event": {
+                "name": "pageTitle",
+                "entity": "base.event",
+                "column": "page_title",
+                "family": "content",
+                "label": "Page Title",
+                "description": "The title of the page as it was at the time of the event.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4389,6 +4836,17 @@
                 "data_type": "string",
                 "denormalized": true
             },
+            "base.event": {
+                "name": "priorVisitCount",
+                "entity": "base.event",
+                "column": "prior_sessions",
+                "family": "visitor",
+                "label": "Prior Visits",
+                "description": "How many sessions the visitor had before this one.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true
+            },
             "base.request": {
                 "name": "priorVisitCount",
                 "entity": "base.request",
@@ -4459,6 +4917,84 @@
                 "family": "visit",
                 "label": "Revenue in Visit",
                 "description": "Revenue generate from e-commerce transactions in a visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "sessionAd": {
+            "base.event": {
+                "name": "sessionAd",
+                "entity": "base.event",
+                "column": "ad",
+                "family": "traffic source",
+                "label": "Ad",
+                "description": "The ad this session was tagged with.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "sessionCampaign": {
+            "base.event": {
+                "name": "sessionCampaign",
+                "entity": "base.event",
+                "column": "campaign",
+                "family": "traffic source",
+                "label": "Campaign",
+                "description": "The campaign this session was tagged with.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "sessionId": {
+            "base.event": {
+                "name": "sessionId",
+                "entity": "base.event",
+                "column": "session_id",
+                "family": "visit",
+                "label": "Session ID",
+                "description": "The identifier of the session the event belongs to.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "sessionMedium": {
+            "base.event": {
+                "name": "sessionMedium",
+                "entity": "base.event",
+                "column": "medium",
+                "family": "traffic source",
+                "label": "Medium",
+                "description": "How this session arrived -- organic search, social, referral or direct.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "sessionSearchTerms": {
+            "base.event": {
+                "name": "sessionSearchTerms",
+                "entity": "base.event",
+                "column": "search_terms",
+                "family": "traffic source",
+                "label": "Search Terms",
+                "description": "The terms the visitor searched for before this session.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "sessionSource": {
+            "base.event": {
+                "name": "sessionSource",
+                "entity": "base.event",
+                "column": "source",
+                "family": "traffic source",
+                "label": "Source",
+                "description": "Where this session came from -- the tag if there was one, otherwise the referring host.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4578,6 +5114,58 @@
                 "denormalized": true
             }
         },
+        "stateRegion": {
+            "base.event": {
+                "name": "stateRegion",
+                "entity": "base.event",
+                "column": "region",
+                "family": "geography",
+                "label": "Region",
+                "description": "The region or state resolved from the visitor's address.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "taggedCampaign": {
+            "base.event": {
+                "name": "taggedCampaign",
+                "entity": "base.event",
+                "column": "tagged_campaign",
+                "family": "traffic source",
+                "label": "Tagged Campaign",
+                "description": "The campaign named by the landing URL, as collected.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "taggedMedium": {
+            "base.event": {
+                "name": "taggedMedium",
+                "entity": "base.event",
+                "column": "tagged_medium",
+                "family": "traffic source",
+                "label": "Tagged Medium",
+                "description": "The medium named by the landing URL, as collected.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "taggedSource": {
+            "base.event": {
+                "name": "taggedSource",
+                "entity": "base.event",
+                "column": "tagged_source",
+                "family": "traffic source",
+                "label": "Tagged Source",
+                "description": "The source named by the landing URL, as collected.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "taxRevenueInVisit": {
             "base.session": {
                 "name": "taxRevenueInVisit",
@@ -4651,6 +5239,19 @@
                 "family": "visit",
                 "label": "Transactions in Visit",
                 "description": "Number of e-commerce transactions completed in a visit.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "userId": {
+            "base.event": {
+                "name": "userId",
+                "entity": "base.event",
+                "column": "user_id",
+                "family": "visitor",
+                "label": "User ID",
+                "description": "The identifier the site declared for the person.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -4730,6 +5331,19 @@
                 "family": "visitor",
                 "label": "User Name",
                 "description": "A generic string used to store the user name of the visitor.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "visitorId": {
+            "base.event": {
+                "name": "visitorId",
+                "entity": "base.event",
+                "column": "visitor_id",
+                "family": "visitor",
+                "label": "Visitor ID",
+                "description": "The identifier OWA assigned to the visitor.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -5042,25 +5656,25 @@
         },
         "browserType": {
             "name": "browserType",
-            "entity": "base.ua",
+            "entity": "base.event",
             "column": "browser_type",
-            "family": "system",
-            "label": "Browser Type",
-            "description": "The browser type of the visitor.",
+            "family": "device",
+            "label": "Browser",
+            "description": "The browser, as a name without its version.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
         },
         "browserVersion": {
             "name": "browserVersion",
-            "entity": "base.ua",
-            "column": "browser",
-            "family": "system",
+            "entity": "base.event",
+            "column": "browser_version",
+            "family": "device",
             "label": "Browser Version",
-            "description": "The browser version of the visitor.",
+            "description": "The version of that browser.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
         },
         "campaign": {
             "name": "campaign",
@@ -5075,14 +5689,25 @@
         },
         "city": {
             "name": "city",
-            "entity": "base.location_dim",
+            "entity": "base.event",
             "column": "city",
-            "family": "geo",
+            "family": "geography",
             "label": "City",
-            "description": "The city of the visitor.",
+            "description": "The city resolved from the visitor's address.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
+        },
+        "clickTarget": {
+            "name": "clickTarget",
+            "entity": "base.event",
+            "column": "target_url",
+            "family": "event",
+            "label": "Click Target",
+            "description": "Where the click led.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "clickX": {
             "name": "clickX",
@@ -5106,27 +5731,60 @@
             "data_type": "string",
             "denormalized": true
         },
-        "country": {
-            "name": "country",
-            "entity": "base.location_dim",
-            "column": "country",
-            "family": "geo",
-            "label": "Country",
-            "description": "The country of the visitor.",
+        "consentState": {
+            "name": "consentState",
+            "entity": "base.event",
+            "column": "consent_state",
+            "family": "device",
+            "label": "Consent State",
+            "description": "What the page declared about consent when the event was sent.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
+        },
+        "contentGroup": {
+            "name": "contentGroup",
+            "entity": "base.event",
+            "column": "content_group",
+            "family": "content",
+            "label": "Content Group",
+            "description": "The grouping the author assigned to the page.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "country": {
+            "name": "country",
+            "entity": "base.event",
+            "column": "country",
+            "family": "geography",
+            "label": "Country",
+            "description": "The country resolved from the visitor's address.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "countryCode": {
             "name": "countryCode",
-            "entity": "base.location_dim",
+            "entity": "base.event",
             "column": "country_code",
-            "family": "geo",
+            "family": "geography",
             "label": "Country Code",
-            "description": "The country code for the inferred country location of visitors.",
+            "description": "The ISO 3166-1 alpha-2 code of that country.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
+        },
+        "currencyCode": {
+            "name": "currencyCode",
+            "entity": "base.event",
+            "column": "currency",
+            "family": "commerce",
+            "label": "Currency",
+            "description": "The ISO 4217 currency the revenue on this row is denominated in.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "customVarName1": {
             "name": "customVarName1",
@@ -5315,6 +5973,39 @@
             "data_type": "string",
             "denormalized": true
         },
+        "deviceBrand": {
+            "name": "deviceBrand",
+            "entity": "base.event",
+            "column": "device_brand",
+            "family": "device",
+            "label": "Device Brand",
+            "description": "The maker of the device.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "deviceModel": {
+            "name": "deviceModel",
+            "entity": "base.event",
+            "column": "device_model",
+            "family": "device",
+            "label": "Device Model",
+            "description": "The model of the device.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "deviceType": {
+            "name": "deviceType",
+            "entity": "base.event",
+            "column": "device_type",
+            "family": "device",
+            "label": "Device Type",
+            "description": "Desktop, mobile or tablet.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
         "distinctItemsInVisit": {
             "name": "distinctItemsInVisit",
             "entity": "base.session",
@@ -5339,11 +6030,11 @@
         },
         "domElementId": {
             "name": "domElementId",
-            "entity": "base.click",
-            "column": "dom_element_id",
-            "family": "dom",
-            "label": "Dom ID",
-            "description": "The id of the dom element.",
+            "entity": "base.event",
+            "column": "element_id",
+            "family": "event",
+            "label": "Element ID",
+            "description": "The id attribute of the element that was clicked.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5361,11 +6052,11 @@
         },
         "domElementTag": {
             "name": "domElementTag",
-            "entity": "base.click",
-            "column": "dom_element_tag",
-            "family": "dom",
-            "label": "Dom Tag",
-            "description": "The html tag of the dom element.",
+            "entity": "base.event",
+            "column": "element_tag",
+            "family": "event",
+            "label": "Element Tag",
+            "description": "The tag name of the element that was clicked.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5388,6 +6079,17 @@
             "family": "dom",
             "label": "Dom Value",
             "description": "The value of the dom element.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "elementPath": {
+            "name": "elementPath",
+            "entity": "base.event",
+            "column": "element_path",
+            "family": "event",
+            "label": "Element Path",
+            "description": "The selector locating the element that was clicked.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5502,6 +6204,61 @@
             "data_type": "string",
             "denormalized": true
         },
+        "firstAd": {
+            "name": "firstAd",
+            "entity": "base.event",
+            "column": "acq_ad",
+            "family": "traffic source",
+            "label": "First Ad",
+            "description": "The ad that acquired the visitor.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "firstCampaign": {
+            "name": "firstCampaign",
+            "entity": "base.event",
+            "column": "acq_campaign",
+            "family": "traffic source",
+            "label": "First Campaign",
+            "description": "The campaign that acquired the visitor.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "firstMedium": {
+            "name": "firstMedium",
+            "entity": "base.event",
+            "column": "acq_medium",
+            "family": "traffic source",
+            "label": "First Medium",
+            "description": "How the visitor arrived on the visit that acquired them.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "firstSearchTerms": {
+            "name": "firstSearchTerms",
+            "entity": "base.event",
+            "column": "acq_search_terms",
+            "family": "traffic source",
+            "label": "First Search Terms",
+            "description": "The terms the visitor searched for before the visit that acquired them.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "firstSource": {
+            "name": "firstSource",
+            "entity": "base.event",
+            "column": "acq_source",
+            "family": "traffic source",
+            "label": "First Source",
+            "description": "Where the visitor came from on the visit that acquired them.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
         "goalStartsInVisit": {
             "name": "goalStartsInVisit",
             "entity": "base.session",
@@ -5537,22 +6294,22 @@
         },
         "hostName": {
             "name": "hostName",
-            "entity": "base.host",
+            "entity": "base.event",
             "column": "host",
-            "family": "network",
+            "family": "content",
             "label": "Host Name",
-            "description": "The host name of the network used by the visitor.",
+            "description": "The host the page was served from.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
         },
         "ipAddress": {
             "name": "ipAddress",
-            "entity": "base.commerce_line_item_fact",
+            "entity": "base.event",
             "column": "ip_address",
-            "family": "network",
+            "family": "device",
             "label": "IP Address",
-            "description": "The IP address of the visitor.",
+            "description": "The visitor's address, where the install stores one.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5612,13 +6369,68 @@
             "data_type": "string",
             "denormalized": true
         },
+        "keyEvent": {
+            "name": "keyEvent",
+            "entity": "base.event",
+            "column": "is_goal_event",
+            "family": "event",
+            "label": "Key Event",
+            "description": "Whether this row is a conversion the author named.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true
+        },
+        "landingPage": {
+            "name": "landingPage",
+            "entity": "base.event",
+            "column": "landing_page_path",
+            "family": "content",
+            "label": "Landing Page",
+            "description": "The path of the session's first page.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "landingPageLocation": {
+            "name": "landingPageLocation",
+            "entity": "base.event",
+            "column": "landing_page_location",
+            "family": "content",
+            "label": "Landing Page URL",
+            "description": "The complete URL of the session's first page.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "landingPageQuery": {
+            "name": "landingPageQuery",
+            "entity": "base.event",
+            "column": "landing_page_query",
+            "family": "content",
+            "label": "Landing Page Query",
+            "description": "The query string of the session's first page.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "landingPageTitle": {
+            "name": "landingPageTitle",
+            "entity": "base.event",
+            "column": "landing_page_title",
+            "family": "content",
+            "label": "Landing Page Title",
+            "description": "The title of the session's first page.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
         "language": {
             "name": "language",
-            "entity": "base.commerce_line_item_fact",
+            "entity": "base.event",
             "column": "language",
-            "family": "system",
+            "family": "device",
             "label": "Language",
-            "description": "The language of the visit.",
+            "description": "The language the browser declared.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -5644,6 +6456,17 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": false
+        },
+        "linkDomain": {
+            "name": "linkDomain",
+            "entity": "base.event",
+            "column": "target_host",
+            "family": "event",
+            "label": "Link Domain",
+            "description": "The host the click led to.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "longitude": {
             "name": "longitude",
@@ -5680,14 +6503,36 @@
         },
         "osType": {
             "name": "osType",
-            "entity": "base.os",
-            "column": "name",
-            "family": "system",
+            "entity": "base.event",
+            "column": "os",
+            "family": "device",
             "label": "Operating System",
-            "description": "The operating System of the visitor.",
+            "description": "The operating system, as a name without its version.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
+        },
+        "osVersion": {
+            "name": "osVersion",
+            "entity": "base.event",
+            "column": "os_version",
+            "family": "device",
+            "label": "Operating System Version",
+            "description": "The version of that operating system.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "pageLocation": {
+            "name": "pageLocation",
+            "entity": "base.event",
+            "column": "page_location",
+            "family": "content",
+            "label": "Page URL",
+            "description": "The complete URL of the page, query string included.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "pagePath": {
             "name": "pagePath",
@@ -5695,21 +6540,43 @@
             "column": "page_path",
             "family": "content",
             "label": "Page Path",
-            "description": "The path of the web page, without its host or query string.",
+            "description": "The path of the page, without its host or query string.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "pageQuery": {
+            "name": "pageQuery",
+            "entity": "base.event",
+            "column": "page_query",
+            "family": "content",
+            "label": "Page Query",
+            "description": "The query string of the page, without its leading question mark.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "pageReferrer": {
+            "name": "pageReferrer",
+            "entity": "base.event",
+            "column": "referer_url",
+            "family": "content",
+            "label": "Page Referrer",
+            "description": "The page the visitor arrived from.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
         },
         "pageTitle": {
             "name": "pageTitle",
-            "entity": "base.document",
+            "entity": "base.event",
             "column": "page_title",
             "family": "content",
             "label": "Page Title",
-            "description": "The title of the web page.",
-            "foreign_key_name": "document_id",
+            "description": "The title of the page as it was at the time of the event.",
+            "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
         },
         "pageType": {
             "name": "pageType",
@@ -5790,13 +6657,13 @@
         },
         "priorVisitCount": {
             "name": "priorVisitCount",
-            "entity": "base.commerce_line_item_fact",
-            "column": "num_prior_sessions",
-            "family": "visit",
+            "entity": "base.event",
+            "column": "prior_sessions",
+            "family": "visitor",
             "label": "Prior Visits",
-            "description": "The number of prior visits, excluding the current one.",
+            "description": "How many sessions the visitor had before this one.",
             "foreign_key_name": "",
-            "data_type": "string",
+            "data_type": "integer",
             "denormalized": true
         },
         "productCategory": {
@@ -5898,16 +6765,71 @@
             "data_type": "string",
             "denormalized": true
         },
-        "sessionId": {
-            "name": "sessionId",
-            "entity": "base.session",
-            "column": "id",
-            "family": "visit-special",
-            "label": "Session ID",
-            "description": "The ID of the session/visit.",
+        "sessionAd": {
+            "name": "sessionAd",
+            "entity": "base.event",
+            "column": "ad",
+            "family": "traffic source",
+            "label": "Ad",
+            "description": "The ad this session was tagged with.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
+        },
+        "sessionCampaign": {
+            "name": "sessionCampaign",
+            "entity": "base.event",
+            "column": "campaign",
+            "family": "traffic source",
+            "label": "Campaign",
+            "description": "The campaign this session was tagged with.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "sessionId": {
+            "name": "sessionId",
+            "entity": "base.event",
+            "column": "session_id",
+            "family": "visit",
+            "label": "Session ID",
+            "description": "The identifier of the session the event belongs to.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "sessionMedium": {
+            "name": "sessionMedium",
+            "entity": "base.event",
+            "column": "medium",
+            "family": "traffic source",
+            "label": "Medium",
+            "description": "How this session arrived -- organic search, social, referral or direct.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "sessionSearchTerms": {
+            "name": "sessionSearchTerms",
+            "entity": "base.event",
+            "column": "search_terms",
+            "family": "traffic source",
+            "label": "Search Terms",
+            "description": "The terms the visitor searched for before this session.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "sessionSource": {
+            "name": "sessionSource",
+            "entity": "base.event",
+            "column": "source",
+            "family": "traffic source",
+            "label": "Source",
+            "description": "Where this session came from -- the tag if there was one, otherwise the referring host.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "shippingRevenueInVisit": {
             "name": "shippingRevenueInVisit",
@@ -5966,14 +6888,47 @@
         },
         "stateRegion": {
             "name": "stateRegion",
-            "entity": "base.location_dim",
-            "column": "state",
-            "family": "geo",
-            "label": "State/Region",
-            "description": "The state or region of the visitor.",
+            "entity": "base.event",
+            "column": "region",
+            "family": "geography",
+            "label": "Region",
+            "description": "The region or state resolved from the visitor's address.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
+        },
+        "taggedCampaign": {
+            "name": "taggedCampaign",
+            "entity": "base.event",
+            "column": "tagged_campaign",
+            "family": "traffic source",
+            "label": "Tagged Campaign",
+            "description": "The campaign named by the landing URL, as collected.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "taggedMedium": {
+            "name": "taggedMedium",
+            "entity": "base.event",
+            "column": "tagged_medium",
+            "family": "traffic source",
+            "label": "Tagged Medium",
+            "description": "The medium named by the landing URL, as collected.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "taggedSource": {
+            "name": "taggedSource",
+            "entity": "base.event",
+            "column": "tagged_source",
+            "family": "traffic source",
+            "label": "Tagged Source",
+            "description": "The source named by the landing URL, as collected.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
         },
         "taxRevenueInVisit": {
             "name": "taxRevenueInVisit",
@@ -6052,6 +7007,17 @@
             "data_type": "string",
             "denormalized": false
         },
+        "userId": {
+            "name": "userId",
+            "entity": "base.event",
+            "column": "user_id",
+            "family": "visitor",
+            "label": "User ID",
+            "description": "The identifier the site declared for the person.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
         "userName": {
             "name": "userName",
             "entity": "base.commerce_line_item_fact",
@@ -6065,14 +7031,14 @@
         },
         "visitorId": {
             "name": "visitorId",
-            "entity": "base.visitor",
-            "column": "id",
+            "entity": "base.event",
+            "column": "visitor_id",
             "family": "visitor",
             "label": "Visitor ID",
-            "description": "The ID of the visitor.",
+            "description": "The identifier OWA assigned to the visitor.",
             "foreign_key_name": "",
             "data_type": "string",
-            "denormalized": false
+            "denormalized": true
         },
         "visitsToTransaction": {
             "name": "visitsToTransaction",
