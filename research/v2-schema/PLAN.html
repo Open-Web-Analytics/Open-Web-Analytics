@@ -980,9 +980,9 @@ code to two <em>named</em> buckets. See 2.4.2 below.</p>
 <tr><td><code>map</code></td><td>One column through a lookup</td><td><code>sessionChannel</code>, <code>firstChannel</code></td></tr>
 <tr><td><code>datePart</code></td><td>A component of the timestamp</td><td>hour, day of week</td></tr>
 <tr><td><code>test</code></td><td>A column against a constant, rendered as a boolean</td><td><code>signedInWithUserId</code></td></tr>
-<tr><td><code>filtered</code></td><td>A column restricted to rows carrying a flag</td><td><code>exitPagePath</code>, on <code>is_exit</code></td></tr>
+<tr><td class="dash"><s>filtered</s></td><td colspan="2"><strong>Dropped 2026-09-24.</strong> Its only three uses were the exit pages, and they are metrics &mdash; see <a href="#s242">2.4.2</a>. Four kinds, not five.</td></tr>
 </tbody></table></div>
-<p class="note">Only five of those are computed; <code>column</code> is the trivial case. A
+<p class="note">Only four of those are computed now; <code>column</code> is the trivial case. A
 move to a different reporting store therefore means writing five renderers, not revisiting every
 dimension &mdash; which is the reason to keep the set small and closed, and to settle it before the
 first computed dimension is built. The portability argument is in <a href="#nA111">the
@@ -1007,11 +1007,10 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>landingPage</code></td><td>column</td><td><code>landing_page_path</code></td><td>renamed from <code>entryPagePath</code></td></tr>
 <tr><td></td><td><code>landingPagePlusQuery</code></td><td>concat</td><td><code>landing_page_path</code> + <code>landing_page_query</code></td><td>new</td></tr>
 <tr><td></td><td><code>landingPageLocation</code></td><td>column</td><td><code>landing_page_location</code></td><td>renamed from <code>entryPageUrl</code></td></tr>
-<tr><td></td><td><code>exitPagePath</code></td><td>filtered</td><td><code>page_path</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td>the 5% of pairs 1.10 costed</td></tr>
-<tr><td></td><td><code>exitPageLocation</code></td><td>filtered</td><td><code>page_location</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td></td></tr>
+<tr id="s242"><td></td><td><code>exitPagePath / exitPageLocation / exitPageTitle</code></td><td>&mdash;</td><td>&mdash;</td><td><strong>Dropped 2026-09-24 &mdash; they are METRICS.</strong> A dimension resolving to a page only on a session's LAST row carries no denominator: every other view of that page lands in one anonymous bucket, so a report can say how many sessions ended on <code>/a</code> but never what share of <code>/a</code>'s views that was &mdash; the only number exits are wanted for. Measured on three sessions (<code>/a&rarr;/b</code>, <code>/a&rarr;/c</code>, <code>/a</code>) the dimension reports <code>/a</code> once; <code>/a</code> was viewed three times. <code>exits</code> is now <code>count</code> conditioned on <code>is_exit</code> and <code>exitRate</code> a <code>ratio</code> over <code>pageViews</code>, both on the ordinary <code>pagePath</code>. <strong>GA4 settled the same way</strong>: Exits is a metric there, paired with the ordinary page dimension, and GA ships no exit-page dimension at all (it ships no exit RATE either &mdash; that part is ours). This removes the <code>filtered</code> kind</td></tr>
 <tr><td></td><td><code>priorPagePath</code></td><td><strong>open</strong></td><td>&mdash;</td><td><code>referer_url</code> holds the previous page only when it was a link. 1.x&rsquo;s <code>priorPage*</code> came from the session chain, which v2 would have to walk</td></tr>
 <tr><td></td><td><code>landingPageTitle</code></td><td>column</td><td><code>landing_page_title</code></td><td>the session&rsquo;s first title, stamped like the other landing columns</td></tr>
-<tr><td></td><td><code>exitPageTitle</code></td><td>filtered</td><td><code>page_title</code> where <code>is_exit&nbsp;=&nbsp;1</code></td><td>needs no column of its own</td></tr>
+
 <tr><td></td><td><code>pageType / entryPageType / exitPageType / priorPageType</code></td><td>&mdash;</td><td>&mdash;</td><td><strong>Superseded by <code>contentGroup</code>.</strong> 1.x&rsquo;s document type sorted pages from feed requests, which <code>event_type</code> now carries; categorising pages is what <code>content_group</code> is for, and one of the two is enough</td></tr>
 <tr><td></td><td><code>priorPageTitle / priorPageUrl</code></td><td>&mdash;</td><td>&mdash;</td><td>open for the same reason as <code>priorPagePath</code> &mdash; all three need the session chain walked</td></tr>
 <tr><td>Traffic source</td><td><code>sessionSource</code></td><td>column</td><td><code>source</code></td><td>the reading on this event&rsquo;s session</td></tr>
@@ -1097,7 +1096,7 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>siteDomain / siteName</code></td><td>column</td><td>the site table</td><td>an admin lookup, not an event column</td></tr>
 <tr><td>Feed</td><td><code>feedType</code></td><td>&mdash;</td><td>&mdash;</td><td>1.10 &mdash; nothing has written a feed request since 2021</td></tr>
 </tbody></table></div>
-<p class="note">Counts: 49 resolve to a column, 17 are computed (6 <code>concat</code>, 8 <code>map</code>, 3 <code>datePart</code>), 7 a <code>test</code> on a column, 3 <code>filtered</code> on <code>is_exit</code>, 8 a <code>params</code> path. 16 are refused or fall out, and 2 remain open (<a href="#s31">&sect;3.1</a>). <strong>Attribution is exposed at both scopes</strong> &mdash; every <code>session*</code> dimension has a <code>first*</code> twin reading the <code>acq_*</code> column, and the reporting layer picks. GA materialises that cross product as 159 separate dimensions; here it is ten columns and a choice.</p>
+<p class="note">Counts, as corrected on 2026-09-24: 50 resolve to a column (<code>newVsReturning</code> joined them), 17 are computed (6 <code>concat</code>, 8 <code>map</code>, 3 <code>datePart</code>), 7 a <code>test</code> on a column, 8 a <code>params</code> path. The 3 <code>filtered</code> are gone, and with them the kind. 16 are refused or fall out, and 2 remain open (<a href="#s31">&sect;3.1</a>). <strong>Attribution is exposed at both scopes</strong> &mdash; every <code>session*</code> dimension has a <code>first*</code> twin reading the <code>acq_*</code> column, and the reporting layer picks. GA materialises that cross product as 159 separate dimensions; here it is ten columns and a choice.</p>
 
 <h4><span class="num">2.4.3</span>What changes in v2</h4>
 <div class="scroll"><table>
