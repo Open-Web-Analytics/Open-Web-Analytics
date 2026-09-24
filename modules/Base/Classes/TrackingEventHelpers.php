@@ -58,14 +58,6 @@ class TrackingEventHelpers {
 
     }
 
-    public function translateKeys( $event ) {
-
-        foreach ( $this->translations as $k => $v ) {
-
-            $event->set( $v, $event->get( $k ));
-            $event->delete( $k );
-        }
-    }
 
 /*
     public function setEnvironmentals( $event ) {
