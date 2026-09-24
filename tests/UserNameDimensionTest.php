@@ -61,8 +61,21 @@ final class UserNameDimensionTest extends TestCase
         $reference = $manager->compatibleEntities( array( 'visits' ), array( 'browserType' ) );
         $subject   = $manager->compatibleEntities( array( 'visits' ), array( 'userName' ) );
 
+        /*
+         * Compared over v1's fact tables only. `browserType` is part of the
+         * reporting cube's vocabulary and `userName` is not -- v2 replaces it
+         * with `userId`, since the column it reads carries the literal
+         * "(not set)" on every row of a default install (A.1.16). So the cube
+         * qualifies for one and not the other, which says nothing about whether
+         * userName is special among the tables this test is about.
+         */
+        $withoutCube = static function ( array $entities ) {
+
+            return array_values( array_diff( $entities, array( 'base.event' ) ) );
+        };
+
         $this->assertSame(
-            $reference, $subject,
+            $withoutCube( $reference ), $withoutCube( $subject ),
             'userName sits on the same fact tables as browserType and should be answerable by '
             . 'exactly the same ones.' );
     }

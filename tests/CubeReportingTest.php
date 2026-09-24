@@ -93,11 +93,20 @@ final class CubeReportingTest extends TestCase
         $day = (int) date('Ymd');
         $ts  = time() * 1000000;
 
+        /*
+         * Two visitors, one of them returning, and engagement on every row --
+         * so the metrics have something to distinguish. An all-identical
+         * fixture makes visits, uniqueVisitors and newVisitors agree by
+         * accident and proves none of them.
+         */
         $rows = [
-            ['page_view',     '/one'],
-            ['page_view',     '/one'],
-            ['page_view',     '/two'],
-            ['session_start', '/one'],
+            // event_type,      path,   visitor,           session,           prior, msec
+            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 100],
+            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 250],
+            ['page_view',     '/two', self::VISITOR,     self::SESSION,     0, 400],
+            ['session_start', '/one', self::VISITOR,     self::SESSION,     0,   0],
+            ['page_view',     '/two', self::VISITOR + 1, self::SESSION + 1, 3, 750],
+            ['click',         '/two', self::VISITOR + 1, self::SESSION + 1, 3,   0],
         ];
 
         foreach ($rows as $i => $row) {
@@ -112,14 +121,16 @@ final class CubeReportingTest extends TestCase
             $event = Cubes::entityFor(self::PROPERTY);
 
             $event->setProperties([
-                'id'         => 900000 + $i,
-                'event_type' => $row[0],
-                'site_id'    => self::SITE,
-                'visitor_id' => self::VISITOR,
-                'session_id' => self::SESSION,
-                'ts'         => $ts + $i,
-                'yyyymmdd'   => $day,
-                'page_path'  => $row[1],
+                'id'              => 900000 + $i,
+                'event_type'      => $row[0],
+                'site_id'         => self::SITE,
+                'visitor_id'      => $row[2],
+                'session_id'      => $row[3],
+                'prior_sessions'  => $row[4],
+                'engagement_msec' => $row[5],
+                'ts'              => $ts + $i,
+                'yyyymmdd'        => $day,
+                'page_path'       => $row[1],
             ]);
 
             if (!$event->create()) {
@@ -260,8 +271,8 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame([], (array) $rs->errors);
 
-        $this->assertSame(4, (int) $rs->aggregates['eventCount']['value'],
-            'the fixture holds four events');
+        $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+            'the fixture holds six events');
 
         $byName = [];
         $sum    = 0;
@@ -272,7 +283,15 @@ final class CubeReportingTest extends TestCase
             $sum += (int) $row['eventCount']['value'];
         }
 
-        $this->assertSame(['page_view' => 3, 'session_start' => 1], $byName);
+        /*
+         * SORTED, because the query asks for no order and two of these counts
+         * tie. Row order is then the server's to choose and it differs between
+         * drivers -- asserting it would be asserting something the query never
+         * promised. What is under test is the grouping, not the ordering.
+         */
+        ksort($byName);
+
+        $this->assertSame(['click' => 1, 'page_view' => 4, 'session_start' => 1], $byName);
 
         $this->assertSame((int) $rs->aggregates['eventCount']['value'], $sum,
             'the breakdown must sum to its total');
@@ -303,7 +322,11 @@ final class CubeReportingTest extends TestCase
             $byPath[$row['pagePath']['value']] = (int) $row['eventCount']['value'];
         }
 
-        $this->assertSame(['/one' => 3, '/two' => 1], $byPath,
+        // Sorted for the same reason as above: both counts are 3, the query
+        // orders by nothing, and the two drivers returned the tie differently.
+        ksort($byPath);
+
+        $this->assertSame(['/one' => 3, '/two' => 3], $byPath,
             'the cube answers, with its own column and no join');
 
         $this->assertSame('base.event',
@@ -406,9 +429,148 @@ final class CubeReportingTest extends TestCase
 
             $this->assertSame([], (array) $rs->errors, $dim . ' did not resolve');
 
-            $this->assertSame(4, (int) $rs->aggregates['eventCount']['value'],
+            $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
                 $dim . ' changed the total, so it is filtering rather than grouping');
         }
+    }
+
+    /**
+     * The metrics compute what the fixture holds.
+     *
+     * Six events over two visitors -- one new with a four-event session, one
+     * returning with two -- so every number below differs from its neighbours.
+     * A fixture where they agreed would prove none of them.
+     */
+    public function testTheMetricsComputeWhatTheFixtureHolds(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray(
+            'eventCount,pageViews,domClicks,visits,uniqueVisitors,newVisitors,returningVisitors,engagementTime');
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $got = [];
+
+        foreach ((array) $rs->aggregates as $name => $a) {
+            $got[$name] = (int) $a['value'];
+        }
+
+        // Compared by name rather than by position, for the same reason.
+        ksort($got);
+
+        $expected = [
+            'eventCount'        => 6,   // every row
+            'pageViews'         => 4,   // event_type = page_view
+            'domClicks'         => 1,   // event_type = click
+            'visits'            => 2,   // distinct session_id
+            'uniqueVisitors'    => 2,   // distinct visitor_id
+            'newVisitors'       => 1,   // prior_sessions = 0
+            'returningVisitors' => 1,   // prior_sessions > 0
+            'engagementTime'    => 1500, // 100 + 250 + 400 + 750
+        ];
+
+        ksort($expected);
+
+        $this->assertSame($expected, $got);
+    }
+
+    /**
+     * A condition restricts the count WITHOUT restricting the query.
+     *
+     * The distinction that matters: `pageViews` must not filter rows out of the
+     * result set, or every other metric beside it would be computed over the
+     * filtered rows too. It is a conditional aggregate over the same scan, so
+     * asking for it alongside `eventCount` must leave `eventCount` alone.
+     */
+    public function testAConditionNarrowsTheCountAndNotTheQuery(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray('pageViews,eventCount');
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame(4, (int) $rs->aggregates['pageViews']['value']);
+
+        $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+            'the condition on one metric must not narrow the rows the others see');
+    }
+
+    /**
+     * The expression does NOT need a database connection.
+     *
+     * A metric's SELECT is a property of its definition, built once at
+     * registration. Escaping the condition's value through the driver made it
+     * depend on a live connection -- Mysql::prepare() calls
+     * mysqli_real_escape_string( $this->connection, ... ) -- so with no
+     * database it rendered `event_type = ''`: a metric that silently counts
+     * nothing. CI's unit job has no database, which is where it surfaced.
+     */
+    public function testTheConditionRendersWithoutADatabaseConnection(): void
+    {
+        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+            'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
+            'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
+            'condition' => ['column' => 'event_type', 'value' => 'page_view'],
+        ]);
+
+        $m = new ReflectionMethod($metric, 'renderCondition');
+        $m->setAccessible(true);
+
+        $this->assertStringContainsString("= 'page_view'", $m->invoke($metric),
+            'the value must reach the statement without being escaped against a connection');
+    }
+
+    /**
+     * A value that cannot be a literal is refused, and the metric goes MISSING
+     * rather than counting every row.
+     */
+    public function testAValueThatCannotBeALiteralIsRefused(): void
+    {
+        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+            'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
+            'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
+            'condition' => ['column' => 'event_type', 'value' => "x' OR '1'='1"],
+        ]);
+
+        $m = new ReflectionMethod($metric, 'renderCondition');
+        $m->setAccessible(true);
+
+        $this->assertSame('', $m->invoke($metric));
+
+        [$statement] = $metric->getSelect();
+
+        $this->assertNull($statement,
+            'counting every row instead would be a metric answering a different question');
+    }
+
+    /** An operator that is not a comparison never reaches the statement. */
+    public function testAnUnknownOperatorIsRefusedRatherThanInterpolated(): void
+    {
+        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+            'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
+            'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
+            'condition' => ['column' => 'event_type', 'operator' => ') OR 1=1 --', 'value' => 'x'],
+        ]);
+
+        $m = new ReflectionMethod($metric, 'renderCondition');
+        $m->setAccessible(true);
+
+        $sql = $m->invoke($metric);
+
+        $this->assertStringNotContainsString('OR 1=1', $sql,
+            'the operator is matched against a list; it is never interpolated');
+
+        $this->assertStringContainsString('=', $sql);
     }
 
     /** The site-to-Property lookup, which is what the binding rests on. */

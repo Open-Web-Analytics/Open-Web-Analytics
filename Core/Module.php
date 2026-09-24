@@ -1312,6 +1312,13 @@ abstract class Module {
              * its subtrahend would render a subtraction against nothing.
              */
             'subtrahend_column' => '',
+            /*
+             * Here for the same reason as subtrahend_column: array_intersect_key()
+             * below filters params down to THIS map, so a key missing from it is
+             * dropped in silence -- and a metric that lost its condition would
+             * count every row while claiming to count some of them.
+             */
+            'condition'         => array(),
             'child_metrics'    => array(),
             'formula'        => ''
         );

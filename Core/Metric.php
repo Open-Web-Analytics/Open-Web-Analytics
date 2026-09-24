@@ -33,6 +33,16 @@ namespace OWA\Core;
 class Metric extends \OWA\Core\Base {
 
     /**
+     * The rows this metric counts, when it counts some of them.
+     *
+     * ['column' => ..., 'value' => ..., 'operator' => '=']. Empty means every
+     * row, which is what every metric did before conditions existed.
+     *
+     * @var array
+     */
+    protected $condition = array();
+
+    /**
      * Current Time
      *
      * @var array
@@ -262,12 +272,59 @@ class Metric extends \OWA\Core\Base {
             switch ( $this->type ) {
                 
                 case 'count':
-                    
-                    $statement = $db->count( $this->getColumn() );
+
+                    /*
+                     * A CONDITION IS THE SAME SCAN, not a subquery. Most of the
+                     * v2 vocabulary is "count the rows that are X" --
+                     * pageViews, domClicks, downloads, transactions, keyEvents
+                     * -- and an event table answers that by testing a column on
+                     * each row it is already reading. Measured on this box:
+                     * EXPLAIN says select_type=SIMPLE, Using where; Using index.
+                     *
+                     * `sum(CASE ...)` rather than a FILTER clause or COUNTIF.
+                     * CASE is SQL-92 and renders on every engine; FILTER is
+                     * SQL:2003 and absent from MySQL, COUNTIF is BigQuery's and
+                     * ClickHouse's. It is also what boolean_true_count below
+                     * already does, so this follows the house pattern.
+                     */
+                    if ( $this->hasCondition() ) {
+
+                        $where = $this->renderCondition();
+
+                        // '' means the condition could not be rendered, and
+                        // counting every row instead would be a metric quietly
+                        // answering a different question.
+                        $statement = $where === ''
+                            ? null
+                            : sprintf( 'sum(CASE WHEN %s THEN 1 ELSE 0 END)', $where );
+
+                    } else {
+
+                        $statement = $db->count( $this->getColumn() );
+                    }
                     break;
-                
+
                 case 'distinct_count':
-                    $statement = $db->count( $db->distinct( $this->getColumn() ) );
+
+                    /*
+                     * The CASE goes INSIDE the distinct, not around it: rows
+                     * failing the test contribute NULL, which a distinct count
+                     * ignores. Wrapping the aggregate instead would count the
+                     * NULL group as a value.
+                     */
+                    if ( $this->hasCondition() ) {
+
+                        $where = $this->renderCondition();
+
+                        $statement = $where === ''
+                            ? null
+                            : $db->count( $db->distinct( sprintf( 'CASE WHEN %s THEN %s END',
+                                  $where, $this->getColumn() ) ) );
+
+                    } else {
+
+                        $statement = $db->count( $db->distinct( $this->getColumn() ) );
+                    }
                     break;
                 
                 case 'sum':
@@ -455,6 +512,137 @@ class Metric extends \OWA\Core\Base {
         return $this->is_aggregate;
     }
     
+    /**
+     * Restrict what this metric counts to the rows matching one test.
+     *
+     * A definition names a column, an operator and a value; it never carries
+     * SQL. The same rule as a derived dimension naming a shape (PLAN 2.4), and
+     * for the same reason -- a metric carrying an expression has to be rewritten
+     * by hand if the reporting store ever changes.
+     *
+     * @param array $condition ['column' => ..., 'value' => ..., 'operator' => '=']
+     * @return void
+     */
+    function setCondition( array $condition ) {
+
+        $this->condition = $condition;
+    }
+
+    /** @return bool */
+    function hasCondition() {
+
+        return ! empty( $this->condition['column'] )
+            && array_key_exists( 'value', (array) $this->condition );
+    }
+
+    /**
+     * The condition as SQL.
+     *
+     * The OPERATOR IS NOT INTERPOLATED. It is matched against a fixed list and
+     * the match is what reaches the statement, so a definition cannot put
+     * anything else there -- these files are repository-controlled, but a
+     * comparison operator is exactly the sort of thing that later gets wired to
+     * something that is not.
+     *
+     * @return string
+     */
+    protected function renderCondition() {
+
+        $allowed = array( '=', '!=', '<>', '>', '<', '>=', '<=' );
+
+        $asked = isset( $this->condition['operator'] )
+            ? (string) $this->condition['operator'] : '=';
+
+        $operator = in_array( $asked, $allowed, true ) ? $asked : '=';
+
+        if ( $operator !== $asked ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                'Metric "%s" asked for comparison operator "%s", which is not one of %s. '
+              . 'Using "=" instead.',
+                (string) $this->getName(), $asked, implode( ' ', $allowed ) ) );
+        }
+
+        $literal = $this->conditionLiteral();
+
+        if ( $literal === null ) {
+
+            return '';
+        }
+
+        return sprintf( '%s %s %s',
+            $this->qualify( $this->condition['column'] ), $operator, $literal );
+    }
+
+    /**
+     * The condition's value as a SQL literal, or null if it may not be one.
+     *
+     * VALIDATED, NOT ESCAPED, and the difference is the point.
+     *
+     * A driver's escaper needs a live connection -- Mysql::prepare() calls
+     * mysqli_real_escape_string( $this->connection, ... ) -- so escaping here
+     * made a metric's SELECT expression depend on the database being connected.
+     * That is wrong on its own terms: the expression is a property of the
+     * definition, built once at registration, and CI's unit job has no database
+     * at all. It rendered `event_type = ''` there, which is a metric that
+     * silently counts nothing.
+     *
+     * Escaping is also the wrong tool for the input. These values come from a
+     * repository-controlled config file, so the risk is a typo that breaks the
+     * statement rather than a visitor injecting one. A value that could not be
+     * a literal is REFUSED and said out loud, which is a better answer than
+     * quietly quoting something unexpected -- and the caller then renders no
+     * statement at all, so the metric is missing rather than wrong.
+     *
+     * @return string|null
+     */
+    protected function conditionLiteral() {
+
+        $value = $this->condition['value'];
+
+        if ( is_int( $value ) || is_float( $value ) ) {
+
+            return (string) $value;
+        }
+
+        if ( is_bool( $value ) ) {
+
+            return $value ? '1' : '0';
+        }
+
+        $value = (string) $value;
+
+        // Letters, digits, underscore, dot, hyphen and space: enough for an
+        // event type, a state name or a short token, and nothing that can end
+        // a quoted literal or start a comment.
+        if ( ! preg_match( '/^[A-Za-z0-9_.\- ]*$/', $value ) ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                'Metric "%s" has a condition value (%s) that cannot be a SQL literal. '
+              . 'Its column will be missing from the query.',
+                (string) $this->getName(), $value ) );
+
+            return null;
+        }
+
+        return "'" . $value . "'";
+    }
+
+    /**
+     * A column, qualified by this metric's entity alias.
+     *
+     * setColumn() does this for the counted column; a condition column needs
+     * the same treatment or it is ambiguous the moment the query joins
+     * anything.
+     *
+     * @param  string $column
+     * @return string
+     */
+    protected function qualify( $column ) {
+
+        return $this->entity->getTableAlias() . '.' . $column;
+    }
+
     function setMetricType( $type ) {
         $this->type = $type;
         

@@ -1282,22 +1282,30 @@ test.describe('custom reports', () => {
 
         /**
          * The pickers only offer what can be asked for alongside what is
-         * already chosen. Clicks and visits are counted in different fact
-         * tables, so no query returns both -- offering it would invite a
-         * selection that the save then refuses.
+         * already chosen, because offering more would invite a selection the
+         * save then refuses.
+         *
+         * CLICKS AND VISITS NO LONGER QUALIFY as the example. They were counted
+         * in different fact tables, and the reporting cube carries both -- so
+         * one table serves the pair and the picker is right to keep offering
+         * it. That widening is the point of the cube (PLAN 2.13), so the
+         * narrowing is exercised with a pair that still has no common table.
          */
         test('the metric picker stops offering incompatible metrics', async ({ page }) => {
             await openBuilderOnGrid(page);
 
             // Both are on offer to begin with.
             await expect(page.locator('#dlgMetrics option[value="visits"]')).toHaveCount(1);
-            await expect(page.locator('#dlgMetrics option[value="domClicks"]')).toHaveCount(1);
+            await expect(page.locator('#dlgMetrics option[value="feedRequests"]')).toHaveCount(1);
 
             await chooseInChosen(page, 'dlgMetrics', 'visits');
 
-            // ...and once visits is chosen, clicks is gone.
-            await expect(page.locator('#dlgMetrics option[value="domClicks"]')).toHaveCount(0);
+            // ...and once visits is chosen, feed requests are gone.
+            await expect(page.locator('#dlgMetrics option[value="feedRequests"]')).toHaveCount(0);
             await expect(page.locator('#dlgMetrics option[value="uniqueVisitors"]')).toHaveCount(1);
+
+            // ...while clicks, which the cube serves beside visits, stays.
+            await expect(page.locator('#dlgMetrics option[value="domClicks"]')).toHaveCount(1);
         });
 
         /** The same narrowing reaches dimensions, and the caps are enforced. */

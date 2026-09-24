@@ -39,6 +39,12 @@
             "entity": "base.click",
             "expression": "COUNT(click.id)",
             "alias": "domClicks"
+        },
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'click' THEN 1 ELSE 0 END)",
+            "alias": "domClicks"
         }
     ],
     "ecommerceConversionRate": [
@@ -49,6 +55,14 @@
                 "transactions",
                 "visits"
             ]
+        }
+    ],
+    "engagementTime": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "SUM(event.engagement_msec)",
+            "alias": "engagementTime"
         }
     ],
     "eventCount": [
@@ -487,6 +501,14 @@
             "alias": "goalValueAll"
         }
     ],
+    "keyEvents": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.is_goal_event = 1 THEN 1 ELSE 0 END)",
+            "alias": "keyEvents"
+        }
+    ],
     "lineItemQuantity": [
         {
             "kind": "aggregate",
@@ -518,12 +540,24 @@
     "newVisitors": [
         {
             "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT CASE WHEN event.prior_sessions = 0 THEN event.visitor_id END)",
+            "alias": "newVisitors"
+        },
+        {
+            "kind": "aggregate",
             "entity": "base.session",
             "expression": "sum(CASE session.is_new_visitor WHEN TRUE THEN 1 ELSE 0 END)",
             "alias": "newVisitors"
         }
     ],
     "pageViews": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'page_view' THEN 1 ELSE 0 END)",
+            "alias": "pageViews"
+        },
         {
             "kind": "aggregate",
             "entity": "base.request",
@@ -553,6 +587,14 @@
             "entity": "base.session",
             "expression": "(count(distinct(session.visitor_id)) - sum(CASE session.is_new_visitor WHEN TRUE THEN 1 ELSE 0 END))",
             "alias": "repeatVisitors"
+        }
+    ],
+    "returningVisitors": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT CASE WHEN event.prior_sessions > 0 THEN event.visitor_id END)",
+            "alias": "returningVisitors"
         }
     ],
     "revenuePerTransaction": [
@@ -694,6 +736,12 @@
         },
         {
             "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT event.visitor_id)",
+            "alias": "uniqueVisitors"
+        },
+        {
+            "kind": "aggregate",
             "entity": "base.request",
             "expression": "COUNT(DISTINCT request.visitor_id)",
             "alias": "uniqueVisitors"
@@ -758,6 +806,12 @@
         }
     ],
     "visits": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT event.session_id)",
+            "alias": "visits"
+        },
         {
             "kind": "aggregate",
             "entity": "base.request",
