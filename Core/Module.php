@@ -599,8 +599,8 @@ abstract class Module {
              * already listed, which meant a module that did not mention
              * is_active simply had no is_active in the registry -- and every
              * installation then reported its own stored is_active and
-             * schema_version as values nothing declares. Core says every module
-             * has these, so core puts them there.
+             * schema_version as values nothing declares. Every module has
+             * these because this class gives every module these.
              */
             foreach ( $mechanical as $key => $args ) {
 

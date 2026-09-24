@@ -120,7 +120,8 @@ final class InstanceInfoCliTest extends TestCase
             'the report must not fatal: ' . substr($out, 0, 500));
 
         foreach (['ENVIRONMENT', 'MODULES', 'SCHEMA', 'SCHEDULER',
-                  'FACT TABLES', 'FRESHNESS', 'EVENT QUEUE', 'CONTENTS'] as $section) {
+                  'FACT TABLES', 'FRESHNESS', 'EVENT QUEUE', 'SETTINGS',
+                  'CONTENTS'] as $section) {
 
             $this->assertStringContainsString($section, $out,
                 'the report is missing its ' . $section . ' section');
@@ -169,6 +170,119 @@ final class InstanceInfoCliTest extends TestCase
                 '/' . $label . '\s+\d+/', $out,
                 $label . ' must be reported with a number');
         }
+    }
+
+    /**
+     * The settings registry has two failure modes that produce no error at all,
+     * and this is the only place either is reported.
+     *
+     * A stored value for a setting nobody declared is loaded and then ignored,
+     * so an administrator who saved it sees the code default. A fieldset naming
+     * an unregistered or static setting renders an empty row, or a control whose
+     * save writes nothing. Neither raises; neither is visible from the screens.
+     *
+     * @group needs-db
+     */
+    public function testItReportsTheSettingsRegistry(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs a database to boot the CLI');
+        }
+
+        $out = $this->report();
+
+        $this->assertMatchesRegularExpression(
+            '/Declared\s+\d+ setting\(s\) across \d+ module\(s\)/', $out,
+            'the report must say how much is declared');
+
+        $this->assertMatchesRegularExpression('/Fetched at boot\s+\d+/', $out,
+            'what boot costs is the reason the registry exists');
+
+        $this->assertStringContainsString('Modules declaring', $out,
+            'a module still relying on the compatibility clause must be named');
+    }
+
+    /**
+     * Every module in this repository declares, so the clause the report warns
+     * about is not in use here -- and it must say so rather than warn anyway.
+     *
+     * @group needs-db
+     */
+    public function testAFullyDeclaredInstanceIsNotWarnedAbout(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs a database to boot the CLI');
+        }
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        if ($c->undeclaredModules()) {
+            $this->markTestSkipped('this install has a module that has not declared');
+        }
+
+        $this->assertMatchesRegularExpression(
+            '/\+\s+Modules declaring\s+all of them/', $this->report(),
+            'with nothing relying on the fallback the line must read as a pass');
+    }
+
+    /**
+     * A schema version records what a module's TABLES look like. A module that
+     * owns none and ships no updates has nothing to record, so its missing
+     * version is not a finding -- warning about it would put a permanent,
+     * unactionable line against most of the modules in this repository.
+     *
+     * The predicate is tested directly rather than by looking for the absence
+     * of a warning in the output: on a healthy install there is no module in
+     * that state to observe, and a test that skips when the condition is not
+     * lying around is the test that stops noticing when the rule breaks.
+     *
+     * @group needs-db
+     */
+    public function testOnlyAModuleWithTablesCanBeMissingASchemaVersion(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs a database to boot the CLI');
+        }
+
+        $m = new ReflectionMethod(
+            \OWA\Module\Base\Controller\InstanceInfoCli::class, 'hasSchema');
+        $m->setAccessible(true);
+
+        $controller = (new ReflectionClass(
+            \OWA\Module\Base\Controller\InstanceInfoCli::class))->newInstanceWithoutConstructor();
+
+        $this->assertTrue($m->invoke($controller, 'base'),
+            'base owns tables and ships updates, so its version is required');
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $schemaless = null;
+
+        foreach ((array) \OWA\Core\CoreAPI::getActiveModules() as $name) {
+
+            $module = $service->getModule($name);
+
+            if (is_object($module)
+                && !(array) $module->getEntities() && !(array) $module->updates) {
+
+                $schemaless = $name;
+                break;
+            }
+        }
+
+        $this->assertNotNull($schemaless,
+            'this repository ships modules that own no tables; if none is active '
+          . 'the rule below is untested');
+
+        $this->assertFalse($m->invoke($controller, $schemaless),
+            $schemaless . ' owns no tables and ships no updates, so it has no '
+          . 'schema version to be missing');
+
+        /*
+         * An unknown module answers true, so a module that cannot be loaded is
+         * reported rather than quietly excused.
+         */
+        $this->assertTrue($m->invoke($controller, 'no_such_module_at_all'));
     }
 
     /**

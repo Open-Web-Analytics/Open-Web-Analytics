@@ -77,6 +77,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         $lines = array_merge( $lines, $this->section( 'Fact tables',  $this->factTables() ) );
         $lines = array_merge( $lines, $this->section( 'Freshness',    $this->freshness() ) );
         $lines = array_merge( $lines, $this->section( 'Event queue',  $this->queue() ) );
+        $lines = array_merge( $lines, $this->section( 'Settings',     $this->settings() ) );
         $lines = array_merge( $lines, $this->section( 'Contents',     $this->contents() ) );
         $lines = array_merge( $lines, $this->summary() );
 
@@ -243,11 +244,17 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
              * version; activate() only sets is_active. A module enabled by the
              * older cmd=activate therefore runs with no tables and no version,
              * and nothing says so -- the default of 1 makes it read as current.
-             * Harmless while a module has no updates and no entities, which is
-             * why it has gone unnoticed; the first update such a module ships
-             * will run against tables that were never created.
+             *
+             * ONLY WORTH SAYING FOR A MODULE THAT HAS A SCHEMA. A schema
+             * version records what a module's tables look like, so a module
+             * that owns no tables and ships no updates has nothing to record
+             * and its absence is not a fault -- reporting one would mean most
+             * of the modules in this repository permanently carrying a warning
+             * there is no action for. Where there IS a schema, the absence is
+             * the finding: the first update will run against tables that were
+             * never created.
              */
-            if ( ! $stored ) {
+            if ( ! $stored && $this->hasSchema( $name ) ) {
 
                 $rows[] = $this->row( self::WARN, '  ' . $name,
                     'active, but never installed',
@@ -269,6 +276,39 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         }
 
         return $rows;
+    }
+
+    /**
+     * Whether a module has anything to version.
+     *
+     * Entities are the tables it owns and updates are the migrations that
+     * change them; a module with neither -- a cache backend, a queue transport,
+     * the example module -- never calls install() for a schema and never
+     * records a version.
+     *
+     * Unknown modules answer true, so a module that cannot be loaded is
+     * reported rather than quietly excused.
+     *
+     * @param  string $name
+     * @return bool
+     */
+    private function hasSchema( $name ) {
+
+        try {
+
+            $module = \OWA\Core\CoreAPI::serviceSingleton()->getModule( $name );
+
+        } catch ( \Throwable $e ) {
+
+            return true;
+        }
+
+        if ( ! is_object( $module ) ) {
+
+            return true;
+        }
+
+        return (bool) ( (array) $module->getEntities() ) || (bool) ( (array) $module->updates );
     }
 
     /**
@@ -444,6 +484,84 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         if ( $total && $oldest ) {
 
             $rows[] = $this->fact( '  oldest', date( 'Y-m-d H:i', (int) $oldest ) );
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The settings registry, and the mistakes in it that fail silently.
+     *
+     * Every problem here has the same shape: something LOOKS configured and is
+     * not. A stored value for a setting nobody declared is loaded and then
+     * ignored, so an administrator who saved it sees the code default and no
+     * error. A fieldset naming an unregistered setting renders an empty row; one
+     * naming a static setting renders a form whose save writes nothing. None of
+     * these raise, and none of them are visible from the screens themselves --
+     * which is the argument for reporting them somewhere an operator looks.
+     *
+     * The counts above them are the other half: what boot costs. Eager keys are
+     * the ones fetched on every request, and a module that has not declared has
+     * ALL of its rows fetched, because nothing says which ones it needs.
+     */
+    private function settings() {
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        if ( ! method_exists( $c, 'declarationProblems' ) ) {
+
+            return array();
+        }
+
+        $rows = array();
+
+        $declared = (array) $c->declaredModules();
+        $fields   = (array) $c->registeredFields();
+
+        $eager = 0;
+
+        foreach ( (array) $c->eagerSettings() as $keys ) {
+
+            $eager += count( (array) $keys );
+        }
+
+        $rows[] = $this->fact( 'Declared',
+            sprintf( '%d setting(s) across %d module(s)', count( $fields ), count( $declared ) ) );
+
+        $rows[] = $this->fact( 'Fetched at boot', sprintf( '%d', $eager ) );
+
+        /*
+         * Not a fault. It is the compatibility clause working as intended, and
+         * a third-party module is entitled to rely on it -- but it is also the
+         * only way to know which modules still are, and the clause is going to
+         * be removed.
+         */
+        $undeclared = (array) $c->undeclaredModules();
+
+        $rows[] = $this->row(
+            $undeclared ? self::WARN : self::OK,
+            'Modules declaring',
+            $undeclared
+                ? sprintf( 'all but %s', implode( ', ', $undeclared ) )
+                : 'all of them',
+            'Those modules store settings but ship no settings.php, so every row they own '
+          . 'is loaded at boot. That fallback is temporary: when it is removed their '
+          . 'stored values will revert to code defaults. Declare their settings in '
+          . 'modules/<Module>/settings.php.' );
+
+        foreach ( (array) $c->declarationProblems() as $problem ) {
+
+            $rows[] = $this->row( self::WARN, '  stored', $problem,
+                'The row is in the database and the value is not used. Either declare the '
+              . "setting storable, or delete the row -- right now it reads as configured "
+              . 'and is not.' );
+        }
+
+        foreach ( (array) $c->fieldSetProblems() as $problem ) {
+
+            $rows[] = $this->row( self::FAIL, '  fieldset', $problem,
+                'The settings screen builds from the registry, so this field renders as an '
+              . 'empty row or as a control whose save does nothing.' );
         }
 
         return $rows;

@@ -10,7 +10,8 @@
  * 'maxmind_geoip' and 'maxmindGeoip' onto this directory, and the stored rows
  * use the first.
  *
- * is_active and schema_version are NOT here. Core adds those to every module.
+ * is_active and schema_version are NOT here. Core\Module::settingsRegistry()
+ * adds those to every module, from mechanicalSettings().
  */
 return array(
 

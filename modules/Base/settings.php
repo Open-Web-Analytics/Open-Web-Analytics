@@ -23,8 +23,8 @@
  *                 the keys the Observation Settings screen writes, plus the
  *                 goal data the GoalManager keeps per site.
  *
- * `schema_version` and `is_active` are NOT here. Core adds those to every
- * module, eager and without a default -- a default would let
+ * `schema_version` and `is_active` are NOT here. Core\Module::settingsRegistry()
+ * adds those to every module, eager and without a default -- a default would let
  * pruneRedundantPersistedSettings() drop them and the module would look
  * uninstalled.
  *

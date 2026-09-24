@@ -1401,6 +1401,34 @@ namespace OWA\Module\Base\Classes;
              return;
          }
 
+         $undeclared = $this->undeclaredModules();
+
+         if ( ! $undeclared ) {
+
+             return;
+         }
+
+         \OWA\Core\CoreAPI::notice( sprintf(
+             'These modules store settings but ship no settings.php, so every row they '
+           . 'own is still loaded at boot: %s. That fallback is temporary -- declare '
+           . 'their settings before it is removed, or their stored values will revert '
+           . 'to code defaults.',
+             implode( ', ', $undeclared ) ) );
+     }
+
+     /**
+      * Modules with stored settings and no declaration.
+      *
+      * These are the ones the compatibility clause carries: boot loads every
+      * row they own, because there is nothing saying which ones it needs. The
+      * log notice above and cmd=instance-info both report it, from here, so
+      * the two cannot come to different conclusions about which modules are
+      * still relying on the fallback.
+      *
+      * @return array module names
+      */
+     public function undeclaredModules() {
+
          $db = \OWA\Core\CoreAPI::dbSingleton();
 
          $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
@@ -1419,17 +1447,17 @@ namespace OWA\Module\Base\Classes;
              }
          }
 
-         if ( ! $undeclared ) {
+         return $undeclared;
+     }
 
-             return;
-         }
+     /**
+      * Modules that ship a settings.php.
+      *
+      * @return array module names
+      */
+     public function declaredModules() {
 
-         \OWA\Core\CoreAPI::notice( sprintf(
-             'These modules store settings but ship no settings.php, so every row they '
-           . 'own is still loaded at boot: %s. That fallback is temporary -- declare '
-           . 'their settings before it is removed, or their stored values will revert '
-           . 'to code defaults.',
-             implode( ', ', $undeclared ) ) );
+         return array_keys( $this->declared_modules );
      }
 
      /**
