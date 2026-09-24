@@ -283,6 +283,14 @@ final class CubeReportingTest extends TestCase
             $sum += (int) $row['eventCount']['value'];
         }
 
+        /*
+         * SORTED, because the query asks for no order and two of these counts
+         * tie. Row order is then the server's to choose and it differs between
+         * drivers -- asserting it would be asserting something the query never
+         * promised. What is under test is the grouping, not the ordering.
+         */
+        ksort($byName);
+
         $this->assertSame(['click' => 1, 'page_view' => 4, 'session_start' => 1], $byName);
 
         $this->assertSame((int) $rs->aggregates['eventCount']['value'], $sum,
@@ -313,6 +321,10 @@ final class CubeReportingTest extends TestCase
 
             $byPath[$row['pagePath']['value']] = (int) $row['eventCount']['value'];
         }
+
+        // Sorted for the same reason as above: both counts are 3, the query
+        // orders by nothing, and the two drivers returned the tie differently.
+        ksort($byPath);
 
         $this->assertSame(['/one' => 3, '/two' => 3], $byPath,
             'the cube answers, with its own column and no join');
@@ -449,7 +461,10 @@ final class CubeReportingTest extends TestCase
             $got[$name] = (int) $a['value'];
         }
 
-        $this->assertSame([
+        // Compared by name rather than by position, for the same reason.
+        ksort($got);
+
+        $expected = [
             'eventCount'        => 6,   // every row
             'pageViews'         => 4,   // event_type = page_view
             'domClicks'         => 1,   // event_type = click
@@ -458,7 +473,11 @@ final class CubeReportingTest extends TestCase
             'newVisitors'       => 1,   // prior_sessions = 0
             'returningVisitors' => 1,   // prior_sessions > 0
             'engagementTime'    => 1500, // 100 + 250 + 400 + 750
-        ], $got);
+        ];
+
+        ksort($expected);
+
+        $this->assertSame($expected, $got);
     }
 
     /**
