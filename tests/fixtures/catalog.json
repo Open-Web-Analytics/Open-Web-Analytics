@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 86,
-        "metricImplementations": 113,
+        "metricNames": 85,
+        "metricImplementations": 112,
         "dimensionNamesNormalized": 42,
         "dimensionEntriesNormalized": 42,
         "dimensionNamesDenormalized": 104,
@@ -262,31 +262,6 @@
                     "name": "eventsPerSession",
                     "numerator": "eventCount",
                     "precision": 2,
-                    "subtrahend_column": ""
-                }
-            }
-        ],
-        "exitRate": [
-            {
-                "name": "exitRate",
-                "class": "base.configurableMetric",
-                "label": "Exit Rate",
-                "group": "Site Usage",
-                "params": {
-                    "child_metrics": [],
-                    "column": "",
-                    "condition": [],
-                    "data_type": "percentage",
-                    "denominator": "pageViews",
-                    "description": "The share of views of this page that ended the session.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Site Usage",
-                    "label": "Exit Rate",
-                    "metric_type": "ratio",
-                    "name": "exitRate",
-                    "numerator": "exits",
-                    "precision": 4,
                     "subtrahend_column": ""
                 }
             }

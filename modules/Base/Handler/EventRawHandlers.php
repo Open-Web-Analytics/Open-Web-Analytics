@@ -241,6 +241,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'visitor_fsts'   => $this->number( $event->get( 'fsts' ) ),
             'prior_sessions' => $this->number( $event->get( 'num_prior_sessions' ) ),
             'prev_event_ts'  => $this->previousEventTs( $event, $ts ),
+            'event_seq'      => $this->number( $event->get( 'event_seq' ) ),
 
             'page_location' => $this->text( $location ),
             'page_path'     => $page['path'],

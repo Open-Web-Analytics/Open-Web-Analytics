@@ -152,15 +152,16 @@ final class NewVsReturningTest extends TestCase
         $declaration = include OWA_DIR . 'modules/Base/config/metrics.php';
         $metrics     = (array) $declaration['metrics'];
 
-        $this->assertSame('ratio', $metrics['exitRate']['metric_type']);
-        $this->assertSame('exits', $metrics['exitRate']['numerator']);
-
-        // The denominator is the whole point -- it is what the dimension form
-        // could not carry.
-        $this->assertSame('pageViews', $metrics['exitRate']['denominator']);
-
         $this->assertSame(array('column' => 'is_exit', 'value' => 1),
             $metrics['exits']['condition']);
+
+        /*
+         * And NO exitRate. A session's last event is decided by ARRIVAL order,
+         * so is_exit can land on the wrong row -- a count carries that error
+         * visibly where a percentage presents it as precision. GA ships no
+         * exit rate either.
+         */
+        $this->assertArrayNotHasKey('exitRate', $metrics);
     }
 
     /** And no shipped report groups by one. */

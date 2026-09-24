@@ -615,6 +615,61 @@ describe('setNumberPriorSessions', () => {
     });
 });
 
+describe('stampEventSequence', () => {
+
+    /* Counts from 1, so 0 is never a position and absence stays readable. */
+    test('the first event of a session is position 1', () => {
+        const t = newTracker();
+        const e = eventAt(NOW);
+
+        t.stampEventSequence(e);
+
+        expect(e.get('event_seq')).toBe(1);
+        expect(OWA.getState(t.storeName('s'), 'seq')).toBe(1);
+    });
+
+    /* Per EVENT, not per page -- the whole point of sitting outside stateInit. */
+    test('each event of a page gets its own position', () => {
+        const t = newTracker();
+        const first = eventAt(NOW);
+        const second = eventAt(NOW);
+        const third = eventAt(NOW);
+
+        t.stampEventSequence(first);
+        t.stampEventSequence(second);
+        t.stampEventSequence(third);
+
+        expect([first, second, third].map((e) => e.get('event_seq'))).toEqual([1, 2, 3]);
+    });
+
+    /*
+     * The position is the EVENT's, taken as it is built. A beacon deferred,
+     * queued or retried carries the number it had when it happened -- stamping
+     * at send time would rebuild the bug this exists to fix.
+     */
+    test('an event keeps its position while later events are stamped', () => {
+        const t = newTracker();
+        const deferred = eventAt(NOW);
+
+        t.stampEventSequence(deferred);
+        t.stampEventSequence(eventAt(NOW));
+        t.stampEventSequence(eventAt(NOW));
+
+        expect(deferred.get('event_seq')).toBe(1);
+    });
+
+    /* Junk in the store restarts rather than producing NaN on every beacon. */
+    test('an unparseable stored position restarts the count', () => {
+        const t = newTracker();
+        OWA.setState(t.storeName('s'), 'seq', 'xyzzy', true);
+
+        const e = eventAt(NOW);
+        t.stampEventSequence(e);
+
+        expect(e.get('event_seq')).toBe(1);
+    });
+});
+
 describe('setFirstSessionTimestamp', () => {
 
     test('stamps fsts on the first visit', () => {

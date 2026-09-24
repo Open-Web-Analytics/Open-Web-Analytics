@@ -1779,7 +1779,7 @@
                     "dimensions": "pagePath,pageTitle",
                     "do": "reports",
                     "format": "json",
-                    "metrics": "pageViews,exits,exitRate",
+                    "metrics": "pageViews,exits",
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",

@@ -3796,6 +3796,10 @@ class OWATracker  {
          */
         this.advanceLastRequestTime( event );
 
+        // Per event, and for the same reason: a page's events must not share a
+        // position any more than they share a last-request time.
+        this.stampEventSequence( event );
+
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
         }
@@ -3812,6 +3816,59 @@ class OWATracker  {
     advanceLastRequestTime( event ) {
 
         OWA.setState( this.storeName('s'), 'last_req', event.get( 'timestamp' ) || this.getTimestamp(), true );
+    }
+
+    /**
+     * The event's position in its session, counted on the DEVICE.
+     *
+     * WHY A COUNTER AND NOT A TIME. The server stamps `ts` at edge receipt --
+     * it is environmental, so a request cannot set it and a queue drain cannot
+     * restamp it -- and the cube's window sorts a session on that. So events
+     * order by ARRIVAL, and a beacon that lands late sorts after ones that
+     * happened after it. The unload beacon is the standing example: it puts
+     * is_exit on the wrong event and mis-orders any funnel spanning it.
+     *
+     * A client TIMESTAMP would not fix that. A device clock can be wrong,
+     * skewed, or set by hand, and two events a second apart can carry times in
+     * the wrong order. A counter is monotonic whatever the clock says, which is
+     * the only property the sort actually needs. (GA sends the same thing --
+     * `_s`, the hit number within the session -- and still cannot order events
+     * inside one upload batch, because they share a timestamp.)
+     *
+     * STAMPED AT CREATION, NOT AT SEND. This runs on the event as it is built,
+     * so a beacon that is deferred, queued or retried carries the number it had
+     * when it happened. Incrementing at transport time would reproduce exactly
+     * the bug it exists to fix.
+     *
+     * Per EVENT, not per page: it sits beside advanceLastRequestTime() outside
+     * the stateInit guard for that reason. Inside it, every event of a page
+     * would share one number.
+     *
+     * Counts from 1, so 0 is never a legitimate value and absence stays
+     * distinguishable -- unlike nps, which counts from zero and needed the
+     * explicit test this one does not.
+     *
+     * TWO TABS SHARE THE STORE, so both can read n and write n+1, and a
+     * duplicate is possible. Not solved here: the cube's sort keeps `id` as its
+     * final tiebreak, so a duplicate is ordered deterministically rather than
+     * arbitrarily, and the pair is still ordered correctly against every other
+     * event of the session. A lock would cost more than the collision does.
+     */
+    stampEventSequence( event ) {
+
+        var store = this.storeName( 's' );
+        var seq   = OWA.getState( store, 'seq' );
+
+        seq = ( seq === undefined || seq === null || seq === '' || isNaN( seq * 1 ) )
+            ? 1
+            : ( seq * 1 ) + 1;
+
+        OWA.setState( store, 'seq', seq, true );
+
+        // On the event rather than collected from the store later: the value is
+        // THIS event's, and a second tab writing between the two reads would
+        // otherwise hand it somebody else's number.
+        event.set( 'event_seq', seq );
     }
 
     /**

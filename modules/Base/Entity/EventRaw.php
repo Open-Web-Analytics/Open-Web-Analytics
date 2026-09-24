@@ -108,6 +108,19 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'prev_event_ts', OWA_DTD_BIGINT ) );
 
         /*
+         * The event's position in its session, counted on the DEVICE.
+         *
+         * NULLABLE, and that is the contract: a tracker cached from before this
+         * existed sends nothing, and the sort has to read that as "no device
+         * order for this session" rather than as position zero. Every row of an
+         * old session is NULL together, so those sessions fall back to arrival
+         * order and behave exactly as they did.
+         *
+         * Counted from 1, so a stored 0 is not a position and never appears.
+         */
+        $this->setProperty( $this->column( 'event_seq', OWA_DTD_INT ) );
+
+        /*
          * The page. page_location is the evidence; every reading of it is its
          * own column, parsed at ingest. A GROUP BY over a parsing expression
          * cannot use an index, and the expression would have to be written once

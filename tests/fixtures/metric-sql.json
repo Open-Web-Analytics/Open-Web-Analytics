@@ -85,18 +85,6 @@
             ]
         }
     ],
-    "exitRate": [
-        {
-            "kind": "ratio",
-            "numerator": "exits",
-            "denominator": "pageViews",
-            "precision": 4,
-            "children": [
-                "exits",
-                "pageViews"
-            ]
-        }
-    ],
     "exits": [
         {
             "kind": "aggregate",

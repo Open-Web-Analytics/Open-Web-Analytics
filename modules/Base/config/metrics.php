@@ -76,9 +76,12 @@ return array(
          * GA4 reached the same shape: Exits is a metric there, paired with the
          * ordinary page dimension, and GA ships no exit-page dimension at all.
          *
-         * exitRate goes further than GA, which leaves you to divide Exits by
-         * Views yourself in an Exploration. It costs one entry here now that
-         * `ratio` exists, and 1.x did report it.
+         * NO exitRate. GA ships none either -- you divide Exits by Views in an
+         * Exploration -- and a rate is the wrong thing to ship first here: a
+         * session's last event is decided by ARRIVAL order (Cube\IsExitStep
+         * over a window sorted on ts), so a late beacon puts is_exit on the
+         * wrong row. A count carries that error visibly; a percentage presents
+         * it as precision.
          */
         'exits' => array(
             'label'       => 'Exits',
@@ -180,22 +183,6 @@ return array(
             'numerator'   => 'pageViews',
             'denominator' => 'visits',
             'precision'   => 2,
-        ),
-
-        /*
-         * Exits over page views. NULL where a page was never viewed, which a
-         * page with exits cannot be -- so the guard is for the empty grouping
-         * rather than for a real page.
-         */
-        'exitRate' => array(
-            'label'       => 'Exit Rate',
-            'description' => 'The share of views of this page that ended the session.',
-            'group'       => 'Site Usage',
-            'metric_type' => 'ratio',
-            'data_type'   => 'percentage',
-            'numerator'   => 'exits',
-            'denominator' => 'pageViews',
-            'precision'   => 4,
         ),
 
         'sessionsPerUser' => array(
