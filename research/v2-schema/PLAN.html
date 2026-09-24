@@ -724,7 +724,10 @@ differ in their id.</p>
 <code>site_type_date</code>, <code>session</code>, <code>visitor</code>; partitioned by RANGE on
 <code>yyyymmdd</code> under the existing rotate job. Deliberately absent, each per a settled
 decision: any engaged flag, <code>is_new_visitor</code>, entry/exit flags, eight date parts, all
-dimension FKs — and bot rows entirely, refused at ingest.</p>
+dimension FKs — and bot rows entirely, refused at ingest. <code>is_new_visitor</code>
+stays absent: what the cube gained on 2026-09-24 is <code>new_vs_returning</code>, the LABEL the
+pass reads off <code>prior_sessions</code> — a stamped reading, not the 1.x marker
+(2.4.2).</p>
 <div class="note"><strong>Two logical stores.</strong> The application tables (sites, users,
 config, goals, job state) <em>require</em> a SQL store — MySQL-class, transactional, never
 abstracted away. <strong>Raw requires a row store</strong> &mdash; it takes one insert per beacon, the one thing
@@ -959,8 +962,14 @@ re-registration of a metric on a second entity.</p>
 <h3 id="s24"><span class="num">2.4</span>Dimensions <span class="chip c-dec">Decided</span></h3>
 <p>Most dimensions are a column: <code>eventName</code> groups by <code>event_type</code>.
 The rest are computed from columns &mdash; <code>sourceMedium</code> joins two,
-<code>newVsReturning</code> maps one onto labels. A computed dimension names which of six shapes
+<code>sessionChannel</code> maps one onto labels. A computed dimension names which of six shapes
 it is and the dialect renders that shape, so no dimension definition holds SQL either.</p>
+<p class="note"><strong>Corrected 2026-09-24.</strong> <code>newVsReturning</code> was this
+section's <code>map</code> example and is now a plain <code>column</code>: the pass stamps the
+label and the dimension reads it. The reason is a constraint this section had not checked &mdash;
+the reporting engine emits <code>GROUP&nbsp;BY&nbsp;&lt;column&gt;</code> and nothing else, and the
+dimension registry has no slot for value labels, so a <code>map</code> has no route from a stored
+code to two <em>named</em> buckets. See 2.4.2 below.</p>
 
 <h4><span class="num">2.4.1</span>The kinds</h4>
 <div class="scroll"><table>
@@ -968,9 +977,9 @@ it is and the dialect renders that shape, so no dimension definition holds SQL e
 <tbody>
 <tr><td><code>column</code></td><td>The stored column</td><td><code>pagePath</code>, <code>eventName</code>, <code>deviceType</code></td></tr>
 <tr><td><code>concat</code></td><td>Two columns joined</td><td><code>sourceMedium</code>, <code>firstSourceMedium</code></td></tr>
-<tr><td><code>map</code></td><td>One column through a lookup</td><td><code>newVsReturning</code></td></tr>
+<tr><td><code>map</code></td><td>One column through a lookup</td><td><code>sessionChannel</code>, <code>firstChannel</code></td></tr>
 <tr><td><code>datePart</code></td><td>A component of the timestamp</td><td>hour, day of week</td></tr>
-<tr><td><code>test</code></td><td>A column against a constant, rendered as a boolean</td><td><code>isNewVisitor</code>, <code>isRepeatVisitor</code></td></tr>
+<tr><td><code>test</code></td><td>A column against a constant, rendered as a boolean</td><td><code>signedInWithUserId</code></td></tr>
 <tr><td><code>filtered</code></td><td>A column restricted to rows carrying a flag</td><td><code>exitPagePath</code>, on <code>is_exit</code></td></tr>
 </tbody></table></div>
 <p class="note">Only five of those are computed; <code>column</code> is the trivial case. A
@@ -1026,9 +1035,8 @@ no answer yet and needs a decision rather than a renderer.</p>
 <tr><td></td><td><code>campaignId</code></td><td>&mdash;</td><td>&mdash;</td><td>the tag carries one value per key; there is no separate id to read</td></tr>
 <tr><td>Visitor</td><td><code>visitorId</code></td><td>column</td><td><code>visitor_id</code></td><td></td></tr>
 <tr><td></td><td><code>userId</code></td><td>column</td><td><code>user_id</code></td><td>new &mdash; site-declared</td></tr>
-<tr><td></td><td><code>isNewVisitor</code></td><td>test</td><td><code>prior_sessions&nbsp;=&nbsp;0</code></td><td>a flag in 1.x, a test in v2 (1.4)</td></tr>
-<tr><td></td><td><code>isRepeatVisitor</code></td><td>test</td><td><code>prior_sessions&nbsp;&gt;&nbsp;0</code></td><td></td></tr>
-<tr><td></td><td><code>newVsReturning</code></td><td>map</td><td><code>prior_sessions</code> through a lookup</td><td>the labelled pair, 2.4.1&rsquo;s <code>map</code> example</td></tr>
+<tr><td></td><td><code>isNewVisitor / isRepeatVisitor</code></td><td>&mdash;</td><td>&mdash;</td><td><strong>Dropped 2026-09-24.</strong> Two dimensions partitioning one population, which is the defect rather than the spelling of it: 1.x held them in a nullable tinyint whose 1, 0 and NULL group separately, so the dashboard pie needed a map folding three buckets onto two names and still drew two slices called New (<a href="#nA126">A.1.26</a>). GA has one <em>New&nbsp;/&nbsp;returning</em> dimension and no boolean twins</td></tr>
+<tr><td></td><td><code>newVsReturning</code></td><td>column</td><td><code>new_vs_returning</code></td><td>the pass stamps the LABEL, not a flag &mdash; the engine groups by a column and the registry has no value labels, so a code could not become two named buckets. A rewording is a rebuild, which is what makes a display string admissible in a DERIVED table. <code>prior_sessions</code> stays on the row and <code>priorVisitCount</code> still reads it</td></tr>
 <tr><td></td><td><code>priorVisitCount</code></td><td>column</td><td><code>prior_sessions</code></td><td></td></tr>
 <tr><td></td><td><code>firstSessionDate</code></td><td>datePart</td><td><code>visitor_fsts</code></td><td>the anchor rides every event</td></tr>
 <tr><td></td><td><code>signedInWithUserId</code></td><td>test</td><td><code>user_id</code> IS NOT NULL</td><td></td></tr>
