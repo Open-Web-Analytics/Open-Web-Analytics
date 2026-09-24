@@ -321,6 +321,57 @@ final class InstanceInfoCliTest extends TestCase
     }
 
     /**
+     * An absent schema version is reported either way, at two weights.
+     *
+     * A recorded version means install() RAN -- it is not a description of the
+     * tables, since install() writes one for a module with no entities too.
+     * activate() writes nothing, so an absence means the module was switched on
+     * without being installed, and that is worth saying whether or not there
+     * are tables. What differs is the consequence, so what differs is the
+     * weight.
+     *
+     * Driven directly, because on a healthy install every active module HAS a
+     * recorded version and neither branch renders -- a test that waited for one
+     * to appear would assert nothing and say nothing about it.
+     */
+    public function testAMissingSchemaVersionIsReportedAtTwoWeights(): void
+    {
+        $m = new ReflectionMethod(
+            \OWA\Module\Base\Controller\InstanceInfoCli::class, 'neverInstalled');
+        $m->setAccessible(true);
+
+        $controller = (new ReflectionClass(
+            \OWA\Module\Base\Controller\InstanceInfoCli::class))->newInstanceWithoutConstructor();
+
+        $tally = new ReflectionProperty(
+            \OWA\Module\Base\Controller\InstanceInfoCli::class, 'tally');
+        $tally->setAccessible(true);
+        $tally->setValue($controller, array('ok' => 0, 'warn' => 0, 'fail' => 0));
+
+        /* With tables: a warning, and the remedy names the command. */
+        $withTables = $m->invoke($controller, 'zz_mod', true);
+
+        $this->assertStringContainsString('active, but never installed', $withTables);
+        $this->assertStringContainsString('cmd=activate module=zz_mod', $withTables);
+        $this->assertSame(1, $tally->getValue($controller)['warn'],
+            'a module whose tables were never created is a warning');
+
+        /* Without tables: said, but not as a fault and not in the tally. */
+        $withoutTables = $m->invoke($controller, 'zz_mod', false);
+
+        $this->assertStringContainsString('never installed', $withoutTables,
+            'the absence still means install() has not run, and that is worth saying');
+
+        $this->assertStringContainsString('nothing is missing yet', $withoutTables,
+            'and the line must say why it is not urgent');
+
+        $this->assertSame(
+            array('ok' => 0, 'warn' => 1, 'fail' => 0), $tally->getValue($controller),
+            'a module that owns no tables must not add to any count -- it is neither a '
+          . 'pass to celebrate nor a problem to fix');
+    }
+
+    /**
      * Colour is for a person at a terminal. Piped into a file or a monitoring
      * check, escape codes are noise the reader cannot turn off -- and shell_exec
      * here is exactly that case, so the report must come back clean.

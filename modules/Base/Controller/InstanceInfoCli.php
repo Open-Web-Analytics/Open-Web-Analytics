@@ -240,29 +240,21 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             /*
              * Active, but never installed.
              *
-             * install() is what creates a module's tables and records its
-             * version; activate() only sets is_active. A module enabled by the
-             * older cmd=activate therefore runs with no tables and no version,
-             * and nothing says so -- the default of 1 makes it read as current.
+             * A RECORDED VERSION MEANS install() RAN. It is not a description
+             * of the tables: install() writes it for a module with no entities
+             * too, because the table loop simply never runs and every table it
+             * owns is therefore trivially current (see Module::install). What
+             * writes nothing is activate(), which sets is_active alone -- so an
+             * absent version means the module was switched on by the older
+             * cmd=activate and install() has not run since.
              *
-             * ONLY WORTH SAYING FOR A MODULE THAT HAS A SCHEMA. A schema
-             * version records what a module's tables look like, so a module
-             * that owns no tables and ships no updates has nothing to record
-             * and its absence is not a fault -- reporting one would mean most
-             * of the modules in this repository permanently carrying a warning
-             * there is no action for. Where there IS a schema, the absence is
-             * the finding: the first update will run against tables that were
-             * never created.
+             * That is worth saying for any module. How much it matters depends
+             * on whether there are tables that were not created, which is what
+             * separates the two lines below.
              */
-            if ( ! $stored && $this->hasSchema( $name ) ) {
+            if ( ! $stored ) {
 
-                $rows[] = $this->row( self::WARN, '  ' . $name,
-                    'active, but never installed',
-                    sprintf( 'No schema version was recorded, so this module was activated '
-                           . 'without being installed and its tables may never have been '
-                           . "created. Run 'php cli.php cmd=activate module=%s' to install "
-                           . 'it properly; that is safe to run on an installed module.',
-                             $name ) );
+                $rows[] = $this->neverInstalled( $name, $this->hasSchema( $name ) );
             }
         }
 
@@ -276,6 +268,44 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         }
 
         return $rows;
+    }
+
+    /**
+     * What to say about an active module with no recorded schema version.
+     *
+     * Two very different situations behind one absence, and reporting them
+     * alike gets one of them wrong. With tables, install() never created them
+     * and the module is running against a schema that does not exist. Without
+     * tables, nothing is missing YET -- the remedy is the same, and it becomes
+     * urgent the day the module ships its first entity or update, because
+     * getSchemaVersion() reads an absent value as 1 and cmd=update migrates
+     * from there rather than creating anything.
+     *
+     * A module that owns no tables gets a plain fact line: no status mark, and
+     * no contribution to the tally. Most of the modules in this repository own
+     * none, and a permanent warning with no action attached is one an operator
+     * learns to scroll past.
+     *
+     * @param  string $name
+     * @param  bool   $has_schema  owns entities or ships updates
+     * @return string
+     */
+    private function neverInstalled( $name, $has_schema ) {
+
+        if ( ! $has_schema ) {
+
+            return $this->fact( '  ' . $name,
+                'never installed; it owns no tables, so nothing is missing yet' );
+        }
+
+        return $this->row( self::WARN, '  ' . $name,
+            'active, but never installed',
+            sprintf( 'No schema version was recorded, so this module was activated '
+                   . 'without being installed and its tables may never have been '
+                   . "created. Run 'php cli.php cmd=activate module=%s' to install "
+                   . 'it properly -- that calls install(), not activate(), and is '
+                   . 'safe to run on an installed module.',
+                     $name ) );
     }
 
     /**
