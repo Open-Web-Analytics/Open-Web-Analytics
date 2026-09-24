@@ -111,6 +111,33 @@ final class AbsenceIsNullTest extends TestCase
     }
 
     /**
+     * A value the PIPELINE could not resolve is "(unknown)", not "(not set)".
+     *
+     * Two different statements, so two different words: absence means the row
+     * carried nothing, while V2Event::UNRESOLVED means a build had something to
+     * read and could not reach an answer. The sentinel is a control byte, so
+     * before this it rendered as an EMPTY label -- a blank pie slice, on every
+     * cube dimension that can resolve.
+     */
+    public function testAnUnresolvedDimensionRendersAsUnknown(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $this->assertSame( '(unknown)', $rsm->formatDimensionValue(
+            'string', \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) );
+
+        // And it is NOT folded onto absence, which would lose the distinction
+        // the sentinel exists to record.
+        $this->assertNotSame(
+            $rsm->formatDimensionValue( 'string', null ),
+            $rsm->formatDimensionValue( 'string', \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) );
+
+        // An ordinary value is untouched, so the branch above cannot be
+        // swallowing everything.
+        $this->assertSame( 'New', $rsm->formatDimensionValue( 'string', 'New' ) );
+    }
+
+    /**
      * A metric of zero is a measurement, not an absence. Guarded because the
      * label is applied on the dimension branch only, and moving it into
      * formatValue() would quietly relabel every zero in every report.

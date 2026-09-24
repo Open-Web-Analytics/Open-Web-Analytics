@@ -1494,11 +1494,34 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     const NOT_SET_LABEL = '(not set)';
 
+    /**
+     * And a value the PIPELINE could not work out reads as "(unknown)".
+     *
+     * A different statement from absence, which is why it gets a different
+     * word. "(not set)" says the row carried nothing; this says a build had
+     * something to read and could not reach an answer -- a visitor whose
+     * acquisition was never captured, or an event whose prior_sessions never
+     * arrived. Folding the two onto one label would lose the distinction that
+     * Classes\V2Event::UNRESOLVED exists to record.
+     *
+     * The sentinel is a control byte, so without this it rendered as NOTHING:
+     * a blank axis label and an unlabelled pie slice. V2Event's own docblock
+     * had described this rendering since the sentinel was introduced, and
+     * nothing implemented it -- every cube column that resolves can emit it,
+     * source and medium included.
+     */
+    const UNKNOWN_LABEL = '(unknown)';
+
     function formatDimensionValue( $data_type, $value ) {
 
         if ( $value === null || $value === '' ) {
 
             return self::NOT_SET_LABEL;
+        }
+
+        if ( $value === \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) {
+
+            return self::UNKNOWN_LABEL;
         }
 
         return $this->formatValue( $data_type, $value );
