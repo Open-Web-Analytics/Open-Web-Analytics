@@ -152,6 +152,20 @@ final class CubeReportingTest extends TestCase
         }
     }
 
+    /**
+     * The vocabulary as the FILE declares it.
+     *
+     * Read from the config file rather than from the registry, because the file
+     * is the artifact under test -- a column that is not on the cube has to be
+     * caught in what someone wrote, not in what survived registration.
+     */
+    private static function declaredDimensions(): array
+    {
+        $declaration = include OWA_DIR . 'modules/Base/config/dimensions.php';
+
+        return (array) $declaration['dimensions'];
+    }
+
     /** A manager set up to read the fixture's day. */
     private function manager(string $metrics, string $dimensions, string $siteId = self::SITE)
     {
@@ -346,7 +360,7 @@ final class CubeReportingTest extends TestCase
             $columns[$row['Field']] = true;
         }
 
-        $declared = \OWA\Module\Base\Module::cubeColumnDimensions();
+        $declared = self::declaredDimensions();
 
         $this->assertGreaterThan(40, count($declared),
             'the table must not be able to empty itself unnoticed');
@@ -367,7 +381,7 @@ final class CubeReportingTest extends TestCase
     /** And each declaration carries what registerDimension() is given. */
     public function testEveryDeclarationIsComplete(): void
     {
-        foreach (\OWA\Module\Base\Module::cubeColumnDimensions() as $name => $d) {
+        foreach (self::declaredDimensions() as $name => $d) {
 
             foreach (['column', 'label', 'family', 'description'] as $key) {
 

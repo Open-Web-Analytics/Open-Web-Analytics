@@ -272,11 +272,13 @@ abstract class Module {
          * Register Metrics
          */
         $this->registerMetrics();
+        $this->registerMetricsFromConfig();
 
         /**
          * Register Dimensions
          */
         $this->registerDimensions();
+        $this->registerDimensionsFromConfig();
 
         /**
          * Register CLI Commands
@@ -1443,6 +1445,115 @@ abstract class Module {
                 $this->dimensions[$dim_name][$entity] = $dim;
             }
         }
+    }
+
+    /**
+     * A module's dimension vocabulary, from `config/dimensions.php`.
+     *
+     * A dimension is a name, a column and what to call it -- data, not code --
+     * so it belongs in a file beside the other vocabularies core reads:
+     * `reports/*.json`, `config/tracking_properties.json`,
+     * `<module>/settings.php`. Fifty of them as a literal inside a class was
+     * the thing that made that obvious.
+     *
+     * Every module gets this for free, like settings: ship the file and the
+     * dimensions are registered. Nothing has to be added to a module class.
+     *
+     * @return void
+     */
+    protected function registerDimensionsFromConfig() {
+
+        $declaration = $this->readVocabulary( 'dimensions' );
+
+        if ( ! $declaration ) {
+
+            return;
+        }
+
+        foreach ( (array) $declaration['dimensions'] as $name => $d ) {
+
+            $this->registerDimension(
+                $name,
+                isset( $d['entity'] ) ? $d['entity'] : $declaration['entity'],
+                $d['column'],
+                $d['label'],
+                $d['family'],
+                isset( $d['description'] ) ? $d['description'] : '',
+                isset( $d['foreign_key_name'] ) ? $d['foreign_key_name'] : '',
+                /*
+                 * DENORMALISED unless the file says otherwise. A vocabulary
+                 * declared this way reads columns off one wide table -- that is
+                 * what makes it a table of names and columns rather than of
+                 * joins -- and a normalised dimension needs a foreign key to
+                 * name, which it would have to say.
+                 */
+                isset( $d['denormalized'] ) ? (bool) $d['denormalized'] : true,
+                isset( $d['data_type'] ) ? $d['data_type'] : 'string' );
+        }
+    }
+
+    /**
+     * A module's metric vocabulary, from `config/metrics.php`.
+     *
+     * Same shape and the same reason. A definition names a column and a kind
+     * the query builder already knows how to render, so it carries no SQL --
+     * which is exactly what makes it a file rather than a class.
+     *
+     * @return void
+     */
+    protected function registerMetricsFromConfig() {
+
+        $declaration = $this->readVocabulary( 'metrics' );
+
+        if ( ! $declaration ) {
+
+            return;
+        }
+
+        foreach ( (array) $declaration['metrics'] as $name => $m ) {
+
+            $this->registerMetricDefinition( array_merge(
+                array(
+                    'name'   => $name,
+                    'entity' => $declaration['entity'],
+                ),
+                $m ) );
+        }
+    }
+
+    /**
+     * Read and check one of this module's vocabulary files.
+     *
+     * Refused rather than half-applied: a file that cannot say which entity its
+     * names read from would register a vocabulary against nothing, and the
+     * failure would surface as an empty report rather than as a bad file.
+     *
+     * @param  string $kind 'dimensions' or 'metrics'
+     * @return array|null the declaration, or null when there is no usable file
+     */
+    private function readVocabulary( $kind ) {
+
+        $file = $this->path . 'config' . DIRECTORY_SEPARATOR . $kind . '.php';
+
+        if ( ! file_exists( $file ) ) {
+
+            return null;
+        }
+
+        $declaration = include $file;
+
+        if ( ! is_array( $declaration )
+          || empty( $declaration['entity'] )
+          || ! isset( $declaration[ $kind ] ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s must return an array with an entity and a %s array; ignoring it.',
+                $file, $kind ) );
+
+            return null;
+        }
+
+        return $declaration;
     }
 
     function registerActions() {
