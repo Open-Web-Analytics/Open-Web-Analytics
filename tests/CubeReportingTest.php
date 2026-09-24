@@ -321,6 +321,82 @@ final class CubeReportingTest extends TestCase
             "the cube's date must declare the same type v1's does, or it formats differently");
     }
 
+    /**
+     * EVERY declared dimension names a column the cube actually has.
+     *
+     * The one that matters, and it matters because the failure is SILENT.
+     * Measured with a column name deliberately misspelled: the result set
+     * carries NO error, the aggregate is still right, and the breakdown comes
+     * back with zero rows -- MySQL refuses the dimensional query with "Unknown
+     * column", and that refusal is swallowed. The report renders an empty grid
+     * under a correct total, on whichever screen happens to ask for it.
+     *
+     * Checked against the real table rather than against the entity's
+     * declaration, because the table is what the query hits.
+     */
+    public function testEveryDeclaredDimensionNamesARealCubeColumn(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $columns = [];
+
+        foreach ((array) $db->get_results(
+                     sprintf('SHOW COLUMNS FROM %s', Cubes::tableFor(self::PROPERTY))) as $row) {
+
+            $columns[$row['Field']] = true;
+        }
+
+        $declared = \OWA\Module\Base\Module::cubeColumnDimensions();
+
+        $this->assertGreaterThan(40, count($declared),
+            'the table must not be able to empty itself unnoticed');
+
+        $missing = [];
+
+        foreach ($declared as $name => $d) {
+
+            if (!isset($columns[$d['column']])) {
+                $missing[$name] = $d['column'];
+            }
+        }
+
+        $this->assertSame([], $missing,
+            'these dimensions name columns the cube does not have');
+    }
+
+    /** And each declaration carries what registerDimension() is given. */
+    public function testEveryDeclarationIsComplete(): void
+    {
+        foreach (\OWA\Module\Base\Module::cubeColumnDimensions() as $name => $d) {
+
+            foreach (['column', 'label', 'family', 'description'] as $key) {
+
+                $this->assertArrayHasKey($key, $d, $name . ' is missing ' . $key);
+                $this->assertNotSame('', (string) $d[$key], $name . ' has an empty ' . $key);
+            }
+        }
+    }
+
+    /**
+     * They resolve in a real query, not merely in the registry.
+     *
+     * One per family, because the families differ in nothing the query builder
+     * sees -- what is being checked is that a registered name reaches the right
+     * column with the cube bound underneath it.
+     */
+    public function testTheColumnDimensionsResolveInAQuery(): void
+    {
+        foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'visitorId'] as $dim) {
+
+            $rs = $this->manager('eventCount', $dim)->getResults();
+
+            $this->assertSame([], (array) $rs->errors, $dim . ' did not resolve');
+
+            $this->assertSame(4, (int) $rs->aggregates['eventCount']['value'],
+                $dim . ' changed the total, so it is filtering rather than grouping');
+        }
+    }
+
     /** The site-to-Property lookup, which is what the binding rests on. */
     public function testThePropertyLookupAnswersAndRefuses(): void
     {
