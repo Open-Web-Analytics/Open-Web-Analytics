@@ -376,7 +376,9 @@ final class TemplateLatentVarTest extends TestCase
                      */
                     'headline' => 'New Goal Event', 'siteId' => 'abc123',
                     'goalEvent' => [], 'goalEventId' => '',
-                    'conditionProperties' => [ [ 'name' => 'page_uri', 'label' => 'Page URL' ] ],
+                    'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path' ] ],
+                    'triggerEvent' => 'page_view',
+                    'triggerEvents' => [ 'page_view', 'click' ],
                     'funnelSteps' => [], 'goalGroups' => [ 1 => 'Goal Group 1' ],
                     'conditions' => [], 'validation_errors' => [],
                 ],

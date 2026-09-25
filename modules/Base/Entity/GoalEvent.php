@@ -144,9 +144,26 @@ class GoalEvent extends \OWA\Core\Entity {
         return false;
     }
 
-    /** What 1.x's single implemented goal type watches. */
+    /**
+     * What 1.x's single implemented goal type watched, in 1.x's words.
+     *
+     * A v1 event type and a v1 property name. Update025 wrote both when it
+     * migrated the twenty numbered slots, and Update049 translates them:
+     * base.page_request is page_view, and page_uri is the page_path column.
+     * Kept because that is what those rows SAY, and a migration reading them has
+     * to name the thing it is reading.
+     */
     const TRIGGER_PAGE_VIEW = 'base.page_request';
     const PROPERTY_PAGE_URI = 'page_uri';
+
+    /**
+     * What a goal event triggers on when nobody chose.
+     *
+     * A v2 event name, because this is what gets STORED on a save -- and
+     * trigger_event_type is a gate at ingest now, so a v1 name here would match
+     * no row at all.
+     */
+    const TRIGGER_DEFAULT = 'page_view';
 
     function __construct() {
 

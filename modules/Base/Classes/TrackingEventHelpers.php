@@ -248,6 +248,49 @@ class TrackingEventHelpers {
     }
 
     /**
+     * Every event name the registry knows.
+     *
+     * The union of the `events` lists, which makes the property declarations the
+     * source for this too: a name is in the vocabulary because some property is
+     * declared for it. There is no separate list of event names to keep in step,
+     * and a name that appears nowhere in the registry is one no event carries a
+     * property for.
+     *
+     * Ordinary events only, by construction: the markers the server raises --
+     * session_start, first_visit -- carry properties of their own and appear
+     * here, while a v1 type that is not an event at all (dom.stream) declares
+     * none and does not.
+     *
+     * @return string[]  sorted
+     */
+    public static function eventNames() {
+
+        $out = array();
+
+        foreach ( array( 'request', 'client', 'server' ) as $scope ) {
+
+            foreach ( self::propertyConfig( $scope ) as $definition ) {
+
+                if ( ! array_key_exists( 'events', $definition ) ) {
+
+                    continue;
+                }
+
+                foreach ( (array) $definition['events'] as $name ) {
+
+                    $out[ $name ] = true;
+                }
+            }
+        }
+
+        $out = array_keys( $out );
+
+        sort( $out );
+
+        return $out;
+    }
+
+    /**
      * Properties the server reads off the HTTP request.
      *
      * The request is the source: the user agent, the host, the address it came

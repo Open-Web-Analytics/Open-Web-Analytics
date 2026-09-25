@@ -82,11 +82,11 @@ final class GoalEventPredicateTest extends TestCase
         return array( $p->compile( $this->goalEvent( $conditions, $match ) ), $p );
     }
 
-    /** page_uri is the document's uri, and the value is BOUND, never inlined. */
+    /** page_path reads the document's uri, and the value is BOUND, never inlined. */
     public function testAnExactPageConditionBecomesAColumnComparison(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_EXACT, '/thanks' ) ) );
+            array( 'page_path', GoalEvent::MATCH_EXACT, '/thanks' ) ) );
 
         $this->assertNotNull( $out );
         $this->assertStringContainsString( 'd.uri', $out['sql'] );
@@ -109,14 +109,14 @@ final class GoalEventPredicateTest extends TestCase
     public function testAConditionTheFunnelCannotExpressIsRefusedByName(): void
     {
         list( $out, $p ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_EXACT, '/basket' ),
-            array( 'medium',   GoalEvent::MATCH_EXACT, 'organic-search' ) ) );
+            array( 'page_path', GoalEvent::MATCH_EXACT, '/basket' ),
+            array( 'tagged_medium', GoalEvent::MATCH_EXACT, 'organic' ) ) );
 
         $this->assertNull( $out,
             'A goal event testing a property the funnel cannot reach compiled anyway, so the '
             . 'funnel counts a WIDER condition than the goal event means.' );
 
-        $this->assertSame( 'medium', $p->getError(),
+        $this->assertSame( 'tagged_medium', $p->getError(),
             'The refusal does not name the property, so nobody can tell what to change.' );
     }
 
@@ -124,14 +124,14 @@ final class GoalEventPredicateTest extends TestCase
     public function testConditionsCombineTheWayTheGoalEventSays(): void
     {
         list( $all ) = $this->compile( array(
-            array( 'page_uri',   GoalEvent::MATCH_EXACT, '/a' ),
+            array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
             array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ALL );
 
         $this->assertStringContainsString( ' AND ', $all['sql'] );
         $this->assertStringNotContainsString( ' OR ', $all['sql'] );
 
         list( $any ) = $this->compile( array(
-            array( 'page_uri',   GoalEvent::MATCH_EXACT, '/a' ),
+            array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
             array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ANY );
 
         $this->assertStringContainsString( ' OR ', $any['sql'] );
@@ -160,7 +160,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testAnUnknownOperatorMatchesNothing(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', 'sideways', '/a' ) ) );
+            array( 'page_path', 'sideways', '/a' ) ) );
 
         $this->assertStringContainsString( '0 = 1', $out['sql'],
             'An unrecognised operator compiles to something that can match, while compare() '
@@ -182,7 +182,7 @@ final class GoalEventPredicateTest extends TestCase
         foreach ( array( GoalEvent::MATCH_CONTAINS, GoalEvent::MATCH_BEGINS,
                          GoalEvent::MATCH_REGEX ) as $operator ) {
 
-            list( $out ) = $this->compile( array( array( 'page_uri', $operator, '' ) ) );
+            list( $out ) = $this->compile( array( array( 'page_path', $operator, '' ) ) );
 
             $this->assertStringContainsString( '0 = 1', $out['sql'],
                 "An empty $operator target compiles to something that matches, while compare() "
@@ -203,7 +203,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testContainsHasNoPatternLanguage(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_CONTAINS, '50%_off' ) ) );
+            array( 'page_path', GoalEvent::MATCH_CONTAINS, '50%_off' ) ) );
 
         $this->assertStringContainsString( 'LOCATE', $out['sql'] );
         $this->assertStringNotContainsString( 'LIKE', $out['sql'] );
@@ -255,7 +255,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testItCompilesWithoutAConnection(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_CONTAINS, '/checkout' ) ) );
+            array( 'page_path', GoalEvent::MATCH_CONTAINS, '/checkout' ) ) );
 
         $this->assertNotNull( $out );
         $this->assertNotSame( '', $out['sql'] );

@@ -49,18 +49,28 @@ namespace OWA\Module\Base\Classes;
 class GoalEventPredicate {
 
     /**
-     * The properties a funnel step can be written against, and their columns.
+     * The condition columns a funnel step can be written against, and the column
+     * each one reads in the funnel's own query.
      *
-     * These are the document dimension's, because that is what the funnel query
-     * joins -- see VisualizationFunnel::countFunnel(). The alias is fixed by
-     * that query and passed in rather than hardcoded here, so the two cannot
-     * drift into disagreeing about what `d` means.
+     * KEYED ON THE v2 VOCABULARY. A condition names a column of the stored row
+     * now -- page_path, page_location -- so the keys are those, and Update049
+     * rewrote the stored declarations to match. The VALUES are still the document
+     * dimension's columns, because that is what the funnel query joins (see
+     * VisualizationFunnel::countFunnel()), and the alias is passed in rather than
+     * hardcoded so the two cannot disagree about what `d` means.
+     *
+     * page_type is gone from the map: it was a document classification with no
+     * column on the v2 row, so no condition can name it any more.
+     *
+     * THE FUNNEL ITSELF IS STILL v1 ON THIS BRANCH -- owa_document is not written
+     * by v2 ingest at all, so a funnel draws zeros whatever this map says. The
+     * map is corrected rather than deleted so that the vocabulary is consistent
+     * in one place when the funnel is repointed at owa_event_raw.
      */
     const COLUMNS = array(
-        'page_uri'   => 'uri',
-        'page_url'   => 'url',
-        'page_title' => 'page_title',
-        'page_type'  => 'page_type',
+        'page_path'     => 'uri',
+        'page_location' => 'url',
+        'page_title'    => 'page_title',
     );
 
     /** Set when compile() returns null: which property could not be expressed. */
