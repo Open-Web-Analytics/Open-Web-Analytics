@@ -38,14 +38,14 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
     /**
      * There are 16 of them; a change to that set should be deliberate.
      *
-     * It was 26 while the ten cv{n} halves were declared in the config. They
-     * are the compat layer's now -- the tracker emits no cv key, so they are
-     * not part of the current vocabulary -- and the ten leaving is the whole
-     * of this change.
+     * It was 26 while the ten cv{n} halves were declared in the config; they
+     * are the compat layer's now, because the tracker emits no cv key. It was
+     * 16 until the dead ingest derivations went -- source, medium, page_uri and
+     * the rest, computed on every beacon and read only by v1 handlers.
      */
     public function testTheLabelledSetIsWhatWeThinkItIs(): void
     {
-        $this->assertCount( 16, self::labelled() );
+        $this->assertCount( 13, self::labelled() );
     }
 
     /**
@@ -82,7 +82,12 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
              */
             'base.session'  => array( 'host', 'user_name' ),
             'base.document' => array( 'page_title' ),
-            'base.host'     => array( 'host', 'full_host' ),
+            /*
+             * full_host left this list with the property. It was a
+             * reverse-DNS name computed on every beacon and read only by v1
+             * handlers, reaching no raw column and no cube pass.
+             */
+            'base.host'     => array( 'host' ),
         );
 
         foreach ( $cases as $entity_name => $columns ) {
@@ -119,9 +124,13 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
     /**
      * Defaults that are real values still belong to the event.
      *
-     * medium defaults to 'direct' and browser/os to '(unknown)' -- those say
-     * something, rather than standing in for the lack of a value, so they are
-     * still applied before dispatch where every reader sees them.
+     * browser and os default to '(unknown)' -- that says something, rather than
+     * standing in for the lack of a value, so it is still applied before
+     * dispatch where every reader sees it.
+     *
+     * medium was the headline example here and is gone: it is not a tracking
+     * property any more. The cube pass resolves it, and MediumStep is where
+     * 'direct' is decided now -- asserted on built rows in CubeBuildTest.
      */
     public function testRealDefaultsStillApplyOnTheEvent(): void
     {
@@ -129,13 +138,6 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
 
         $teh   = new Helpers();
         $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-
-        // medium resolves from the referer, and there is none here, so its
-        // declared default is what lands.
-        $teh->setTrackerProperties( $event, array( 'medium' => $definitions['medium'] ) );
-
-        $this->assertSame( 'direct', $event->get( 'medium' ),
-            'medium lost its default when the storage label moved' );
 
         // os and browser are resolved from the user agent, which the runner
         // supplies -- so assert the weaker but still meaningful thing: whatever

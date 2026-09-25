@@ -47,7 +47,7 @@ class OWATracker  {
 	    // Resolved per tracker, not a fixed list: each tracker contributes its
 	    // OWN session store, so cross-domain linking carries site A's session
 	    // and site B's session rather than one store both of them fought over.
-	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
+	    this.sharableStateStores =  ['v', 's', 'b'],
 
 	    /*
 	     * Every property the tracker derives from state, on two axes.
@@ -104,7 +104,17 @@ class OWATracker  {
 		    session_referer:         { scope: 'session', permanent: false },
 		    landing_url:             { scope: 'session', permanent: false },
 		    nps:                     { scope: 'session', permanent: false },
-		    attribs:                 { scope: 'session', permanent: false },
+		    /*
+		     * attribs WAS HERE, and being in this map is what put it on the
+		     * beacon. It is the campaign attribution history, and the only
+		     * thing that ever read it server-side was SessionHandlers --
+		     * `latest_attributions` on the v1 session row -- which is not
+		     * registered on v2. It reached no raw column and no cube pass.
+		     *
+		     * The whole client-side attribution stack went with it: the two
+		     * models, the 'c' cookie, maxPriorCampaigns and
+		     * trafficAttributionMode. The server resolves tags from landing_url.
+		     */
 		    // The site may set a different one, so it is not permanent.
 		    user_name:               { scope: 'session', permanent: false },
 
@@ -124,9 +134,7 @@ class OWATracker  {
 	    // time when tracker is unloaded
 	    this.endTime =  null;
 	    // campaign state holder
-	    this.campaignState  =  [];
 	    // flag for new campaign status
-	    this.isNewCampaign =  false;
 	    // flag for new session status
 	    this.isNewSessionFlag =  false;
 	    /*
@@ -163,7 +171,6 @@ class OWATracker  {
 	     */
 	    this.pendingVisitorCreated = false;
 	    // flag for whether or not traffic has been attributed
-	    this.isTrafficAttributed =  false;
 	    this.linkedStateSet =  false;
 	    this.hashCookiesToDomain =  true;
 	    	    
@@ -282,7 +289,11 @@ class OWATracker  {
 	     * only know the logical one.
 	     */
 	    OWA.registerStateStore('v', 364, '', 'json', { owner: this, logical: 'v' });
-	    OWA.registerStateStore('c', 60, '', 'json', { owner: this, logical: 'c' });
+	    /*
+	     * The 'c' campaign store is GONE. It held the attribution stack the
+	     * client used to compute, which the server never read -- see
+	     * setTrafficAttribution().
+	     */
 
 	    // The session store does not load its cookie on first touch, and does
 	    // not write one until the session has been accepted for delivery.
@@ -330,13 +341,11 @@ class OWATracker  {
 	        logDomStreamPercentage: 100,
 	        domstreamLoggingInterval: 3000,
 	        domstreamEventThreshold: 10,
-	        maxPriorCampaigns: 5,
 	        /*
 	         * Whether the #fragment is part of a page's URL. It is not, by
 	         * default, which is GA's default too -- see getCurrentUrl().
 	         */
 	        trackUrlFragments: false,
-	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
 	        /*
 	         * Scroll depths, as percentages, that each raise ONE scroll event.
@@ -386,25 +395,20 @@ class OWATracker  {
 	        stateStoreExpirations: {},
 	        cookiePersistence: true,
 	        /*
-	         * 'public' is the parameter a marketer puts in a campaign URL and can
-	         * never move -- those links are already published. 'private' keys the
-	         * campaign params. 'full' is the property name on the wire AND the key
-	         * in the session store, and it is deliberately tagged_*: what the
-	         * tracker reports is what the landing URL CLAIMED, and the server
-	         * decides the answer. They used to share one name, so a value in the
-	         * column recorded no trace of which half produced it.
+	         * campaignKeys WAS HERE, with six setters beside it.
 	         *
-	         * 'full' is now only the name the parse produces for the attribution
-	         * MODEL below -- it no longer names a session-store key or a wire
-	         * property, because the server parses landing_url instead.
+	         * THE v2 TRACKER KNOWS NOTHING ABOUT ATTRIBUTION. It sends
+	         * landing_url and session_referer; the server parses the tags out of
+	         * the landing URL and decides source, medium and campaign. So the
+	         * key list belongs where the parse is, and is now the `campaignKeys`
+	         * setting -- scoped to a Property, so a site whose links use GA's
+	         * utm_* can say so without changing its links.
+	         *
+	         * Keeping the setters here was worse than not having them: the
+	         * server built its own ns-prefixed list and never consulted these,
+	         * so a site calling setCampaignSourceKey('utm_source') renamed a key
+	         * nothing read and its campaigns silently stopped being attributed.
 	         */
-	        campaignKeys: [
-	                { public: 'owa_medium', private: 'md', full: 'tagged_medium' },
-	                { public: 'owa_campaign', private: 'cn', full: 'tagged_campaign' },
-	                { public: 'owa_source', private: 'sr', full: 'tagged_source' },
-	                { public: 'owa_search_terms', private: 'tr', full: 'tagged_terms' },
-	                { public: 'owa_ad', private: 'ad', full: 'tagged_ad' },
-	                { public: 'owa_ad_type', private: 'at', full: 'tagged_ad_type' } ],
 	        logger_endpoint: '',
 	        api_endpoint: '',
 	        maxCustomVars: 5,
@@ -2538,181 +2542,44 @@ class OWATracker  {
         this.streamBindings.push(name);
     }
 
-    // gets campaign related properties from request scope.
-    getCampaignProperties() {
+    /*
+     * getCampaignProperties() WAS HERE and had no caller left.
+     *
+     * The tracker does not read owa_* tags off the URL at all any more. It
+     * sends landing_url, and taggedColumns() parses the tags out of it
+     * server-side -- where a corrected rule reaches data already collected,
+     * which the browser cannot do. The parse survived only because the
+     * attribution models called it, and they are gone for the same reason:
+     * nothing they computed ever reached the server.
+     */
 
-        // load GET params from URL
-        if (!this.urlParams.length > 0)    {
-            this.urlParams = Util.parseUrlParams(document.URL);
-            OWA.debug('GET: '+ JSON.stringify(this.urlParams));
-        }
 
-        // look for attributes in the url of the page
-        var campaignKeys = this.getOption('campaignKeys');
 
-        // pull campaign params from _GET
-        var campaign_params = {};
 
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-			
-			// anytime we see a campaign param on the URL its a new campaign.
-            if ( this.urlParams.hasOwnProperty(campaignKeys[i].public) ) {
 
-                campaign_params[campaignKeys[i].private] = this.urlParams[campaignKeys[i].public];
-                //OWA.debug('campaign params obj: ' + JSON.stringify(campaign_params));
-                this.isNewCampaign = true;
-            }
-        }
 
-        // check for incomplete combos and backfill values if needed
-        if (campaign_params['at'] && !campaign_params['ad']) {
-            campaign_params['ad'] = '(not set)';
-        }
 
-        if (campaign_params['ad'] && !campaign_params['at']) {
-            campaign_params['at'] = '(not set)';
-        }
 
-        return campaign_params;
-    }
 
-    setCampaignSessionState( properties ) {
 
-        var campaignKeys = this.getOption('campaignKeys');
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-            if ( properties.hasOwnProperty(campaignKeys[i].private) ) {
-
-                OWA.setState( this.storeName('s'), campaignKeys[i].full, properties[campaignKeys[i].private]);
-            }
-        }
-    }
-
-    directAttributionModel(campaign_params) {
-
-        if ( this.isNewCampaign ) {
-            OWA.debug( 'campaign state length: %s', this.campaignState.length );
-            // add the new campaing params to the prior touches array
-            this.campaignState.push( campaign_params );
-
-            // if there is prior campaign touches, check to see if there is room for one more touch
-            if ( this.campaignState.length > this.options.maxPriorCampaigns ) {
-                // splice array to make room for the new one
-                var removed = this.campaignState.splice( 0, 1 );
-                OWA.debug('Too many prior campaigns in state store. Dropping oldest to make room.');
-                //OWA.debug('campaign state array post slice: ' + JSON.stringify( this.campaignState ) );
-            }
-
-            // set/reset the campaign cookie.
-            this.setCampaignCookie( this.campaignState );
-
-            // set flag
-            this.isTrafficAttributed = true;
-            /*
-             * The parsed tags are NOT persisted to session state any more, and
-             * that is what takes them off the wire: the session store is what
-             * rides every beacon. The server resolves them from landing_url.
-             *
-             * The parse itself stays, because the attribution MODEL below still
-             * runs on it -- campaignState and the `c` cookie are a separate
-             * retirement, decided for v2 and not bundled here.
-             */
-            // return values just in case
-            return campaign_params;
-        }
-    }
-
-    originalAttributionModel( campaign_params ) {
-
-        // orignal touch was set previously. jus use that.
-        if ( this.campaignState.length > 0 ) {
-            // do nothing
-            OWA.debug( 'Original attribution detected.' );
-            // set the attributes from the first campaign touch
-
-            campaign_params = this.campaignState[0];
-            // set flag
-            this.isTrafficAttributed = true;
-
-        // no orginal touch, set one if its a new campaign touch
-        } else {
-            OWA.debug( 'Setting Original Campaign touch.' );
-            if ( this.isNewCampaign ) {
-
-                this.campaignState.push( campaign_params );
-                // set cookie
-                this.setCampaignCookie( this.campaignState );
-                // set flag
-                this.isTrafficAttributed = true;
-            }
-        }
-        // persist state to session store
-        // Not persisted to session state -- see directAttributionModel().
-        // return values just in case
-        return campaign_params;
-
-    }
-
-    setCampaignMediumKey( key ) {
-
-        this.options.campaignKeys[0].public = key;
-    }
-
-    setCampaignNameKey( key ) {
-
-        this.options.campaignKeys[1].public = key;
-    }
-
-    setCampaignSourceKey( key ) {
-
-        this.options.campaignKeys[2].public = key;
-    }
-
-    setCampaignSearchTermsKey( key ) {
-
-        this.options.campaignKeys[3].public = key;
-    }
-
-    setCampaignAdKey( key ) {
-
-        this.options.campaignKeys[4].public = key;
-    }
-
-    setCampaignAdTypeKey( key ) {
-
-        this.options.campaignKeys[5].public = key;
-    }
-
+    /**
+     * Record what the session arrived from.
+     *
+     * THE CLIENT NO LONGER ATTRIBUTES ANYTHING. This loaded a campaign stack
+     * out of the `c` cookie, parsed the URL's owa_* tags, ran one of two
+     * attribution models over them and wrote the stack back -- and none of it
+     * reached the server. NO tracker generation ever put the tags on the wire:
+     * v1 and v2 both send landing_url and the server parses the tags out of it
+     * in taggedColumns(), where a corrected rule can reach data already
+     * collected.
+     *
+     * So the models, the stack, the cookie, maxPriorCampaigns and
+     * trafficAttributionMode were a browser deciding an answer nobody read.
+     * What remains is the one thing that does ride the beacon and that the
+     * server cannot derive: the referrer this session arrived on.
+     */
     setTrafficAttribution( event, callback ) {
 
-        var campaignState = OWA.getState( 'c', 'attribs' );
-
-        if (campaignState) {
-            this.campaignState = campaignState;
-        }
-
-        var campaign_params = this.getCampaignProperties();
-
-        // choose attribution mode.
-        switch ( this.options.trafficAttributionMode ) {
-
-            case 'direct':
-                OWA.debug( 'Applying "Direct" Traffic Attribution Model' );
-                campaign_params = this.directAttributionModel( campaign_params );
-                break;
-            case 'original':
-                OWA.debug( 'Applying "Original" Traffic Attribution Model' );
-                campaign_params = this.originalAttributionModel( campaign_params );
-                break;
-            default:
-                OWA.debug( 'Applying Default (Direct) Traffic Attribution Model' );
-                this.directAttributionModel( campaign_params );
-        }
-
-        // if one of the attribution methods attributes the traffic them
-        if ( this.isTrafficAttributed ) {
-
-            OWA.debug( 'Attributed Traffic to: %s', JSON.stringify( campaign_params ) );
-        }
 
         /*
          * The session's referrer is recorded whether or not a campaign was
@@ -2778,10 +2645,6 @@ class OWATracker  {
         // values from the same place, for every event and every tracker.
 
 
-        // attribs is not copied onto a global here any more. campaignState is
-        // loaded from 'c' at the top of this method and written back by
-        // setCampaignCookie() immediately after every mutation, so the store
-        // holds the same value -- collectStateProperties() reads it from there.
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2791,10 +2654,6 @@ class OWATracker  {
 
 
 
-    setCampaignCookie( values ) {
-	    
-        OWA.setState( 'c', 'attribs', values, '', 'json' );
-    }
     
 
     /**
@@ -3469,14 +3328,6 @@ class OWATracker  {
             collected.last_req = prior_last_req;
         }
 
-        // The accumulated attribution history. Stored as an array; the wire
-        // format is JSON, and it is omitted entirely when empty rather than
-        // being sent as "[]".
-        var campaign_state = OWA.getState( 'c', 'attribs' );
-
-        if ( campaign_state && campaign_state.length > 0 ) {
-            collected.attribs = JSON.stringify( campaign_state );
-        }
 
         /*
          * The visitor's first-visit DATE, derived from the stored anchor rather

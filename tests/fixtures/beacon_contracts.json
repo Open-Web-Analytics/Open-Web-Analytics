@@ -192,7 +192,6 @@
         ],
         "page_view.campaign": [
             "HTTP_REFERER",
-            "attribs",
             "beacon_version",
             "client_ts_usec",
             "event_seq",

@@ -197,6 +197,34 @@ return array(
                 'This is the e-mail address that new visitor e-mails will be sent to.',
         ),
         'ns' => array( 'default' => 'owa_' ),
+
+        /*
+         * The URL parameter names a campaign tag arrives under.
+         *
+         * EMPTY MEANS ns-PREFIXED, which is what OWA has always done: owa_source,
+         * owa_medium and so on, honouring a custom `ns`. Setting it names the
+         * parameters explicitly instead, which is how a site opts into GA's --
+         * utm_source, utm_medium, utm_campaign, utm_term, utm_content -- without
+         * having to change its links.
+         *
+         * PROPERTY-SCOPED, because a Property is a website and its links are its
+         * own. The install default covers the common case of one convention
+         * everywhere; a Property that arrived from a GA setup overrides it.
+         *
+         * It has to be a SERVER setting. The tracker used to parse the tags and
+         * had setCampaignSourceKey() and friends for exactly this, but the parse
+         * moved server-side and the server built its own ns-prefixed list -- so a
+         * site calling those setters was renaming a key nothing read, and its
+         * campaigns silently stopped being attributed.
+         *
+         * Keyed by ROLE, not by parameter name, so the two ends cannot disagree
+         * about which tag is the medium.
+         */
+        'campaignKeys' => array(
+            'default'  => array(),
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+        ),
         'numGoalGroups' => array( 'default' => 5 ),
         'numGoals' => array( 'default' => 15 ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5' ),

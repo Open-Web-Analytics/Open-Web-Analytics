@@ -17,18 +17,27 @@ use OWA\Core\Lib;
  */
 final class DimensionIdDerivationTest extends TestCase
 {
-    /** Every content-derived dimension, its key, and what absence means. */
+    /**
+     * Every content-derived dimension, its key, and what absence means.
+     *
+     * FOUR ENTRIES LEFT THIS MAP: source_dim, search_term_dim, campaign_dim and
+     * ad_dim. Their keys were the properties `source`, `search_terms`,
+     * `campaign` and `ad`, and those are no longer tracking properties at all
+     * -- the cube pass derives the readings now, so ingest computes none of
+     * them and nothing declares them.
+     *
+     * The entities themselves are still registered and nothing writes them:
+     * their writers were the v1 event chain. Removing them is its own change,
+     * and until it happens this map is the honest statement of which
+     * content-derived dimensions still have a key ingest can produce.
+     */
     private const DIMENSIONS = array(
-        'base.source_dim'      => array( array( 'source' ),          'unknown' ),
         'base.host'            => array( array( 'host' ),            'unknown' ),
         'base.ua'              => array( array( 'HTTP_USER_AGENT' ), 'unknown' ),
         'base.os'              => array( array( 'os' ),              'unknown' ),
         'base.document'        => array( array( 'page_url' ),        'unknown' ),
         'base.location_dim'    => array( array( 'country', 'state', 'city' ), 'unknown' ),
         'base.referer'         => array( array( 'session_referer' ), 'not_applicable' ),
-        'base.search_term_dim' => array( array( 'search_terms' ),    'not_applicable' ),
-        'base.campaign_dim'    => array( array( 'campaign' ),        'not_applicable' ),
-        'base.ad_dim'          => array( array( 'ad' ),              'not_applicable' ),
     );
 
     /** OWA entity name -> class. deriveId() is static, so nothing is instantiated. */

@@ -65,7 +65,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
      * taggedValue() returning the right string proves nothing on its own if the
      * resolvers still read the event directly.
      */
-    public function testTheResolversReadThroughToTheLandingUrl(): void
+    public function testTheParseReadsThroughToTheLandingUrl(): void
     {
         $ns    = $this->ns();
         $event = $this->event([
@@ -73,11 +73,18 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
                 . $ns . 'source=news&' . $ns . 'medium=email&' . $ns . 'campaign=summer',
         ]);
 
+        /*
+         * Through taggedValue(), not the resolvers. resolveSource() and friends
+         * are gone: they classified at ingest and reached no column, and the
+         * classification is the cube pass's now. What survives -- and what this
+         * file is about -- is the PARSE: the tags coming out of the landing URL
+         * as tagged_* claims.
+         */
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
-        $this->assertSame('news',   $H::resolveSource(null, $event));
-        $this->assertSame('email',  $H::resolveMedium(null, $event));
-        $this->assertSame('summer', $H::resolveCampaign(null, $event));
+        $this->assertSame('news',   $H::taggedValue($event, 'tagged_source'));
+        $this->assertSame('email',  $H::taggedValue($event, 'tagged_medium'));
+        $this->assertSame('summer', $H::taggedValue($event, 'tagged_campaign'));
     }
 
     /**
@@ -128,16 +135,114 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
             'a whitespace-only value is the same claim');
     }
 
-    /** No landing URL, no tags: the referer still decides, as it always did. */
-    public function testWithoutALandingUrlTheRefererStillDecides(): void
-    {
-        $event = $this->event([
-            'session_referer' => 'https://www.bing.com/search?q=widgets',
-        ]);
+    /*
+     * testWithoutALandingUrlTheRefererStillDecides WAS HERE. With no tags, the
+     * referer decides source and medium -- bing.com and organic-search -- and
+     * that is no longer decided at ingest. MediumStep and SourceStep classify
+     * the referer host in the cube pass, and CubeBuildTest asserts
+     * organic-search, referral and direct on built rows.
+     */
 
+    /**
+     * A Property can name the parameters its links actually use.
+     *
+     * The tracker used to own this: setCampaignSourceKey('utm_source') remapped
+     * the key it parsed. The parse moved server-side and the server built its
+     * own ns-prefixed list, so that setter renamed a key nothing read and a site
+     * using utm_* silently got no attribution at all.
+     *
+     * It is a setting now, resolved at profile scope so the chain walks Profile
+     * -> Property -> Install: one convention by default, and a Property that
+     * arrived from a GA setup overrides it.
+     */
+    public function testAPropertyCanUseGoogleSCampaignKeys(): void
+    {
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
-        $this->assertSame('bing.com', $H::resolveSource(null, $event));
-        $this->assertSame('organic-search', $H::resolveMedium(null, $event));
+        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', [
+            'source'       => 'utm_source',
+            'medium'       => 'utm_medium',
+            'campaign'     => 'utm_campaign',
+            'search_terms' => 'utm_term',
+            'ad'           => 'utm_content',
+        ]);
+
+        $event = $this->event([
+            'site_id'     => 'ga-keys-site',
+            'landing_url' => 'https://example.test/p?utm_source=newsletter&utm_medium=email'
+                . '&utm_campaign=spring&utm_term=shoes&utm_content=banner1'
+                . '&' . $this->ns() . 'source=ignored',
+        ]);
+
+        $this->assertSame('newsletter', $H::taggedValue($event, 'tagged_source'));
+        $this->assertSame('email',      $H::taggedValue($event, 'tagged_medium'));
+        $this->assertSame('spring',     $H::taggedValue($event, 'tagged_campaign'));
+        $this->assertSame('shoes',      $H::taggedValue($event, 'tagged_terms'));
+        $this->assertSame('banner1',    $H::taggedValue($event, 'tagged_ad'));
+
+        /*
+         * And the ns-prefixed name stops being read. Without this the case
+         * would pass on a parser that read BOTH conventions, which is not the
+         * same guarantee -- a site with a stray owa_source on a link would get
+         * two different answers depending on parameter order.
+         */
+        $this->assertNotSame('ignored', $H::taggedValue($event, 'tagged_source'));
+    }
+
+    /**
+     * THE SAME LANDING URL PARSES DIFFERENTLY FOR TWO PROPERTIES.
+     *
+     * The parse is memoised, and the key map is per-Property now, so the memo
+     * has to be keyed on the site as well as the URL. Keyed on the URL alone --
+     * which is how it was written, because the map used to be installation-wide
+     * -- the first Property's answer is handed to the second, and a site reading
+     * utm_source silently inherits whatever the site before it resolved.
+     *
+     * Two Properties cannot be given different settings from here, so the
+     * setting is changed BETWEEN the two parses, which exercises exactly the
+     * same path: a second site asking about a URL the memo already holds.
+     */
+    public function testTheMemoDoesNotHandOnePropertysAnswerToAnother(): void
+    {
+        $H   = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $ns  = $this->ns();
+        $url = 'https://example.test/shared?' . $ns . 'source=owa_answer&utm_source=utm_answer';
+
+        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', []);
+
+        $first = $this->event([ 'site_id' => 'memo-site-one', 'landing_url' => $url ]);
+
+        $this->assertSame('owa_answer', $H::taggedValue($first, 'tagged_source'),
+            'the default map reads the ns-prefixed parameter');
+
+        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', [ 'source' => 'utm_source' ]);
+
+        $second = $this->event([ 'site_id' => 'memo-site-two', 'landing_url' => $url ]);
+
+        $this->assertSame('utm_answer', $H::taggedValue($second, 'tagged_source'),
+            'the second site got the first site\'s cached answer, so the parse memo is '
+          . 'keyed on the URL alone');
+    }
+
+    /** A role the setting omits keeps its ns-prefixed name rather than vanishing. */
+    public function testAPartialOverrideIsPartialRatherThanDestructive(): void
+    {
+        $H  = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $ns = $this->ns();
+
+        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', [
+            'source' => 'utm_source',
+        ]);
+
+        $event = $this->event([
+            'site_id'     => 'partial-keys-site',
+            'landing_url' => 'https://example.test/p?utm_source=newsletter&' . $ns . 'medium=email',
+        ]);
+
+        $this->assertSame('newsletter', $H::taggedValue($event, 'tagged_source'),
+            'the named role uses the named parameter');
+        $this->assertSame('email', $H::taggedValue($event, 'tagged_medium'),
+            'an unnamed role keeps its ns-prefixed name; a partial override must not '
+          . 'silently disable the roles it does not mention');
     }
 }

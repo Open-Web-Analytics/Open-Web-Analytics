@@ -1024,24 +1024,6 @@ class TrackingEventHelpers {
 
 
 
-    static function derivePageUri( $page_uri, $event ) {
-
-        $page_parse = parse_url( $event->get( 'page_url' ) );
-
-        if ( ! array_key_exists( 'path', $page_parse ) || empty( $page_parse['path'] ) ) {
-
-            $page_parse['path'] = '/';
-        }
-
-        if ( array_key_exists( 'query', $page_parse ) || ! empty( $page_parse['query'] ) ) {
-
-            return sprintf( '%s?%s', $page_parse['path'], $page_parse['query'] );
-
-        } else {
-
-            return $page_parse['path'] ;
-        }
-    }
     
     
     /**
@@ -1155,6 +1137,438 @@ class TrackingEventHelpers {
     static function getSocialNetworkList() {
 	    
 	    return \OWA\Core\CoreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
+    }
+
+
+
+    /**
+     * A canonical URL that is safe to store and to render.
+     *
+     * This method decodes HTML entities so that parse_url() sees the real URL,
+     * and its return value goes to the event untouched -- setTrackerProperties()
+     * only re-applies the declared type when a callback answers null. So
+     * whatever survives the decode is what reaches the column, and a value that
+     * arrived encoded comes back out raw.
+     *
+     * The answer is not to escape it. A URL is not HTML, and escaping it for one
+     * output context breaks it for the others -- it also has to survive as an
+     * href, in a CSV, and in a JSON response. What a URL HAS is a grammar, and
+     * the characters below cannot legally appear raw in one: a browser
+     * percent-encodes them before the request is ever made. So percent-encoding
+     * them is not a mangling, it is the URL written correctly, and the value
+     * stays inert in every context rather than in one.
+     *
+     * Existing percent-escapes are left alone -- '%' is not in the replacement
+     * set -- so %3C stays %3C instead of becoming %253C.
+     *
+     * The scheme is checked separately, because 'javascript:' and 'data:' carry
+     * no dangerous characters at all and no amount of encoding addresses them.
+     * A rejected URL is recorded as absent rather than stored, which is the
+     * honest record: we did not observe a page we can represent.
+     */
+    const STORABLE_URL_SCHEMES = array( 'http', 'https' );
+
+    static function makeUrlStorageSafe( $url ) {
+
+        if ( $url === null || $url === '' ) {
+
+            return $url;
+        }
+
+        $url = (string) $url;
+
+        /*
+         * Control characters first, and before the scheme is read. Browsers
+         * strip tab, newline and carriage return from inside a scheme, so
+         * "java	script:" is javascript: to a browser while parse_url() sees
+         * something else entirely -- the check and the consumer have to agree
+         * about what the string is.
+         */
+        $url = preg_replace( '/[\x00-\x1F\x7F]/', '', $url );
+
+        /*
+         * The scheme is read off the string, not via parse_url().
+         *
+         * parse_url() applies the grammar, so anything it considers malformed
+         * yields NO scheme -- and a check that only fires when a scheme parses
+         * is skipped by exactly the inputs worth checking. Sanitising upstream
+         * turns "java\tscript:" into "java_script:", which parse_url() reports
+         * no scheme for at all; the guard then passes it through.
+         *
+         * Everything before the first ':' is the claimed scheme, provided no
+         * '/' comes first -- that condition is what keeps a relative URL, or a
+         * path containing a colon, from being read as one.
+         */
+        $colon = strpos( $url, ':' );
+        $slash = strpos( $url, '/' );
+
+        if ( $colon !== false && ( $slash === false || $colon < $slash ) ) {
+
+            $scheme = strtolower( substr( $url, 0, $colon ) );
+
+            if ( ! in_array( $scheme, self::STORABLE_URL_SCHEMES, true ) ) {
+
+                \OWA\Core\CoreAPI::debug(
+                    'Not recording a URL with the scheme: ' . $scheme );
+
+                return '';
+            }
+        }
+
+        return str_replace(
+            array( '<',   '>',   '"',   "'",   '`',   ' ' ),
+            array( '%3C', '%3E', '%22', '%27', '%60', '%20' ),
+            $url );
+    }
+
+    static function utfEncodeProperty( $string, $event ) {
+	if(is_null($string)){
+            return $string;
+        }
+
+        return \OWA\Core\Lib::utf8Encode( trim( $string ) );
+    }
+
+
+    static function getHostDomain( $host, $event ) {
+
+        $fullhost = $event->get( 'full_host' );
+
+        if ( $fullhost ) {
+
+            // Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
+            if ($fullhost === 'localhost') {
+
+                $host = 'localhost';
+
+            } else {
+
+                // lookup the registered domain using the Public Suffix List.
+                $host = \OWA\Core\CoreAPI::getRegisteredDomain( $fullhost );
+                \OWA\Core\CoreAPI::debug("Registered domain is: $host");
+            }
+
+            return $host;
+        }
+    }
+
+    static function resolveBrowserType( $browser_type, $event ) {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $bcap = $service->getBrowscap();
+
+        return $bcap->getUaFamily();
+    }
+
+
+    static function resolveBrowserVersion( $version, $event ) {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $bcap = $service->getBrowscap();
+
+        return $bcap->getUaVersion();
+    }
+
+
+    static function resolveOs ( $os, $event ) {
+
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $bcap = $service->getBrowscap();
+
+        return $bcap->getOsFamily();
+
+    }
+
+
+    static function resolveCountry ( $country, $event ) {
+
+        // if country is set manually, use it
+        if ($country) {
+            return $country;
+        }
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+
+        return $location->getCountry();
+    }
+
+    static function resolveCity ( $city, $event ) {
+
+        // if city is set manually, use it
+        if ($city) {
+            return $city;
+        }
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getCity();
+    }
+
+
+
+    static function resolveCountryCode ( $country_code, $event ) {
+
+        // if country_code is set manually, use it
+        if ($country_code) {
+            return $country_code;
+        }
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getCountryCode();
+    }
+
+    static function resolveState ( $state, $event ) {
+
+        // if state is set manually, use it
+        if ($state) {
+            return $state;
+        }
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getState();
+    }
+
+    static function lowercaseString ( $string, $event ) {
+	if(is_null($string)){
+            return($string);
+        }
+
+        return strtolower( trim( $string ) );
+    }
+
+
+    static function setSearchTerms ( $search_terms, $event ) {
+
+        if ( $search_terms && $search_terms != '(not set)' ) {
+
+            return trim( strtolower( $search_terms ) );
+        }
+    }
+
+    static function setUserName( $user_name, $event ) {
+
+        // record and filter personally identifiable info (PII)
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+
+            // set user name if one does not already exist on event
+            if ( ! $user_name && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+
+                $cu = \OWA\Core\CoreAPI::getCurrentUser();
+
+                $user_name = $cu->user->get( 'user_id' );
+            }
+
+            return $user_name;
+        }
+    }
+
+    static function setEmailAddress ( $email_address, $event ) {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+
+            if ( ! $email_address && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+
+                $cu = \OWA\Core\CoreAPI::getCurrentUser();
+
+                $email_address = $cu->user->get( 'email_address' );
+            }
+
+            return $email_address;
+        }
+    }
+
+    /**
+     * The campaign parameters a site owner writes on a landing URL, and the
+     * wire property each one becomes.
+     *
+     * SUFFIXES, not whole names: the public parameter is the `ns` setting plus
+     * the suffix, because `ns` is what keeps OWA's names off a tracked page's
+     * own query string. Changing `ns` changes every campaign URL in the wild,
+     * which is exactly why the list is built from it rather than hard-coded.
+     *
+     * Mirrors the tracker's `campaignKeys`. Note owa_search_terms becomes
+     * tagged_TERMS, not tagged_search_terms -- the one place the two halves do
+     * not share a stem.
+     */
+    const CAMPAIGN_KEYS = array(
+        'source'       => 'tagged_source',
+        'medium'       => 'tagged_medium',
+        'campaign'     => 'tagged_campaign',
+        'search_terms' => 'tagged_terms',
+        'ad'           => 'tagged_ad',
+        'ad_type'      => 'tagged_ad_type',
+    );
+
+    /** Parsed landing URLs, keyed by site and URL. */
+    private static $landingTags = array();
+
+    /** Resolved campaign key maps, keyed by site. */
+    private static $campaignKeys = array();
+
+    /**
+     * What the landing URL claimed for one campaign property.
+     *
+     * The tracker used to parse the landing URL against campaignKeys and send
+     * six tagged_* parameters on every beacon of the session. It now carries
+     * the URL itself and the parse happens here, which is what makes the answer
+     * re-derivable: a fix to this parser, or a site changing `ns`, applies on
+     * reprocess instead of being frozen in whatever a browser decided months
+     * ago.
+     *
+     * AN EVENT'S OWN tagged_* STILL WINS. Trackers are cached in browsers and
+     * installs upgrade at their own pace, so beacons from the old tracker keep
+     * arriving long after the new one ships; treating what it sent as
+     * authoritative is what makes this change invisible to them. The parse is
+     * the fallback, which is also the right precedence on its own terms -- a
+     * value that was actually transmitted beats one re-derived from evidence.
+     *
+     * @param object $event
+     * @param string $name  a value of CAMPAIGN_KEYS
+     * @return string|null
+     */
+    static function taggedValue( $event, $name ) {
+
+        $sent = $event->get( $name );
+
+        if ( $sent ) {
+
+            return $sent;
+        }
+
+        $landing = $event->get( 'landing_url' );
+
+        if ( ! $landing || ! is_string( $landing ) ) {
+
+            return null;
+        }
+
+        /*
+         * MEMOISED PER SITE AS WELL AS PER URL. The key map is a Property
+         * setting now, so the same landing URL parses differently for two
+         * Properties -- one reading owa_source and one utm_source -- and a memo
+         * keyed on the URL alone would hand the first site's answer to the
+         * second.
+         */
+        $site_id = (string) $event->get( 'site_id' );
+        $memo    = $site_id . '|' . $landing;
+
+        if ( ! isset( self::$landingTags[ $memo ] ) ) {
+
+            self::$landingTags[ $memo ] = self::parseLandingTags(
+                $landing, self::campaignKeysFor( $site_id ) );
+        }
+
+        return isset( self::$landingTags[ $memo ][ $name ] )
+            ? self::$landingTags[ $memo ][ $name ]
+            : null;
+    }
+
+    /**
+     * Pull the campaign parameters out of one landing URL.
+     *
+     * @param string $landing
+     * @return array wire property name => value
+     */
+    /**
+     * The URL parameter each campaign role arrives under, for this site.
+     *
+     * EMPTY SETTING MEANS ns-PREFIXED, which is what OWA has always done and
+     * what honours a custom `ns`. A site that sets it names the parameters
+     * explicitly instead -- utm_source, utm_medium, utm_campaign, utm_term,
+     * utm_content -- so a Property that came from a GA setup keeps its links.
+     *
+     * Read at PROFILE scope so the chain walks Profile -> Property -> Install:
+     * the install default covers one convention everywhere, and a Property
+     * overrides it.
+     *
+     * Only the roles CAMPAIGN_KEYS names are read, so a setting cannot invent a
+     * tag the pipeline has nowhere to put. A role the setting omits keeps its
+     * ns-prefixed name rather than being dropped, so a partial override is
+     * partial rather than destructive.
+     *
+     * @param  string $site_id
+     * @return array  public parameter name => tagged_* property
+     */
+    private static function campaignKeysFor( $site_id ) {
+
+        if ( isset( self::$campaignKeys[ $site_id ] ) ) {
+
+            return self::$campaignKeys[ $site_id ];
+        }
+
+        $configured = \OWA\Core\CoreAPI::getSetting(
+            'base', 'campaignKeys', 'profile', $site_id );
+
+        $configured = is_array( $configured ) ? $configured : array();
+
+        $ns  = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $map = array();
+
+        foreach ( self::CAMPAIGN_KEYS as $role => $property ) {
+
+            $public = isset( $configured[ $role ] ) && is_string( $configured[ $role ] )
+                   && trim( $configured[ $role ] ) !== ''
+                ? trim( $configured[ $role ] )
+                : $ns . $role;
+
+            $map[ $public ] = $property;
+        }
+
+        return self::$campaignKeys[ $site_id ] = $map;
+    }
+
+    private static function parseLandingTags( $landing, array $keys ) {
+
+        $uri = self::parse_url( $landing );
+
+        if ( empty( $uri['query'] ) ) {
+
+            return array();
+        }
+
+        $params = array();
+
+        parse_str( $uri['query'], $params );
+
+        $tags = array();
+
+        foreach ( $keys as $public => $property ) {
+
+            // Absent and empty are the same claim: the URL said nothing. An
+            // empty owa_campaign= must not read as a campaign named ''.
+            if ( ! isset( $params[ $public ] ) || ! is_string( $params[ $public ] ) ) {
+
+                continue;
+            }
+
+            $value = trim( $params[ $public ] );
+
+            if ( $value === '' ) {
+
+                continue;
+            }
+
+            $tags[ $property ] = $value;
+        }
+
+        return $tags;
+    }
+
+
+
+
+
+    /** As resolveCampaign(). Read by AdHandlers beside ad. */
+    static function resolveAdType( $ad_type, $event ) {
+
+        $tagged = self::taggedValue( $event, 'tagged_ad_type' );
+
+        return $tagged ? trim( $tagged ) : $ad_type;
     }
 
 
@@ -1286,641 +1700,6 @@ class TrackingEventHelpers {
 
          return self::makeUrlStorageSafe( $url );
 
-    }
-
-    /**
-     * A canonical URL that is safe to store and to render.
-     *
-     * This method decodes HTML entities so that parse_url() sees the real URL,
-     * and its return value goes to the event untouched -- setTrackerProperties()
-     * only re-applies the declared type when a callback answers null. So
-     * whatever survives the decode is what reaches the column, and a value that
-     * arrived encoded comes back out raw.
-     *
-     * The answer is not to escape it. A URL is not HTML, and escaping it for one
-     * output context breaks it for the others -- it also has to survive as an
-     * href, in a CSV, and in a JSON response. What a URL HAS is a grammar, and
-     * the characters below cannot legally appear raw in one: a browser
-     * percent-encodes them before the request is ever made. So percent-encoding
-     * them is not a mangling, it is the URL written correctly, and the value
-     * stays inert in every context rather than in one.
-     *
-     * Existing percent-escapes are left alone -- '%' is not in the replacement
-     * set -- so %3C stays %3C instead of becoming %253C.
-     *
-     * The scheme is checked separately, because 'javascript:' and 'data:' carry
-     * no dangerous characters at all and no amount of encoding addresses them.
-     * A rejected URL is recorded as absent rather than stored, which is the
-     * honest record: we did not observe a page we can represent.
-     */
-    const STORABLE_URL_SCHEMES = array( 'http', 'https' );
-
-    static function makeUrlStorageSafe( $url ) {
-
-        if ( $url === null || $url === '' ) {
-
-            return $url;
-        }
-
-        $url = (string) $url;
-
-        /*
-         * Control characters first, and before the scheme is read. Browsers
-         * strip tab, newline and carriage return from inside a scheme, so
-         * "java	script:" is javascript: to a browser while parse_url() sees
-         * something else entirely -- the check and the consumer have to agree
-         * about what the string is.
-         */
-        $url = preg_replace( '/[\x00-\x1F\x7F]/', '', $url );
-
-        /*
-         * The scheme is read off the string, not via parse_url().
-         *
-         * parse_url() applies the grammar, so anything it considers malformed
-         * yields NO scheme -- and a check that only fires when a scheme parses
-         * is skipped by exactly the inputs worth checking. Sanitising upstream
-         * turns "java\tscript:" into "java_script:", which parse_url() reports
-         * no scheme for at all; the guard then passes it through.
-         *
-         * Everything before the first ':' is the claimed scheme, provided no
-         * '/' comes first -- that condition is what keeps a relative URL, or a
-         * path containing a colon, from being read as one.
-         */
-        $colon = strpos( $url, ':' );
-        $slash = strpos( $url, '/' );
-
-        if ( $colon !== false && ( $slash === false || $colon < $slash ) ) {
-
-            $scheme = strtolower( substr( $url, 0, $colon ) );
-
-            if ( ! in_array( $scheme, self::STORABLE_URL_SCHEMES, true ) ) {
-
-                \OWA\Core\CoreAPI::debug(
-                    'Not recording a URL with the scheme: ' . $scheme );
-
-                return '';
-            }
-        }
-
-        return str_replace(
-            array( '<',   '>',   '"',   "'",   '`',   ' ' ),
-            array( '%3C', '%3E', '%22', '%27', '%60', '%20' ),
-            $url );
-    }
-
-    static function utfEncodeProperty( $string, $event ) {
-	if(is_null($string)){
-            return $string;
-        }
-
-        return \OWA\Core\Lib::utf8Encode( trim( $string ) );
-    }
-
-    /**
-     * Resolve hostname from IP address
-     *
-     * @access public
-     */
-    static function resolveFullHost( $full_host, $event ) {
-
-        if (
-        		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' )
-				&& $event->get( 'ip_address' )
-				&& \OWA\Core\CoreAPI::getSetting(
-						'base', 'resolve_hosts', 'profile', $event->get('site_id') )
-
-        ) {
-			
-			$remote_host = '';
-            // get ip address
-            $ip_address = $event->get( 'ip_address' );
-            
-            if ( \OWA\Core\Lib::isNotPrivateIp( $ip_address ) ) {
-	            
-	            // valid v4 or v6 IP address
-	            
-	            if ( \OWA\Core\Lib::isValidIpv6( $ip_address ) ) {
-		            
-		            // is v6 format
-		            $result = @dns_get_record( $ip_address, DNS_AAAA );
-
-	                if ( is_array( $result ) && isset( $result[0] ) && isset( $result[0]['host'] ) ) {
-	
-	                    $remote_host = $result[0]['host'];
-	                }
-		            
-	            } else {
-		            
-		            // must be v4.
-		            $remote_host = @gethostbyaddr( $ip_address );
-	            }
-	        }
- 
-            // if we get a host back that is not an ip address or unknown
-            if ( $remote_host && $remote_host != $ip_address && $remote_host != 'unknown' ) {
-
-                return $remote_host;
-            }
-        }
-    }
-
-    static function getHostDomain( $host, $event ) {
-
-        $fullhost = $event->get( 'full_host' );
-
-        if ( $fullhost ) {
-
-            // Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
-            if ($fullhost === 'localhost') {
-
-                $host = 'localhost';
-
-            } else {
-
-                // lookup the registered domain using the Public Suffix List.
-                $host = \OWA\Core\CoreAPI::getRegisteredDomain( $fullhost );
-                \OWA\Core\CoreAPI::debug("Registered domain is: $host");
-            }
-
-            return $host;
-        }
-    }
-
-    static function resolveBrowserType( $browser_type, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getUaFamily();
-    }
-
-    static function isBrowser( $is_browser , $event ) {
-
-        if ( $event->get( 'browser_type' ) ) {
-
-            return true;
-        }
-    }
-
-    static function resolveBrowserVersion( $version, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getUaVersion();
-    }
-
-    static function isRobot ( $is_robot, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->isRobot();
-    }
-
-    static function resolveOs ( $os, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getOsFamily();
-
-    }
-
-
-    static function resolveCountry ( $country, $event ) {
-
-        // if country is set manually, use it
-        if ($country) {
-            return $country;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-
-        return $location->getCountry();
-    }
-
-    static function resolveCity ( $city, $event ) {
-
-        // if city is set manually, use it
-        if ($city) {
-            return $city;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getCity();
-    }
-
-    static function resolveLatitude ( $latitude, $event ) {
-
-        // if latitude is set manually, use it
-        if ($latitude) {
-            return $latitude;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getLatitude();
-    }
-
-    static function resolveLongitude ( $longitude, $event ) {
-
-        // if longitude is set manually, use it
-        if ($longitude) {
-            return $longitude;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getLongitude();
-    }
-
-    static function resolveCountryCode ( $country_code, $event ) {
-
-        // if country_code is set manually, use it
-        if ($country_code) {
-            return $country_code;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getCountryCode();
-    }
-
-    static function resolveState ( $state, $event ) {
-
-        // if state is set manually, use it
-        if ($state) {
-            return $state;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getState();
-    }
-
-    static function lowercaseString ( $string, $event ) {
-	if(is_null($string)){
-            return($string);
-        }
-
-        return strtolower( trim( $string ) );
-    }
-
-    static function setPriorPage ( $prior_page, $event ) {
-
-        // if prior_page is set manually, use it
-        if ($prior_page) {
-            return $prior_page;
-        }
-
-        if ( $event->get( 'HTTP_REFERER' ) ) {
-            // @todo is this parse done somewhere else already? source?
-            $referer_parse = \OWA\Core\Lib::parse_url( $event->get('HTTP_REFERER') );
-
-            $http_host = $event->get( 'HTTP_HOST' );
-
-            if ( isset($referer_parse['host'] ) && $referer_parse['host'] === $http_host ) {
-
-                return $event->get('HTTP_REFERER');
-            }
-        }
-
-        return null;
-    }
-
-    static function setSearchTerms ( $search_terms, $event ) {
-
-        if ( $search_terms && $search_terms != '(not set)' ) {
-
-            return trim( strtolower( $search_terms ) );
-        }
-    }
-
-    static function setUserName( $user_name, $event ) {
-
-        // record and filter personally identifiable info (PII)
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-
-            // set user name if one does not already exist on event
-            if ( ! $user_name && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
-
-                $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-                $user_name = $cu->user->get( 'user_id' );
-            }
-
-            return $user_name;
-        }
-    }
-
-    static function setEmailAddress ( $email_address, $event ) {
-
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-
-            if ( ! $email_address && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
-
-                $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-                $email_address = $cu->user->get( 'email_address' );
-            }
-
-            return $email_address;
-        }
-    }
-
-    /**
-     * The campaign parameters a site owner writes on a landing URL, and the
-     * wire property each one becomes.
-     *
-     * SUFFIXES, not whole names: the public parameter is the `ns` setting plus
-     * the suffix, because `ns` is what keeps OWA's names off a tracked page's
-     * own query string. Changing `ns` changes every campaign URL in the wild,
-     * which is exactly why the list is built from it rather than hard-coded.
-     *
-     * Mirrors the tracker's `campaignKeys`. Note owa_search_terms becomes
-     * tagged_TERMS, not tagged_search_terms -- the one place the two halves do
-     * not share a stem.
-     */
-    const CAMPAIGN_KEYS = array(
-        'source'       => 'tagged_source',
-        'medium'       => 'tagged_medium',
-        'campaign'     => 'tagged_campaign',
-        'search_terms' => 'tagged_terms',
-        'ad'           => 'tagged_ad',
-        'ad_type'      => 'tagged_ad_type',
-    );
-
-    /** Parsed landing URLs, keyed by the URL. */
-    private static $landingTags = array();
-
-    /**
-     * What the landing URL claimed for one campaign property.
-     *
-     * The tracker used to parse the landing URL against campaignKeys and send
-     * six tagged_* parameters on every beacon of the session. It now carries
-     * the URL itself and the parse happens here, which is what makes the answer
-     * re-derivable: a fix to this parser, or a site changing `ns`, applies on
-     * reprocess instead of being frozen in whatever a browser decided months
-     * ago.
-     *
-     * AN EVENT'S OWN tagged_* STILL WINS. Trackers are cached in browsers and
-     * installs upgrade at their own pace, so beacons from the old tracker keep
-     * arriving long after the new one ships; treating what it sent as
-     * authoritative is what makes this change invisible to them. The parse is
-     * the fallback, which is also the right precedence on its own terms -- a
-     * value that was actually transmitted beats one re-derived from evidence.
-     *
-     * @param object $event
-     * @param string $name  a value of CAMPAIGN_KEYS
-     * @return string|null
-     */
-    static function taggedValue( $event, $name ) {
-
-        $sent = $event->get( $name );
-
-        if ( $sent ) {
-
-            return $sent;
-        }
-
-        $landing = $event->get( 'landing_url' );
-
-        if ( ! $landing || ! is_string( $landing ) ) {
-
-            return null;
-        }
-
-        if ( ! isset( self::$landingTags[ $landing ] ) ) {
-
-            self::$landingTags[ $landing ] = self::parseLandingTags( $landing );
-        }
-
-        return isset( self::$landingTags[ $landing ][ $name ] )
-            ? self::$landingTags[ $landing ][ $name ]
-            : null;
-    }
-
-    /**
-     * Pull the campaign parameters out of one landing URL.
-     *
-     * @param string $landing
-     * @return array wire property name => value
-     */
-    private static function parseLandingTags( $landing ) {
-
-        $uri = self::parse_url( $landing );
-
-        if ( empty( $uri['query'] ) ) {
-
-            return array();
-        }
-
-        $params = array();
-
-        parse_str( $uri['query'], $params );
-
-        $ns   = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
-        $tags = array();
-
-        foreach ( self::CAMPAIGN_KEYS as $suffix => $property ) {
-
-            $public = $ns . $suffix;
-
-            // Absent and empty are the same claim: the URL said nothing. An
-            // empty owa_campaign= must not read as a campaign named ''.
-            if ( ! isset( $params[ $public ] ) || ! is_string( $params[ $public ] ) ) {
-
-                continue;
-            }
-
-            $value = trim( $params[ $public ] );
-
-            if ( $value === '' ) {
-
-                continue;
-            }
-
-            $tags[ $property ] = $value;
-        }
-
-        return $tags;
-    }
-
-    /**
-     * Resolve the traffic source.
-     *
-     * The tracker reports what the landing URL was tagged with; the server
-     * decides what the source IS. Those used to be the same property name, so
-     * a value in the column recorded no trace of which half produced it and
-     * the callback had to open by respecting its own current value. Now the
-     * claim arrives as tagged_source and the answer is written here.
-     *
-     * Precedence: an explicit tag wins, else classify the referer.
-     */
-    static function resolveSource( $source, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_source' );
-
-        if ( $tagged ) {
-
-            return strtolower( trim( $tagged ) );
-        }
-
-        $referer = $event->get( 'session_referer' );
-
-        if ( ! $referer ) {
-
-            return $source;
-        }
-
-        $uri = self::parse_url( $referer );
-
-        if ( empty( $uri['host'] ) ) {
-
-            return $source;
-        }
-
-        return strtolower( self::stripWwwFromDomain( $uri['host'] ) );
-    }
-
-    /**
-     * Resolve the medium. See resolveSource() for the claim/answer split.
-     *
-     * Precedence: an explicit tag wins, else classify the referer as a search
-     * engine, a social network or a plain referral, else leave the declared
-     * default of direct.
-     */
-    static function resolveMedium( $medium, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_medium' );
-
-        if ( $tagged ) {
-
-            return strtolower( trim( $tagged ) );
-        }
-
-        $referer = $event->get( 'session_referer' );
-
-        if ( ! $referer ) {
-
-            return $medium;
-        }
-
-        $uri = self::parse_url( $referer );
-
-        if ( empty( $uri['host'] ) ) {
-
-            return $medium;
-        }
-
-        $host = $uri['host'];
-
-        if ( self::isSearchEngine( $host ) ) {
-
-            return 'organic-search';
-        }
-
-        if ( self::isSocialNetwork( $host ) ) {
-
-            return 'social-network';
-        }
-
-        return 'referral';
-    }
-
-    /**
-     * Resolve the campaign name.
-     *
-     * There is nothing to derive it from -- a campaign exists only because a
-     * URL was tagged with one -- so this is the claim, passed through. It is a
-     * callback rather than a bare property so that campaign is registered at
-     * all: it reached CampaignHandlers on the wire for years without appearing
-     * in any property map, which meant no declared type and no way for the
-     * wire filter to have an opinion about it.
-     */
-    static function resolveCampaign( $campaign, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_campaign' );
-
-        return $tagged ? trim( $tagged ) : $campaign;
-    }
-
-    /** As resolveCampaign(). Read by AdHandlers. */
-    static function resolveAd( $ad, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_ad' );
-
-        return $tagged ? trim( $tagged ) : $ad;
-    }
-
-    /** As resolveCampaign(). Read by AdHandlers beside ad. */
-    static function resolveAdType( $ad_type, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_ad_type' );
-
-        return $tagged ? trim( $tagged ) : $ad_type;
-    }
-
-    /**
-     * Resolve the search terms someone arrived on.
-     *
-     * Note this is acquisition, not site-internal search -- the v2 plan (§1.10)
-     * flags that those two facts share this one name and should not.
-     *
-     * Precedence: an explicit tag wins, else read the query param the
-     * referring search engine is known to use.
-     */
-    static function resolveSearchTerms( $terms, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_terms' );
-
-        if ( $tagged ) {
-
-            return trim( strtolower( $tagged ) );
-        }
-
-        $referer = $event->get( 'session_referer' );
-
-        if ( ! $referer ) {
-
-            return $terms;
-        }
-
-        $uri = self::parse_url( $referer );
-
-        if ( empty( $uri['query_params'] ) || empty( $uri['host'] ) ) {
-
-            return $terms;
-        }
-
-        foreach ( self::getSearchEngineList() as $engine ) {
-
-            if ( stripos( $uri['host'], $engine['domain'] ) === false ) {
-
-                continue;
-            }
-
-            $param = $engine['query_param'];
-
-            if ( ! isset( $uri['query_params'][ $param ] ) ) {
-
-                /* A known engine that sent no term: it withheld it (https
-                   referrers usually do), which is a different fact from never
-                   having searched. */
-                return '(not provided)';
-            }
-
-            // urldecode to turn the '+' separators back into spaces
-            return trim( urldecode( strtolower( $uri['query_params'][ $param ] ) ) );
-        }
-
-        return $terms;
     }
 
 }

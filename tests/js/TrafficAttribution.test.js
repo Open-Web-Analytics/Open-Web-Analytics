@@ -67,177 +67,34 @@ afterEach(() => {
     window.history.replaceState({}, '', '/');
 });
 
-describe('getCampaignProperties: extraction and key remapping', () => {
+/*
+ * THE ATTRIBUTION MODELS ARE GONE and their cases with them. The client used
+ * to load a campaign stack from the `c` cookie, run last-touch or first-touch
+ * over the URL's tags and write the stack back -- and none of it reached the
+ * server. No tracker generation put the tags on the wire: v1 and v2 both send
+ * landing_url and taggedColumns() parses them out of it server-side.
+ *
+ * What is still tested here is what still happens: the URL parse, and the
+ * session referrer, which does ride the beacon.
+ */
+/*
+ * THE TAG PARSE IS NOT THE TRACKER'S ANY MORE, so its four cases are gone --
+ * extraction off the URL, the ad/ad_type backfill, and the remapped public key.
+ *
+ * The tracker sends landing_url and the server parses the tags out of it in
+ * TrackingEventHelpers::parseLandingTags(), with the parameter names coming
+ * from the per-Property `campaignKeys` setting. The remapping case is the one
+ * worth following: it asserted that setCampaignSourceKey('utm_source') was
+ * honoured, and it WAS honoured here while doing nothing end to end, because
+ * the server built its own ns-prefixed list and never read the tracker's. A
+ * site using utm_* got no attribution and this test said it was fine.
+ *
+ * It is a real capability now, tested where it takes effect:
+ * LandingUrlCampaignParseTest.
+ */
 
-    test('pulls campaign params off the URL and remaps public keys to private keys', () => {
-        setUrl('/p?owa_medium=email&owa_campaign=summer&owa_source=news&owa_search_terms=widgets');
-        const t = newTracker();
 
-        const params = t.getCampaignProperties();
 
-        // public owa_* keys -> short private keys.
-        expect(params).toEqual({
-            md: 'email',
-            cn: 'summer',
-            sr: 'news',
-            tr: 'widgets',
-        });
-        // Seeing any campaign param marks the visit as a new campaign touch.
-        expect(t.isNewCampaign).toBe(true);
-    });
-
-    test('leaves isNewCampaign false and returns empty when no campaign params present', () => {
-        setUrl('/p?unrelated=1');
-        const t = newTracker();
-
-        expect(t.getCampaignProperties()).toEqual({});
-        expect(t.isNewCampaign).toBe(false);
-    });
-
-    test('backfills the co-required ad / ad_type pair with "(not set)"', () => {
-        setUrl('/p?owa_ad=banner1');
-        const adOnly = newTracker().getCampaignProperties();
-        // ad present -> ad_type backfilled.
-        expect(adOnly.ad).toBe('banner1');
-        expect(adOnly.at).toBe('(not set)');
-
-        setUrl('/p?owa_ad_type=cpc');
-        const typeOnly = newTracker().getCampaignProperties();
-        // ad_type present -> ad backfilled.
-        expect(typeOnly.at).toBe('cpc');
-        expect(typeOnly.ad).toBe('(not set)');
-    });
-
-    test('honors a remapped public key (e.g. utm_source via setCampaignSourceKey)', () => {
-        setUrl('/p?utm_source=google');
-        const t = newTracker();
-        t.setCampaignSourceKey('utm_source');
-
-        // owa_source would no longer match; utm_source now maps to sr.
-        expect(t.getCampaignProperties()).toEqual({ sr: 'google' });
-    });
-});
-
-describe('directAttributionModel (last-touch)', () => {
-
-    test('appends the new touch, marks attributed, and persists session + cookie state', () => {
-        setUrl('/p?owa_source=news&owa_medium=email');
-        const t = newTracker();
-        const params = t.getCampaignProperties();
-
-        t.directAttributionModel(params);
-
-        expect(t.campaignState.length).toBe(1);
-        expect(t.isTrafficAttributed).toBe(true);
-        // The session store no longer carries the parsed tags, which is what
-        // took them off the wire -- the server parses landing_url instead.
-        // What the MODEL does with the parse is unchanged, and that is what
-        // the assertions either side of this cover.
-        expect(OWA.getState('s_attribution-site', 'tagged_source')).toBeFalsy();
-        expect(OWA.getState('s_attribution-site', 'tagged_medium')).toBeFalsy();
-        // The campaign cookie ('c') holds the touch list.
-        expect(OWA.getState('c', 'attribs')).toBeTruthy();
-    });
-
-    test('caps the touch list at maxPriorCampaigns, dropping the oldest', () => {
-        const t = newTracker();
-        // Pre-load exactly maxPriorCampaigns (5) touches, then add one more.
-        t.campaignState = [{ sr: 'a' }, { sr: 'b' }, { sr: 'c' }, { sr: 'd' }, { sr: 'e' }];
-        t.isNewCampaign = true;
-
-        t.directAttributionModel({ sr: 'f' });
-
-        expect(t.campaignState.length).toBe(5);
-        // Oldest ('a') dropped; newest ('f') retained.
-        expect(t.campaignState[0]).toEqual({ sr: 'b' });
-        expect(t.campaignState[t.campaignState.length - 1]).toEqual({ sr: 'f' });
-    });
-
-    test('does nothing when the visit is not a new campaign', () => {
-        const t = newTracker();
-        t.isNewCampaign = false;
-
-        const result = t.directAttributionModel({ sr: 'news' });
-
-        expect(result).toBeUndefined();
-        expect(t.campaignState.length).toBe(0);
-        expect(t.isTrafficAttributed).toBe(false);
-    });
-});
-
-describe('originalAttributionModel (first-touch)', () => {
-
-    test('keeps the original touch and ignores the new params when a prior touch exists', () => {
-        const t = newTracker();
-        t.campaignState = [{ sr: 'first', cn: 'orig' }];
-        t.isNewCampaign = true;
-
-        const result = t.originalAttributionModel({ sr: 'second', cn: 'new' });
-
-        // First touch wins.
-        expect(result).toEqual({ sr: 'first', cn: 'orig' });
-        expect(t.isTrafficAttributed).toBe(true);
-        expect(t.campaignState.length).toBe(1);
-    });
-
-    test('records the new touch as the original when none exists yet', () => {
-        const t = newTracker();
-        t.isNewCampaign = true;
-
-        t.originalAttributionModel({ sr: 'brandnew' });
-
-        expect(t.campaignState).toEqual([{ sr: 'brandnew' }]);
-        expect(t.isTrafficAttributed).toBe(true);
-    });
-});
-
-describe('setTrafficAttribution: end to end', () => {
-
-    test('promotes resolved campaign values to global event properties (direct model)', () => {
-        setUrl('/p?owa_source=news&owa_medium=email&owa_campaign=summer');
-        const t = newTracker({ trafficAttributionMode: 'direct' });
-        t.isNewSessionFlag = true;
-
-        t.setTrafficAttribution(null, null);
-
-        // NOT resolved into the session store any more. The model still runs
-        // on the parse -- the touch list below proves it -- but the parsed
-        // values stop there rather than being persisted and re-sent.
-        expect(OWA.getState('s_attribution-site', 'tagged_source')).toBeFalsy();
-        expect(OWA.getState('s_attribution-site', 'tagged_medium')).toBeFalsy();
-        expect(OWA.getState('s_attribution-site', 'tagged_campaign')).toBeFalsy();
-        // The serialized touch list rides along as `attribs`.
-        expect(JSON.stringify(OWA.getState('c', 'attribs'))).toContain('news');
-    });
-
-    test('infers attribution from the referrer when no campaign params and a new session', () => {
-        setUrl('/p');
-        Object.defineProperty(document, 'referrer', {
-            configurable: true,
-            get() { return 'https://ref.example/landing'; },
-        });
-        const t = newTracker();
-        t.isNewSessionFlag = true;
-
-        t.setTrafficAttribution(null, null);
-
-        // No campaign -> not attributed -> referrer inference sets session_referer.
-        expect(t.isTrafficAttributed).toBe(false);
-        expect(OWA.getState('s_attribution-site', 'referer')).toBe('https://ref.example/landing');
-    });
-
-    test('runs the callback with the event when provided', () => {
-        setUrl('/p?owa_source=news');
-        const t = newTracker();
-        t.isNewSessionFlag = true;
-
-        const event = { marker: 'evt' };
-        let received = null;
-        t.setTrafficAttribution(event, (e) => { received = e; });
-
-        expect(received).toBe(event);
-    });
-});
 
 describe('the session referrer is recorded independently of the campaign', () => {
 
@@ -272,7 +129,8 @@ describe('the session referrer is recorded independently of the campaign', () =>
 
         t.setTrafficAttribution({}, function () {});
 
-        expect(t.isTrafficAttributed).toBe(true);
+        // isTrafficAttributed went with the attribution models: nothing sets
+        // it, because the client no longer decides anything.
         expect(storedReferer(t)).toBe('https://partner.example/post');
     });
 

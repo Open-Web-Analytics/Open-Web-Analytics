@@ -2613,6 +2613,14 @@ namespace OWA\Module\Base\Classes;
                  */
                 'ns'                                => 'owa_',
                 'app_ns'                            => '',
+                /*
+                 * EMPTY MEANS ns-PREFIXED -- owa_source, owa_medium and so on.
+                 * Naming the parameters explicitly is how a site opts into
+                 * GA's utm_* without changing its links, and is a Property
+                 * setting because a Property is a website and its links are
+                 * its own. See TrackingEventHelpers::campaignKeysFor().
+                 */
+                'campaignKeys'                      => array(),
                 'feed_subscription_param'            => 'sid',
                 'source_param'                        => 'source',
                 'site_id'                            => '',

@@ -30,14 +30,14 @@ final class ServerOwnedPropertyTest extends TestCase
 {
     public function testAComputedPropertyCannotBeSetFromTheWire(): void
     {
-        $kept = Helpers::rejectServerOwnedParams( array(
-            'is_browser' => 'ludhiana',
+        $kept = Helpers::admitRequestParams( array(
+            'browser' => 'ludhiana',
             'is_robot'   => '1',
         ) );
 
         $this->assertArrayNotHasKey(
-            'is_browser', $kept,
-            'A request could set is_browser, which is how a city name reached a boolean column.' );
+            'browser', $kept,
+            'A request could set browser, which is how a city name reached a derived column.' );
 
         $this->assertArrayNotHasKey( 'is_robot', $kept );
     }
@@ -49,7 +49,7 @@ final class ServerOwnedPropertyTest extends TestCase
          * sends geolocation somewhere else; a forged timestamp reorders events;
          * a forged is_robot decides whether the sender gets filtered at all.
          */
-        $kept = Helpers::rejectServerOwnedParams( array(
+        $kept = Helpers::admitRequestParams( array(
             'ip_address' => '1.2.3.4',
             'timestamp'  => '999',
             'is_robot'   => '0',
@@ -76,7 +76,7 @@ final class ServerOwnedPropertyTest extends TestCase
          *     List, so accepting one lets a request forge the visitor's
          *     resolved hostname.
          */
-        $kept = Helpers::rejectServerOwnedParams( array(
+        $kept = Helpers::admitRequestParams( array(
             'country' => 'India',
             'city'    => 'Ludhiana',
             'state'   => 'Punjab',
@@ -89,30 +89,31 @@ final class ServerOwnedPropertyTest extends TestCase
             . 'tracking request may set are the ones the tracker sends.' );
     }
 
-    public function testUnregisteredPropertiesPassThrough(): void
+    /**
+     * An unregistered property is REFUSED, which is the opposite of what this
+     * asserted.
+     *
+     * The gate was a denylist: it refused the names the server computed and let
+     * everything else through, and its own note said so -- "it does not
+     * restrict what a site may send". So it was open for exactly the inputs
+     * nobody had thought about. admitRequestParams() admits two things: a name
+     * some event declares and a client may set, and a custom value under one of
+     * the four prefixes.
+     *
+     * A site's own values are as free as they ever were. They just have to say
+     * which bag they are in, which the tracker already does.
+     */
+    public function testAnUnregisteredPropertyIsRefused(): void
     {
-        /*
-         * This refuses to let a request OVERWRITE a derivation; it does not
-         * restrict what a site may send. Custom variables and event parameters
-         * are unaffected, and so is anything a module has not registered.
-         *
-         * The custom variable here is the SLOT. cv1_name is not a slot -- it is
-         * the half the server produces by splitting one, so it is server owned
-         * and rejected. Naming it here was the mistake this comment now
-         * prevents: the split halves were only ever settable because they had
-         * been merged into the regular map.
-         */
-        $kept = Helpers::rejectServerOwnedParams( array(
-            'site_id'      => 'abc',
-            'cv1'          => 'plan=pro',
-            'anything_new' => 'value',
-        ) );
-
-        $this->assertCount( 3, $kept );
+        $this->assertSame( array(), Helpers::admitRequestParams( array(
+            'nobody_declared_this' => 'x',
+            'cv1_name'             => 'forged',
+        ) ), 'the gate is an allowlist; an undeclared name has no way in' );
 
         $this->assertSame(
-            array(), Helpers::rejectServerOwnedParams( array( 'cv1_name' => 'forged' ) ),
-            'The split half of a custom variable is derived, not settable.' );
+            array( 'ep_plan' => 'pro', 'cv1' => 'k|v' ),
+            Helpers::admitRequestParams( array( 'ep_plan' => 'pro', 'cv1' => 'k|v' ) ),
+            'a custom value and an older generation\'s slot are both still admitted' );
     }
 
     public function testTheTwoEnforcementPointsShareOneDefinition(): void
@@ -126,12 +127,16 @@ final class ServerOwnedPropertyTest extends TestCase
 
         $this->assertNotEmpty( $serverOwned );
 
-        foreach ( array( 'is_browser', 'is_robot', 'ip_address', 'timestamp' ) as $name ) {
+        foreach ( array( 'browser', 'country', 'ip_address', 'timestamp' ) as $name ) {
 
             $this->assertArrayHasKey( $name, $serverOwned );
         }
 
-        foreach ( array( 'country', 'city', 'state', 'host', 'full_host' ) as $name ) {
+        /*
+         * full_host is gone with the v1 handlers that read it -- the reverse-DNS
+         * name reached no raw column and no cube pass. host, which does, stays.
+         */
+        foreach ( array( 'country', 'city', 'state', 'host' ) as $name ) {
 
             $this->assertArrayHasKey(
                 $name, $serverOwned,

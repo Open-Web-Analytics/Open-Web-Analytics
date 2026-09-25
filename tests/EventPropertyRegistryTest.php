@@ -61,54 +61,36 @@ final class EventPropertyRegistryTest extends TestCase
             'These are cube-pass readings. Offering one as a condition property produces a '
           . 'goal that saves cleanly and can never fire, which is how this installation '
           . 'acquired nine of them.');
-    }
-
-    /**
-     * An empty `events` list means NO event, not every event.
-     *
-     * Asserted against the declared config rather than a synthetic one, so it
-     * fails if a reading ever loses its empty list -- which is the realistic
-     * regression. It does NOT distinguish isset() from array_key_exists() in
-     * the reader: isset([]) is true, so both spellings agree here. The case
-     * they disagree on is a declared null, which nothing declares.
-     */
-    public function testAnEmptyEventListIsNotReadAsUniversal(): void
-    {
-        $declared = json_decode(
-            (string) file_get_contents(OWA_DIR . 'modules/Base/config/tracking_properties.json'), true);
-
-        $empty = [];
-
-        foreach (['request', 'client', 'server'] as $scope) {
-            foreach ((array) $declared[$scope] as $name => $definition) {
-                if (array_key_exists('events', $definition) && $definition['events'] === []) {
-                    $empty[] = $name;
-                }
-            }
-        }
-
-        $this->assertNotEmpty($empty, 'nothing declares an empty list, so this proves nothing');
 
         /*
-         * And the entries are still REGISTERED, which is the other half of
-         * what an empty list means. Deleting them to say "no event carries
-         * this" would also remove them from serverOwnedProperties(), and a
-         * request could then set its own `source` -- so the empty list is the
-         * only way to state one fact without destroying the other.
+         * And they are not registered AT ALL now, which is the stronger state.
+         * They were kept as entries declaring an empty event list so that
+         * serverOwnedProperties() could refuse a request setting `source`
+         * directly; the allowlist refuses an unregistered name anyway, so the
+         * entries went with the derivations.
          */
-        foreach (['source', 'medium', 'campaign', 'ad', 'search_terms'] as $reserved) {
+        foreach (['source', 'medium', 'campaign', 'ad', 'search_terms'] as $reading) {
 
-            $this->assertSame([], Helpers::rejectServerOwnedParams([$reserved => 'forged']),
-                $reserved . ' became settable from the wire, so its registry entry is gone');
-        }
-
-        foreach (self::storableEvents() as $event) {
-            foreach ($empty as $name) {
-                $this->assertNotContains($name, Helpers::propertiesForEvent($event),
-                    $name . ' declares no events but is offered on ' . $event);
-            }
+            $this->assertSame([], Helpers::admitRequestParams([$reading => 'forged']),
+                $reading . ' is admissible from the wire');
         }
     }
+
+    /*
+     * testAnEmptyEventListIsNotReadAsUniversal WAS HERE, and the `events: []`
+     * marker it guarded is gone with it.
+     *
+     * The five cube-pass readings declared an empty list to say "no event
+     * carries this" while staying registered, because serverOwnedProperties()
+     * needed the entry to refuse a request that set `source` directly. The
+     * allowlist made that unnecessary -- an unregistered name is not admitted,
+     * so deleting the entry refuses it for a stronger reason than declaring it
+     * did -- and then the readings were deleted outright, because nothing at
+     * ingest computes them.
+     *
+     * So the registry means one thing again: absent is every event, a list is
+     * those events, and there is no third case.
+     */
 
     /** An event-specific property belongs to its event and not to others. */
     public static function eventSpecificProvider(): array

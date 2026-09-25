@@ -147,7 +147,14 @@ final class WireSurfaceEnumeratedTest extends TestCase
         $this->assertGreaterThan( 40, count( $this->emitted() ),
             'Far fewer beacon fields than expected -- the fixture is not being read.' );
 
-        $this->assertGreaterThan( 100, count( $this->declared() ),
+        /*
+         * The floor was 100 while the dead ingest derivations were still
+         * declared: the five cube-pass readings, the v1 handler inputs
+         * (page_uri, full_host, is_browser, is_robot, latitude, longitude,
+         * prior_page), the v1 date parts and the cv halves. 91 is the current
+         * vocabulary, and the guard still catches the config not being read.
+         */
+        $this->assertGreaterThan( 85, count( $this->declared() ),
             'Far fewer declared properties than expected -- the config is not being read.' );
     }
 

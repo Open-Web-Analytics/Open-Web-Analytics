@@ -15,10 +15,21 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * own current value -- the callback could not tell "the tracker sent this" from
  * "an earlier callback computed this".
  *
- * The tracker now reports tagged_*: what the landing URL claimed. The server
- * resolves the answer into the bare name. Because the split follows the scope
- * a property is registered in, the existing wire filter enforces it with no
- * special-casing -- server-scope names are simply not settable from a request.
+ * The tracker no longer reports tagged_* either. It sends landing_url, and the
+ * server parses the tags out of it -- TrackingEventHelpers::taggedValue(), with
+ * the parameter names coming from the per-Property `campaignKeys` setting.
+ *
+ * WHAT THIS FILE NO LONGER TESTS. Seven cases here drove resolveSource(),
+ * resolveMedium(), resolveSearchTerms(), resolveCampaign() and resolveAd(),
+ * asserting that a tag beats a referer, that a search referer is
+ * organic-search, that a bare visit is direct. Those functions are gone: the
+ * classification is the cube pass's now (SourceStep, MediumStep,
+ * SearchTermsStep), and CubeBuildTest asserts organic-search, direct and
+ * referral on BUILT ROWS -- the same behaviour, checked where it happens and
+ * against the value a report actually reads.
+ *
+ * What remains here is the WIRE GATE: a request may state a claim and may not
+ * state the answer. That is the half no other file covers.
  */
 final class TaggedAttributionTest extends TestCase
 {
@@ -56,7 +67,17 @@ final class TaggedAttributionTest extends TestCase
      */
     public function testTheAnswerIsNotSettableFromTheWire(): void
     {
-        $kept = Helpers::rejectServerOwnedParams( array(
+        /*
+         * Through admitRequestParams(), which is the gate log.php runs.
+         *
+         * It used to be rejectServerOwnedParams() -- a DENYLIST that refused
+         * the names the server computed and passed everything else. These six
+         * are not registered properties at all any more, because nothing
+         * derives them at ingest: the cube pass does. So a denylist would now
+         * let them straight through, while the allowlist refuses them for the
+         * stronger reason that nothing declares them as settable.
+         */
+        $kept = Helpers::admitRequestParams( array(
             'source'       => 'forged',
             'medium'       => 'forged',
             'campaign'     => 'forged',
@@ -70,91 +91,12 @@ final class TaggedAttributionTest extends TestCase
             'A request set the resolved attribution directly.' );
     }
 
-    public function testATaggedSourceWinsOverTheReferer(): void
-    {
-        $event = $this->event( array(
-            'tagged_source'   => 'Newsletter',
-            'session_referer' => 'https://www.google.com/search?q=widgets',
-        ) );
 
-        $this->assertSame( 'newsletter', Helpers::resolveSource( null, $event ),
-            'An explicit tag must beat a referer classification.' );
-    }
 
-    public function testAnUntaggedVisitIsClassifiedFromTheReferer(): void
-    {
-        $event = $this->event( array(
-            'session_referer' => 'https://www.example-blog.com/post',
-        ) );
 
-        $this->assertSame( 'example-blog.com', Helpers::resolveSource( null, $event ) );
-        $this->assertSame( 'referral', Helpers::resolveMedium( null, $event ) );
-    }
 
-    public function testASearchRefererIsOrganicSearchAndYieldsItsTerm(): void
-    {
-        $event = $this->event( array(
-            'session_referer' => 'https://www.google.com/search?q=blue+widgets',
-        ) );
 
-        $this->assertSame( 'organic-search', Helpers::resolveMedium( null, $event ) );
-        $this->assertSame( 'blue widgets', Helpers::resolveSearchTerms( null, $event ) );
-    }
 
-    /**
-     * A known engine that sent no term withheld it -- https referrers usually
-     * do -- which is a different fact from never having searched.
-     */
-    public function testAKnownEngineWithNoTermIsNotProvided(): void
-    {
-        $event = $this->event( array(
-            'session_referer' => 'https://www.google.com/search?hl=en',
-        ) );
-
-        $this->assertSame( '(not provided)', Helpers::resolveSearchTerms( null, $event ) );
-    }
-
-    public function testATaggedTermWinsOverTheReferer(): void
-    {
-        $event = $this->event( array(
-            'tagged_terms'    => 'Paid Widgets',
-            'session_referer' => 'https://www.google.com/search?q=organic+widgets',
-        ) );
-
-        $this->assertSame( 'paid widgets', Helpers::resolveSearchTerms( null, $event ) );
-    }
-
-    /**
-     * With no tag and no referer the declared defaults stand -- and 'direct' is
-     * the medium default, not something a callback returns.
-     */
-    public function testADirectVisitFallsThroughToTheDeclaredDefault(): void
-    {
-        $event = $this->event( array() );
-
-        $this->assertSame( 'direct', Helpers::resolveMedium( 'direct', $event ) );
-        $this->assertSame( '(not set)', Helpers::resolveSource( '(not set)', $event ) );
-    }
-
-    /**
-     * campaign, ad and ad_type have nothing to derive them from -- they exist
-     * only because a URL was tagged. They are registered anyway: they reached
-     * CampaignHandlers and AdHandlers on the wire for years while appearing in
-     * no property map, so nothing declared their type and the wire filter had
-     * no opinion about them.
-     */
-    public function testTheTagOnlyPropertiesAreCarriedFromTheirClaim(): void
-    {
-        $event = $this->event( array(
-            'tagged_campaign' => ' summer ',
-            'tagged_ad'       => ' creative-a ',
-            'tagged_ad_type'  => ' cpc ',
-        ) );
-
-        $this->assertSame( 'summer',     Helpers::resolveCampaign( null, $event ) );
-        $this->assertSame( 'creative-a', Helpers::resolveAd( null, $event ) );
-        $this->assertSame( 'cpc',        Helpers::resolveAdType( null, $event ) );
-    }
 
     /**
      * No dimension id is derived in the property pipeline at all.
