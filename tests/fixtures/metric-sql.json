@@ -1,12 +1,4 @@
 {
-    "actions": [
-        {
-            "kind": "aggregate",
-            "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'custom_event' THEN 1 ELSE 0 END)",
-            "alias": "actions"
-        }
-    ],
     "averageEngagementTime": [
         {
             "kind": "ratio",

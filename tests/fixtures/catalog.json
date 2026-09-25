@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 21,
-        "metricImplementations": 21,
+        "metricNames": 20,
+        "metricImplementations": 20,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 53,
@@ -9,34 +9,6 @@
         "accessorDimensionNames": 53
     },
     "metrics": {
-        "actions": [
-            {
-                "name": "actions",
-                "class": "base.configurableMetric",
-                "label": "Custom Events",
-                "group": "Site Usage",
-                "params": {
-                    "child_metrics": [],
-                    "column": "id",
-                    "condition": [
-                        "custom_event",
-                        "event_type"
-                    ],
-                    "data_type": "integer",
-                    "denominator": "",
-                    "description": "The number of custom events the site logged.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Site Usage",
-                    "label": "Custom Events",
-                    "metric_type": "count",
-                    "name": "actions",
-                    "numerator": "",
-                    "precision": "",
-                    "subtrahend_column": ""
-                }
-            }
-        ],
         "averageEngagementTime": [
             {
                 "name": "averageEngagementTime",

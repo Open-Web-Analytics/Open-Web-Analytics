@@ -134,21 +134,6 @@ return array(
             'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
         ),
 
-        /*
-         * Custom events -- 1.x called them actions, and track.action maps onto
-         * custom_event. The NAME and LABEL it carried are params paths, so a
-         * breakdown by them waits on that dimension kind; the count does not.
-         */
-        'actions' => array(
-            'label'       => 'Custom Events',
-            'description' => 'The number of custom events the site logged.',
-            'group'       => 'Site Usage',
-            'metric_type' => 'count',
-            'data_type'   => 'integer',
-            'column'      => 'id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'custom_event' ),
-        ),
-
         // ---- counting distinct things -----------------------------------
         /*
          * `session_id` ALONE, not paired with the visitor.
