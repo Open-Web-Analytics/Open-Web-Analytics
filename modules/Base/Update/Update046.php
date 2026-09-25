@@ -162,20 +162,45 @@ class Update046 extends \OWA\Core\Update {
      */
     private function dropColumns( array $columns ) {
 
-        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
 
         foreach ( $columns as $column ) {
 
-            if ( $this->dropCubeColumn( $column ) === false
-              || $this->dropColumnIfPresent( $raw, $column ) === false ) {
+            /*
+             * BY NAME, not through the entity -- the same reason restoreColumn()
+             * spells its types out.
+             *
+             * dropColumnIfPresent() and the CubeColumn trait both ask the entity
+             * for the column, and up() has just removed its declaration. Before
+             * Entity::getColumn() refused an undeclared name this returned null
+             * with a warning and the DDL happened to work anyway, so it passed
+             * on a database where the column was already gone and failed on one
+             * where it was not -- which is to say, on every real upgrade and no
+             * fresh install. The schema upgrade cycle is the only job that runs
+             * it.
+             */
+            foreach ( array_merge( array( $raw ),
+                      \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) as $table ) {
 
-                $this->e->notice( sprintf( 'Dropping %s failed', $column ) );
+                $existing = (array) $db->get_results( sprintf(
+                    "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
 
-                return false;
+                if ( ! $existing ) {
+
+                    continue;
+                }
+
+                if ( ! $db->query( sprintf( OWA_SQL_DROP_COLUMN, $table, $column ) ) ) {
+
+                    $this->e->notice( sprintf( 'Dropping %s.%s failed', $table, $column ) );
+
+                    return false;
+                }
             }
         }
 
-        return true;
+        return $this->clearCubeInstantColumns();
     }
 }
 
