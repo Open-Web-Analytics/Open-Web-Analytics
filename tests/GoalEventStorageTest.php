@@ -426,8 +426,172 @@ final class GoalEventStorageTest extends TestCase
         return $event;
     }
 
-    /* ---------------- funnels ---------------- */
+    /* ---------------- deleting ---------------- */
 
+    /**
+     * DELETING A GOAL EVENT DELETES ITS CONDITIONS.
+     *
+     * It did not. Entity::delete() removes one row from one table and nothing
+     * overrode it, so every goal event ever deleted left its conditions behind
+     * with nothing able to reach them: a condition row carries no site_id and no
+     * property_id, and is reachable only through its goal event.
+     *
+     * The count on the test install when it was found: 31 of 40 condition rows
+     * pointed at a goal event that no longer existed, left by e2e fixtures that
+     * create a goal and delete it. The reason nobody noticed is that an
+     * unreachable row is also an invisible one -- until one of those 64-bit ids
+     * collides with a new goal event's and a condition somebody deleted starts
+     * deciding what converts.
+     */
+    public function testDeletingAGoalEventDeletesItsConditions(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'begins', '/thanks' ),
+            array( 'medium', 'exact', 'organic-search' ),
+        ) );
+
+        $id = $goalEvent->get( 'id' );
+
+        $this->assertCount( 2, $this->conditionRowsFor( $id ),
+            'the fixture did not store its conditions, so this would pass on nothing' );
+
+        $goalEvent->delete( $id );
+
+        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+            'The goal event is gone and its conditions are still there -- unreachable, '
+            . 'because nothing but the goal event points at them.' );
+    }
+
+    /**
+     * ANY ROLE, not just the matching ones.
+     *
+     * loadConditions() filters by role, so a cascade written in terms of it
+     * would delete the match conditions and leave the start ones -- the same
+     * leak, narrower.
+     */
+    public function testTheCascadeTakesStartConditionsToo(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'exact', '/checkout' ),
+        ) );
+
+        $id = $goalEvent->get( 'id' );
+
+        $start = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $start->set( 'id', $start->generateId( 'goal_event_condition:' . $id . ':start' ) );
+        $start->set( 'goal_event_id', $id );
+        $start->set( 'sort_order', 9 );
+        $start->set( 'role', \OWA\Module\Base\Entity\GoalEvent::ROLE_START );
+        $start->set( 'condition_property', 'page_uri' );
+        $start->set( 'condition_operator', 'exact' );
+        $start->set( 'condition_value', '/cart' );
+        $start->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $start->create();
+
+        $this->createdConditions[] = $start->get( 'id' );
+
+        $this->assertCount( 2, $this->conditionRowsFor( $id ) );
+
+        $goalEvent->delete( $id );
+
+        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+            'A start condition survived the cascade.' );
+    }
+
+    /**
+     * DELETE BY A COLUMN OTHER THAN id CASCADES AS WELL.
+     *
+     * Entity::delete( $value, $col ) accepts any column, so a caller can remove
+     * every goal event belonging to a Property in one call. A cascade that only
+     * understood the id would leak on exactly the delete that removes the most
+     * rows.
+     */
+    public function testDeletingByPropertyIdCascades(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'exact', '/one' ),
+        ) );
+
+        $id = $goalEvent->get( 'id' );
+
+        $this->assertCount( 1, $this->conditionRowsFor( $id ) );
+
+        /*
+         * The Property really does own it -- makeGoalEventWithConditions sets
+         * property_id -- so this is the live shape and not an invented column.
+         */
+        $goalEvent->delete( $this->propertyId, 'property_id' );
+
+        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+            'Deleting by property_id left the conditions behind.' );
+    }
+
+    /**
+     * Update048 deletes the orphans that accumulated before the cascade existed,
+     * and ONLY those.
+     *
+     * The second half is the part worth asserting: a cleanup that also removed a
+     * live goal event's conditions would silently stop that goal converting, and
+     * the install would look tidy.
+     */
+    public function testTheCleanupTakesOrphansAndLeavesLiveConditions(): void
+    {
+        $live = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'exact', '/live' ),
+        ) );
+
+        $liveId = $live->get( 'id' );
+
+        // An orphan: a condition whose goal_event_id names nothing.
+        $orphan = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $orphanId = $orphan->generateId( 'goal_event_condition:orphan-probe:' . uniqid( '', true ) );
+        $orphan->set( 'id', $orphanId );
+        $orphan->set( 'goal_event_id', '9' . substr( (string) $orphanId, 1 ) );
+        $orphan->set( 'sort_order', 1 );
+        $orphan->set( 'condition_property', 'page_uri' );
+        $orphan->set( 'condition_operator', 'exact' );
+        $orphan->set( 'condition_value', '/orphan' );
+        $orphan->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $orphan->create();
+
+        $this->createdConditions[] = $orphanId;
+
+        $update = new \OWA\Module\Base\Update\Update048;
+
+        $this->assertTrue( $update->up(), 'the cleanup reported failure' );
+
+        $this->assertCount( 1, $this->conditionRowsFor( $liveId ),
+            'The cleanup deleted a live goal event\'s condition, which stops it converting.' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory(
+            'base.goal_event_condition' )->getTableName() );
+        $db->selectColumn( 'id' );
+        $db->where( 'id', $orphanId );
+
+        $this->assertSame( array(), (array) $db->getAllRows(),
+            'The orphan survived the cleanup.' );
+
+        // Idempotent: a second run finds nothing left to do.
+        $this->assertTrue( $update->up(), 'a second run of the cleanup failed' );
+
+        $this->assertCount( 1, $this->conditionRowsFor( $liveId ),
+            'The second run deleted the live condition.' );
+    }
+
+    /** The condition rows pointing at one goal event, by query, not by cache. */
+    private function conditionRowsFor( $goalEventId )
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory(
+            'base.goal_event_condition' )->getTableName() );
+        $db->selectColumn( 'id' );
+        $db->where( 'goal_event_id', $goalEventId );
+
+        return (array) $db->getAllRows();
+    }
+
+    /* ---------------- funnels ---------------- */
     /**
      * 1.x funnel steps are deliberately NOT migrated.
      *

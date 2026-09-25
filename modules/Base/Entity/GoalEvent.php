@@ -375,6 +375,94 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
+     * Delete this goal event AND the conditions that belong to it.
+     *
+     * Entity::delete() removes one row from one table, so every delete until
+     * now left the conditions behind with nothing able to reach them. Measured
+     * on the test install before the fix: 31 of 40 condition rows pointed at a
+     * goal event that no longer existed.
+     *
+     * ON THE ENTITY rather than in GoalEventDelete, because that controller is
+     * not the only caller: the e2e fixtures and GoalManager delete goal events
+     * too, and a cascade living in one of several callers is a cascade that
+     * happens sometimes.
+     *
+     * BY ANY COLUMN, because the inherited signature allows it. The ids are
+     * resolved first, so delete( $property_id, 'property_id' ) cascades as well
+     * as delete( $id ) does.
+     *
+     * CONDITIONS GO ONE AT A TIME, BY ID. GoalEventCondition is cachable, and
+     * Entity::delete() evicts the key it was given -- so a single
+     * delete( $goal_event_id, 'goal_event_id' ) would clear the wrong key and
+     * leave every condition still in cache under its own id.
+     *
+     * @param  mixed  $value
+     * @param  string $col
+     * @return bool
+     */
+    public function delete( $value = '', $col = 'id' ) {
+
+        if ( empty( $value ) ) {
+
+            $value = $this->get( 'id' );
+        }
+
+        foreach ( $this->conditionIdsFor( $col, $value ) as $condition_id ) {
+
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition->delete( $condition_id );
+        }
+
+        return parent::delete( $value, $col );
+    }
+
+    /**
+     * The condition ids belonging to whichever goal events ( $col, $value )
+     * names -- every role, which is why this is not loadConditions().
+     *
+     * @param  string $col
+     * @param  mixed  $value
+     * @return array
+     */
+    protected function conditionIdsFor( $col, $value ) {
+
+        if ( empty( $value ) ) {
+
+            return array();
+        }
+
+        $ids = array( $value );
+
+        if ( $col !== 'id' ) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $this->getTableName() );
+            $db->selectColumn( 'id' );
+            $db->where( $col, $value );
+
+            $ids = array_column( (array) $db->getAllRows(), 'id' );
+        }
+
+        $out = array();
+
+        foreach ( $ids as $id ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $entity->getTableName() );
+            $db->selectColumn( 'id' );
+            $db->where( 'goal_event_id', $id );
+
+            foreach ( (array) $db->getAllRows() as $row ) {
+
+                $out[] = $row['id'];
+            }
+        }
+
+        return $out;
+    }
+    /**
      * Did this event BEGIN the goal event?
      *
      * Separate from matchesEvent() because starting and completing are
