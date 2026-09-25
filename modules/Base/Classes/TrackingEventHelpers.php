@@ -1283,12 +1283,21 @@ class TrackingEventHelpers {
     }
 
 
+    /*
+     * GEO IS DERIVED FROM THE OBSERVED IP AND CANNOT BE SUPPLIED.
+     *
+     * All four of these opened by returning their own current value if it was
+     * truthy -- a client-override path, so a proxy could state a visitor's
+     * location and skip the lookup. It was unreachable twice over: none of the
+     * four declares client_settable, so admitRequestParams() refuses it at
+     * log.php, and LocationHandlers -- the v1 handler that read a supplied
+     * country -- is not registered.
+     *
+     * A branch guarding a capability with no way in reads like the capability
+     * exists. If supplying geo is wanted back it needs client_settable set,
+     * which is a decision about trust, not this branch restored.
+     */
     static function resolveCountry ( $country, $event ) {
-
-        // if country is set manually, use it
-        if ($country) {
-            return $country;
-        }
 
         $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
 
@@ -1296,11 +1305,6 @@ class TrackingEventHelpers {
     }
 
     static function resolveCity ( $city, $event ) {
-
-        // if city is set manually, use it
-        if ($city) {
-            return $city;
-        }
 
         $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
@@ -1311,22 +1315,12 @@ class TrackingEventHelpers {
 
     static function resolveCountryCode ( $country_code, $event ) {
 
-        // if country_code is set manually, use it
-        if ($country_code) {
-            return $country_code;
-        }
-
         $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
         return $location->getCountryCode();
     }
 
     static function resolveState ( $state, $event ) {
-
-        // if state is set manually, use it
-        if ($state) {
-            return $state;
-        }
 
         $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
 
