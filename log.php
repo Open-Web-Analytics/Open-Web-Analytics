@@ -115,10 +115,14 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
      * A property the server derives is refused by construction: it is not
      * client-settable, so it is not in the admitted set.
      */
-    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams(
+    $params = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::REQUEST_PRE,
         $service->request->getAllOwaParams() );
 
+    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams( $params );
+
     $event->setProperties( $params );
+
+    $event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::REQUEST_POST, $event );
 
     \OWA\Core\CoreAPI::logEvent($event->getEventType(), $event);
 

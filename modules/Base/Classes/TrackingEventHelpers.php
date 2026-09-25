@@ -393,6 +393,22 @@ class TrackingEventHelpers {
 
         $allowed = self::clientSettableProperties();
 
+        /*
+         * Plus the names the beacon compat layer renames on the way in. They
+         * are legitimate inbound names for an older generation, and three of
+         * the four are not registered properties at all -- they exist only as
+         * the FROM side of a rename, so nothing else can vouch for them.
+         *
+         * Missed on the first cut of this gate: the denylist it replaced passed
+         * anything unregistered, so those three arrived by accident and
+         * Compat::apply() renamed them. Refusing them here made the bridge
+         * unreachable without breaking a single test, because no test sent one.
+         */
+        foreach ( \OWA\Module\Base\Classes\Beacon\Compat::bridgedNames() as $bridged ) {
+
+            $allowed[ $bridged ] = true;
+        }
+
         $kept = array();
 
         foreach ( $params as $name => $value ) {

@@ -81,6 +81,13 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         // STAGE 2 - process incomming properties
 
+        /*
+         * Before any callback runs. The beacon compat layer normalises here, so
+         * every callback below sees the current shape and none of them needs to
+         * know an older one existed.
+         */
+        $this->event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::PROPERTY_PRE, $this->event );
+
         $properties = $s->getMap( 'tracking_properties_regular' );
 
         // there is no global input sanitization on tracking requests
@@ -134,6 +141,9 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         // re-apply sanitized properties to event.
         $this->event->setProperties( $sanitized_properties );
+
+        // Every property resolved, before the event is dispatched to handlers.
+        $this->event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::PROPERTY_POST, $this->event );
     }
 
     function post() {

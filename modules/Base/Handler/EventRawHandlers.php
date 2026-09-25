@@ -90,6 +90,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_HANDLED;
         }
 
+        /*
+         * One beacon, before it becomes rows. A listener here sees the event
+         * whole; after expand() there are three of them for a landing page_view
+         * and no single place that means "the beacon".
+         */
+        $event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::STORE_PRE, $event );
+
         $rows = $this->expand( $event );
 
         if ( ! $rows ) {
@@ -696,6 +703,19 @@ class EventRawHandlers extends \OWA\Core\Observer {
         $db->beginTransaction();
 
         foreach ( $rows as $row ) {
+
+            /*
+             * PER ROW, immediately before the INSERT, and the row is COMPLETE
+             * here -- deviceColumns() and taggedColumns() are merged, which they
+             * are not while row()'s literal is being built. A decision about the
+             * row belongs here and nowhere earlier.
+             *
+             * The event rides as context so a listener can read it without being
+             * able to swap it. Three rows from one landing page_view each reach
+             * this on their own facts, which is what lets a goal target
+             * session_start rather than the page view that materialised it.
+             */
+            $row = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::STORE_POST, $row, $event );
 
             $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
             $entity->setProperties( $row );

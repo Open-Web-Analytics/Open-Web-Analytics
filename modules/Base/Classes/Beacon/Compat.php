@@ -169,6 +169,27 @@ class Compat {
         return (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
     }
 
+    /**
+     * The names an older beacon uses that this layer renames on the way in.
+     *
+     * THE ALLOWLIST HAS TO ADMIT THESE OR THE BRIDGE CANNOT FIRE. apply() runs
+     * after the event is built, so a name it renames must survive the gate at
+     * log.php first -- and three of the four are not registered properties at
+     * all: `dsfs`, `dsps` and `email_address` exist only as the FROM side of a
+     * rename. The old gate was a denylist and passed anything unregistered, so
+     * they arrived by accident. Under an allowlist they have to be named, and
+     * this is the only place that knows they are legitimate.
+     *
+     * Read from the same index apply() reads, so the two cannot disagree about
+     * which names are bridged.
+     *
+     * @return string[]
+     */
+    public static function bridgedNames() {
+
+        return array_keys( self::renames() );
+    }
+
     public static function apply( $event ) {
 
         $applied = 0;
