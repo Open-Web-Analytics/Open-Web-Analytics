@@ -52,6 +52,28 @@ class EventRawHandlers extends \OWA\Core\Observer {
     const EVENT_PROPERTY_PREFIX = 'ep_';
     const USER_PROPERTY_PREFIX  = 'up_';
 
+    /**
+     * The numeric halves, as GA spells them `epn.` and `upn.`.
+     *
+     * A query string carries no types, so a value arrives as text whatever the
+     * site set. The prefix is the tracker saying which it meant, and it is the
+     * only way to tell 42 from a string that merely looks like one -- a
+     * version, a postcode, an order id with leading zeros.
+     */
+    const EVENT_PROPERTY_NUMBER_PREFIX = 'epn_';
+    const USER_PROPERTY_NUMBER_PREFIX  = 'upn_';
+
+    /**
+     * How many custom properties one event may carry, per scope.
+     *
+     * The tracker refuses a 26th at the setter, where an author can see it.
+     * This is the SECOND gate, because the tracker is not the only thing that
+     * can post to the endpoint -- and because params is one JSON column on a
+     * row already using most of MySQL's 65,535-byte limit, where an over-long
+     * row is refused outright rather than truncated.
+     */
+    const MAX_CUSTOM_PROPERTIES = 25;
+
 
     /**
      * @param object $event
@@ -493,19 +515,70 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * below, which are names the release knows. `up_` is the other half and
          * goes to the visitor store, not here.
          */
+        $custom = 0;
+
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
-            if ( strpos( (string) $key, self::EVENT_PROPERTY_PREFIX ) !== 0 ) {
+            $key = (string) $key;
+
+            /*
+             * The numeric prefix is tested FIRST, because 'ep_' is a prefix of
+             * nothing else but 'epn_' begins with neither -- test the shorter
+             * one first and `epn_plan` is read as an event property named
+             * `n_plan`, which is a real value under a name nobody set.
+             */
+            if ( strpos( $key, self::EVENT_PROPERTY_NUMBER_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::EVENT_PROPERTY_NUMBER_PREFIX ) );
+                $numeric = true;
+
+            } elseif ( strpos( $key, self::EVENT_PROPERTY_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::EVENT_PROPERTY_PREFIX ) );
+                $numeric = false;
+
+            } else {
 
                 continue;
             }
 
-            $name = substr( (string) $key, strlen( self::EVENT_PROPERTY_PREFIX ) );
+            if ( $name === '' || $value === null || $value === false || $value === '' ) {
 
-            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
-
-                $params[ $name ] = $value;
+                continue;
             }
+
+            if ( $custom >= self::MAX_CUSTOM_PROPERTIES ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'v2 ingest: refused custom event property "%s"; the cap is %d.',
+                    $name, self::MAX_CUSTOM_PROPERTIES ) );
+
+                continue;
+            }
+
+            $custom++;
+
+            /*
+             * A declared number that will not convert is DROPPED, not stored as
+             * text: the prefix is a claim about the type, and storing a string
+             * under it would make the claim unreliable for every reader that
+             * trusted it.
+             */
+            if ( $numeric ) {
+
+                if ( ! is_numeric( $value ) ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        'v2 ingest: custom event property "%s" is declared numeric and is not.',
+                        $name ) );
+
+                    continue;
+                }
+
+                $value = $value + 0;
+            }
+
+            $params[ $name ] = $value;
         }
 
         /*
@@ -840,17 +913,48 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
-            if ( strpos( (string) $key, self::USER_PROPERTY_PREFIX ) !== 0 ) {
+            $key = (string) $key;
+
+            // Longest prefix first; see the note in params().
+            if ( strpos( $key, self::USER_PROPERTY_NUMBER_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::USER_PROPERTY_NUMBER_PREFIX ) );
+                $numeric = true;
+
+            } elseif ( strpos( $key, self::USER_PROPERTY_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::USER_PROPERTY_PREFIX ) );
+                $numeric = false;
+
+            } else {
 
                 continue;
             }
 
-            $name = substr( (string) $key, strlen( self::USER_PROPERTY_PREFIX ) );
+            if ( $name === '' || $value === null || $value === false || $value === '' ) {
 
-            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
-
-                $incoming[ $name ] = (string) $value;
+                continue;
             }
+
+            if ( count( $incoming ) >= self::MAX_CUSTOM_PROPERTIES ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'v2 ingest: refused custom user property "%s"; the cap is %d.',
+                    $name, self::MAX_CUSTOM_PROPERTIES ) );
+
+                continue;
+            }
+
+            if ( $numeric && ! is_numeric( $value ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'v2 ingest: custom user property "%s" is declared numeric and is not.',
+                    $name ) );
+
+                continue;
+            }
+
+            $incoming[ $name ] = $numeric ? $value + 0 : (string) $value;
         }
 
         // Nothing set on this beacon, which is almost every beacon.

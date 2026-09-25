@@ -151,7 +151,14 @@ final class ServerOwnedPropertyTest extends TestCase
          */
         $source = file_get_contents( OWA_DIR . 'log.php' );
 
-        $this->assertStringContainsString( 'rejectServerOwnedParams', $source );
+        /*
+         * admitRequestParams(), not rejectServerOwnedParams(): the gate is an
+         * allowlist now. It subsumes the old refusal -- a server-computed
+         * property is not client-settable, so it is not admitted -- and closes
+         * the half the denylist left open, which was every name nobody had
+         * registered.
+         */
+        $this->assertStringContainsString( 'admitRequestParams', $source );
 
         $this->assertStringNotContainsString(
             '$event->setProperties($service->request->getAllOwaParams());', $source,

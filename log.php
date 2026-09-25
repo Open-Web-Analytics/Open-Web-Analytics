@@ -97,18 +97,25 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
     $event->setEventType(\OWA\Core\CoreAPI::getRequestParam('event_type'));
     /*
-     * Parameters naming a property the server computes are dropped here.
+     * Only parameters a request is ALLOWED to set reach the event.
      *
-     * A tracking request is untrusted input, and a property the server derives
-     * for itself is the server's to set: a request naming one must not be able
-     * to replace it. TrackingEventHelpers::serverOwnedProperties() is that
-     * list, assembled from what the modules register.
+     * A tracking request is untrusted input. This used to refuse the names the
+     * server computes for itself and let everything else through -- a denylist,
+     * and its own note said as much: unregistered names still passed. So the
+     * gate was open for exactly the inputs nobody had thought about, which is
+     * the shape of the mistake OWA already made once in the settings registry.
      *
-     * Unregistered names still pass through: this refuses to let a request
-     * OVERWRITE a derivation, it does not restrict what a site may send. Custom
-     * variables and event parameters are unaffected.
+     * Two things are admitted now and nothing else: a name some event declares
+     * it carries, which the tracking property registry states; and a custom
+     * value under one of the four scope/type prefixes -- ep_, epn_, up_, upn_
+     * -- with a legal name. A site's own keys stay unrestricted, because the
+     * prefix is a namespace rather than a list, so admitting them needs no
+     * knowledge of a site's keys. GA's `ep.` and `up.` work the same way.
+     *
+     * A property the server derives is refused by construction: it is not
+     * client-settable, so it is not in the admitted set.
      */
-    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::rejectServerOwnedParams(
+    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams(
         $service->request->getAllOwaParams() );
 
     $event->setProperties( $params );

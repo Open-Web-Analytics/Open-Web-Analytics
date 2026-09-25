@@ -352,6 +352,80 @@ class TrackingEventHelpers {
             self::clientSettableProperties() );
     }
 
+    /**
+     * The prefixes a site's own values arrive under.
+     *
+     * Scope and type live in the NAME, so these four are the whole custom
+     * surface -- and because they are a namespace rather than a list, a gate
+     * can admit them without knowing a single one of a site's keys. That is
+     * what makes an allowlist possible here at all; GA relies on exactly the
+     * same property of `ep.` and `up.`.
+     */
+    const CUSTOM_PREFIXES = array( 'ep_', 'epn_', 'up_', 'upn_' );
+
+    /** A custom name must survive becoming a JSON key; the tracker's rule. */
+    const CUSTOM_NAME_PATTERN = '/^[A-Za-z][A-Za-z0-9_]{0,39}$/';
+
+    /**
+     * Keep only what a request is ALLOWED to set.
+     *
+     * WHY THIS REPLACES A DENYLIST. rejectServerOwnedParams() refuses names
+     * the server computes and lets everything else through -- its own note
+     * said so: "Unregistered names still pass through: this refuses to let a
+     * request OVERWRITE a derivation, it does not restrict what a site may
+     * send." So any name nobody had registered reached the event, and the gate
+     * failed open for exactly the inputs nobody had thought about. OWA has
+     * made this mistake before, in the settings registry, for the same reason.
+     *
+     * Two things are admitted and nothing else:
+     *
+     *   - a name some event declares, which the property registry now states
+     *   - a custom value under one of the four prefixes, whose name is legal
+     *
+     * A site's own keys are therefore unrestricted, which is the freedom the
+     * denylist was protecting -- they simply have to say which bag they are
+     * in, which the tracker already does.
+     *
+     * @param  array $params
+     * @return array  the admitted subset
+     */
+    public static function admitRequestParams( array $params ) {
+
+        $allowed = self::clientSettableProperties();
+
+        $kept = array();
+
+        foreach ( $params as $name => $value ) {
+
+            $name = (string) $name;
+
+            if ( array_key_exists( $name, $allowed ) ) {
+
+                $kept[ $name ] = $value;
+
+                continue;
+            }
+
+            foreach ( self::CUSTOM_PREFIXES as $prefix ) {
+
+                if ( strpos( $name, $prefix ) !== 0 ) {
+
+                    continue;
+                }
+
+                if ( preg_match( self::CUSTOM_NAME_PATTERN,
+                        substr( $name, strlen( $prefix ) ) ) ) {
+
+                    $kept[ $name ] = $value;
+                }
+
+                continue 2;
+            }
+        }
+
+        return $kept;
+    }
+
     public static function rejectServerOwnedParams( array $params ) {
 
         $serverOwned = self::serverOwnedProperties();

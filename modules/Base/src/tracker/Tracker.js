@@ -3244,6 +3244,30 @@ class OWATracker  {
     static get EVENT_PROPERTY_PREFIX() { return 'ep_'; }
     static get USER_PROPERTY_PREFIX()  { return 'up_'; }
 
+    /**
+     * And the numeric halves, which GA spells `epn.` and `upn.`.
+     *
+     * THE TYPE IS IN THE NAME for the same reason the scope is: a query string
+     * has no numbers, so without a prefix every value arrives as text and
+     * `params` stores "42" where the site set 42. Nothing downstream can tell
+     * that from a string that merely looks numeric -- a version, a postcode,
+     * an order id with leading zeros -- so guessing at the far end is worse
+     * than being told at this one.
+     */
+    static get EVENT_PROPERTY_NUMBER_PREFIX() { return 'epn_'; }
+    static get USER_PROPERTY_NUMBER_PREFIX()  { return 'upn_'; }
+
+    /*
+     * THERE IS NO CAP HERE, deliberately. How many custom properties an event
+     * may carry is enforced at INGEST, because the tracker is not the only
+     * thing that can post to the endpoint and a limit only this file honours
+     * is a limit only well-behaved callers meet. It was implemented in both
+     * places first, which is worse than either: two numbers that can drift,
+     * and a client-side one that reads like a guarantee while guaranteeing
+     * nothing.
+     */
+
+
     /** Names must survive becoming a JSON key and then a column. */
     static get PROPERTY_NAME_PATTERN() { return /^[A-Za-z][A-Za-z0-9_]{0,39}$/; }
 
@@ -3270,7 +3294,17 @@ class OWATracker  {
             return;
         }
 
-        this.setGlobalEventProperty( OWATracker.EVENT_PROPERTY_PREFIX + name, String( value ) );
+        /*
+         * A JS number goes to the numeric prefix, as gtag routes one to
+         * `epn.`. NaN and Infinity are NOT numbers here: neither survives
+         * JSON, so both would arrive as null and read as absence.
+         */
+        var numeric = typeof value === 'number' && isFinite( value );
+
+        var key = ( numeric ? OWATracker.EVENT_PROPERTY_NUMBER_PREFIX
+                            : OWATracker.EVENT_PROPERTY_PREFIX ) + name;
+
+        this.setGlobalEventProperty( key, numeric ? value : String( value ) );
     }
 
     /**
@@ -3299,7 +3333,17 @@ class OWATracker  {
             return;
         }
 
-        this.setGlobalEventProperty( OWATracker.USER_PROPERTY_PREFIX + name, String( value ) );
+        /*
+         * A JS number goes to the numeric prefix, as gtag routes one to
+         * `upn.`. NaN and Infinity are NOT numbers here: neither survives
+         * JSON, so both would arrive as null and read as absence.
+         */
+        var numeric = typeof value === 'number' && isFinite( value );
+
+        var key = ( numeric ? OWATracker.USER_PROPERTY_NUMBER_PREFIX
+                            : OWATracker.USER_PROPERTY_PREFIX ) + name;
+
+        this.setGlobalEventProperty( key, numeric ? value : String( value ) );
     }
 
     /**
