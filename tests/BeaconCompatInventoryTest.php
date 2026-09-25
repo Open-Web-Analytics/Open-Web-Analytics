@@ -157,7 +157,16 @@ final class BeaconCompatInventoryTest extends TestCase
             $checked++;
         }
 
-        $this->assertGreaterThan( 5, $checked,
+        /*
+         * Four now, down from eight: the renames and the URL chain moved into
+         * the layer, and the flag fallback was removed with the flag. What is
+         * left is the two value-encoding coercions and the two callbacks that
+         * return an older tracker's value unchanged.
+         *
+         * A floor rather than an exact count, so moving one more INTO the layer
+         * does not fail this -- but dropping the needles silently does.
+         */
+        $this->assertGreaterThanOrEqual( 4, $checked,
             'too few code bridges checked; the index has probably lost its needles' );
     }
 

@@ -115,23 +115,24 @@ return array(
     'indexed' => array(
 
         /*
-         * The page-scoped flag standing in for the request-scoped one, on
-         * trackers cached from before the two were split.
+         * THE FLAG FALLBACK IS GONE, and it is worth saying why rather than
+         * just deleting the entries.
          *
-         * Open-coded because it cannot be declared (see above), and applied in
-         * only TWO of the three readers ON PURPOSE. `is_new_session` rides
-         * every event of the landing PAGE, so using it to raise a marker would
-         * write one session_start per event of that page. Both sites that DO
-         * fall back are ones where a wrong "yes" is harmless: a session create
-         * falls through to an update, and the tagged columns want every landing
-         * event to keep a copy. EventRawHandlers::rows() deliberately has no
-         * fallback, and a pre-split tracker therefore gets no marker row --
-         * an accepted loss, because the alternative is duplicates.
+         * is_new_session (page-scoped) stood in for is_new_session_start
+         * (request-scoped) on trackers cached from before the two were split.
+         * It could not be sequestered here, because page-scoped to
+         * request-scoped is lossy: every event of the landing page carries the
+         * page-scoped flag, so a rename would raise one session_start marker
+         * per event of it.
+         *
+         * The pair no longer exists. v1's session listener was the reason for
+         * the split -- it decided create-vs-update on the flag -- and v2
+         * materialises a session_start EVENT from the request-scoped one alone.
+         * So the tracker sends one flag, the twin is removed, and the bridge
+         * has nothing left to bridge. A tracker cached from before this sends
+         * neither and gets no marker, which was already the outcome.
+         *
          */
-        array( 'kind' => 'flag_fallback', 'from' => 'is_new_session', 'to' => 'is_new_session_start',
-               'in' => 'modules/Base/Handler/SessionHandlers.php', 'needle' => "is_new_session'" ),
-        array( 'kind' => 'flag_fallback', 'from' => 'is_new_session', 'to' => 'is_new_session_start',
-               'in' => 'modules/Base/Handler/EventRawHandlers.php', 'needle' => "is_new_session' )" ),
 
         /*
          * Value ENCODINGS, where a value counting from zero was sent as a

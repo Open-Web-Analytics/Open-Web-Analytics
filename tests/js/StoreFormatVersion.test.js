@@ -167,7 +167,7 @@ describe('persisted store format version', () => {
 
         expect(beacon.visitor_id).toBeTruthy();
         expect(beacon.visitor_id).not.toBe(SEEDED_VID);
-        expect(beacon.is_new_visitor).toBeTruthy();
+        expect(beacon.is_new_visitor_created).toBeTruthy();
     });
 
     test('the marker never reaches the beacon as a tracking property', () => {

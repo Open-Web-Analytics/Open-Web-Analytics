@@ -858,28 +858,16 @@ class TrackingEventHelpers {
         return $count === null ? $days : $count;
     }
 
-    /**
-     * Is this session's visitor a returning one?
+    /*
+     * setRepeatVisitorFlag() was here, and resolveEntryPage() below it.
      *
-     * Returns a BOOLEAN both ways. It used to return true for a repeat visitor
-     * and fall off the end for a new one, so the "false" case was NULL -- and
-     * `is_repeat_visitor` is a required derived property, so every new
-     * visitor's session stored NULL rather than 0.
-     *
-     * That is not merely untidy. NULL and 0 are two distinct values for a
-     * two-state fact, so anything GROUPing on the column got three buckets and
-     * reported "No" twice.
-     *
-     * v2 does not group on it at all: the cube stamps a `new_vs_returning`
-     * label and `newVsReturning` reads that column, so the three-bucket problem
-     * has no reader left. This flag is still written -- it is v1's session
-     * column and the migrator will read it -- so it still has to be a boolean
-     * both ways.
+     * Both derived a v1 column from a flag the tracker no longer sends --
+     * is_repeat_visitor from is_new_visitor, is_entry_page from
+     * is_new_session. Removed with their inputs rather than left computing:
+     * `! $event->get('is_new_visitor')` on an absent flag is `! false`, so
+     * every session would have been marked a repeat visit, and every page a
+     * non-entry. Wrong data is worse than a missing column.
      */
-    static function setRepeatVisitorFlag( $flag, $event ) {
-
-        return ! $event->get( 'is_new_visitor' );
-    }
 
     static function deriveYear( $year, $event ) {
 
@@ -1438,10 +1426,6 @@ class TrackingEventHelpers {
 
     }
 
-    static function resolveEntryPage( $is_entry_page, $event ) {
-	    
-        return $event->get('is_new_session') ? true : false;
-    }
 
     static function resolveCountry ( $country, $event ) {
 

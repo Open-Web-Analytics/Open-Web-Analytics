@@ -399,8 +399,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * each keeps its own copy, since a build reads whichever of them it
          * finds first.
          */
-        $is_landing = $event->get( 'is_new_session_start' )
-                   || $event->get( 'is_new_session' );
+        // ONE FLAG. The page-scoped twin used to be ORed in so every event of
+        // the landing page kept a copy of the tags -- redundant, because the
+        // pass spreads them: Columns::SESSION reads tagged_* through
+        // FIRST_VALUE over the session, so one tagged row is enough.
+        $is_landing = $event->get( 'is_new_session_start' );
 
         if ( ! $is_landing ) {
 
@@ -822,8 +825,14 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function writeVisitorAcquisition( $event, $row ) {
 
-        $is_first_session = $event->get( 'is_new_visitor' )
-                         || (string) $event->get( 'num_prior_sessions' ) === '0';
+        /*
+         * prior_sessions == 0 alone. The session-scoped is_new_visitor flag
+         * said the same thing and was ORed in for robustness -- ANY event of
+         * the first session may write this row -- but that robustness is what
+         * this half already gives: the count rides every beacon, so losing one
+         * still leaves the rest able to write the acquisition.
+         */
+        $is_first_session = (string) $event->get( 'num_prior_sessions' ) === '0';
 
         if ( ! $is_first_session ) {
 

@@ -149,14 +149,14 @@ describe('isNewSession (sessionLength expiry boundary)', () => {
 
 describe('setVisitorId', () => {
 
-    test('mints a visitor id and flags is_new_visitor when none is stored', () => {
+    test('mints a visitor id and raises the visitor-created flag when none is stored', () => {
         const t = newTracker();
 
         t.setVisitorId(eventAt(NOW), null);
 
         const vid = OWA.getState('v', 'vid');
         expect(vid).toBeTruthy();
-        expect(OWA.getState('s_session-site', 'is_new_visitor')).toBe(true);
+        expect(t.pendingVisitorCreated).toBe(true);
         // The freshly minted id is persisted for the next visit.
         expect(OWA.getState('v', 'vid')).toBe(vid);
     });
@@ -168,7 +168,6 @@ describe('setVisitorId', () => {
         t.setVisitorId(eventAt(NOW), null);
 
         expect(OWA.getState('v', 'vid')).toBe('existing-vid-123');
-        expect(OWA.getState('s_session-site', 'is_new_visitor')).toBeFalsy();
     });
 
     test('migrates a legacy bare-string v store into v.vid without counting a new visitor', () => {
@@ -181,7 +180,6 @@ describe('setVisitorId', () => {
 
         expect(OWA.getState('v', 'vid')).toBe('legacy-bare-guid');
         // A migrated id is a returning visitor, not a new one.
-        expect(OWA.getState('s_session-site', 'is_new_visitor')).toBeFalsy();
         // ...and it is rehomed under the modern v.vid key.
         expect(OWA.getState('v', 'vid')).toBe('legacy-bare-guid');
     });
@@ -205,7 +203,6 @@ describe('setSessionId', () => {
         t.setSessionId(eventAt(NOW), null);
 
         expect(OWA.getState('s_session-site', 'sid')).toBeTruthy();
-        expect(OWA.getState('d', 'is_new_session')).toBe(true);
         expect(t.isNewSessionFlag).toBe(true);
 
         // The id lives in the store and is what rides events. It used to be
@@ -230,7 +227,6 @@ describe('setSessionId', () => {
         expect(OWA.getState('s_session-site', 'prior_session_id')).toBe('old-session-id');
         // A brand new session id replaced the old one.
         expect(OWA.getState('s_session-site', 'sid')).not.toBe('old-session-id');
-        expect(OWA.getState('d', 'is_new_session')).toBe(true);
     });
 
     test('the prior session id rides the event that started the new session', () => {
@@ -280,63 +276,19 @@ describe('setSessionId', () => {
         t.setSessionId(eventAt(NOW), null);
 
         expect(OWA.getState('s_session-site', 'sid')).toBe('active-session-1');
-        expect(OWA.getState('d', 'is_new_session')).toBeFalsy();
     });
 });
 
-describe('is_new_visitor has session lifetime', () => {
-
-    /*
-     * It says this session was the visitor's FIRST, not that this request
-     * minted them. As a per-page global it vanished on the next page, so the
-     * server derived is_repeat_visitor = true on page two of a visitor's very
-     * first session -- while the session row it had just written still said
-     * is_new_visitor. The store's lifetime is what makes the two agree.
-     */
-
-    test('it survives into a later page of the same session', () => {
-        seedPersistedSession({
-            sid: 'first-session',
-            last_req: NOW,
-            is_new_visitor: true,
-        });
-        OWA.setState('v', 'vid', 'known-visitor');
-        const t = newTracker();
-        OWA.setState('s_session-site', 'last_req', NOW);
-
-        t.setVisitorId(eventAt(NOW), null);
-        t.setSessionId(eventAt(NOW), null);
-
-        const event = new OwaEvent();
-        t.addGlobalPropertiesToEvent(event);
-
-        expect(event.get('is_new_session')).toBeFalsy();
-        expect(event.get('is_new_visitor')).toBe(true);
-    });
-
-    test('but not into the visitor\'s NEXT session', () => {
-        // The boundary discards the persisted store, so a known visitor
-        // starting a second session is not flagged as new.
-        seedPersistedSession({
-            sid: 'old-session',
-            last_req: NOW - 5000,
-            is_new_visitor: true,
-        });
-        OWA.setState('v', 'vid', 'known-visitor');
-        const t = newTracker();
-        OWA.setState('s_session-site', 'last_req', NOW - 5000);
-
-        t.setVisitorId(eventAt(NOW), null);
-        t.setSessionId(eventAt(NOW), null);
-
-        const event = new OwaEvent();
-        t.addGlobalPropertiesToEvent(event);
-
-        expect(event.get('is_new_session')).toBe(true);
-        expect(event.get('is_new_visitor')).toBeFalsy();
-    });
-});
-
+/*
+ * "is_new_visitor has session lifetime" was here.
+ *
+ * The flag is gone. It said this SESSION was the visitor's first -- a
+ * session-scoped restatement of a per-request fact -- and existed so v1 could
+ * derive is_repeat_visitor. v2 materialises a first_visit EVENT from the
+ * request-scoped is_new_visitor_created, and the one thing that still wanted
+ * the session-scoped answer, writing the visitor's acquisition from any event
+ * of the first session, reads prior_sessions == 0 instead.
+ */
 describe('the two session-start flags have different lifetimes', () => {
 
     /*
@@ -364,20 +316,6 @@ describe('the two session-start flags have different lifetimes', () => {
 
         expect(beacons[0].is_new_session_start).toBe(true);
         expect(beacons[1].is_new_session_start).toBeFalsy();
-    });
-
-    test('...while every event from that page carries is_new_session', () => {
-        const t = newTracker();
-        const beacons = [];
-        t.logEvent = (p) => beacons.push({ ...p });
-
-        t.trackPageView(location.href);
-        const later = t.makeEvent();
-        later.setEventType('track.action');
-        t.trackEvent(later);
-
-        expect(beacons[0].is_new_session).toBe(true);
-        expect(beacons[1].is_new_session).toBe(true);
     });
 
     test('a second pageview on the same page does not re-declare the start', () => {
@@ -438,9 +376,13 @@ describe('the visitor-created flag belongs to one event', () => {
 
         expect(beacons[0].is_new_visitor_created).toBe(true);
         expect(beacons[1].is_new_visitor_created).toBeFalsy();
-        // ...while the session-scoped one rides both.
-        expect(beacons[0].is_new_visitor).toBe(true);
-        expect(beacons[1].is_new_visitor).toBe(true);
+
+        // And no session-scoped twin rides alongside it. There used to be one,
+        // restating the same fact for every event of the first session; v2
+        // materialises first_visit from the flag above and derives everything
+        // session-wide in the pass.
+        expect(beacons[0].is_new_visitor).toBeUndefined();
+        expect(beacons[1].is_new_visitor).toBeUndefined();
     });
 
     test('a known visitor starting a new session does not get it', () => {
@@ -772,7 +714,6 @@ describe('setLastRequestTime', () => {
 
         t.setSessionId(eventAt(NOW), null);
 
-        expect(OWA.getState('d', 'is_new_session')).toBeFalsy();
         expect(OWA.getState('s_session-site', 'sid')).toBe('live-session');
     });
 });

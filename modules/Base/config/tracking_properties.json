@@ -165,17 +165,6 @@
             "data_type": "integer",
             "default_value": false
         },
-        "is_new_visitor": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false
-        },
-        "is_new_session": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false,
-            "note": "PAGE scoped: every event from the page the session started on carries it. Decides is_entry_page, and is the fallback for is_new_session_start on trackers cached from before the two were split."
-        },
         "is_new_session_start": {
             "required": true,
             "data_type": "boolean",
@@ -646,14 +635,6 @@
                 "owa_trackingEventHelpers::derivePageUri"
             ]
         },
-        "is_repeat_visitor": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false,
-            "callbacks": [
-                "owa_trackingEventHelpers::setRepeatVisitorFlag"
-            ]
-        },
         "full_host": {
             "required": true,
             "callbacks": [
@@ -705,15 +686,6 @@
                 "owa_trackingEventHelpers::resolveOs"
             ],
             "default_value": "(unknown)"
-        },
-        "is_entry_page": {
-            "required": true,
-            "data_type": "boolean",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveEntryPage"
-            ],
-            "default_value": false,
-            "note": "A second guard only: required + default_value false already turns the null this callback returns into false. The type matters if either of those is ever removed -- which is how is_repeat_visitor wrote NULL from 2015, back when a falsy default_value was skipped by a truthy test."
         },
         "country": {
             "required": true,

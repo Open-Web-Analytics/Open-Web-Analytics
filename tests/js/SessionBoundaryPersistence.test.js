@@ -97,7 +97,7 @@ describe('crossing a session boundary', () => {
         t.logEvent = (p) => beacons.push({ ...p });
         t.trackPageView('https://example.com/second');
 
-        expect(beacons[0].is_new_session).toBe(true);
+        expect(beacons[0].is_new_session_start).toBe(true);
         expect(beacons[0].last_req).toBe(aged.last_req);
         expect(beacons[0].prior_session_id).toBe(first.sid);
     });
@@ -168,7 +168,7 @@ describe('crossing a session boundary', () => {
         t.logEvent = (p) => beacons.push({ ...p });
         t.trackPageView('https://example.com/second');
 
-        expect(beacons[0].is_new_session).toBe(true);
+        expect(beacons[0].is_new_session_start).toBe(true);
         expect(beacons[0].cv1).toBeFalsy();
         expect(OWA.getState('s_boundary-site', 'cv1')).toBeFalsy();
     });

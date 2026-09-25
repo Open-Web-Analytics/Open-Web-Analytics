@@ -99,7 +99,6 @@ class OWATracker  {
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
 		    prior_session_id:        { scope: 'session', permanent: false },
-		    is_new_visitor:          { scope: 'session', permanent: false },
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
 		    session_referer:         { scope: 'session', permanent: false },
@@ -111,7 +110,6 @@ class OWATracker  {
 
 		    // Rewritten every page load.
 		    last_req:                { scope: 'page',    permanent: false },
-		    is_new_session:          { scope: 'page',    permanent: false },
 		    page_url:                { scope: 'page',    permanent: false },
 		    page_title:              { scope: 'page',    permanent: false },
 		    page_type:               { scope: 'page',    permanent: false },
@@ -136,30 +134,32 @@ class OWATracker  {
 	     * sent. Distinct from is_new_session, which is page-scoped and rides
 	     * every event from the session's first page:
 	     *
-	     *   is_new_session_start  this REQUEST created the session. True for
-	     *                         exactly one event, which is what a server
-	     *                         deciding create-vs-update needs.
-	     *   is_new_session        this event happened on the page where the
-	     *                         session started. True for all of them, which
-	     *                         is what a per-event dimension needs.
+	     * True for exactly one beacon, which is what materialising a
+	     * session_start event needs.
 	     *
-	     * One flag cannot answer both, and it was answering the second while
-	     * being read as the first -- so a second trackPageView() on the same
-	     * page re-entered logSession() for a session that already existed.
+	     * THE PAGE-SCOPED TWIN IS GONE. is_new_session rode every event from
+	     * the session's first page, and existed because v1's session listener
+	     * decided create-vs-update on it -- badly, since "we are on the landing
+	     * page" is true several times, so a second trackPageView() re-entered
+	     * logSession() for a session that already existed. Splitting the two
+	     * fixed that; removing v1's listener removes the need for a second flag
+	     * at all.
+	     *
+	     * Nothing session-scoped is sent as a flag now. The tracker reports the
+	     * EVENT -- this request started a session -- and the pass spreads what
+	     * belongs to the whole session across its rows.
 	     */
 	    this.pendingSessionStart = false;
 	    /*
 	     * The visitor half of the same pair, and the same distinction:
 	     *
-	     *   is_new_visitor_created  this REQUEST minted the visitor. One event.
-	     *   is_new_visitor          this SESSION was the visitor's first. Every
-	     *                           event of it.
+	     * This REQUEST minted the visitor, true for one beacon, and first_visit
+	     * is materialised from it -- which is what GA does with its _fv flag.
 	     *
-	     * Nothing consumes the first one yet. It exists so v2 can raise a
-	     * first_visit event from the request that actually created the visitor,
-	     * which is what GA does with its _fv flag -- the session column and the
-	     * is_repeat_visitor dimension both want the session-scoped one, so
-	     * neither can answer "was this the moment". Do not remove it as unused.
+	     * Its session-scoped twin is gone too. The one thing that still wanted
+	     * it -- writing the visitor's acquisition from any event of the first
+	     * session -- reads prior_sessions == 0 instead, which rides every
+	     * beacon and says the same thing.
 	     */
 	    this.pendingVisitorCreated = false;
 	    // flag for whether or not traffic has been attributed
@@ -2921,22 +2921,6 @@ class OWATracker  {
         if ( ! visitor_id ) {
             visitor_id = Util.generateRandomGuid();
 
-            /*
-             * Session state: it says this session was the visitor's FIRST, not
-             * that this request minted them, and the store's lifetime is what
-             * makes that true.
-             *
-             * On a new session the persisted copy is discarded and memory kept,
-             * so a returning visitor's stale flag goes and a genuinely new
-             * one's survives. Written here, ahead of that discard, because
-             * setVisitorId runs before setSessionId in the chain.
-             *
-             * On a later page of the SAME session it hydrates back, which is
-             * the fix: as a per-page global it vanished, so the server derived
-             * is_repeat_visitor = true on page two of a visitor's very first
-             * session while the session row still said is_new_visitor.
-             */
-            OWA.setState( this.storeName('s'), 'is_new_visitor', true );
             this.pendingVisitorCreated = true;
             OWA.debug('Creating new visitor id');
         }
@@ -3170,7 +3154,6 @@ class OWATracker  {
             session_id = Util.generateRandomGuid();
             // it's a new session. generate new session ID
                //mark new session flag on current request
-            OWA.setState( 'd', 'is_new_session', true );
             this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( this.storeName('s'), 'sid', session_id, true );
@@ -3193,7 +3176,6 @@ class OWATracker  {
         if ( ! session_id ) {
             session_id = Util.generateRandomGuid();
             //mark new session flag on current request
-            OWA.setState( 'd', 'is_new_session', true );
             this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( this.storeName('s'), 'sid', session_id, true );
@@ -3417,7 +3399,6 @@ class OWATracker  {
             // no longer parses them itself.
             { store: 's', key: 'landing_url', name: 'landing_url' },
             { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
-            { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' },
             { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
         ];
