@@ -128,7 +128,7 @@ final class TemplateLatentVarTest extends TestCase
 
         // Two API links per tab: the trend (always sorted by date) then the grid.
         $this->assertSame(['date', 'sessions-'], array_column($t->apiCalls, 'sort'));
-        $this->assertStringContainsString("var dimurl = 'API?sort=visits-'", $out);
+        $this->assertStringContainsString("var dimurl = 'API?sort=sessions-'", $out);
         // Against the $tag typo this read 'API?sort=<none>'.
         $this->assertStringNotContainsString('sort=<none>', $out);
     }

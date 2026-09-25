@@ -784,88 +784,41 @@ class Module extends \OWA\Core\Module {
      */
     function _registerEventHandlers() {
 
-        // Page Requests
-        $this->registerEventHandler(array('base.page_request'), 'requestHandlers');
-        // Sessions
-        $this->registerEventHandler(array('base.page_request_logged'), 'sessionHandlers');
-        // Clicks
-        $this->registerEventHandler('dom.click', 'clickHandlers');
-        // Feed requests
-        $this->registerEventHandler('base.feed_request', 'feedRequestHandlers');
-
-        // actions
-        $this->registerEventHandler('track.action', 'actionHandler');
-
-        // ecommerce
-
-        // handles new ecommerce transactions
-        $this->registerEventHandler('ecommerce.transaction', 'commerceTransactionHandlers');
-
-        // updates session once ecommerce transactions are persisted
-        $this->registerEventHandler(array(
-                'ecommerce.transaction_persisted',
-                'ecommerce.async_transaction_persisted'),
-            'sessionCommerceSummaryHandlers'
-        );
-
-        $this->registerEventHandler('base.new_session', 'visitorUpdateHandlers');
-
-
-        // register standard dimension handlers to listen for events
-        // that populate fact tables.
-
-        // Note: ecommerce.async_transaction_persisted events are ommited here
-        // because it the event gets alll non ecommerce dimensional properties
-        // from a previously persisted session entity
-        $fact_events = array(
-            'base.page_request_logged',
-            'base.new_session',
-            'dom.stream_logged',
-            'dom.click_logged',
-            'track.action_logged',
-            'ecommerce.transaction_persisted'
-        );
-
-        $standard_dimension_handlers = array(
-            'refererHandlers',
-            'searchTermHandlers',
-            'osHandlers',
-            'sourceHandlers',
-            'campaignHandlers',
-            'adHandlers',
-            'userAgentHandlers',
-            'hostHandlers',
-            'visitorHandlers',
-            'locationHandlers'
-        );
-
-        foreach ($standard_dimension_handlers as $handler) {
-
-            $this->registerEventHandler($fact_events, $handler);
-        }
-
-        // Documents
-        $this->registerEventHandler(
-            array(
-                'base.page_request_logged',
-                'base.feed_request_logged',
-                'track.action',
-                'dom.stream',
-                'dom.click',
-                'ecommerce.transaction'
-            ),
-            'documentHandlers'
-        );
-
-        // Goal Conversions
-        $this->registerEventHandler(
-            array(
-                'base.new_session',
-                'base.session_update',
-                'ecommerce.transaction_persisted'
-            ),
-            'conversionHandlers'
-        );
+        /*
+         * THE v1 INGEST CHAIN WAS HERE, and this is 2.25 step 4.
+         *
+         * It was: base.page_request -> requestHandlers writes owa_request and
+         * raises base.page_request_logged -> sessionHandlers writes owa_session
+         * and raises base.new_session -> ten dimension handlers and the
+         * document, conversion, commerce and visitor-update handlers populate
+         * the star schema. Clicks, actions and feed requests ran their own
+         * copies of the same shape.
+         *
+         * NOTHING READ ITS OUTPUT. The v1 metric and dimension vocabularies are
+         * gone, so owa_request, owa_session, the dimension tables and the fact
+         * tables were write-only -- and it is not free to keep: the queue is a
+         * RETRY queue, reached when a handler returns EVENT_FAILED, and this
+         * install had accumulated 50 failures in two hours from a chain filling
+         * tables nobody queries.
+         *
+         * base.new_session, the one signal anything outside v1 wanted, is
+         * raised by Handler\EventRawHandlers::announce() now -- from the
+         * ingest that materialises the marker, one hop instead of three, and
+         * beside base.new_visitor and base.new_page_view. Both were raised
+         * twice while the two chains overlapped, which is what
+         * IngestAnnouncementsTest caught.
+         *
+         * WHAT GOES WITH IT, and is not replaced:
+         *   - GOAL CONVERSIONS. conversionHandlers evaluated them, and v2 never
+         *     materialises a goal event -- is_goal_event is written 0 on every
+         *     row. So keyEvents and the rates over it already answered zero
+         *     before this, and goal evaluation is a v2 gap either way.
+         *   - v1's tables stop being WRITTEN. They are not dropped: the
+         *     migrator reads them, and their history is the only copy of what
+         *     was collected before v2 ingest existed.
+         *
+         * git history has every handler if one is ever wanted.
+         */
 
         /*
          * Notification handler.

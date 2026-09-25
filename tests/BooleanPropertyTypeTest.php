@@ -28,8 +28,13 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 final class BooleanPropertyTypeTest extends TestCase
 {
     /** The three flags whose callback can fall off the end returning null. */
-    private const FLAGS = array( 'is_browser', 'is_robot', 'is_entry_page',
-                                 'is_repeat_visitor' );
+    /*
+     * is_entry_page and is_repeat_visitor were here. Both were v1 derivations
+     * reading flags the tracker no longer sends -- and removing the flags
+     * without them would have left each computing a wrong value rather than
+     * none, which is the defect this whole file is about.
+     */
+    private const FLAGS = array( 'is_browser', 'is_robot' );
 
     private function runPipeline( array $definition )
     {

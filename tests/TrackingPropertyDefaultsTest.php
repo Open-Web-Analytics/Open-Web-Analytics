@@ -93,23 +93,12 @@ final class TrackingPropertyDefaultsTest extends TestCase
             . implode(', ', $bad));
     }
 
-    /** is_new_visitor specifically -- the one that carried the typo. */
-    public function testIsNewVisitorDeclaresAUsableDefault(): void
-    {
-        $map = \OWA\Core\CoreAPI::serviceSingleton()->getMap('tracking_properties_regular');
-
-        $this->assertIsArray($map);
-        $this->assertArrayHasKey('is_new_visitor', $map);
-        $this->assertArrayHasKey('default_value', $map['is_new_visitor'],
-            "the key was ' default_value' with a leading space, so it never applied");
-    }
-
-    /**
-     * Defect 2: a falsy default is applied.
-     *
-     * No callbacks, no incoming value -- so the default is the only thing that
-     * can supply one.
+    /*
+     * testIsNewVisitorDeclaresAUsableDefault was here. The property is gone:
+     * v2 materialises a first_visit EVENT from the request-scoped
+     * is_new_visitor_created, and nothing wants a session-scoped restatement.
      */
+
     public function testAFalsyDefaultIsApplied(): void
     {
         $event = $this->event();

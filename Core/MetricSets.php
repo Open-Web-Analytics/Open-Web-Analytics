@@ -74,15 +74,15 @@ class MetricSets {
 
         $sets[ self::DEFAULT_KEY ] = array(
             'label'       => 'Site Usage',
-            'metrics'     => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-            'chartMetric' => 'visits',
+            'metrics'     => 'sessions,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
+            'chartMetric' => 'sessions',
         );
 
         if ( \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'enableEcommerceReporting' ) ) {
 
             $sets['ecommerce'] = array(
                 'label'       => 'e-commerce',
-                'metrics'     => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
+                'metrics'     => 'sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate',
                 'chartMetric' => 'transactions',
             );
         }
@@ -154,7 +154,7 @@ class MetricSets {
      */
     public static function goalGroupSet( $label, array $activeGoals ) {
 
-        $metrics = 'visits';
+        $metrics = 'sessions';
 
         foreach ( $activeGoals as $goal ) {
 
@@ -172,7 +172,7 @@ class MetricSets {
         return array(
             'label'       => $label,
             'metrics'     => $metrics,
-            'chartMetric' => 'visits',
+            'chartMetric' => 'sessions',
         );
     }
 

@@ -656,7 +656,71 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $db->endTransaction();
 
+        $this->announce( $event, $rows );
+
         return OWA_EHS_EVENT_HANDLED;
+    }
+
+    /**
+     * Tell anything that cares what just happened.
+     *
+     * AFTER THE COMMIT, deliberately. Raised inside the transaction, a beacon
+     * that then rolled back would still have announced a session that does not
+     * exist -- and an email is not retractable.
+     *
+     * SYNCHRONOUS, and it needs nothing else. EventDispatch::notify() calls the
+     * listeners in-process and logs "no listeners registered" when there are
+     * none, so an event nobody wants costs a array_key_exists and stops.
+     * asyncNotify() is a deprecated alias for exactly this.
+     *
+     * NOTHING ACCUMULATES. The queue is a RETRY queue, not a dispatch queue:
+     * notify() only calls sendMessage() when a handler returns EVENT_FAILED.
+     * So these raise no rows unless a listener actually fails, which is what
+     * the queue is for.
+     *
+     * WHY HERE AND NOT FROM v1. base.new_session used to be raised by v1's
+     * SessionHandlers, two hops downstream of the beacon -- page_request to
+     * page_request_logged to the session write to the announcement. Every hop
+     * was v1 machinery kept alive to deliver one signal. v2 knows all three
+     * facts at ingest, because it is what materialises the marker rows.
+     *
+     * The event carries the BEACON's properties, which is what the
+     * announcement templates read: visitor_id, user_name, host, city, country,
+     * page_title, page_url.
+     *
+     * @param object  $event the incoming tracking event
+     * @param array[] $rows  the rows just written, primary first
+     * @return void
+     */
+    protected function announce( $event, array $rows ) {
+
+        $names = array();
+
+        foreach ( $rows as $row ) {
+
+            $names[ (string) $row['event_type'] ] = true;
+        }
+
+        $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
+
+        $announcements = array(
+            \OWA\Module\Base\Classes\V2Event::MARKER_SESSION_START => 'base.new_session',
+            \OWA\Module\Base\Classes\V2Event::MARKER_FIRST_VISIT   => 'base.new_visitor',
+            'page_view'                                             => 'base.new_page_view',
+        );
+
+        foreach ( $announcements as $marker => $announcement ) {
+
+            if ( ! isset( $names[ $marker ] ) ) {
+
+                continue;
+            }
+
+            $notice = $dispatch->makeEvent( $announcement );
+            $notice->setProperties( $event->getProperties() );
+
+            $dispatch->notify( $notice );
+        }
     }
 
     /**

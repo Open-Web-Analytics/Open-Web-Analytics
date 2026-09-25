@@ -86,27 +86,24 @@ return array(
         array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'user_email' ),
 
         /*
-         * A COLLISION, kept so it is not rediscovered. `sid` is also the
-         * tracker's store key for the SESSION id -- sent on the wire as
-         * session_id, so the two do not meet. A beacon carrying a literal `sid`
-         * resolves it into feed_subscription_id, a value from a retired feature
-         * nothing has written since 2021. Left rather than removed, because
-         * removing it is a behaviour change on a path nobody can observe.
-         */
-        array( 'role' => 'legacy', 'from' => 'sid', 'to' => 'feed_subscription_id' ),
-
-        /*
-         * The complete URL. page_url is the CANONICAL form -- campaign
-         * parameters and the site's query_string_filters are stripped out of it
-         * -- so it cannot answer what the tags were a second time. A tracker
-         * cached before page_location shipped sends only page_url, and it is
-         * the last evidence there is; past that the query string is gone.
+         * `sid` -> feed_subscription_id was here, and it is REMOVED rather
+         * than kept.
          *
-         * This was a callback (keepCompleteUrl) plus a `?:` in the raw handler:
-         * the same rename, twice, in two mechanisms. Compat never overwrites a
-         * canonical the beacon already carries, which is exactly what both did.
+         * It bridged a feed subscription id, and feeds are retired -- nothing
+         * has written a feed request since 2021, and V2Event::NOT_EVENTS
+         * refuses the type outright. So the bridge could only ever fire for a
+         * value no live path produces.
+         *
+         * It was also a collision waiting to happen: `sid` is the tracker's
+         * store key for the SESSION id. The two do not meet today because the
+         * session goes on the wire as session_id, but any beacon carrying a
+         * literal `sid` would have had its session id resolved into a feed
+         * column. A bridge that can only misfire is worse than no bridge.
+         *
+         * feed_subscription_id itself stays declared, and the feed handler with
+         * it -- removing a retired feature is its own decision, not a side
+         * effect of tidying the compat layer.
          */
-        array( 'role' => 'legacy', 'from' => 'page_url', 'to' => 'page_location' ),
     ),
 
     /*

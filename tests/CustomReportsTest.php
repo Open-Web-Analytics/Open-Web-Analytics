@@ -246,17 +246,59 @@ final class CustomReportsTest extends TestCase
          * The guard still has work to do, so it is exercised with a set that
          * genuinely has no common table.
          */
-        $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,feedRequests';
+        /*
+         * THE SECOND TABLE IS BUILT, not borrowed.
+         *
+         * `sessions,feedRequests` was the example, and feedRequests is gone
+         * with the v1 vocabulary -- so the check now fails with "not a known
+         * metric", a different refusal that would let this test pass while the
+         * guard it names did nothing. Every metric v2 declares lives on the
+         * cube, so there is no longer a pair in the shipped vocabulary that
+         * shares no table.
+         *
+         * The guard still has work to do -- summary tables are coming, and
+         * ResultSetManager picks a table per summary level for exactly that
+         * reason -- so the condition is created rather than looked for.
+         */
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $restore = $service->metrics;
 
-        $error = CustomReports::validate($definition);
+        $service->metrics['probeOnAnotherTable'] = array( array(
+            'name'   => 'probeOnAnotherTable',
+            'class'  => 'base.configurableMetric',
+            'params' => array(
+                'name'        => 'probeOnAnotherTable',
+                'label'       => 'Probe',
+                'description' => '',
+                'group'       => 'Test',
+                'entity'      => 'base.session',
+                'metric_type' => 'count',
+                'data_type'   => 'integer',
+                'column'      => 'id',
+            ),
+            'label'       => 'Probe',
+            'description' => '',
+            'group'       => 'Test',
+        ) );
 
-        $this->assertNotSame('', $error, 'visits and feed requests share no table');
+        try {
+            $definition = $this->definition();
+            $definition['widgets'][1]['query']['metrics'] = 'sessions,probeOnAnotherTable';
 
-        // BOTH SIDES named: which field broke it, and what it clashed with.
-        // Listing everything asked for tells an author nothing to act on.
-        $this->assertStringContainsString('feedRequests', $error);
-        $this->assertStringContainsString('sessions', $error);
+            $error = CustomReports::validate($definition);
+
+            $this->assertNotSame('', $error,
+                'a cube metric and one on another table share no table');
+
+            // BOTH SIDES named: which field broke it, and what it clashed with.
+            // Listing everything asked for tells an author nothing to act on.
+            $this->assertStringContainsString('probeOnAnotherTable', $error);
+            $this->assertStringContainsString('sessions', $error);
+        } finally {
+            // The registry is a singleton; a probe left in it leaks into every
+            // later test in the run.
+            $service->metrics = $restore;
+        }
     }
 
     /**
@@ -296,18 +338,16 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         /*
-         * pagePath is on the request but not the session, so it decides which
-         * table answers -- it does not make the query impossible. The cube
-         * carries both, so it qualifies too: the assertion is what is IN the
-         * set, not that the set has one member, because the set grows as the
-         * cube takes over the vocabulary.
+         * ONE TABLE ANSWERS NOW, and the reduction still runs.
+         *
+         * base.request used to qualify alongside the cube -- v1 registered
+         * sessions and pagePath against it. With one vocabulary the set has one
+         * member, so what is asserted is that the reduction REACHES the
+         * dimension and does not empty on a legitimate pairing.
          */
         $entities = $rsm->compatibleEntities(array('sessions'), array('pagePath'));
 
-        $this->assertContains('base.request', $entities);
-        $this->assertContains('base.event', $entities);
-        $this->assertNotContains('base.session', $entities,
-            'the session has no pagePath, which is the point of the reduction');
+        $this->assertSame(array('base.event'), $entities);
 
         // ...and a dimension no fact table carries leaves nothing.
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
@@ -322,17 +362,42 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         /*
-         * `domClicks` was the offender here until the cube carried it beside
-         * visits. A set that still has no common table exercises the same
-         * reporting: it is the LAST name added that emptied the set, and the
-         * message names what it clashed with.
+         * THE CLASH IS BUILT. Every metric v2 declares lives on the cube, so
+         * the shipped vocabulary no longer contains a pair that clashes --
+         * looking for one would make this pass on an empty search rather than
+         * on the reporting it names.
          */
-        $clash = $rsm->firstIncompatible(array('sessions', 'totalUsers', 'feedRequests'));
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $restore = $service->metrics;
 
-        $this->assertNotNull($clash);
-        $this->assertSame('feedRequests', $clash['name'], 'the LAST one added is what broke it');
-        $this->assertSame('metric', $clash['kind']);
-        $this->assertContains('sessions', $clash['with']);
+        $service->metrics['probeOnAnotherTable'] = array( array(
+            'name'   => 'probeOnAnotherTable',
+            'class'  => 'base.configurableMetric',
+            'params' => array(
+                'name'        => 'probeOnAnotherTable',
+                'label'       => 'Probe',
+                'description' => '',
+                'group'       => 'Test',
+                'entity'      => 'base.session',
+                'metric_type' => 'count',
+                'data_type'   => 'integer',
+                'column'      => 'id',
+            ),
+            'label' => 'Probe', 'description' => '', 'group' => 'Test',
+        ) );
+
+        try {
+            $clash = $rsm->firstIncompatible(
+                array('sessions', 'totalUsers', 'probeOnAnotherTable'));
+
+            $this->assertNotNull($clash);
+            $this->assertSame('probeOnAnotherTable', $clash['name'],
+                'the LAST one added is what broke it');
+            $this->assertSame('metric', $clash['kind']);
+            $this->assertContains('sessions', $clash['with']);
+        } finally {
+            $service->metrics = $restore;
+        }
     }
 
     public function testACompatibleSetHasNoClash(): void
@@ -359,8 +424,10 @@ final class CustomReportsTest extends TestCase
 
         /*
          * The dimension is dropped for the metric-count cases so that only the
-         * COUNT is under test. Left in, a four-metric set including bounceRate
-         * fails for a different and correct reason -- bounceRate is measured on
+         * COUNT is under test, so every metric in the set has to be one that
+         * exists and shares a table -- otherwise the set fails for a different
+         * and correct reason and says nothing about the limit. bounceRate was
+         * here and has no v2 definition yet; it used to be measured on
          * the session and pagePath lives on the request, so they cannot be
          * grouped together. That is the compatibility rule doing its job, and
          * it would make this test look like a limit failure.
@@ -369,11 +436,11 @@ final class CustomReportsTest extends TestCase
         unset( $definition['widgets'][1]['query']['dimensions'] );
         unset( $definition['widgets'][1]['query']['sort'] );
 
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,bounceRate';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,keyEvents';
         $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
 
         $definition['widgets'][1]['query']['metrics'] =
-            'sessions,totalUsers,pageViews,bounceRate,averageEngagementTime';
+            'sessions,totalUsers,pageViews,keyEvents,totalEngagementTime';
         $this->assertStringContainsString('4 is the most',
             CustomReports::validate($definition), 'five metrics is refused');
 
@@ -1286,15 +1353,20 @@ final class CustomReportsTest extends TestCase
         $metrics = \OWA\Module\Base\Controller\CustomReportEdit::metricEntities();
 
         $this->assertNotEmpty($metrics);
-        $this->assertContains('base.click', $metrics['domClicks']);
-        $this->assertNotContains('base.click', $metrics['sessions']);
+        // Every metric resolves against the cube, so the map is uniform now.
+        // What matters is that the builder is GIVEN one -- a builder working
+        // from a different map than the save check would offer combinations
+        // the save then refuses.
+        $this->assertSame(array('base.event'), $metrics['sessions']);
+        $this->assertSame(array('base.event'), $metrics['pageViews']);
 
         $dimensions = \OWA\Module\Base\Controller\CustomReportEdit::dimensionEntities();
 
         $this->assertNotEmpty($dimensions);
-        $this->assertContains('base.request', $dimensions['pagePath']);
-        $this->assertNotContains('base.session', $dimensions['pagePath'],
-            'pagePath is not on the session, which is why it narrows the choice of table');
+        // One vocabulary, so every dimension maps to the cube. The point of
+        // the assertion is that the builder HAS the map, not that the map is
+        // plural -- it goes plural again when summaries land.
+        $this->assertSame(array('base.event'), $dimensions['pagePath']);
     }
 
     public function testAtMostTenWidgets(): void
