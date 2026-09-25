@@ -4,9 +4,9 @@
         "metricImplementations": 23,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 54,
-        "dimensionEntriesDenormalized": 54,
-        "accessorDimensionNames": 54
+        "dimensionNamesDenormalized": 60,
+        "dimensionEntriesDenormalized": 60,
+        "accessorDimensionNames": 60
     },
     "metrics": {
         "averageEngagementTimePerSession": [
@@ -904,6 +904,41 @@
                 "denormalized": true
             }
         },
+        "firstSourceMedium": {
+            "base.event": {
+                "name": "firstSourceMedium",
+                "entity": "base.event",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.acq_source,''), IF(%1$s.acq_medium IS NULL OR %1$s.acq_medium = '', '', CONCAT(' / ', %1$s.acq_medium))), '')",
+                "family": "traffic source",
+                "label": "First Source / Medium",
+                "description": "Where the user came from and how they arrived on the session that acquired them, as one value.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true,
+                "parts": [
+                    "acq_source",
+                    "acq_medium"
+                ]
+            }
+        },
+        "fullPageUrl": {
+            "base.event": {
+                "name": "fullPageUrl",
+                "entity": "base.event",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.host,''), IF(%1$s.page_path IS NULL OR %1$s.page_path = '', '', CONCAT('', %1$s.page_path)), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+                "family": "content",
+                "label": "Full Page URL",
+                "description": "The page's URL without its scheme -- host, path and query string.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true,
+                "parts": [
+                    "host",
+                    "page_path",
+                    "page_query"
+                ]
+            }
+        },
         "hostName": {
             "base.event": {
                 "name": "hostName",
@@ -967,6 +1002,23 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
+            }
+        },
+        "landingPagePlusQuery": {
+            "base.event": {
+                "name": "landingPagePlusQuery",
+                "entity": "base.event",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.landing_page_path,''), IF(%1$s.landing_page_query IS NULL OR %1$s.landing_page_query = '', '', CONCAT('?', %1$s.landing_page_query))), '')",
+                "family": "content",
+                "label": "Landing Page + Query String",
+                "description": "The path of the session's first page with its query string.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true,
+                "parts": [
+                    "landing_page_path",
+                    "landing_page_query"
+                ]
             }
         },
         "landingPageQuery": {
@@ -1034,6 +1086,23 @@
                 "denormalized": true
             }
         },
+        "operatingSystemWithVersion": {
+            "base.event": {
+                "name": "operatingSystemWithVersion",
+                "entity": "base.event",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.os,''), IF(%1$s.os_version IS NULL OR %1$s.os_version = '', '', CONCAT(' ', %1$s.os_version))), '')",
+                "family": "device",
+                "label": "Operating System with Version",
+                "description": "The operating system and its version, as one value -- GA ships this dimension under this name.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true,
+                "parts": [
+                    "os",
+                    "os_version"
+                ]
+            }
+        },
         "osType": {
             "base.event": {
                 "name": "osType",
@@ -1084,6 +1153,23 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
+            }
+        },
+        "pagePathPlusQuery": {
+            "base.event": {
+                "name": "pagePathPlusQuery",
+                "entity": "base.event",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.page_path,''), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+                "family": "content",
+                "label": "Page Path + Query String",
+                "description": "The path of the page with its query string, as it would be typed.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true,
+                "parts": [
+                    "page_path",
+                    "page_query"
+                ]
             }
         },
         "pageQuery": {
@@ -1227,6 +1313,23 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
+            }
+        },
+        "sessionSourceMedium": {
+            "base.event": {
+                "name": "sessionSourceMedium",
+                "entity": "base.event",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.source,''), IF(%1$s.medium IS NULL OR %1$s.medium = '', '', CONCAT(' / ', %1$s.medium))), '')",
+                "family": "traffic source",
+                "label": "Source / Medium",
+                "description": "Where this session came from and how it arrived, as one value.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true,
+                "parts": [
+                    "source",
+                    "medium"
+                ]
             }
         },
         "siteId": {
@@ -1562,6 +1665,37 @@
             "data_type": "string",
             "denormalized": true
         },
+        "firstSourceMedium": {
+            "name": "firstSourceMedium",
+            "entity": "base.event",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.acq_source,''), IF(%1$s.acq_medium IS NULL OR %1$s.acq_medium = '', '', CONCAT(' / ', %1$s.acq_medium))), '')",
+            "family": "traffic source",
+            "label": "First Source / Medium",
+            "description": "Where the user came from and how they arrived on the session that acquired them, as one value.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true,
+            "parts": [
+                "acq_source",
+                "acq_medium"
+            ]
+        },
+        "fullPageUrl": {
+            "name": "fullPageUrl",
+            "entity": "base.event",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.host,''), IF(%1$s.page_path IS NULL OR %1$s.page_path = '', '', CONCAT('', %1$s.page_path)), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+            "family": "content",
+            "label": "Full Page URL",
+            "description": "The page's URL without its scheme -- host, path and query string.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true,
+            "parts": [
+                "host",
+                "page_path",
+                "page_query"
+            ]
+        },
         "hostName": {
             "name": "hostName",
             "entity": "base.event",
@@ -1616,6 +1750,21 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
+        },
+        "landingPagePlusQuery": {
+            "name": "landingPagePlusQuery",
+            "entity": "base.event",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.landing_page_path,''), IF(%1$s.landing_page_query IS NULL OR %1$s.landing_page_query = '', '', CONCAT('?', %1$s.landing_page_query))), '')",
+            "family": "content",
+            "label": "Landing Page + Query String",
+            "description": "The path of the session's first page with its query string.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true,
+            "parts": [
+                "landing_page_path",
+                "landing_page_query"
+            ]
         },
         "landingPageQuery": {
             "name": "landingPageQuery",
@@ -1672,6 +1821,21 @@
             "data_type": "string",
             "denormalized": true
         },
+        "operatingSystemWithVersion": {
+            "name": "operatingSystemWithVersion",
+            "entity": "base.event",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.os,''), IF(%1$s.os_version IS NULL OR %1$s.os_version = '', '', CONCAT(' ', %1$s.os_version))), '')",
+            "family": "device",
+            "label": "Operating System with Version",
+            "description": "The operating system and its version, as one value -- GA ships this dimension under this name.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true,
+            "parts": [
+                "os",
+                "os_version"
+            ]
+        },
         "osType": {
             "name": "osType",
             "entity": "base.event",
@@ -1715,6 +1879,21 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
+        },
+        "pagePathPlusQuery": {
+            "name": "pagePathPlusQuery",
+            "entity": "base.event",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.page_path,''), IF(%1$s.page_query IS NULL OR %1$s.page_query = '', '', CONCAT('?', %1$s.page_query))), '')",
+            "family": "content",
+            "label": "Page Path + Query String",
+            "description": "The path of the page with its query string, as it would be typed.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true,
+            "parts": [
+                "page_path",
+                "page_query"
+            ]
         },
         "pageQuery": {
             "name": "pageQuery",
@@ -1836,6 +2015,21 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
+        },
+        "sessionSourceMedium": {
+            "name": "sessionSourceMedium",
+            "entity": "base.event",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.source,''), IF(%1$s.medium IS NULL OR %1$s.medium = '', '', CONCAT(' / ', %1$s.medium))), '')",
+            "family": "traffic source",
+            "label": "Source / Medium",
+            "description": "Where this session came from and how it arrived, as one value.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true,
+            "parts": [
+                "source",
+                "medium"
+            ]
         },
         "siteId": {
             "name": "siteId",

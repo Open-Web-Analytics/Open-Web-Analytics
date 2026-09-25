@@ -63,6 +63,22 @@ return array(
                 'family' => 'content', 'description' => 'The title of the page as it was at the time of the event.' ),
             'hostName' => array( 'column' => 'host', 'label' => 'Host Name',
                 'family' => 'content', 'description' => 'The host the page was served from.' ),
+
+            /*
+             * The two joined readings of a page, both of which GA ships by
+             * these names. They are EXPRESSIONS, not columns: the measurement
+             * that settled it is in DimensionExpression. `parts` is what marks
+             * one, and the separator before an absent part disappears with it,
+             * so a page with no query string groups as `/pricing` rather than
+             * as `/pricing?`.
+             */
+            'pagePathPlusQuery' => array( 'parts' => array( 'page_path', 'page_query' ),
+                'separator' => '?', 'label' => 'Page Path + Query String',
+                'family' => 'content', 'description' => 'The path of the page with its query string, as it would be typed.' ),
+            'fullPageUrl' => array( 'parts' => array( 'host', 'page_path', 'page_query' ),
+                'separator' => array( '', '?' ), 'label' => 'Full Page URL',
+                'family' => 'content', 'description' => "The page's URL without its scheme -- host, path and query string." ),
+
             /*
              * The referring HOST, which the cube carried as a column and no
              * dimension read -- so a referring-sites report, one of the oldest
@@ -90,6 +106,9 @@ return array(
                 'family' => 'content', 'description' => "The complete URL of the session's first page." ),
             'landingPageQuery' => array( 'column' => 'landing_page_query', 'label' => 'Landing Page Query',
                 'family' => 'content', 'description' => "The query string of the session's first page." ),
+            'landingPagePlusQuery' => array( 'parts' => array( 'landing_page_path', 'landing_page_query' ),
+                'separator' => '?', 'label' => 'Landing Page + Query String',
+                'family' => 'content', 'description' => "The path of the session's first page with its query string." ),
             'landingPageTitle' => array( 'column' => 'landing_page_title', 'label' => 'Landing Page Title',
                 'family' => 'content', 'description' => "The title of the session's first page." ),
 
@@ -104,6 +123,9 @@ return array(
                 'family' => 'traffic source', 'description' => 'The ad this session was tagged with.' ),
             'sessionSearchTerms' => array( 'column' => 'search_terms', 'label' => 'Search Terms',
                 'family' => 'traffic source', 'description' => 'The terms the user searched for before this session.' ),
+            'sessionSourceMedium' => array( 'parts' => array( 'source', 'medium' ),
+                'separator' => ' / ', 'label' => 'Source / Medium',
+                'family' => 'traffic source', 'description' => 'Where this session came from and how it arrived, as one value.' ),
 
             // ---- and at user scope, from the visit that acquired them ------
             'firstSource' => array( 'column' => 'acq_source', 'label' => 'First Source',
@@ -116,6 +138,9 @@ return array(
                 'family' => 'traffic source', 'description' => 'The ad that acquired the user.' ),
             'firstSearchTerms' => array( 'column' => 'acq_search_terms', 'label' => 'First Search Terms',
                 'family' => 'traffic source', 'description' => 'The terms the user searched for before the session that acquired them.' ),
+            'firstSourceMedium' => array( 'parts' => array( 'acq_source', 'acq_medium' ),
+                'separator' => ' / ', 'label' => 'First Source / Medium',
+                'family' => 'traffic source', 'description' => 'Where the user came from and how they arrived on the session that acquired them, as one value.' ),
 
             // ---- the tags as collected, before anything classified them ----
             'taggedSource' => array( 'column' => 'tagged_source', 'label' => 'Tagged Source',
@@ -173,6 +198,9 @@ return array(
                 'family' => 'device', 'description' => 'The operating system, as a name without its version.' ),
             'osVersion' => array( 'column' => 'os_version', 'label' => 'Operating System Version',
                 'family' => 'device', 'description' => 'The version of that operating system.' ),
+            'operatingSystemWithVersion' => array( 'parts' => array( 'os', 'os_version' ),
+                'separator' => ' ', 'label' => 'Operating System with Version',
+                'family' => 'device', 'description' => 'The operating system and its version, as one value -- GA ships this dimension under this name.' ),
             'deviceType' => array( 'column' => 'device_type', 'label' => 'Device Type',
                 'family' => 'device', 'description' => 'Desktop, mobile or tablet.' ),
             'deviceBrand' => array( 'column' => 'device_brand', 'label' => 'Device Brand',

@@ -1017,8 +1017,16 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $dim = $service->getDenormalizedDimension($name, $entity->getName());
 
         if ($dim) {
-            //apply table aliasing to dimension column
-            $dim['column'] = $entity->getTableAlias().'.'.$dim['column'];
+            /*
+             * A dimension built from several columns already carries its own
+             * SQL, with %1$s wherever the alias belongs. Writing the alias in
+             * FRONT of it -- which is what every column dimension needs -- turns
+             * CONCAT(...) into event.CONCAT(...), and MySQL reads that as a call
+             * to a function named CONCAT in a schema named event.
+             */
+            $dim['column'] = isset( $dim['parts'] )
+                ? sprintf( $dim['column'], $entity->getTableAlias() )
+                : $entity->getTableAlias().'.'.$dim['column'];
         } else {
 
             // check for normalized dim
@@ -1523,6 +1531,26 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if ( $value === \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) {
 
             return self::UNKNOWN_LABEL;
+        }
+
+        /*
+         * A dimension built from several columns can carry the sentinel in ONE
+         * of its parts -- `(unknown) / referral` is a true statement about a
+         * session whose source never resolved but whose medium did. The
+         * whole-value comparison above cannot see that, so before this was
+         * here a source/medium pair with an unresolved half rendered as ` / `:
+         * a label that looks empty and says nothing, which is the failure the
+         * sentinel was given a label to avoid in the first place.
+         *
+         * Only a joined dimension can reach this. V2Event::strip() removes
+         * control bytes from every observed value, and a pass writes the
+         * sentinel alone or not at all, so no single column holds it beside
+         * other text.
+         */
+        if ( strpos( (string) $value, \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) !== false ) {
+
+            return str_replace( \OWA\Module\Base\Classes\V2Event::UNRESOLVED,
+                self::UNKNOWN_LABEL, (string) $value );
         }
 
         return $this->formatValue( $data_type, $value );

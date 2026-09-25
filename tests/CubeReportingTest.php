@@ -400,8 +400,26 @@ final class CubeReportingTest extends TestCase
             'the table must not be able to empty itself unnoticed');
 
         $missing = [];
+        $joined  = 0;
 
         foreach ($declared as $name => $d) {
+
+            // A dimension is either a column or several columns joined, and
+            // EVERY part of a joined one has to be a real column too -- the
+            // expression is built from them without anything checking.
+            if (isset($d['parts'])) {
+
+                $joined++;
+
+                foreach ((array) $d['parts'] as $part) {
+
+                    if (!isset($columns[$part])) {
+                        $missing[$name . '.' . $part] = $part;
+                    }
+                }
+
+                continue;
+            }
 
             if (!isset($columns[$d['column']])) {
                 $missing[$name] = $d['column'];
@@ -410,6 +428,9 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame([], $missing,
             'these dimensions name columns the cube does not have');
+
+        $this->assertGreaterThan(0, $joined,
+            'the joined form must stay exercised here, not merely supported');
     }
 
     /** And each declaration carries what registerDimension() is given. */
@@ -417,10 +438,27 @@ final class CubeReportingTest extends TestCase
     {
         foreach (self::declaredDimensions() as $name => $d) {
 
-            foreach (['column', 'label', 'family', 'description'] as $key) {
+            $required = isset($d['parts']) ? ['parts'] : ['column'];
+
+            foreach (array_merge($required, ['label', 'family', 'description']) as $key) {
 
                 $this->assertArrayHasKey($key, $d, $name . ' is missing ' . $key);
-                $this->assertNotSame('', (string) $d[$key], $name . ' has an empty ' . $key);
+                $this->assertNotEmpty($d[$key], $name . ' has an empty ' . $key);
+            }
+
+            // The two forms are alternatives. A declaration carrying both says
+            // one thing to the registry and another to a reader.
+            if (isset($d['parts'])) {
+
+                $this->assertArrayNotHasKey('column', $d,
+                    $name . ' declares both parts and a column; only parts is read.');
+
+                $this->assertGreaterThan(1, count((array) $d['parts']),
+                    $name . ' joins fewer than two columns, so it is just a column.');
+            } else {
+
+                $this->assertArrayNotHasKey('separator', $d,
+                    $name . ' declares a separator but nothing to separate.');
             }
         }
     }
@@ -443,6 +481,55 @@ final class CubeReportingTest extends TestCase
             $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
                 $dim . ' changed the total, so it is filtering rather than grouping');
         }
+    }
+
+    /**
+     * A report can be FILTERED by a metric, not only sorted by one.
+     *
+     * Every v2 metric that counts a kind of event carries a condition, and the
+     * SQL it generates for itself therefore contains a string literal:
+     * `sum(CASE WHEN event.event_type = 'page_view' THEN 1 ELSE 0 END)`. That
+     * expression is the operand of the HAVING clause, and it used to be run
+     * through the value escaper on its way there, which turned every quote into
+     * an escaped one and made the statement unparseable. So `pageViews > 1` --
+     * the ordinary act of hiding the long tail of a report -- returned nothing
+     * at all, on every conditional metric there is.
+     *
+     * It did not surface as a syntax error, which is why it lasted: the added
+     * backslashes desynchronised the placeholder count and the driver's binding
+     * guard refused the statement first.
+     */
+    public function testAReportCanBeFilteredByAConditionalMetric(): void
+    {
+        $rows = function (string $constraint): array {
+
+            $rsm = $this->manager('pageViews', 'pagePath');
+            $rsm->setConstraints($rsm->parseConstraintsString($constraint));
+
+            $rs = $rsm->getResults();
+
+            $this->assertSame([], (array) $rs->errors, $constraint . ' did not resolve');
+
+            $out = [];
+
+            foreach ($rs->getResultsRows() as $row) {
+                $out[$row['pagePath']['value']] = (int) $row['pageViews']['value'];
+            }
+
+            return $out;
+        };
+
+        // The fixture: /one has two page views, /two has two, /buy has none.
+        $this->assertSame(['/one' => 2, '/two' => 2], $rows('pageViews>1'));
+
+        // A threshold nothing clears returns nothing -- which is the answer the
+        // broken clause also gave, so the assertion above is what distinguishes
+        // them and this one only guards the boundary.
+        $this->assertSame([], $rows('pageViews>2'));
+
+        // And the filter is on the metric, not on the rows it counts: /buy has
+        // events but no page views, so it is absent above and present here.
+        $this->assertArrayHasKey('/buy', $rows('eventCount>1'));
     }
 
     /**

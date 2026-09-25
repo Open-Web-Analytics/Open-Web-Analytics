@@ -792,12 +792,32 @@ class Db extends \OWA\Core\Base {
             return $expression;
         }
 
-        return sprintf( '( %s OR %s IS NULL )', $expression, $this->prepare( $name ) );
+        return sprintf( '( %s OR %s IS NULL )', $expression, $name );
     }
 
     /**
-     *  Generates the SQL constraint string
-     *  @type string    'WHERE' || 'HAVING'
+     * Generates the SQL constraint string.
+     *
+     * @param string $type 'WHERE' or 'HAVING'
+     *
+     * WHY THE OPERAND IS NOT ESCAPED.
+     *
+     * It is not a value. It is a column name, an expression a dimension
+     * declared, or the SQL a metric generates for itself -- resolved through
+     * the registry before it ever arrives, which is the boundary that keeps a
+     * request from naming an arbitrary column. Only $v['value'] comes from
+     * outside, and that is bound.
+     *
+     * prepare() ran on it until it was noticed that escaping an IDENTIFIER
+     * protects nothing -- an attacker who could choose the operand would not
+     * need a quote to do damage -- while corrupting every operand that
+     * legitimately contains one. Both kinds exist: a metric with a condition
+     * generates `sum(CASE WHEN event_type = 'page_view' ...)`, so filtering a
+     * report on pageViews emitted an escaped literal and the statement was
+     * refused; a dimension built from several columns carries its separators as
+     * string literals and broke the same way. The escaped backslashes also
+     * desynchronised the placeholder count, so the driver's binding guard fired
+     * instead of a syntax error, which is what hid it.
      */
     function _makeConstraintClause( $type, $params ) {
          
@@ -847,38 +867,38 @@ class Db extends \OWA\Core\Base {
                 switch ( $op ) {
 
                     case '==':
-                        $constraint .= sprintf("%s = %s", $this->prepare( $v['name'] ), $this->bindValue( $v['value'] ) );
+                        $constraint .= sprintf("%s = %s", $v['name'], $this->bindValue( $v['value'] ) );
                         break;
 
                     case 'between':
-                        $constraint .= sprintf("%s BETWEEN %s AND %s", $this->prepare( $v['name'] ), $this->bindValue( $v['value']['start'] ), $this->bindValue( $v['value']['end'] ) );
+                        $constraint .= sprintf("%s BETWEEN %s AND %s", $v['name'], $this->bindValue( $v['value']['start'] ), $this->bindValue( $v['value']['end'] ) );
                         break;
 
                     case '=~':
-                        $constraint .= sprintf("%s %s %s", $this->prepare( $v['name'] ), OWA_SQL_REGEXP, $this->bindValue( $v['value'] ) );
+                        $constraint .= sprintf("%s %s %s", $v['name'], OWA_SQL_REGEXP, $this->bindValue( $v['value'] ) );
                         break;
 
                     case '!~':
                         $constraint .= $this->tolerateNull( $tolerateNull, $v['name'],
-                            sprintf("%s %s %s",$this->prepare( $v['name'] ), OWA_SQL_NOTREGEXP, $this->bindValue( $v['value'] ) ) );
+                            sprintf("%s %s %s",$v['name'], OWA_SQL_NOTREGEXP, $this->bindValue( $v['value'] ) ) );
                         break;
 
                     case '=@':
                         // Dialect-owned, like =~ and !~ above: the expression
                         // for "contains" is not the same SQL everywhere.
-                        $constraint .= sprintf( OWA_SQL_CONTAINS, $this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) );
+                        $constraint .= sprintf( OWA_SQL_CONTAINS, $this->bindValue( $v['value'] ), $v['name'] );
                         break;
 
                     case '!@':
                         $constraint .= $this->tolerateNull( $tolerateNull, $v['name'],
-                            sprintf( OWA_SQL_NOT_CONTAINS, $this->bindValue( $v['value'] ), $this->prepare( $v['name'] ) ) );
+                            sprintf( OWA_SQL_NOT_CONTAINS, $this->bindValue( $v['value'] ), $v['name'] ) );
                         break;
 
                     default:
                         // $op has already been validated against ALLOWED_OPERATORS,
                         // so this covers '=', '!=', '>', '>=', '<', '<='.
                         $constraint .= $this->tolerateNull( $tolerateNull, $v['name'],
-                            sprintf("%s %s %s",$this->prepare( $v['name'] ), $op, $this->bindValue( $v['value'] ) ) );
+                            sprintf("%s %s %s",$v['name'], $op, $this->bindValue( $v['value'] ) ) );
                         break;
                 }
 
