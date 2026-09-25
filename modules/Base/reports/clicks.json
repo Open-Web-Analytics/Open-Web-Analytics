@@ -11,8 +11,7 @@
                 "dimensions": "date",
                 "sort": "date",
                 "metrics": "eventCount"
-            },
-            "headline": "There were {eventCount.raw} {eventCount|click|clicks} on all elements."
+            }
         },
         {
             "type": "grid",

@@ -117,7 +117,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         $this->set( 'funnel_constraints',       (string) $this->getParam( 'constraints' ) );
         // What the counts are counting, so the template does not have to say
         // "visitors" when it is counting visits.
-        $this->set( 'funnel_scope_label', $scope === 'session' ? 'visits' : 'visitors' );
+        $this->set( 'funnel_scope_label', $scope === 'session' ? 'sessions' : 'users' );
         $this->set( 'funnel_scope_other', $scope === 'visitor' ? 'session' : 'visitor' );
 
         if ( $funnel ) {
@@ -240,7 +240,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
             $this->set( 'total_visitors', $entered );
             $this->set( 'funnel_table', $this->stepsAsResultSet(
-                $steps, $entered, $scope === 'session' ? 'visits' : 'visitors' ) );
+                $steps, $entered, $scope === 'session' ? 'sessions' : 'users' ) );
             $this->set( 'goal_conversion_rate', $goal_conversion_rate );
             $this->set( 'funnel', $steps );
         }

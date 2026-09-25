@@ -10,8 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "feedReaders",
-            "headline": "There were {feedReaders.formatted} readers of all feeds."
+            "chartMetric": "feedReaders"
         },
         {
             "type": "grid",

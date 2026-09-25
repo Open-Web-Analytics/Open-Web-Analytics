@@ -1,6 +1,6 @@
 {
     "title": "Dashboard",
-    "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit",
+    "metrics": "sessions,totalUsers,pageViews,bounceRate,pageViewsPerSession",
     "widgets": [
         {
             "type": "trend-card",
@@ -8,9 +8,9 @@
             "container": "trend-chart",
             "title": "Site Metrics",
             "showTitle": true,
-            "chartMetric": "uniqueVisitors",
+            "chartMetric": "totalUsers",
             "query": {
-                "metrics": "uniqueVisitors,pageViews,bounceRate,pagesPerVisit",
+                "metrics": "totalUsers,pageViews,bounceRate,pageViewsPerSession",
                 "dimensions": "date",
                 "sort": "date"
             }
@@ -46,11 +46,11 @@
             "title": "Visitor Types",
             "colspan": 3,
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "newVsReturning",
-                "sort": "visits-"
+                "sort": "sessions-"
             },
-            "chartMetric": "visits"
+            "chartMetric": "sessions"
         },
         {
             "type": "pie",
@@ -58,11 +58,11 @@
             "container": "visitor-mediums",
             "title": "Traffic Sources",
             "colspan": 3,
-            "chartMetric": "visits",
+            "chartMetric": "sessions",
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "sessionMedium",
-                "sort": "visits-"
+                "sort": "sessions-"
             }
         },
         {
@@ -103,9 +103,9 @@
                 }
             ],
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "referralWebSite",
-                "sort": "visits-",
+                "sort": "sessions-",
                 "resultsPerPage": 10
             },
             "more": {
@@ -119,9 +119,9 @@
             "container": "latest-visits",
             "title": "Latest Visits",
             "query": {
-                "metrics": "pagesPerVisit",
-                "dimensions": "ipAddress,hostName,landingPage,sessionMedium,sessionSource,city,country,priorVisitCount",
-                "sort": "visits-",
+                "metrics": "pageViewsPerSession",
+                "dimensions": "ipAddress,hostName,landingPage,sessionMedium,sessionSource,city,country,priorSessionCount",
+                "sort": "sessions-",
                 "resultsPerPage": 10
             },
             "more": {

@@ -11,8 +11,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from referrals."
+            }
         },
         {
             "type": "grid",
@@ -20,7 +19,7 @@
             "container": "dimension-grid",
             "query": {
                 "dimensions": "referralLinkText",
-                "sort": "visits-",
+                "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }

@@ -14,8 +14,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from this campaign."
+            }
         }
     ],
     "settings": {

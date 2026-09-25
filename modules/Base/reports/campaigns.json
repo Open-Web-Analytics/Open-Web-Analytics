@@ -8,8 +8,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from campaigns."
+            }
         },
         {
             "type": "grid",
@@ -17,7 +16,7 @@
             "container": "dimension-grid",
             "query": {
                 "dimensions": "sessionCampaign",
-                "sort": "visits-",
+                "sort": "sessions-",
                 "resultsPerPage": 30
             },
             "link": {

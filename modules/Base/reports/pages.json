@@ -1,6 +1,6 @@
 {
     "title": "Pages",
-    "metrics": "pageViews,visits,pageViews",
+    "metrics": "pageViews,sessions,pageViews",
     "widgets": [
         {
             "type": "trend",
@@ -10,8 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "pageViews",
-            "headline": "There were {pageViews.formatted} page views for {uniquePageViews.raw} unique pages."
+            "chartMetric": "pageViews"
         },
         {
             "type": "grid",

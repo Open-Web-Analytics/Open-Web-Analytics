@@ -10,8 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "lineItemQuantity",
-            "headline": "There were {lineItemQuantity.formatted} products sold across all SKUs."
+            "chartMetric": "lineItemQuantity"
         },
         {
             "type": "grid",

@@ -434,7 +434,7 @@ final class CubeReportingTest extends TestCase
      */
     public function testTheColumnDimensionsResolveInAQuery(): void
     {
-        foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'visitorId'] as $dim) {
+        foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'clientId'] as $dim) {
 
             $rs = $this->manager('eventCount', $dim)->getResults();
 
@@ -457,7 +457,7 @@ final class CubeReportingTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray(
-            'eventCount,pageViews,visits,uniqueVisitors,newVisitors,totalEngagementTime');
+            'eventCount,pageViews,sessions,totalUsers,newUsers,totalEngagementTime');
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(25);
@@ -478,9 +478,9 @@ final class CubeReportingTest extends TestCase
         $expected = [
             'eventCount'        => 8,   // every row
             'pageViews'         => 4,   // event_type = page_view
-            'visits'            => 2,   // distinct session_id
-            'uniqueVisitors'    => 2,   // distinct visitor_id
-            'newVisitors'       => 1,   // prior_sessions = 0
+            'sessions'            => 2,   // distinct session_id
+            'totalUsers'    => 2,   // distinct visitor_id
+            'newUsers'       => 1,   // prior_sessions = 0
             'totalEngagementTime' => 1500, // 100 + 250 + 400 + 750
         ];
 
@@ -594,7 +594,7 @@ final class CubeReportingTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray(
-            'pageViews,visits,uniqueVisitors,eventCount,pagesPerVisit,sessionsPerUser,eventsPerSession');
+            'pageViews,sessions,totalUsers,eventCount,pageViewsPerSession,sessionsPerUser,eventsPerSession');
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(25);
@@ -604,7 +604,7 @@ final class CubeReportingTest extends TestCase
         $this->assertSame([], (array) $rs->errors);
 
         // 4 page views, 2 sessions, 2 visitors, 8 events
-        $this->assertSame(2.0, (float) $rs->aggregates['pagesPerVisit']['value'],  '4 / 2');
+        $this->assertSame(2.0, (float) $rs->aggregates['pageViewsPerSession']['value'],  '4 / 2');
         $this->assertSame(1.0, (float) $rs->aggregates['sessionsPerUser']['value'], '2 / 2');
         $this->assertSame(4.0, (float) $rs->aggregates['eventsPerSession']['value'], '8 / 2');
     }
@@ -629,7 +629,7 @@ final class CubeReportingTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray(
-            'transactions,transactionRevenue,revenuePerTransaction,revenuePerVisit,ecommerceConversionRate');
+            'transactions,transactionRevenue,revenuePerTransaction,revenuePerSession,ecommerceConversionRate');
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(25);
@@ -648,7 +648,7 @@ final class CubeReportingTest extends TestCase
         $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerTransaction']['value'],
             '4000 / 2');
 
-        $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerVisit']['value'],
+        $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerSession']['value'],
             '4000 / 2 visits');
 
         $this->assertSame(1.0, (float) $rs->aggregates['ecommerceConversionRate']['value'],
@@ -700,7 +700,7 @@ final class CubeReportingTest extends TestCase
         $rounded = owa_coreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzRounded', 'label' => 'R', 'data_type' => 'decimal',
             'metric_type' => 'ratio', 'entity' => 'base.event',
-            'numerator' => 'eventCount', 'denominator' => 'visits', 'precision' => 2,
+            'numerator' => 'eventCount', 'denominator' => 'sessions', 'precision' => 2,
         ]);
 
         $this->assertSame(0.33, $rounded->computeRatio(1, 3));
@@ -709,7 +709,7 @@ final class CubeReportingTest extends TestCase
         $exact = owa_coreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzExact', 'label' => 'E', 'data_type' => 'decimal',
             'metric_type' => 'ratio', 'entity' => 'base.event',
-            'numerator' => 'eventCount', 'denominator' => 'visits',
+            'numerator' => 'eventCount', 'denominator' => 'sessions',
         ]);
 
         $this->assertEqualsWithDelta(1 / 3, $exact->computeRatio(1, 3), 0.0000001,
@@ -731,7 +731,7 @@ final class CubeReportingTest extends TestCase
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray('visits,pagesPerVisit');
+        $rsm->metrics = $rsm->metricsStringToArray('sessions,pageViewsPerSession');
         // A day the fixture wrote nothing on.
         $rsm->setTimePeriod('date_range', '20200101', '20200101');
         $rsm->setSiteId(self::SITE);
@@ -739,9 +739,9 @@ final class CubeReportingTest extends TestCase
 
         $rs = $rsm->getResults();
 
-        $this->assertSame(0, (int) $rs->aggregates['visits']['value']);
+        $this->assertSame(0, (int) $rs->aggregates['sessions']['value']);
 
-        $this->assertNull($rs->aggregates['pagesPerVisit']['value'],
+        $this->assertNull($rs->aggregates['pageViewsPerSession']['value'],
             'a ratio with nothing to divide by has no value, and 0 would be a claim');
     }
 
@@ -755,9 +755,9 @@ final class CubeReportingTest extends TestCase
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray('pagesPerVisit');
+        $rsm->metrics = $rsm->metricsStringToArray('pageViewsPerSession');
         $rsm->setDimensions($rsm->dimensionsStringToArray('pagePath'));
-        $rsm->setSorts($rsm->sortStringToArray('pagesPerVisit-'));
+        $rsm->setSorts($rsm->sortStringToArray('pageViewsPerSession-'));
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(5);
@@ -799,7 +799,7 @@ final class CubeReportingTest extends TestCase
         $this->assertStringContainsString('round(', $column,
             'and the declared precision with them');
 
-        $this->assertStringNotContainsString('pagesPerVisit', $column,
+        $this->assertStringNotContainsString('pageViewsPerSession', $column,
             'sorting by the alias would sort on a column the query does not select');
     }
 

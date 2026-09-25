@@ -8,8 +8,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits to the site."
+            }
         },
         {
             "type": "grid",

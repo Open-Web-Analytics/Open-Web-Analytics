@@ -64,7 +64,7 @@ return array(
             'hostName' => array( 'column' => 'host', 'label' => 'Host Name',
                 'family' => 'content', 'description' => 'The host the page was served from.' ),
             'pageReferrer' => array( 'column' => 'referer_url', 'label' => 'Page Referrer',
-                'family' => 'content', 'description' => 'The page the visitor arrived from.' ),
+                'family' => 'content', 'description' => 'The page the user arrived from.' ),
             'contentGroup' => array( 'column' => 'content_group', 'label' => 'Content Group',
                 'family' => 'content', 'description' => 'The grouping the author assigned to the page.' ),
 
@@ -88,19 +88,19 @@ return array(
             'sessionAd' => array( 'column' => 'ad', 'label' => 'Ad',
                 'family' => 'traffic source', 'description' => 'The ad this session was tagged with.' ),
             'sessionSearchTerms' => array( 'column' => 'search_terms', 'label' => 'Search Terms',
-                'family' => 'traffic source', 'description' => 'The terms the visitor searched for before this session.' ),
+                'family' => 'traffic source', 'description' => 'The terms the user searched for before this session.' ),
 
             // ---- and at user scope, from the visit that acquired them ------
             'firstSource' => array( 'column' => 'acq_source', 'label' => 'First Source',
-                'family' => 'traffic source', 'description' => 'Where the visitor came from on the visit that acquired them.' ),
+                'family' => 'traffic source', 'description' => 'Where the user came from on the session that acquired them.' ),
             'firstMedium' => array( 'column' => 'acq_medium', 'label' => 'First Medium',
-                'family' => 'traffic source', 'description' => 'How the visitor arrived on the visit that acquired them.' ),
+                'family' => 'traffic source', 'description' => 'How the user arrived on the session that acquired them.' ),
             'firstCampaign' => array( 'column' => 'acq_campaign', 'label' => 'First Campaign',
-                'family' => 'traffic source', 'description' => 'The campaign that acquired the visitor.' ),
+                'family' => 'traffic source', 'description' => 'The campaign that acquired the user.' ),
             'firstAd' => array( 'column' => 'acq_ad', 'label' => 'First Ad',
-                'family' => 'traffic source', 'description' => 'The ad that acquired the visitor.' ),
+                'family' => 'traffic source', 'description' => 'The ad that acquired the user.' ),
             'firstSearchTerms' => array( 'column' => 'acq_search_terms', 'label' => 'First Search Terms',
-                'family' => 'traffic source', 'description' => 'The terms the visitor searched for before the visit that acquired them.' ),
+                'family' => 'traffic source', 'description' => 'The terms the user searched for before the session that acquired them.' ),
 
             // ---- the tags as collected, before anything classified them ----
             'taggedSource' => array( 'column' => 'tagged_source', 'label' => 'Tagged Source',
@@ -111,12 +111,12 @@ return array(
                 'family' => 'traffic source', 'description' => 'The campaign named by the landing URL, as collected.' ),
 
             // ---- who ------------------------------------------------------
-            'visitorId' => array( 'column' => 'visitor_id', 'label' => 'Visitor ID',
-                'family' => 'visitor', 'description' => 'The identifier OWA assigned to the visitor.' ),
+            'clientId' => array( 'column' => 'visitor_id', 'label' => 'Client ID',
+                'family' => 'visitor', 'description' => 'The identifier OWA assigned to the user.' ),
             'userId' => array( 'column' => 'user_id', 'label' => 'User ID',
                 'family' => 'visitor', 'description' => 'The identifier the site declared for the person.' ),
-            'priorVisitCount' => array( 'column' => 'prior_sessions', 'label' => 'Prior Visits',
-                'family' => 'visitor', 'description' => 'How many sessions the visitor had before this one.',
+            'priorSessionCount' => array( 'column' => 'prior_sessions', 'label' => 'Prior Sessions',
+                'family' => 'visitor', 'description' => 'How many sessions the user had before this one.',
                 'data_type' => 'integer' ),
 
             /*
@@ -135,19 +135,19 @@ return array(
              */
             'newVsReturning' => array( 'column' => 'new_vs_returning', 'label' => 'New vs Returning',
                 'family' => 'visitor',
-                'description' => 'Whether the session was the visitor\'s first.' ),
+                'description' => 'Whether the session was the user\'s first.' ),
             'sessionId' => array( 'column' => 'session_id', 'label' => 'Session ID',
                 'family' => 'visit', 'description' => 'The identifier of the session the event belongs to.' ),
 
             // ---- where -----------------------------------------------------
             'country' => array( 'column' => 'country', 'label' => 'Country',
-                'family' => 'geography', 'description' => "The country resolved from the visitor's address." ),
+                'family' => 'geography', 'description' => "The country resolved from the user's address." ),
             'countryCode' => array( 'column' => 'country_code', 'label' => 'Country Code',
                 'family' => 'geography', 'description' => 'The ISO 3166-1 alpha-2 code of that country.' ),
             'city' => array( 'column' => 'city', 'label' => 'City',
-                'family' => 'geography', 'description' => "The city resolved from the visitor's address." ),
+                'family' => 'geography', 'description' => "The city resolved from the user's address." ),
             'stateRegion' => array( 'column' => 'region', 'label' => 'Region',
-                'family' => 'geography', 'description' => "The region or state resolved from the visitor's address." ),
+                'family' => 'geography', 'description' => "The region or state resolved from the user's address." ),
 
             // ---- what they were using --------------------------------------
             'browserType' => array( 'column' => 'browser_type', 'label' => 'Browser',
@@ -167,7 +167,7 @@ return array(
             'language' => array( 'column' => 'language', 'label' => 'Language',
                 'family' => 'device', 'description' => 'The language the browser declared.' ),
             'ipAddress' => array( 'column' => 'ip_address', 'label' => 'IP Address',
-                'family' => 'device', 'description' => "The visitor's address, where the install stores one." ),
+                'family' => 'device', 'description' => "The user's address, where the install stores one." ),
             'consentState' => array( 'column' => 'consent_state', 'label' => 'Consent State',
                 'family' => 'device', 'description' => 'What the page declared about consent when the event was sent.' ),
 

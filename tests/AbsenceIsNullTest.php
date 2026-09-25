@@ -70,7 +70,7 @@ final class AbsenceIsNullTest extends TestCase
      */
     public function testHavingIsLeftAlone(): void
     {
-        $this->assertStringNotContainsString( 'IS NULL', $this->clause( 'HAVING', '!=', 'visits', 5 ) );
+        $this->assertStringNotContainsString( 'IS NULL', $this->clause( 'HAVING', '!=', 'sessions', 5 ) );
     }
 
     /**

@@ -94,8 +94,8 @@ final class ReportMetricDimensionContractTest extends TestCase
             foreach ($blocks as $block) {
                 $grab = static function (string $key) use ($block): ?string {
                     // ':' as well as ',' and '=>', so a JSON definition's
-                    // "metrics": "pageViews,visits" is read the same way the
-                    // controller's set('metrics', 'pageViews,visits') was.
+                    // "metrics": "pageViews,sessions" is read the same way the
+                    // controller's set('metrics', 'pageViews,sessions') was.
                     $re = '/[\'"]' . $key . '[\'"]\s*(?:,|=>|:)\s*[\'"]([^\'"]*)[\'"]/';
                     return preg_match($re, $block, $mm) ? $mm[1] : null;
                 };

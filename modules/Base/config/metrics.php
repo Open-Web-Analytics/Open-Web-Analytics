@@ -142,8 +142,8 @@ return array(
          * GA pairs because GA must: its `ga_session_id` is the session-start
          * timestamp in seconds with no randomness at all. Ours is not that.
          */
-        'visits' => array(
-            'label'       => 'Visits',
+        'sessions' => array(
+            'label'       => 'Sessions',
             'description' => 'The number of sessions.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
@@ -151,18 +151,18 @@ return array(
             'column'      => 'session_id',
         ),
 
-        'uniqueVisitors' => array(
-            'label'       => 'Unique Visitors',
-            'description' => 'The number of distinct visitors.',
+        'totalUsers' => array(
+            'label'       => 'Total Users',
+            'description' => 'The number of distinct users.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'visitor_id',
         ),
 
-        'newVisitors' => array(
-            'label'       => 'New Visitors',
-            'description' => 'Visitors whose first session this is.',
+        'newUsers' => array(
+            'label'       => 'New Users',
+            'description' => 'Users whose first session this is.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
@@ -195,14 +195,14 @@ return array(
          * visit is not a number" is a different answer from "pages per visit is
          * zero", and the formatter renders the first as absent.
          */
-        'pagesPerVisit' => array(
-            'label'       => 'Pages Per Visit',
+        'pageViewsPerSession' => array(
+            'label'       => 'Pages Per Session',
             'description' => 'The average number of pages viewed per session.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',
             'data_type'   => 'decimal',
             'numerator'   => 'pageViews',
-            'denominator' => 'visits',
+            'denominator' => 'sessions',
             'precision'   => 2,
         ),
 
@@ -217,25 +217,25 @@ return array(
             'precision'   => 0,
         ),
 
-        'revenuePerVisit' => array(
-            'label'       => 'Revenue Per Visit',
-            'description' => 'Revenue divided by the number of visits.',
+        'revenuePerSession' => array(
+            'label'       => 'Revenue Per Session',
+            'description' => 'Revenue divided by the number of sessions.',
             'group'       => 'Ecommerce',
             'metric_type' => 'ratio',
             'data_type'   => 'currency',
             'numerator'   => 'transactionRevenue',
-            'denominator' => 'visits',
+            'denominator' => 'sessions',
             'precision'   => 0,
         ),
 
         'ecommerceConversionRate' => array(
             'label'       => 'Ecommerce Conversion Rate',
-            'description' => 'The share of visits that completed a purchase.',
+            'description' => 'The share of sessions that completed a purchase.',
             'group'       => 'Ecommerce',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
             'numerator'   => 'transactions',
-            'denominator' => 'visits',
+            'denominator' => 'sessions',
             'precision'   => 4,
         ),
 
@@ -246,12 +246,12 @@ return array(
          */
         'sessionKeyEventRate' => array(
             'label'       => 'Key Event Rate',
-            'description' => 'The share of visits that included a key event.',
+            'description' => 'The share of sessions that included a key event.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
             'numerator'   => 'keyEvents',
-            'denominator' => 'visits',
+            'denominator' => 'sessions',
             'precision'   => 4,
         ),
 
@@ -270,79 +270,79 @@ return array(
          * denominator in the metric is not pedantry.
          */
         'eventCountPerUser' => array(
-            'label'       => 'Events Per Visitor',
-            'description' => 'The average number of events per visitor.',
+            'label'       => 'Events Per User',
+            'description' => 'The average number of events per user.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',
             'data_type'   => 'decimal',
             'numerator'   => 'eventCount',
-            'denominator' => 'uniqueVisitors',
+            'denominator' => 'totalUsers',
             'precision'   => 2,
         ),
 
         'pageViewsPerUser' => array(
-            'label'       => 'Page Views Per Visitor',
-            'description' => 'The average number of pages viewed per visitor.',
+            'label'       => 'Page Views Per User',
+            'description' => 'The average number of pages viewed per user.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',
             'data_type'   => 'decimal',
             'numerator'   => 'pageViews',
-            'denominator' => 'uniqueVisitors',
+            'denominator' => 'totalUsers',
             'precision'   => 2,
         ),
 
         'averageEngagementTimePerUser' => array(
-            'label'       => 'Average Engagement Time Per Visitor',
-            'description' => 'Average time accrued per visitor, in milliseconds.',
+            'label'       => 'Average Engagement Time Per User',
+            'description' => 'Average time accrued per user, in milliseconds.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',
             'data_type'   => 'milliseconds',
             'numerator'   => 'totalEngagementTime',
-            'denominator' => 'uniqueVisitors',
+            'denominator' => 'totalUsers',
             'precision'   => 0,
         ),
 
         'revenuePerUser' => array(
-            'label'       => 'Revenue Per Visitor',
-            'description' => 'Revenue divided by the number of visitors.',
+            'label'       => 'Revenue Per User',
+            'description' => 'Revenue divided by the number of users.',
             'group'       => 'Ecommerce',
             'metric_type' => 'ratio',
             'data_type'   => 'currency',
             'numerator'   => 'transactionRevenue',
-            'denominator' => 'uniqueVisitors',
+            'denominator' => 'totalUsers',
             'precision'   => 0,
         ),
 
         'userKeyEventRate' => array(
-            'label'       => 'Key Event Rate Per Visitor',
-            'description' => 'The share of visitors who triggered a key event.',
+            'label'       => 'Key Event Rate Per User',
+            'description' => 'The share of users who triggered a key event.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
             'numerator'   => 'keyEvents',
-            'denominator' => 'uniqueVisitors',
+            'denominator' => 'totalUsers',
             'precision'   => 4,
         ),
 
         'sessionsPerUser' => array(
-            'label'       => 'Sessions Per Visitor',
-            'description' => 'The average number of sessions per visitor.',
+            'label'       => 'Sessions Per User',
+            'description' => 'The average number of sessions per user.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',
             'data_type'   => 'decimal',
-            'numerator'   => 'visits',
-            'denominator' => 'uniqueVisitors',
+            'numerator'   => 'sessions',
+            'denominator' => 'totalUsers',
             'precision'   => 2,
         ),
 
         'eventsPerSession' => array(
-            'label'       => 'Events Per Visit',
+            'label'       => 'Events Per Session',
             'description' => 'The average number of events recorded per session.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',
             'data_type'   => 'decimal',
             'numerator'   => 'eventCount',
-            'denominator' => 'visits',
+            'denominator' => 'sessions',
             'precision'   => 2,
         ),
 
@@ -386,13 +386,13 @@ return array(
          * that promised a duration.
          */
         'averageEngagementTimePerSession' => array(
-            'label'       => 'Average Engagement Time Per Visit',
-            'description' => 'Average time accrued per visit, in milliseconds.',
+            'label'       => 'Average Engagement Time Per Session',
+            'description' => 'Average time accrued per session, in milliseconds.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',
             'data_type'   => 'milliseconds',
             'numerator'   => 'totalEngagementTime',
-            'denominator' => 'visits',
+            'denominator' => 'sessions',
             'precision'   => 0,
         ),
     ),

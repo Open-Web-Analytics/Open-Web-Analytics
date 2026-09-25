@@ -168,8 +168,19 @@ final class ReportRenderCharacterizationTest extends TestCase
             'these reports emit no API query at all, so nothing about them is pinned: '
             . implode( ', ', $withoutQuery ) );
 
+        /*
+         * Floors, not counts. 180 commands where it was 227 -- the 47
+         * renderHeadline calls went with the headlines, one per report -- and a
+         * floor that tracked the exact number would have to move every time a
+         * widget is added or removed, which makes it a number nobody reads
+         * rather than a guard.
+         *
+         * What it guards is the snapshot collapsing: an empty recording passes
+         * every per-report assertion above, because there is nothing to
+         * disagree with.
+         */
         $this->assertGreaterThan( 90, $queries );
-        $this->assertGreaterThan( 180, $commands );
+        $this->assertGreaterThan( 150, $commands );
     }
 
     /**
@@ -241,14 +252,14 @@ final class ReportRenderCharacterizationTest extends TestCase
      */
     public function testTheHarnessCanSeeAChange(): void
     {
-        $html = "<script>var aurl = 'https://x/owa/api/index.php?do=reports&metrics=visits&nonce=abc';\n"
+        $html = "<script>var aurl = 'https://x/owa/api/index.php?do=reports&metrics=sessions&nonce=abc';\n"
               . "trend.asyncQueue.push(['makeAreaChart', [{x:'date'}], 'trend-chart']);</script>";
 
         $queries = Render::queriesIn( $html );
 
         $this->assertCount( 1, $queries );
         $this->assertSame( 'aurl', $queries[0]['var'] );
-        $this->assertSame( 'visits', $queries[0]['query']['metrics'] );
+        $this->assertSame( 'sessions', $queries[0]['query']['metrics'] );
         $this->assertSame( '<nonce>', $queries[0]['query']['nonce'],
             'the volatile value must be normalised, not passed through' );
 

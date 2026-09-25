@@ -1,6 +1,6 @@
 {
     "title": "Content Overview",
-    "metrics": "visits,pageViews,bounceRate",
+    "metrics": "sessions,pageViews,bounceRate",
     "widgets": [
         {
             "type": "trend-card",
@@ -9,10 +9,9 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date",
-                "metrics": "pageViews,pagesPerVisit,bounceRate"
+                "metrics": "pageViews,pageViewsPerSession,bounceRate"
             },
-            "chartMetric": "pageViews",
-            "headline": "There were {pageViews.raw} {pageViews|page view|page views} of all pages."
+            "chartMetric": "pageViews"
         },
         {
             "type": "grid-card",
@@ -21,9 +20,9 @@
             "title": "Pages",
             "colspan": 6,
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "pageTitle",
-                "sort": "visits-"
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "pages",
@@ -37,9 +36,9 @@
             "title": "Page Types",
             "colspan": 3,
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "pageType",
-                "sort": "visits-"
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "page-types",
@@ -52,9 +51,9 @@
             "container": "entry-pages",
             "title": "Entry Pages",
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "landingPage",
-                "sort": "visits-"
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "entry-pages",

@@ -14,8 +14,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "actions",
-            "headline": "There were {actions.formatted} actions for this action group."
+            "chartMetric": "actions"
         },
         {
             "type": "grid",

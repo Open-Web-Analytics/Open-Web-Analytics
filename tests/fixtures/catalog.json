@@ -13,19 +13,19 @@
             {
                 "name": "averageEngagementTimePerSession",
                 "class": "base.configurableMetric",
-                "label": "Average Engagement Time Per Visit",
+                "label": "Average Engagement Time Per Session",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "milliseconds",
-                    "denominator": "visits",
-                    "description": "Average time accrued per visit, in milliseconds.",
+                    "denominator": "sessions",
+                    "description": "Average time accrued per session, in milliseconds.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Average Engagement Time Per Visit",
+                    "label": "Average Engagement Time Per Session",
                     "metric_type": "ratio",
                     "name": "averageEngagementTimePerSession",
                     "numerator": "totalEngagementTime",
@@ -38,19 +38,19 @@
             {
                 "name": "averageEngagementTimePerUser",
                 "class": "base.configurableMetric",
-                "label": "Average Engagement Time Per Visitor",
+                "label": "Average Engagement Time Per User",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "milliseconds",
-                    "denominator": "uniqueVisitors",
-                    "description": "Average time accrued per visitor, in milliseconds.",
+                    "denominator": "totalUsers",
+                    "description": "Average time accrued per user, in milliseconds.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Average Engagement Time Per Visitor",
+                    "label": "Average Engagement Time Per User",
                     "metric_type": "ratio",
                     "name": "averageEngagementTimePerUser",
                     "numerator": "totalEngagementTime",
@@ -70,8 +70,8 @@
                     "column": "",
                     "condition": [],
                     "data_type": "percentage",
-                    "denominator": "visits",
-                    "description": "The share of visits that completed a purchase.",
+                    "denominator": "sessions",
+                    "description": "The share of sessions that completed a purchase.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Ecommerce",
@@ -113,19 +113,19 @@
             {
                 "name": "eventCountPerUser",
                 "class": "base.configurableMetric",
-                "label": "Events Per Visitor",
+                "label": "Events Per User",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "decimal",
-                    "denominator": "uniqueVisitors",
-                    "description": "The average number of events per visitor.",
+                    "denominator": "totalUsers",
+                    "description": "The average number of events per user.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Events Per Visitor",
+                    "label": "Events Per User",
                     "metric_type": "ratio",
                     "name": "eventCountPerUser",
                     "numerator": "eventCount",
@@ -138,19 +138,19 @@
             {
                 "name": "eventsPerSession",
                 "class": "base.configurableMetric",
-                "label": "Events Per Visit",
+                "label": "Events Per Session",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "decimal",
-                    "denominator": "visits",
+                    "denominator": "sessions",
                     "description": "The average number of events recorded per session.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Events Per Visit",
+                    "label": "Events Per Session",
                     "metric_type": "ratio",
                     "name": "eventsPerSession",
                     "numerator": "eventCount",
@@ -215,11 +215,11 @@
                 }
             }
         ],
-        "newVisitors": [
+        "newUsers": [
             {
-                "name": "newVisitors",
+                "name": "newUsers",
                 "class": "base.configurableMetric",
-                "label": "New Visitors",
+                "label": "New Users",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
@@ -230,13 +230,13 @@
                     ],
                     "data_type": "integer",
                     "denominator": "",
-                    "description": "Visitors whose first session this is.",
+                    "description": "Users whose first session this is.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "New Visitors",
+                    "label": "New Users",
                     "metric_type": "distinct_count",
-                    "name": "newVisitors",
+                    "name": "newUsers",
                     "numerator": "",
                     "precision": "",
                     "subtrahend_column": ""
@@ -271,23 +271,48 @@
                 }
             }
         ],
-        "pageViewsPerUser": [
+        "pageViewsPerSession": [
             {
-                "name": "pageViewsPerUser",
+                "name": "pageViewsPerSession",
                 "class": "base.configurableMetric",
-                "label": "Page Views Per Visitor",
+                "label": "Pages Per Session",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "decimal",
-                    "denominator": "uniqueVisitors",
-                    "description": "The average number of pages viewed per visitor.",
+                    "denominator": "sessions",
+                    "description": "The average number of pages viewed per session.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Page Views Per Visitor",
+                    "label": "Pages Per Session",
+                    "metric_type": "ratio",
+                    "name": "pageViewsPerSession",
+                    "numerator": "pageViews",
+                    "precision": 2,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "pageViewsPerUser": [
+            {
+                "name": "pageViewsPerUser",
+                "class": "base.configurableMetric",
+                "label": "Page Views Per User",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "decimal",
+                    "denominator": "totalUsers",
+                    "description": "The average number of pages viewed per user.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Page Views Per User",
                     "metric_type": "ratio",
                     "name": "pageViewsPerUser",
                     "numerator": "pageViews",
@@ -296,27 +321,27 @@
                 }
             }
         ],
-        "pagesPerVisit": [
+        "revenuePerSession": [
             {
-                "name": "pagesPerVisit",
+                "name": "revenuePerSession",
                 "class": "base.configurableMetric",
-                "label": "Pages Per Visit",
-                "group": "Site Usage",
+                "label": "Revenue Per Session",
+                "group": "Ecommerce",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
-                    "data_type": "decimal",
-                    "denominator": "visits",
-                    "description": "The average number of pages viewed per session.",
+                    "data_type": "currency",
+                    "denominator": "sessions",
+                    "description": "Revenue divided by the number of sessions.",
                     "entity": "base.event",
                     "formula": "",
-                    "group": "Site Usage",
-                    "label": "Pages Per Visit",
+                    "group": "Ecommerce",
+                    "label": "Revenue Per Session",
                     "metric_type": "ratio",
-                    "name": "pagesPerVisit",
-                    "numerator": "pageViews",
-                    "precision": 2,
+                    "name": "revenuePerSession",
+                    "numerator": "transactionRevenue",
+                    "precision": 0,
                     "subtrahend_column": ""
                 }
             }
@@ -350,46 +375,21 @@
             {
                 "name": "revenuePerUser",
                 "class": "base.configurableMetric",
-                "label": "Revenue Per Visitor",
+                "label": "Revenue Per User",
                 "group": "Ecommerce",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "currency",
-                    "denominator": "uniqueVisitors",
-                    "description": "Revenue divided by the number of visitors.",
+                    "denominator": "totalUsers",
+                    "description": "Revenue divided by the number of users.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Ecommerce",
-                    "label": "Revenue Per Visitor",
+                    "label": "Revenue Per User",
                     "metric_type": "ratio",
                     "name": "revenuePerUser",
-                    "numerator": "transactionRevenue",
-                    "precision": 0,
-                    "subtrahend_column": ""
-                }
-            }
-        ],
-        "revenuePerVisit": [
-            {
-                "name": "revenuePerVisit",
-                "class": "base.configurableMetric",
-                "label": "Revenue Per Visit",
-                "group": "Ecommerce",
-                "params": {
-                    "child_metrics": [],
-                    "column": "",
-                    "condition": [],
-                    "data_type": "currency",
-                    "denominator": "visits",
-                    "description": "Revenue divided by the number of visits.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Ecommerce",
-                    "label": "Revenue Per Visit",
-                    "metric_type": "ratio",
-                    "name": "revenuePerVisit",
                     "numerator": "transactionRevenue",
                     "precision": 0,
                     "subtrahend_column": ""
@@ -407,8 +407,8 @@
                     "column": "",
                     "condition": [],
                     "data_type": "percentage",
-                    "denominator": "visits",
-                    "description": "The share of visits that included a key event.",
+                    "denominator": "sessions",
+                    "description": "The share of sessions that included a key event.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Goals",
@@ -421,26 +421,51 @@
                 }
             }
         ],
+        "sessions": [
+            {
+                "name": "sessions",
+                "class": "base.configurableMetric",
+                "label": "Sessions",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "session_id",
+                    "condition": [],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of sessions.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Sessions",
+                    "metric_type": "distinct_count",
+                    "name": "sessions",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "sessionsPerUser": [
             {
                 "name": "sessionsPerUser",
                 "class": "base.configurableMetric",
-                "label": "Sessions Per Visitor",
+                "label": "Sessions Per User",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "decimal",
-                    "denominator": "uniqueVisitors",
-                    "description": "The average number of sessions per visitor.",
+                    "denominator": "totalUsers",
+                    "description": "The average number of sessions per user.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Sessions Per Visitor",
+                    "label": "Sessions Per User",
                     "metric_type": "ratio",
                     "name": "sessionsPerUser",
-                    "numerator": "visits",
+                    "numerator": "sessions",
                     "precision": 2,
                     "subtrahend_column": ""
                 }
@@ -465,6 +490,31 @@
                     "label": "Total Engagement Time",
                     "metric_type": "sum",
                     "name": "totalEngagementTime",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "totalUsers": [
+            {
+                "name": "totalUsers",
+                "class": "base.configurableMetric",
+                "label": "Total Users",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "visitor_id",
+                    "condition": [],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of distinct users.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Total Users",
+                    "metric_type": "distinct_count",
+                    "name": "totalUsers",
                     "numerator": "",
                     "precision": "",
                     "subtrahend_column": ""
@@ -527,77 +577,27 @@
                 }
             }
         ],
-        "uniqueVisitors": [
-            {
-                "name": "uniqueVisitors",
-                "class": "base.configurableMetric",
-                "label": "Unique Visitors",
-                "group": "Site Usage",
-                "params": {
-                    "child_metrics": [],
-                    "column": "visitor_id",
-                    "condition": [],
-                    "data_type": "integer",
-                    "denominator": "",
-                    "description": "The number of distinct visitors.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Site Usage",
-                    "label": "Unique Visitors",
-                    "metric_type": "distinct_count",
-                    "name": "uniqueVisitors",
-                    "numerator": "",
-                    "precision": "",
-                    "subtrahend_column": ""
-                }
-            }
-        ],
         "userKeyEventRate": [
             {
                 "name": "userKeyEventRate",
                 "class": "base.configurableMetric",
-                "label": "Key Event Rate Per Visitor",
+                "label": "Key Event Rate Per User",
                 "group": "Goals",
                 "params": {
                     "child_metrics": [],
                     "column": "",
                     "condition": [],
                     "data_type": "percentage",
-                    "denominator": "uniqueVisitors",
-                    "description": "The share of visitors who triggered a key event.",
+                    "denominator": "totalUsers",
+                    "description": "The share of users who triggered a key event.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Goals",
-                    "label": "Key Event Rate Per Visitor",
+                    "label": "Key Event Rate Per User",
                     "metric_type": "ratio",
                     "name": "userKeyEventRate",
                     "numerator": "keyEvents",
                     "precision": 4,
-                    "subtrahend_column": ""
-                }
-            }
-        ],
-        "visits": [
-            {
-                "name": "visits",
-                "class": "base.configurableMetric",
-                "label": "Visits",
-                "group": "Site Usage",
-                "params": {
-                    "child_metrics": [],
-                    "column": "session_id",
-                    "condition": [],
-                    "data_type": "integer",
-                    "denominator": "",
-                    "description": "The number of sessions.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Site Usage",
-                    "label": "Visits",
-                    "metric_type": "distinct_count",
-                    "name": "visits",
-                    "numerator": "",
-                    "precision": "",
                     "subtrahend_column": ""
                 }
             }
@@ -638,7 +638,7 @@
                 "column": "city",
                 "family": "geography",
                 "label": "City",
-                "description": "The city resolved from the visitor's address.",
+                "description": "The city resolved from the user's address.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -652,6 +652,19 @@
                 "family": "event",
                 "label": "Click Target",
                 "description": "Where the click led.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "clientId": {
+            "base.event": {
+                "name": "clientId",
+                "entity": "base.event",
+                "column": "visitor_id",
+                "family": "visitor",
+                "label": "Client ID",
+                "description": "The identifier OWA assigned to the user.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -690,7 +703,7 @@
                 "column": "country",
                 "family": "geography",
                 "label": "Country",
-                "description": "The country resolved from the visitor's address.",
+                "description": "The country resolved from the user's address.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -833,7 +846,7 @@
                 "column": "acq_ad",
                 "family": "traffic source",
                 "label": "First Ad",
-                "description": "The ad that acquired the visitor.",
+                "description": "The ad that acquired the user.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -846,7 +859,7 @@
                 "column": "acq_campaign",
                 "family": "traffic source",
                 "label": "First Campaign",
-                "description": "The campaign that acquired the visitor.",
+                "description": "The campaign that acquired the user.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -859,7 +872,7 @@
                 "column": "acq_medium",
                 "family": "traffic source",
                 "label": "First Medium",
-                "description": "How the visitor arrived on the visit that acquired them.",
+                "description": "How the user arrived on the session that acquired them.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -872,7 +885,7 @@
                 "column": "acq_search_terms",
                 "family": "traffic source",
                 "label": "First Search Terms",
-                "description": "The terms the visitor searched for before the visit that acquired them.",
+                "description": "The terms the user searched for before the session that acquired them.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -885,7 +898,7 @@
                 "column": "acq_source",
                 "family": "traffic source",
                 "label": "First Source",
-                "description": "Where the visitor came from on the visit that acquired them.",
+                "description": "Where the user came from on the session that acquired them.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -911,7 +924,7 @@
                 "column": "ip_address",
                 "family": "device",
                 "label": "IP Address",
-                "description": "The visitor's address, where the install stores one.",
+                "description": "The user's address, where the install stores one.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -1015,7 +1028,7 @@
                 "column": "new_vs_returning",
                 "family": "visitor",
                 "label": "New vs Returning",
-                "description": "Whether the session was the visitor's first.",
+                "description": "Whether the session was the user's first.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -1093,7 +1106,7 @@
                 "column": "referer_url",
                 "family": "content",
                 "label": "Page Referrer",
-                "description": "The page the visitor arrived from.",
+                "description": "The page the user arrived from.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -1112,14 +1125,14 @@
                 "denormalized": true
             }
         },
-        "priorVisitCount": {
+        "priorSessionCount": {
             "base.event": {
-                "name": "priorVisitCount",
+                "name": "priorSessionCount",
                 "entity": "base.event",
                 "column": "prior_sessions",
                 "family": "visitor",
-                "label": "Prior Visits",
-                "description": "How many sessions the visitor had before this one.",
+                "label": "Prior Sessions",
+                "description": "How many sessions the user had before this one.",
                 "foreign_key_name": "",
                 "data_type": "integer",
                 "denormalized": true
@@ -1184,7 +1197,7 @@
                 "column": "search_terms",
                 "family": "traffic source",
                 "label": "Search Terms",
-                "description": "The terms the visitor searched for before this session.",
+                "description": "The terms the user searched for before this session.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -1223,7 +1236,7 @@
                 "column": "region",
                 "family": "geography",
                 "label": "Region",
-                "description": "The region or state resolved from the visitor's address.",
+                "description": "The region or state resolved from the user's address.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -1280,19 +1293,6 @@
                 "data_type": "string",
                 "denormalized": true
             }
-        },
-        "visitorId": {
-            "base.event": {
-                "name": "visitorId",
-                "entity": "base.event",
-                "column": "visitor_id",
-                "family": "visitor",
-                "label": "Visitor ID",
-                "description": "The identifier OWA assigned to the visitor.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            }
         }
     },
     "accessorGetAllDimensions": {
@@ -1324,7 +1324,7 @@
             "column": "city",
             "family": "geography",
             "label": "City",
-            "description": "The city resolved from the visitor's address.",
+            "description": "The city resolved from the user's address.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1336,6 +1336,17 @@
             "family": "event",
             "label": "Click Target",
             "description": "Where the click led.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "clientId": {
+            "name": "clientId",
+            "entity": "base.event",
+            "column": "visitor_id",
+            "family": "visitor",
+            "label": "Client ID",
+            "description": "The identifier OWA assigned to the user.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1368,7 +1379,7 @@
             "column": "country",
             "family": "geography",
             "label": "Country",
-            "description": "The country resolved from the visitor's address.",
+            "description": "The country resolved from the user's address.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1489,7 +1500,7 @@
             "column": "acq_ad",
             "family": "traffic source",
             "label": "First Ad",
-            "description": "The ad that acquired the visitor.",
+            "description": "The ad that acquired the user.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1500,7 +1511,7 @@
             "column": "acq_campaign",
             "family": "traffic source",
             "label": "First Campaign",
-            "description": "The campaign that acquired the visitor.",
+            "description": "The campaign that acquired the user.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1511,7 +1522,7 @@
             "column": "acq_medium",
             "family": "traffic source",
             "label": "First Medium",
-            "description": "How the visitor arrived on the visit that acquired them.",
+            "description": "How the user arrived on the session that acquired them.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1522,7 +1533,7 @@
             "column": "acq_search_terms",
             "family": "traffic source",
             "label": "First Search Terms",
-            "description": "The terms the visitor searched for before the visit that acquired them.",
+            "description": "The terms the user searched for before the session that acquired them.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1533,7 +1544,7 @@
             "column": "acq_source",
             "family": "traffic source",
             "label": "First Source",
-            "description": "Where the visitor came from on the visit that acquired them.",
+            "description": "Where the user came from on the session that acquired them.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1555,7 +1566,7 @@
             "column": "ip_address",
             "family": "device",
             "label": "IP Address",
-            "description": "The visitor's address, where the install stores one.",
+            "description": "The user's address, where the install stores one.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1643,7 +1654,7 @@
             "column": "new_vs_returning",
             "family": "visitor",
             "label": "New vs Returning",
-            "description": "Whether the session was the visitor's first.",
+            "description": "Whether the session was the user's first.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1709,7 +1720,7 @@
             "column": "referer_url",
             "family": "content",
             "label": "Page Referrer",
-            "description": "The page the visitor arrived from.",
+            "description": "The page the user arrived from.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1725,13 +1736,13 @@
             "data_type": "string",
             "denormalized": true
         },
-        "priorVisitCount": {
-            "name": "priorVisitCount",
+        "priorSessionCount": {
+            "name": "priorSessionCount",
             "entity": "base.event",
             "column": "prior_sessions",
             "family": "visitor",
-            "label": "Prior Visits",
-            "description": "How many sessions the visitor had before this one.",
+            "label": "Prior Sessions",
+            "description": "How many sessions the user had before this one.",
             "foreign_key_name": "",
             "data_type": "integer",
             "denormalized": true
@@ -1786,7 +1797,7 @@
             "column": "search_terms",
             "family": "traffic source",
             "label": "Search Terms",
-            "description": "The terms the visitor searched for before this session.",
+            "description": "The terms the user searched for before this session.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1819,7 +1830,7 @@
             "column": "region",
             "family": "geography",
             "label": "Region",
-            "description": "The region or state resolved from the visitor's address.",
+            "description": "The region or state resolved from the user's address.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -1864,17 +1875,6 @@
             "family": "visitor",
             "label": "User ID",
             "description": "The identifier the site declared for the person.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": true
-        },
-        "visitorId": {
-            "name": "visitorId",
-            "entity": "base.event",
-            "column": "visitor_id",
-            "family": "visitor",
-            "label": "Visitor ID",
-            "description": "The identifier OWA assigned to the visitor.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

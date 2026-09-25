@@ -12,8 +12,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from this source."
+            }
         }
     ],
     "settings": {

@@ -3,11 +3,11 @@
         {
             "kind": "ratio",
             "numerator": "totalEngagementTime",
-            "denominator": "visits",
+            "denominator": "sessions",
             "precision": 0,
             "children": [
-                "totalEngagementTime",
-                "visits"
+                "sessions",
+                "totalEngagementTime"
             ]
         }
     ],
@@ -15,11 +15,11 @@
         {
             "kind": "ratio",
             "numerator": "totalEngagementTime",
-            "denominator": "uniqueVisitors",
+            "denominator": "totalUsers",
             "precision": 0,
             "children": [
                 "totalEngagementTime",
-                "uniqueVisitors"
+                "totalUsers"
             ]
         }
     ],
@@ -27,11 +27,11 @@
         {
             "kind": "ratio",
             "numerator": "transactions",
-            "denominator": "visits",
+            "denominator": "sessions",
             "precision": 4,
             "children": [
-                "transactions",
-                "visits"
+                "sessions",
+                "transactions"
             ]
         }
     ],
@@ -47,11 +47,11 @@
         {
             "kind": "ratio",
             "numerator": "eventCount",
-            "denominator": "uniqueVisitors",
+            "denominator": "totalUsers",
             "precision": 2,
             "children": [
                 "eventCount",
-                "uniqueVisitors"
+                "totalUsers"
             ]
         }
     ],
@@ -59,11 +59,11 @@
         {
             "kind": "ratio",
             "numerator": "eventCount",
-            "denominator": "visits",
+            "denominator": "sessions",
             "precision": 2,
             "children": [
                 "eventCount",
-                "visits"
+                "sessions"
             ]
         }
     ],
@@ -83,12 +83,12 @@
             "alias": "keyEvents"
         }
     ],
-    "newVisitors": [
+    "newUsers": [
         {
             "kind": "aggregate",
             "entity": "base.event",
             "expression": "COUNT(DISTINCT CASE WHEN event.prior_sessions = 0 THEN event.visitor_id END)",
-            "alias": "newVisitors"
+            "alias": "newUsers"
         }
     ],
     "pageViews": [
@@ -99,27 +99,39 @@
             "alias": "pageViews"
         }
     ],
+    "pageViewsPerSession": [
+        {
+            "kind": "ratio",
+            "numerator": "pageViews",
+            "denominator": "sessions",
+            "precision": 2,
+            "children": [
+                "pageViews",
+                "sessions"
+            ]
+        }
+    ],
     "pageViewsPerUser": [
         {
             "kind": "ratio",
             "numerator": "pageViews",
-            "denominator": "uniqueVisitors",
+            "denominator": "totalUsers",
             "precision": 2,
             "children": [
                 "pageViews",
-                "uniqueVisitors"
+                "totalUsers"
             ]
         }
     ],
-    "pagesPerVisit": [
+    "revenuePerSession": [
         {
             "kind": "ratio",
-            "numerator": "pageViews",
-            "denominator": "visits",
-            "precision": 2,
+            "numerator": "transactionRevenue",
+            "denominator": "sessions",
+            "precision": 0,
             "children": [
-                "pageViews",
-                "visits"
+                "sessions",
+                "transactionRevenue"
             ]
         }
     ],
@@ -139,23 +151,11 @@
         {
             "kind": "ratio",
             "numerator": "transactionRevenue",
-            "denominator": "uniqueVisitors",
+            "denominator": "totalUsers",
             "precision": 0,
             "children": [
-                "transactionRevenue",
-                "uniqueVisitors"
-            ]
-        }
-    ],
-    "revenuePerVisit": [
-        {
-            "kind": "ratio",
-            "numerator": "transactionRevenue",
-            "denominator": "visits",
-            "precision": 0,
-            "children": [
-                "transactionRevenue",
-                "visits"
+                "totalUsers",
+                "transactionRevenue"
             ]
         }
     ],
@@ -163,23 +163,31 @@
         {
             "kind": "ratio",
             "numerator": "keyEvents",
-            "denominator": "visits",
+            "denominator": "sessions",
             "precision": 4,
             "children": [
                 "keyEvents",
-                "visits"
+                "sessions"
             ]
+        }
+    ],
+    "sessions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT event.session_id)",
+            "alias": "sessions"
         }
     ],
     "sessionsPerUser": [
         {
             "kind": "ratio",
-            "numerator": "visits",
-            "denominator": "uniqueVisitors",
+            "numerator": "sessions",
+            "denominator": "totalUsers",
             "precision": 2,
             "children": [
-                "uniqueVisitors",
-                "visits"
+                "sessions",
+                "totalUsers"
             ]
         }
     ],
@@ -189,6 +197,14 @@
             "entity": "base.event",
             "expression": "SUM(event.engagement_msec)",
             "alias": "totalEngagementTime"
+        }
+    ],
+    "totalUsers": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT event.visitor_id)",
+            "alias": "totalUsers"
         }
     ],
     "transactionRevenue": [
@@ -207,32 +223,16 @@
             "alias": "transactions"
         }
     ],
-    "uniqueVisitors": [
-        {
-            "kind": "aggregate",
-            "entity": "base.event",
-            "expression": "COUNT(DISTINCT event.visitor_id)",
-            "alias": "uniqueVisitors"
-        }
-    ],
     "userKeyEventRate": [
         {
             "kind": "ratio",
             "numerator": "keyEvents",
-            "denominator": "uniqueVisitors",
+            "denominator": "totalUsers",
             "precision": 4,
             "children": [
                 "keyEvents",
-                "uniqueVisitors"
+                "totalUsers"
             ]
-        }
-    ],
-    "visits": [
-        {
-            "kind": "aggregate",
-            "entity": "base.event",
-            "expression": "COUNT(DISTINCT event.session_id)",
-            "alias": "visits"
         }
     ]
 }

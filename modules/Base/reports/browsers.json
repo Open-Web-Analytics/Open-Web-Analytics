@@ -8,8 +8,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits for all browser types."
+            }
         },
         {
             "type": "grid",
@@ -17,7 +16,7 @@
             "container": "dimension-grid",
             "query": {
                 "dimensions": "browserType",
-                "sort": "visits-",
+                "sort": "sessions-",
                 "resultsPerPage": 25
             }
         }

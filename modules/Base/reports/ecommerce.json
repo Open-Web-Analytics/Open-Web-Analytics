@@ -1,6 +1,6 @@
 {
     "title": "Ecommerce",
-    "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
+    "metrics": "sessions,transactions,transactionRevenue,ecommerceConversionRate,revenuePerSession,revenuePerTransaction",
     "widgets": [
         {
             "type": "trend",
@@ -10,8 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "transactions",
-            "headline": "There were {transactions.formatted} {transactions|transaction|transactions} completed."
+            "chartMetric": "transactions"
         },
         {
             "type": "grid-card",

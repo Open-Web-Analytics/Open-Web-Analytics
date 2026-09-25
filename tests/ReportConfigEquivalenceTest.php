@@ -126,7 +126,7 @@ final class ReportConfigEquivalenceTest extends TestCase
     {
         return array(
             'not an object'   => array( 'pages', 'must be an object' ),
-            'no title'        => array( array( 'metrics' => 'visits' ), 'needs a "title"' ),
+            'no title'        => array( array( 'metrics' => 'sessions' ), 'needs a "title"' ),
             'empty title'     => array( array( 'title' => '' ), 'needs a "title"' ),
             'names a renderer' => array(
                 array( 'title' => 'Pages', 'subview' => 'base.reportWidgets' ), 'unknown key' ),

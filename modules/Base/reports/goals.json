@@ -1,6 +1,6 @@
 {
     "title": "Goals",
-    "metrics": "visits,keyEvents,sessionKeyEventRate,goalAbandonRateAll,goalValueAll",
+    "metrics": "sessions,keyEvents,sessionKeyEventRate,goalAbandonRateAll,goalValueAll",
     "widgets": [
         {
             "type": "trend",
@@ -11,8 +11,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "keyEvents",
-            "headline": "There were {goalCompletionsAll.formatted} {goalCompletionsAll|goal|goals} completed."
+            "chartMetric": "keyEvents"
         },
         {
             "type": "metric-boxes",

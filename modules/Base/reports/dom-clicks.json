@@ -14,8 +14,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {eventCount.formatted} dom clicks for this web page."
+            }
         },
         {
             "type": "grid",

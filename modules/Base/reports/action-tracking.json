@@ -12,7 +12,6 @@
                 "sort": "date"
             },
             "chartMetric": "actions",
-            "headline": "There were {actions.formatted} {actions|action|actions} performed on all pages.",
             "colspan": 12
         },
         {

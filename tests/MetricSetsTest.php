@@ -34,7 +34,7 @@ final class MetricSetsTest extends TestCase
             $this->assertNotEmpty( $default[ $key ], "the default set has no $key" );
         }
 
-        $this->assertStringContainsString( 'visits', $default['metrics'] );
+        $this->assertStringContainsString( 'sessions', $default['metrics'] );
     }
 
     /**
@@ -108,7 +108,7 @@ final class MetricSetsTest extends TestCase
     public function testTheLegacyShapeIsDerivedNotDuplicated(): void
     {
         $sets = array(
-            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'visits', 'chartMetric' => 'visits' ),
+            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'sessions', 'chartMetric' => 'sessions' ),
             'ecommerce'  => array( 'label' => 'e-commerce', 'metrics' => 'transactions', 'chartMetric' => 'transactions' ),
         );
 
@@ -118,8 +118,8 @@ final class MetricSetsTest extends TestCase
             'the same sets, in the same order' );
 
         $this->assertSame( 'Site Usage', $tabs['site_usage']['tab_label'] );
-        $this->assertSame( 'visits', $tabs['site_usage']['metrics'] );
-        $this->assertSame( 'visits', $tabs['site_usage']['trendchartmetric'] );
+        $this->assertSame( 'sessions', $tabs['site_usage']['metrics'] );
+        $this->assertSame( 'sessions', $tabs['site_usage']['trendchartmetric'] );
 
         // Present but empty: the template indexes it, and a missing key is a
         // warning on every render. Nothing reads the value.
@@ -166,9 +166,9 @@ final class MetricSetsTest extends TestCase
         $set = \OWA\Core\MetricSets::goalGroupSet( 'Signups', array( 1, 4, 7 ) );
 
         $this->assertSame( 'Signups', $set['label'] );
-        $this->assertSame( 'visits,goal1Completions,goal4Completions,goal7Completions,goalValueAll',
+        $this->assertSame( 'sessions,goal1Completions,goal4Completions,goal7Completions,goalValueAll',
             $set['metrics'] );
-        $this->assertSame( 'visits', $set['chartMetric'] );
+        $this->assertSame( 'sessions', $set['chartMetric'] );
     }
 
     /**
@@ -184,7 +184,7 @@ final class MetricSetsTest extends TestCase
 
             $metrics = explode( ',', \OWA\Core\MetricSets::goalGroupSet( 'G', $goals )['metrics'] );
 
-            $this->assertSame( 'visits', reset( $metrics ), 'visits leads' );
+            $this->assertSame( 'sessions', reset( $metrics ), 'visits leads' );
             $this->assertSame( 'goalValueAll', end( $metrics ), 'the total is last' );
             $this->assertCount( count( $goals ) + 2, $metrics );
         }
@@ -220,7 +220,7 @@ final class MetricSetsTest extends TestCase
     /** A group with no active goals still measures visits and the total. */
     public function testAnEmptyGoalGroupIsStillUsable(): void
     {
-        $this->assertSame( 'visits,goalValueAll',
+        $this->assertSame( 'sessions,goalValueAll',
             \OWA\Core\MetricSets::goalGroupSet( 'Empty', array() )['metrics'] );
     }
 

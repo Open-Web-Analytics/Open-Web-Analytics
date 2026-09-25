@@ -10,8 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "transactionRevenue",
-            "headline": "There were {transactionRevenue.formatted} across all transactions."
+            "chartMetric": "transactionRevenue"
         },
         {
             "type": "grid",

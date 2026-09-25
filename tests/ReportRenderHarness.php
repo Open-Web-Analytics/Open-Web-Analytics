@@ -73,18 +73,18 @@ final class ReportRenderHarness
     public const METRIC_SETS = array(
         'site_usage' => array(
             'label'       => 'Site Usage',
-            'metrics'     => 'visits,pagesPerVisit,averageEngagementTime,bounceRate,uniqueVisitors',
-            'chartMetric' => 'visits',
+            'metrics'     => 'sessions,pageViewsPerSession,averageEngagementTime,bounceRate,totalUsers',
+            'chartMetric' => 'sessions',
         ),
         'ecommerce' => array(
             'label'       => 'e-commerce',
-            'metrics'     => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
+            'metrics'     => 'sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate',
             'chartMetric' => 'transactions',
         ),
         'goal_group_1' => array(
             'label'       => 'Goal Group One',
-            'metrics'     => 'visits,goal1Completions,goalValueAll',
-            'chartMetric' => 'visits',
+            'metrics'     => 'sessions,goal1Completions,goalValueAll',
+            'chartMetric' => 'sessions',
         ),
     );
 

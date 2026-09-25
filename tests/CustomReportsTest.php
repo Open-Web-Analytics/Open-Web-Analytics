@@ -64,13 +64,13 @@ final class CustomReportsTest extends TestCase
     {
         return array(
             'title'   => 'A Custom Report',
-            'metrics' => 'visits,uniqueVisitors',
+            'metrics' => 'sessions,totalUsers',
             'widgets' => array(
                 array(
                     'type'        => 'trend',
                     'id'          => 'trend',
                     'container'   => 'trend-chart',
-                    'chartMetric' => 'visits',
+                    'chartMetric' => 'sessions',
                     'query'       => array('dimensions' => 'date', 'sort' => 'date'),
                 ),
                 array(
@@ -152,7 +152,7 @@ final class CustomReportsTest extends TestCase
                 'notASort',
             ),
             'unknown name in the report metric set' => array(
-                function (array &$d) { $d['metrics'] = 'visits,notAMetric'; },
+                function (array &$d) { $d['metrics'] = 'sessions,notAMetric'; },
                 'notAMetric',
             ),
             'one bad name among good ones' => array(
@@ -193,8 +193,8 @@ final class CustomReportsTest extends TestCase
                 'type'        => $type,
                 'id'          => 'w',
                 'container'   => 'w',
-                'chartMetric' => 'visits',
-                'query'       => array('metrics' => 'visits', 'dimensions' => 'date'),
+                'chartMetric' => 'sessions',
+                'query'       => array('metrics' => 'sessions', 'dimensions' => 'date'),
             ));
 
             $this->assertSame('', CustomReports::validate($definition),
@@ -247,7 +247,7 @@ final class CustomReportsTest extends TestCase
          * genuinely has no common table.
          */
         $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'visits,feedRequests';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,feedRequests';
 
         $error = CustomReports::validate($definition);
 
@@ -256,7 +256,7 @@ final class CustomReportsTest extends TestCase
         // BOTH SIDES named: which field broke it, and what it clashed with.
         // Listing everything asked for tells an author nothing to act on.
         $this->assertStringContainsString('feedRequests', $error);
-        $this->assertStringContainsString('visits', $error);
+        $this->assertStringContainsString('sessions', $error);
     }
 
     /**
@@ -266,7 +266,7 @@ final class CustomReportsTest extends TestCase
     public function testACombinationV1CouldNotServeIsNowAnswerable(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,domClicks';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,keyEvents';
 
         $this->assertSame('', CustomReports::validate($definition),
             'the cube carries sessions, visitors and clicks, so one table serves all three');
@@ -274,7 +274,7 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $this->assertSame(array('base.event'),
-            $rsm->compatibleEntities(array('visits', 'uniqueVisitors', 'domClicks'), array()),
+            $rsm->compatibleEntities(array('sessions', 'totalUsers', 'keyEvents'), array()),
             'and it is the cube that serves it');
     }
 
@@ -282,7 +282,7 @@ final class CustomReportsTest extends TestCase
     public function testMetricsSharingAFactTableAreAccepted(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,pageViews';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews';
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -302,7 +302,7 @@ final class CustomReportsTest extends TestCase
          * set, not that the set has one member, because the set grows as the
          * cube takes over the vocabulary.
          */
-        $entities = $rsm->compatibleEntities(array('visits'), array('pagePath'));
+        $entities = $rsm->compatibleEntities(array('sessions'), array('pagePath'));
 
         $this->assertContains('base.request', $entities);
         $this->assertContains('base.event', $entities);
@@ -313,7 +313,7 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $this->assertSame(array(),
-            $rsm->compatibleEntities(array('visits'), array('notARealDimension')));
+            $rsm->compatibleEntities(array('sessions'), array('notARealDimension')));
     }
 
     /** The offender is the field that emptied the set, not the whole list. */
@@ -327,19 +327,19 @@ final class CustomReportsTest extends TestCase
          * reporting: it is the LAST name added that emptied the set, and the
          * message names what it clashed with.
          */
-        $clash = $rsm->firstIncompatible(array('visits', 'uniqueVisitors', 'feedRequests'));
+        $clash = $rsm->firstIncompatible(array('sessions', 'totalUsers', 'feedRequests'));
 
         $this->assertNotNull($clash);
         $this->assertSame('feedRequests', $clash['name'], 'the LAST one added is what broke it');
         $this->assertSame('metric', $clash['kind']);
-        $this->assertContains('visits', $clash['with']);
+        $this->assertContains('sessions', $clash['with']);
     }
 
     public function testACompatibleSetHasNoClash(): void
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $this->assertNull($rsm->firstIncompatible(array('visits', 'uniqueVisitors')));
+        $this->assertNull($rsm->firstIncompatible(array('sessions', 'totalUsers')));
     }
 
     // ------------------------------------------------------------------
@@ -369,11 +369,11 @@ final class CustomReportsTest extends TestCase
         unset( $definition['widgets'][1]['query']['dimensions'] );
         unset( $definition['widgets'][1]['query']['sort'] );
 
-        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,pageViews,bounceRate';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,bounceRate';
         $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
 
         $definition['widgets'][1]['query']['metrics'] =
-            'visits,uniqueVisitors,pageViews,bounceRate,averageEngagementTime';
+            'sessions,totalUsers,pageViews,bounceRate,averageEngagementTime';
         $this->assertStringContainsString('4 is the most',
             CustomReports::validate($definition), 'five metrics is refused');
 
@@ -1012,7 +1012,7 @@ final class CustomReportsTest extends TestCase
 
         unset($definition['metrics']);
 
-        $definition['widgets'][0]['query']['metrics'] = 'visits';
+        $definition['widgets'][0]['query']['metrics'] = 'sessions';
         $definition['widgets'][1]['query']['metrics'] = '';
 
         $says = CustomReports::validate($definition);
@@ -1034,7 +1034,7 @@ final class CustomReportsTest extends TestCase
 
         unset($definition['metrics']);
 
-        $definition['widgets'][0]['query']['metrics'] = 'visits';
+        $definition['widgets'][0]['query']['metrics'] = 'sessions';
 
         unset($definition['widgets'][1]['query']['metrics']);
 
@@ -1059,7 +1059,7 @@ final class CustomReportsTest extends TestCase
     {
         $definition = $this->definition();
 
-        $this->assertSame('visits,uniqueVisitors', $definition['metrics'],
+        $this->assertSame('sessions,totalUsers', $definition['metrics'],
             'the fixture has to carry a set for this test to be about anything');
         $this->assertArrayNotHasKey('metrics', $definition['widgets'][0]['query'],
             '...and a widget that names none of its own');
@@ -1094,7 +1094,7 @@ final class CustomReportsTest extends TestCase
         $this->assertContains('pie', CustomReports::SINGLE_FIELD_TYPES);
 
         $definition = $this->definition();
-        $definition['metrics'] = 'visits,uniqueVisitors';
+        $definition['metrics'] = 'sessions,totalUsers';
         $definition['widgets'][1] = array(
             'type' => 'pie', 'id' => 'p', 'container' => 'p',
             'query' => array('dimensions' => 'sessionMedium'),
@@ -1102,7 +1102,7 @@ final class CustomReportsTest extends TestCase
 
         $this->assertStringContainsString('0 metrics', CustomReports::validate($definition));
 
-        $definition['widgets'][1]['query']['metrics'] = 'visits';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions';
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -1130,7 +1130,7 @@ final class CustomReportsTest extends TestCase
         $this->assertContains('trend-card', CustomReports::OWN_METRIC_TYPES);
 
         $definition = $this->definition();
-        $definition['metrics'] = 'visits,uniqueVisitors';
+        $definition['metrics'] = 'sessions,totalUsers';
         $definition['widgets'][1] = array(
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
             'query' => array('dimensions' => 'date'),
@@ -1141,7 +1141,7 @@ final class CustomReportsTest extends TestCase
         $this->assertStringContainsString('Trend card', $says);
         $this->assertStringContainsString('does not take the report metric set', $says);
 
-        $definition['widgets'][1]['query']['metrics'] = 'visits';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions';
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -1160,8 +1160,8 @@ final class CustomReportsTest extends TestCase
         $definition = $this->definition();
         $definition['widgets'][1] = array(
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
-            'chartMetric' => 'visits',
-            'query' => array('metrics' => 'visits,uniqueVisitors', 'dimensions' => 'date'),
+            'chartMetric' => 'sessions',
+            'query' => array('metrics' => 'sessions,totalUsers', 'dimensions' => 'date'),
         );
 
         $this->assertSame('', CustomReports::validate($definition));
@@ -1183,8 +1183,8 @@ final class CustomReportsTest extends TestCase
         $definition = $this->definition();
         $definition['widgets'][1] = array(
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
-            'chartMetric' => 'visits',
-            'query' => array('metrics' => 'visits', 'dimensions' => 'date,sessionMedium'),
+            'chartMetric' => 'sessions',
+            'query' => array('metrics' => 'sessions', 'dimensions' => 'date,sessionMedium'),
         );
 
         $this->assertStringContainsString('Trend card',
@@ -1287,7 +1287,7 @@ final class CustomReportsTest extends TestCase
 
         $this->assertNotEmpty($metrics);
         $this->assertContains('base.click', $metrics['domClicks']);
-        $this->assertNotContains('base.click', $metrics['visits']);
+        $this->assertNotContains('base.click', $metrics['sessions']);
 
         $dimensions = \OWA\Module\Base\Controller\CustomReportEdit::dimensionEntities();
 
