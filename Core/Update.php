@@ -235,7 +235,7 @@ class Update extends \OWA\Core\Base {
      * @return bool   false only when the column is genuinely missing and could
      *                not be added
      */
-    protected function addColumnIfMissing( $entity, $column ) {
+    protected function addColumnIfMissing( $entity, $column, $definition = '' ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -247,6 +247,26 @@ class Update extends \OWA\Core\Base {
         if ( $existing ) {
 
             return true;
+        }
+
+        /*
+         * AN EXPLICIT DEFINITION IS FOR A COLUMN THE ENTITY NO LONGER DECLARES.
+         *
+         * Going through the entity is right while the column is still part of
+         * the shape: one declaration, and the update cannot drift from it. But
+         * an update is permanent and a shape is not -- a LATER update may drop
+         * the column, and from then on this one is asking the entity to
+         * describe something it has deliberately forgotten. getColumn() throws,
+         * and the whole upgrade path from before that version is broken, which
+         * is a fresh install's path too.
+         *
+         * Update037 is the case: it adds prev_event_ts, and Update046 removes
+         * it. The mirror of Update046::down() having to spell its types out for
+         * exactly the same reason.
+         */
+        if ( $definition !== '' ) {
+
+            return $db->addColumn( $entity->getTableName(), $column, $definition ) !== false;
         }
 
         return $entity->addColumn( $column ) !== false;
