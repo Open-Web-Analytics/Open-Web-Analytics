@@ -72,7 +72,15 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
     public function testATextColumnStillStoresTheLabel(): void
     {
         $cases = array(
-            'base.session'  => array( 'host', 'cv1_name', 'user_name' ),
+            /*
+             * cv1_name was here and is not a case any more. It is a column on
+             * base.session -- a v1 entity whose writers are the v1 event
+             * chain, none of which is registered -- and keeping it meant
+             * Core\Entity reaching into a module's beacon compat layer to
+             * preserve a default on a table nothing populates. The label
+             * behaviour is still covered by the columns beside it.
+             */
+            'base.session'  => array( 'host', 'user_name' ),
             'base.document' => array( 'page_title' ),
             'base.host'     => array( 'host', 'full_host' ),
         );
