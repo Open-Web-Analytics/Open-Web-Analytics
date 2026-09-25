@@ -82,9 +82,9 @@
             "container": "clicked-elements",
             "title": "Most Clicked Elements",
             "query": {
-                "metrics": "domClicks",
+                "metrics": "eventCount",
                 "dimensions": "domElementId",
-                "sort": "domClicks-"
+                "sort": "eventCount-"
             },
             "more": {
                 "reportId": "clicks",

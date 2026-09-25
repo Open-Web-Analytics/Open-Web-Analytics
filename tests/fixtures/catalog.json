@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 20,
-        "metricImplementations": 20,
+        "metricNames": 23,
+        "metricImplementations": 23,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 53,
@@ -9,11 +9,11 @@
         "accessorDimensionNames": 53
     },
     "metrics": {
-        "averageEngagementTime": [
+        "averageEngagementTimePerSession": [
             {
-                "name": "averageEngagementTime",
+                "name": "averageEngagementTimePerSession",
                 "class": "base.configurableMetric",
-                "label": "Average Engagement Time",
+                "label": "Average Engagement Time Per Visit",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
@@ -25,39 +25,36 @@
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Average Engagement Time",
+                    "label": "Average Engagement Time Per Visit",
                     "metric_type": "ratio",
-                    "name": "averageEngagementTime",
+                    "name": "averageEngagementTimePerSession",
                     "numerator": "totalEngagementTime",
                     "precision": 0,
                     "subtrahend_column": ""
                 }
             }
         ],
-        "domClicks": [
+        "averageEngagementTimePerUser": [
             {
-                "name": "domClicks",
+                "name": "averageEngagementTimePerUser",
                 "class": "base.configurableMetric",
-                "label": "Clicks",
+                "label": "Average Engagement Time Per Visitor",
                 "group": "Site Usage",
                 "params": {
                     "child_metrics": [],
-                    "column": "id",
-                    "condition": [
-                        "click",
-                        "event_type"
-                    ],
-                    "data_type": "integer",
-                    "denominator": "",
-                    "description": "The number of clicks on page elements.",
+                    "column": "",
+                    "condition": [],
+                    "data_type": "milliseconds",
+                    "denominator": "uniqueVisitors",
+                    "description": "Average time accrued per visitor, in milliseconds.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",
-                    "label": "Clicks",
-                    "metric_type": "count",
-                    "name": "domClicks",
-                    "numerator": "",
-                    "precision": "",
+                    "label": "Average Engagement Time Per Visitor",
+                    "metric_type": "ratio",
+                    "name": "averageEngagementTimePerUser",
+                    "numerator": "totalEngagementTime",
+                    "precision": 0,
                     "subtrahend_column": ""
                 }
             }
@@ -108,6 +105,31 @@
                     "name": "eventCount",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "eventCountPerUser": [
+            {
+                "name": "eventCountPerUser",
+                "class": "base.configurableMetric",
+                "label": "Events Per Visitor",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "decimal",
+                    "denominator": "uniqueVisitors",
+                    "description": "The average number of events per visitor.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Events Per Visitor",
+                    "metric_type": "ratio",
+                    "name": "eventCountPerUser",
+                    "numerator": "eventCount",
+                    "precision": 2,
                     "subtrahend_column": ""
                 }
             }
@@ -249,6 +271,31 @@
                 }
             }
         ],
+        "pageViewsPerUser": [
+            {
+                "name": "pageViewsPerUser",
+                "class": "base.configurableMetric",
+                "label": "Page Views Per Visitor",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "decimal",
+                    "denominator": "uniqueVisitors",
+                    "description": "The average number of pages viewed per visitor.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Page Views Per Visitor",
+                    "metric_type": "ratio",
+                    "name": "pageViewsPerUser",
+                    "numerator": "pageViews",
+                    "precision": 2,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "pagesPerVisit": [
             {
                 "name": "pagesPerVisit",
@@ -274,35 +321,6 @@
                 }
             }
         ],
-        "returningVisitors": [
-            {
-                "name": "returningVisitors",
-                "class": "base.configurableMetric",
-                "label": "Returning Visitors",
-                "group": "Site Usage",
-                "params": {
-                    "child_metrics": [],
-                    "column": "visitor_id",
-                    "condition": [
-                        0,
-                        ">",
-                        "prior_sessions"
-                    ],
-                    "data_type": "integer",
-                    "denominator": "",
-                    "description": "Visitors who had been here before.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Site Usage",
-                    "label": "Returning Visitors",
-                    "metric_type": "distinct_count",
-                    "name": "returningVisitors",
-                    "numerator": "",
-                    "precision": "",
-                    "subtrahend_column": ""
-                }
-            }
-        ],
         "revenuePerTransaction": [
             {
                 "name": "revenuePerTransaction",
@@ -322,6 +340,31 @@
                     "label": "Average Order Value",
                     "metric_type": "ratio",
                     "name": "revenuePerTransaction",
+                    "numerator": "transactionRevenue",
+                    "precision": 0,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "revenuePerUser": [
+            {
+                "name": "revenuePerUser",
+                "class": "base.configurableMetric",
+                "label": "Revenue Per Visitor",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "currency",
+                    "denominator": "uniqueVisitors",
+                    "description": "Revenue divided by the number of visitors.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Revenue Per Visitor",
+                    "metric_type": "ratio",
+                    "name": "revenuePerUser",
                     "numerator": "transactionRevenue",
                     "precision": 0,
                     "subtrahend_column": ""
@@ -505,6 +548,31 @@
                     "name": "uniqueVisitors",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "userKeyEventRate": [
+            {
+                "name": "userKeyEventRate",
+                "class": "base.configurableMetric",
+                "label": "Key Event Rate Per Visitor",
+                "group": "Goals",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "uniqueVisitors",
+                    "description": "The share of visitors who triggered a key event.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Goals",
+                    "label": "Key Event Rate Per Visitor",
+                    "metric_type": "ratio",
+                    "name": "userKeyEventRate",
+                    "numerator": "keyEvents",
+                    "precision": 4,
                     "subtrahend_column": ""
                 }
             }

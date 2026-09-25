@@ -1,5 +1,5 @@
 {
-    "averageEngagementTime": [
+    "averageEngagementTimePerSession": [
         {
             "kind": "ratio",
             "numerator": "totalEngagementTime",
@@ -11,12 +11,16 @@
             ]
         }
     ],
-    "domClicks": [
+    "averageEngagementTimePerUser": [
         {
-            "kind": "aggregate",
-            "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'click' THEN 1 ELSE 0 END)",
-            "alias": "domClicks"
+            "kind": "ratio",
+            "numerator": "totalEngagementTime",
+            "denominator": "uniqueVisitors",
+            "precision": 0,
+            "children": [
+                "totalEngagementTime",
+                "uniqueVisitors"
+            ]
         }
     ],
     "ecommerceConversionRate": [
@@ -37,6 +41,18 @@
             "entity": "base.event",
             "expression": "COUNT(event.id)",
             "alias": "eventCount"
+        }
+    ],
+    "eventCountPerUser": [
+        {
+            "kind": "ratio",
+            "numerator": "eventCount",
+            "denominator": "uniqueVisitors",
+            "precision": 2,
+            "children": [
+                "eventCount",
+                "uniqueVisitors"
+            ]
         }
     ],
     "eventsPerSession": [
@@ -83,6 +99,18 @@
             "alias": "pageViews"
         }
     ],
+    "pageViewsPerUser": [
+        {
+            "kind": "ratio",
+            "numerator": "pageViews",
+            "denominator": "uniqueVisitors",
+            "precision": 2,
+            "children": [
+                "pageViews",
+                "uniqueVisitors"
+            ]
+        }
+    ],
     "pagesPerVisit": [
         {
             "kind": "ratio",
@@ -95,14 +123,6 @@
             ]
         }
     ],
-    "returningVisitors": [
-        {
-            "kind": "aggregate",
-            "entity": "base.event",
-            "expression": "COUNT(DISTINCT CASE WHEN event.prior_sessions > 0 THEN event.visitor_id END)",
-            "alias": "returningVisitors"
-        }
-    ],
     "revenuePerTransaction": [
         {
             "kind": "ratio",
@@ -112,6 +132,18 @@
             "children": [
                 "transactionRevenue",
                 "transactions"
+            ]
+        }
+    ],
+    "revenuePerUser": [
+        {
+            "kind": "ratio",
+            "numerator": "transactionRevenue",
+            "denominator": "uniqueVisitors",
+            "precision": 0,
+            "children": [
+                "transactionRevenue",
+                "uniqueVisitors"
             ]
         }
     ],
@@ -181,6 +213,18 @@
             "entity": "base.event",
             "expression": "COUNT(DISTINCT event.visitor_id)",
             "alias": "uniqueVisitors"
+        }
+    ],
+    "userKeyEventRate": [
+        {
+            "kind": "ratio",
+            "numerator": "keyEvents",
+            "denominator": "uniqueVisitors",
+            "precision": 4,
+            "children": [
+                "keyEvents",
+                "uniqueVisitors"
+            ]
         }
     ],
     "visits": [

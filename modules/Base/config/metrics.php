@@ -50,16 +50,6 @@ return array(
             'condition'   => array( 'column' => 'event_type', 'value' => 'page_view' ),
         ),
 
-        'domClicks' => array(
-            'label'       => 'Clicks',
-            'description' => 'The number of clicks on page elements.',
-            'group'       => 'Site Usage',
-            'metric_type' => 'count',
-            'data_type'   => 'integer',
-            'column'      => 'id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'click' ),
-        ),
-
         /*
          * Exits: the last event of a session, counted on the page it happened
          * on. A METRIC, not a dimension, which is the whole point of it.
@@ -180,15 +170,15 @@ return array(
             'condition'   => array( 'column' => 'prior_sessions', 'value' => 0 ),
         ),
 
-        'returningVisitors' => array(
-            'label'       => 'Returning Visitors',
-            'description' => 'Visitors who had been here before.',
-            'group'       => 'Site Usage',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'column'      => 'visitor_id',
-            'condition'   => array( 'column' => 'prior_sessions', 'operator' => '>', 'value' => 0 ),
-        ),
+        /*
+         * newVisitors has no `returningVisitors` twin, deliberately.
+         *
+         * GA has newUsers and no returning-users metric: you take totalUsers
+         * and group it by the New/returning dimension. Two metrics splitting
+         * one population is the same shape as the isNewVisitor /
+         * isRepeatVisitor dimensions this replaced -- and newVsReturning is
+         * exactly the dimension to group uniqueVisitors by.
+         */
 
         // ---- summing ------------------------------------------------------
         /*
@@ -265,6 +255,75 @@ return array(
             'precision'   => 4,
         ),
 
+        /*
+         * ---- the per-USER ratios GA carries and we did not ----------------
+         *
+         * Every one is arithmetic over metrics that already exist, so they cost
+         * a declaration each. GA's names are eventCountPerUser,
+         * screenPageViewsPerUser, averagePurchaseRevenuePerUser and
+         * averageEngagementTimePerUser; ours differ only where the underlying
+         * metric does.
+         *
+         * A per-USER denominator answers a different question from a
+         * per-session one -- "how much does a person do" against "how much
+         * happens in a visit" -- which is why GA ships both and why naming the
+         * denominator in the metric is not pedantry.
+         */
+        'eventCountPerUser' => array(
+            'label'       => 'Events Per Visitor',
+            'description' => 'The average number of events per visitor.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'decimal',
+            'numerator'   => 'eventCount',
+            'denominator' => 'uniqueVisitors',
+            'precision'   => 2,
+        ),
+
+        'pageViewsPerUser' => array(
+            'label'       => 'Page Views Per Visitor',
+            'description' => 'The average number of pages viewed per visitor.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'decimal',
+            'numerator'   => 'pageViews',
+            'denominator' => 'uniqueVisitors',
+            'precision'   => 2,
+        ),
+
+        'averageEngagementTimePerUser' => array(
+            'label'       => 'Average Engagement Time Per Visitor',
+            'description' => 'Average time accrued per visitor, in milliseconds.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'milliseconds',
+            'numerator'   => 'totalEngagementTime',
+            'denominator' => 'uniqueVisitors',
+            'precision'   => 0,
+        ),
+
+        'revenuePerUser' => array(
+            'label'       => 'Revenue Per Visitor',
+            'description' => 'Revenue divided by the number of visitors.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'ratio',
+            'data_type'   => 'currency',
+            'numerator'   => 'transactionRevenue',
+            'denominator' => 'uniqueVisitors',
+            'precision'   => 0,
+        ),
+
+        'userKeyEventRate' => array(
+            'label'       => 'Key Event Rate Per Visitor',
+            'description' => 'The share of visitors who triggered a key event.',
+            'group'       => 'Goals',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'keyEvents',
+            'denominator' => 'uniqueVisitors',
+            'precision'   => 4,
+        ),
+
         'sessionsPerUser' => array(
             'label'       => 'Sessions Per Visitor',
             'description' => 'The average number of sessions per visitor.',
@@ -319,8 +378,15 @@ return array(
          * No ordering caveat, unlike exits: this sums over a session, so which
          * event the pass calls last does not enter into it.
          */
-        'averageEngagementTime' => array(
-            'label'       => 'Average Engagement Time',
+        /*
+         * PER SESSION, and the name says so. GA carries both
+         * averageEngagementTimePerSession and a per-user one, and a bare
+         * "average engagement time" does not say which denominator it used --
+         * the same defect as 1.x's visitDuration, which was an AVG under a name
+         * that promised a duration.
+         */
+        'averageEngagementTimePerSession' => array(
+            'label'       => 'Average Engagement Time Per Visit',
             'description' => 'Average time accrued per visit, in milliseconds.',
             'group'       => 'Site Usage',
             'metric_type' => 'ratio',

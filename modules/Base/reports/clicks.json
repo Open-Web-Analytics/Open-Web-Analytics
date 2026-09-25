@@ -1,18 +1,18 @@
 {
     "title": "Clicks",
-    "metrics": "domClicks",
+    "metrics": "eventCount",
     "widgets": [
         {
             "type": "trend",
             "id": "trend",
             "container": "trend-chart",
-            "chartMetric": "domClicks",
+            "chartMetric": "eventCount",
             "query": {
                 "dimensions": "date",
                 "sort": "date",
-                "metrics": "domClicks"
+                "metrics": "eventCount"
             },
-            "headline": "There were {domClicks.raw} {domClicks|click|clicks} on all elements."
+            "headline": "There were {eventCount.raw} {eventCount|click|clicks} on all elements."
         },
         {
             "type": "grid",
@@ -20,9 +20,9 @@
             "container": "clicked-elements",
             "title": "Clicked Elements",
             "query": {
-                "metrics": "domClicks",
+                "metrics": "eventCount",
                 "dimensions": "pagePath,domElementId",
-                "sort": "domClicks-"
+                "sort": "eventCount-"
             }
         }
     ]
