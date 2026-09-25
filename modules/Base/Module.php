@@ -92,11 +92,38 @@ class Module extends \OWA\Core\Module {
 
         $this->registerTrackingProperties( 'environmental', $environmental );
 
-        $regular = \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties();
+        /*
+         * REGISTERED HERE, not in registerFilters(), because of when each
+         * runs. registerFilters() is called from Service::initializeFramework()
+         * and this method runs during module REGISTRATION, which is earlier --
+         * so a filter attached there is attached after the maps it would
+         * contribute to have already been built, and contributes nothing.
+         *
+         * This is therefore the hook point for a property contributor, and it
+         * is before the maps are built by construction rather than by luck.
+         */
+        \OWA\Core\CoreAPI::registerFilter( 'tracking_properties_regular',
+            array( '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeClientProperties' ) );
+
+        \OWA\Core\CoreAPI::registerFilter( 'tracking_properties_derived',
+            array( '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeDerivedProperties' ) );
+
+        /*
+         * Filtered as the maps are BUILT, not where they are used, so
+         * everything downstream sees the same set: the allowlist at log.php
+         * reads the regular map, and ProcessEvent reads the derived one.
+         *
+         * A compat layer contributes here what an older tracker still sends
+         * and the current vocabulary no longer declares. tracking_properties
+         * .json stays the statement of what v2 itself carries.
+         */
+        $regular = \OWA\Core\CoreAPI::filter( 'tracking_properties_regular',
+            \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties() );
 
         $this->registerTrackingProperties( 'regular', $regular );
 
-        $derived = \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties();
+        $derived = \OWA\Core\CoreAPI::filter( 'tracking_properties_derived',
+            \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties() );
 
         $this->registerTrackingProperties( 'derived', $derived );
 
@@ -115,6 +142,14 @@ class Module extends \OWA\Core\Module {
         }
 
         $this->registerFilter('tracker_tag_cmds', $this, 'addTrackerCmds', 0);
+
+        /*
+         * The beacon compat layer contributes what an older generation still
+         * sends and the current format no longer declares. Through a FILTER
+         * because the wire keeps moving -- browsers cache trackers, so every
+         * change leaves a generation sending the old shape. What gets dropped
+         * is an entry once nothing carries it; this hook stays.
+         */
     }
 
     function addTrackerCmds( $cmds ) {

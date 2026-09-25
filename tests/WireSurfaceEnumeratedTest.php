@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
+use OWA\Module\Base\Classes\Beacon\Compat;
 
 /**
  * Everything the tracker sends must be declared somewhere.
@@ -54,12 +55,26 @@ final class WireSurfaceEnumeratedTest extends TestCase
         return array_values( array_unique( $names ) );
     }
 
+    /**
+     * Everywhere a wire property may legitimately be declared.
+     *
+     * The config is the CURRENT vocabulary. The compat layer is the other
+     * place, and deliberately separate: it declares what an OLDER beacon
+     * generation still carries. The cv{n} slots are today's case -- cached
+     * trackers still send them and params() still reads them, but nothing the
+     * current tracker emits produces one, so they do not belong in the config.
+     * They are contributed to the runtime maps by a filter instead.
+     *
+     * Both are consulted here because the question this asks is "does ANYTHING
+     * declare what the tracker sends", and a compat declaration is a real
+     * answer to it.
+     */
     private function declared(): array
     {
         return array_merge(
             Helpers::requestProperties(),
-            Helpers::clientProperties(),
-            Helpers::serverProperties() );
+            Compat::contributeClientProperties( Helpers::clientProperties() ),
+            Compat::contributeDerivedProperties( Helpers::serverProperties() ) );
     }
 
     public function testEveryPropertyOnTheWireIsDeclared(): void
@@ -145,12 +160,11 @@ final class WireSurfaceEnumeratedTest extends TestCase
      */
     public function testTheGeneratedCustomVariablePropertiesKeepTheirShape(): void
     {
-        $helpers = new Helpers();
         $max     = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
 
         $this->assertGreaterThan( 0, $max, 'maxCustomVars is what bounds the loop.' );
 
-        $generated = $helpers->addCustomVariableProperties( array() );
+        $generated = Compat::contributeDerivedProperties( array() );
 
         $this->assertCount(
             $max * 2, $generated,
@@ -161,7 +175,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
         $this->assertSame(
             array( 'required' => 'untouched' ),
-            $helpers->addCustomVariableProperties( $declared )['cv1_name'],
+            Compat::contributeDerivedProperties( $declared )['cv1_name'],
             'The top-up overwrote a definition the config had already made.' );
 
         for ( $slot = 1; $slot <= $max; $slot++ ) {

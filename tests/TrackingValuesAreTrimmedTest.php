@@ -4,6 +4,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
+use OWA\Module\Base\Classes\Beacon\Compat;
 
 /**
  * A resolver that hands back padding, so the POSITION of the trim can be
@@ -34,9 +35,15 @@ final class TrackingValuesAreTrimmedTest extends TestCase
 {
     private function definitions(): array
     {
+        /*
+         * The compat layer is consulted beside the config: it declares what an
+         * older beacon generation carries and the current format does not --
+         * the cv{n} slots today. They are still real properties on that
+         * beacon's path, so a set gathered without them is incomplete.
+         */
         return array_merge( Helpers::requestProperties(),
-                            Helpers::clientProperties(),
-                            Helpers::serverProperties() );
+                            Compat::contributeClientProperties( Helpers::clientProperties() ),
+                            Compat::contributeDerivedProperties( Helpers::serverProperties() ) );
     }
 
     private function through( string $property, $value )

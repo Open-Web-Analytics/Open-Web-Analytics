@@ -129,7 +129,7 @@ class ProcessEvent extends \OWA\Core\Controller {
          * re-applied over the split result by the sanitized-properties step
          * below.
          */
-        $derived_properties = $teh->addCustomVariableProperties( $derived_properties );
+
         $teh->setTrackerProperties( $this->event, $derived_properties );
 
         // re-apply sanitized properties to event.

@@ -177,6 +177,68 @@ final class CustomPropertyWireTest extends TestCase
             'ingest is the only gate, so it has to hold on its own');
     }
 
+    // ---- the compat contribution ------------------------------------------
+
+    /**
+     * An older generation's properties reach the maps THROUGH THE FILTER.
+     *
+     * The cv{n} slots are today's case. They used to be generated inside
+     * TrackingEventHelpers, which put a compat shim in the middle of the
+     * current vocabulary -- and made a measurement of what v2 reads report a
+     * live compat path as dead, because the slot names are built at runtime
+     * and appear nowhere as literals.
+     *
+     * Asserted through CoreAPI::filter() rather than by calling the compat
+     * class, because the thing that can break is the REGISTRATION: drop that
+     * line and the slots quietly stop being defined, a v1 beacon's custom
+     * variables stop arriving, and nothing else fails.
+     */
+    public function testTheCompatLayerContributesTheV1SlotsThroughTheFilter(): void
+    {
+        owa_coreAPI::serviceSingleton()->initializeFramework();
+
+        $service = owa_coreAPI::serviceSingleton();
+
+        $regular = (array) $service->getMap( 'tracking_properties_regular' );
+        $derived = (array) $service->getMap( 'tracking_properties_derived' );
+
+        $max = (int) owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+
+        $this->assertGreaterThan( 0, $max );
+
+        for ( $slot = 1; $slot <= $max; $slot++ ) {
+
+            $this->assertArrayHasKey( "cv{$slot}", $regular,
+                'the compat filter is not registered on the regular map, so log.php\'s '
+              . 'allowlist would refuse a v1 beacon\'s slot' );
+
+            foreach ( [ 'name', 'value' ] as $half ) {
+                $this->assertArrayHasKey( "cv{$slot}_{$half}", $derived,
+                    'the compat filter is not registered, so a v1 beacon loses its custom variables' );
+            }
+        }
+    }
+
+    /** And the slot is still ADMITTED from the wire, which is the point of it. */
+    public function testAnOlderBeaconsSlotIsStillAdmitted(): void
+    {
+        owa_coreAPI::serviceSingleton()->initializeFramework();
+
+        $this->assertSame( [ 'cv1' => 'plan|pro' ],
+            Helpers::admitRequestParams( [ 'cv1' => 'plan|pro' ] ),
+            'the allowlist refused a v1 slot, so those beacons lose their custom variables' );
+    }
+
+    /** And they are carried by NO event in the current vocabulary. */
+    public function testAnOlderGenerationsSlotsAreOfferedForNoEvent(): void
+    {
+        $offered = Helpers::propertiesForEvent( 'page_view' );
+
+        $this->assertNotContains( 'cv1_name', $offered,
+            'a v1 slot must not appear in the current vocabulary; nothing a v2 tracker sends produces one' );
+        $this->assertNotContains( 'cv1_value', $offered );
+    }
+
     /** Run params() over an event carrying these properties. */
     private function paramsFor(array $properties): array
     {

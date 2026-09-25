@@ -78,6 +78,97 @@ class Compat {
      * @param object $event
      * @return int how many renames were applied, for callers that want to log
      */
+    /**
+     * Properties an OLDER beacon generation carries that the current format
+     * does not declare.
+     *
+     * THIS IS NOT A v1 SHIM, and the distinction is the whole reason the
+     * mechanism is generic: this class normalises any earlier beacon into the
+     * CURRENT format, and the current format keeps moving. Browsers cache
+     * trackers, so every change to the wire leaves a generation still sending
+     * the old shape -- v1 to v2 today, v2.0 to v2.1 next. What is droppable is
+     * an ENTRY, once no beacon carries it any more; the contribution point
+     * stays.
+     *
+     * Today's entry is the v1 custom variable slots: v1 carried five numbered
+     * ones, the current format carries named keys under `ep_` and `up_`, and
+     * params() still reads a slot off an older beacon and writes it out as the
+     * same named param a current one produces.
+     *
+     * They were in tracking_properties.json, which is the statement of what
+     * the CURRENT format carries -- so a compat property sitting there made a
+     * measurement of what v2 reads report them as dead, because the slot names
+     * are built at runtime and appear nowhere as literals.
+     *
+     * Contributed to the MAPS rather than to the config, so the runtime sees
+     * them -- the allowlist at log.php admits `cv1` because the regular map
+     * has it -- while propertiesForEvent() reads the config and therefore does
+     * NOT offer them. That asymmetry is the point: an older beacon may carry
+     * one, and nothing in the current vocabulary may be written against one.
+     *
+     * @param  array $properties  the regular (client-settable) map
+     * @return array
+     */
+    public static function contributeClientProperties( $properties ) {
+
+        $properties = (array) $properties;
+
+        for ( $i = 1; $i <= self::slotCount(); $i++ ) {
+
+            if ( ! array_key_exists( 'cv' . $i, $properties ) ) {
+
+                $properties[ 'cv' . $i ] = array(
+                    'required'      => false,
+                    'data_type'     => 'string',
+                    'default_value' => '',
+                );
+            }
+        }
+
+        return $properties;
+    }
+
+    /**
+     * And the halves the server splits each slot into.
+     *
+     * Same contribution point, the derived map rather than the regular one.
+     *
+     * @param  array $properties  the derived map
+     * @return array
+     */
+    public static function contributeDerivedProperties( $properties ) {
+
+        $properties = (array) $properties;
+
+        for ( $i = 1; $i <= self::slotCount(); $i++ ) {
+
+            foreach ( array( 'name', 'value' ) as $half ) {
+
+                $key = 'cv' . $i . '_' . $half;
+
+                if ( array_key_exists( $key, $properties ) ) {
+
+                    continue;
+                }
+
+                $properties[ $key ] = array(
+                    'required'      => true,
+                    'data_type'     => 'string',
+                    'callbacks'     => array( 'owa_trackingEventHelpers::lowercaseString' ),
+                    'default_value' => '(not set)',
+                );
+            }
+        }
+
+        return $properties;
+    }
+
+    /** How many slots that generation carried, which is still a setting. */
+    private static function slotCount() {
+
+        return (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
+    }
+
     public static function apply( $event ) {
 
         $applied = 0;

@@ -350,10 +350,20 @@ class Entity {
              * label, and nothing would have reported it. These three read the
              * config file directly and cache, so they answer the same everywhere.
              */
+            /*
+             * The compat layer is one of the sources, and has to be: a property
+             * an older beacon generation carries is declared THERE rather than
+             * in the config, which states only what the current format
+             * carries. The cv{n} halves are today's case -- leave this out and
+             * base.session.cv1_name silently stops storing the label, an older
+             * disk format changing because the current registry was tidied.
+             */
             $definitions = array_merge(
                 \OWA\Module\Base\Classes\TrackingEventHelpers::requestProperties(),
-                \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties(),
-                \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties() );
+                \OWA\Module\Base\Classes\Beacon\Compat::contributeClientProperties(
+                    \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties() ),
+                \OWA\Module\Base\Classes\Beacon\Compat::contributeDerivedProperties(
+                    \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties() ) );
             
             {
                 foreach ( $definitions as $name => $definition ) {

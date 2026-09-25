@@ -4,6 +4,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
+use OWA\Module\Base\Classes\Beacon\Compat;
 
 /**
  * "(not set)" is how a v1 column stores absence, not how an event carries it.
@@ -21,9 +22,15 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
     {
         $out = array();
 
+        /*
+         * The compat layer is consulted beside the config: it declares what an
+         * older beacon generation carries and the current format does not --
+         * the cv{n} slots today. They are still real properties on that
+         * beacon's path, so a set gathered without them is incomplete.
+         */
         foreach ( array_merge( Helpers::requestProperties(),
-                               Helpers::clientProperties(),
-                               Helpers::serverProperties() ) as $name => $definition ) {
+                               Compat::contributeClientProperties( Helpers::clientProperties() ),
+                               Compat::contributeDerivedProperties( Helpers::serverProperties() ) ) as $name => $definition ) {
 
             if ( isset( $definition['default_value'] )
                  && $definition['default_value'] === Helpers::ABSENT_VALUE_LABEL ) {
@@ -49,8 +56,8 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
     public function testThePipelineLeavesItAbsent( string $property ): void
     {
         $definitions = array_merge( Helpers::requestProperties(),
-                                    Helpers::clientProperties(),
-                                    Helpers::serverProperties() );
+                                    Compat::contributeClientProperties( Helpers::clientProperties() ),
+                                    Compat::contributeDerivedProperties( Helpers::serverProperties() ) );
 
         $teh   = new Helpers();
         $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
@@ -110,7 +117,7 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
      */
     public function testRealDefaultsStillApplyOnTheEvent(): void
     {
-        $definitions = Helpers::serverProperties();
+        $definitions = Compat::contributeDerivedProperties( Helpers::serverProperties() );
 
         $teh   = new Helpers();
         $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
@@ -151,8 +158,8 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
 
         $this->assertNotEmpty(
             array_merge( Helpers::requestProperties(),
-                         Helpers::clientProperties(),
-                         Helpers::serverProperties() ),
+                         Compat::contributeClientProperties( Helpers::clientProperties() ),
+                         Compat::contributeDerivedProperties( Helpers::serverProperties() ) ),
             'the property definitions must be readable without the service maps' );
 
         $method = new ReflectionMethod( '\OWA\Core\Entity', 'storageDefaultFor' );
