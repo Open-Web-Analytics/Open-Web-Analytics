@@ -930,16 +930,16 @@
                 "denormalized": true
             }
         },
-        "keyEvent": {
+        "isKeyEvent": {
             "base.event": {
-                "name": "keyEvent",
+                "name": "isKeyEvent",
                 "entity": "base.event",
                 "column": "is_goal_event",
                 "family": "event",
                 "label": "Key Event",
-                "description": "Whether this row is a conversion the author named.",
+                "description": "Whether this event met a goal condition.",
                 "foreign_key_name": "",
-                "data_type": "integer",
+                "data_type": "boolean",
                 "denormalized": true
             }
         },
@@ -1571,15 +1571,15 @@
             "data_type": "string",
             "denormalized": true
         },
-        "keyEvent": {
-            "name": "keyEvent",
+        "isKeyEvent": {
+            "name": "isKeyEvent",
             "entity": "base.event",
             "column": "is_goal_event",
             "family": "event",
             "label": "Key Event",
-            "description": "Whether this row is a conversion the author named.",
+            "description": "Whether this event met a goal condition.",
             "foreign_key_name": "",
-            "data_type": "integer",
+            "data_type": "boolean",
             "denormalized": true
         },
         "landingPage": {

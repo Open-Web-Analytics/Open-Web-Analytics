@@ -174,9 +174,21 @@ return array(
             // ---- the event itself -------------------------------------------
             'eventName' => array( 'column' => 'event_type', 'label' => 'Event Name',
                 'family' => 'event', 'description' => 'The name of the event -- page_view, click, session_start.' ),
-            'keyEvent' => array( 'column' => 'is_goal_event', 'label' => 'Key Event',
-                'family' => 'event', 'description' => 'Whether this row is a conversion the author named.',
-                'data_type' => 'integer' ),
+            /*
+             * GA's name and GA's shape: isKeyEvent, deprecating the
+             * isConversionEvent it replaced.
+             *
+             * BOOLEAN, not integer -- the formatter renders Yes and No where
+             * integer rendered 1 and 0. That is safe here in a way it was not
+             * for 1.x's isNewVisitor: is_goal_event is NOT NULL DEFAULT 0, so
+             * it holds two values. The defect there was a NULLABLE tinyint
+             * holding three, which grouped into three buckets and drew a pie
+             * with two slices called New -- the formatter was never the
+             * problem.
+             */
+            'isKeyEvent' => array( 'column' => 'is_goal_event', 'label' => 'Key Event',
+                'family' => 'event', 'description' => 'Whether this event met a goal condition.',
+                'data_type' => 'boolean' ),
             'domElementId' => array( 'column' => 'element_id', 'label' => 'Element ID',
                 'family' => 'event', 'description' => 'The id attribute of the element that was clicked.' ),
             'domElementTag' => array( 'column' => 'element_tag', 'label' => 'Element Tag',
