@@ -463,44 +463,58 @@ class GoalEvent extends \OWA\Core\Entity {
         return $out;
     }
     /**
-     * Did this event BEGIN the goal event?
+     * Does this ROW satisfy the goal event?
      *
-     * Separate from matchesEvent() because starting and completing are
-     * different questions with different answers, and 1.x records both.
+     * THE ROW, NOT THE EVENT, and that is the whole point of moving this. A
+     * condition used to be matched against the tracking event, which meant it
+     * could only test what the beacon and the property callbacks had produced.
+     * Half the vocabulary an author would reach for does not exist until the
+     * row is assembled: device_type is derived in the handler from the
+     * user-agent parse, and the tagged_* columns are transcribed there too. A
+     * goal on "mobile" or "organic" was therefore unexpressible, and a goal
+     * declared on one of those names matched nothing without saying so.
      *
-     * No start condition means no start -- the same rule as matching, and for
-     * the same reason: a vacuously true rule would mark every event as
-     * beginning every goal event on the site.
+     * The row is complete at Ingest::STORE_POST -- deviceColumns() and
+     * taggedColumns() are merged -- so a condition can name any column the row
+     * has. This is also what GA marks on: a key event is decided by the event
+     * parameters, which is what the stored row is.
+     *
+     * THE TRIGGER IS A GATE NOW. trigger_event_type has been stored since
+     * Update025 and read by NOTHING, so a goal declared on a page view was
+     * evaluated against every event on the site -- clicks, scrolls,
+     * session_start, everything. It mostly went unnoticed because a condition
+     * on a page column finds that column NULL on a click, but a goal on, say,
+     * host would have fired on every event type there is. An empty trigger
+     * still means every event: that is what a row written before the column
+     * existed says.
+     *
+     * AN ABSENT OR NULL COLUMN CANNOT ANSWER, so it does not match -- whatever
+     * the operator. Passing NULL through to compare() would make `not` true for
+     * every row that simply does not carry the column: a condition meant to
+     * exclude one medium would mark every event with no medium at all, which is
+     * most of them. The cost is that "medium is not set" is not expressible as
+     * a condition, and that is the right way round.
+     *
+     * @param  array $row         the assembled raw row
+     * @param  array|null $conditions  the conditions, already loaded, or null to
+     *                                 load them -- the caller passes them when
+     *                                 it is matching many rows against the same
+     *                                 goal event, which is ingest's shape.
+     * @return bool
      */
-    public function startedByEvent( $event ) {
+    public function matchesRow( array $row, $conditions = null ) {
 
-        $conditions = $this->loadConditions( self::ROLE_START );
+        $trigger = (string) $this->get( 'trigger_event_type' );
 
-        if ( ! $conditions ) {
+        if ( $trigger !== '' && $trigger !== (string) ( $row['event_type'] ?? '' ) ) {
 
             return false;
         }
 
-        foreach ( $conditions as $condition ) {
+        if ( $conditions === null ) {
 
-            if ( ! $condition->matches( $event->get( $condition->get( 'condition_property' ) ) ) ) {
-
-                return false;
-            }
+            $conditions = $this->loadConditions();
         }
-
-        return true;
-    }
-
-    /**
-     * Does this event satisfy the goal event?
-     *
-     * @param  object $event  the tracking event
-     * @return bool
-     */
-    public function matchesEvent( $event ) {
-
-        $conditions = $this->loadConditions();
 
         /*
          * NO conditions means no match, not every match.
@@ -520,7 +534,10 @@ class GoalEvent extends \OWA\Core\Entity {
 
         foreach ( $conditions as $condition ) {
 
-            $matched = $condition->matches( $event->get( $condition->get( 'condition_property' ) ) );
+            $property = (string) $condition->get( 'condition_property' );
+
+            $matched = isset( $row[ $property ] )
+                       && $condition->matches( $row[ $property ] );
 
             if ( $any && $matched ) {
 

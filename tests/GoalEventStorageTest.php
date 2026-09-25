@@ -325,20 +325,20 @@ final class GoalEventStorageTest extends TestCase
     public function testConditionsCombineWithAllOrAny(): void
     {
         $goalEvent = $this->makeGoalEventWithConditions( array(
-            array( 'page_uri', 'begins', '/checkout' ),
-            array( 'ct_total', 'gt',     '50' ),
+            array( 'page_path', 'begins', '/checkout' ),
+            array( 'revenue',   'gt',     '50' ),
         ) );
 
-        $over  = $this->fakeEvent( array( 'page_uri' => '/checkout/done', 'ct_total' => '60' ) );
-        $under = $this->fakeEvent( array( 'page_uri' => '/checkout/done', 'ct_total' => '40' ) );
+        $over  = $this->row( array( 'page_path' => '/checkout/done', 'revenue' => '60' ) );
+        $under = $this->row( array( 'page_path' => '/checkout/done', 'revenue' => '40' ) );
 
-        $this->assertTrue(  $goalEvent->matchesEvent( $over ) );
-        $this->assertFalse( $goalEvent->matchesEvent( $under ),
+        $this->assertTrue(  $goalEvent->matchesRow( $over ) );
+        $this->assertFalse( $goalEvent->matchesRow( $under ),
             'Under ALL, one failing condition must fail the whole rule.' );
 
         $goalEvent->set( 'condition_match', 'any' );
 
-        $this->assertTrue( $goalEvent->matchesEvent( $under ),
+        $this->assertTrue( $goalEvent->matchesRow( $under ),
             'Under ANY, one matching condition is enough.' );
     }
 
@@ -353,8 +353,119 @@ final class GoalEventStorageTest extends TestCase
     {
         $goalEvent = $this->makeGoalEventWithConditions( array() );
 
-        $this->assertFalse( $goalEvent->matchesEvent(
-            $this->fakeEvent( array( 'page_uri' => '/anything' ) ) ) );
+        $this->assertFalse( $goalEvent->matchesRow(
+            $this->row( array( 'page_path' => '/anything' ) ) ) );
+    }
+
+    /**
+     * THE TRIGGER GATES THE MATCH.
+     *
+     * trigger_event_type has been stored since Update025 and was read by
+     * NOTHING, so a goal declared on a page view was evaluated against every
+     * event on the site. It went unnoticed because a condition on a page column
+     * finds that column NULL on a click -- but a condition on host, or on
+     * device_type, would have fired on scrolls, clicks and session_start alike,
+     * counting several conversions for one visit to one page.
+     */
+    public function testAGoalOnlyMatchesItsTriggerEventType(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'host', 'exact', 'example.com' ),
+        ) );
+
+        $goalEvent->set( 'trigger_event_type', 'page_view' );
+
+        $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view', 'host' => 'example.com' ) ) ) );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'click', 'host' => 'example.com' ) ) ),
+            'A goal triggered on a page view counted a click as a conversion.' );
+    }
+
+    /**
+     * An EMPTY trigger still means every event type.
+     *
+     * That is what a row written before the column existed says, and reading it
+     * as "matches nothing" would silently switch off every goal on an install
+     * that predates it.
+     */
+    public function testAnEmptyTriggerMatchesAnyEventType(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'host', 'exact', 'example.com' ),
+        ) );
+
+        $goalEvent->set( 'trigger_event_type', '' );
+
+        foreach ( array( 'page_view', 'click', 'scroll' ) as $type ) {
+
+            $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+                'event_type' => $type, 'host' => 'example.com' ) ) ),
+                "An empty trigger refused $type." );
+        }
+    }
+
+    /**
+     * A COLUMN THE ROW DOES NOT CARRY CANNOT ANSWER, so it does not match --
+     * whatever the operator.
+     *
+     * The operator is the point. Handing NULL to compare() makes `not` TRUE for
+     * every row that simply has no value there: a condition meant to exclude one
+     * medium would mark every event with no medium at all, which is most of
+     * them. Both spellings of absence are checked because the row has both -- a
+     * key that is not there at all, and a column that is there and NULL, which
+     * is what tagged_medium is on every event but the landing one.
+     */
+    public function testAnAbsentOrNullColumnDoesNotMatchEvenUnderNot(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'tagged_medium', 'not', 'organic' ),
+        ) );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view' ) ) ),
+            'A row with no tagged_medium key matched "medium is not organic".' );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view', 'tagged_medium' => null ) ) ),
+            'A row whose tagged_medium is NULL matched "medium is not organic".' );
+
+        $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view', 'tagged_medium' => 'cpc' ) ) ),
+            'and a row that does carry a different medium must still match' );
+    }
+
+    /**
+     * THE ROW-ONLY COLUMNS ARE MATCHABLE, which is the reason marking moved.
+     *
+     * device_type is derived in the handler from the user-agent parse and the
+     * tagged_* columns are transcribed there; neither exists as an event
+     * property. Matching from the event could not see them at all, so "a signup
+     * from mobile" was not expressible -- and a goal declared on it matched
+     * nothing without saying so.
+     */
+    public function testAConditionCanTestAColumnThatOnlyExistsOnTheRow(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'device_type',   'exact', 'mobile' ),
+            array( 'tagged_medium', 'exact', 'organic' ),
+        ) );
+
+        $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+            'device_type' => 'mobile', 'tagged_medium' => 'organic' ) ) ) );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'device_type' => 'desktop', 'tagged_medium' => 'organic' ) ) ) );
+    }
+
+    /** A raw row, with the keys a condition is allowed to name. */
+    private function row( array $columns )
+    {
+        return array_merge( array(
+            'event_type' => 'page_view',
+            'site_id'    => $this->siteId,
+        ), $columns );
     }
 
     /** The migration writes the 1.x triple as a condition row. */
@@ -416,15 +527,6 @@ final class GoalEventStorageTest extends TestCase
 
     /** @var array ids to clean up */
     private array $createdConditions = [];
-
-    /** Something with ->get(), which is all matchesEvent() asks of an event. */
-    private function fakeEvent( array $properties )
-    {
-        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-        $event->setProperties( $properties );
-
-        return $event;
-    }
 
     /* ---------------- deleting ---------------- */
 

@@ -86,7 +86,7 @@ class GoalEventPredicate {
         $conditions = $goalEvent->loadConditions();
 
         /*
-         * NO conditions matches NOTHING, which is what matchesEvent() answers
+         * NO conditions matches NOTHING, which is what matchesRow() answers
          * for the same case and for the same reason: an empty rule is
          * vacuously true, and a half-written goal event that counted every
          * event on the site would be loudly wrong only after the fact.

@@ -314,10 +314,19 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'scroll_depth'    => $this->number( $event->get( 'scroll_depth' ) ),
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
 
-            // Whether this event met a goal condition. GA's shape: the key
-            // event IS the event, flagged -- no separate row, so eventCount
-            // stays a count of what happened.
-            'is_goal_event' => $this->isGoalEvent( $event ) ? 1 : 0,
+            /*
+             * Whether this row met a goal condition. GA's shape: the key event
+             * IS the event, flagged -- no separate row, so eventCount stays a
+             * count of what happened.
+             *
+             * 0 HERE, DECIDED AT Ingest::STORE_POST. The column is NOT NULL and
+             * strict mode aborts an insert that hands it NULL, so the literal
+             * carries the default and Classes\GoalMarking -- a listener on the
+             * complete row -- is what raises it. It has to be the complete row:
+             * device_type and the tagged_* columns are merged in below this
+             * literal, and matching from the event could not see them.
+             */
+            'is_goal_event' => 0,
 
             'revenue'  => $this->number( $event->get( 'revenue' ) ),
             'currency' => $this->text( $event->get( 'currency' ) ),
@@ -751,93 +760,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
         $this->announce( $event, $rows );
 
         return OWA_EHS_EVENT_HANDLED;
-    }
-
-    /** @var array<string,array> site id => its active goal event entities */
-    private $goal_events = array();
-
-    /**
-     * Did this event meet a goal condition?
-     *
-     * AT INGEST, not in the pass, and the difference is a factor of how many
-     * times a partition is rebuilt. Here it is N predicates against properties
-     * already in memory, once per event, ever. In the pass it would be per row
-     * per rebuild -- and a daily partition is rebuilt repeatedly as its
-     * sessions close and is_exit settles -- plus a compute step's side table
-     * and join.
-     *
-     * WHAT THAT COSTS is retroactivity: a goal defined today does not mark
-     * yesterday. GA4 behaves the same way, key events there are not
-     * retroactive, and the case that actually needs history is already served
-     * without this flag -- Classes\GoalEventPredicate compiles a goal's
-     * CONDITIONS against the event stream at read time, which is what lets a
-     * funnel be ordered and counted by visitor. Its docblock says that is why
-     * it exists. Counting takes the cheap mechanism; ordering takes the one
-     * that can see the past.
-     *
-     * ONE FLAG, NOT ONE PER GOAL. An event meeting two goals is still one
-     * event, and `goalConversions` counts events. Which goal converted is a question
-     * for the predicate, not for a column per slot the way owa_session carried
-     * goal_1..goal_N.
-     *
-     * The goal events are loaded once per site per request: ingest runs this
-     * for every beacon, and a query per beacon per goal is the shape that makes
-     * a tracker endpoint slow.
-     *
-     * @param object $event
-     * @return bool
-     */
-    protected function isGoalEvent( $event ) {
-
-        $site_id = (string) $event->getSiteId();
-
-        if ( $site_id === '' ) {
-
-            return false;
-        }
-
-        if ( ! isset( $this->goal_events[ $site_id ] ) ) {
-
-            $this->goal_events[ $site_id ] = $this->activeGoalEvents( $site_id );
-        }
-
-        foreach ( $this->goal_events[ $site_id ] as $goal_event ) {
-
-            if ( $goal_event->matchesEvent( $event ) ) {
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * The site's active goal events, as entities.
-     *
-     * @param string $site_id
-     * @return array
-     */
-    protected function activeGoalEvents( $site_id ) {
-
-        $out = array();
-
-        $goals = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $site_id );
-
-        foreach ( (array) $goals->getActiveGoals() as $number => $goal ) {
-
-            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-
-            $entity->load( \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
-                $site_id, $number ) );
-
-            if ( $entity->wasPersisted() ) {
-
-                $out[] = $entity;
-            }
-        }
-
-        return $out;
     }
 
     /**

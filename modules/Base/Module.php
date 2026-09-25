@@ -150,6 +150,25 @@ class Module extends \OWA\Core\Module {
          * change leaves a generation sending the old shape. What gets dropped
          * is an entry once nothing carries it; this hook stays.
          */
+
+        /*
+         * GOAL MARKING, at the point where the row is complete.
+         *
+         * It used to be a step inside EventRawHandlers::row(), computed from the
+         * event while the row literal was still being built -- so device_type and
+         * the tagged_* columns, which are merged in afterwards, were not in scope
+         * when conditions were matched. A goal on "mobile" or "organic" could not
+         * work and did not say so.
+         *
+         * A LISTENER, so the raw handler no longer knows what a goal is: it
+         * assembles a row and hands it to the point. Registered here because
+         * registerFilters() runs from Service::initializeFramework(), which
+         * Caller's constructor calls in every role -- including the logger role
+         * the beacon endpoint runs in, and the drain of a queued file.
+         */
+        \OWA\Core\CoreAPI::registerFilter(
+            \OWA\Module\Base\Classes\Ingest::STORE_POST,
+            array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ) );
     }
 
     function addTrackerCmds( $cmds ) {

@@ -141,7 +141,7 @@ final class GoalEventPredicateTest extends TestCase
     /**
      * NO conditions matches NOTHING.
      *
-     * matchesEvent() answers the same for the same reason: an empty rule is
+     * matchesRow() answers the same for the same reason: an empty rule is
      * vacuously true, and a half-written goal event that counted every event on
      * the site would be loudly wrong only after the fact. Compiled rather than
      * refused, because it is not an error -- it is a goal event that genuinely
