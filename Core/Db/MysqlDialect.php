@@ -182,6 +182,58 @@ if ( ! defined( 'OWA_SQL_JSON_VALUE' ) ) { define('OWA_SQL_JSON_VALUE', "JSON_VA
 if ( ! defined( 'OWA_SQL_JSON_VALUE_SIGNED' ) ) { define('OWA_SQL_JSON_VALUE_SIGNED', "JSON_VALUE(%s, '%s' RETURNING SIGNED)"); }
 if ( ! defined( 'OWA_SQL_JSON_VALUE_UNSIGNED' ) ) { define('OWA_SQL_JSON_VALUE_UNSIGNED', "JSON_VALUE(%s, '%s' RETURNING UNSIGNED)"); }
 if ( ! defined( 'OWA_SQL_JSON_VALUE_DOUBLE' ) ) { define('OWA_SQL_JSON_VALUE_DOUBLE', "JSON_VALUE(%s, '%s' RETURNING DOUBLE)"); }
+/*
+ * Date parts, read from a yyyymmdd INT rather than from a timestamp.
+ *
+ * WHICH COLUMN THESE READ IS A CORRECTNESS DECISION, not a convenience. The
+ * cube carries both `ts` (epoch microseconds, timezone-free) and `yyyymmdd`
+ * (the day, written by PHP in the installation's CONFIGURED timezone). Date
+ * functions applied to `ts` use the DATABASE session's timezone, which is a
+ * different thing: on this installation MySQL is UTC and OWA is
+ * America/Los_Angeles, so HOUR(FROM_UNIXTIME(ts/1000000)) answers 18 where the
+ * configured zone says 11, and near midnight the day disagrees with the
+ * partition the row is stored in.
+ *
+ * yyyymmdd has the zone baked in already, so a part read from it is correct by
+ * construction and agrees with the `date` dimension and with the partitioning.
+ * Verified against PHP for dayofweek, dayofyear and weekofyear on real rows.
+ *
+ * Year, month, day and yearMonth are INTEGER ARITHMETIC on purpose: no date
+ * type is constructed, and FLOOR/MOD are standard SQL, so those four need no
+ * dialect entry at all. Only the three that genuinely need a calendar are here.
+ *
+ * The %% are literal percent signs for STR_TO_DATE's format, doubled because
+ * these templates are consumed by sprintf.
+ */
+if ( ! defined( 'OWA_SQL_DATE_FROM_YYYYMMDD' ) ) { define('OWA_SQL_DATE_FROM_YYYYMMDD', "STR_TO_DATE(%s, '%%Y%%m%%d')"); }
+// 1 = Sunday through 7 = Saturday, which is MySQL's numbering and therefore
+// what a formatter or a report label has to assume.
+if ( ! defined( 'OWA_SQL_DAY_OF_WEEK' ) ) { define('OWA_SQL_DAY_OF_WEEK', 'DAYOFWEEK(%s)'); }
+if ( ! defined( 'OWA_SQL_DAY_OF_YEAR' ) ) { define('OWA_SQL_DAY_OF_YEAR', 'DAYOFYEAR(%s)'); }
+// ISO-8601 week: weeks start Monday and week 1 holds the first Thursday.
+if ( ! defined( 'OWA_SQL_WEEK_OF_YEAR' ) ) { define('OWA_SQL_WEEK_OF_YEAR', 'WEEKOFYEAR(%s)'); }
+/*
+ * Epoch MICROseconds as a local datetime, in a named timezone.
+ *
+ * The whole expression is the dialect's to give, like OWA_SQL_CONTAINS above:
+ * PostgreSQL spells this `to_timestamp(x / 1000000) AT TIME ZONE 'zone'` and
+ * SQLite has neither function, so nothing about it survives translation --
+ * not the conversion, not the division, not the argument order.
+ *
+ * Arguments, in order: the microsecond column, then an IANA zone NAME. The
+ * name rather than an offset is load-bearing, because the server resolves it
+ * per row and so daylight saving is applied at the instant it changed rather
+ * than at the instant the query was built.
+ *
+ * MySQL resolves the name out of its timezone tables, which are populated by a
+ * separate step at server setup. Where they are missing this returns NULL for
+ * every row rather than raising anything.
+ */
+if ( ! defined( 'OWA_SQL_LOCAL_DATETIME' ) ) { define('OWA_SQL_LOCAL_DATETIME', "CONVERT_TZ(FROM_UNIXTIME(%s / 1000000), '+00:00', '%s')"); }
+if ( ! defined( 'OWA_SQL_HOUR' ) ) { define('OWA_SQL_HOUR', 'HOUR(%s)'); }
+if ( ! defined( 'OWA_SQL_MINUTE' ) ) { define('OWA_SQL_MINUTE', 'MINUTE(%s)'); }
+// Day and hour as one sortable number, e.g. 2026092518 -- GA's dateHour.
+if ( ! defined( 'OWA_SQL_DATE_HOUR' ) ) { define('OWA_SQL_DATE_HOUR', "DATE_FORMAT(%s, '%%Y%%m%%d%%H')"); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN' ) ) { define('OWA_SQL_JOIN', 'JOIN'); }

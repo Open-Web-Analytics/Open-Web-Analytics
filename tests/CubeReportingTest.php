@@ -404,9 +404,9 @@ final class CubeReportingTest extends TestCase
 
         foreach ($declared as $name => $d) {
 
-            // A dimension is either a column or several columns joined, and
-            // EVERY part of a joined one has to be a real column too -- the
-            // expression is built from them without anything checking.
+            // A dimension is a column, several columns joined, or a component
+            // of a date. Whichever it is, every column it reads has to exist --
+            // the expression is built from them without anything checking.
             if (isset($d['parts'])) {
 
                 $joined++;
@@ -421,8 +421,14 @@ final class CubeReportingTest extends TestCase
                 continue;
             }
 
-            if (!isset($columns[$d['column']])) {
-                $missing[$name] = $d['column'];
+            // A date part defaults to reading yyyymmdd; naming a column means
+            // reading that one instead, which is how the clock parts get `ts`.
+            $column = isset($d['datePart'])
+                ? ($d['column'] ?? 'yyyymmdd')
+                : $d['column'];
+
+            if (!isset($columns[$column])) {
+                $missing[$name] = $column;
             }
         }
 
@@ -438,7 +444,13 @@ final class CubeReportingTest extends TestCase
     {
         foreach (self::declaredDimensions() as $name => $d) {
 
-            $required = isset($d['parts']) ? ['parts'] : ['column'];
+            if (isset($d['parts'])) {
+                $required = ['parts'];
+            } elseif (isset($d['datePart'])) {
+                $required = ['datePart'];
+            } else {
+                $required = ['column'];
+            }
 
             foreach (array_merge($required, ['label', 'family', 'description']) as $key) {
 
@@ -446,15 +458,32 @@ final class CubeReportingTest extends TestCase
                 $this->assertNotEmpty($d[$key], $name . ' has an empty ' . $key);
             }
 
-            // The two forms are alternatives. A declaration carrying both says
+            // The three forms are alternatives. A declaration carrying two says
             // one thing to the registry and another to a reader.
             if (isset($d['parts'])) {
 
                 $this->assertArrayNotHasKey('column', $d,
                     $name . ' declares both parts and a column; only parts is read.');
 
+                $this->assertArrayNotHasKey('datePart', $d,
+                    $name . ' declares two kinds of expression.');
+
                 $this->assertGreaterThan(1, count((array) $d['parts']),
                     $name . ' joins fewer than two columns, so it is just a column.');
+
+            } elseif (isset($d['datePart'])) {
+
+                // A date part MAY name a column -- that is how the clock parts
+                // read `ts` rather than the yyyymmdd default -- so unlike the
+                // joined form the two are not in conflict.
+                $this->assertArrayNotHasKey('separator', $d,
+                    $name . ' declares a separator but nothing to separate.');
+
+                $this->assertContains($d['datePart'], array_merge(
+                    array_keys(\OWA\Module\Base\Classes\DimensionExpression::PARTS),
+                    \OWA\Module\Base\Classes\DimensionExpression::CLOCK_PARTS),
+                    $name . ' names a date part nothing can render.');
+
             } else {
 
                 $this->assertArrayNotHasKey('separator', $d,

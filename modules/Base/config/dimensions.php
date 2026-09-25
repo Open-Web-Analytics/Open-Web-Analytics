@@ -49,6 +49,60 @@ return array(
         'date' => array( 'column' => 'yyyymmdd', 'label' => 'Date',
             'family' => 'time', 'data_type' => 'yyyymmdd',
             'description' => 'The day the event was recorded, in the configured timezone.' ),
+
+        /*
+         * THE DATE PARTS, read out of yyyymmdd rather than out of ts.
+         *
+         * 1.x stored six of these as columns on every fact row. They are
+         * rendered from one column now -- the measurement behind that, and the
+         * timezone reasoning behind the basis, are in DimensionExpression.
+         *
+         * The short version: yyyymmdd was written by PHP in the configured
+         * timezone, so a part read from it agrees with `date` above and with
+         * the partition the row lives in. A part read from `ts` would answer in
+         * the DATABASE's timezone, which on this installation is seven hours
+         * away.
+         */
+        'year' => array( 'datePart' => 'year', 'label' => 'Year',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The year the event was recorded.' ),
+        'month' => array( 'datePart' => 'month', 'label' => 'Month',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The month of the year, 1 to 12.' ),
+        'yearMonth' => array( 'datePart' => 'yearMonth', 'label' => 'Year / Month',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The year and month together, as 202609 -- one value that sorts chronologically.' ),
+        'day' => array( 'datePart' => 'day', 'label' => 'Day of Month',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The day of the month, 1 to 31.' ),
+        'dayOfWeek' => array( 'datePart' => 'dayOfWeek', 'label' => 'Day of Week',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The day of the week, 1 for Sunday through 7 for Saturday.' ),
+        'dayOfYear' => array( 'datePart' => 'dayOfYear', 'label' => 'Day of Year',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The day of the year, 1 to 366.' ),
+        'weekOfYear' => array( 'datePart' => 'weekOfYear', 'label' => 'Week of Year',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The ISO-8601 week of the year: weeks start on Monday and week 1 holds the first Thursday.' ),
+
+        /*
+         * And the CLOCK parts, which yyyymmdd cannot answer.
+         *
+         * These read `ts` and convert it with the configured zone NAME, so the
+         * server resolves the offset per row and daylight saving is handled
+         * where it changes rather than where the query was built. They need
+         * MySQL's timezone tables; an installation without them loses these
+         * three and keeps the seven above.
+         */
+        'hour' => array( 'datePart' => 'hour', 'column' => 'ts', 'label' => 'Hour',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The hour of the day, 0 to 23, in the configured timezone. 1.x stored no hour at all.' ),
+        'minute' => array( 'datePart' => 'minute', 'column' => 'ts', 'label' => 'Minute',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The minute of the hour, 0 to 59, in the configured timezone.' ),
+        'dateHour' => array( 'datePart' => 'dateHour', 'column' => 'ts', 'label' => 'Date + Hour',
+            'family' => 'time', 'data_type' => 'integer',
+            'description' => 'The day and hour together, as 2026092518 -- one value that sorts chronologically.' ),
         'siteId' => array( 'column' => 'site_id', 'label' => 'Site ID',
             'family' => 'site', 'description' => 'The Profile the event was collected for.' ),
 

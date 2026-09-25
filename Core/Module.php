@@ -1489,21 +1489,33 @@ abstract class Module {
         foreach ( (array) $declaration['dimensions'] as $name => $d ) {
 
             /*
-             * A dimension is EITHER a column or several columns joined. The
-             * joined form emits SQL carrying an alias placeholder, and
-             * lookupDimension() substitutes into it instead of writing the
-             * alias in front -- which is what `parts` in the registration
-             * tells it to do.
+             * A dimension is a COLUMN or an EXPRESSION, and there are now two
+             * kinds of expression: several columns joined (`parts`) and one
+             * component of a date (`datePart`). What they share is the only
+             * thing the reporting seam needs to know -- the emitted SQL carries
+             * an alias placeholder, so lookupDimension() substitutes into it
+             * instead of writing the alias in front. `expression` says that
+             * once, rather than the seam learning each kind's key.
              */
             $options = array();
 
             if ( isset( $d['parts'] ) ) {
 
-                $options['parts'] = (array) $d['parts'];
+                $options['parts']      = (array) $d['parts'];
+                $options['expression'] = true;
 
                 $column = \OWA\Module\Base\Classes\DimensionExpression::sql(
                     $options['parts'],
                     isset( $d['separator'] ) ? $d['separator'] : ' / ' );
+
+            } elseif ( isset( $d['datePart'] ) ) {
+
+                $options['datePart']   = (string) $d['datePart'];
+                $options['expression'] = true;
+
+                $column = \OWA\Module\Base\Classes\DimensionExpression::datePart(
+                    isset( $d['column'] ) ? $d['column'] : 'yyyymmdd',
+                    $options['datePart'] );
 
             } else {
 

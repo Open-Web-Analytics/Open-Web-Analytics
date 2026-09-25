@@ -359,11 +359,10 @@ final class JoinedDimensionTest extends TestCase
         $this->assertSame(2, $rows['/pricing'] ?? null);
     }
 
-    /** It can be filtered and sorted on, not merely grouped by. */
-    public function testAJoinedDimensionCanBeConstrainedAndSorted(): void
+    /** It can be CONSTRAINED on, not merely grouped by. */
+    public function testAJoinedDimensionCanBeConstrained(): void
     {
         $rsm = $this->manager('pagePathPlusQuery');
-        $rsm->setSort('pageViews', 'DESC');
         $rsm->setConstraints($rsm->parseConstraintsString('pagePathPlusQuery==/pricing?plan=pro'));
 
         $rs = $rsm->getResults();
@@ -375,6 +374,34 @@ final class JoinedDimensionTest extends TestCase
         $this->assertCount(1, $rows, 'the constraint matched the joined value itself');
         $this->assertSame('/pricing?plan=pro', $rows[0]['pagePathPlusQuery']['value']);
         $this->assertSame(2, (int) $rows[0]['pageViews']['value']);
+    }
+
+    /**
+     * ...and SORTED on, which is a separate claim and was not being made.
+     *
+     * This case used setSort(), whose body was commented out -- so it asserted
+     * a single constrained row and proved nothing about ordering while looking
+     * like it did. setSorts( sortStringToArray( ... ) ) is the path the REST
+     * controller uses, and the ordering is asserted against values chosen so
+     * that grouped order and sorted order differ.
+     */
+    public function testAJoinedDimensionCanBeSortedOn(): void
+    {
+        $rsm = $this->manager('pagePathPlusQuery');
+        $rsm->setSorts($rsm->sortStringToArray('pagePathPlusQuery'));
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $values = array_map(
+            fn($row) => $row['pagePathPlusQuery']['value'], $rs->getResultsRows());
+
+        $sorted = $values;
+        sort($sorted, SORT_STRING);
+
+        $this->assertSame($sorted, $values, 'the joined value was not ordered by');
+        $this->assertGreaterThan(2, count($values), 'too few groups for order to mean anything');
     }
 
     /**

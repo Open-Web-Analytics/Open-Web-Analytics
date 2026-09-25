@@ -25,6 +25,13 @@ namespace OWA\Module\Base\Classes;
  * query string, plus a rebuild every time one is added. The expression costs a
  * tenth of one group-by and nothing else.
  *
+ * TWO KINDS SO FAR
+ * ----------------
+ * `sql()` joins several columns into one value; `datePart()` reads a component
+ * out of one. They have nothing in common except the thing below, which is why
+ * they live together: both produce SQL rather than a column name, and the
+ * reporting seam has to be told that once rather than once per kind.
+ *
  * WHAT THE ALIAS PLACEHOLDER IS FOR
  * ---------------------------------
  * ResultSetManager::lookupDimension() historically built a dimension's column
@@ -146,6 +153,194 @@ class DimensionExpression {
 
         return "'" . str_replace(
             array( '\\', "'" ), array( '\\\\', "''" ), (string) $value ) . "'";
+    }
+
+    /**
+     * The date parts, and how each is read out of a yyyymmdd INT.
+     *
+     * READ FROM yyyymmdd, NOT FROM ts, and that is a correctness decision
+     * rather than a convenience -- see the note on OWA_SQL_DATE_FROM_YYYYMMDD.
+     * The short version: `ts` is epoch microseconds and a SQL date function
+     * applied to it answers in the DATABASE's timezone, while `yyyymmdd` was
+     * written by PHP in the installation's configured one. On this
+     * installation those are seven hours apart. yyyymmdd already has the
+     * decision baked in, so a part read from it cannot disagree with the
+     * `date` dimension or with the partition the row lives in.
+     *
+     * THE PLAN SAID `ts` FOR ALL OF THESE. It was written before the timezone
+     * question was asked, and nothing that follows from `ts` can answer it
+     * without either the server's timezone tables or a stored offset.
+     *
+     * Four of the seven are integer arithmetic on the INT itself, so no date
+     * value is built and nothing dialect-specific is used. Only the three that
+     * need a calendar -- which day of the week a date fell on, and the two
+     * counts within a year -- go through the dialect.
+     *
+     * `hour` is the exception and is handled separately below: there is no
+     * hour in yyyymmdd, so it has to come from `ts` and therefore has to be
+     * converted.
+     */
+    const PARTS = array(
+        'year'       => 'FLOOR(%1$s.%2$s / 10000)',
+        'month'      => 'FLOOR(MOD(%1$s.%2$s, 10000) / 100)',
+        'day'        => 'MOD(%1$s.%2$s, 100)',
+        'yearMonth'  => 'FLOOR(%1$s.%2$s / 100)',
+        'dayOfWeek'  => null,
+        'dayOfYear'  => null,
+        'weekOfYear' => null,
+    );
+
+    /** Parts that read a timestamp and therefore need the timezone. */
+    const CLOCK_PARTS = array( 'hour', 'minute', 'dateHour' );
+
+    /**
+     * SQL for one component of a date.
+     *
+     * @param string $column  the yyyymmdd column
+     * @param string $part    a key of PARTS
+     * @return string  SQL with %1$s where the table alias belongs
+     */
+    public static function datePart( $column, $part ) {
+
+        if ( ! preg_match( self::COLUMN, (string) $column ) ) {
+
+            throw new \InvalidArgumentException( sprintf(
+                '"%s" is not a column name.', $column ) );
+        }
+
+        if ( in_array( (string) $part, self::CLOCK_PARTS, true ) ) {
+
+            return self::clockPart( $column, $part );
+        }
+
+        if ( ! array_key_exists( (string) $part, self::PARTS ) ) {
+
+            throw new \InvalidArgumentException( sprintf(
+                '"%s" is not a date part. Known: %s.',
+                $part, implode( ', ', array_merge(
+                    array_keys( self::PARTS ), self::CLOCK_PARTS ) ) ) );
+        }
+
+        $template = self::PARTS[ $part ];
+
+        if ( $template !== null ) {
+
+            return sprintf( $template, '%1$s', $column );
+        }
+
+        $calendar = array(
+            'dayOfWeek'  => OWA_SQL_DAY_OF_WEEK,
+            'dayOfYear'  => OWA_SQL_DAY_OF_YEAR,
+            'weekOfYear' => OWA_SQL_WEEK_OF_YEAR,
+        );
+
+        /*
+         * THE EMITTED SQL IS sprintf'd AGAIN, by the seam, to put the alias in.
+         * STR_TO_DATE's format is '%Y%m%d', so handing that straight back would
+         * have the second pass read %Y as a specifier and raise ValueError --
+         * the same trap that makes a percent illegal in a join separator, which
+         * is why that one is refused outright rather than escaped.
+         *
+         * Here the percents are not the caller's to give up, so they are
+         * escaped instead: build with a placeholder the format cannot contain,
+         * double every literal percent, then put the real placeholder in.
+         */
+        $marker = "\x00alias\x00";
+
+        $sql = sprintf( $calendar[ $part ],
+            sprintf( OWA_SQL_DATE_FROM_YYYYMMDD, $marker . '.' . $column ) );
+
+        return str_replace( $marker, '%1$s', str_replace( '%', '%%', $sql ) );
+    }
+
+    /**
+     * A part of the CLOCK, which only a timestamp carries.
+     *
+     * THE ZONE NAME IS PASSED, NOT AN OFFSET, and the difference is not
+     * cosmetic. An offset computed in PHP is a single number, correct only for
+     * the moment it was computed: measured against six instants spanning the
+     * 2026 US transitions, a `-07:00` fixed at one point in the year answered
+     * three of them wrong -- including every winter timestamp. The zone name
+     * was right on all six, both transitions included, because the SERVER does
+     * the lookup per row.
+     *
+     * THE ZONE IS A SECOND PLACEHOLDER, filled where the alias is, rather than
+     * written in at registration. Baking it in made the emitted SQL depend on
+     * the machine that generated it -- the catalog recording held
+     * 'America/Los_Angeles' and would not have matched on any server configured
+     * differently -- and it meant an installation that changed its timezone
+     * kept querying with the old one until something re-registered. Both go
+     * away when the zone arrives at the same moment the table alias does.
+     *
+     * KNOWN DEPENDENCY, and it is the reason the other seven parts do not come
+     * through here: CONVERT_TZ resolves a zone NAME out of MySQL's timezone
+     * tables, which are populated by a separate step at server setup. Where
+     * they are missing it returns NULL for every row, which renders as
+     * `(not set)` rather than as an error -- indistinguishable, from SQL, from
+     * a zone name that does not exist. An installation without those tables
+     * loses these dimensions and keeps the seven day-level ones.
+     *
+     * @param string $column    a timestamp column, in MICROseconds
+     * @param string $part
+     * @param string $timezone  an IANA zone name
+     * @return string  SQL with %1$s where the table alias belongs
+     */
+    private static function clockPart( $column, $part ) {
+
+        /*
+         * Built against markers, not against '%1$s' directly, because the last
+         * step doubles every literal percent -- dateHour's DATE_FORMAT carries
+         * '%Y%m%d%H' and the seam sprintf's this string again to insert the
+         * alias. Doubling the placeholder too would leave it in the SQL.
+         */
+        $alias = "\x00alias\x00";
+        $local = "\x00local\x00";
+
+        $zone = "\x00zone\x00";
+
+        $converted = sprintf( OWA_SQL_LOCAL_DATETIME, $alias . '.' . $column, $zone );
+
+        $readers = array(
+            'hour'   => OWA_SQL_HOUR,
+            'minute' => OWA_SQL_MINUTE,
+            // The day and the hour together, as GA ships it: 2026092518.
+            'dateHour' => OWA_SQL_DATE_HOUR,
+        );
+
+        $sql = sprintf( $readers[ $part ], $local );
+
+        $sql = str_replace( $local, $converted, $sql );
+        $sql = str_replace( '%', '%%', $sql );
+
+        return str_replace( array( $alias, $zone ),
+            array( '%1$s', '%2$s' ), $sql );
+    }
+
+    /**
+     * The timezone the clock parts are read in, validated.
+     *
+     * PHP's default, which Settings sets from `base.timezone` during boot --
+     * so this is the same zone `yyyymmdd` was written in at ingest, and the
+     * two bases cannot drift apart.
+     *
+     * Validated because it is interpolated into SQL as a string literal. It
+     * cannot come from a request, but an empty value would quietly become
+     * UTC and put every clock reading hours out with nothing to show for it.
+     *
+     * @return string
+     * @throws \RuntimeException
+     */
+    public static function timezone() {
+
+        $zone = trim( (string) date_default_timezone_get() );
+
+        if ( ! preg_match( '#^[A-Za-z][A-Za-z0-9_+/-]*$#', $zone ) ) {
+
+            throw new \RuntimeException( sprintf(
+                '"%s" is not usable as a timezone name.', $zone ) );
+        }
+
+        return $zone;
     }
 
 }

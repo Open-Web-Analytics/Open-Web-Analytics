@@ -4,9 +4,9 @@
         "metricImplementations": 23,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 60,
-        "dimensionEntriesDenormalized": 60,
-        "accessorDimensionNames": 60
+        "dimensionNamesDenormalized": 70,
+        "dimensionEntriesDenormalized": 70,
+        "accessorDimensionNames": 70
     },
     "metrics": {
         "averageEngagementTimePerSession": [
@@ -748,6 +748,66 @@
                 "denormalized": true
             }
         },
+        "dateHour": {
+            "base.event": {
+                "name": "dateHour",
+                "entity": "base.event",
+                "column": "DATE_FORMAT(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'), '%%Y%%m%%d%%H')",
+                "family": "time",
+                "label": "Date + Hour",
+                "description": "The day and hour together, as 2026092518 -- one value that sorts chronologically.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "dateHour"
+            }
+        },
+        "day": {
+            "base.event": {
+                "name": "day",
+                "entity": "base.event",
+                "column": "MOD(%1$s.yyyymmdd, 100)",
+                "family": "time",
+                "label": "Day of Month",
+                "description": "The day of the month, 1 to 31.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "day"
+            }
+        },
+        "dayOfWeek": {
+            "base.event": {
+                "name": "dayOfWeek",
+                "entity": "base.event",
+                "column": "DAYOFWEEK(STR_TO_DATE(%1$s.yyyymmdd, '%%Y%%m%%d'))",
+                "family": "time",
+                "label": "Day of Week",
+                "description": "The day of the week, 1 for Sunday through 7 for Saturday.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "dayOfWeek"
+            }
+        },
+        "dayOfYear": {
+            "base.event": {
+                "name": "dayOfYear",
+                "entity": "base.event",
+                "column": "DAYOFYEAR(STR_TO_DATE(%1$s.yyyymmdd, '%%Y%%m%%d'))",
+                "family": "time",
+                "label": "Day of Year",
+                "description": "The day of the year, 1 to 366.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "dayOfYear"
+            }
+        },
         "deviceBrand": {
             "base.event": {
                 "name": "deviceBrand",
@@ -915,6 +975,7 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true,
+                "expression": true,
                 "parts": [
                     "acq_source",
                     "acq_medium"
@@ -932,6 +993,7 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true,
+                "expression": true,
                 "parts": [
                     "host",
                     "page_path",
@@ -950,6 +1012,21 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
+            }
+        },
+        "hour": {
+            "base.event": {
+                "name": "hour",
+                "entity": "base.event",
+                "column": "HOUR(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+                "family": "time",
+                "label": "Hour",
+                "description": "The hour of the day, 0 to 23, in the configured timezone. 1.x stored no hour at all.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "hour"
             }
         },
         "ipAddress": {
@@ -1015,6 +1092,7 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true,
+                "expression": true,
                 "parts": [
                     "landing_page_path",
                     "landing_page_query"
@@ -1073,6 +1151,36 @@
                 "denormalized": true
             }
         },
+        "minute": {
+            "base.event": {
+                "name": "minute",
+                "entity": "base.event",
+                "column": "MINUTE(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+                "family": "time",
+                "label": "Minute",
+                "description": "The minute of the hour, 0 to 59, in the configured timezone.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "minute"
+            }
+        },
+        "month": {
+            "base.event": {
+                "name": "month",
+                "entity": "base.event",
+                "column": "FLOOR(MOD(%1$s.yyyymmdd, 10000) / 100)",
+                "family": "time",
+                "label": "Month",
+                "description": "The month of the year, 1 to 12.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "month"
+            }
+        },
         "newVsReturning": {
             "base.event": {
                 "name": "newVsReturning",
@@ -1097,6 +1205,7 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true,
+                "expression": true,
                 "parts": [
                     "os",
                     "os_version"
@@ -1166,6 +1275,7 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true,
+                "expression": true,
                 "parts": [
                     "page_path",
                     "page_query"
@@ -1326,6 +1436,7 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true,
+                "expression": true,
                 "parts": [
                     "source",
                     "medium"
@@ -1408,6 +1519,51 @@
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
+            }
+        },
+        "weekOfYear": {
+            "base.event": {
+                "name": "weekOfYear",
+                "entity": "base.event",
+                "column": "WEEKOFYEAR(STR_TO_DATE(%1$s.yyyymmdd, '%%Y%%m%%d'))",
+                "family": "time",
+                "label": "Week of Year",
+                "description": "The ISO-8601 week of the year: weeks start on Monday and week 1 holds the first Thursday.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "weekOfYear"
+            }
+        },
+        "year": {
+            "base.event": {
+                "name": "year",
+                "entity": "base.event",
+                "column": "FLOOR(%1$s.yyyymmdd / 10000)",
+                "family": "time",
+                "label": "Year",
+                "description": "The year the event was recorded.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "year"
+            }
+        },
+        "yearMonth": {
+            "base.event": {
+                "name": "yearMonth",
+                "entity": "base.event",
+                "column": "FLOOR(%1$s.yyyymmdd / 100)",
+                "family": "time",
+                "label": "Year / Month",
+                "description": "The year and month together, as 202609 -- one value that sorts chronologically.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true,
+                "expression": true,
+                "datePart": "yearMonth"
             }
         }
     },
@@ -1532,6 +1688,58 @@
             "foreign_key_name": "",
             "data_type": "yyyymmdd",
             "denormalized": true
+        },
+        "dateHour": {
+            "name": "dateHour",
+            "entity": "base.event",
+            "column": "DATE_FORMAT(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'), '%%Y%%m%%d%%H')",
+            "family": "time",
+            "label": "Date + Hour",
+            "description": "The day and hour together, as 2026092518 -- one value that sorts chronologically.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "dateHour"
+        },
+        "day": {
+            "name": "day",
+            "entity": "base.event",
+            "column": "MOD(%1$s.yyyymmdd, 100)",
+            "family": "time",
+            "label": "Day of Month",
+            "description": "The day of the month, 1 to 31.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "day"
+        },
+        "dayOfWeek": {
+            "name": "dayOfWeek",
+            "entity": "base.event",
+            "column": "DAYOFWEEK(STR_TO_DATE(%1$s.yyyymmdd, '%%Y%%m%%d'))",
+            "family": "time",
+            "label": "Day of Week",
+            "description": "The day of the week, 1 for Sunday through 7 for Saturday.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "dayOfWeek"
+        },
+        "dayOfYear": {
+            "name": "dayOfYear",
+            "entity": "base.event",
+            "column": "DAYOFYEAR(STR_TO_DATE(%1$s.yyyymmdd, '%%Y%%m%%d'))",
+            "family": "time",
+            "label": "Day of Year",
+            "description": "The day of the year, 1 to 366.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "dayOfYear"
         },
         "deviceBrand": {
             "name": "deviceBrand",
@@ -1675,6 +1883,7 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true,
+            "expression": true,
             "parts": [
                 "acq_source",
                 "acq_medium"
@@ -1690,6 +1899,7 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true,
+            "expression": true,
             "parts": [
                 "host",
                 "page_path",
@@ -1706,6 +1916,19 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
+        },
+        "hour": {
+            "name": "hour",
+            "entity": "base.event",
+            "column": "HOUR(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+            "family": "time",
+            "label": "Hour",
+            "description": "The hour of the day, 0 to 23, in the configured timezone. 1.x stored no hour at all.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "hour"
         },
         "ipAddress": {
             "name": "ipAddress",
@@ -1761,6 +1984,7 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true,
+            "expression": true,
             "parts": [
                 "landing_page_path",
                 "landing_page_query"
@@ -1810,6 +2034,32 @@
             "data_type": "string",
             "denormalized": true
         },
+        "minute": {
+            "name": "minute",
+            "entity": "base.event",
+            "column": "MINUTE(CONVERT_TZ(FROM_UNIXTIME(%1$s.ts / 1000000), '+00:00', '%2$s'))",
+            "family": "time",
+            "label": "Minute",
+            "description": "The minute of the hour, 0 to 59, in the configured timezone.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "minute"
+        },
+        "month": {
+            "name": "month",
+            "entity": "base.event",
+            "column": "FLOOR(MOD(%1$s.yyyymmdd, 10000) / 100)",
+            "family": "time",
+            "label": "Month",
+            "description": "The month of the year, 1 to 12.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "month"
+        },
         "newVsReturning": {
             "name": "newVsReturning",
             "entity": "base.event",
@@ -1831,6 +2081,7 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true,
+            "expression": true,
             "parts": [
                 "os",
                 "os_version"
@@ -1890,6 +2141,7 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true,
+            "expression": true,
             "parts": [
                 "page_path",
                 "page_query"
@@ -2026,6 +2278,7 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true,
+            "expression": true,
             "parts": [
                 "source",
                 "medium"
@@ -2096,6 +2349,45 @@
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
+        },
+        "weekOfYear": {
+            "name": "weekOfYear",
+            "entity": "base.event",
+            "column": "WEEKOFYEAR(STR_TO_DATE(%1$s.yyyymmdd, '%%Y%%m%%d'))",
+            "family": "time",
+            "label": "Week of Year",
+            "description": "The ISO-8601 week of the year: weeks start on Monday and week 1 holds the first Thursday.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "weekOfYear"
+        },
+        "year": {
+            "name": "year",
+            "entity": "base.event",
+            "column": "FLOOR(%1$s.yyyymmdd / 10000)",
+            "family": "time",
+            "label": "Year",
+            "description": "The year the event was recorded.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "year"
+        },
+        "yearMonth": {
+            "name": "yearMonth",
+            "entity": "base.event",
+            "column": "FLOOR(%1$s.yyyymmdd / 100)",
+            "family": "time",
+            "label": "Year / Month",
+            "description": "The year and month together, as 202609 -- one value that sorts chronologically.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true,
+            "expression": true,
+            "datePart": "yearMonth"
         }
     },
     "relatedDimensions": {

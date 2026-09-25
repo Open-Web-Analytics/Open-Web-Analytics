@@ -1018,14 +1018,21 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         if ($dim) {
             /*
-             * A dimension built from several columns already carries its own
+             * A dimension registered as an EXPRESSION already carries its own
              * SQL, with %1$s wherever the alias belongs. Writing the alias in
              * FRONT of it -- which is what every column dimension needs -- turns
              * CONCAT(...) into event.CONCAT(...), and MySQL reads that as a call
              * to a function named CONCAT in a schema named event.
              */
-            $dim['column'] = isset( $dim['parts'] )
-                ? sprintf( $dim['column'], $entity->getTableAlias() )
+            /*
+             * Two arguments, because a date part reading the clock needs the
+             * timezone as well as the alias. An expression that does not use
+             * the second simply ignores it, which is how one substitution
+             * serves both kinds.
+             */
+            $dim['column'] = ! empty( $dim['expression'] )
+                ? sprintf( $dim['column'], $entity->getTableAlias(),
+                    \OWA\Module\Base\Classes\DimensionExpression::timezone() )
                 : $entity->getTableAlias().'.'.$dim['column'];
         } else {
 
@@ -1077,10 +1084,16 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function setSort($column, $order) {
-
-        //$this->params['orderby'][] = array($this->getColumnName($column), $order);
-    }
+    /*
+     * setSort() WAS HERE and did nothing: its one statement was commented out,
+     * so every call silently produced an unsorted result. Nothing in the
+     * application called it -- ReportsRest goes through
+     * setSorts( sortStringToArray( ... ) ), which is the working path -- so the
+     * only thing it did was read like the obvious way to sort and then not
+     * sort, which cost one test in this suite its meaning before it was
+     * noticed. Deleted rather than implemented, because the plural is already
+     * the one everything uses.
+     */
 
     function setSorts($array) {
 
