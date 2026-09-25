@@ -328,7 +328,15 @@ class EventRawHandlers extends \OWA\Core\Observer {
              */
             'is_goal_event' => 0,
 
-            'revenue'  => $this->number( $event->get( 'revenue' ) ),
+            /*
+             * ct_total, converted -- NOT a property named `revenue`, which is
+             * what this read and which the registry does not declare. So the
+             * column was NULL on every purchase ever stored. ct_total is the
+             * name the wire has carried since 1.x and the one the registry
+             * declares for the purchase event; the column is minor units.
+             */
+            'revenue'  => \OWA\Module\Base\Classes\V2Event::minorUnits(
+                $event->get( 'ct_total' ) ),
             'currency' => $this->text( $event->get( 'currency' ) ),
 
             'raw_ua' => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),

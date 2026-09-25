@@ -541,4 +541,77 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertSame([], $this->rowsFor($this->site, $visitor, $session));
     }
+
+    /**
+     * A PURCHASE STORES ITS REVENUE, in minor units.
+     *
+     * It stored NULL. row() read a property named `revenue`, which the registry
+     * does not declare and no tracker sends -- the wire name is ct_total, and has
+     * been since 1.x. So every purchase ever ingested by v2 recorded its currency
+     * and no amount, and nothing said so because absence is a legitimate value in
+     * that column.
+     *
+     * 12.50 is the value to test with rather than a round number: the column is
+     * minor units, so the conversion multiplies by 100, and (int) truncation of
+     * the binary float gives 1249 instead of 1250. A round amount would pass
+     * either way.
+     */
+    public function testAPurchaseStoresItsRevenueInMinorUnits(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'    => $this->site,
+            'visitor_id' => $visitor,
+            'session_id' => $session,
+            'page_url'   => 'https://owa-test-site/v2/thanks',
+            'ct_order_id' => 'A-1',
+            'ct_total'    => '12.50',
+            'currency'    => 'USD',
+        ]);
+
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertArrayHasKey('purchase', $rows, 'the purchase was not stored at all');
+
+        $this->assertSame('1250', (string) $rows['purchase']['revenue'],
+            'The purchase stored no revenue. The row reads ct_total -- the name the '
+            . 'registry declares for this event -- not a property called revenue.');
+
+        $this->assertSame('USD', $rows['purchase']['currency'],
+            'minor units without the currency sum different things together');
+    }
+
+    /**
+     * A purchase that sent NO total stores NULL, not 0.
+     *
+     * The two have to be distinguishable: 0 is a free order, NULL is a store
+     * that did not tell us. Asserted for the ABSENT case because that is the one
+     * the pipeline can still express -- ct_total is declared with data_type
+     * integer, and that applies `$var + 0`, so a total of 'free' has already
+     * become 0 before the row is built. The conversion's own not-a-number branch
+     * is therefore unreachable from the wire, and 0 in this column can mean
+     * either a free order or a garbled one.
+     */
+    public function testAPurchaseWithNoTotalStoresNullNotZero(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'    => $this->site,
+            'visitor_id' => $visitor,
+            'session_id' => $session,
+            'page_url'   => 'https://owa-test-site/v2/thanks',
+            'ct_order_id' => 'A-2',
+            'currency'    => 'USD',
+        ]);
+
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertArrayHasKey('purchase', $rows);
+
+        $this->assertNull($rows['purchase']['revenue']);
+    }
 }

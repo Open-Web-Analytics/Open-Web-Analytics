@@ -234,10 +234,16 @@ class EventRaw extends \OWA\Core\Entity {
         // than one page.
         $this->setProperty( $this->column( 'engagement_msec', OWA_DTD_INT ) );
 
-        // Set on the row a goal condition MATERIALISED, never on the ordinary
-        // event that triggered it -- flagging both would double-count and blur
-        // which row is the conversion. NOT NULL with a default because a
-        // boolean holding three values groups as three things.
+        /*
+         * Set on the event that MET the condition -- GA's shape, where a key
+         * event is an ordinary event flagged, so eventCount stays a count of
+         * what happened and a conversion needs no row of its own. Decided per
+         * row by Classes\GoalMarking at Ingest::STORE_POST, where the row is
+         * complete.
+         *
+         * NOT NULL with a default, because a boolean holding three values
+         * groups as three things.
+         */
         $is_goal_event = $this->column( 'is_goal_event', OWA_DTD_BOOLEAN, false );
         $is_goal_event->setNotNull();
         $is_goal_event->setDefaultValue( 0 );
