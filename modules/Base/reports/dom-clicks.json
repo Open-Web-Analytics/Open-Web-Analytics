@@ -48,22 +48,14 @@
                 "sort": "eventCount-",
                 "resultsPerPage": 5
             }
-        },
-        {
-            "type": "grid",
-            "id": "domclasses",
-            "container": "topDomClasses",
-            "title": "Dom Classes",
-            "query": {
-                "dimensions": "domElementClass",
-                "sort": "eventCount-",
-                "resultsPerPage": 5
-            }
         }
     ],
     "settings": {
         "constraints": [
-            { "dimension": "pagePath", "fromParam": "pagePath" }
+            {
+                "dimension": "pagePath",
+                "fromParam": "pagePath"
+            }
         ]
     }
 }

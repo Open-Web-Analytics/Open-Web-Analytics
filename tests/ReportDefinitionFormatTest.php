@@ -2294,11 +2294,16 @@ final class ReportDefinitionFormatTest extends TestCase
      */
     public function testTheConvertedWidgetsAreCards(): void
     {
+        /*
+         * Two of the original four are gone with their reports:
+         * action-tracking (its dimensions are params paths, which only a
+         * registered custom dimension can reach) and ecommerce's productName
+         * widget (v2 carries no line items). The conversion they recorded is
+         * still recorded by the two that remain.
+         */
         $expected = array(
-            'action-tracking.json' => 'actionsByGroup',
-            'content.json'         => 'toppagetypes',
-            'ecommerce.json'       => 'productName',
-            'visitors.json'        => 'browserTypes',
+            'content.json'  => 'toppagetypes',
+            'visitors.json' => 'browserTypes',
         );
 
         $cards = array();

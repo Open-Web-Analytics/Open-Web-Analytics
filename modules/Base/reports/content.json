@@ -1,6 +1,6 @@
 {
     "title": "Content Overview",
-    "metrics": "sessions,pageViews,bounceRate",
+    "metrics": "sessions,pageViews",
     "widgets": [
         {
             "type": "trend-card",
@@ -9,7 +9,7 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date",
-                "metrics": "pageViews,pageViewsPerSession,bounceRate"
+                "metrics": "pageViews,pageViewsPerSession"
             },
             "chartMetric": "pageViews"
         },
@@ -37,7 +37,7 @@
             "colspan": 3,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "pageType",
+                "dimensions": "contentGroup",
                 "sort": "sessions-"
             },
             "more": {
@@ -101,11 +101,6 @@
                     "description": "See user mouse movement and keypress recordings."
                 },
                 {
-                    "reportId": "action-tracking",
-                    "label": "Actions",
-                    "description": "See which actions your user performed."
-                },
-                {
                     "reportId": "entry-pages",
                     "label": "Entry Pages",
                     "description": "See which web pages users entered on."
@@ -114,11 +109,6 @@
                     "reportId": "exit-pages",
                     "label": "Exit Pages",
                     "description": "See which web pages users exited on."
-                },
-                {
-                    "reportId": "feeds",
-                    "label": "Feeds",
-                    "description": "See trends for feed subscribers and usage."
                 }
             ]
         }

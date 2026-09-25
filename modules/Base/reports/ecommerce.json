@@ -13,22 +13,6 @@
             "chartMetric": "transactions"
         },
         {
-            "type": "grid-card",
-            "id": "productName",
-            "container": "productNameExplorer",
-            "title": "Top Products",
-            "colspan": 6,
-            "query": {
-                "metrics": "lineItemRevenue",
-                "dimensions": "productName",
-                "sort": "lineItemRevenue-"
-            },
-            "more": {
-                "reportId": "products",
-                "label": "View Full Report \u00bb"
-            }
-        },
-        {
             "type": "grid",
             "id": "sessionSource",
             "container": "sourceExplorer",

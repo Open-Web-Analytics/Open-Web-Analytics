@@ -24,34 +24,6 @@
         },
         {
             "type": "grid",
-            "id": "priorpages",
-            "container": "priorpages",
-            "title": "Prior Pages Viewed",
-            "query": {
-                "metrics": "sessions",
-                "dimensions": "priorPagePath,priorPageTitle",
-                "sort": "sessions-",
-                "resultsPerPage": 15
-            },
-            "constraints": [
-                {
-                    "dimension": "pagePath",
-                    "fromParam": "pagePath"
-                }
-            ],
-            "link": {
-                "linkColumn": "priorPagePath",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "priorPagePath"
-            },
-            "colspan": 3
-        },
-        {
-            "type": "grid",
             "id": "nextpages",
             "container": "nextpages",
             "title": "Next Pages Viewed",

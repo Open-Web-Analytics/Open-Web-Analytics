@@ -63,6 +63,21 @@ return array(
                 'family' => 'content', 'description' => 'The title of the page as it was at the time of the event.' ),
             'hostName' => array( 'column' => 'host', 'label' => 'Host Name',
                 'family' => 'content', 'description' => 'The host the page was served from.' ),
+            /*
+             * The referring HOST, which the cube carried as a column and no
+             * dimension read -- so a referring-sites report, one of the oldest
+             * questions in analytics, had nothing to group by. 1.x asked it as
+             * referralWebSite off an enriched referer table.
+             *
+             * Distinct from sessionSource beside it: that is the RESOLVED
+             * source, which is the tag when a URL carried one and falls back to
+             * direct when there was no referrer at all. This is the host as
+             * observed, and empty when the visit was direct.
+             */
+            'referrerHost' => array( 'column' => 'referer_host', 'label' => 'Referring Site',
+                'family' => 'traffic source',
+                'description' => 'The host the user arrived from, as observed.' ),
+
             'pageReferrer' => array( 'column' => 'referer_url', 'label' => 'Page Referrer',
                 'family' => 'content', 'description' => 'The page the user arrived from.' ),
             'contentGroup' => array( 'column' => 'content_group', 'label' => 'Content Group',

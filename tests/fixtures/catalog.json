@@ -4,9 +4,9 @@
         "metricImplementations": 23,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 53,
-        "dimensionEntriesDenormalized": 53,
-        "accessorDimensionNames": 53
+        "dimensionNamesDenormalized": 54,
+        "dimensionEntriesDenormalized": 54,
+        "accessorDimensionNames": 54
     },
     "metrics": {
         "averageEngagementTimePerSession": [
@@ -1138,6 +1138,19 @@
                 "denormalized": true
             }
         },
+        "referrerHost": {
+            "base.event": {
+                "name": "referrerHost",
+                "entity": "base.event",
+                "column": "referer_host",
+                "family": "traffic source",
+                "label": "Referring Site",
+                "description": "The host the user arrived from, as observed.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "sessionAd": {
             "base.event": {
                 "name": "sessionAd",
@@ -1745,6 +1758,17 @@
             "description": "How many sessions the user had before this one.",
             "foreign_key_name": "",
             "data_type": "integer",
+            "denormalized": true
+        },
+        "referrerHost": {
+            "name": "referrerHost",
+            "entity": "base.event",
+            "column": "referer_host",
+            "family": "traffic source",
+            "label": "Referring Site",
+            "description": "The host the user arrived from, as observed.",
+            "foreign_key_name": "",
+            "data_type": "string",
             "denormalized": true
         },
         "sessionAd": {

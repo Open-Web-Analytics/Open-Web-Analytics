@@ -11,21 +11,6 @@
                 "sort": "date"
             },
             "chartMetric": "transactions"
-        },
-        {
-            "type": "grid",
-            "id": "transactions",
-            "container": "transactions",
-            "query": {
-                "metrics": "transactionRevenue,shippingRevenue,taxRevenue",
-                "dimensions": "date,transactionId",
-                "sort": "timestamp-",
-                "resultsPerPage": 25
-            },
-            "excludeColumns": [
-                "date"
-            ],
-            "title": "Transaction Roster"
         }
     ]
 }

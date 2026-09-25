@@ -629,16 +629,8 @@ class Module extends \OWA\Core\Module {
      */
     function registerReports() {
 
-        $this->registerReport( 'action-detail', 'reports/action-detail.json' );
-        $this->registerReport( 'action-group', 'reports/action-group.json' );
-        $this->registerReport( 'action-groups', 'reports/action-groups.json' );
-        $this->registerReport( 'action-tracking', 'reports/action-tracking.json' );
         $this->registerReport( 'ad-detail', 'reports/ad-detail.json' );
-        $this->registerReport( 'ad-type-detail', 'reports/ad-type-detail.json' );
-        $this->registerReport( 'ad-types', 'reports/ad-types.json' );
         $this->registerReport( 'ads', 'reports/ads.json' );
-        $this->registerReport( 'anchortext', 'reports/anchortext.json' );
-        $this->registerReport( 'attribution-history', 'reports/attribution-history.json' );
         $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
         $this->registerReport( 'browsers', 'reports/browsers.json' );
         $this->registerReport( 'campaign-detail', 'reports/campaign-detail.json' );
@@ -646,7 +638,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
-        $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );
         $this->registerReport( 'document', 'reports/document.json' );
         $this->registerReport( 'clicks', 'reports/clicks.json' );
         $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
@@ -655,7 +646,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
         $this->registerReport( 'entry-pages', 'reports/entry-pages.json' );
         $this->registerReport( 'exit-pages', 'reports/exit-pages.json' );
-        $this->registerReport( 'feeds', 'reports/feeds.json' );
         $this->registerReport( 'geolocation', 'reports/geolocation.json' );
         $this->registerReport( 'goals', 'reports/goals.json' );
         $this->registerReport( 'hosts', 'reports/hosts.json' );
@@ -664,9 +654,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'os', 'reports/os.json' );
         $this->registerReport( 'page-types', 'reports/page-types.json' );
         $this->registerReport( 'pages', 'reports/pages.json' );
-        $this->registerReport( 'product-categories', 'reports/product-categories.json' );
-        $this->registerReport( 'product-skus', 'reports/product-skus.json' );
-        $this->registerReport( 'products', 'reports/products.json' );
         $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
         $this->registerReport( 'revenue', 'reports/revenue.json' );
         $this->registerReport( 'search-engines', 'reports/search-engines.json' );
@@ -675,10 +662,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'traffic', 'reports/traffic.json' );
         $this->registerReport( 'transactions', 'reports/transactions.json' );
         $this->registerReport( 'visitors', 'reports/visitors.json' );
-        $this->registerReport( 'visitors-age', 'reports/visitors-age.json' );
         $this->registerReport( 'visitors-loyalty', 'reports/visitors-loyalty.json' );
-        $this->registerReport( 'visitors-recency', 'reports/visitors-recency.json' );
-        $this->registerReport( 'visits-to-purchase', 'reports/visits-to-purchase.json' );
     }
 
     function registerNavigation() {
@@ -722,33 +706,59 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3, 'view_reports_ecommerce');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), 'Average Order Value', 4, 'view_reports_ecommerce');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), 'Conversion Rate', 5, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'products' ), 'Products', 6, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-skus' ), 'Product SKUs', 7, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-categories' ), 'Product Categories', 8, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 9, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 10, 'view_reports_ecommerce');
+        /*
+         * days-to-purchase and visits-to-purchase go with them. Each is one
+         * dimension -- daysToTransaction, visitsToTransaction -- measuring the
+         * gap between acquisition and a purchase, and v2 has built neither. The
+         * anchors are on the row (visitor_fsts, prior_sessions), so these come
+         * back as computed dimensions rather than needing schema.
+         */
+
+        /*
+         * THE PRODUCT REPORTS ARE GONE, and this is a capability gap rather
+         * than a tidy-up. v2's raw row carries ONE revenue figure per purchase
+         * and no line items, so productName, productSku, productCategory,
+         * lineItemRevenue, lineItemQuantity, shippingRevenue and taxRevenue
+         * have nothing to read. 1.x had owa_commerce_line_item_fact for this.
+         *
+         * Restoring them needs an item-level shape in the schema -- GA carries
+         * itemRevenue, itemsPurchased and friends -- not a report definition.
+         */
 
         //Content
         $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Pages', 1);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'feeds' ), 'Feeds', 7);
+        /*
+         * The Feeds link was here. base.feed_request is in V2Event::NOT_EVENTS
+         * -- the type never reaches owa_event_raw at all -- and nothing has
+         * written a feed request since 2021. A nav entry to a report with no
+         * data source is worse than no entry.
+         */
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
 
 
-        //Actions
-        $this->addNavigationSubGroup('Action Tracking', $this->reportRef( 'action-tracking' ), 'Action Tracking', 1, 'view_reports', 'Reports','fa fa-hand-pointer');
-        $this->addNavigationLinkInSubGroup('Action Tracking', $this->reportRef( 'action-groups' ), 'Action Groups', 2);
+        /*
+         * ACTION TRACKING was here, and the data still flows -- track.action
+         * maps onto custom_event and its properties land in owa_event_raw's
+         * `params`. What cannot ship is the REPORTS: they group by actionGroup,
+         * actionName and actionLabel, which are params paths, and the cube
+         * reaches a params path through a REGISTERED custom dimension
+         * (Cube\JsonStep) that adds a column per Property. That is an
+         * installation's choice, so it cannot be a shipped dimension, and a
+         * shipped report cannot depend on one.
+         *
+         * An install that wants these registers action_group and friends as
+         * custom dimensions and builds its own report over them.
+         */
 
         //Visitors
         $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'hosts' ), 'Domains', 2);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-recency' ), 'Visitor Recency', 4);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-age' ), 'Visitor Age', 5);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);
@@ -756,14 +766,11 @@ class Module extends \OWA\Core\Module {
         //Traffic
         $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'anchortext' ), 'Inbound Link Text', 2);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'campaigns' ), 'Campaigns', 5);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ads' ), 'Ad Performance', 6);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ad-types' ), 'Ad Types', 7);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'creative-performance' ), 'Creative Performance', 8);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'attribution-history' ), 'Attribution History', 8);
 
         //Goals
         $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');

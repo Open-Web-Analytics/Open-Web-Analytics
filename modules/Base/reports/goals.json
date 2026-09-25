@@ -1,6 +1,6 @@
 {
     "title": "Goals",
-    "metrics": "sessions,goalConversions,goalConversionRatePerSession,goalAbandonRateAll,goalValueAll",
+    "metrics": "sessions,goalConversions,goalConversionRatePerSession",
     "widgets": [
         {
             "type": "trend",
@@ -21,7 +21,7 @@
             "colspan": 6,
             "boxWidth": "150px",
             "query": {
-                "metrics": "@activeGoalCompletions"
+                "metrics": "goalConversions"
             },
             "showTitle": true
         }

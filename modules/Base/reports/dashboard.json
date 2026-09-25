@@ -1,6 +1,6 @@
 {
     "title": "Dashboard",
-    "metrics": "sessions,totalUsers,pageViews,bounceRate,pageViewsPerSession",
+    "metrics": "sessions,totalUsers,pageViews,pageViewsPerSession",
     "widgets": [
         {
             "type": "trend-card",
@@ -10,7 +10,7 @@
             "showTitle": true,
             "chartMetric": "totalUsers",
             "query": {
-                "metrics": "totalUsers,pageViews,bounceRate,pageViewsPerSession",
+                "metrics": "totalUsers,pageViews,pageViewsPerSession",
                 "dimensions": "date",
                 "sort": "date"
             }
@@ -66,31 +66,6 @@
             }
         },
         {
-            "type": "grid",
-            "id": "actions",
-            "container": "actions-trend",
-            "title": "Actions",
-            "colspan": 3,
-            "query": {
-                "metrics": "actions",
-                "dimensions": "actionGroup,actionName",
-                "sort": "actions-",
-                "resultsPerPage": 5
-            },
-            "link": {
-                "linkColumn": "actionGroup",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "action-group",
-                    "actionGroup": "%s"
-                },
-                "valueColumns": "actionGroup"
-            },
-            "more": {
-                "reportId": "action-tracking"
-            }
-        },
-        {
             "type": "grid-card",
             "id": "topReferrers",
             "container": "top-referers",
@@ -104,7 +79,7 @@
             ],
             "query": {
                 "metrics": "sessions",
-                "dimensions": "referralWebSite",
+                "dimensions": "referrerHost",
                 "sort": "sessions-",
                 "resultsPerPage": 10
             },

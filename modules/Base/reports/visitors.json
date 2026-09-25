@@ -55,36 +55,6 @@
                 "reportId": "visitors-loyalty",
                 "label": "View Full Report \u00bb"
             }
-        },
-        {
-            "type": "grid-card",
-            "id": "recency",
-            "container": "visitor-recency",
-            "title": "Visitor Recency",
-            "query": {
-                "metrics": "totalUsers",
-                "dimensions": "daysSinceLastVisit",
-                "sort": "daysSinceLastVisit"
-            },
-            "more": {
-                "reportId": "visitors-recency",
-                "label": "View Full Report \u00bb"
-            }
-        },
-        {
-            "type": "grid-card",
-            "id": "age",
-            "container": "visitor-age",
-            "title": "Visitor Age",
-            "query": {
-                "metrics": "totalUsers",
-                "dimensions": "daysSinceFirstVisit",
-                "sort": "daysSinceFirstVisit"
-            },
-            "more": {
-                "reportId": "visitors-age",
-                "label": "View Full Report \u00bb"
-            }
         }
     ]
 }

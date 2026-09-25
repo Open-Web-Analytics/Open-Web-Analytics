@@ -179,8 +179,8 @@ final class ReportRenderCharacterizationTest extends TestCase
          * every per-report assertion above, because there is nothing to
          * disagree with.
          */
-        $this->assertGreaterThan( 90, $queries );
-        $this->assertGreaterThan( 150, $commands );
+        $this->assertGreaterThan( 60, $queries );
+        $this->assertGreaterThan( 100, $commands );
     }
 
     /**

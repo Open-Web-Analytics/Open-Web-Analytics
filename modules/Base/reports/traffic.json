@@ -74,7 +74,7 @@
             "colspan": 6,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "referralWebSite",
+                "dimensions": "referrerHost",
                 "sort": "sessions-"
             },
             "more": {

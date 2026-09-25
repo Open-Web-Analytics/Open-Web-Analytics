@@ -17,7 +17,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "pageType",
+                "dimensions": "contentGroup",
                 "sort": "pageViews-",
                 "resultsPerPage": 25
             }

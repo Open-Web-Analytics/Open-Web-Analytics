@@ -15,7 +15,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "referralWebSite",
+                "dimensions": "referrerHost",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }
