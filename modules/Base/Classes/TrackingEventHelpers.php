@@ -180,8 +180,19 @@ class TrackingEventHelpers {
      * page_location. A list means only those events: file_name is a property
      * of file_download and of nothing else.
      *
-     * A property the pass derives rather than the beacon carrying it has no
-     * entry here at all, because it is not a tracking property of any event.
+     * An EMPTY list means no event carries it, and that is not the same as
+     * having no entry. source, medium, campaign, ad and search_terms are
+     * derived by the cube pass, so no beacon carries them and no row stores
+     * them -- but the registry entry is still load-bearing three times over:
+     * it puts the name in serverOwnedProperties(), which is what refuses a
+     * request that tries to set `source` directly and forge its own
+     * attribution; it carries the default (medium defaults to 'direct'); and
+     * the v1 dimension entities derive their ids from these names.
+     *
+     * So the entry states two independent facts -- the name is RESERVED, and
+     * no event CARRIES it. Deleting the entry to assert the second would
+     * destroy the first, which was tried: it makes attribution settable from
+     * the wire and TaggedAttributionTest goes red.
      *
      * @param  string $event_name  a v2 event name
      * @return string[]            property names, sorted

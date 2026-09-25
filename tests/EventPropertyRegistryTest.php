@@ -89,6 +89,19 @@ final class EventPropertyRegistryTest extends TestCase
 
         $this->assertNotEmpty($empty, 'nothing declares an empty list, so this proves nothing');
 
+        /*
+         * And the entries are still REGISTERED, which is the other half of
+         * what an empty list means. Deleting them to say "no event carries
+         * this" would also remove them from serverOwnedProperties(), and a
+         * request could then set its own `source` -- so the empty list is the
+         * only way to state one fact without destroying the other.
+         */
+        foreach (['source', 'medium', 'campaign', 'ad', 'search_terms'] as $reserved) {
+
+            $this->assertSame([], Helpers::rejectServerOwnedParams([$reserved => 'forged']),
+                $reserved . ' became settable from the wire, so its registry entry is gone');
+        }
+
         foreach (self::storableEvents() as $event) {
             foreach ($empty as $name) {
                 $this->assertNotContains($name, Helpers::propertiesForEvent($event),
