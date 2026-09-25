@@ -100,13 +100,23 @@ final class CubeReportingTest extends TestCase
          * accident and proves none of them.
          */
         $rows = [
-            // event_type,      path,   visitor,           session,           prior, msec
-            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 100],
-            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 250],
-            ['page_view',     '/two', self::VISITOR,     self::SESSION,     0, 400],
-            ['session_start', '/one', self::VISITOR,     self::SESSION,     0,   0],
-            ['page_view',     '/two', self::VISITOR + 1, self::SESSION + 1, 3, 750],
-            ['click',         '/two', self::VISITOR + 1, self::SESSION + 1, 3,   0],
+            // event_type,      path,   visitor,           session,           prior, msec, revenue
+            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 100, null],
+            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 250, null],
+            ['page_view',     '/two', self::VISITOR,     self::SESSION,     0, 400, null],
+            ['session_start', '/one', self::VISITOR,     self::SESSION,     0,   0, null],
+            ['page_view',     '/two', self::VISITOR + 1, self::SESSION + 1, 3, 750, null],
+            ['click',         '/two', self::VISITOR + 1, self::SESSION + 1, 3,   0, null],
+
+            /*
+             * Two purchases, BOTH in one of the two sessions. That asymmetry is
+             * the point: transactions (2) differs from the sessions that
+             * converted (1), so a conversion rate computed against the wrong
+             * denominator gives 200% instead of 50% and the fixture says which.
+             * Revenue differs between them so a sum is not a doubled single.
+             */
+            ['purchase',      '/buy', self::VISITOR + 1, self::SESSION + 1, 3,   0, 2500],
+            ['purchase',      '/buy', self::VISITOR + 1, self::SESSION + 1, 3,   0, 1500],
         ];
 
         foreach ($rows as $i => $row) {
@@ -131,6 +141,7 @@ final class CubeReportingTest extends TestCase
                 'ts'              => $ts + $i,
                 'yyyymmdd'        => $day,
                 'page_path'       => $row[1],
+                'revenue'         => $row[6],
             ]);
 
             if (!$event->create()) {
@@ -271,7 +282,7 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame([], (array) $rs->errors);
 
-        $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+        $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
             'the fixture holds six events');
 
         $byName = [];
@@ -291,7 +302,7 @@ final class CubeReportingTest extends TestCase
          */
         ksort($byName);
 
-        $this->assertSame(['click' => 1, 'page_view' => 4, 'session_start' => 1], $byName);
+        $this->assertSame(['click' => 1, 'page_view' => 4, 'purchase' => 2, 'session_start' => 1], $byName);
 
         $this->assertSame((int) $rs->aggregates['eventCount']['value'], $sum,
             'the breakdown must sum to its total');
@@ -326,7 +337,7 @@ final class CubeReportingTest extends TestCase
         // orders by nothing, and the two drivers returned the tie differently.
         ksort($byPath);
 
-        $this->assertSame(['/one' => 3, '/two' => 3], $byPath,
+        $this->assertSame(['/buy' => 2, '/one' => 3, '/two' => 3], $byPath,
             'the cube answers, with its own column and no join');
 
         $this->assertSame('base.event',
@@ -429,7 +440,7 @@ final class CubeReportingTest extends TestCase
 
             $this->assertSame([], (array) $rs->errors, $dim . ' did not resolve');
 
-            $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+            $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
                 $dim . ' changed the total, so it is filtering rather than grouping');
         }
     }
@@ -465,7 +476,7 @@ final class CubeReportingTest extends TestCase
         ksort($got);
 
         $expected = [
-            'eventCount'        => 6,   // every row
+            'eventCount'        => 8,   // every row
             'pageViews'         => 4,   // event_type = page_view
             'domClicks'         => 1,   // event_type = click
             'visits'            => 2,   // distinct session_id
@@ -501,7 +512,7 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame(4, (int) $rs->aggregates['pageViews']['value']);
 
-        $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+        $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
             'the condition on one metric must not narrow the rows the others see');
     }
 
@@ -594,10 +605,88 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame([], (array) $rs->errors);
 
-        // 4 page views, 2 sessions, 2 visitors, 6 events
+        // 4 page views, 2 sessions, 2 visitors, 8 events
         $this->assertSame(2.0, (float) $rs->aggregates['pagesPerVisit']['value'],  '4 / 2');
         $this->assertSame(1.0, (float) $rs->aggregates['sessionsPerUser']['value'], '2 / 2');
-        $this->assertSame(3.0, (float) $rs->aggregates['eventsPerSession']['value'], '6 / 2');
+        $this->assertSame(4.0, (float) $rs->aggregates['eventsPerSession']['value'], '8 / 2');
+    }
+
+    /**
+     * The commerce metrics compute what the fixture holds.
+     *
+     * TWO PURCHASES IN ONE OF THE TWO SESSIONS, deliberately. If both numbers
+     * agreed, a conversion rate computed against the wrong denominator would
+     * pass: 2 transactions over 2 sessions is 100% whichever way you read it.
+     * With the purchases in one session, transactions (2) and converting
+     * sessions (1) differ, and 2/2 = 100% is visibly wrong against the 50% a
+     * per-session rate would give.
+     *
+     * The rate here is transactions/visits, which is 100% -- TWO purchases
+     * against TWO visits. That is what the metric is declared to mean, and it
+     * is GA's shape too; a "share of sessions that converted" is a different
+     * metric and would need a distinct count of converting sessions.
+     */
+    public function testTheCommerceMetricsComputeWhatTheFixtureHolds(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray(
+            'transactions,transactionRevenue,revenuePerTransaction,revenuePerVisit,ecommerceConversionRate');
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $this->assertSame(2, (int) $rs->aggregates['transactions']['value'],
+            'two purchase rows');
+
+        // 2500 + 1500, in minor units. Different amounts, so a sum cannot pass
+        // by doubling one of them.
+        $this->assertSame(4000, (int) $rs->aggregates['transactionRevenue']['value']);
+
+        $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerTransaction']['value'],
+            '4000 / 2');
+
+        $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerVisit']['value'],
+            '4000 / 2 visits');
+
+        $this->assertSame(1.0, (float) $rs->aggregates['ecommerceConversionRate']['value'],
+            '2 transactions / 2 visits');
+    }
+
+    /**
+     * Revenue is summed only over PURCHASES, not over every row.
+     *
+     * The condition is the whole point: `sum(revenue)` unconditioned happens to
+     * be right today only because nothing else writes that column, which is a
+     * property of the data rather than a statement of what the metric means.
+     */
+    public function testRevenueIgnoresRowsThatAreNotPurchases(): void
+    {
+        $db    = owa_coreAPI::dbSingleton();
+        $table = Cubes::tableFor(self::PROPERTY);
+
+        // Put revenue on a PAGE VIEW, which no purchase metric should see.
+        $db->query(sprintf(
+            "UPDATE %s SET revenue = 9999 WHERE event_type = 'page_view' LIMIT 1", $table));
+
+        try {
+            $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+            $rsm->metrics = $rsm->metricsStringToArray('transactionRevenue');
+            $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+            $rsm->setSiteId(self::SITE);
+
+            $rs = $rsm->getResults();
+
+            $this->assertSame(4000, (int) $rs->aggregates['transactionRevenue']['value'],
+                'a page view carrying revenue must not reach a purchase metric');
+        } finally {
+            $db->query(sprintf(
+                "UPDATE %s SET revenue = NULL WHERE event_type = 'page_view'", $table));
+        }
     }
 
     /**

@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 14,
-        "metricImplementations": 14,
+        "metricNames": 21,
+        "metricImplementations": 21,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 53,
@@ -9,6 +9,34 @@
         "accessorDimensionNames": 53
     },
     "metrics": {
+        "actions": [
+            {
+                "name": "actions",
+                "class": "base.configurableMetric",
+                "label": "Custom Events",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "condition": [
+                        "custom_event",
+                        "event_type"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of custom events the site logged.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Custom Events",
+                    "metric_type": "count",
+                    "name": "actions",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "averageEngagementTime": [
             {
                 "name": "averageEngagementTime",
@@ -58,6 +86,31 @@
                     "name": "domClicks",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "ecommerceConversionRate": [
+            {
+                "name": "ecommerceConversionRate",
+                "class": "base.configurableMetric",
+                "label": "Ecommerce Conversion Rate",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "visits",
+                    "description": "The share of visits that completed a purchase.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Ecommerce Conversion Rate",
+                    "metric_type": "ratio",
+                    "name": "ecommerceConversionRate",
+                    "numerator": "transactions",
+                    "precision": 4,
                     "subtrahend_column": ""
                 }
             }
@@ -278,6 +331,81 @@
                 }
             }
         ],
+        "revenuePerTransaction": [
+            {
+                "name": "revenuePerTransaction",
+                "class": "base.configurableMetric",
+                "label": "Average Order Value",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "currency",
+                    "denominator": "transactions",
+                    "description": "Revenue divided by the number of purchases.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Average Order Value",
+                    "metric_type": "ratio",
+                    "name": "revenuePerTransaction",
+                    "numerator": "transactionRevenue",
+                    "precision": 0,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "revenuePerVisit": [
+            {
+                "name": "revenuePerVisit",
+                "class": "base.configurableMetric",
+                "label": "Revenue Per Visit",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "currency",
+                    "denominator": "visits",
+                    "description": "Revenue divided by the number of visits.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Revenue Per Visit",
+                    "metric_type": "ratio",
+                    "name": "revenuePerVisit",
+                    "numerator": "transactionRevenue",
+                    "precision": 0,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "sessionKeyEventRate": [
+            {
+                "name": "sessionKeyEventRate",
+                "class": "base.configurableMetric",
+                "label": "Key Event Rate",
+                "group": "Goals",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "visits",
+                    "description": "The share of visits that included a key event.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Goals",
+                    "label": "Key Event Rate",
+                    "metric_type": "ratio",
+                    "name": "sessionKeyEventRate",
+                    "numerator": "keyEvents",
+                    "precision": 4,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "sessionsPerUser": [
             {
                 "name": "sessionsPerUser",
@@ -322,6 +450,62 @@
                     "label": "Total Engagement Time",
                     "metric_type": "sum",
                     "name": "totalEngagementTime",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "transactionRevenue": [
+            {
+                "name": "transactionRevenue",
+                "class": "base.configurableMetric",
+                "label": "Revenue",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "revenue",
+                    "condition": [
+                        "event_type",
+                        "purchase"
+                    ],
+                    "data_type": "currency",
+                    "denominator": "",
+                    "description": "Total revenue from completed purchases.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Revenue",
+                    "metric_type": "sum",
+                    "name": "transactionRevenue",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "transactions": [
+            {
+                "name": "transactions",
+                "class": "base.configurableMetric",
+                "label": "Transactions",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "condition": [
+                        "event_type",
+                        "purchase"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of completed purchases.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Transactions",
+                    "metric_type": "count",
+                    "name": "transactions",
                     "numerator": "",
                     "precision": "",
                     "subtrahend_column": ""

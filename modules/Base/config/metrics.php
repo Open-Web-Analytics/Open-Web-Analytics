@@ -103,6 +103,52 @@ return array(
             'condition'   => array( 'column' => 'is_goal_event', 'value' => 1 ),
         ),
 
+        /*
+         * ---- commerce ----------------------------------------------------
+         *
+         * All of it off two columns on the event row -- `revenue` in minor
+         * units and the `currency` beside it -- and the purchase event type.
+         * 1.x needed two fact tables and a line-item join for the same set.
+         *
+         * MINOR UNITS, so these are integers and the formatter renders them.
+         * Summing minor units of different currencies is meaningless, which is
+         * why currency is a dimension: a multi-currency store groups by it.
+         */
+        'transactions' => array(
+            'label'       => 'Transactions',
+            'description' => 'The number of completed purchases.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
+        ),
+
+        'transactionRevenue' => array(
+            'label'       => 'Revenue',
+            'description' => 'Total revenue from completed purchases.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'column'      => 'revenue',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
+        ),
+
+        /*
+         * Custom events -- 1.x called them actions, and track.action maps onto
+         * custom_event. The NAME and LABEL it carried are params paths, so a
+         * breakdown by them waits on that dimension kind; the count does not.
+         */
+        'actions' => array(
+            'label'       => 'Custom Events',
+            'description' => 'The number of custom events the site logged.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'custom_event' ),
+        ),
+
         // ---- counting distinct things -----------------------------------
         /*
          * `session_id` ALONE, not paired with the visitor.
@@ -183,6 +229,55 @@ return array(
             'numerator'   => 'pageViews',
             'denominator' => 'visits',
             'precision'   => 2,
+        ),
+
+        'revenuePerTransaction' => array(
+            'label'       => 'Average Order Value',
+            'description' => 'Revenue divided by the number of purchases.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'ratio',
+            'data_type'   => 'currency',
+            'numerator'   => 'transactionRevenue',
+            'denominator' => 'transactions',
+            'precision'   => 0,
+        ),
+
+        'revenuePerVisit' => array(
+            'label'       => 'Revenue Per Visit',
+            'description' => 'Revenue divided by the number of visits.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'ratio',
+            'data_type'   => 'currency',
+            'numerator'   => 'transactionRevenue',
+            'denominator' => 'visits',
+            'precision'   => 0,
+        ),
+
+        'ecommerceConversionRate' => array(
+            'label'       => 'Ecommerce Conversion Rate',
+            'description' => 'The share of visits that completed a purchase.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'transactions',
+            'denominator' => 'visits',
+            'precision'   => 4,
+        ),
+
+        /*
+         * Key events, as a rate and a share, off the flag the event row already
+         * carries. 1.x spelled these goalConversionRateAll / goalValueAll and
+         * needed the goal configuration to do it.
+         */
+        'sessionKeyEventRate' => array(
+            'label'       => 'Key Event Rate',
+            'description' => 'The share of visits that included a key event.',
+            'group'       => 'Goals',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'keyEvents',
+            'denominator' => 'visits',
+            'precision'   => 4,
         ),
 
         'sessionsPerUser' => array(

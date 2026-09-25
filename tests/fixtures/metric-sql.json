@@ -1,4 +1,12 @@
 {
+    "actions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'custom_event' THEN 1 ELSE 0 END)",
+            "alias": "actions"
+        }
+    ],
     "averageEngagementTime": [
         {
             "kind": "ratio",
@@ -17,6 +25,18 @@
             "entity": "base.event",
             "expression": "sum(CASE WHEN event.event_type = 'click' THEN 1 ELSE 0 END)",
             "alias": "domClicks"
+        }
+    ],
+    "ecommerceConversionRate": [
+        {
+            "kind": "ratio",
+            "numerator": "transactions",
+            "denominator": "visits",
+            "precision": 4,
+            "children": [
+                "transactions",
+                "visits"
+            ]
         }
     ],
     "eventCount": [
@@ -91,6 +111,42 @@
             "alias": "returningVisitors"
         }
     ],
+    "revenuePerTransaction": [
+        {
+            "kind": "ratio",
+            "numerator": "transactionRevenue",
+            "denominator": "transactions",
+            "precision": 0,
+            "children": [
+                "transactionRevenue",
+                "transactions"
+            ]
+        }
+    ],
+    "revenuePerVisit": [
+        {
+            "kind": "ratio",
+            "numerator": "transactionRevenue",
+            "denominator": "visits",
+            "precision": 0,
+            "children": [
+                "transactionRevenue",
+                "visits"
+            ]
+        }
+    ],
+    "sessionKeyEventRate": [
+        {
+            "kind": "ratio",
+            "numerator": "keyEvents",
+            "denominator": "visits",
+            "precision": 4,
+            "children": [
+                "keyEvents",
+                "visits"
+            ]
+        }
+    ],
     "sessionsPerUser": [
         {
             "kind": "ratio",
@@ -109,6 +165,22 @@
             "entity": "base.event",
             "expression": "SUM(event.engagement_msec)",
             "alias": "totalEngagementTime"
+        }
+    ],
+    "transactionRevenue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN event.revenue ELSE 0 END)",
+            "alias": "transactionRevenue"
+        }
+    ],
+    "transactions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN 1 ELSE 0 END)",
+            "alias": "transactions"
         }
     ],
     "uniqueVisitors": [

@@ -62,6 +62,33 @@ final class MillisecondsFormatterTest extends TestCase
         $this->assertSame('', $this->rsm()->formatMilliseconds(''));
     }
 
+    /**
+     * A ratio's NULL survives every numeric formatter.
+     *
+     * A zero denominator gives NULL on purpose -- "no transactions, so revenue
+     * per transaction is not a number" -- and a formatter that renders it as
+     * $0.00 or 0.00% throws that away at the last step, reading as a measured
+     * zero. numberFormatter already guarded; currency and percentage did not,
+     * so every commerce ratio on a page with no purchases claimed a real zero.
+     */
+    public function testANullRatioIsNotFormattedIntoAValue(): void
+    {
+        $rsm = $this->rsm();
+
+        $this->assertNull( $rsm->formatValue( 'currency', null ),
+            'currency must not render a NULL ratio as 0.00' );
+
+        $this->assertNull( $rsm->formatValue( 'percentage', null ),
+            'percentage must not render a NULL ratio as 0.00%' );
+
+        $this->assertNull( $rsm->formatValue( 'integer', null ) );
+        $this->assertNull( $rsm->formatValue( 'milliseconds', null ) );
+
+        // A real zero still formats, so the guards are not swallowing values.
+        $this->assertSame( '0.00%', $rsm->formatValue( 'percentage', 0 ) );
+        $this->assertSame( '0:00', $rsm->formatValue( 'milliseconds', 0 ) );
+    }
+
     /** And the metric layer accepts the type, or a metric would refuse it. */
     public function testTheMetricLayerAcceptsTheType(): void
     {

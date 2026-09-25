@@ -1618,12 +1618,32 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return sprintf( '%d:%02d', $minutes, $rest );
     }
 
+    /**
+     * NULL STAYS NULL, like numberFormatter above.
+     *
+     * A ratio answers NULL on a zero denominator, deliberately: "no visits, so
+     * pages per visit is not a number" is a different answer from "pages per
+     * visit is zero". Formatting that NULL as 0.00% throws the distinction away
+     * at the last step, and reads as a measured zero -- which for a conversion
+     * rate claims people came and did not buy, rather than that nobody came.
+     */
     function formatPercentage($value) {
+
+        if ( $value === null ) {
+
+            return $value;
+        }
 
         return number_format($value * 100, 2).'%';
     }
 
+    /** NULL stays NULL, for the same reason formatPercentage does. */
     function formatCurrency($value) {
+
+        if ( $value === null ) {
+
+            return $value;
+        }
 
         return \OWA\Core\Lib::formatCurrency(
                 $value,

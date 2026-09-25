@@ -1,6 +1,6 @@
 {
     "title": "Pages",
-    "metrics": "pageViews,visits,uniquePageViews",
+    "metrics": "pageViews,visits,pageViews",
     "widgets": [
         {
             "type": "trend",
