@@ -99,7 +99,7 @@ describe('a hash change is not a route change', () => {
 
         window.history.pushState({}, '', '/pricing#faq');
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(0);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
     });
 
     test('but a real route change still does', () => {
@@ -110,7 +110,7 @@ describe('a hash change is not a route change', () => {
 
         window.history.pushState({}, '', '/features');
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(1);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1);
     });
 
     test('moving between anchors on one page raises nothing', () => {
@@ -124,7 +124,7 @@ describe('a hash change is not a route change', () => {
         window.history.pushState({}, '', '/docs#two');
         window.history.pushState({}, '', '/docs#three');
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(0);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
     });
 });
 
@@ -146,7 +146,7 @@ describe('a site that routes on the hash turns both halves back on', () => {
 
         window.history.pushState({}, '', '/app#/settings');
 
-        const views = sent.filter(e => e.event_type === 'base.page_request');
+        const views = sent.filter(e => e.event_type === 'page_view');
 
         expect(views).toHaveLength(1);
         expect(views[0].page_location).toContain('#/settings');
@@ -164,7 +164,7 @@ describe('a site that routes on the hash turns both halves back on', () => {
         window.history.pushState({}, '', '/app#/three');
 
         const urls = sent
-            .filter(e => e.event_type === 'base.page_request')
+            .filter(e => e.event_type === 'page_view')
             .map(e => e.page_location);
 
         expect(urls).toHaveLength(2);

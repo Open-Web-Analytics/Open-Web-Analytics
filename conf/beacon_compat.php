@@ -31,8 +31,17 @@
  * DELETING A GENERATION. When a tracker is old enough that nothing can still
  * be sending it, its entries come out of here and out of whatever applies
  * them, and the test stops demanding coverage. That decision wants evidence
- * rather than a guess about cache lifetimes -- which is what storing a beacon
- * format version on the row would give, and does not exist yet.
+ * rather than a guess about cache lifetimes, and now has it: every beacon
+ * carries a format version, owa_event_raw.beacon_version stores it, and each
+ * version's emitted set is recorded standalone in
+ * tests/fixtures/beacon_contracts.json. "Has generation N died out" is a query.
+ *
+ * THIS FILE IS THE v1 -> v2 MAPPING, and only became so when the v2 tracker
+ * stopped emitting v1 event names. While it still sent base.page_request, the
+ * rename below fired on every beacon the CURRENT tracker produced -- so it was
+ * a translation the live path depended on rather than a bridge from a dead
+ * generation, and it could never have been deleted. Now nothing a v2 tracker
+ * sends reaches these four lines.
  */
 
 return array(
@@ -42,8 +51,9 @@ return array(
      *
      * Event type names. 1.x namespaced its event types and v2 does not, so
      * these four are renames and nothing more. A name already in the v2
-     * vocabulary passes through untouched, which is what lets the tracker send
-     * `scroll` or `file_download` with no line here.
+     * vocabulary passes through untouched -- which is now every name the
+     * current tracker sends, not just the newer ones. These fire only for a
+     * beacon from the v1 line.
      */
     'event_names' => array(
         'base.page_request'     => 'page_view',

@@ -93,7 +93,7 @@ describe('tracker referred pageview beacon contracts', () => {
         window.history.replaceState({}, '', '/p');
         const actual = emittedKeys((t) => t.trackPageView(location.href));
 
-        const expected = CONTRACTS['base.page_request.referral'];
+        const expected = CONTRACTS['2']['page_view.referral'];
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
         // Guard the mutually-exclusive invariant explicitly.
@@ -109,7 +109,7 @@ describe('tracker referred pageview beacon contracts', () => {
         );
         const actual = emittedKeys((t) => t.trackPageView(location.href));
 
-        const expected = CONTRACTS['base.page_request.campaign'];
+        const expected = CONTRACTS['2']['page_view.campaign'];
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
         // The tracker no longer reports the tags it read off the URL. It

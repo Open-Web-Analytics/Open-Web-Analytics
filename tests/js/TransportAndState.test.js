@@ -101,7 +101,7 @@ describe('prepareRequestData: param naming and array flattening', () => {
     // the campaignKeys -- still carry the wire prefix.
     test('emits every param key un-namespaced', () => {
         const t = newTracker();
-        const data = t.prepareRequestData({ event_type: 'base.page_request', foo: 'bar' });
+        const data = t.prepareRequestData({ event_type: 'page_view', foo: 'bar' });
         expect(Object.keys(data)).toEqual(['event_type', 'foo']);
     });
 
@@ -134,11 +134,11 @@ describe('logEvent: GET pixel vs POST fallback', () => {
 
     test('fires a single GET beacon when the url is within the character limit', () => {
         const t = newTracker();
-        t.logEvent({ event_type: 'base.page_request', site_id: 'transport-site' });
+        t.logEvent({ event_type: 'page_view', site_id: 'transport-site' });
 
         expect(beacons.length).toBe(1);
         expect(beacons[0]).toContain('https://track.example/owa/log.php?');
-        expect(beacons[0]).toMatch(/[?&]event_type=base\.page_request/);
+        expect(beacons[0]).toMatch(/[?&]event_type=page_view/);
     });
 
     test('falls back to a cross-domain POST when the url exceeds the character limit', () => {
@@ -147,19 +147,19 @@ describe('logEvent: GET pixel vs POST fallback', () => {
         let posted = null;
         t.cdPost = (data) => { posted = data; };
 
-        t.logEvent({ event_type: 'base.page_request', big: 'x'.repeat(50) });
+        t.logEvent({ event_type: 'page_view', big: 'x'.repeat(50) });
 
         // No pixel; the data went out via POST instead.
         expect(beacons.length).toBe(0);
         expect(posted).toBeTruthy();
-        expect(posted['event_type']).toBe('base.page_request');
+        expect(posted['event_type']).toBe('page_view');
     });
 
     test('sends nothing while the tracker is inactive', () => {
         const t = newTracker();
         t.active = false;
 
-        t.logEvent({ event_type: 'base.page_request' });
+        t.logEvent({ event_type: 'page_view' });
 
         expect(beacons.length).toBe(0);
     });
@@ -220,7 +220,7 @@ describe('trackEvent: end-to-end orchestration', () => {
     test('emits one beacon carrying identity + core params in first-party mode', () => {
         const t = newTracker();
         const event = new OwaEvent();
-        event.setEventType('base.page_request');
+        event.setEventType('page_view');
         event.set('page_url', 'http://cv.example/page');
 
         t.trackEvent(event);
@@ -231,7 +231,7 @@ describe('trackEvent: end-to-end orchestration', () => {
         expect(url).toMatch(/site_id=/);
         expect(url).toMatch(/visitor_id=/);
         expect(url).toMatch(/session_id=/);
-        expect(url).toMatch(/event_type=base\.page_request/);
+        expect(url).toMatch(/event_type=page_view/);
     });
 
 });

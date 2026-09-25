@@ -1197,7 +1197,7 @@ class OWATracker  {
     log() {
 
         var event = new OwaEvent
-        event.setEventType("base.page_request");
+        event.setEventType( 'page_view' );
         return this.logEvent(event);
     }
     
@@ -1906,7 +1906,7 @@ class OWATracker  {
 
         var click = new OwaEvent();
         // set event type
-        click.setEventType("dom.click");
+        click.setEventType( 'click' );
 
         //clicked DOM element properties
         var targ = this._getTarget(e);
@@ -2808,7 +2808,7 @@ class OWATracker  {
     addTransaction( order_id, order_source, total, tax, shipping, gateway, city, state, country ) {
 	    
         this.ecommerce_transaction = new OwaEvent();
-        this.ecommerce_transaction.setEventType( 'ecommerce.transaction' );
+        this.ecommerce_transaction.setEventType( 'purchase' );
         this.ecommerce_transaction.set( 'ct_order_id', order_id );
         this.ecommerce_transaction.set( 'ct_order_source', order_source );
         this.ecommerce_transaction.set( 'ct_total', total );
@@ -3899,12 +3899,18 @@ class OWATracker  {
      * customer's cache policy lets an old tracker live -- and OWA, unlike GA,
      * does not control that policy.
      *
-     * 1 is the first VERSIONED generation. Everything already cached in the
-     * wild sends nothing, lands as NULL, and is generation 0.
+     * ALIGNED TO THE OWA MAJOR, so a beacon format version and the tracker
+     * generation that emitted it are the same number. 2 is this wire. 1 is the
+     * v1 line, which predates the field, sends nothing and lands as NULL.
+     *
+     * Each version's emitted set is recorded standalone in
+     * tests/fixtures/beacon_contracts.json -- a version does not inherit from
+     * another, because the point of keeping an old one is to know what
+     * actually arrived.
      */
     static get BEACON_FORMAT_VERSION() {
 
-        return 1;
+        return 2;
     }
 
     stampEventSequence( event ) {
@@ -3996,7 +4002,7 @@ class OWATracker  {
             event.set('page_url', url);
         }
 
-        event.setEventType( "base.page_request" );
+        event.setEventType( 'page_view' );
 
         return this.trackEvent( event );
     }
@@ -4005,7 +4011,7 @@ class OWATracker  {
 
         var event = new OwaEvent;
 
-        event.setEventType('track.action');
+        event.setEventType( 'custom_event' );
         event.set('action_group', action_group);
         event.set('action_name', action_name);
         event.set('action_label', action_label);

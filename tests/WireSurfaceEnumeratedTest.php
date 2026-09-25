@@ -31,6 +31,9 @@ final class WireSurfaceEnumeratedTest extends TestCase
     private const NOT_TRACKING_PROPERTIES = array();
 
     /** @return array every name the tracker emits, across all event types */
+    /** The wire this branch's tracker emits; OWATracker.BEACON_FORMAT_VERSION. */
+    private const CURRENT_BEACON_FORMAT_VERSION = '2';
+
     private function emitted(): array
     {
         $contracts = json_decode(
@@ -39,16 +42,29 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
         $this->assertIsArray( $contracts, 'the beacon contract fixture is unreadable' );
 
+        /*
+         * VERSION 2 ONLY. The registry is keyed by beacon format version and
+         * each version is a standalone record of what that tracker emitted.
+         * This asks what the CURRENT wire carries, so an older version's
+         * properties are not its business -- they are the compat layer's, and
+         * mixing them in is how a retired property looked like part of the
+         * current vocabulary in the first place.
+         */
+        $current = (array) ( $contracts[ self::CURRENT_BEACON_FORMAT_VERSION ] ?? array() );
+
+        $this->assertNotEmpty( $current,
+            'no contract for beacon format version ' . self::CURRENT_BEACON_FORMAT_VERSION );
+
         $names = array();
 
-        foreach ( $contracts as $event_type => $fields ) {
+        foreach ( $current as $event_type => $fields ) {
 
             if ( $event_type === '_comment' ) {
 
                 continue;
             }
 
-            $names = array_merge( $names, $fields );
+            $names = array_merge( $names, (array) $fields );
         }
 
         return array_values( array_unique( $names ) );

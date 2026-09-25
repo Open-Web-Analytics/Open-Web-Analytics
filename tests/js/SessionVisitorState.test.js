@@ -311,7 +311,7 @@ describe('the two session-start flags have different lifetimes', () => {
 
         t.trackPageView(location.href);
         const later = t.makeEvent();
-        later.setEventType('track.action');
+        later.setEventType('custom_event');
         t.trackEvent(later);
 
         expect(beacons[0].is_new_session_start).toBe(true);
@@ -371,7 +371,7 @@ describe('the visitor-created flag belongs to one event', () => {
 
         t.trackPageView(location.href);
         const later = t.makeEvent();
-        later.setEventType('track.action');
+        later.setEventType('custom_event');
         t.trackEvent(later);
 
         expect(beacons[0].is_new_visitor_created).toBe(true);
@@ -428,7 +428,7 @@ describe('last_req tracks activity, not page starts', () => {
         const afterPageview = OWA.getState('s_session-site', 'last_req');
 
         const later = t.makeEvent();
-        later.setEventType('track.action');
+        later.setEventType('custom_event');
         later.set('timestamp', afterPageview + 600);
         t.trackEvent(later);
 
@@ -444,7 +444,7 @@ describe('last_req tracks activity, not page starts', () => {
         seedPersistedSession({ sid: 'live', last_req: NOW - (35 * 60) });
 
         const active = t.makeEvent();
-        active.setEventType('track.action');
+        active.setEventType('custom_event');
         active.set('timestamp', NOW - (10 * 60));
         t.trackEvent(active);
 
@@ -463,7 +463,7 @@ describe('last_req tracks activity, not page starts', () => {
         const reported = beacons[0].last_req;
 
         const later = t.makeEvent();
-        later.setEventType('track.action');
+        later.setEventType('custom_event');
         later.set('timestamp', NOW + 600);
         t.trackEvent(later);
 

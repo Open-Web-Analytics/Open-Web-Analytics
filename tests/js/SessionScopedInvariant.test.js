@@ -112,7 +112,7 @@ describe('session-scoped properties do not vary within a session', () => {
         first.trackPageView('https://example.com/one');
 
         const action = first.makeEvent();
-        action.setEventType('track.action');
+        action.setEventType('custom_event');
         first.trackEvent(action);
 
         first.sendAccepted();

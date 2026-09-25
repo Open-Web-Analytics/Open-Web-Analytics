@@ -93,7 +93,7 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             expect(spy.sent).toHaveLength(1);
             const url = spy.sent[0];
             expect(url).toContain(BASE_URL + 'log.php?');
-            expect(url).toMatch(/[?&]event_type=base\.page_request/);
+            expect(url).toMatch(/[?&]event_type=page_view/);
             // Proves the setSiteId command's argument survived the queue indirection
             // all the way onto the wire.
             expect(url).toMatch(/[?&]site_id=queue-site/);

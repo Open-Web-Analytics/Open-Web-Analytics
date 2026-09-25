@@ -251,7 +251,34 @@ abstract class IngestionTestCase extends TestCase
             $json = file_get_contents(__DIR__ . '/fixtures/beacon_contracts.json');
             $data = json_decode($json, true);
             unset($data['_comment']);
-            self::$contracts = $data;
+
+            /*
+             * EVERY VERSION, flattened. The registry is keyed by beacon format
+             * version, and ingest sees all of them -- a browser caches a
+             * tracker, so an older generation keeps arriving long after the
+             * current one ships. A handler fed a field that only an older wire
+             * carried is still being fed something real.
+             *
+             * The versions cannot collide: each names its event types in its
+             * own vocabulary, so v1's base.page_request and v2's page_view are
+             * separate keys.
+             */
+            $flattened = array();
+
+            foreach ($data as $version => $contracts) {
+
+                foreach ((array) $contracts as $event_type => $fields) {
+
+                    if ($event_type === '_comment') {
+                        continue;
+                    }
+
+                    $flattened[$event_type] = array_values(array_unique(array_merge(
+                        $flattened[$event_type] ?? array(), (array) $fields)));
+                }
+            }
+
+            self::$contracts = $flattened;
         }
         return self::$contracts;
     }

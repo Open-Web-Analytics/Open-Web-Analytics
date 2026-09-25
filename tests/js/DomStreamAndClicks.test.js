@@ -92,7 +92,7 @@ describe('trackClicks()', () => {
     });
 });
 
-describe('clickEventHandler builds the dom.click event', () => {
+describe('clickEventHandler builds the click event', () => {
 
     test('captures an anchor element id/name/class/tag/text/target_url/coords', () => {
         const t = newTracker();
@@ -104,7 +104,7 @@ describe('clickEventHandler builds the dom.click event', () => {
         t.clickEventHandler(clickOn(document.getElementById('lnk')));
 
         const c = t.click.getProperties();
-        expect(c.event_type).toBe('dom.click');
+        expect(c.event_type).toBe('click');
         expect(c.dom_element_id).toBe('lnk');
         expect(c.dom_element_name).toBe('nav');
         expect(c.dom_element_class).toBe('btn');
@@ -136,7 +136,7 @@ describe('clickEventHandler builds the dom.click event', () => {
         t.clickEventHandler(clickOn(document.getElementById('b')));
 
         expect(beacons.length).toBe(1);
-        expect(beacons[0]).toMatch(/dom\.click/);
+        expect(beacons[0]).toMatch(/click/);
     });
 
     test('queues (does not beacon) the click when DomStream capture is active', () => {
@@ -216,7 +216,7 @@ describe('logDomStream() queue flush', () => {
         const t = newTracker();
         expect(t.getOption('domstreamEventThreshold')).toBe(10);
         // 1 event, threshold 10: below threshold -> no-op.
-        t.event_queue = [{ event_type: 'dom.click' }];
+        t.event_queue = [{ event_type: 'click' }];
 
         const result = t.logDomStream();
 
@@ -230,7 +230,7 @@ describe('logDomStream() queue flush', () => {
         const t = newTracker();
         const queue = [];
         for (let i = 0; i < 11; i++) {
-            queue.push({ event_type: 'dom.click', n: i });
+            queue.push({ event_type: 'click', n: i });
         }
         t.event_queue = queue;
 
@@ -248,7 +248,7 @@ describe('logDomStream() queue flush', () => {
         const t = newTracker();
         const fill = () => {
             const q = [];
-            for (let i = 0; i < 11; i++) q.push({ event_type: 'dom.click', n: i });
+            for (let i = 0; i < 11; i++) q.push({ event_type: 'click', n: i });
             t.event_queue = q;
         };
 

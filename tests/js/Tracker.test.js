@@ -22,24 +22,24 @@ describe('OWATracker event assembly', () => {
         tracker.trackEvent = (event) => { captured.push(event); };
     });
 
-    test('trackAction assembles a track.action event with all fields', () => {
+    test('trackAction assembles a custom_event event with all fields', () => {
         tracker.trackAction('test group', 'test action', 'this is just a test', 10);
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('track.action');
+        expect(e.get('event_type')).toBe('custom_event');
         expect(e.get('action_group')).toBe('test group');
         expect(e.get('action_name')).toBe('test action');
         expect(e.get('action_label')).toBe('this is just a test');
         expect(e.get('numeric_value')).toBe(10);
     });
 
-    test('trackPageView assembles a base.page_request event', () => {
+    test('trackPageView assembles a page_view event', () => {
         tracker.trackPageView('https://example.com/page');
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('base.page_request');
+        expect(e.get('event_type')).toBe('page_view');
         expect(e.get('page_url')).toBe('https://example.com/page');
     });
 
@@ -47,7 +47,7 @@ describe('OWATracker event assembly', () => {
         tracker.trackPageView();
 
         expect(captured).toHaveLength(1);
-        expect(captured[0].get('event_type')).toBe('base.page_request');
+        expect(captured[0].get('event_type')).toBe('page_view');
     });
 
     test('trackTransaction assembles an ecommerce.transaction event with line items', () => {
@@ -57,7 +57,7 @@ describe('OWATracker event assembly', () => {
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('ecommerce.transaction');
+        expect(e.get('event_type')).toBe('purchase');
         expect(e.get('ct_order_id')).toBe('order-1');
         expect(e.get('ct_order_source')).toBe('web');
         expect(e.get('ct_total')).toBe(42.5);
@@ -75,7 +75,7 @@ describe('OWATracker event assembly', () => {
         expect(captured).toHaveLength(0);
     });
 
-    test('clickEventHandler assembles a dom.click event from a DOM target', () => {
+    test('clickEventHandler assembles a click event from a DOM target', () => {
         // logClicksAsTheyHappen makes the handler hand the click to trackEvent.
         tracker.setOption('logClicksAsTheyHappen', true);
 
@@ -92,7 +92,7 @@ describe('OWATracker event assembly', () => {
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('dom.click');
+        expect(e.get('event_type')).toBe('click');
         // dom_element_tag is lower-cased by getDomElementProperties() for
         // consistent storage regardless of how the browser reports tagName.
         expect(e.get('dom_element_tag')).toBe('a');
