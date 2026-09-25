@@ -8,7 +8,7 @@
             "container": "dimension-grid",
             "title": "Latest Visits Profile",
             "query": {
-                "dimensions": "ipAddress,landingPageLocation,sessionMedium,sessionSource,city,country,priorSessionCount",
+                "dimensions": "ipAddress,landingPageLocation,sessionSourceMedium,city,country,priorSessionCount",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }

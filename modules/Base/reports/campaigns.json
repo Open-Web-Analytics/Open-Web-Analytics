@@ -18,15 +18,6 @@
                 "dimensions": "sessionCampaign",
                 "sort": "sessions-",
                 "resultsPerPage": 30
-            },
-            "link": {
-                "linkColumn": "sessionCampaign",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "campaign-detail",
-                    "sessionCampaign": "%s"
-                },
-                "valueColumns": "sessionCampaign"
             }
         }
     ],

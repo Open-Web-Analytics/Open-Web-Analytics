@@ -18,15 +18,6 @@
                 "dimensions": "sessionAd,landingPage",
                 "sort": "sessions-",
                 "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "sessionAd",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "ad-detail",
-                    "sessionAd": "%s"
-                },
-                "valueColumns": "sessionAd"
             }
         }
     ]

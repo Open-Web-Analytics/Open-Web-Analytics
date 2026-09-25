@@ -210,8 +210,8 @@ final class ReportRegistryTest extends TestCase
         $this->requireDb();
 
         $viaId = (array) ( new \OWA\Module\Base\Controller\Report( array(
-            'reportId' => 'source-detail',
-            'sessionSource' => Harness::SENTINEL,
+            'reportId' => 'dom-clicks',
+            'pagePath' => Harness::SENTINEL,
         ) ) )->doAction();
 
         $this->assertStringContainsString( Harness::SENTINEL, (string) ( $viaId['constraints'] ?? '' ),

@@ -629,11 +629,9 @@ class Module extends \OWA\Core\Module {
      */
     function registerReports() {
 
-        $this->registerReport( 'ad-detail', 'reports/ad-detail.json' );
         $this->registerReport( 'ads', 'reports/ads.json' );
         $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
         $this->registerReport( 'browsers', 'reports/browsers.json' );
-        $this->registerReport( 'campaign-detail', 'reports/campaign-detail.json' );
         $this->registerReport( 'campaigns', 'reports/campaigns.json' );
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
@@ -657,7 +655,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
         $this->registerReport( 'revenue', 'reports/revenue.json' );
         $this->registerReport( 'search-engines', 'reports/search-engines.json' );
-        $this->registerReport( 'source-detail', 'reports/source-detail.json' );
         $this->registerReport( 'sources', 'reports/sources.json' );
         $this->registerReport( 'traffic', 'reports/traffic.json' );
         $this->registerReport( 'transactions', 'reports/transactions.json' );

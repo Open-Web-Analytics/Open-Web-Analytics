@@ -99,28 +99,16 @@
             }
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "topsources",
             "container": "top-sources",
             "title": "Top Sources",
             "colspan": 6,
             "query": {
-                "dimensions": "sessionSource,sessionMedium",
+                "metrics": "sessions",
+                "dimensions": "sessionSourceMedium",
                 "sort": "sessions-",
                 "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "sessionSource",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "source-detail",
-                    "sessionSource": "%s",
-                    "sessionMedium": "%s"
-                },
-                "valueColumns": [
-                    "sessionSource",
-                    "sessionMedium"
-                ]
             },
             "more": {
                 "reportId": "sources",

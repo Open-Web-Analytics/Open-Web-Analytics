@@ -625,28 +625,34 @@ final class CustomReportsTest extends TestCase
      * A card's rows lead to the report that details that dimension.
      *
      * DERIVED from what the destination declares, not from a list kept here. A
-     * detail report says it is read under a constraint -- source-detail names
-     * `{dimension: source, fromParam: source}` -- so the report itself already
-     * knows what a link into it has to carry.
+     * detail report says it is read under a constraint -- dom-clicks names
+     * `{dimension: pagePath, fromParam: pagePath}` -- so the report itself
+     * already knows what a link into it has to carry.
+     *
+     * It read source-detail, then campaign-detail, then ad-detail, as each was
+     * removed. The MECHANISM is what is under test, not the report it happens
+     * to name, so it follows the shape rather than dying with one instance.
+     * dom-clicks is now the ONLY shipped report of that shape: if it goes too,
+     * this needs a fixture report of its own rather than a fourth move.
      */
     public function testLinkTargetsComeFromWhatTheDestinationDeclares(): void
     {
         $targets = CustomReports::linkTargetsByDimension();
 
-        $this->assertArrayHasKey('sessionSource', $targets);
+        $this->assertArrayHasKey('pagePath', $targets);
 
-        $ids = array_column($targets['sessionSource'], 'id');
+        $ids = array_column($targets['pagePath'], 'id');
 
-        $this->assertContains('source-detail', $ids);
+        $this->assertContains('dom-clicks', $ids);
 
-        $target = $targets['sessionSource'][array_search('source-detail', $ids, true)];
+        $target = $targets['pagePath'][array_search('dom-clicks', $ids, true)];
 
-        $this->assertSame('sessionSource', $target['param'],
+        $this->assertSame('pagePath', $target['param'],
             'the link carries the parameter the destination is read under');
 
         // The name without the value it is about: the title is
-        // "Source Detail: " and the value is per request.
-        $this->assertSame('Source Detail', $target['label']);
+        // "Dom Clicks: " and the value is per request.
+        $this->assertSame('Dom Clicks', $target['label']);
     }
 
     /**
@@ -910,11 +916,11 @@ final class CustomReportsTest extends TestCase
     public function testAFullReportLinkToADetailReportIsRefused(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['more'] = array( 'reportId' => 'source-detail' );
+        $definition['widgets'][1]['more'] = array( 'reportId' => 'dom-clicks' );
 
         $error = CustomReports::validate($definition);
 
-        $this->assertStringContainsString('source', $error);
+        $this->assertStringContainsString('pagePath', $error);
         $this->assertStringContainsString('Link the rows instead', $error);
     }
 

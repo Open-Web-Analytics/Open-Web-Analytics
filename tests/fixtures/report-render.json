@@ -1,46 +1,4 @@
 {
-    "ad-detail": {
-        "subview": "base.reportWidgets",
-        "queries": [
-            {
-                "var": "site_usage_trendurl",
-                "query": {
-                    "constraints": "sessionAd==characterization_sentinel",
-                    "dimensions": "date",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "sessions,pageViewsPerSession,averageEngagementTimePerSession,totalUsers",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "siteId": "1",
-                    "sort": "date",
-                    "version": "v1"
-                }
-            }
-        ],
-        "control": {
-            "container": true,
-            "panels": [
-                "tab_site_usage"
-            ],
-            "registered": 1,
-            "built": 1,
-            "loads": 0,
-            "loadsWithUrl": 0,
-            "urls": 1
-        },
-        "explorers": [
-            {
-                "var": "site_usage_trend",
-                "container": "site_usage_trend-chart"
-            }
-        ],
-        "commands": [
-            "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
-            "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
-        ]
-    },
     "ads": {
         "subview": "base.reportWidgets",
         "queries": [
@@ -225,48 +183,6 @@
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
-        ]
-    },
-    "campaign-detail": {
-        "subview": "base.reportWidgets",
-        "queries": [
-            {
-                "var": "site_usage_trendurl",
-                "query": {
-                    "constraints": "sessionCampaign==characterization_sentinel",
-                    "dimensions": "date",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "sessions,pageViewsPerSession,averageEngagementTimePerSession,totalUsers",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "siteId": "1",
-                    "sort": "date",
-                    "version": "v1"
-                }
-            }
-        ],
-        "control": {
-            "container": true,
-            "panels": [
-                "tab_site_usage"
-            ],
-            "registered": 1,
-            "built": 1,
-            "loads": 0,
-            "loadsWithUrl": 0,
-            "urls": 1
-        },
-        "explorers": [
-            {
-                "var": "site_usage_trend",
-                "container": "site_usage_trend-chart"
-            }
-        ],
-        "commands": [
-            "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
-            "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
         ]
     },
     "campaigns": {
@@ -682,7 +598,7 @@
             {
                 "var": "latestVisitsurl",
                 "query": {
-                    "dimensions": "ipAddress,hostName,landingPage,sessionMedium,sessionSource,city,country,priorSessionCount",
+                    "dimensions": "ipAddress,hostName,landingPage,sessionSourceMedium,city,country,priorSessionCount",
                     "do": "reports",
                     "format": "json",
                     "metrics": "pageViewsPerSession",
@@ -1404,7 +1320,7 @@
             {
                 "var": "dimurl",
                 "query": {
-                    "dimensions": "ipAddress,landingPageLocation,sessionMedium,sessionSource,city,country,priorSessionCount",
+                    "dimensions": "ipAddress,landingPageLocation,sessionSourceMedium,city,country,priorSessionCount",
                     "do": "reports",
                     "format": "json",
                     "metrics": "sessions,pageViewsPerSession",
@@ -1807,48 +1723,6 @@
             "site_usage_dim.refreshGrid"
         ]
     },
-    "source-detail": {
-        "subview": "base.reportWidgets",
-        "queries": [
-            {
-                "var": "site_usage_trendurl",
-                "query": {
-                    "constraints": "sessionSource==characterization_sentinel",
-                    "dimensions": "date",
-                    "do": "reports",
-                    "format": "json",
-                    "metrics": "sessions,pageViewsPerSession,averageEngagementTimePerSession,totalUsers",
-                    "module": "base",
-                    "nonce": "<nonce>",
-                    "period": "last_thirty_days",
-                    "siteId": "1",
-                    "sort": "date",
-                    "version": "v1"
-                }
-            }
-        ],
-        "control": {
-            "container": true,
-            "panels": [
-                "tab_site_usage"
-            ],
-            "registered": 1,
-            "built": 1,
-            "loads": 0,
-            "loadsWithUrl": 0,
-            "urls": 1
-        },
-        "explorers": [
-            {
-                "var": "site_usage_trend",
-                "container": "site_usage_trend-chart"
-            }
-        ],
-        "commands": [
-            "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
-            "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics"
-        ]
-    },
     "sources": {
         "subview": "base.reportWidgets",
         "queries": [
@@ -1870,7 +1744,7 @@
             {
                 "var": "site_usage_dimurl",
                 "query": {
-                    "dimensions": "sessionSource,sessionMedium",
+                    "dimensions": "sessionSourceMedium",
                     "do": "reports",
                     "format": "json",
                     "metrics": "sessions,pageViewsPerSession,averageEngagementTimePerSession,totalUsers",
@@ -2025,7 +1899,7 @@
             {
                 "var": "topsourcesurl",
                 "query": {
-                    "dimensions": "sessionSource,sessionMedium",
+                    "dimensions": "sessionSourceMedium",
                     "do": "reports",
                     "format": "json",
                     "metrics": "sessions",
@@ -2445,17 +2319,17 @@
             "goal_group_1_dim.refreshGrid"
         ]
     },
-    "source-detail (3 metric sets)": {
+    "dom-clicks (3 metric sets)": {
         "subview": "base.reportWidgets",
         "queries": [
             {
-                "var": "site_usage_trendurl",
+                "var": "trendurl",
                 "query": {
-                    "constraints": "sessionSource==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel",
                     "dimensions": "date",
                     "do": "reports",
                     "format": "json",
-                    "metrics": "sessions,pageViewsPerSession,averageEngagementTime,bounceRate,totalUsers",
+                    "metrics": "eventCount",
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
@@ -2465,72 +2339,90 @@
                 }
             },
             {
-                "var": "ecommerce_trendurl",
+                "var": "domidsurl",
                 "query": {
-                    "constraints": "sessionSource==characterization_sentinel",
-                    "dimensions": "date",
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "domElementId",
                     "do": "reports",
                     "format": "json",
-                    "metrics": "sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate",
+                    "metrics": "eventCount",
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
+                    "resultsPerPage": "5",
                     "siteId": "1",
-                    "sort": "date",
+                    "sort": "eventCount-",
                     "version": "v1"
                 }
             },
             {
-                "var": "goal_group_1_trendurl",
+                "var": "domnamesurl",
                 "query": {
-                    "constraints": "sessionSource==characterization_sentinel",
-                    "dimensions": "date",
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "domElementId",
                     "do": "reports",
                     "format": "json",
-                    "metrics": "sessions,goal1Completions,goalValueAll",
+                    "metrics": "eventCount",
                     "module": "base",
                     "nonce": "<nonce>",
                     "period": "last_thirty_days",
+                    "resultsPerPage": "5",
                     "siteId": "1",
-                    "sort": "date",
+                    "sort": "eventCount-",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "htmltagsurl",
+                "query": {
+                    "constraints": "pagePath==characterization_sentinel",
+                    "dimensions": "domElementTag",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "eventCount",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "resultsPerPage": "5",
+                    "siteId": "1",
+                    "sort": "eventCount-",
                     "version": "v1"
                 }
             }
         ],
         "control": {
-            "container": true,
-            "panels": [
-                "tab_site_usage",
-                "tab_ecommerce",
-                "tab_goal_group_1"
-            ],
-            "registered": 3,
-            "built": 1,
-            "loads": 0,
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 4,
             "loadsWithUrl": 0,
-            "urls": 3
+            "urls": 4
         },
         "explorers": [
             {
-                "var": "site_usage_trend",
-                "container": "site_usage_trend-chart"
+                "var": "trend",
+                "container": "trend-chart"
             },
             {
-                "var": "ecommerce_trend",
-                "container": "ecommerce_trend-chart"
+                "var": "domids",
+                "container": "topDomIds"
             },
             {
-                "var": "goal_group_1_trend",
-                "container": "goal_group_1_trend-chart"
+                "var": "domnames",
+                "container": "topDomNames"
+            },
+            {
+                "var": "htmltags",
+                "container": "topHtmlTags"
             }
         ],
         "commands": [
-            "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
-            "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
-            "ecommerce_trend.makeAreaChart -> ecommerce_trend-chart",
-            "ecommerce_trend.makeMetricBoxes -> ecommerce_trend-metrics",
-            "goal_group_1_trend.makeAreaChart -> goal_group_1_trend-chart",
-            "goal_group_1_trend.makeMetricBoxes -> goal_group_1_trend-metrics"
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "domids.refreshGrid",
+            "domnames.refreshGrid",
+            "htmltags.refreshGrid"
         ]
     }
 }
