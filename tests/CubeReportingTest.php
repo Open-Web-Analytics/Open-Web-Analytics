@@ -545,6 +545,16 @@ final class CubeReportingTest extends TestCase
                 $out[$row['pagePath']['value']] = (int) $row['pageViews']['value'];
             }
 
+            /*
+             * Sorted by key, because the query carries no ORDER BY and a
+             * GROUP BY promises no row order. Comparing with assertSame made
+             * this depend on the order the engine happened to return -- which
+             * is not the same under PDO and mysqli, so it passed on one driver
+             * and failed on the other for a reason that has nothing to do with
+             * what the case is about.
+             */
+            ksort($out);
+
             return $out;
         };
 
