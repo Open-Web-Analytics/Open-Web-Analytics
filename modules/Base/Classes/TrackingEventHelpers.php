@@ -1027,23 +1027,8 @@ class TrackingEventHelpers {
      * non-entry. Wrong data is worse than a missing column.
      */
 
-    static function deriveYear( $year, $event ) {
 
-        return date( "Y", $event->get('timestamp') );
 
-    }
-
-    static function deriveMonth( $month, $event ) {
-
-        return date("Ym", $event->get('timestamp') );
-
-    }
-
-    static function deriveDay( $day, $event ) {
-
-        return date("d", $event->get('timestamp') );
-
-    }
 
     static function deriveYyyymmdd( $yyyymmdd, $event ) {
 
@@ -1069,53 +1054,13 @@ class TrackingEventHelpers {
 
     }
 
-    static function deriveDayOfWeek( $dayofweek, $event ) {
 
-        return date("D", $event->get('timestamp') );
 
-    }
 
-    static function deriveDayOfYear( $dayofyear, $event ) {
 
-        return date("z", $event->get('timestamp') );
 
-    }
 
-    static function deriveWeekOfYear( $weekofyear, $event ) {
 
-        return date("W", $event->get('timestamp') );
-
-    }
-
-    static function deriveHour( $hour, $event ) {
-
-        return date("G", $event->get('timestamp') );
-
-    }
-
-    static function deriveMinute( $minute, $event ) {
-
-        return date("i", $event->get('timestamp') );
-
-    }
-
-    static function deriveSecond( $second, $event ) {
-
-        return date("s", $event->get('timestamp') );
-
-    }
-
-    static function deriveSec( $sec, $event ) {
-
-        list( $msec, $sec ) = explode( " ", (string) $event->get( 'microtime' ) );
-        return $sec;
-    }
-
-    static function deriveMsec( $msec, $event ) {
-
-        list( $msec, $sec ) = explode( " ", (string) $event->get( 'microtime' ) );
-        return $msec;
-    }
 
     static function derivePageUri( $page_uri, $event ) {
 

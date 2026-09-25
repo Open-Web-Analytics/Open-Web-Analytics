@@ -32,14 +32,14 @@ final class ServerOwnedPropertyTest extends TestCase
     {
         $kept = Helpers::rejectServerOwnedParams( array(
             'is_browser' => 'ludhiana',
-            'day'        => 'united states',
+            'is_robot'   => '1',
         ) );
 
         $this->assertArrayNotHasKey(
             'is_browser', $kept,
             'A request could set is_browser, which is how a city name reached a boolean column.' );
 
-        $this->assertArrayNotHasKey( 'day', $kept );
+        $this->assertArrayNotHasKey( 'is_robot', $kept );
     }
 
     public function testTheObservedRequestCannotBeForged(): void
@@ -126,7 +126,7 @@ final class ServerOwnedPropertyTest extends TestCase
 
         $this->assertNotEmpty( $serverOwned );
 
-        foreach ( array( 'is_browser', 'day', 'ip_address', 'timestamp' ) as $name ) {
+        foreach ( array( 'is_browser', 'is_robot', 'ip_address', 'timestamp' ) as $name ) {
 
             $this->assertArrayHasKey( $name, $serverOwned );
         }

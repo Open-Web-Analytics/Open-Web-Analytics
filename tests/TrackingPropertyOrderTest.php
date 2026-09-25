@@ -138,8 +138,15 @@ final class TrackingPropertyOrderTest extends TestCase
             }
         }
 
+        /*
+         * The floor was 25 while eleven v1 date-part callbacks were still
+         * registered -- deriveDay and friends each read `timestamp`, so each
+         * was a dependency this counted. v2 renders date parts as query-time
+         * dimensions and the callbacks are gone, which takes the real count to
+         * 15 without anything about the ORDERING changing.
+         */
         $this->assertGreaterThan(
-            25, $checked,
+            12, $checked,
             'Far fewer dependencies than expected were found, so this test is not looking at '
             . 'what it thinks it is -- most likely the callback parser stopped matching.' );
 

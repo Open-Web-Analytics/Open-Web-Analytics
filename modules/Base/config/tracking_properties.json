@@ -703,76 +703,10 @@
         }
     },
     "server": {
-        "year": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveYear"
-            ]
-        },
-        "month": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveMonth"
-            ]
-        },
-        "day": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDay"
-            ]
-        },
         "yyyymmdd": {
             "required": true,
             "callbacks": [
                 "owa_trackingEventHelpers::deriveYyyymmdd"
-            ]
-        },
-        "dayofweek": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDayOfWeek"
-            ]
-        },
-        "dayofyear": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDayOfYear"
-            ]
-        },
-        "weekofyear": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveWeekOfYear"
-            ]
-        },
-        "hour": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveHour"
-            ]
-        },
-        "minute": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveMinute"
-            ]
-        },
-        "second": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveSecond"
-            ]
-        },
-        "sec": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveSec"
-            ]
-        },
-        "msec": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveMsec"
             ]
         },
         "page_uri": {
