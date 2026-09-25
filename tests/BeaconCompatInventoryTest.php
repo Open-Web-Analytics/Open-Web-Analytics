@@ -4,6 +4,8 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
+use OWA\Module\Base\Classes\Beacon\Compat;
+
 /**
  * Every old-beacon bridge is indexed, and every indexed bridge still exists.
  *
@@ -202,6 +204,56 @@ final class BeaconCompatInventoryTest extends TestCase
 
             $this->assertArrayHasKey( $to, $properties,
                 $from . ' is bridged to ' . $to . ', which the registry does not declare' );
+        }
+    }
+
+    /**
+     * The shape of what the compat layer contributes.
+     *
+     * The cv{n} slots are declared HERE and nowhere else: the current tracker
+     * emits no cv key at all, so they are not part of the current vocabulary
+     * and do not belong in tracking_properties.json. How many there are is the
+     * maxCustomVars setting rather than a constant -- FactTable builds its cv
+     * columns from the same setting -- and a definition already present is
+     * left alone, so a caller's own map is never overwritten.
+     */
+    public function testTheGeneratedCustomVariablePropertiesKeepTheirShape(): void
+    {
+        $max     = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
+
+        $this->assertGreaterThan( 0, $max, 'maxCustomVars is what bounds the loop.' );
+
+        $generated = Compat::contributeDerivedProperties( array() );
+
+        $this->assertCount(
+            $max * 2, $generated,
+            'Each slot needs a name and a value property.' );
+
+        /* The config is authoritative: a declared slot is left exactly alone. */
+        $declared = array( 'cv1_name' => array( 'required' => 'untouched' ) );
+
+        $this->assertSame(
+            array( 'required' => 'untouched' ),
+            Compat::contributeDerivedProperties( $declared )['cv1_name'],
+            'The top-up overwrote a definition the config had already made.' );
+
+        for ( $slot = 1; $slot <= $max; $slot++ ) {
+
+            foreach ( array( 'name', 'value' ) as $half ) {
+
+                $property = $generated[ "cv{$slot}_{$half}" ] ?? null;
+
+                $this->assertIsArray( $property, "cv{$slot}_{$half} is not generated." );
+
+                $this->assertTrue( $property['required'] );
+                $this->assertSame( 'string', $property['data_type'] );
+                $this->assertSame( '(not set)', $property['default_value'],
+                    'An unset slot must read as (not set), not as empty.' );
+                $this->assertContains(
+                    'owa_trackingEventHelpers::lowercaseString', $property['callbacks'],
+                    "cv{$slot}_{$half} is lowercased so the same variable does not "
+                    . 'split into two dimensions by case.' );
+            }
         }
     }
 }

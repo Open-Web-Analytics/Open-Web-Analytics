@@ -5,7 +5,6 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
-use OWA\Module\Base\Classes\Beacon\Compat;
 
 /**
  * Everything the tracker sends must be declared somewhere.
@@ -55,26 +54,12 @@ final class WireSurfaceEnumeratedTest extends TestCase
         return array_values( array_unique( $names ) );
     }
 
-    /**
-     * Everywhere a wire property may legitimately be declared.
-     *
-     * The config is the CURRENT vocabulary. The compat layer is the other
-     * place, and deliberately separate: it declares what an OLDER beacon
-     * generation still carries. The cv{n} slots are today's case -- cached
-     * trackers still send them and params() still reads them, but nothing the
-     * current tracker emits produces one, so they do not belong in the config.
-     * They are contributed to the runtime maps by a filter instead.
-     *
-     * Both are consulted here because the question this asks is "does ANYTHING
-     * declare what the tracker sends", and a compat declaration is a real
-     * answer to it.
-     */
     private function declared(): array
     {
         return array_merge(
             Helpers::requestProperties(),
-            Compat::contributeClientProperties( Helpers::clientProperties() ),
-            Compat::contributeDerivedProperties( Helpers::serverProperties() ) );
+            Helpers::clientProperties(),
+            Helpers::serverProperties() );
     }
 
     public function testEveryPropertyOnTheWireIsDeclared(): void
@@ -148,54 +133,6 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
         $this->assertGreaterThan( 100, count( $this->declared() ),
             'Far fewer declared properties than expected -- the config is not being read.' );
-    }
-    /**
-     * The top-up, for slots the config does not declare.
-     *
-     * The pairs are in the config now, but how MANY of them there are is the
-     * maxCustomVars setting rather than a constant -- FactTable builds its cv
-     * columns from the same setting -- so an install that raises it would have
-     * columns with no property definition. This covers those, and must not
-     * overwrite what the config already says.
-     */
-    public function testTheGeneratedCustomVariablePropertiesKeepTheirShape(): void
-    {
-        $max     = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
-
-        $this->assertGreaterThan( 0, $max, 'maxCustomVars is what bounds the loop.' );
-
-        $generated = Compat::contributeDerivedProperties( array() );
-
-        $this->assertCount(
-            $max * 2, $generated,
-            'Each slot needs a name and a value property.' );
-
-        /* The config is authoritative: a declared slot is left exactly alone. */
-        $declared = array( 'cv1_name' => array( 'required' => 'untouched' ) );
-
-        $this->assertSame(
-            array( 'required' => 'untouched' ),
-            Compat::contributeDerivedProperties( $declared )['cv1_name'],
-            'The top-up overwrote a definition the config had already made.' );
-
-        for ( $slot = 1; $slot <= $max; $slot++ ) {
-
-            foreach ( array( 'name', 'value' ) as $half ) {
-
-                $property = $generated[ "cv{$slot}_{$half}" ] ?? null;
-
-                $this->assertIsArray( $property, "cv{$slot}_{$half} is not generated." );
-
-                $this->assertTrue( $property['required'] );
-                $this->assertSame( 'string', $property['data_type'] );
-                $this->assertSame( '(not set)', $property['default_value'],
-                    'An unset slot must read as (not set), not as empty.' );
-                $this->assertContains(
-                    'owa_trackingEventHelpers::lowercaseString', $property['callbacks'],
-                    "cv{$slot}_{$half} is lowercased so the same variable does not "
-                    . 'split into two dimensions by case.' );
-            }
-        }
     }
 
     /** The slot itself must not survive the split, or it would ride on as junk. */

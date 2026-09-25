@@ -4,7 +4,6 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
-use OWA\Module\Base\Classes\Beacon\Compat;
 
 /**
  * A resolver that hands back padding, so the POSITION of the trim can be
@@ -35,15 +34,9 @@ final class TrackingValuesAreTrimmedTest extends TestCase
 {
     private function definitions(): array
     {
-        /*
-         * The compat layer is consulted beside the config: it declares what an
-         * older beacon generation carries and the current format does not --
-         * the cv{n} slots today. They are still real properties on that
-         * beacon's path, so a set gathered without them is incomplete.
-         */
         return array_merge( Helpers::requestProperties(),
-                            Compat::contributeClientProperties( Helpers::clientProperties() ),
-                            Compat::contributeDerivedProperties( Helpers::serverProperties() ) );
+                            Helpers::clientProperties(),
+                            Helpers::serverProperties() );
     }
 
     private function through( string $property, $value )
@@ -73,7 +66,12 @@ final class TrackingValuesAreTrimmedTest extends TestCase
             'spaces'          => array( 'page_title', '  Spaced Title  ', 'Spaced Title' ),
             'trailing break'  => array( 'page_title', "Title\n",          'Title' ),
             'tabs'            => array( 'page_title', "\tTitle\t",        'Title' ),
-            'custom var'      => array( 'cv1_value',  '  value  ',        'value' ),
+            /*
+             * cv1_value was here. The cv{n} slots are not part of the current
+             * vocabulary -- the tracker emits no cv key -- so an example drawn
+             * from them tests the compat layer, not this one.
+             */
+            'content group'   => array( 'content_group', '  Docs  ',      'Docs' ),
             'user name'       => array( 'user_name',  '  Peter Adams  ',  'Peter Adams' ),
             'a url'           => array( 'page_url',   '  https://x.test/a  ', 'https://x.test/a' ),
         );
@@ -104,8 +102,8 @@ final class TrackingValuesAreTrimmedTest extends TestCase
          * Not asserted on a custom variable: cv{n}_name and cv{n}_value are
          * added dynamically and pick up the CATCH-ALL definition, whose callback
          * is lowercaseString(). So they are lowercased today, and this change
-         * neither causes that nor fixes it -- whether user-supplied custom
-         * variable values should be case-folded is its own question.
+         * neither causes that nor fixes it -- whether user-supplied values
+         * should be case-folded is its own question.
          */
     }
 
@@ -113,7 +111,7 @@ final class TrackingValuesAreTrimmedTest extends TestCase
     public function testInteriorWhitespaceSurvives(): void
     {
         $this->assertSame( 'a  b', $this->through( 'page_title', 'a  b' ) );
-        $this->assertSame( 'two  spaces here', $this->through( 'cv1_value', '  two  spaces here  ' ) );
+        $this->assertSame( 'two  spaces here', $this->through( 'content_group', '  two  spaces here  ' ) );
     }
 
     /**
