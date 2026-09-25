@@ -201,55 +201,99 @@
             "data_type": "url",
             "callbacks": [
                 "owa_trackingEventHelpers::makeUrlCanonical"
+            ],
+            "events": [
+                "click",
+                "file_download"
             ]
         },
         "session_referer": {
             "required": false,
             "data_type": "url",
             "callbacks": [],
-            "note": "Carried straight from the wire -- no callback, no default -- so it is on the event before the property pass starts. The old \"must come after session_referer\" comments on source/medium/search_terms described a constraint that never existed."
+            "note": "Carried straight from the wire -- no callback, no default -- so it is on the event before the property pass starts. The old \"must come after session_referer\" comments on source/medium/search_terms described a constraint that never existed.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "landing_url": {
             "required": false,
             "data_type": "url",
             "callbacks": [],
-            "note": "The URL the session landed on, carried for the whole session so the server can resolve campaign tags from it on every beacon -- not just the first, where page_url would do. Replaces the six tagged_* params the tracker used to parse and re-send. Carried rather than derived because raw is the realtime surface: a value only a later pass produces does not exist for a live query. See resolveSource/taggedValue."
+            "note": "The URL the session landed on, carried for the whole session so the server can resolve campaign tags from it on every beacon -- not just the first, where page_url would do. Replaces the six tagged_* params the tracker used to parse and re-send. Carried rather than derived because raw is the realtime surface: a value only a later pass produces does not exist for a live query. See resolveSource/taggedValue.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "tagged_source": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "tagged_medium": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "tagged_campaign": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "tagged_ad": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "tagged_ad_type": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "tagged_terms": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
+            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope.",
+            "events": [
+                "page_view",
+                "session_start",
+                "first_visit"
+            ]
         },
         "feed_subscription_id": {
             "required": false,
@@ -266,25 +310,37 @@
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "click_y": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "dom_element_x": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "dom_element_y": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "page_width": {
             "required": false,
@@ -302,120 +358,180 @@
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "dom_element_id": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "dom_element_name": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "dom_element_tag": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "dom_element_text": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "dom_element_value": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
+            "note": "Carried by dom.click only. Column type from base.click.",
+            "events": [
+                "click"
+            ]
         },
         "action_name": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
+            "note": "Carried by track.action only. Column type from base.action_fact.",
+            "events": [
+                "custom_event"
+            ]
         },
         "action_label": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
+            "note": "Carried by track.action only. Column type from base.action_fact.",
+            "events": [
+                "custom_event"
+            ]
         },
         "action_group": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
+            "note": "Carried by track.action only. Column type from base.action_fact.",
+            "events": [
+                "custom_event"
+            ]
         },
         "numeric_value": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
+            "note": "Carried by track.action only. Column type from base.action_fact.",
+            "events": [
+                "custom_event"
+            ]
         },
         "ct_order_id": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_order_source": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_gateway": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_city": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_state": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_country": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_total": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_tax": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_shipping": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value.",
+            "events": [
+                "purchase"
+            ]
         },
         "ct_line_items": {
             "required": false,
             "callbacks": [],
-            "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first."
+            "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first.",
+            "events": [
+                "purchase"
+            ]
         },
         "site_id": {
             "required": false,
@@ -487,7 +603,11 @@
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection."
+            "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection.",
+            "events": [
+                "user_engagement",
+                "page_view"
+            ]
         },
         "content_group": {
             "required": false,
@@ -511,49 +631,75 @@
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "ISO 4217, stored beside revenue. Without it a multi-currency store sums minor units of different things."
+            "note": "ISO 4217, stored beside revenue. Without it a multi-currency store sums minor units of different things.",
+            "events": [
+                "purchase"
+            ]
         },
         "scroll_depth": {
             "required": false,
             "data_type": "integer",
             "callbacks": [],
-            "note": "Percentage of the document reached, on a scroll event. One event per threshold per page."
+            "note": "Percentage of the document reached, on a scroll event. One event per threshold per page.",
+            "events": [
+                "scroll"
+            ]
         },
         "element_path": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "A CSS-ish path to the clicked element. dom_element_id is real on 0.09% of clicks and populated on 94%, so a path is what actually identifies what was clicked."
+            "note": "A CSS-ish path to the clicked element. dom_element_id is real on 0.09% of clicks and populated on 94%, so a path is what actually identifies what was clicked.",
+            "events": [
+                "click"
+            ]
         },
         "search_term": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "Site-search term, on a view_search_results event. Reaches reporting as the params.search_term path."
+            "note": "Site-search term, on a view_search_results event. Reaches reporting as the params.search_term path.",
+            "events": [
+                "view_search_results"
+            ]
         },
         "file_name": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "On a file_download event."
+            "note": "On a file_download event.",
+            "events": [
+                "file_download"
+            ]
         },
         "file_extension": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "On a file_download event."
+            "note": "On a file_download event.",
+            "events": [
+                "file_download"
+            ]
         },
         "form_id": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
+            "note": "On form_start / form_submit. Both id and name are carried because either may be absent.",
+            "events": [
+                "form_start",
+                "form_submit"
+            ]
         },
         "form_name": {
             "required": false,
             "data_type": "string",
             "callbacks": [],
-            "note": "On form_start / form_submit."
+            "note": "On form_start / form_submit.",
+            "events": [
+                "form_start",
+                "form_submit"
+            ]
         }
     },
     "server": {
@@ -744,7 +890,8 @@
             "callbacks": [
                 "owa_trackingEventHelpers::resolveSource"
             ],
-            "note": "The answer. tagged_source if the URL carried one, else the session_referer host."
+            "note": "The answer. tagged_source if the URL carried one, else the session_referer host.",
+            "events": []
         },
         "medium": {
             "required": true,
@@ -753,7 +900,8 @@
             "callbacks": [
                 "owa_trackingEventHelpers::resolveMedium"
             ],
-            "note": "The answer. tagged_medium if the URL carried one, else the referer classified as referral / organic-search / social-network, else direct."
+            "note": "The answer. tagged_medium if the URL carried one, else the referer classified as referral / organic-search / social-network, else direct.",
+            "events": []
         },
         "campaign": {
             "required": false,
@@ -761,7 +909,8 @@
             "callbacks": [
                 "owa_trackingEventHelpers::resolveCampaign"
             ],
-            "note": "Was on the wire but registered nowhere until this entry, so nothing typed it and nothing could reject a forged one."
+            "note": "Was on the wire but registered nowhere until this entry, so nothing typed it and nothing could reject a forged one.",
+            "events": []
         },
         "ad": {
             "required": false,
@@ -769,7 +918,8 @@
             "callbacks": [
                 "owa_trackingEventHelpers::resolveAd"
             ],
-            "note": "As campaign: on the wire, previously unregistered."
+            "note": "As campaign: on the wire, previously unregistered.",
+            "events": []
         },
         "ad_type": {
             "required": false,
@@ -785,7 +935,8 @@
             "callbacks": [
                 "owa_trackingEventHelpers::resolveSearchTerms"
             ],
-            "note": "The answer. tagged_terms if the URL carried one, else the query param the referring search engine used."
+            "note": "The answer. tagged_terms if the URL carried one, else the query param the referring search engine used.",
+            "events": []
         },
         "cv1_name": {
             "required": true,

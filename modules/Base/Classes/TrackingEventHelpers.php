@@ -164,6 +164,79 @@ class TrackingEventHelpers {
     }
 
     /**
+     * The properties an event of this name may carry.
+     *
+     * WHY THIS EXISTS. Three namespaces nearly-but-don't align here: the wire
+     * (~130 registered properties), the raw row (59 columns), and the
+     * dimension vocabulary. Nothing stated which properties belong to which
+     * event, so a goal condition could be written against `medium` on a
+     * page_view -- a reading the cube pass derives, which no row carries and
+     * no ingest-time match can ever satisfy. Nine such conditions exist on
+     * this installation, every one of them unsatisfiable, and nothing could
+     * have refused them at save time.
+     *
+     * `events` in the config is that statement. Absent means the property is
+     * carried by every event, which is the common case -- site_id, visitor_id,
+     * page_location. A list means only those events: file_name is a property
+     * of file_download and of nothing else.
+     *
+     * A property the pass derives rather than the beacon carrying it has no
+     * entry here at all, because it is not a tracking property of any event.
+     *
+     * @param  string $event_name  a v2 event name
+     * @return string[]            property names, sorted
+     */
+    public static function propertiesForEvent( $event_name ) {
+
+        $event_name = (string) $event_name;
+
+        if ( $event_name === '' ) {
+
+            throw new \InvalidArgumentException(
+                'An event name is required; there is no vocabulary without one.' );
+        }
+
+        $out = array();
+
+        foreach ( array( 'request', 'client', 'server' ) as $scope ) {
+
+            foreach ( self::propertyConfig( $scope ) as $name => $definition ) {
+
+                /*
+                 * Absent means every event; a list means only those; an EMPTY
+                 * list means none, which is how a cube-pass reading declares
+                 * that no event carries it.
+                 *
+                 * array_key_exists rather than isset because isset() is false
+                 * for a declared NULL -- `"events": null` would read as absent
+                 * and therefore as every event, the opposite answer. It is NOT
+                 * needed for the empty list: isset([]) is true. That was the
+                 * stated reason here until a mutation showed both spellings
+                 * behaving identically on [], which is the only reason anyone
+                 * looked.
+                 */
+                if ( ! array_key_exists( 'events', $definition ) ) {
+
+                    $out[ $name ] = true;
+
+                    continue;
+                }
+
+                if ( in_array( $event_name, (array) $definition['events'], true ) ) {
+
+                    $out[ $name ] = true;
+                }
+            }
+        }
+
+        $out = array_keys( $out );
+
+        sort( $out );
+
+        return $out;
+    }
+
+    /**
      * Properties the server reads off the HTTP request.
      *
      * The request is the source: the user agent, the host, the address it came
