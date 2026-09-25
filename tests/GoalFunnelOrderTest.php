@@ -39,6 +39,13 @@ use PHPUnit\Framework\TestCase;
  * unchanged in what they assert across all three implementations, which is the
  * useful thing about them: they pin the SEMANTICS, not the mechanism.
  *
+ * AND THEN THE TABLE MOVED. The fixture seeded owa_request joined to
+ * owa_document, which is what the funnel read and what v2 ingest does not write
+ * at all -- so the funnel could only ever have counted zero on this branch. It
+ * reads the CUBE now, one row per event, and the fixture is cube rows: a
+ * Property, one Profile under it, and the same fifteen hits. Not one assertion
+ * below changed, which is the test doing its job.
+ *
  * THE FIXTURE IS ASYMMETRIC ON PURPOSE
  *
  * Seven visitors over two steps, /a then /b. Every one of them exists to make a
@@ -59,9 +66,17 @@ final class GoalFunnelOrderTest extends TestCase
 {
     private const SITE = 'funnel-order-test-site';
 
-    /** @var array<int,string> ids to clean up */
-    private static $documents = array();
-    private static $requests   = array();
+    /**
+     * A Property of its own, because a cube belongs to one.
+     *
+     * High and fixed, so a crashed run leaves nothing for the next one to
+     * collide with -- and so the cube it creates cannot be mistaken for a real
+     * Property's. The Profile id is derived from it for the same reason.
+     */
+    private const PROPERTY = 92000001;
+
+    /** @var bool whether the fixture rows are in place */
+    private static $seeded = false;
 
     public static function setUpBeforeClass(): void
     {
@@ -75,6 +90,13 @@ final class GoalFunnelOrderTest extends TestCase
         }
     }
 
+    /**
+     * The Property, the Profile and the cube all go.
+     *
+     * One cube per Property means a fixture that leaves its own behind leaves a
+     * partitioned table -- and its _rebuild and _computed working tables -- on
+     * the developer's installation, for a Property that no longer exists.
+     */
     public static function tearDownAfterClass(): void
     {
         if (!function_exists('owa_test_db_available') || !owa_test_db_available()) {
@@ -82,39 +104,64 @@ final class GoalFunnelOrderTest extends TestCase
         }
 
         $db = owa_coreAPI::dbSingleton();
-        $db->query('DELETE FROM owa_request WHERE site_id = ?', array(self::SITE));
 
-        foreach (self::$documents as $id) {
-            $db->query('DELETE FROM owa_document WHERE id = ?', array($id));
+        $cube = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
+
+        foreach (array('', '_rebuild', '_computed') as $suffix) {
+            $db->query(sprintf('DROP TABLE IF EXISTS %s%s', $cube, $suffix));
         }
+
+        $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
+            owa_coreAPI::entityFactory('base.site')->getTableName(),
+            $db->prepare(self::SITE)));
+
+        $db->query(sprintf('DELETE FROM %s WHERE id = %d',
+            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+
+        self::$seeded = false;
     }
 
     private function seed(): void
     {
-        if (self::$requests) {
+        if (self::$seeded) {
             return;
         }
 
         $db = owa_coreAPI::dbSingleton();
-        $db->query('DELETE FROM owa_request WHERE site_id = ?', array(self::SITE));
 
-        $paths = array('/a' => null, '/b' => null, '/c' => null);
+        // Whatever a previous crashed run left, before creating it again.
+        self::tearDownAfterClass();
 
-        foreach (array_keys($paths) as $path) {
+        $property = owa_coreAPI::entityFactory('base.property');
+        $property->setProperties(array(
+            'id'            => self::PROPERTY,
+            'name'          => 'Funnel order fixture',
+            'domain'        => 'funnel.test',
+            'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
+            'creation_date' => time(),
+        ));
 
-            $d = owa_coreAPI::entityFactory('base.document');
-            $id = $d->generateId(self::SITE . $path);
+        if (!$property->create()) {
+            throw new \RuntimeException('seeding owa_property failed');
+        }
 
-            $db->query('DELETE FROM owa_document WHERE id = ?', array($id));
+        $site = owa_coreAPI::entityFactory('base.site');
+        $site->setProperties(array(
+            // A Profile's primary key is `id`; site_id is the string a beacon
+            // quotes and the funnel filters on.
+            'id'          => self::PROPERTY * 10,
+            'site_id'     => self::SITE,
+            'property_id' => self::PROPERTY,
+            'name'        => 'Funnel order fixture profile',
+            'domain'      => 'funnel.test',
+        ));
 
-            $d->set('id', $id);
-            $d->set('uri', $path);
-            $d->set('url', 'https://funnel.test' . $path);
-            $d->set('page_type', 'page');
-            $d->create();
+        if (!$site->create()) {
+            throw new \RuntimeException('seeding owa_site failed');
+        }
 
-            $paths[$path]     = $id;
-            self::$documents[] = $id;
+        if (!\OWA\Module\Base\Classes\Cube\Cubes::create(self::PROPERTY)) {
+            throw new \RuntimeException("creating the fixture Property's cube failed");
         }
 
         $day = (int) date('Ymd');
@@ -185,46 +232,61 @@ final class GoalFunnelOrderTest extends TestCase
             array($v6, $s6, '/b', 0),
 
             /*
-             * v7 does both steps inside ONE SECOND.
+             * v7 does both steps at the SAME INSTANT.
              *
-             * owa_request records whole seconds -- msec is declared INT and fed
-             * the fractional part of microtime() as a string, so it rounds to 0
-             * or 1 and carries nothing -- and request ids are the tracker's
-             * random GUID. So there is no evidence about which of these two
-             * came first.
+             * This was the shape 1.x forced on everything: owa_request recorded
+             * whole seconds, and msec was declared INT and fed the fractional
+             * part of microtime() as a string, so it rounded to 0 or 1 and
+             * carried nothing. The cube's ts is MICROSECONDS, so a tie is now a
+             * deliberate fixture rather than the storage's limitation -- and it
+             * still has to be answered, because two events can share a
+             * microsecond and their ids are random GUIDs.
              *
-             * They are resolved as a SET, in the funnel's own order, rather
-             * than by whichever happens to sort first: if somebody hit two
-             * consecutive funnel steps inside a second, that reading is the
-             * only one worth having, and the alternative settles it by coin
-             * flip. Each event is still spent once. So v7 PASSES.
-             *
-             * msec is fixed in V2, not 1.x. When it is, v7 stops being a tie
-             * and this fixture visitor should be retired along with the test
-             * that names them.
+             * Resolved as a SET, in the funnel's own order, rather than by
+             * whichever happens to sort first: if somebody hit two consecutive
+             * steps at one instant, that reading is the only one worth having
+             * and the alternative settles it by coin flip. Each event is still
+             * spent once. So v7 PASSES.
              */
             array($v7, $s7, '/a', 40),
             array($v7, $s7, '/b', 40),
         );
 
+        $built = (int) round( microtime(true) * 1000000 );
+
         foreach ($hits as $i => $hit) {
 
             list($visitor, $session, $path, $offset) = $hit;
 
-            $r = owa_coreAPI::entityFactory('base.request');
-            $id = (string) (9200000000000000000 + $i);
+            $row = \OWA\Module\Base\Classes\Cube\Cubes::entityFor(self::PROPERTY);
 
-            $r->set('id', $id);
-            $r->set('site_id', self::SITE);
-            $r->set('visitor_id', $visitor);
-            $r->set('session_id', $session);
-            $r->set('document_id', $paths[$path]);
-            $r->set('timestamp', $now + $offset);
-            $r->set('yyyymmdd', $day);
-            $r->create();
+            $row->setProperties(array(
+                'id'         => (string) (9200000000000000000 + $i),
+                'site_id'    => self::SITE,
+                'visitor_id' => $visitor,
+                'session_id' => $session,
+                'event_type' => 'page_view',
+                'page_path'  => $path,
+                // MICROSECONDS, which is what the cube's ts holds and what the
+                // walk orders by.
+                'ts'         => ($now + $offset) * 1000000,
+                'yyyymmdd'   => $day,
+                /*
+                 * NOT NULL on the cube and nothing here is about acquisition:
+                 * a visit with no referrer is `direct`, which is what a build
+                 * would have written.
+                 */
+                'acq_source' => 'direct',
+                'acq_medium' => 'direct',
+                'built_at'   => $built,
+            ));
 
-            self::$requests[] = $id;
+            if (!$row->create()) {
+                throw new \RuntimeException('seeding the fixture cube failed');
+            }
         }
+
+        self::$seeded = true;
     }
 
     /** The counting method, which is where the semantics live. */

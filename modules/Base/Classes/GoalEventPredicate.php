@@ -24,9 +24,11 @@ namespace OWA\Module\Base\Classes;
  *
  *   2. IT IS SESSION-SCOPED. A funnel counted by visitor has no column to read.
  *
- *   3. IT IS STAMPED FORWARD ONLY. A goal event created this morning has no
- *      conversions behind it, so a funnel drawn over last month would be empty
- *      -- while every fact needed to answer the question sits in owa_request.
+ *   3. IT IS STAMPED FORWARD ONLY. is_goal_event is written at ingest, so a goal
+ *      event created this morning has no conversions behind it and a funnel drawn
+ *      over last month would be empty -- while every fact needed to answer the
+ *      question is sitting in the cube. Counting takes the cheap mechanism;
+ *      ordering takes the one that can see the past.
  *
  * This is also how GA does it. A key event named in a funnel step is a
  * condition matched against the event stream like any other step condition; the
@@ -34,44 +36,29 @@ namespace OWA\Module\Base\Classes;
  * being read back. Nothing in a funnel exploration consults a stored conversion
  * total.
  *
- * WHAT IT REFUSES
+ * WHAT IT COMPILES AGAINST
  *
- * The funnel's query joins the request facts to the document dimension, so the
- * properties it can speak about are the document's. A condition on anything
- * else is REFUSED BY NAME rather than dropped. Dropping one would silently
- * WIDEN the goal event -- "purchase over 50 from the pricing page" would become
- * "from the pricing page" and report a bigger number that looks perfectly
- * plausible. Silently discarded constraints have produced exactly that kind of
- * wrong answer in this codebase before.
+ * The cube, one row per event, carrying every raw column under its own name plus
+ * the derived ones -- so a condition column IS a cube column and there is nothing
+ * to translate. There used to be a map of four v1 property names to four
+ * owa_document columns here, which is what the funnel joined; that table is not
+ * written by v2 ingest at all.
+ *
+ * So the check is the one Classes\GoalVocabulary already performs for the
+ * builder, the save and marking: a name it does not know is REFUSED BY NAME
+ * rather than dropped. Dropping one would silently WIDEN the goal event --
+ * "purchase over 50 from the pricing page" would become "from the pricing page"
+ * and report a bigger number that looks perfectly plausible. It is also the
+ * registry check that has to stand between an author's stored name and a column
+ * name interpolated into SQL.
+ *
+ * A stored condition CAN still name something unknown: Update049 leaves an
+ * untranslatable property in place and switches its goal off, so the name
+ * survives to be shown to whoever has to fix it.
  *
  * @since owa 1.8.0
  */
 class GoalEventPredicate {
-
-    /**
-     * The condition columns a funnel step can be written against, and the column
-     * each one reads in the funnel's own query.
-     *
-     * KEYED ON THE v2 VOCABULARY. A condition names a column of the stored row
-     * now -- page_path, page_location -- so the keys are those, and Update049
-     * rewrote the stored declarations to match. The VALUES are still the document
-     * dimension's columns, because that is what the funnel query joins (see
-     * VisualizationFunnel::countFunnel()), and the alias is passed in rather than
-     * hardcoded so the two cannot disagree about what `d` means.
-     *
-     * page_type is gone from the map: it was a document classification with no
-     * column on the v2 row, so no condition can name it any more.
-     *
-     * THE FUNNEL ITSELF IS STILL v1 ON THIS BRANCH -- owa_document is not written
-     * by v2 ingest at all, so a funnel draws zeros whatever this map says. The
-     * map is corrected rather than deleted so that the vocabulary is consistent
-     * in one place when the funnel is repointed at owa_event_raw.
-     */
-    const COLUMNS = array(
-        'page_path'     => 'uri',
-        'page_location' => 'url',
-        'page_title'    => 'page_title',
-    );
 
     /** Set when compile() returns null: which property could not be expressed. */
     private $error = '';
@@ -120,14 +107,21 @@ class GoalEventPredicate {
 
             $property = (string) $condition->get( 'condition_property' );
 
-            if ( ! isset( self::COLUMNS[ $property ] ) ) {
+            /*
+             * THE REGISTRY CHECK, and the only thing between a stored name and a
+             * column name in SQL. GoalVocabulary::has() answers from the raw
+             * entity's own columns, so a name that passes is a column that
+             * exists -- on raw and therefore on the cube, which copies them under
+             * the same names.
+             */
+            if ( ! \OWA\Module\Base\Classes\GoalVocabulary::has( $property ) ) {
 
                 $this->error = $property;
 
                 return null;
             }
 
-            $column = $alias . '.' . self::COLUMNS[ $property ];
+            $column = $alias . '.' . $property;
 
             $compiled = $this->comparison(
                 $column,
