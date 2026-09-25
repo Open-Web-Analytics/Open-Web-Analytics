@@ -308,7 +308,7 @@ final class CustomReportsTest extends TestCase
     public function testACombinationV1CouldNotServeIsNowAnswerable(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,keyEvents';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,goalConversions';
 
         $this->assertSame('', CustomReports::validate($definition),
             'the cube carries sessions, visitors and clicks, so one table serves all three');
@@ -316,7 +316,7 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $this->assertSame(array('base.event'),
-            $rsm->compatibleEntities(array('sessions', 'totalUsers', 'keyEvents'), array()),
+            $rsm->compatibleEntities(array('sessions', 'totalUsers', 'goalConversions'), array()),
             'and it is the cube that serves it');
     }
 
@@ -436,11 +436,11 @@ final class CustomReportsTest extends TestCase
         unset( $definition['widgets'][1]['query']['dimensions'] );
         unset( $definition['widgets'][1]['query']['sort'] );
 
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,keyEvents';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,goalConversions';
         $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
 
         $definition['widgets'][1]['query']['metrics'] =
-            'sessions,totalUsers,pageViews,keyEvents,totalEngagementTime';
+            'sessions,totalUsers,pageViews,goalConversions,totalEngagementTime';
         $this->assertStringContainsString('4 is the most',
             CustomReports::validate($definition), 'five metrics is refused');
 

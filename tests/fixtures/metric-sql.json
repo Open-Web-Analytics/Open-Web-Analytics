@@ -75,12 +75,36 @@
             "alias": "exits"
         }
     ],
-    "keyEvents": [
+    "goalConversionRatePerSession": [
+        {
+            "kind": "ratio",
+            "numerator": "goalConversions",
+            "denominator": "sessions",
+            "precision": 4,
+            "children": [
+                "goalConversions",
+                "sessions"
+            ]
+        }
+    ],
+    "goalConversionRatePerUser": [
+        {
+            "kind": "ratio",
+            "numerator": "goalConversions",
+            "denominator": "totalUsers",
+            "precision": 4,
+            "children": [
+                "goalConversions",
+                "totalUsers"
+            ]
+        }
+    ],
+    "goalConversions": [
         {
             "kind": "aggregate",
             "entity": "base.event",
             "expression": "sum(CASE WHEN event.is_goal_event = 1 THEN 1 ELSE 0 END)",
-            "alias": "keyEvents"
+            "alias": "goalConversions"
         }
     ],
     "newUsers": [
@@ -159,18 +183,6 @@
             ]
         }
     ],
-    "sessionKeyEventRate": [
-        {
-            "kind": "ratio",
-            "numerator": "keyEvents",
-            "denominator": "sessions",
-            "precision": 4,
-            "children": [
-                "keyEvents",
-                "sessions"
-            ]
-        }
-    ],
     "sessions": [
         {
             "kind": "aggregate",
@@ -221,18 +233,6 @@
             "entity": "base.event",
             "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN 1 ELSE 0 END)",
             "alias": "transactions"
-        }
-    ],
-    "userKeyEventRate": [
-        {
-            "kind": "ratio",
-            "numerator": "keyEvents",
-            "denominator": "totalUsers",
-            "precision": 4,
-            "children": [
-                "keyEvents",
-                "totalUsers"
-            ]
         }
     ]
 }

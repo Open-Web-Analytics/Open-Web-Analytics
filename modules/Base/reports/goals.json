@@ -1,6 +1,6 @@
 {
     "title": "Goals",
-    "metrics": "sessions,keyEvents,sessionKeyEventRate,goalAbandonRateAll,goalValueAll",
+    "metrics": "sessions,goalConversions,goalConversionRatePerSession,goalAbandonRateAll,goalValueAll",
     "widgets": [
         {
             "type": "trend",
@@ -11,7 +11,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "keyEvents"
+            "chartMetric": "goalConversions"
         },
         {
             "type": "metric-boxes",

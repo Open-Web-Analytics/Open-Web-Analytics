@@ -187,11 +187,61 @@
                 }
             }
         ],
-        "keyEvents": [
+        "goalConversionRatePerSession": [
             {
-                "name": "keyEvents",
+                "name": "goalConversionRatePerSession",
                 "class": "base.configurableMetric",
-                "label": "Key Events",
+                "label": "Goal Conversion Rate Per Session",
+                "group": "Goals",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "sessions",
+                    "description": "The share of sessions that included a goal conversion.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Goals",
+                    "label": "Goal Conversion Rate Per Session",
+                    "metric_type": "ratio",
+                    "name": "goalConversionRatePerSession",
+                    "numerator": "goalConversions",
+                    "precision": 4,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "goalConversionRatePerUser": [
+            {
+                "name": "goalConversionRatePerUser",
+                "class": "base.configurableMetric",
+                "label": "Goal Conversion Rate Per User",
+                "group": "Goals",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "totalUsers",
+                    "description": "The share of users who triggered a goal conversion.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Goals",
+                    "label": "Goal Conversion Rate Per User",
+                    "metric_type": "ratio",
+                    "name": "goalConversionRatePerUser",
+                    "numerator": "goalConversions",
+                    "precision": 4,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "goalConversions": [
+            {
+                "name": "goalConversions",
+                "class": "base.configurableMetric",
+                "label": "Goal Conversions",
                 "group": "Goals",
                 "params": {
                     "child_metrics": [],
@@ -202,13 +252,13 @@
                     ],
                     "data_type": "integer",
                     "denominator": "",
-                    "description": "Conversions, counted from the rows the server materialised for them.",
+                    "description": "The number of events that met a goal condition.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Goals",
-                    "label": "Key Events",
+                    "label": "Goal Conversions",
                     "metric_type": "count",
-                    "name": "keyEvents",
+                    "name": "goalConversions",
                     "numerator": "",
                     "precision": "",
                     "subtrahend_column": ""
@@ -396,31 +446,6 @@
                 }
             }
         ],
-        "sessionKeyEventRate": [
-            {
-                "name": "sessionKeyEventRate",
-                "class": "base.configurableMetric",
-                "label": "Key Event Rate",
-                "group": "Goals",
-                "params": {
-                    "child_metrics": [],
-                    "column": "",
-                    "condition": [],
-                    "data_type": "percentage",
-                    "denominator": "sessions",
-                    "description": "The share of sessions that included a key event.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Goals",
-                    "label": "Key Event Rate",
-                    "metric_type": "ratio",
-                    "name": "sessionKeyEventRate",
-                    "numerator": "keyEvents",
-                    "precision": 4,
-                    "subtrahend_column": ""
-                }
-            }
-        ],
         "sessions": [
             {
                 "name": "sessions",
@@ -573,31 +598,6 @@
                     "name": "transactions",
                     "numerator": "",
                     "precision": "",
-                    "subtrahend_column": ""
-                }
-            }
-        ],
-        "userKeyEventRate": [
-            {
-                "name": "userKeyEventRate",
-                "class": "base.configurableMetric",
-                "label": "Key Event Rate Per User",
-                "group": "Goals",
-                "params": {
-                    "child_metrics": [],
-                    "column": "",
-                    "condition": [],
-                    "data_type": "percentage",
-                    "denominator": "totalUsers",
-                    "description": "The share of users who triggered a key event.",
-                    "entity": "base.event",
-                    "formula": "",
-                    "group": "Goals",
-                    "label": "Key Event Rate Per User",
-                    "metric_type": "ratio",
-                    "name": "userKeyEventRate",
-                    "numerator": "keyEvents",
-                    "precision": 4,
                     "subtrahend_column": ""
                 }
             }
@@ -930,13 +930,13 @@
                 "denormalized": true
             }
         },
-        "isKeyEvent": {
+        "isGoalEvent": {
             "base.event": {
-                "name": "isKeyEvent",
+                "name": "isGoalEvent",
                 "entity": "base.event",
                 "column": "is_goal_event",
                 "family": "event",
-                "label": "Key Event",
+                "label": "Goal Event",
                 "description": "Whether this event met a goal condition.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
@@ -1571,12 +1571,12 @@
             "data_type": "string",
             "denormalized": true
         },
-        "isKeyEvent": {
-            "name": "isKeyEvent",
+        "isGoalEvent": {
+            "name": "isGoalEvent",
             "entity": "base.event",
             "column": "is_goal_event",
             "family": "event",
-            "label": "Key Event",
+            "label": "Goal Event",
             "description": "Whether this event met a goal condition.",
             "foreign_key_name": "",
             "data_type": "boolean",

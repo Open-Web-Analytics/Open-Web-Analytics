@@ -83,9 +83,9 @@ return array(
             'condition'   => array( 'column' => 'is_exit', 'value' => 1 ),
         ),
 
-        'keyEvents' => array(
-            'label'       => 'Key Events',
-            'description' => 'Conversions, counted from the rows the server materialised for them.',
+        'goalConversions' => array(
+            'label'       => 'Goal Conversions',
+            'description' => 'The number of events that met a goal condition.',
             'group'       => 'Goals',
             'metric_type' => 'count',
             'data_type'   => 'integer',
@@ -240,17 +240,17 @@ return array(
         ),
 
         /*
-         * Key events, as a rate and a share, off the flag the event row already
-         * carries. 1.x spelled these goalConversionRateAll / goalValueAll and
-         * needed the goal configuration to do it.
+         * Goal conversions, as a rate and a share, off the flag the event row
+         * already carries. 1.x spelled these goalConversionRateAll /
+         * goalValueAll and needed the goal configuration to do it.
          */
-        'sessionKeyEventRate' => array(
-            'label'       => 'Key Event Rate',
-            'description' => 'The share of sessions that included a key event.',
+        'goalConversionRatePerSession' => array(
+            'label'       => 'Goal Conversion Rate Per Session',
+            'description' => 'The share of sessions that included a goal conversion.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
-            'numerator'   => 'keyEvents',
+            'numerator'   => 'goalConversions',
             'denominator' => 'sessions',
             'precision'   => 4,
         ),
@@ -313,13 +313,13 @@ return array(
             'precision'   => 0,
         ),
 
-        'userKeyEventRate' => array(
-            'label'       => 'Key Event Rate Per User',
-            'description' => 'The share of users who triggered a key event.',
+        'goalConversionRatePerUser' => array(
+            'label'       => 'Goal Conversion Rate Per User',
+            'description' => 'The share of users who triggered a goal conversion.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
-            'numerator'   => 'keyEvents',
+            'numerator'   => 'goalConversions',
             'denominator' => 'totalUsers',
             'precision'   => 4,
         ),

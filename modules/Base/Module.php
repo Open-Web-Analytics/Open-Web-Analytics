@@ -811,7 +811,7 @@ class Module extends \OWA\Core\Module {
          * WHAT GOES WITH IT, and is not replaced:
          *   - GOAL CONVERSIONS. conversionHandlers evaluated them, and v2 never
          *     materialises a goal event -- is_goal_event is written 0 on every
-         *     row. So keyEvents and the rates over it already answered zero
+         *     row. So goalConversions and the rates over it already answered zero
          *     before this, and goal evaluation is a v2 gap either way.
          *   - v1's tables stop being WRITTEN. They are not dropped: the
          *     migrator reads them, and their history is the only copy of what

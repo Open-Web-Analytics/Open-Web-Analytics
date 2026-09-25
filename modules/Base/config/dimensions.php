@@ -175,8 +175,12 @@ return array(
             'eventName' => array( 'column' => 'event_type', 'label' => 'Event Name',
                 'family' => 'event', 'description' => 'The name of the event -- page_view, click, session_start.' ),
             /*
-             * GA's name and GA's shape: isKeyEvent, deprecating the
-             * isConversionEvent it replaced.
+             * GA's SHAPE, our word. GA carries isKeyEvent (deprecating
+             * isConversionEvent), so a flag dimension on the event row is the
+             * right form -- but OWA calls these goals everywhere else it
+             * speaks: is_goal_event, base.goal_event, GoalManager. Taking GA's
+             * spelling here would have left one noun disagreeing with the
+             * column it reads.
              *
              * BOOLEAN, not integer -- the formatter renders Yes and No where
              * integer rendered 1 and 0. That is safe here in a way it was not
@@ -186,7 +190,7 @@ return array(
              * with two slices called New -- the formatter was never the
              * problem.
              */
-            'isKeyEvent' => array( 'column' => 'is_goal_event', 'label' => 'Key Event',
+            'isGoalEvent' => array( 'column' => 'is_goal_event', 'label' => 'Goal Event',
                 'family' => 'event', 'description' => 'Whether this event met a goal condition.',
                 'data_type' => 'boolean' ),
             'domElementId' => array( 'column' => 'element_id', 'label' => 'Element ID',

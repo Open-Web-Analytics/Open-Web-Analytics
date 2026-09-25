@@ -293,7 +293,7 @@ class Metric extends \OWA\Core\Base {
                     /*
                      * A CONDITION IS THE SAME SCAN, not a subquery. Most of the
                      * v2 vocabulary is "count the rows that are X" --
-                     * pageViews, domClicks, downloads, transactions, keyEvents
+                     * pageViews, downloads, transactions, goalConversions
                      * -- and an event table answers that by testing a column on
                      * each row it is already reading. Measured on this box:
                      * EXPLAIN says select_type=SIMPLE, Using where; Using index.

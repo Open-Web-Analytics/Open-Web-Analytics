@@ -683,7 +683,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * that can see the past.
      *
      * ONE FLAG, NOT ONE PER GOAL. An event meeting two goals is still one
-     * event, and `keyEvents` counts events. Which goal converted is a question
+     * event, and `goalConversions` counts events. Which goal converted is a question
      * for the predicate, not for a column per slot the way owa_session carried
      * goal_1..goal_N.
      *
