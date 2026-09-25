@@ -50,52 +50,79 @@ final class BeaconCompatInventoryTest extends TestCase
         return $flat;
     }
 
-    /** @return array<string,string> the indexed renames, old => new */
-    private function indexedRenames(): array
+    /** @return array<string,string> the renames the layer applies, old => new */
+    private function renames(): array
     {
         $out = array();
 
-        foreach ( (array) $this->index()['indexed'] as $entry ) {
+        foreach ( (array) $this->index()['renames'] as $entry ) {
 
-            if ( $entry['kind'] === 'rename' ) {
-
-                $out[ $entry['from'] ] = $entry['to'];
-            }
+            $out[ $entry['from'] ] = $entry['to'];
         }
 
         return $out;
     }
 
     /**
-     * Every alternative_key in the registry is indexed here.
+     * THE REGISTRY CARRIES NO RENAMES AT ALL any more.
      *
-     * This is the half that catches a bridge being ADDED without being
-     * recorded -- the common case, because adding one is a single line in a
-     * JSON file and nothing else prompts you.
+     * `alternative_key` did this per property, inside the property loop, gated
+     * on the canonical value being FALSY -- so it could not tell "absent" from
+     * "present and false", needed 0 and "0" carved out by hand, and could never
+     * be used for a boolean. Classes\Beacon\Compat does it once, up front, on
+     * presence.
+     *
+     * Asserted as an absence because the mechanism is what was removed. A
+     * declaration creeping back would be a second place renames happen, which
+     * is the thing this whole exercise was about.
      */
-    public function testEveryRegistryRenameIsIndexed(): void
+    public function testTheRegistryDeclaresNoRenames(): void
     {
-        $actual = array();
+        $offenders = array();
 
         foreach ( $this->properties() as $name => $property ) {
 
             if ( ! empty( $property['alternative_key'] ) ) {
 
-                $actual[ $property['alternative_key'] ] = $name;
+                $offenders[] = $name;
             }
         }
 
-        $this->assertNotEmpty( $actual,
-            'no alternative_key found at all; this assertion would be vacuous' );
+        $this->assertSame( array(), $offenders,
+            'alternative_key is gone; a rename belongs in conf/beacon_compat.php '
+          . 'so that every one of them is in a single place.' );
+    }
 
-        ksort( $actual );
+    /** And the layer actually applies them. */
+    public function testTheLayerAppliesARename(): void
+    {
+        $renames = $this->renames();
 
-        $indexed = $this->indexedRenames();
-        ksort( $indexed );
+        $this->assertNotEmpty( $renames, 'no renames declared; this would be vacuous' );
 
-        $this->assertSame( $indexed, $actual,
-            'conf/beacon_compat.php must list exactly the alternative_key renames '
-          . 'the property registry declares -- in both directions.' );
+        $event = new \OWA\Module\Base\Classes\Event;
+        $event->set( 'nps', 4 );
+
+        \OWA\Module\Base\Classes\Beacon\Compat::apply( $event );
+
+        $this->assertSame( 4, $event->get( 'num_prior_sessions' ),
+            'the current spelling must be set from the old one' );
+    }
+
+    /**
+     * PRESENCE, NOT TRUTHINESS -- the substantive difference from what it
+     * replaced, and the reason a boolean can use this mechanism.
+     */
+    public function testAFalseCanonicalIsNotTreatedAsAbsent(): void
+    {
+        $event = new \OWA\Module\Base\Classes\Event;
+        $event->set( 'num_prior_sessions', 0 );
+        $event->set( 'nps', 9 );
+
+        \OWA\Module\Base\Classes\Beacon\Compat::apply( $event );
+
+        $this->assertSame( 0, $event->get( 'num_prior_sessions' ),
+            'a canonical value of 0 is a value; the old spelling must not overwrite it' );
     }
 
     /**
@@ -162,7 +189,7 @@ final class BeaconCompatInventoryTest extends TestCase
     {
         $properties = $this->properties();
 
-        foreach ( $this->indexedRenames() as $from => $to ) {
+        foreach ( $this->renames() as $from => $to ) {
 
             $this->assertArrayHasKey( $to, $properties,
                 $from . ' is bridged to ' . $to . ', which the registry does not declare' );

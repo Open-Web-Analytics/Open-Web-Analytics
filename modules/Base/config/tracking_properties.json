@@ -90,7 +90,6 @@
             "required": true,
             "data_type": "url",
             "callbacks": [
-                "owa_trackingEventHelpers::keepCompleteUrl",
                 "owa_trackingEventHelpers::makeUrlCanonical"
             ]
         },
@@ -98,7 +97,7 @@
             "required": false,
             "data_type": "url",
             "callbacks": [],
-            "note": "The complete page URL, query included, with nothing stripped. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks on purpose: a filter here would defeat the column. Falls back to keepCompleteUrl() for beacons from a tracker cached before this shipped."
+            "note": "The complete page URL, query included, with nothing stripped. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks on purpose: a filter here would defeat the column. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
         },
         "page_title": {
             "required": true,
@@ -132,8 +131,7 @@
                 "owa_trackingEventHelpers::deriveDaysSinceFirstSession"
             ],
             "data_type": "integer",
-            "default_value": false,
-            "alternative_key": "dsfs"
+            "default_value": false
         },
         "time_since_last_session": {
             "required": false,
@@ -147,8 +145,7 @@
                 "owa_trackingEventHelpers::deriveDaysSincePriorSession"
             ],
             "data_type": "integer",
-            "default_value": false,
-            "alternative_key": "dsps"
+            "default_value": false
         },
         "beacon_version": {
             "required": false,
@@ -166,8 +163,7 @@
             "required": true,
             "callbacks": [],
             "data_type": "integer",
-            "default_value": false,
-            "alternative_key": "nps"
+            "default_value": false
         },
         "is_new_visitor": {
             "required": true,
@@ -204,8 +200,7 @@
             "callbacks": [
                 "owa_trackingEventHelpers::setEmailAddress"
             ],
-            "default_value": "(not set)",
-            "alternative_key": "email_address"
+            "default_value": "(not set)"
         },
         "HTTP_REFERER": {
             "required": false,
@@ -270,8 +265,7 @@
         "feed_subscription_id": {
             "required": false,
             "callbacks": [],
-            "default_value": null,
-            "alternative_key": "sid"
+            "default_value": null
         },
         "attribs": {
             "required": false,

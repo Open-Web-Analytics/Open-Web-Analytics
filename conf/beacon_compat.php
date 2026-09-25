@@ -53,68 +53,66 @@ return array(
     ),
 
     /*
+     * ---- APPLIED FROM HERE ------------------------------------------------
+     *
+     * Token renames. Classes\Beacon\Compat puts the current spelling on the
+     * event for anything sent under an old one, ONCE, before any reader.
+     *
+     * This replaces `alternative_key` in the property registry, and the change
+     * is not only where it lives. That mechanism fired when the canonical key
+     * was FALSY, so it could not tell "absent" from "present and false" -- fine
+     * for counters and strings with the zero cases carved out by hand, and the
+     * reason a BOOLEAN could never use it. Which is why the flag fallbacks had
+     * to be open-coded in three places instead. Presence has no such hole.
+     *
+     * `role` says when an entry may be DELETED, not how it is applied:
+     *
+     *   wire   the short name the CURRENT tracker sends. Deleting it breaks
+     *          today's tracker, so it is permanent until the wire changes.
+     *   legacy what an OLDER tracker sent. Deletable once beacon_version shows
+     *          nothing is still sending it.
+     *
+     * beacon_version deliberately has no short name: the tracker sends the
+     * canonical one. Ten bytes a beacon against a split that has to be
+     * remembered forever is not a trade worth making, and a new field was the
+     * one chance not to make it.
+     */
+    'renames' => array(
+
+        array( 'role' => 'wire',   'from' => 'nps',  'to' => 'num_prior_sessions' ),
+
+        array( 'role' => 'legacy', 'from' => 'dsfs',          'to' => 'days_since_first_session' ),
+        array( 'role' => 'legacy', 'from' => 'dsps',          'to' => 'days_since_prior_session' ),
+        array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'user_email' ),
+
+        /*
+         * A COLLISION, kept so it is not rediscovered. `sid` is also the
+         * tracker's store key for the SESSION id -- sent on the wire as
+         * session_id, so the two do not meet. A beacon carrying a literal `sid`
+         * resolves it into feed_subscription_id, a value from a retired feature
+         * nothing has written since 2021. Left rather than removed, because
+         * removing it is a behaviour change on a path nobody can observe.
+         */
+        array( 'role' => 'legacy', 'from' => 'sid', 'to' => 'feed_subscription_id' ),
+
+        /*
+         * The complete URL. page_url is the CANONICAL form -- campaign
+         * parameters and the site's query_string_filters are stripped out of it
+         * -- so it cannot answer what the tags were a second time. A tracker
+         * cached before page_location shipped sends only page_url, and it is
+         * the last evidence there is; past that the query string is gone.
+         *
+         * This was a callback (keepCompleteUrl) plus a `?:` in the raw handler:
+         * the same rename, twice, in two mechanisms. Compat never overwrites a
+         * canonical the beacon already carries, which is exactly what both did.
+         */
+        array( 'role' => 'legacy', 'from' => 'page_url', 'to' => 'page_location' ),
+    ),
+
+    /*
      * ---- APPLIED ELSEWHERE, INDEXED HERE ----------------------------------
-     *
-     * Each entry says where the bridge actually lives. The test asserts it is
-     * still there, so removing a bridge without removing its entry fails, and
-     * so does adding one without indexing it.
-     *
-     * `kind` is descriptive here, not dispatched on: nothing reads these at
-     * runtime.
-     *
-     * A `needle` NAMING A FUNCTION CARRIES ITS OPENING PAREN. Without it the
-     * match is a substring: renaming keepCompleteUrl to keepCompleteUrlRENAMED
-     * still contains "function keepCompleteUrl", so the guard passed while the
-     * bridge was gone. Measured.
      */
     'indexed' => array(
-
-        /*
-         * Declarative renames, in the property registry. Applied by
-         * TrackingEventHelpers when the canonical key has no value.
-         *
-         * TRUTHINESS, NOT PRESENCE -- `if ( ! $value && $value !== 0 && $value
-         * !== "0" )`. Fine for these six, which are counters and strings with
-         * the zero cases carved out, and the reason a BOOLEAN cannot use this
-         * mechanism: a flag legitimately sent as false would be indistinguishable
-         * from one that was never sent, and the fallback would fire on it. That
-         * is why the flag fallbacks below are open-coded instead.
-         */
-        /*
-         * `role` SEPARATES TWO THINGS alternative_key was doing at once, which
-         * is only visible once they are listed together:
-         *
-         *   wire   the short name the CURRENT tracker sends. Not a bridge at
-         *          all -- the registry's canonical name is simply longer than
-         *          the one on the wire. Deleting it breaks today's tracker.
-         *   legacy the name an OLDER tracker sent. A real bridge, and a
-         *          candidate for deletion once beacon_version says nothing is
-         *          sending it.
-         *
-         * Indexing them as one kind made every entry look permanent. Most of
-         * them are not.
-         *
-         * beacon_version deliberately has NO short name: the tracker sends the
-         * canonical one. Ten bytes a beacon against a wire/canonical split that
-         * has to be remembered forever is not a trade worth making, and the new
-         * field was the one chance to not make it.
-         */
-        array( 'kind' => 'rename', 'role' => 'wire',   'from' => 'nps',  'to' => 'num_prior_sessions', 'in' => 'registry' ),
-
-        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'dsfs',          'to' => 'days_since_first_session', 'in' => 'registry' ),
-        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'dsps',          'to' => 'days_since_prior_session', 'in' => 'registry' ),
-        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'email_address', 'to' => 'user_email',               'in' => 'registry' ),
-
-        /*
-         * A COLLISION, indexed so it is not rediscovered. `sid` is also the
-         * tracker's store key for the SESSION id -- sent on the wire as
-         * session_id, so the two do not meet today. A beacon carrying a literal
-         * `sid` would resolve it into feed_subscription_id, which is a value
-         * from a retired feature: nothing has written a feed request since
-         * 2021. Left alone rather than removed, because removing it is a
-         * behaviour change on a path nobody can currently observe.
-         */
-        array( 'kind' => 'rename', 'role' => 'legacy', 'from' => 'sid', 'to' => 'feed_subscription_id', 'in' => 'registry' ),
 
         /*
          * The page-scoped flag standing in for the request-scoped one, on
@@ -134,19 +132,6 @@ return array(
                'in' => 'modules/Base/Handler/SessionHandlers.php', 'needle' => "is_new_session'" ),
         array( 'kind' => 'flag_fallback', 'from' => 'is_new_session', 'to' => 'is_new_session_start',
                'in' => 'modules/Base/Handler/EventRawHandlers.php', 'needle' => "is_new_session' )" ),
-
-        /*
-         * The complete URL. page_url has had campaign parameters and the site's
-         * query_string_filters stripped from it by the time a handler sees it,
-         * which is right for 1.x's document identity and wrong for evidence.
-         * page_location is what the v2 tracker sends; keepCompleteUrl() stashes
-         * it for older beacons, and page_url is the last resort -- at which
-         * point the query string is genuinely gone.
-         */
-        array( 'kind' => 'chain', 'from' => 'page_url', 'to' => 'page_location',
-               'in' => 'modules/Base/Handler/EventRawHandlers.php', 'needle' => "?: \$event->get( 'page_url' )" ),
-        array( 'kind' => 'chain', 'from' => 'page_url', 'to' => 'page_location',
-               'in' => 'modules/Base/Classes/TrackingEventHelpers.php', 'needle' => 'function keepCompleteUrl(' ),
 
         /*
          * Value ENCODINGS, where a value counting from zero was sent as a

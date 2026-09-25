@@ -322,26 +322,27 @@ class TrackingEventHelpers {
 
     public function setTrackerProperties( $event, $properties ) {
 
+        /*
+         * OLD SPELLINGS FIRST, once, before anything below reads a value.
+         *
+         * This used to be `alternative_key`, applied per property inside the
+         * loop and gated on the canonical value being FALSY -- which cannot
+         * tell "absent" from "present and false", needed the 0 and "0" cases
+         * carved out by hand, and could never be used for a boolean at all.
+         * Classes\Beacon\Compat asks whether the key is THERE, which has no
+         * such hole, and it is one place rather than a branch per property.
+         */
+        \OWA\Module\Base\Classes\Beacon\Compat::apply( $event );
+
         $this->registerCallbacks( $properties, 0 );
 
         $eq = \OWA\Core\CoreAPI::getEventDispatch();
 
         foreach ( $properties as $name => $property ) {
 
+            // Already normalised by Compat::apply() above, so the canonical
+            // name is the only one this has to know about.
             $value = $event->get( $name );
-
-            // if no value try alternate key
-
-            if ( ! $value && $value !== 0 && $value !== "0" ) {
-
-                if ( isset( $property['alternative_key'] ) &&  $property['alternative_key'] ) {
-
-                    $value = $event->get( $property['alternative_key'] );
-                    // should we delete the original key on the event? if so:
-                    //$event->delete( $name );
-                    \OWA\Core\CoreAPI::debug('alt key value: '.$value);
-                }
-            }
 
 
             // sanitize properties by datatype
@@ -1103,45 +1104,6 @@ class TrackingEventHelpers {
 	    return \OWA\Core\CoreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
     }
 
-    /**
-     * Keep the page URL that arrived, before anything is stripped from it.
-     *
-     * Registered on page_url AHEAD of makeUrlCanonical, and returns its input
-     * untouched -- it exists for the side effect.
-     *
-     * makeUrlCanonical removes the campaign parameters along with whatever a
-     * site put in query_string_filters, which is right for v1: page_url IS the
-     * page's identity there, and two spellings of one page must not become two
-     * documents. v2's raw store needs the other thing. page_location is the
-     * EVIDENCE the campaign tags are parsed out of, so that a parser fix, or a
-     * site changing its campaign keys, can be re-applied to history -- and a
-     * URL whose query has already been removed cannot answer that question a
-     * second time.
-     *
-     * A SEPARATE CALLBACK rather than a line inside makeUrlCanonical, because
-     * that one is registered on three properties -- page_url, target_url and
-     * prior_page -- and is handed no name, so it cannot tell which one it is
-     * filtering. It would have had to guess, and guessing wrong stores the
-     * previous page's URL as this page's location.
-     *
-     * The TRACKER also sends page_location directly, which is the path that
-     * survives every filter by construction. This is the fallback for beacons
-     * from a tracker cached before that shipped, and the guard is what gives
-     * the transmitted value precedence.
-     *
-     * @param string $url
-     * @param object $event
-     * @return string the url, unchanged
-     */
-    static function keepCompleteUrl( $url, $event ) {
-
-        if ( $url && ! $event->get( 'page_location' ) ) {
-
-            $event->set( 'page_location', $url );
-        }
-
-        return $url;
-    }
 
     /**
      * Filter function Strips a URL of certain defined session or tracking params

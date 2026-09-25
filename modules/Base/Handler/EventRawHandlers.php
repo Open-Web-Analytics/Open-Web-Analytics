@@ -194,7 +194,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * TrackingEventHelpers::keepCompleteUrl() for older beacons; page_url
          * is the last resort, and then the query is genuinely gone.
          */
-        $location = $event->get( 'page_location' ) ?: $event->get( 'page_url' );
+        // Compat::apply() has already put page_url under page_location for a
+        // beacon that only carries the old name, so this reads one field.
+        $location = $event->get( 'page_location' );
 
         $page = \OWA\Module\Base\Classes\V2Event::parseUrl( $location );
         $target = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'target_url' ) );
