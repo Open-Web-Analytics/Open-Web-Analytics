@@ -3928,8 +3928,32 @@ class OWATracker  {
             return false;
         }
 
+        /*
+         * AND THE `owa_` PREFIX IS RESERVED, which is forward protection rather
+         * than a rule about today.
+         *
+         * GA reserves ga_, google_ and firebase_ for exactly this: it keeps room
+         * to name a future first-class event without colliding with one a site
+         * has already been sending for years. OWA's own events are unprefixed --
+         * page_view, click -- and GA's are too, so the prefix is not how either
+         * names things now; it is how a later addition stays safe.
+         *
+         * Two of GA's other refusals come free from the pattern above: a leading
+         * underscore fails "must start with a letter", and gtag. fails on the dot.
+         */
+        if ( name.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
+
+            OWA.debug( 'Custom event names may not start with '
+                + OWATracker.RESERVED_EVENT_PREFIX + ', which OWA reserves: ' + name );
+
+            return false;
+        }
+
         return true;
     }
+
+    /** Reserved so a future first-class event cannot collide with a site's. */
+    static get RESERVED_EVENT_PREFIX() { return 'owa_'; }
 
     trackEvent(event, block) {
         //OWA.debug('pre global event: %s', JSON.stringify(event));

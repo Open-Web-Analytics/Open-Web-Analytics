@@ -2234,6 +2234,14 @@ class CoreAPI {
             return true;
         }
 
+        /*
+         * NO `owa_` PREFIX CHECK HERE, deliberately. The tracker refuses that
+         * prefix, and the server does not need to: a tracking event dispatches as
+         * tracking.<name>, so a site's owa_x cannot collide with OWA's own
+         * routing -- the namespace already separates them. Enforcing it here would
+         * only add a way to LOSE a site's data, and it would fall hardest on a
+         * tracker cached from before the rule existed.
+         */
         return (bool) preg_match(
             \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN,
             $event_type );

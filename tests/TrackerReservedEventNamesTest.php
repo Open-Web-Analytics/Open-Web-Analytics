@@ -99,6 +99,42 @@ final class TrackerReservedEventNamesTest extends TestCase
     }
 
     /**
+     * The reserved `owa_` prefix is enforced in the TRACKER only.
+     *
+     * Forward protection, the way GA reserves ga_, google_ and firebase_: it keeps
+     * room to name a future first-class event without colliding with one a site
+     * has been sending for years.
+     *
+     * NOT ON THE SERVER, and that is the point worth recording. A tracking event
+     * dispatches as tracking.<name>, so a site's owa_x cannot collide with OWA's
+     * routing -- the namespace already separates them. A server-side refusal would
+     * add no protection and one way to lose a site's data, falling hardest on a
+     * tracker cached from before the rule.
+     */
+    public function testTheTrackerReservesTheOwaPrefix(): void
+    {
+        $source = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/src/tracker/Tracker.js' );
+
+        $this->assertStringContainsString( "RESERVED_EVENT_PREFIX() { return 'owa_'; }",
+            $source, 'the tracker no longer reserves the owa_ prefix' );
+
+        $this->assertStringContainsString( 'RESERVED_EVENT_PREFIX ) === 0', $source,
+            'the prefix is declared but never tested against a name' );
+    }
+
+    /** And the server admits it, because the namespace has already separated it. */
+    public function testTheServerDoesNotRefuseThePrefix(): void
+    {
+        $this->assertTrue( owa_coreAPI::isTrackingEventType( 'owa_future_event' ),
+            'the server must not refuse a prefixed name: tracking.<name> cannot '
+            . 'collide, and refusing it only loses data from an older tracker' );
+
+        $this->assertTrue( owa_coreAPI::isTrackingEventType( 'owa' ) );
+        $this->assertTrue( owa_coreAPI::isTrackingEventType( 'my_owa_event' ) );
+    }
+
+    /**
      * A reserved name is refused as a custom event; a legal one is admitted.
      *
      * Asserted through the ENDPOINT's rule, not a restatement of it, so this
