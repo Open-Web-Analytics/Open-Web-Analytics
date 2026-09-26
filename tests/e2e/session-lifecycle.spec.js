@@ -100,7 +100,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         const url = root + 'tests/e2e/tracker_harness.html?base=' + encodeURIComponent(root);
         await serveHarness(page, url);
         await page.goto(url, { waitUntil: 'load' });
-        await awaitBeacon(beacons, 'base.page_request');
+        await awaitBeacon(beacons, 'page_view');
 
         const state = await awaitSessions(1);
         expect(state.request_count).toBe(1);
@@ -121,7 +121,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         await serveHarness(page, b);
 
         await page.goto(a, { waitUntil: 'load' });
-        await awaitBeacon(beacons, 'base.page_request');
+        await awaitBeacon(beacons, 'page_view');
         await awaitSessions(1);
 
         /*
@@ -162,7 +162,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         expect(state.dangling_total).toBe(0);
 
         // The second hit continues the session -- it must NOT re-declare a new one.
-        const second = beacons.filter((u) => /[?&]event_type=base\.page_request/.test(u))[1];
+        const second = beacons.filter((u) => /[?&]event_type=page_view/.test(u))[1];
         expect(second).toBeTruthy();
         /*
          * is_new_session_start, the REQUEST-scoped flag, which is the only one
@@ -224,7 +224,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         // --- page B: delivery restored --------------------------------------
         await page.unroute('**/log.php*');
         await page.goto(b, { waitUntil: 'load' });
-        await awaitBeacon(beacons, 'base.page_request');
+        await awaitBeacon(beacons, 'page_view');
 
         state = await awaitSessions(1);
 
@@ -235,7 +235,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         expect(state.dangling_total).toBe(0);
 
         // B had to declare a NEW session, because A's identity was never persisted.
-        const pageviews = beacons.filter((u) => /[?&]event_type=base\.page_request/.test(u));
+        const pageviews = beacons.filter((u) => /[?&]event_type=page_view/.test(u));
         expect(pageviews[pageviews.length - 1]).toMatch(/[?&]is_new_session_start=/);
 
         // Arrival facts captured on A survive: they are observable only on the
@@ -273,17 +273,17 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
             null, { timeout: 20_000 });
         await page.evaluate(() => window.OWATracker.trackClicks());
         await page.locator('#tracked-btn').click();
-        await awaitBeacon(beacons, 'dom.click');
+        await awaitBeacon(beacons, 'click');
 
         await page.waitForTimeout(1500);
         const state = helper('session-state', `site=${HARNESS_SITE_ID}`);
 
         /*
-         * The click carries the in-memory sid and is_new_session, but dom.click is
-         * registered to clickHandlers + the dimension handlers only -- never
-         * sessionHandlers -- so no session is created and every handler succeeds.
-         * The row lands referencing a session that does not exist, and nothing is
-         * queued to flag it.
+         * The click carries the in-memory sid, but NOT is_new_session_start -- that
+         * flag marks the one request that created the session, and this request did
+         * not. Ingest therefore stores the click and materialises no session_start
+         * row for it, so the row references a session that was never begun and
+         * nothing is queued to flag it.
          *
          * This is the CURRENT, accepted outcome. Closing it requires the server to
          * establish a session thinly from any event type, which is a separate

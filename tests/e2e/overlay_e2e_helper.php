@@ -121,13 +121,22 @@ function provision(): array
 
     $site_id = md5(OVERLAY_DOMAIN);
 
-    $s = owa_coreAPI::entityFactory('base.site');
-    $s->set('id', $s->generateId($site_id));
-    $s->set('site_id', $site_id);
-    $s->set('domain', OVERLAY_DOMAIN);
-    $s->set('name', 'OWA overlay cross-origin e2e site');
-    $s->set('description', FIXTURE_TAG);
-    $s->create();
+    /*
+     * THROUGH SiteManager, because a site needs a PROPERTY.
+     *
+     * This built the row by hand, which was enough while nothing about this
+     * fixture read the cube. It is not now: a cube belongs to a Property, and
+     * createNewSite() is what mints one -- a site IS an Observation Profile. A
+     * hand-built row has property_id empty, so buildOverlayCube() found no
+     * Property and provision() refused, which is how this fixture went from
+     * passing over v1 rows to failing outright.
+     *
+     * Idempotent, and it recognises an existing site, so cleanup() having run
+     * first is not a precondition.
+     */
+    $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+    $sm->createNewSite(OVERLAY_DOMAIN, 'OWA overlay cross-origin e2e site',
+        FIXTURE_TAG, '', $site_id);
 
     // A user for the token to name. The token carries this user's privileges,
     // scoped to one action and one resource.
