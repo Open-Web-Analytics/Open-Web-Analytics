@@ -42,7 +42,16 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(63, $columns);
+        $this->assertCount(62, $columns);
+
+        // browser_type, and NOT `browser`. Both columns existed and both were
+        // written from the one property -- config/dimensions.php declares
+        // browserType against browser_type, and nothing read the other. Update052
+        // dropped the VARCHAR(128) copy: on a table whose row cannot exceed
+        // 65,535 bytes, a duplicate is budget a real dimension does not get.
+        $this->assertContains('browser_type', $columns);
+        $this->assertNotContains('browser', $columns,
+            'browser was a copy of browser_type that no dimension read');
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
@@ -84,6 +93,14 @@ final class EventRawEntityTest extends TestCase
             'document_id', 'referer_id', 'ua_id', 'host_id', 'os_id',
             'location_id', 'source_id', 'campaign_id', 'ad_id', 'is_robot',
             'landing_url', 'source', 'medium', 'campaign',
+            /*
+             * The tracker's own clock in seconds. Sent on every beacon until it
+             * became device-local: `ts` is the edge receipt in microseconds and
+             * client_ts_usec is this same client clock at higher resolution, so
+             * the wire was carrying a third spelling of one instant. Never a
+             * column here, and now not on the wire either.
+             */
+            'timestamp',
         ] as $name) {
             $this->assertNotContains($name, $columns,
                 "$name is deliberately not a raw column -- it is a derivation, a dimension "

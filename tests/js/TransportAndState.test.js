@@ -167,7 +167,7 @@ describe('logEvent: GET pixel vs POST fallback', () => {
 
 describe('addDefaultsToEvent', () => {
 
-    test('backfills site_id, page_url, page_title and timestamp', () => {
+    test('backfills site_id, page_url and page_title', () => {
         const t = newTracker();
         const event = new OwaEvent();
 
@@ -176,8 +176,28 @@ describe('addDefaultsToEvent', () => {
 
         expect(p.site_id).toBe('transport-site');
         expect(p.page_url).toBeTruthy();
-        expect(p.timestamp).toBeTruthy();
         expect(p.hasOwnProperty('page_title')).toBe(true);
+    });
+
+    /*
+     * timestamp is asserted on the EVENT, not on getProperties().
+     *
+     * It used to be read off getProperties() here, which is how a value the
+     * server has no use for went on every beacon for years without anyone
+     * noticing: the only test that looked at it looked at the wire copy, so the
+     * wire copy was what the test protected.
+     *
+     * The device needs it -- isNewSession(), fsts and last_req all read it before
+     * the beacon exists -- so it is still set. It is just not sent. See
+     * tests/js/BeaconContractDeviceLocal.test.js for the wire half.
+     */
+    test('stamps the tracker clock on the event, for the device to use', () => {
+        const t = newTracker();
+        const event = new OwaEvent();
+
+        t.addDefaultsToEvent(event, null);
+
+        expect(event.get('timestamp')).toBeTruthy();
     });
 
     test('does not overwrite a value the event already carries', () => {

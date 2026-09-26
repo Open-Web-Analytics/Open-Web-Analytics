@@ -65,16 +65,6 @@ final class RowIsAMappingTest extends TestCase
      */
     private const IDENTITY = array( 'site_id', 'visitor_id', 'session_id', 'ts' );
 
-    /**
-     * The one column no property backs and no reason justifies.
-     *
-     * owa_event_raw carries both `browser` and `browser_type`, written from the
-     * same property, and no dimension reads `browser`. It is listed here rather
-     * than tolerated by a loose rule, so removing the column closes this entry
-     * and adding a second duplicate fails.
-     */
-    private const KNOWN_DUPLICATE = array( 'browser' => 'browser_type' );
-
     /** row()'s body, from the source. */
     private function body(): string
     {
@@ -180,12 +170,6 @@ final class RowIsAMappingTest extends TestCase
                 continue;
             }
 
-            if ( isset( self::KNOWN_DUPLICATE[ $column ] )
-                 && self::KNOWN_DUPLICATE[ $column ] === $property ) {
-
-                continue;
-            }
-
             $wrong[ $column ] = $property . ' declares column '
                 . ( $declared === '' ? '<none>' : $declared );
         }
@@ -269,8 +253,14 @@ final class RowIsAMappingTest extends TestCase
             . var_export( $missing, true ) );
     }
 
-    /** The duplicate is the only unbacked column, and stays the only one. */
-    public function testTheDuplicateIsTheOnlyUnbackedColumn(): void
+    /**
+     * NO column is unbacked, beyond the four listed with a reason.
+     *
+     * `browser` was the exception here: a VARCHAR(128) copy of browser_type that
+     * no dimension read. Update052 dropped it, so the rule is unconditional and
+     * a new duplicate cannot be added quietly.
+     */
+    public function testNoColumnIsUnbacked(): void
     {
         $backed = array();
 
@@ -284,12 +274,11 @@ final class RowIsAMappingTest extends TestCase
             }
         }
 
-        $unbacked = array_diff( array_keys( $this->entries() ),
-            array_keys( $backed ), array_keys( self::NOT_A_PROPERTY ) );
+        $unbacked = array_values( array_diff( array_keys( $this->entries() ),
+            array_keys( $backed ), array_keys( self::NOT_A_PROPERTY ) ) );
 
-        $this->assertSame( array_keys( self::KNOWN_DUPLICATE ),
-            array_values( $unbacked ),
-            'a column appeared that no property declares, or the known duplicate '
-            . 'was removed without closing its entry here' );
+        $this->assertSame( array(), $unbacked,
+            'a column appeared that no property declares: '
+            . implode( ', ', $unbacked ) );
     }
 }

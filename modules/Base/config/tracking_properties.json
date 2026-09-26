@@ -769,19 +769,6 @@
         "callbacks": [],
         "note": "Timestamp of the previous request, on the CLIENT clock. It is subtracted from a server clock downstream, so it is not interchangeable with timestamp."
     },
-    "timestamp": {
-        "set_by": "client",
-        "from": [
-            "timestamp"
-        ],
-        "events": [
-            "*"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": [],
-        "note": "The TRACKER’s own clock, in seconds, and load-bearing on the device: isNewSession() compares it with the previous request to decide whether the session has timed out, and fsts is seeded from it. Listed because the tracker sends it; stored nowhere because the server has two better readings. `ts` is the edge stamp in microseconds — the one server clock reading, and what yyyymmdd derives from — and client_ts_usec is the client clock the skew calculation uses. A server-set `timestamp` property existed until it was removed as a duplicate of ts: one instant, two spellings, one column."
-    },
     "client_ts_usec": {
         "set_by": "client",
         "from": [

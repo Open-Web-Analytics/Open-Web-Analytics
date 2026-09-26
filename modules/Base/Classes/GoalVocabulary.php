@@ -68,10 +68,6 @@ class GoalVocabulary {
         'device_brand'    => 'HTTP_USER_AGENT',
         'device_model'    => 'HTTP_USER_AGENT',
 
-        // The browser column is the FAMILY; browser_type is the same reading
-        // under its own name, and browser_version comes from the parse above.
-        'browser' => 'browser_type',
-
         // The purchase, whose wire names carry 1.x's commerce-transaction prefix.
         'revenue'        => 'ct_total',
         'tax'            => 'ct_tax',

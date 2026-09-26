@@ -54,6 +54,25 @@ class DomstreamHandlers extends \OWA\Core\Observer {
             $ds->set( 'page_url', $event->get('page_url') );
             $ds->set( 'events', $event->get('stream_events') );
             $ds->set( 'duration', $event->get('duration') );
+
+            /*
+             * THE RECORDING'S TIME COMES FROM THE SERVER CLOCK.
+             *
+             * owa_domstream.timestamp used to arrive as the `timestamp` property
+             * -- the tracker's own clock in seconds, on every beacon -- and
+             * setProperties() above carried it into the column by name. The
+             * tracker no longer sends it: it is device-local state now, because
+             * `ts` is the edge receipt and client_ts_usec is the same client clock
+             * at higher resolution, so the wire was carrying a third spelling of
+             * one instant.
+             *
+             * This was the ONE live reader of that property. Derived from `ts`
+             * rather than left to go NULL, because DomstreamsRestController orders
+             * the roster by max(timestamp) and shows it as a column -- and because
+             * the v2 rule is that the server assigns event time. The column is
+             * seconds, ts is microseconds.
+             */
+            $ds->set( 'timestamp', intdiv( (int) $event->get( 'ts' ), 1000000 ) );
             $ds->set( 'page_width', $event->get('page_width') );
             $ds->set( 'page_height', $event->get('page_height') );
 

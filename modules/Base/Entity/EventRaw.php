@@ -181,8 +181,13 @@ class EventRaw extends \OWA\Core\Entity {
          * Device and browser, resolved from raw_ua at ingest so realtime can
          * report on them. raw_ua is kept beside them so a parser fix can be
          * re-applied to history.
+         *
+         * `browser` was here too, VARCHAR(128), written from the same property as
+         * browser_type and read by nothing -- dimensions.php declares browserType
+         * against browser_type. Dropped in Update052: on a table whose row cannot
+         * exceed 65,535 bytes, a second copy of a value is budget a real
+         * dimension does not get.
          */
-        $this->setProperty( $this->column( 'browser', OWA_DTD_VARCHAR128 ) );
         $this->setProperty( $this->column( 'browser_type', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'browser_version', OWA_DTD_VARCHAR32 ) );
         $this->setProperty( $this->column( 'os', OWA_DTD_VARCHAR64 ) );

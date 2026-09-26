@@ -186,7 +186,6 @@
             "session_id",
             "site_id",
             "sts",
-            "timestamp",
             "visitor_id"
         ],
         "page_view.campaign": [
@@ -206,7 +205,6 @@
             "session_id",
             "site_id",
             "sts",
-            "timestamp",
             "visitor_id"
         ],
         "page_view.referral": [
@@ -226,7 +224,6 @@
             "session_id",
             "site_id",
             "sts",
-            "timestamp",
             "visitor_id"
         ],
         "click": [
@@ -255,7 +252,6 @@
             "site_id",
             "sts",
             "target_url",
-            "timestamp",
             "visitor_id"
         ],
         "purchase": [
@@ -280,7 +276,6 @@
             "session_id",
             "site_id",
             "sts",
-            "timestamp",
             "visitor_id"
         ],
         "custom_event": [
@@ -302,7 +297,6 @@
             "session_id",
             "site_id",
             "sts",
-            "timestamp",
             "visitor_id"
         ]
     }

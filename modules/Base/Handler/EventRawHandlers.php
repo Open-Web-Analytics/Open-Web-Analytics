@@ -212,10 +212,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * and first_visit markers, so the property cannot answer for all three;
      * `is_goal_event`, raised by Classes\GoalMarking at Ingest::STORE_POST; and
      * `params`, which is by definition everything with no column.
-     *
-     * A fifth, `browser`, is a duplicate of browser_type that no dimension
-     * reads. It is on that list as a known exception rather than covered by a
-     * loose rule, so deleting the column closes the entry.
+
      *
      * @param object $event
      * @param string $name  the v2 event name
@@ -283,7 +280,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'referer_host'  => $this->text( $event->get( 'referer_host' ) ),
             'referer_query' => $this->text( $event->get( 'referer_query' ) ),
 
-            'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
             'browser_version' => $this->text( $event->get( 'browser_version' ) ),
             'os_version'      => $this->text( $event->get( 'os_version' ) ),

@@ -1059,15 +1059,21 @@ class TrackingEventHelpers {
         return $chosen_ip;
     }
 
-    static function timestampDefault() {
-
-        return \OWA\Core\CoreAPI::getRequestTimestamp();
-    }
-
-    static function microtimeDefault() {
-
-        return microtime();
-    }
+    /*
+     * timestampDefault() and microtimeDefault() stood here, and are removed with
+     * the last property either could be attached to.
+     *
+     * Both answered a spelling of ONE instant that `ts` already carries: the edge
+     * receipt, in microseconds, environmental so a request cannot set it and a
+     * queue drain cannot restamp it. timestampDefault() returned the same instant
+     * in seconds and reached no column; microtimeDefault() returned PHP's
+     * space-separated microtime() string and reached nothing at all.
+     *
+     * They were unregistered when their properties left the registry, and
+     * `timestamp` has now left it too -- it is device-local state in the tracker,
+     * read by isNewSession() and fsts and never sent. So there is no definition
+     * left for either to be named by. See edgeTimestampMicroseconds() below.
+     */
 
     /**
      * Edge receipt in microseconds, for owa_event_raw.ts.
