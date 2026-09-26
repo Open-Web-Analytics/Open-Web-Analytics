@@ -109,6 +109,56 @@ final class DispatchNameSeparationTest extends TestCase
     }
 
     /**
+     * A NON-TRACKING EVENT DOES NOT INHERIT ITS TYPE FROM COPIED PROPERTIES.
+     *
+     * The convention is fine for a tracking event: the beacon carries event_type,
+     * the endpoint admits it, and owa_event_raw.event_type stores it, so the bag
+     * legitimately holds it and the registry declares it.
+     *
+     * It is wrong for everything else, and announce() is how that happened -- it
+     * copies a beacon's whole property bag onto a fresh notice, event_type
+     * included. With getEventType() falling back to the bag, an event whose member
+     * was never set would take its identity from whatever beacon it inherited from.
+     *
+     * Asserted on an event that has ONLY the property, which is the case the
+     * fallback used to answer and now must not.
+     */
+    public function testATypeInThePropertyBagDoesNotNameTheEvent(): void
+    {
+        $inherited = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+
+        // Never setEventType(): only the copied property, as announce() leaves it.
+        $inherited->setProperties( array( 'event_type' => 'page_view', 'site_id' => 'x' ) );
+
+        $this->assertSame( 'page_view', $inherited->get( 'event_type' ),
+            'the property is there -- that is the whole point' );
+
+        $this->assertNotSame( 'page_view', $inherited->getEventType(),
+            'the bag must not name the event; that is how a session announcement '
+            . 'came to route as a page view' );
+
+        $this->assertSame( 'unknown_event_type', $inherited->getEventType(),
+            'an event nobody named says so, rather than borrowing a name' );
+
+        $this->assertFalse( $inherited->isTrackingEvent() );
+    }
+
+    /**
+     * And a tracking event keeps carrying it as DATA, because the column records it.
+     */
+    public function testATrackingEventStillCarriesTypeAsAProperty(): void
+    {
+        $declared = \OWA\Module\Base\Classes\TrackingEventHelpers::allProperties();
+
+        $this->assertArrayHasKey( 'event_type', $declared,
+            'event_type is a real tracking property: the beacon sends it and '
+            . 'owa_event_raw.event_type stores it' );
+
+        $this->assertSame( 'event_type',
+            \OWA\Module\Base\Classes\TrackingEventHelpers::columnFor( 'event_type' ) );
+    }
+
+    /**
      * The dispatch key is NOT in the property bag.
      *
      * The bag is the wire surface: admitRequestParams() vets it and params() may

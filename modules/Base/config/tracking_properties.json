@@ -85,20 +85,6 @@
         ],
         "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
     },
-    "event_type": {
-        "set_by": "client",
-        "from": [
-            "event_type"
-        ],
-        "column": "event_type",
-        "events": [
-            "*"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [],
-        "note": "What happened. The tracker sends it and log.php also reads it with getRequestParam to call setEventType(), which sets a MEMBER -- getEventType() prefers that member and falls back to this property. Declared required:false with no default so the two cannot disagree: a default here would fabricate an event_type on events that carry their type on the member instead. It is already a column on the queue table, and v2 logs it on the fact row."
-    },
     "page_location": {
         "set_by": "client",
         "from": [
@@ -584,6 +570,20 @@
         "required": false,
         "callbacks": [],
         "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first."
+    },
+    "event_type": {
+        "set_by": "client",
+        "from": [
+            "event_type"
+        ],
+        "column": "event_type",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "What happened. A REAL tracking property: the beacon carries it, the endpoint admits it, and owa_event_raw.event_type stores it. Declared required:false with no default so nothing fabricates one.\nWHAT CHANGED IS WHO READS IT. log.php also passes it to setEventType(), which sets a class member, and Event::getEventType() used to fall back to this property when the member was empty. That made the bag a SOURCE of an event's identity, and for a non-tracking event that is wrong: EventRawHandlers::announce() copies a beacon's properties onto a fresh notice, so a base.new_session notice carries this property reading 'page_view'. The fallback is gone -- an event's type comes from its member, set at construction or by the endpoint -- and the property is what the beacon SENT, which is what the column records."
     },
     "site_id": {
         "set_by": "client",
