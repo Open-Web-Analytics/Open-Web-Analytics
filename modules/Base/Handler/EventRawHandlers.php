@@ -641,12 +641,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
          */
         foreach ( $this->declaredParams( $event ) as $wire => $key ) {
 
-            // A bare entry is a name that does not change on its way in.
-            if ( is_int( $wire ) ) {
-
-                $wire = $key;
-            }
-
             $value = $event->get( $wire );
 
             if ( $value !== null && $value !== false && $value !== '' ) {
@@ -682,47 +676,27 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
-     * The param names this event type may carry.
+     * The params this event type may carry, as wire name => params key.
+     *
+     * READ FROM THE REGISTRY. This was a map written by hand here, and the hand
+     * was wrong: it listed `transaction_id, tax, shipping, gateway, items` for a
+     * purchase while the wire sends `ct_order_id, ct_tax, ct_shipping,
+     * ct_gateway, ct_line_items`, so every lookup missed, `params` came back
+     * NULL, and a NULL params column is indistinguishable from an event that
+     * carried none. Four of its click entries -- link_url, link_domain,
+     * link_text, outbound -- named fields no tracker has ever sent.
+     *
+     * Every one of those is a fact the registry already holds: which events carry
+     * a property, what the wire calls it, and what key it is reached by. Asking
+     * it is how the three stop drifting apart.
      *
      * @param object $event
-     * @return string[]
+     * @return array  wire name => params key
      */
     protected function declaredParams( $event ) {
 
-        /*
-         * WIRE NAME => PARAM KEY, and a bare entry means the two are the same.
-         *
-         * The distinction is load-bearing and its absence cost the whole purchase
-         * param set: this list read `transaction_id, tax, shipping, gateway,
-         * items` while the wire sends `ct_order_id, ct_tax, ct_shipping,
-         * ct_gateway, ct_line_items`, so every lookup found nothing, params came
-         * back NULL, and a NULL params column is indistinguishable from an event
-         * that carried none. Measured on a purchase carrying all five.
-         *
-         * Keys are the names a report reaches -- params.gateway, params.items --
-         * so the ct_ prefix, which is 1.x's way of saying "commerce transaction",
-         * does not reach the reporting vocabulary.
-         */
-        $by_type = array(
-            'file_download'       => array( 'file_name', 'file_extension' ),
-            'view_search_results' => array( 'search_term' ),
-            'form_start'          => array( 'form_id', 'form_name' ),
-            'form_submit'         => array( 'form_id', 'form_name' ),
-            'purchase'            => array(
-                'ct_gateway'      => 'gateway',
-                'ct_order_source' => 'order_source',
-                'ct_line_items'   => 'items',
-            ),
-            // The old four-slot action shape. Carried as params rather than
-            // columns because it is v1's vocabulary, not v2's: a custom event
-            // in v2 is a NAME plus params, and these are what an action's four
-            // slots become when it is migrated.
-            'custom_event'        => array( 'action_group', 'action_name', 'action_label', 'numeric_value' ),
-        );
-
-        $name = \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() );
-
-        return isset( $by_type[ $name ] ) ? $by_type[ $name ] : array();
+        return \OWA\Module\Base\Classes\TrackingEventHelpers::paramsForEvent(
+            \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
     }
 
     /**

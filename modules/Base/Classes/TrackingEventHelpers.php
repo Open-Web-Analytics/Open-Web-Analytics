@@ -223,20 +223,74 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The raw column a property lands in.
+     * The raw column a property lands in, or '' when it lands in none.
      *
-     * The property's own name unless the entry says otherwise. Declared rather
-     * than inferred, because the two differ for twenty-odd properties and every
-     * place that guessed got at least one of them wrong.
+     * SPELLED OUT ON EVERY ENTRY, never inferred. This used to answer the
+     * property's own name whenever the key was absent, which read as "the column
+     * has the same name" -- and 32 of the 90 properties have no column at all, so
+     * it confidently answered `last_req`, `form_id` and `session_referer`, none of
+     * which exist. A guess that is right 58 times out of 90 is worse than no
+     * answer, because nothing downstream can tell which kind it got.
      *
      * @param  string $property
-     * @return string
+     * @return string  '' when the property reaches no column
      */
     public static function columnFor( $property ) {
 
         $all = self::allProperties();
 
-        return (string) ( $all[ $property ]['column'] ?? $property );
+        return (string) ( $all[ $property ]['column'] ?? '' );
+    }
+
+    /**
+     * The params key a property lands under, or '' when it is not a param.
+     *
+     * The other half of the destination. A property lands in a column, or in the
+     * params document, or nowhere -- and the third case is a real answer: the
+     * clock anchors, the marker flags and the landing URL are consumed during
+     * ingest and stored by nothing.
+     *
+     * The KEY, not the property name, because they differ: ct_gateway is reached
+     * as params.gateway, ct_line_items as params.items. That difference is what
+     * the row builder's hand-written per-event list got wrong -- it named the
+     * column spellings while the wire sent the ct_ ones, so every purchase stored
+     * its currency and no amount.
+     *
+     * @param  string $property
+     * @return string
+     */
+    public static function paramFor( $property ) {
+
+        $all = self::allProperties();
+
+        return (string) ( $all[ $property ]['param'] ?? '' );
+    }
+
+    /**
+     * The params an event of this name carries, as property name => params key.
+     *
+     * Read from the registry, so the wire name, the params key and the event
+     * scoping are one declaration. EventRawHandlers::declaredParams() was a map
+     * written by hand beside all three.
+     *
+     * @param  string $event_name
+     * @return array  property name => params key
+     */
+    public static function paramsForEvent( $event_name ) {
+
+        $out = array();
+
+        foreach ( self::propertiesForEvent( $event_name ) as $property ) {
+
+            $key = self::paramFor( $property );
+
+            if ( $key !== '' ) {
+
+                $out[ $property ] = $key;
+            }
+        }
+
+        return $out;
     }
 
     /**

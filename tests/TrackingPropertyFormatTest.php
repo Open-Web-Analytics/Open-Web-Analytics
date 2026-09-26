@@ -243,31 +243,111 @@ final class TrackingPropertyFormatTest extends TestCase
         }
     }
 
-    /* ---------------- column ---------------- */
+    /* ---------------- the destination ---------------- */
 
-    public function testADeclaredColumnExistsAndDiffersFromTheName(): void
+    /**
+     * EVERY PROPERTY HAS EXACTLY ONE DESTINATION: a column, a params key, or
+     * explicitly neither.
+     *
+     * `column` used to be declared only when it differed from the property name,
+     * so an absent key meant "same name" -- and 32 of the entries have no column
+     * at all, which made columnFor() answer `last_req`, `form_id` and
+     * `session_referer` with total confidence. A guess that is right most of the
+     * time is worse than no answer, because nothing downstream can tell which
+     * kind it got.
+     *
+     * The third case is a real answer rather than an omission: the clock anchors,
+     * the two marker flags and the landing URL are consumed during ingest and
+     * stored by nothing.
+     */
+    public function testEveryPropertyHasExactlyOneDestination(): void
     {
         $columns = $this->rawColumns();
 
+        $counts = array( 'column' => 0, 'param' => 0, 'nowhere' => 0 );
+
         foreach ( $this->registry() as $name => $definition ) {
 
-            if ( ! array_key_exists( 'column', $definition ) ) {
+            $has_column = array_key_exists( 'column', $definition );
+            $has_param  = array_key_exists( 'param', $definition );
 
-                $this->assertSame( $name, Helpers::columnFor( $name ),
-                    "columnFor($name) should answer the property's own name" );
+            $this->assertFalse( $has_column && $has_param,
+                "$name declares both a column and a param; a value lands in one place" );
+
+            if ( $has_column ) {
+
+                $this->assertContains( $definition['column'], $columns,
+                    "$name lands in '{$definition['column']}', which is not a column of "
+                    . 'owa_event_raw' );
+
+                $this->assertSame( $definition['column'], Helpers::columnFor( $name ) );
+                $this->assertSame( '', Helpers::paramFor( $name ) );
+
+                $counts['column']++;
 
                 continue;
             }
 
-            $this->assertNotSame( $name, $definition['column'],
-                "$name declares a column equal to its own name; omit the key" );
+            if ( $has_param ) {
 
-            $this->assertContains( $definition['column'], $columns,
-                "$name lands in '{$definition['column']}', which is not a column of "
-                . 'owa_event_raw' );
+                $this->assertNotSame( '', trim( (string) $definition['param'] ),
+                    "$name declares an empty params key" );
 
-            $this->assertSame( $definition['column'], Helpers::columnFor( $name ) );
+                $this->assertSame( $definition['param'], Helpers::paramFor( $name ) );
+                $this->assertSame( '', Helpers::columnFor( $name ) );
+
+                $counts['param']++;
+
+                continue;
+            }
+
+            /* Stored by nothing, and both accessors have to say so. */
+            $this->assertSame( '', Helpers::columnFor( $name ),
+                "$name reaches no column and columnFor() answered one anyway" );
+            $this->assertSame( '', Helpers::paramFor( $name ) );
+
+            $counts['nowhere']++;
         }
+
+        foreach ( $counts as $kind => $n ) {
+
+            $this->assertGreaterThan( 5, $n, "Only $n properties land in a $kind." );
+        }
+    }
+
+    /**
+     * A params key reaches the row, and the row builder no longer keeps its own
+     * list of them.
+     *
+     * The hand-written map is where the purchase params went missing: it named
+     * the column spellings while the wire sent the ct_ ones. Asserting the two
+     * agree is the guard; asserting a couple of the renames by name is what makes
+     * a failure readable.
+     */
+    public function testTheRowBuilderReadsTheRegistrysParams(): void
+    {
+        $handler = new \OWA\Module\Base\Handler\EventRawHandlers();
+
+        $method = new ReflectionMethod( $handler, 'declaredParams' );
+        $method->setAccessible( true );
+
+        foreach ( array( 'purchase', 'click', 'file_download', 'custom_event' ) as $event_name ) {
+
+            $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+            $event->setEventType( $event_name );
+
+            $this->assertSame(
+                Helpers::paramsForEvent( $event_name ),
+                (array) $method->invoke( $handler, $event ),
+                "the row builder and the registry disagree about $event_name's params" );
+        }
+
+        $purchase = Helpers::paramsForEvent( 'purchase' );
+
+        $this->assertSame( 'items', $purchase['ct_line_items'] ?? null,
+            'the line items are reached as params.items, not under the wire name' );
+
+        $this->assertSame( 'gateway', $purchase['ct_gateway'] ?? null );
     }
 
     /* ---------------- default_value ---------------- */

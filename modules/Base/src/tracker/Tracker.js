@@ -1921,11 +1921,15 @@ class OWATracker  {
         }
         click.set("dom_element_name", dom_name);
 
-        var dom_value = '(not set)';
-        if ( targ.hasAttribute('value') && targ.value.length > 0 ) {
-            dom_value = targ.value;
-        }
-        click.set("dom_element_value", dom_value);
+        /*
+         * THE ELEMENT'S VALUE IS NOT COLLECTED.
+         *
+         * A click on an input would have shipped whatever the visitor had typed
+         * into it, and no report has ever shown it: it reached no column, and the
+         * server's registry declares no destination for it. GA collects nothing
+         * equivalent. "We store it but nothing reads it" is the worst version of
+         * that trade.
+         */
 
         var dom_id = '(not set)';
         if ( targ.id && targ.id.length > 0 ) {
@@ -1953,8 +1957,12 @@ class OWATracker  {
         // The stored selector. See getElementPath().
         click.set( 'element_path', this.getElementPath( targ ) );
         // set coordinates
-        click.set("dom_element_x", this.findPosX(targ) + '');
-        click.set("dom_element_y", this.findPosY(targ) + '');
+        /*
+         * The ELEMENT's position is not collected either. The heatmap is an
+         * ordinary dimensional query over click_x and click_y -- the CLICK's
+         * coordinates, set below -- and the element's own offsets reached only
+         * v1's owa_click columns, which v2 ingest does not write.
+         */
         var coords = this.getCoords(e);
         click.set('click_x', coords.x);
         click.set('click_y', coords.y);
@@ -2453,7 +2461,6 @@ class OWATracker  {
         event.set('key_value', key_value);
         event.set('key_code', key_code);
         event.set("dom_element_name", targ.name);
-        event.set("dom_element_value", targ.value);
         event.set("dom_element_id", targ.id);
         event.set("dom_element_tag", String( targ.tagName ).toLowerCase());
         //console.log("Keypress: %s %d", key_value, key_code);

@@ -50,6 +50,7 @@
         "from": [
             "HTTP_ACCEPT_LANGUAGE"
         ],
+        "column": "language",
         "events": [
             "*"
         ],
@@ -69,6 +70,7 @@
             "HTTP_FORWARDED_FOR",
             "REMOTE_ADDR"
         ],
+        "column": "ip_address",
         "events": [
             "*"
         ],
@@ -114,6 +116,7 @@
         "from": [
             "clock"
         ],
+        "column": "ts",
         "events": [
             "*"
         ],
@@ -130,6 +133,7 @@
         "from": [
             "event_type"
         ],
+        "column": "event_type",
         "events": [
             "*"
         ],
@@ -143,6 +147,7 @@
         "from": [
             "page_location"
         ],
+        "column": "page_location",
         "events": [
             "*"
         ],
@@ -156,6 +161,7 @@
         "from": [
             "page_title"
         ],
+        "column": "page_title",
         "events": [
             "*"
         ],
@@ -237,6 +243,7 @@
         "from": [
             "beacon_version"
         ],
+        "column": "beacon_version",
         "events": [
             "*"
         ],
@@ -250,6 +257,7 @@
         "from": [
             "event_seq"
         ],
+        "column": "event_seq",
         "events": [
             "*"
         ],
@@ -347,6 +355,7 @@
         "from": [
             "target_url"
         ],
+        "column": "target_url",
         "events": [
             "click",
             "file_download"
@@ -392,6 +401,7 @@
         "from": [
             "landing_url"
         ],
+        "column": "tagged_source",
         "events": [
             "page_view",
             "session_start",
@@ -407,6 +417,7 @@
         "from": [
             "landing_url"
         ],
+        "column": "tagged_medium",
         "events": [
             "page_view",
             "session_start",
@@ -422,6 +433,7 @@
         "from": [
             "landing_url"
         ],
+        "column": "tagged_campaign",
         "events": [
             "page_view",
             "session_start",
@@ -437,6 +449,7 @@
         "from": [
             "landing_url"
         ],
+        "column": "tagged_ad",
         "events": [
             "page_view",
             "session_start",
@@ -468,6 +481,7 @@
         "from": [
             "click_x"
         ],
+        "column": "click_x",
         "events": [
             "click"
         ],
@@ -481,32 +495,7 @@
         "from": [
             "click_y"
         ],
-        "events": [
-            "click"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried by dom.click only. Column type from base.click."
-    },
-    "dom_element_x": {
-        "set_by": "client",
-        "from": [
-            "dom_element_x"
-        ],
-        "events": [
-            "click"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried by dom.click only. Column type from base.click."
-    },
-    "dom_element_y": {
-        "set_by": "client",
-        "from": [
-            "dom_element_y"
-        ],
+        "column": "click_y",
         "events": [
             "click"
         ],
@@ -520,6 +509,7 @@
         "from": [
             "page_width"
         ],
+        "column": "page_width",
         "events": [
             "*"
         ],
@@ -533,6 +523,7 @@
         "from": [
             "page_height"
         ],
+        "column": "page_height",
         "events": [
             "*"
         ],
@@ -546,6 +537,7 @@
         "from": [
             "dom_element_class"
         ],
+        "param": "element_class",
         "events": [
             "click"
         ],
@@ -573,6 +565,7 @@
         "from": [
             "dom_element_name"
         ],
+        "param": "element_name",
         "events": [
             "click"
         ],
@@ -600,19 +593,7 @@
         "from": [
             "dom_element_text"
         ],
-        "events": [
-            "click"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried by dom.click only. Column type from base.click."
-    },
-    "dom_element_value": {
-        "set_by": "client",
-        "from": [
-            "dom_element_value"
-        ],
+        "param": "element_text",
         "events": [
             "click"
         ],
@@ -626,6 +607,7 @@
         "from": [
             "action_name"
         ],
+        "param": "action_name",
         "events": [
             "custom_event"
         ],
@@ -639,6 +621,7 @@
         "from": [
             "action_label"
         ],
+        "param": "action_label",
         "events": [
             "custom_event"
         ],
@@ -652,6 +635,7 @@
         "from": [
             "action_group"
         ],
+        "param": "action_group",
         "events": [
             "custom_event"
         ],
@@ -665,6 +649,7 @@
         "from": [
             "numeric_value"
         ],
+        "param": "numeric_value",
         "events": [
             "custom_event"
         ],
@@ -692,6 +677,7 @@
         "from": [
             "ct_order_source"
         ],
+        "param": "order_source",
         "events": [
             "purchase"
         ],
@@ -705,6 +691,7 @@
         "from": [
             "ct_gateway"
         ],
+        "param": "gateway",
         "events": [
             "purchase"
         ],
@@ -760,6 +747,7 @@
         "from": [
             "ct_line_items"
         ],
+        "param": "items",
         "events": [
             "purchase"
         ],
@@ -773,6 +761,7 @@
         "from": [
             "site_id"
         ],
+        "column": "site_id",
         "events": [
             "*"
         ],
@@ -786,6 +775,7 @@
         "from": [
             "session_id"
         ],
+        "column": "session_id",
         "events": [
             "*"
         ],
@@ -799,6 +789,7 @@
         "from": [
             "visitor_id"
         ],
+        "column": "visitor_id",
         "events": [
             "*"
         ],
@@ -838,6 +829,7 @@
         "from": [
             "engagement_msec"
         ],
+        "column": "engagement_msec",
         "events": [
             "user_engagement",
             "page_view"
@@ -852,6 +844,7 @@
         "from": [
             "content_group"
         ],
+        "column": "content_group",
         "events": [
             "*"
         ],
@@ -865,6 +858,7 @@
         "from": [
             "consent_state"
         ],
+        "column": "consent_state",
         "events": [
             "*"
         ],
@@ -878,6 +872,7 @@
         "from": [
             "user_id"
         ],
+        "column": "user_id",
         "events": [
             "*"
         ],
@@ -891,6 +886,7 @@
         "from": [
             "currency"
         ],
+        "column": "currency",
         "events": [
             "purchase"
         ],
@@ -904,6 +900,7 @@
         "from": [
             "scroll_depth"
         ],
+        "column": "scroll_depth",
         "events": [
             "scroll"
         ],
@@ -917,6 +914,7 @@
         "from": [
             "element_path"
         ],
+        "column": "element_path",
         "events": [
             "click"
         ],
@@ -930,6 +928,7 @@
         "from": [
             "search_term"
         ],
+        "param": "search_term",
         "events": [
             "view_search_results"
         ],
@@ -943,6 +942,7 @@
         "from": [
             "file_name"
         ],
+        "param": "file_name",
         "events": [
             "file_download"
         ],
@@ -956,6 +956,7 @@
         "from": [
             "file_extension"
         ],
+        "param": "file_extension",
         "events": [
             "file_download"
         ],
@@ -969,6 +970,7 @@
         "from": [
             "form_id"
         ],
+        "param": "form_id",
         "events": [
             "form_start",
             "form_submit"
@@ -983,6 +985,7 @@
         "from": [
             "form_name"
         ],
+        "param": "form_name",
         "events": [
             "form_start",
             "form_submit"
@@ -997,6 +1000,7 @@
         "from": [
             "timestamp"
         ],
+        "column": "yyyymmdd",
         "events": [
             "*"
         ],
@@ -1011,6 +1015,7 @@
         "from": [
             "page_location"
         ],
+        "column": "host",
         "events": [
             "*"
         ],
@@ -1023,6 +1028,7 @@
         "from": [
             "HTTP_USER_AGENT"
         ],
+        "column": "browser_type",
         "events": [
             "*"
         ],
@@ -1037,6 +1043,7 @@
         "from": [
             "HTTP_USER_AGENT"
         ],
+        "column": "os",
         "events": [
             "*"
         ],
@@ -1051,6 +1058,7 @@
         "from": [
             "ip_address"
         ],
+        "column": "country",
         "events": [
             "*"
         ],
@@ -1065,6 +1073,7 @@
         "from": [
             "ip_address"
         ],
+        "column": "city",
         "events": [
             "*"
         ],
@@ -1094,6 +1103,7 @@
         "from": [
             "ip_address"
         ],
+        "column": "country_code",
         "events": [
             "*"
         ],
@@ -1108,6 +1118,7 @@
         "from": [
             "page_location"
         ],
+        "column": "page_path",
         "events": [
             "*"
         ],
@@ -1121,6 +1132,7 @@
         "from": [
             "page_location"
         ],
+        "column": "page_query",
         "events": [
             "*"
         ],
@@ -1134,6 +1146,7 @@
         "from": [
             "HTTP_REFERER"
         ],
+        "column": "referer_host",
         "events": [
             "*"
         ],
@@ -1147,6 +1160,7 @@
         "from": [
             "HTTP_REFERER"
         ],
+        "column": "referer_query",
         "events": [
             "*"
         ],
@@ -1159,6 +1173,7 @@
         "from": [
             "target_url"
         ],
+        "column": "target_host",
         "events": [
             "click",
             "file_download"
@@ -1173,6 +1188,7 @@
         "from": [
             "HTTP_USER_AGENT"
         ],
+        "column": "browser_version",
         "events": [
             "*"
         ],
@@ -1186,6 +1202,7 @@
         "from": [
             "HTTP_USER_AGENT"
         ],
+        "column": "os_version",
         "events": [
             "*"
         ],
@@ -1198,6 +1215,7 @@
         "from": [
             "HTTP_USER_AGENT"
         ],
+        "column": "device_type",
         "events": [
             "*"
         ],
@@ -1211,6 +1229,7 @@
         "from": [
             "HTTP_USER_AGENT"
         ],
+        "column": "device_brand",
         "events": [
             "*"
         ],
@@ -1223,6 +1242,7 @@
         "from": [
             "HTTP_USER_AGENT"
         ],
+        "column": "device_model",
         "events": [
             "*"
         ],

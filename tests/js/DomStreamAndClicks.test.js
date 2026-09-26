@@ -115,7 +115,7 @@ describe('clickEventHandler builds the click event', () => {
         expect(c.click_y).toBe('34');
     });
 
-    test('falls back to "(not set)" for absent id/name/value', () => {
+    test('falls back to "(not set)" for an absent name, and sends no element value', () => {
         const t = newTracker();
         t.setOption('logClicksAsTheyHappen', false);
         document.body.innerHTML = '<span id="sp">hi</span>';
@@ -124,8 +124,17 @@ describe('clickEventHandler builds the click event', () => {
 
         const c = t.click.getProperties();
         expect(c.dom_element_name).toBe('(not set)');
-        expect(c.dom_element_value).toBe('(not set)');
         expect(c.dom_element_tag).toBe('span');
+
+        /*
+         * THE ELEMENT'S VALUE IS NOT COLLECTED. A click on an input would have
+         * shipped whatever the visitor had typed into it, and nothing ever read
+         * it: no column, and the server's registry declares no destination. Its
+         * own offsets go too -- the heatmap reads the CLICK's coordinates.
+         */
+        expect(c.dom_element_value).toBeUndefined();
+        expect(c.dom_element_x).toBeUndefined();
+        expect(c.dom_element_y).toBeUndefined();
     });
 
     test('fires a dom.click beacon when logClicksAsTheyHappen is on', () => {
