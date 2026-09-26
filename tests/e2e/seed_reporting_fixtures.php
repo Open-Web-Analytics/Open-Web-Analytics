@@ -1251,15 +1251,17 @@ function teardown(): array
  * grid AND a non-flat timeseries (the sparkline KPI boxes and the Flot area /
  * trend charts need >1 day of data or they collapse to a single point).
  *
- * TIME-TRAVEL: OWA stamps every event with the request timestamp, not a value
- * the caller sets on the event. The 'timestamp' property has a registered
- * filter (owa_trackingEventHelpers::timestampDefault) that IGNORES whatever is
- * on the event and returns owa_coreAPI::getRequestTimestamp() -- i.e. the
- * requestContainer singleton's timestamp (set once to time()). Every fact-table
- * time dimension (year/month/day/yyyymmdd/hour) is then DERIVED from that at log
- * time (owa_trackingEventHelpers::deriveYyyymmdd et al.). So to backdate an
- * event we must move the singleton's clock before logEvent(); setting a
- * 'timestamp' prop alone is silently overwritten.
+ * TIME-TRAVEL: OWA stamps every event with the request clock, not a value the
+ * caller sets on the event. `ts` is owa_trackingEventHelpers::edgeTimestampMicro
+ * seconds() -- the requestContainer singleton's receipt time, in MICROSECONDS,
+ * taken once per process -- and yyyymmdd is derived from ts at log time. So to
+ * backdate an event we must move the singleton's clock before logEvent().
+ *
+ * THROUGH setTimestamp(), which moves both of the container's clock fields. This
+ * assigned ->timestamp directly, which is the seconds field; v2 reads the
+ * microsecond one. Measured: every event below landed on TODAY, so the four-day
+ * spread this docblock describes collapsed to a single point -- exactly the flat
+ * timeseries the spread exists to avoid -- and nothing errored.
  *
  * The plan below fires exactly E2E_PAGEVIEWS (8) pageviews: 4 pages x 2 views
  * each (keeps the pages-grid contract -- 4 rows, count "2" per page), arranged
@@ -1479,10 +1481,10 @@ function seedPageviews(int $n): int
             $url     = E2E_SITE_DOMAIN . $page;
             $isFirst = ($i === 0);
 
-            // Backdate the request clock; timestampDefault() reads this and the
-            // derived time dimensions follow. Pageviews within a visit are a few
-            // minutes apart so their order (and the session duration) is sane.
-            $rc->timestamp = $day_base + ($i * 120);
+            // Backdate the request clock; `ts` reads it and the derived time
+            // dimensions follow. Pageviews within a visit are a few minutes apart
+            // so their order (and the session duration) is sane.
+            $rc->setTimestamp($day_base + ($i * 120));
 
             $props = [
                 'site_id'          => $site_id,
@@ -1524,7 +1526,7 @@ function seedPageviews(int $n): int
     }
 
     // Restore the request clock so anything later in this process sees "now".
-    $rc->timestamp = time();
+    $rc->setTimestamp(time());
     return $count;
 }
 
@@ -1586,7 +1588,7 @@ function seedClicks(): array
 
         for ($i = 0; $i < $click['n']; $i++) {
 
-            $rc->timestamp = $day + ($offset * 60);
+            $rc->setTimestamp($day + ($offset * 60));
             $offset++;
 
             $url = E2E_SITE_DOMAIN . $click['page'];
@@ -1621,7 +1623,7 @@ function seedClicks(): array
         }
     }
 
-    $rc->timestamp = time();
+    $rc->setTimestamp(time());
 
     return [
         'clicks'       => $written,
@@ -1690,7 +1692,7 @@ function seedActions(): array
 
         for ($i = 0; $i < $action['n']; $i++) {
 
-            $rc->timestamp = $day + ($offset * 60);
+            $rc->setTimestamp($day + ($offset * 60));
             $offset++;
 
             $event = owa_coreAPI::supportClassFactory('base', 'event');
@@ -1716,7 +1718,7 @@ function seedActions(): array
         }
     }
 
-    $rc->timestamp = time();
+    $rc->setTimestamp(time());
 
     return [
         'actions'       => $written,
