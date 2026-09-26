@@ -12,18 +12,25 @@
  * was transmitted. When that first beacon died -- typically cancelled by the
  * browser when the visitor clicked through while the 1x1 pixel was in flight --
  * the cookie asserted a session the server had never been told about. Every later
- * page then read that sid, sent is_new_session UNSET, and the server took
+ * page then read that sid and sent no new-session flag, so on v1 the server took
  * sessionHandlers::logSessionUpdate(), which correctly aborts (on a multi-server
  * setup an update can legitimately precede its create) and requeued the event.
  * Nothing reconciled it, so one lost beacon stranded the whole session.
  *
- * Scenario 4 asserts a dangling fact row as the CORRECT current outcome, not a
- * bug: a click fired after a lost page view reaches only clickHandlers and the
- * dimension handlers, never sessionHandlers, so no session is created and nothing
- * is queued. Fixing that needs the server to be able to establish a session
- * thinly from any event type -- deliberately out of scope here. The test pins the
- * behaviour so a future change to handler registration cannot alter what lands in
- * the fact tables silently.
+ * WHAT "A SESSION" IS HERE, NOW. There is no owa_session row on v2 -- that whole
+ * chain is unregistered. A session is the set of owa_event_raw rows sharing a
+ * session_id, and its existence is a `session_start` row, materialised from the
+ * request-scoped is_new_session_start flag in the same transaction as the page
+ * view that carried it. session_e2e_helper.php reads exactly that, so
+ * session_count is a count of markers and `dangling` is rows whose session was
+ * never started. Both questions are the same ones; only the table changed.
+ *
+ * Scenario 4 asserts a dangling row as the CORRECT current outcome, not a bug: a
+ * click fired after a lost page view carries no request-scoped flag, so ingest
+ * stores the click and raises no marker for it. Fixing that needs the server to
+ * be able to establish a session thinly from any event type -- deliberately out
+ * of scope here. The test pins the behaviour so a future change cannot alter what
+ * lands silently.
  */
 
 const fs = require('fs');
@@ -157,10 +164,16 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         // The second hit continues the session -- it must NOT re-declare a new one.
         const second = beacons.filter((u) => /[?&]event_type=base\.page_request/.test(u))[1];
         expect(second).toBeTruthy();
-        // Anchored on both sides: 'is_new_session' is a PREFIX of
-        // 'is_new_session_start', which rides the same beacon, so an unanchored
-        // check conflates the page-scoped flag with the one-event marker.
-        expect(second).not.toMatch(/[?&]is_new_session=/);
+        /*
+         * is_new_session_start, the REQUEST-scoped flag, which is the only one
+         * left. This read `is_new_session=` -- anchored on both sides precisely
+         * because the page-scoped flag was a prefix of the request-scoped one and
+         * both rode the same beacon. v2 removed the page-scoped twin: ingest
+         * materialises a session_start row from the request-scoped flag alone, so
+         * there is no pair left to conflate and the assertion is on the flag that
+         * exists.
+         */
+        expect(second).not.toMatch(/[?&]is_new_session_start=/);
     });
 
     test('3 - a lost first page view does not strand the session', async ({ page }) => {
@@ -223,7 +236,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
 
         // B had to declare a NEW session, because A's identity was never persisted.
         const pageviews = beacons.filter((u) => /[?&]event_type=base\.page_request/.test(u));
-        expect(pageviews[pageviews.length - 1]).toMatch(/[?&]is_new_session=/);
+        expect(pageviews[pageviews.length - 1]).toMatch(/[?&]is_new_session_start=/);
 
         // Arrival facts captured on A survive: they are observable only on the
         // landing hit and are unrecoverable if dropped. B's URL carries no utm_*.

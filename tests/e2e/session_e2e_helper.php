@@ -83,33 +83,63 @@ function db()
     return owa_coreAPI::dbSingleton();
 }
 
-/**
- * Fact tables carrying a session_id. A dangling row in ANY of these is a session
- * the server was never told to create -- and only page_request_logged surfaces
- * that as a queue item, so the rest fail silently.
+/*
+ * ---- WHAT A SESSION IS ON v2 -----------------------------------------------
+ *
+ * NOT A ROW. This helper read owa_session, and the v1 event chain that fills it
+ * came out of Module.php -- so every lookup answered nothing and each of these
+ * three specs asserted against an empty table.
+ *
+ * A session is the set of owa_event_raw rows sharing a session_id, and its
+ * existence is a `session_start` row: ingest materialises one from the
+ * request-scoped is_new_session_start flag, in the same transaction as the page
+ * view that carried it. So the questions this helper answers all survive the
+ * move, and two of them get SHARPER:
+ *
+ *   session_count   session_start rows. A click on a page whose page view was
+ *                   lost carries no flag, so it raises no marker and the count
+ *                   is 0 -- which is what scenario 3 asserts, and it used to
+ *                   mean "sessionHandlers never ran".
+ *   dangling        raw rows whose session_id has no session_start row. The
+ *                   same stranding, read off the same table.
+ *
+ * Nothing here computes a v1 dimension id. first_page_id, last_page_id,
+ * referer_id, source_id and campaign_id were foreign keys into dimension tables
+ * v2 does not join, and no spec read them.
  */
-function factTables(): array
+
+/** The raw table, asked for rather than spelled out. */
+function rawTable(): string
 {
-    return ['owa_request', 'owa_click', 'owa_domstream', 'owa_commerce_transaction_fact'];
+    return owa_coreAPI::entityFactory('base.event_raw')->getTableName();
 }
 
-/** Every value of $column in $table for this site. */
-function columnValues(string $table, string $column, string $site_id): array
+/** Escaped, because these come from the query string. */
+function esc(string $v): string
+{
+    return db()->prepare($v);
+}
+
+/**
+ * Rows of one site, as arrays, for an arbitrary predicate.
+ *
+ * @param string $site_id
+ * @param string $columns
+ * @param string $and      extra SQL, already escaped, or ''
+ */
+function rawRows(string $site_id, string $columns, string $and = ''): array
 {
     $db = db();
-    $db->selectFrom($table);
-    $db->selectColumn($column);
-    $db->where('site_id', $site_id);
-    $rows = $db->getAllRows();
+    $db->connect();
 
-    $out = [];
-    foreach ((array) $rows as $r) {
-        if (isset($r[$column]) && $r[$column] !== '') {
-            $out[] = (string) $r[$column];
-        }
-    }
+    $rows = $db->get_results(
+        "SELECT $columns FROM " . rawTable()
+        . " WHERE site_id = '" . esc($site_id) . "'"
+        . ( $and === '' ? '' : ' AND ' . $and )
+        . ' ORDER BY ts'
+    );
 
-    return $out;
+    return array_map(function ($r) { return (array) $r; }, (array) $rows);
 }
 
 function countRows(string $table, string $site_id): int
@@ -123,25 +153,68 @@ function countRows(string $table, string $site_id): int
     return is_array($row) ? (int) $row['c'] : 0;
 }
 
+/** Raw rows of one event type. */
+function countRawRows(string $site_id, ?string $event_type = null): int
+{
+    $rows = rawRows($site_id, 'id', $event_type === null
+        ? '' : "event_type = '" . esc($event_type) . "'");
+
+    return count($rows);
+}
+
 function sessionState(string $site_id): array
 {
-    $db = db();
+    /*
+     * The sessions: one entry per session_start row, with the page views of that
+     * session counted off raw.
+     *
+     * is_bounce is DERIVED here rather than stored. v1 kept a column, maintained
+     * by the session handler as pages arrived; v2 has no session row to keep it
+     * on, and a bounce is a session with exactly one page view -- which is the
+     * definition the v1 column was maintaining anyway.
+     */
+    $starts = rawRows($site_id,
+        'session_id, visitor_id, yyyymmdd, tagged_source, tagged_medium, '
+        . 'tagged_campaign, tagged_ad, tagged_search_terms',
+        "event_type = 'session_start'");
 
-    $db->selectFrom('owa_session');
-    $db->selectColumn('id, num_pageviews, is_bounce, first_page_id, last_page_id, referer_id, '
-        . 'medium, campaign_id, source_id, latest_attributions, cv1_name, cv1_value');
-    $db->where('site_id', $site_id);
-    $rows = $db->getAllRows();
-
-    $sessions   = [];
+    $sessions    = [];
     $session_ids = [];
 
-    foreach ((array) $rows as $r) {
-        $session_ids[(string) $r['id']] = true;
-        $r['latest_attributions'] = $r['latest_attributions']
-            ? json_decode($r['latest_attributions'], true)
-            : null;
-        $sessions[] = $r;
+    foreach ($starts as $start) {
+
+        $sid = (string) $start['session_id'];
+        $session_ids[$sid] = true;
+
+        $pageviews = countRawRows($site_id,
+            "event_type = 'page_view' AND session_id = " . (int) $sid);
+
+        /*
+         * The campaign the session arrived on, under the name the spec reads.
+         *
+         * v1 stored a `latest_attributions` JSON blob on the session row, written
+         * by the attribution model. v2 stores the tags as COLUMNS on every row of
+         * the session -- ingest parses them out of page_location on the landing
+         * beacon -- so the session's attribution is its start row's tags. Returned
+         * as a map so a spec can assert on the values without knowing the shape of
+         * a blob that no longer exists.
+         */
+        $attributions = array_filter([
+            'source'       => $start['tagged_source'],
+            'medium'       => $start['tagged_medium'],
+            'campaign'     => $start['tagged_campaign'],
+            'ad'           => $start['tagged_ad'],
+            'search_terms' => $start['tagged_search_terms'],
+        ], function ($v) { return $v !== null && $v !== ''; });
+
+        $sessions[] = [
+            'id'                  => $sid,
+            'visitor_id'          => (string) $start['visitor_id'],
+            'yyyymmdd'            => (int) $start['yyyymmdd'],
+            'num_pageviews'       => $pageviews,
+            'is_bounce'           => $pageviews === 1 ? 1 : 0,
+            'latest_attributions' => $attributions ?: null,
+        ];
     }
 
     // Queue depth is global: the scratch install runs one spec at a time, and a
@@ -157,22 +230,32 @@ function sessionState(string $site_id): array
         $queued_types[$q['event_type']] = (int) $q['c'];
     }
 
+    /*
+     * Events belonging to a session that was never started.
+     *
+     * Grouped by event_type so the answer says WHAT was stranded, which is the
+     * distinction scenario 4 pins: a click fired after a lost page view reaches
+     * ingest and is stored, and nothing raises a session for it.
+     */
     $dangling = [];
-    foreach (factTables() as $t) {
-        $n = 0;
-        foreach (columnValues($t, 'session_id', $site_id) as $sid) {
-            if (!isset($session_ids[$sid])) {
-                $n++;
-            }
+
+    foreach (rawRows($site_id, 'event_type, session_id') as $row) {
+
+        if (isset($session_ids[(string) $row['session_id']])) {
+            continue;
         }
-        $dangling[$t] = $n;
+
+        $type = (string) $row['event_type'];
+        $dangling[$type] = ($dangling[$type] ?? 0) + 1;
     }
 
     return [
         'site_id'        => $site_id,
         'sessions'       => $sessions,
         'session_count'  => count($sessions),
-        'request_count'  => countRows('owa_request', $site_id),
+        // v1 called a page view a request, and the spec still does.
+        'request_count'  => countRawRows($site_id, 'page_view'),
+        'event_count'    => countRawRows($site_id),
         'queue_depth'    => array_sum($queued_types),
         'queued_types'   => $queued_types,
         'dangling'       => $dangling,
@@ -184,7 +267,13 @@ function resetSite(string $site_id): array
 {
     $deleted = [];
 
-    foreach (array_merge(factTables(), ['owa_session']) as $t) {
+    /*
+     * owa_event_raw is the one that matters; the v1 tables are empty on this
+     * branch and each costs one no-op DELETE, which keeps reset correct on a
+     * branch where the chain is registered.
+     */
+    foreach ([rawTable(), 'owa_request', 'owa_session', 'owa_click', 'owa_domstream',
+              'owa_commerce_transaction_fact'] as $t) {
         $db = db();
         $db->deleteFrom($t);
         $db->where('site_id', $site_id);
