@@ -46,12 +46,21 @@ final class ServerOwnedPropertyTest extends TestCase
     {
         /*
          * The more serious half. A forged ip_address defeats IP exclusion and
-         * sends geolocation somewhere else; a forged timestamp reorders events;
-         * a forged is_robot decides whether the sender gets filtered at all.
+         * sends geolocation somewhere else; a forged is_robot decides whether the
+         * sender gets filtered at all.
+         *
+         * `timestamp` was in this set on the reasoning that forging it reorders
+         * events, and that is no longer what it is. It is the TRACKER's own clock
+         * -- declared client-set, because the tracker sends it and the device's
+         * session-timeout comparison needs it -- and it reaches no column, so
+         * forging it achieves nothing. Ordering rests on `ts`, the edge stamp,
+         * which has no wire key and cannot be sent at all; `event_seq` is the
+         * device's own counter and is client-set by design, because nothing else
+         * knows the order in which a page built its events.
          */
         $kept = Helpers::admitRequestParams( array(
             'ip_address' => '1.2.3.4',
-            'timestamp'  => '999',
+            'ts'         => '999',
             'is_robot'   => '0',
         ) );
 
@@ -127,7 +136,12 @@ final class ServerOwnedPropertyTest extends TestCase
 
         $this->assertNotEmpty( $serverOwned );
 
-        foreach ( array( 'browser_type', 'country', 'ip_address', 'timestamp' ) as $name ) {
+        /*
+         * `timestamp` was here and is not a property any more: it was the
+         * second-resolution twin of `ts`, from the same clock reading, and only
+         * one of the two ever reached a column.
+         */
+        foreach ( array( 'browser_type', 'country', 'ip_address', 'ts' ) as $name ) {
 
             $this->assertArrayHasKey( $name, $serverOwned );
         }

@@ -361,7 +361,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
              */
             'transaction_id' => $this->text( $event->get( 'ct_order_id' ) ),
 
-            'raw_ua' => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
+            'raw_ua'      => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
+            'remote_host' => $this->text( $event->get( 'REMOTE_HOST' ) ),
             'params' => $this->params( $event ),
         );
 

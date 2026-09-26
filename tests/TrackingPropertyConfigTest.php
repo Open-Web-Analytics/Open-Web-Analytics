@@ -92,12 +92,15 @@ final class TrackingPropertyConfigTest extends TestCase
         }
 
         $this->assertGreaterThan(
-            20, $checked, 'Almost no callbacks were found, so this test is not reading the config.'
+            15, $checked, 'Almost no callbacks were found, so this test is not reading the config.'
             /*
              * The floor was 30 while the v1 date parts, the five attribution
              * readings and the v1 handler inputs still had callbacks. Cutting
              * those took the real count to 25 without changing what this test
              * checks, which is that every callback NAMED in the config exists.
+             * Then to 19, when timestampDefault and microtimeDefault went with
+             * their properties -- two spellings of the instant `ts` already
+             * carries, one reaching no column and the other nothing at all.
              */ );
 
         $this->assertSame( array(), $missing, implode( "\n  ", $missing ) );

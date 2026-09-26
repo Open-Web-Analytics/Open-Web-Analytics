@@ -273,6 +273,25 @@ class EventRaw extends \OWA\Core\Entity {
 
         $this->setProperty( $this->column( 'raw_ua', OWA_DTD_VARCHAR1024 ) );
 
+        /*
+         * THE VISITOR'S NETWORK, reverse DNS of their address -- a third host,
+         * and not either of the other two.
+         *
+         *   host         the page's own hostname, cut from page_location
+         *   HTTP_HOST    this server's, the Host header of the beacon request
+         *   remote_host  the visitor's, which is what this is
+         *
+         * v1 reduced it to a registered domain through the Public Suffix List and
+         * reported it as the `host` dimension -- Entity\Host says "the visitor
+         * came from some host" -- and v2 gave that NAME to the page's host. So the
+         * fact needs a column of its own or it has nowhere to live.
+         *
+         * Usually empty, and that is the server's choice rather than ours: Apache
+         * fills REMOTE_HOST only with HostnameLookups On, which is off by default
+         * because it costs a DNS round trip per request.
+         */
+        $this->setProperty( $this->column( 'remote_host', OWA_DTD_VARCHAR255 ) );
+
         // Only what cannot be a column: site-defined keys unknown at release
         // time, and nested arrays. Everything the release knows the name of
         // gets a column of its own.

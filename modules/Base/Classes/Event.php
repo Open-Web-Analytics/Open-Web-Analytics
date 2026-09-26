@@ -211,17 +211,6 @@ class Event {
     }
 
     /**
-     * Determines the time since the last request from this borwser
-     *
-     * @access private
-     * @return integer
-     */
-    function timeSinceLastRequest() {
-
-        return ($this->get('timestamp') - $this->get('last_req'));
-    }
-
-    /**
      * Applies calling application specific properties to request
      *
      * @access     private

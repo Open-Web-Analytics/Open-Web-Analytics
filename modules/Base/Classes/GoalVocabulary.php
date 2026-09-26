@@ -55,6 +55,10 @@ class GoalVocabulary {
         // The click target.
         'target_host' => 'target_url',
 
+        // The visitor's NETWORK host, reverse DNS of their address -- a third
+        // host, and neither the page's nor this server's.
+        'remote_host' => 'REMOTE_HOST',
+
         // The one user-agent parse, which is also why device_type is available
         // on every event type: the request carries the agent, not the beacon.
         'raw_ua'          => 'HTTP_USER_AGENT',

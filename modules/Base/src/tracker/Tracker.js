@@ -1218,6 +1218,7 @@ class OWATracker  {
         if (this.active) {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
+
             var url = this._assembleRequestUrl(properties);
             var limit = this.getOption('getRequestCharacterLimit');
             if ( url.length > limit ) {

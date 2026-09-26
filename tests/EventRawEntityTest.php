@@ -42,7 +42,7 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(62, $columns);
+        $this->assertCount(63, $columns);
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
@@ -66,6 +66,13 @@ final class EventRawEntityTest extends TestCase
              * are params, because nothing adds them up.
              */
             'transaction_id', 'tax', 'shipping',
+            /*
+             * The VISITOR's network host, reverse DNS of their address. Three
+             * hosts reach an event -- the page's (host), this server's
+             * (HTTP_HOST) and the visitor's -- and v1 reported the third as its
+             * `host` dimension, a name v2 gave to the first.
+             */
+            'remote_host',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }

@@ -1194,7 +1194,15 @@ class TrackingEventHelpers {
 
         $sent = self::dateFromTimestamp( $event->get( 'sts' ) );
 
-        return $sent !== null ? $sent : date( 'Ymd', (int) $event->get( 'timestamp' ) );
+        if ( $sent !== null ) {
+
+            return $sent;
+        }
+
+        // The edge stamp, in microseconds. Same reading deriveYyyymmdd() uses.
+        $ts = (int) $event->get( 'ts' );
+
+        return date( 'Ymd', $ts > 0 ? intdiv( $ts, 1000000 ) : time() );
     }
 
     static function deriveDaysSinceFirstSession( $days, $event ) {
@@ -1244,12 +1252,16 @@ class TrackingEventHelpers {
         // date() with a null timestamp yields 1970, which is worse than useless
         // because it looks like real data. Falling back to now is honest: the
         // server assigns event time anyway when the client does not supply one.
-        $timestamp = $event->get('timestamp');
+        //
+        // FROM `ts`, which is the edge stamp in MICROseconds and the only server
+        // clock reading there is. There used to be a second-resolution twin --
+        // the `timestamp` property, from the same microtime() call so the two
+        // could not straddle a boundary -- and this was its one live reader. Two
+        // spellings of one instant, where one of them reached a column and the
+        // other reached nothing.
+        $ts = (int) $event->get( 'ts' );
 
-        if ( ! $timestamp ) {
-
-            $timestamp = time();
-        }
+        $timestamp = $ts > 0 ? intdiv( $ts, 1000000 ) : time();
 
         return date("Ymd", $timestamp );
 
