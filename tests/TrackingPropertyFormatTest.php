@@ -309,9 +309,31 @@ final class TrackingPropertyFormatTest extends TestCase
             $counts['nowhere']++;
         }
 
-        foreach ( $counts as $kind => $n ) {
+        /*
+         * A MINIMUM PER BUCKET, not one number for all three.
+         *
+         * It was `> 5` everywhere, which was a "is this test reading the file at
+         * all" guard and stopped being true of the small bucket: `nowhere` is now
+         * just the two request-scoped marker flags, is_new_session_start and
+         * is_new_visitor_created. Those raise the session_start and first_visit
+         * rows and are deliberately stored nowhere themselves -- the row they
+         * raise IS the record.
+         *
+         * Five properties used to sit there because five were computed and
+         * discarded: HTTP_HOST, client_ts_usec, last_req and the two day counts.
+         * Each is now removed rather than tolerated, so the bucket shrank for a
+         * good reason and the floor has to say what it expects instead of
+         * demanding the old size.
+         */
+        $floors = array( 'column' => 30, 'param' => 10, 'nowhere' => 1 );
 
-            $this->assertGreaterThan( 5, $n, "Only $n properties land in a $kind." );
+        $this->assertSame( array_keys( $floors ), array_keys( $counts ),
+            'a destination kind appeared or vanished' );
+
+        foreach ( $floors as $kind => $least ) {
+
+            $this->assertGreaterThanOrEqual( $least, $counts[ $kind ],
+                "Only {$counts[$kind]} properties land in a $kind." );
         }
     }
 

@@ -32,21 +32,6 @@
             "owa_trackingEventHelpers::userAgentDefault"
         ]
     },
-    "HTTP_HOST": {
-        "set_by": "request",
-        "from": [
-            "HTTP_HOST"
-        ],
-        "events": [
-            "*"
-        ],
-        "data_type": "string",
-        "required": true,
-        "filter": true,
-        "callbacks": [
-            "owa_trackingEventHelpers::httpHostDefault"
-        ]
-    },
     "language": {
         "set_by": "request",
         "from": [
@@ -182,34 +167,6 @@
         "required": false,
         "callbacks": []
     },
-    "days_since_first_session": {
-        "set_by": "event",
-        "from": [
-            "fsts"
-        ],
-        "events": [
-            "*"
-        ],
-        "data_type": "integer",
-        "required": true,
-        "callbacks": [
-            "owa_trackingEventHelpers::deriveDaysSinceFirstSession"
-        ]
-    },
-    "days_since_prior_session": {
-        "set_by": "event",
-        "from": [
-            "psts"
-        ],
-        "events": [
-            "*"
-        ],
-        "data_type": "integer",
-        "required": true,
-        "callbacks": [
-            "owa_trackingEventHelpers::deriveDaysSincePriorSession"
-        ]
-    },
     "beacon_version": {
         "set_by": "client",
         "from": [
@@ -280,34 +237,36 @@
         "note": "REQUEST scoped: marks the one request that minted the visitor. Nothing consumes it yet -- it exists so v2 can raise first_visit from the request that actually created the visitor. Do not drop it as unused."
     },
     "user_name": {
-        "set_by": "request",
+        "set_by": "client",
         "from": [
-            "session"
+            "user_name"
         ],
+        "param": "user_name",
         "events": [
             "*"
         ],
         "data_type": "string",
-        "required": true,
+        "required": false,
         "callbacks": [
             "owa_trackingEventHelpers::setUserName"
         ],
-        "note": "Set from the REQUEST’s authenticated identity, not from the beacon: when log_visitor_pii and log_owa_user_names are on and an OWA user is logged in while being tracked, the callback fills this from getCurrentUser(). That is neither a value the client sends nor one derived from other event properties, which is why `from` names the session rather than a $_SERVER key — the same latitude `clock` takes. It reaches no v2 column: the writers were v1’s owa_visitor and owa_request, and the v2 spelling of a user-scoped value is a up_ custom property."
+        "note": "A display name the SITE supplies, through OWA.setUserName(), which writes it to the visitor store so it rides every later beacon. Not user_id, which is the site’s own identifier for the person and has a column. IT WAS DECLARED set_by request, from the authenticated OWA session, and that made the tracker’s own setter dead: an environmental property is server-owned, so admitRequestParams() refused the value the beacon carried and the callback then filled it from whoever was logged into OWA — on a tracked site, nobody. Client-set, so the wire value is admitted. The callback stays and still gates on log_visitor_pii, which now gates the SUPPLIED value too, and still falls back to the OWA user when log_owa_user_names is on. A param, not a column: PII nothing groups by, and params is where a value with no dimension belongs."
     },
     "user_email": {
-        "set_by": "request",
+        "set_by": "client",
         "from": [
-            "session"
+            "user_email"
         ],
+        "param": "user_email",
         "events": [
             "*"
         ],
         "data_type": "string",
-        "required": true,
+        "required": false,
         "callbacks": [
             "owa_trackingEventHelpers::setEmailAddress"
         ],
-        "note": "Set from the REQUEST’s authenticated identity, not from the beacon: when log_visitor_pii and log_owa_user_names are on and an OWA user is logged in while being tracked, the callback fills this from getCurrentUser(). That is neither a value the client sends nor one derived from other event properties, which is why `from` names the session rather than a $_SERVER key — the same latitude `clock` takes. It reaches no v2 column: the writers were v1’s owa_visitor and owa_request, and the v2 spelling of a user-scoped value is a up_ custom property."
+        "note": "As user_name: client-supplied, PII-gated, and a param rather than a column. No tracker method sets it today — a site passes it through globalEventProperties — and it is client-settable so that such a value is admitted rather than silently refused. log_visitor_pii gates it, and log_owa_user_names still backfills the logged-in OWA user’s address. An older tracker sends it as email_address; Classes\\Beacon\\Compat renames it."
     },
     "HTTP_REFERER": {
         "set_by": "client",
@@ -463,12 +422,12 @@
         ],
         "column": "page_width",
         "events": [
-            "*"
+            "click"
         ],
         "data_type": "integer",
         "required": false,
         "callbacks": [],
-        "note": "Carried by dom.click only. Column type from base.click."
+        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x, click_y and element_path.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
     },
     "page_height": {
         "set_by": "client",
@@ -477,12 +436,12 @@
         ],
         "column": "page_height",
         "events": [
-            "*"
+            "click"
         ],
         "data_type": "integer",
         "required": false,
         "callbacks": [],
-        "note": "Carried by dom.click only. Column type from base.click."
+        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x, click_y and element_path.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
     },
     "dom_element_class": {
         "set_by": "client",
@@ -755,32 +714,6 @@
         "required": false,
         "callbacks": [],
         "note": "Minted by the tracker and held in the v store. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
-    },
-    "last_req": {
-        "set_by": "client",
-        "from": [
-            "last_req"
-        ],
-        "events": [
-            "*"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": [],
-        "note": "Timestamp of the previous request, on the CLIENT clock. It is subtracted from a server clock downstream, so it is not interchangeable with timestamp."
-    },
-    "client_ts_usec": {
-        "set_by": "client",
-        "from": [
-            "client_ts_usec"
-        ],
-        "events": [
-            "*"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": [],
-        "note": "The client's own clock at send, microseconds. Subtracted from the server's receipt time into owa_event_raw.clock_offset_usec, so skew is a stored number rather than a silent error. NOT used as the event time: the server assigns that."
     },
     "engagement_msec": {
         "set_by": "client",

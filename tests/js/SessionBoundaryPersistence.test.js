@@ -81,12 +81,23 @@ describe('crossing a session boundary', () => {
     beforeEach(wipe);
     afterEach(wipe);
 
-    test('the new session reports the PRIOR session last request', () => {
-        // Regression. setLastRequestTime() runs after the session decision, so
-        // erasing the cookie at that decision made this read find nothing --
-        // every new session reported an empty last_req, and the server derived
-        // no prior_session_lastreq and none of the prior_session_* date parts
-        // from it.
+    test('the new session can still read the PRIOR session last request', () => {
+        /*
+         * Regression. setLastRequestTime() runs AFTER the session decision, so
+         * erasing the cookie at that decision made this read find nothing.
+         *
+         * ASSERTED ON STATE, NOT ON THE WIRE. It used to read
+         * beacons[0].last_req, and last_req is no longer sent: v2 reads nothing
+         * from it -- v1's logSession() wrote prior_session_lastreq and six date
+         * parts from it and is unregistered, and engagement_msec replaced the
+         * visitDuration that subtracted it. The prior session's START arrives as
+         * psts, with a column.
+         *
+         * The invariant this file exists for is unchanged and is the STORE's: the
+         * persisted session survives the decision long enough for the rest of the
+         * page load to read it. Reading prior_last_req proves exactly that, and
+         * the value is still the aged one rather than now.
+         */
         const first = establishSession();
         const aged = expire(first);
 
@@ -98,8 +109,12 @@ describe('crossing a session boundary', () => {
         t.trackPageView('https://example.com/second');
 
         expect(beacons[0].is_new_session_start).toBe(true);
-        expect(beacons[0].last_req).toBe(aged.last_req);
         expect(beacons[0].prior_session_id).toBe(first.sid);
+
+        expect(OWA.getState('s_boundary-site', 'prior_last_req')).toBe(aged.last_req);
+
+        // And it is NOT on the beacon any more, in either spelling.
+        expect(beacons[0].hasOwnProperty('last_req')).toBe(false);
     });
 
     test('the previous session cookie survives until a beacon is accepted', () => {

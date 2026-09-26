@@ -222,6 +222,62 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A site-supplied user name reaches params, and it could not before.
+     *
+     * user_name was declared set_by REQUEST, from the authenticated OWA session.
+     * That made it an environmental property, and environmental properties are
+     * server-owned -- so admitRequestParams() refused whatever the beacon carried
+     * and the callback then filled it from whoever was logged into OWA, which on
+     * a tracked site is nobody. OWA.setUserName() writes it to the visitor store
+     * and it rides every later beacon, and every one of those values was dropped
+     * at the endpoint.
+     *
+     * A PARAM rather than a column: PII that nothing groups by.
+     */
+    public function testASuppliedUserNameReachesParams(): void
+    {
+        $row = $this->firePageView([ 'user_name' => 'Peter Adams' ])['page_view'];
+
+        $params = json_decode( (string) $row['params'], true );
+
+        $this->assertIsArray( $params, 'the row carried no params at all' );
+
+        $this->assertSame( 'Peter Adams', $params['user_name'] ?? null,
+            'a user name the beacon supplied must reach params' );
+
+        $this->assertArrayNotHasKey( 'user_name', $row,
+            'and it is a param, not a column' );
+    }
+
+    /**
+     * And the PII gate still governs it, now that the value can be supplied.
+     *
+     * The callback returns nothing at all unless log_visitor_pii is on, which is
+     * what kept an OWA admin's name out of the fact table. Making the property
+     * client-settable widens WHO can offer a value, so the gate has to apply to a
+     * supplied one too -- otherwise turning PII logging off would stop the
+     * fallback and leave the beacon's own claim untouched.
+     */
+    public function testThePiiGateAppliesToASuppliedName(): void
+    {
+        $before = owa_coreAPI::getSetting( 'base', 'log_visitor_pii' );
+
+        owa_coreAPI::setSetting( 'base', 'log_visitor_pii', false );
+
+        try {
+            $row = $this->firePageView([ 'user_name' => 'Peter Adams' ])['page_view'];
+
+            $params = json_decode( (string) $row['params'], true ) ?: array();
+
+            $this->assertArrayNotHasKey( 'user_name', $params,
+                'with PII logging off, a supplied user name must not be stored' );
+
+        } finally {
+            owa_coreAPI::setSetting( 'base', 'log_visitor_pii', $before );
+        }
+    }
+
+    /**
      * The referrer is read for its host and its query, and edited no further.
      *
      * The host is what the cube pass classifies source and medium from, so it is

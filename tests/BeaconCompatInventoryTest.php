@@ -154,15 +154,22 @@ final class BeaconCompatInventoryTest extends TestCase
         }
 
         /*
-         * Four now, down from eight: the renames and the URL chain moved into
-         * the layer, and the flag fallback was removed with the flag. What is
-         * left is the two value-encoding coercions and the two callbacks that
-         * return an older tracker's value unchanged.
+         * TWO now, down from eight. The renames and the URL chain moved into the
+         * layer; the flag fallback went with its flag; and the two callback
+         * passthroughs went when days_since_first_session and
+         * days_since_prior_session left the registry -- a bridge whose
+         * destination no property declares can only put a value on the event for
+         * nobody to read.
+         *
+         * What is left is the two value-encoding coercions, where a value
+         * counting from zero arrived as a string from one generation and a number
+         * from the next. Those are the entries a falsy check would misread, so
+         * they are the ones most worth holding.
          *
          * A floor rather than an exact count, so moving one more INTO the layer
          * does not fail this -- but dropping the needles silently does.
          */
-        $this->assertGreaterThanOrEqual( 4, $checked,
+        $this->assertGreaterThanOrEqual( 2, $checked,
             'too few code bridges checked; the index has probably lost its needles' );
     }
 

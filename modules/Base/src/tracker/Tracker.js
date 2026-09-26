@@ -3320,14 +3320,26 @@ class OWATracker  {
             }
         }
 
-        // Defined-only, not non-empty: '' is the honest answer on a visitor's
-        // first ever request, and the property is in the beacon contract, so it
-        // has to be present as '' rather than missing.
-        var prior_last_req = OWA.getState( this.storeName('s'), 'prior_last_req' );
-
-        if ( prior_last_req !== undefined ) {
-            collected.last_req = prior_last_req;
-        }
+        /*
+         * last_req is no longer collected onto the event.
+         *
+         * THE STORE KEY STAYS. `s.last_req` is how the DEVICE decides a session
+         * has timed out -- isNewSession() compares it with this request -- and
+         * `prior_last_req` still holds the previous session's last hit so the
+         * boundary can read it before it is overwritten. Both are state; neither
+         * needs to be on the wire.
+         *
+         * What the SERVER did with it: v1's logSession() wrote
+         * prior_session_lastreq and six date parts formatted from it, and
+         * visitDuration was AVG(last_req - timestamp). Those handlers are
+         * unregistered, and engagement_msec replaced visitDuration because the
+         * old one could not see the final page. Nothing on v2 reads it, and the
+         * prior session's start arrives as `psts` with a column of its own.
+         *
+         * It was also the one CLIENT-clock value reaching the schema, subtracted
+         * from a SERVER clock -- see project_clock_provenance. Removing it ends
+         * that mixing rather than documenting it.
+         */
 
 
         /*
@@ -3479,22 +3491,18 @@ class OWATracker  {
         }
 
         /*
-         * The client's own clock at send, in microseconds.
+         * client_ts_usec was stamped here and is not sent any more.
          *
-         * The server stamps its receipt time and stores the DIFFERENCE, so
-         * skew becomes a number instead of a silent error. 1.x subtracts a
-         * client clock from a server one and records no provenance for either,
-         * so a device an hour out produces a session length nobody can identify
-         * as wrong.
+         * It existed for ONE column: the server subtracted it from its own
+         * receipt time into owa_event_raw.clock_offset_usec, so skew would be a
+         * stored number rather than a silent error. Update046 dropped that
+         * column -- ordering is settled by event_seq, a counter that needs no
+         * clock -- and the field went on being sent for every beacon afterwards,
+         * read by nothing on either side. The tracker never read it back either.
          *
-         * Date.now() is milliseconds; the extra three digits are zeros and not
-         * a claim of precision the browser does not have. What matters is the
-         * UNIT matching the column, so the subtraction is meaningful.
+         * If skew is wanted again it needs the column back, and then this line;
+         * sending the number to nowhere is not a step toward that.
          */
-        if ( ! event.get( 'client_ts_usec' ) ) {
-
-            event.set( 'client_ts_usec', Date.now() * 1000 );
-        }
 
         /*
          * ENGAGEMENT RIDES EVERY EVENT, as a delta.

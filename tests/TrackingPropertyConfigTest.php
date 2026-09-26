@@ -59,9 +59,24 @@ final class TrackingPropertyConfigTest extends TestCase
         $this->assertSame( array( 'client', 'event', 'request' ), array_keys( $counts ),
             'All three setters must be in use, or the vocabulary has lost one.' );
 
-        foreach ( $counts as $set_by => $n ) {
+        /*
+         * A MINIMUM PER SETTER. It was `> 5` for all three, which the request
+         * bucket no longer satisfies: HTTP_HOST went (always this install's own
+         * host), and user_name and user_email moved to `client`, which is what
+         * they always were -- the tracker has a setter for user_name, and
+         * declaring it request-set made an environmental property of it, so
+         * admitRequestParams() refused the value the beacon carried.
+         *
+         * Five is what is left, and every one is a genuine reading of the
+         * REQUEST: the agent, the address, the language, the visitor's network
+         * host and the edge clock.
+         */
+        $floors = array( 'client' => 30, 'event' => 15, 'request' => 5 );
 
-            $this->assertGreaterThan( 5, $n, "Only $n properties are set by $set_by." );
+        foreach ( $floors as $set_by => $least ) {
+
+            $this->assertGreaterThanOrEqual( $least, $counts[ $set_by ] ?? 0,
+                "Only {$counts[$set_by]} properties are set by $set_by." );
         }
     }
 

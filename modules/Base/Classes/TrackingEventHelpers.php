@@ -964,10 +964,20 @@ class TrackingEventHelpers {
         return $ua;
     }
 
-    static function httpHostDefault() {
-
-        return \OWA\Core\CoreAPI::getServerParam('HTTP_HOST');
-    }
+    /*
+     * httpHostDefault() stood here, and goes with the HTTP_HOST property.
+     *
+     * It returned the Host header of the BEACON request -- this OWA instance's
+     * own hostname, the same value on every event of every site an install
+     * tracks. There are three hosts on a tracking event and only two say
+     * anything about the visit: the PAGE's (`host`, cut from page_location) and
+     * the VISITOR's network (`remote_host`, reverse DNS). This was the third, it
+     * never had a column, and no dimension or metric named it.
+     *
+     * Where the install's own hostname is genuinely wanted it is a SETTING
+     * rather than an observation -- Lib and Settings read $_SERVER['HTTP_HOST']
+     * for that, and still do.
+     */
 
     static function languageDefault() {
 
@@ -1106,137 +1116,32 @@ class TrackingEventHelpers {
      * The event carries content. Nothing derived rides along on it.
      */
 
-    /**
-     * Days since the prior session, derived from the interval the tracker
-     * measured.
+    /*
+     * THE DAY-COUNT DERIVATIONS WERE HERE, and are removed with their
+     * properties: deriveDaysSinceFirstSession(), deriveDaysSincePriorSession(),
+     * and the three helpers only they used -- dateFromTimestamp(),
+     * daysBetweenDates() and sessionDateOf().
      *
-     * STRAIGHT 24-HOUR PERIODS, not calendar days, and that is forced rather
-     * than chosen: this value must be IDENTICAL on every event sharing a
-     * session_id. Calendar days cannot be, because counting date boundaries
-     * needs two absolute times and the events carry only one -- their own
-     * timestamp -- plus a session-scoped interval. Anchoring
-     * `then = timestamp - elapsed` is exact on the event that OPENED the
-     * session but lands later for every event after it, so two hits either side
-     * of a midnight would disagree about the same session. Depending only on
-     * the interval, which is the same on all of them, is what makes the value
-     * stable.
+     * THEY WERE NOT v1 HOLDOVERS. The client used to compute both counts and the
+     * server accepted the integers on faith; 2026-08-22 moved the arithmetic
+     * here, so the client sends three raw ANCHORS -- fsts, psts, sts -- and the
+     * server derives the offsets and can re-derive them. That was a deliberate
+     * increase in trust and it worked.
      *
-     * Identical arithmetic to what the tracker used to do, so nothing about the
-     * daysSinceLastVisit dimension changes meaning -- only where it is computed.
-     * One value on the wire now feeds both this and timeSinceLastVisit, instead
-     * of the same interval being measured twice on the client.
+     * What they never got was a DESTINATION. Neither property declared a column
+     * or a param, and no dimension or metric read either, so both were computed
+     * on every event and discarded. The anchors, meanwhile, are stored:
+     * visitor_fsts, prior_session_start_ts and session_start_ts.
      *
-     * $days already holds whatever an older tracker sent as 'dsps' -- see the
-     * alternative_key on this property -- so returning it unchanged is the
-     * fallback for trackers cached from before the interval existed.
+     * So the offsets go and the anchors stay, which is the shape the audit
+     * against GA argued for -- ship the anchor, derive the offset downstream. On
+     * the cube that is arithmetic between two columns of one row at query time:
+     * no join, no dimension table, and a corrected calculation re-applies to
+     * history instead of being frozen into a row.
+     *
+     * Anything reviving a daysSince* dimension should derive it there, from
+     * yyyymmdd and the anchor, not restore a write-path callback.
      */
-    /**
-     * Days since the visitor's first session, from the date they sent.
-     *
-     * The tracker sends first_session_date as YYYYMMDD, not a timestamp and not
-     * an elapsed count. The anchor is stamped by the VISITOR's clock, and
-     * coarsening to a day is what limits the damage: a clock wrong by minutes or
-     * hours yields the same date, so only an error crossing midnight costs
-     * anything, and only ever one day, once. GA exposes firstSessionDate the
-     * same way and for the same reason.
-     *
-     * Counted against the SERVER's calendar, the one every other date part on
-     * the row uses. The two calendars can differ by a day at the edges; that is
-     * the bounded cost of the anchor being the visitor's.
-     *
-     * This value is per-EVENT, not per-session: it is "days since first visit as
-     * of this event", so it legitimately ticks over at midnight during a long
-     * session. That is why the registry declares it page-scoped.
-     *
-     * $days already holds whatever an older tracker sent as 'dsfs' -- see the
-     * alternative_key -- so returning it unchanged is the fallback for trackers
-     * cached from before the date existed.
-     */
-    /**
-     * A unix timestamp as YYYYMMDD, or null if it is not usable.
-     *
-     * The tracker sends the raw anchors -- fsts, psts, sts -- rather than dates,
-     * so no granularity is lost on the way and anything else that wants the
-     * precise instant still has it. Everything downstream of here works at DAY
-     * level, which is what limits the damage: these anchors are stamped by the
-     * VISITOR's clock, and a date absorbs anything short of an error that
-     * crosses midnight.
-     *
-     * Converted with the SERVER's timezone, so these day boundaries are the
-     * same ones every other date part on the row uses.
-     */
-    static function dateFromTimestamp( $timestamp ) {
-
-        $timestamp = (int) $timestamp;
-
-        return $timestamp > 0 ? date( 'Ymd', $timestamp ) : null;
-    }
-
-    /**
-     * Whole days between two YYYYMMDD dates, or null if either is unusable.
-     *
-     * Day-level arithmetic on purpose: converting first and subtracting days is
-     * what makes midnight a non-event, where subtracting the timestamps and
-     * dividing would make a two-hour gap spanning midnight look like no days at
-     * all.
-     */
-    static function daysBetweenDates( $from, $to ) {
-
-        if ( ! preg_match( '/^\d{8}$/', (string) $from ) || ! preg_match( '/^\d{8}$/', (string) $to ) ) {
-
-            return null;
-        }
-
-        $a = strtotime( substr( $from, 0, 4 ) . '-' . substr( $from, 4, 2 ) . '-' . substr( $from, 6, 2 ) );
-        $b = strtotime( substr( $to, 0, 4 ) . '-' . substr( $to, 4, 2 ) . '-' . substr( $to, 6, 2 ) );
-
-        if ( $a === false || $b === false ) {
-
-            return null;
-        }
-
-        // round, not floor: a day is 23 or 25 hours across a DST boundary.
-        return (int) round( ( $b - $a ) / 86400 );
-    }
-
-    /**
-     * The date the current session began, as the tracker reported it, falling
-     * back to the server's date for trackers that predate the field.
-     */
-    static function sessionDateOf( $event ) {
-
-        $sent = self::dateFromTimestamp( $event->get( 'sts' ) );
-
-        if ( $sent !== null ) {
-
-            return $sent;
-        }
-
-        // The edge stamp, in microseconds. Same reading deriveYyyymmdd() uses.
-        $ts = (int) $event->get( 'ts' );
-
-        return date( 'Ymd', $ts > 0 ? intdiv( $ts, 1000000 ) : time() );
-    }
-
-    static function deriveDaysSinceFirstSession( $days, $event ) {
-
-        $count = self::daysBetweenDates(
-            self::dateFromTimestamp( $event->get( 'fsts' ) ),
-            self::sessionDateOf( $event )
-        );
-
-        return $count === null ? $days : $count;
-    }
-
-    static function deriveDaysSincePriorSession( $days, $event ) {
-
-        $count = self::daysBetweenDates(
-            self::dateFromTimestamp( $event->get( 'psts' ) ),
-            self::sessionDateOf( $event )
-        );
-
-        return $count === null ? $days : $count;
-    }
 
     /*
      * setRepeatVisitorFlag() was here, and resolveEntryPage() below it.
@@ -1669,36 +1574,69 @@ class TrackingEventHelpers {
         }
     }
 
+    /**
+     * THE PII GATE HAS TO DELETE, NOT JUST RETURN NOTHING.
+     *
+     * Both of these return null when log_visitor_pii is off, and that stopped
+     * being enough the moment the two properties became client-settable. A
+     * callback's null does not REMOVE anything: setTrackerProperties() declines
+     * to write it back, so whatever the beacon put on the event is still there,
+     * and params() reads the event. So with PII logging off a supplied name was
+     * stored anyway -- measured, and the reason this comment exists.
+     *
+     * It could not happen before, for a reason that was never the gate: both were
+     * declared set_by request, which made them server-owned, so
+     * admitRequestParams() dropped them at the endpoint. The refusal was a side
+     * effect of a wrong `set_by`, and correcting that exposed the gate as
+     * incomplete.
+     *
+     * Deleting here rather than at the endpoint because every path passes through
+     * a callback: log.php's allowlist does not see an event built in process by a
+     * queue drain, a fixture or another module.
+     *
+     * @param  string|null $user_name  whatever the beacon supplied, if anything
+     * @param  object      $event
+     * @return string|null
+     */
     static function setUserName( $user_name, $event ) {
 
         // record and filter personally identifiable info (PII)
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 
-            // set user name if one does not already exist on event
-            if ( ! $user_name && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+            $event->delete( 'user_name' );
 
-                $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-                $user_name = $cu->user->get( 'user_id' );
-            }
-
-            return $user_name;
+            return null;
         }
+
+        // set user name if one does not already exist on event
+        if ( ! $user_name && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+
+            $cu = \OWA\Core\CoreAPI::getCurrentUser();
+
+            $user_name = $cu->user->get( 'user_id' );
+        }
+
+        return $user_name;
     }
 
+    /** As setUserName(), including why the gate deletes. */
     static function setEmailAddress ( $email_address, $event ) {
 
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 
-            if ( ! $email_address && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+            $event->delete( 'user_email' );
 
-                $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-                $email_address = $cu->user->get( 'email_address' );
-            }
-
-            return $email_address;
+            return null;
         }
+
+        if ( ! $email_address && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
+
+            $cu = \OWA\Core\CoreAPI::getCurrentUser();
+
+            $email_address = $cu->user->get( 'email_address' );
+        }
+
+        return $email_address;
     }
 
     /**

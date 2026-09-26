@@ -110,9 +110,23 @@ return array(
          */
         array( 'role' => 'wire',   'from' => 'page_url', 'to' => 'page_location' ),
 
-        array( 'role' => 'legacy', 'from' => 'dsfs',          'to' => 'days_since_first_session' ),
-        array( 'role' => 'legacy', 'from' => 'dsps',          'to' => 'days_since_prior_session' ),
         array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'user_email' ),
+
+        /*
+         * dsfs -> days_since_first_session and dsps -> days_since_prior_session
+         * were here, and are REMOVED because their DESTINATION is gone, not
+         * because the generation that sent them has died out.
+         *
+         * Both properties left the registry: the server derived each day count
+         * from an anchor it already stores and then had nowhere to put it, so the
+         * offsets go and visitor_fsts / prior_session_start_ts / session_start_ts
+         * stay. A rename whose target no property declares cannot do anything
+         * except put a value on the event for nobody to read.
+         *
+         * An old tracker still sending dsfs or dsps now has those keys dropped at
+         * the endpoint like any other unregistered name. Nothing is lost that was
+         * being kept: the counts were discarded on arrival either way.
+         */
 
         /*
          * `sid` -> feed_subscription_id was here, and it is REMOVED rather
@@ -174,14 +188,15 @@ return array(
                'in' => 'modules/Base/Handler/EventRawHandlers.php', 'needle' => "num_prior_sessions' ) === '0'" ),
 
         /*
-         * The visitor's prior-session interval, which the tracker used to
-         * measure itself and now sends as an anchor. The callback returns
-         * whatever an older tracker sent under the alternative key, unchanged.
+         * The two callback_passthrough entries for dsps and dsfs were here.
+         *
+         * Each named a derivation that returned whatever an older tracker had
+         * sent under the short key when it could not compute the count itself.
+         * Both derivations are deleted with their properties, so there is no
+         * callback left to index -- and the inventory test reads this list
+         * against the code in BOTH directions, which is what makes leaving a
+         * stale entry here a failure rather than a comment.
          */
-        array( 'kind' => 'callback_passthrough', 'from' => 'dsps', 'to' => 'days_since_prior_session',
-               'in' => 'modules/Base/Classes/TrackingEventHelpers.php', 'needle' => 'function deriveDaysSincePriorSession(' ),
-        array( 'kind' => 'callback_passthrough', 'from' => 'dsfs', 'to' => 'days_since_first_session',
-               'in' => 'modules/Base/Classes/TrackingEventHelpers.php', 'needle' => 'function deriveDaysSinceFirstSession(' ),
     ),
 );
 
