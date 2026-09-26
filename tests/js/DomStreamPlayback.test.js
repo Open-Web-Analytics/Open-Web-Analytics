@@ -76,7 +76,7 @@ describe('domstream playback (admin-side Player)', () => {
         const p = new Player();
         const stream = makeStream([
             { event_type: 'dom.scroll', x: 0, y: 100 },
-            { event_type: 'dom.click', dom_element_id: 'x', click_x: 1, click_y: 2 },
+            { event_type: 'click', dom_element_id: 'x', click_x: 1, click_y: 2 },
         ]);
         p.load({ data: stream });
         expect(p.queue_count).toBe(stream.events.length);
@@ -97,7 +97,7 @@ describe('domstream playback (admin-side Player)', () => {
         expect(document.getElementById('search-box').value).toBe('hi');
     });
 
-    test('a dom.click event replays by clicking the recorded element', () => {
+    test('a click event replays by clicking the recorded element', () => {
         document.body.innerHTML = '<button id="buy-now">buy</button>';
         let clicked = false;
         document.getElementById('buy-now').addEventListener('click', () => { clicked = true; });
@@ -105,7 +105,7 @@ describe('domstream playback (admin-side Player)', () => {
         // elementFromPoint is unimplemented in jsdom -> returns null, so the Player
         // falls back to the id/name accessor path, which is what we want to exercise.
         p.clickEventHandler({
-            event_type: 'dom.click',
+            event_type: 'click',
             dom_element_id: 'buy-now',
             dom_element_name: '(not set)',
             dom_element_class: '(not set)',
@@ -142,7 +142,7 @@ describe('domstream playback (admin-side Player)', () => {
 
         p.load({ data: makeStream([
             { event_type: 'dom.scroll', x: 0, y: 1 },
-            { event_type: 'dom.click', dom_element_id: 'a' },
+            { event_type: 'click', dom_element_id: 'a' },
             { event_type: 'dom.keypress', key_value: 'b' },
         ]) });
 
@@ -153,6 +153,6 @@ describe('domstream playback (admin-side Player)', () => {
 
         // queue_step starts at 1, so playback plays events[1..3] (scroll, click,
         // keypress) in order, then step() hits queue_step >= queue_count and stops.
-        expect(played).toEqual(['dom.scroll', 'dom.click', 'dom.keypress', 'STOP']);
+        expect(played).toEqual(['dom.scroll', 'click', 'dom.keypress', 'STOP']);
     });
 });

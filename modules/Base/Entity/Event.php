@@ -192,6 +192,28 @@ class Event extends EventRaw {
         $built_at = $this->column( 'built_at', OWA_DTD_BIGINT, false );
         $built_at->setNotNull();
         $this->setProperty( $built_at );
+
+        /*
+         * Whether the session this event belongs to was the visitor's first,
+         * as the label a report groups by -- see Classes\Cube\NewVsReturningStep
+         * for why the label and not a flag.
+         *
+         * LAST, AFTER built_at, on purpose. ADD COLUMN appends
+         * (OWA_SQL_ADD_COLUMN_REBUILD), so a cube that got this column from
+         * Update044 carries it at the end; declaring it anywhere else would
+         * leave an upgraded install and a fresh one with the same columns in a
+         * different order. Nothing reads the cube positionally -- the build
+         * names its columns and a staging table is cut from the live DDL -- but
+         * two shapes for one release is a difference somebody eventually has to
+         * explain.
+         *
+         * NOT NULL and no default, like source and medium: a build always
+         * produces a value, the sentinel included. Measured on this server
+         * under STRICT_ALL_TABLES, ADD COLUMN ... NOT NULL on a populated cube
+         * backfills '' rather than failing, so rows written before the next
+         * rebuild read as `(not set)` until one runs.
+         */
+        $this->setProperty( $this->resolved( 'new_vs_returning', OWA_DTD_VARCHAR16 ) );
     }
 
     /**

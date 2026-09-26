@@ -44,6 +44,25 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
 
     <div class="setting">
+        <div class="title">On this event</div>
+        <div class="description">Which event the conditions are tested against. Only
+        this event type can count as this goal &mdash; a condition is checked against
+        what that event carries, so a click's target cannot be tested on a page
+        view.</div>
+        <div class="field">
+            <select name="<?php echo $view->getNs();?>triggerEvent">
+            <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
+                <option value="<?php $view->out( $owa_event );?>"
+                    <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
+                    <?php $view->out( $owa_event );?>
+                </option>
+            <?php endforeach;?>
+            </select>
+            <span class="validation_error"><?php $view->out( $view->validation_errors['triggerEvent'] ?? '' );?></span>
+        </div>
+    </div>
+
+    <div class="setting">
         <div class="title">Counts when</div>
         <div class="description">An event matching these conditions is counted as a goal
         event.</div>

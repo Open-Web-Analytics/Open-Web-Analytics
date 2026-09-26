@@ -60,6 +60,16 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     );
 
     /**
+     * The cube's alias in the funnel query.
+     *
+     * One place, because a step predicate is compiled elsewhere -- by
+     * Classes\GoalEventPredicate for a goal step -- and is handed the alias
+     * rather than assuming it. The two disagreeing is exactly the kind of thing
+     * that produces a query that runs and answers about the wrong table.
+     */
+    const ALIAS = 'e';
+
+    /**
      * The row this is drawing, from the reportId on the request.
      *
      * The dispatcher builds this controller from the REQUEST params, so nothing
@@ -117,7 +127,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         $this->set( 'funnel_constraints',       (string) $this->getParam( 'constraints' ) );
         // What the counts are counting, so the template does not have to say
         // "visitors" when it is counting visits.
-        $this->set( 'funnel_scope_label', $scope === 'session' ? 'visits' : 'visitors' );
+        $this->set( 'funnel_scope_label', $scope === 'session' ? 'sessions' : 'users' );
         $this->set( 'funnel_scope_other', $scope === 'visitor' ? 'session' : 'visitor' );
 
         if ( $funnel ) {
@@ -240,7 +250,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
             $this->set( 'total_visitors', $entered );
             $this->set( 'funnel_table', $this->stepsAsResultSet(
-                $steps, $entered, $scope === 'session' ? 'visits' : 'visitors' ) );
+                $steps, $entered, $scope === 'session' ? 'sessions' : 'users' ) );
             $this->set( 'goal_conversion_rate', $goal_conversion_rate );
             $this->set( 'funnel', $steps );
         }
@@ -385,16 +395,75 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         return $goalEvent->wasPersisted() ? (string) $goalEvent->get( 'name' ) : '';
     }
 
-    private function stepPredicate( array $step, $alias = 'd' ) {
+    /**
+     * "this page", as a condition on the cube.
+     *
+     * THE STORED VALUE IS WHAT THE AUTHOR TYPED, and it used to be compared to
+     * owa_document.uri -- which was the path with `?query` appended when there
+     * was one (DocumentHandlers::uriFor, mirroring the v1 derivePageUri the
+     * registry no longer declares). The cube splits those: page_path never
+     * contains a `?`, and page_query holds the rest.
+     *
+     * So two corrections, both on the READ side, because the stored step is
+     * author input and rewriting it would change what they asked for:
+     *
+     *   - CANONICALISED the same way the row was. page_path collapses the
+     *     Profile's default page and the trailing slash, so a step typed as
+     *     `/store/` or `/store/index.php` would otherwise never equal the stored
+     *     `/store`. Same function, same setting, so the two cannot disagree.
+     *
+     *   - A `?` IN THE TYPED PATH is split and matched against both columns. A
+     *     step written `/checkout?step=2` would otherwise never match anything,
+     *     silently, because no page_path has a `?` in it. None of the steps on
+     *     either install here carry one -- measured -- but the old builder
+     *     accepted them and the value survives in the definition.
+     *
+     * WHAT CHANGES FOR A PLAIN PATH: v1 compared the whole uri, so `/thanks`
+     * matched only a hit with no query string at all. On the cube it matches
+     * `/thanks` however the visitor arrived, which is what the step says.
+     *
+     * @param  string $path
+     * @param  string $alias
+     * @return array  { sql, params }
+     */
+    private function pathPredicate( $path, $alias ) {
+
+        $query = null;
+
+        $mark = strpos( $path, '?' );
+
+        if ( $mark !== false ) {
+
+            $query = substr( $path, $mark + 1 );
+            $path  = substr( $path, 0, $mark );
+        }
+
+        $path = \OWA\Module\Base\Classes\V2Event::canonicalPath( $path,
+            (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'profile',
+                $this->getParam( 'siteId' ) ) );
+
+        if ( $query === null || $query === '' ) {
+
+            return array(
+                'sql'    => $alias . '.page_path = ?',
+                'params' => array( (string) $path ),
+            );
+        }
+
+        return array(
+            'sql'    => '( ' . $alias . '.page_path = ? AND '
+                        . $alias . '.page_query = ? )',
+            'params' => array( (string) $path, $query ),
+        );
+    }
+
+    private function stepPredicate( array $step, $alias = self::ALIAS ) {
 
         $goalEventId = (string) ( $step['goal_event_id'] ?? '' );
 
         if ( $goalEventId === '' ) {
 
-            return array(
-                'sql'    => $alias . '.uri = ?',
-                'params' => array( (string) ( $step['path'] ?? '' ) ),
-            );
+            return $this->pathPredicate( (string) ( $step['path'] ?? '' ), $alias );
         }
 
         $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
@@ -455,8 +524,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * state machine, one cursor per subject -- happens here.
      *
      * That looks like the wrong side of the line, so it was moved into SQL and
-     * measured. Three formulations, against scratch tables carrying
-     * owa_request's real schema and indexes, with a realistic drop-off
+     * measured. Three formulations, against scratch tables carrying the fact
+     * table's real schema and indexes -- owa_request's, when the funnel still
+     * read it -- with a realistic drop-off
      * (100% -> 33% -> 10%) over a three-step funnel at 262,144 rows:
      *
      *     this, streamed                1.11s     4MB
@@ -493,8 +563,60 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
         $subject = self::SCOPES[ $scope ];
+        $alias   = self::ALIAS;
 
         $zeroes = array_fill( 0, count( $steps ), 0 );
+
+        /*
+         * THE CUBE, not the request facts.
+         *
+         * A cube row is one event -- the build is an INSERT ... SELECT off raw
+         * with no GROUP BY -- carrying every raw column under its own name plus
+         * the derived ones. So it has the subject, the time and the id this walk
+         * orders by, and a step can name the CLASSIFIED readings (source, medium,
+         * new_vs_returning) and not only what a URL claimed.
+         *
+         * The funnel was already half here: the segment below picks its subjects
+         * through the ordinary reporting stack, which resolves to this same
+         * table. The walk read owa_request joined to owa_document, which v2
+         * ingest does not write at all -- so the segment chose people and the
+         * walk then found none of their events.
+         *
+         * One cube per Property, so the table is resolved from the Profile the
+         * report is drawn for. A Profile with no Property has no cube to read,
+         * which is a funnel that cannot be counted rather than an empty one.
+         */
+        $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite(
+            $this->getParam( 'siteId' ) );
+
+        if ( ! $property ) {
+
+            $this->set( 'funnel_step_error',
+                'This Profile belongs to no Property, so there is no cube to count '
+                . 'the funnel against. Give it a Property and build.' );
+
+            return null;
+        }
+
+        /*
+         * The table has to EXIST, not merely be nameable. tableFor() composes a
+         * name from the Property id whether or not anything has ever built it, so
+         * a Property that has never had a build would otherwise reach MySQL as
+         * "Table 'owa_event_7' doesn't exist" -- an error about the schema for
+         * what is really "there is nothing to count yet".
+         */
+        $cubes = \OWA\Module\Base\Classes\Cube\Cubes::existing();
+
+        if ( ! isset( $cubes[ (string) $property ] ) ) {
+
+            $this->set( 'funnel_step_error',
+                "This Property's cube has not been built yet, so there is nothing to "
+                . 'count the funnel against. Run a build and reload.' );
+
+            return null;
+        }
+
+        $table = $cubes[ (string) $property ];
 
         $params = array();
         $select = array();
@@ -502,7 +624,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         foreach ( $steps as $i => $step ) {
 
-            $predicate = $this->stepPredicate( $step );
+            $predicate = $this->stepPredicate( $step, $alias );
 
             if ( $predicate === null ) {
 
@@ -531,16 +653,20 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          */
         $params = array_merge( $params, $params );
 
-        $where    = array( '( ' . implode( ' OR ', $any ) . ' )', 'r.site_id = ?' );
+        /*
+         * site_id, not property: a cube holds every Profile under its Property,
+         * and a funnel is drawn for one Profile.
+         */
+        $where    = array( '( ' . implode( ' OR ', $any ) . ' )', $alias . '.site_id = ?' );
         $params[] = (string) $this->getParam( 'siteId' );
 
         $bounds = $this->dateBounds();
 
         if ( $bounds ) {
 
-            // Closed at both ends: the fact tables are RANGE-partitioned on
-            // yyyymmdd, and an open bound reads every partition from there on.
-            $where[]  = 'r.yyyymmdd BETWEEN ? AND ?';
+            // Closed at both ends: the cube is RANGE-partitioned on yyyymmdd,
+            // and an open bound reads every partition from there on.
+            $where[]  = $alias . '.yyyymmdd BETWEEN ? AND ?';
             $params[] = $bounds['start'];
             $params[] = $bounds['end'];
         }
@@ -571,7 +697,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         if ( is_array( $segment ) ) {
 
-            $where[] = 'r.' . $subject . ' IN ('
+            $where[] = $alias . '.' . $subject . ' IN ('
                      . implode( ',', array_fill( 0, count( $segment ), '?' ) ) . ')';
 
             foreach ( $segment as $id ) {
@@ -590,12 +716,13 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * are the tracker's random GUID -- which is what groupsAtSameTime()
          * below exists to handle.
          */
-        $sql = 'SELECT r.' . $subject . ' AS subj, r.timestamp AS ts, r.id AS rid, '
+        $sql = 'SELECT ' . $alias . '.' . $subject . ' AS subj, '
+             . $alias . '.ts AS ts, ' . $alias . '.id AS rid, '
              . implode( ', ', $select )
-             . ' FROM owa_request r'
-             . ' INNER ' . OWA_SQL_JOIN . ' owa_document d ON d.id = r.document_id'
+             . ' FROM ' . $table . ' ' . $alias
              . ' WHERE ' . implode( ' AND ', $where )
-             . ' ORDER BY r.' . $subject . ', r.timestamp, r.id';
+             . ' ORDER BY ' . $alias . '.' . $subject . ', '
+             . $alias . '.ts, ' . $alias . '.id';
 
         /*
          * get_result_iterator(), NOT get_results().

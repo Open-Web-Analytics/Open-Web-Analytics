@@ -1,6 +1,6 @@
 {
     "title": "Traffic Sources",
-    "metrics": "visits",
+    "metrics": "sessions",
     "widgets": [
         {
             "type": "trend-card",
@@ -10,10 +10,9 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date",
-                "metrics": "visits,uniqueVisitors,visitDuration"
+                "metrics": "sessions,totalUsers"
             },
-            "chartMetric": "visits",
-            "headline": "There were {visits.formatted} {visits|visit|visits} from all mediums."
+            "chartMetric": "sessions"
         },
         {
             "type": "grid-card",
@@ -22,9 +21,9 @@
             "title": "Entry Pages",
             "colspan": 6,
             "query": {
-                "metrics": "visits",
-                "dimensions": "entryPageTitle",
-                "sort": "visits-"
+                "metrics": "sessions",
+                "dimensions": "landingPageTitle",
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "entry-pages",
@@ -33,38 +32,38 @@
         },
         {
             "type": "pie",
-            "id": "medium",
+            "id": "sessionMedium",
             "container": "traffic-sources",
             "colspan": 4,
-            "chartMetric": "visits",
+            "chartMetric": "sessions",
             "query": {
-                "dimensions": "medium",
-                "sort": "visits-"
+                "dimensions": "sessionMedium",
+                "sort": "sessions-"
             },
             "title": "Mediums"
         },
         {
             "type": "pie",
-            "id": "source",
+            "id": "sessionSource",
             "container": "traffic-sources-source",
             "title": "Sources",
             "colspan": 4,
-            "chartMetric": "visits",
+            "chartMetric": "sessions",
             "query": {
-                "dimensions": "source",
-                "sort": "visits-"
+                "dimensions": "sessionSource",
+                "sort": "sessions-"
             }
         },
         {
             "type": "pie",
-            "id": "campaign",
+            "id": "sessionCampaign",
             "container": "traffic-sources-campaign",
             "title": "Campaigns",
             "colspan": 4,
-            "chartMetric": "visits",
+            "chartMetric": "sessions",
             "query": {
-                "dimensions": "campaign",
-                "sort": "visits-"
+                "dimensions": "sessionCampaign",
+                "sort": "sessions-"
             }
         },
         {
@@ -74,9 +73,9 @@
             "title": "Referring Web Sites",
             "colspan": 6,
             "query": {
-                "metrics": "visits",
-                "dimensions": "referralWebSite",
-                "sort": "visits-"
+                "metrics": "sessions",
+                "dimensions": "referrerHost",
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "referring-sites",
@@ -90,9 +89,9 @@
             "title": "Countries",
             "colspan": 6,
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "country",
-                "sort": "visits-"
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "geolocation",
@@ -100,28 +99,16 @@
             }
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "topsources",
             "container": "top-sources",
             "title": "Top Sources",
             "colspan": 6,
             "query": {
-                "dimensions": "source,medium",
-                "sort": "visits-",
+                "metrics": "sessions",
+                "dimensions": "sessionSourceMedium",
+                "sort": "sessions-",
                 "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "source",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "source-detail",
-                    "source": "%s",
-                    "medium": "%s"
-                },
-                "valueColumns": [
-                    "source",
-                    "medium"
-                ]
             },
             "more": {
                 "reportId": "sources",

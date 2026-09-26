@@ -47,7 +47,7 @@
 
     var trend = new OWA.resultSetExplorer('trend-chart');
     trend.setDataLoadUrl(trendurl);
-    trend.options.sparkline.metric = 'visits';
+    trend.options.sparkline.metric = 'sessions';
     <?php if ($view->trendTitle):?>
     trend.asyncQueue.push(['renderTemplate', '<?php echo $view->trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
     <?php endif;?>

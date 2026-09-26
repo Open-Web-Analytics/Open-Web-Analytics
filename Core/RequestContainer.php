@@ -421,6 +421,34 @@ class RequestContainer {
     }
 
     /**
+     * Move the request clock, BOTH readings of it.
+     *
+     * THE TWO FIELDS HAD TO BE SET TOGETHER AND ONE CALLER SET ONE. $timestamp is
+     * seconds and $timestamp_usec is the same instant in microseconds; the
+     * constructor takes them from a single microtime() reading so they cannot
+     * disagree. Assigning ->timestamp directly broke that: seconds moved and
+     * microseconds did not.
+     *
+     * That is not cosmetic, because v2 reads the MICROSECOND field. `ts` is
+     * TrackingEventHelpers::edgeTimestampMicroseconds(), yyyymmdd is derived from
+     * ts, and the event id is a hash over ts. So a caller that backdated
+     * ->timestamp got an event stamped NOW, with today's date parts, and no error
+     * -- measured: the reporting e2e seeder spreads its fixture over four days by
+     * assigning ->timestamp per event, and every row landed on today.
+     *
+     * Seconds in, because that is what every caller has and it is the coarser of
+     * the two: multiplying up cannot invent precision, where truncating down would
+     * throw some away.
+     *
+     * @param int $seconds
+     */
+    public function setTimestamp( $seconds ) {
+
+        $this->timestamp      = (int) $seconds;
+        $this->timestamp_usec = ( (int) $seconds ) * 1000000;
+    }
+
+    /**
      * Edge receipt in microseconds. See the constructor.
      *
      * @return int

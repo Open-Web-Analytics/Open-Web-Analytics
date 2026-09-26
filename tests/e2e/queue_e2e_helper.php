@@ -169,12 +169,28 @@ function fileQueueDepth(): int
     return $lines;
 }
 
+/**
+ * Page views stored for this site.
+ *
+ * COUNTED OFF owa_event_raw. This asked owa_request, and the v1 chain that fills
+ * it is unregistered -- so the spec's "stays out of the facts, then ingests on
+ * drain" read 0 before the drain and 0 after, and passed the first half for the
+ * wrong reason while the second half had nothing to see.
+ *
+ * page_view specifically, not every row: one beacon materialises a session_start
+ * and a first_visit beside it, so counting all events would answer 3 for one
+ * page view and the spec asserts an exact count.
+ */
 function countSiteRequests(string $site_id): int
 {
-    $db = owa_coreAPI::dbSingleton();
-    $db->selectFrom('owa_request');
-    $db->selectColumn('COUNT(*) AS c');
-    $db->where('site_id', $site_id);
-    $row = $db->getOneRow();
-    return is_array($row) ? (int) $row['c'] : 0;
+    $db  = owa_coreAPI::dbSingleton();
+    $db->connect();
+
+    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+
+    $rows = $db->get_results(sprintf(
+        "SELECT COUNT(*) AS c FROM %s WHERE site_id = '%s' AND event_type = 'page_view'",
+        $raw, $db->prepare($site_id)));
+
+    return is_array($rows) && $rows ? (int) ((array) $rows[0])['c'] : 0;
 }

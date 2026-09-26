@@ -74,7 +74,7 @@ describe('two trackers sharing the state stores', () => {
     test('both report the session as starting here, because it did', () => {
         const { beacons } = trackBoth();
 
-        // is_new_session marks THIS EVENT as occurring at the start of a new
+        // is_new_session_start marks THIS EVENT as the one that created a new
         // session -- which is what resolveEntryPage() reads it as server-side.
         // It is a fact about the page load, not about which tracker happened to
         // derive it first, so it lives in the page store and both trackers see
@@ -87,8 +87,8 @@ describe('two trackers sharing the state stores', () => {
         // actually happens is that the second site gets no session row of its
         // own, which is the per-site limitation below, not something this flag
         // causes.
-        expect(beacons.a[0].is_new_session).toBe(true);
-        expect(beacons.b[0].is_new_session).toBe(true);
+        expect(beacons.a[0].is_new_session_start).toBe(true);
+        expect(beacons.b[0].is_new_session_start).toBe(true);
     });
 
     test('each site owns the session its facts point at', () => {

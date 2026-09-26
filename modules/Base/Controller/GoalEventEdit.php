@@ -54,7 +54,22 @@ class GoalEventEdit extends \OWA\Core\AdminController {
         /* Whatever it resolved to, so the form saves the row it opened. */
         $this->set( 'goalEventId', $goalEvent->get( 'id' ) );
         $this->set( 'siteId', $siteId );
-        $this->set( 'conditionProperties', self::conditionProperties() );
+        /*
+         * The trigger first, because the condition vocabulary depends on it: a
+         * click carries element_id and a page view does not, and offering a
+         * property the event cannot carry produces a goal that never fires.
+         */
+        $trigger = (string) $goalEvent->get( 'trigger_event_type' );
+
+        if ( $trigger === '' ) {
+
+            $trigger = \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT;
+        }
+
+        $this->set( 'triggerEvent', $trigger );
+        $this->set( 'triggerEvents',
+            \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
+        $this->set( 'conditionProperties', self::conditionProperties( $trigger, $conditions ) );
 
         /*
          * Group labels still live in settings -- they are labels, not records,
@@ -72,53 +87,49 @@ class GoalEventEdit extends \OWA\Core\AdminController {
     }
 
     /**
-     * What a condition can be written against.
+     * What a condition can be written against, for this trigger event.
      *
-     * Drawn from the tracking property registry rather than hardcoded, so the
-     * list is the properties an event actually carries -- and so it grows with
-     * them instead of drifting. Labelled the way the reporting constraint
-     * builder labels dimensions, because this is the same act.
+     * Classes\GoalVocabulary answers it: the columns of the stored ROW that the
+     * trigger event carries. Three things used to answer this question
+     * differently -- this list offered every client and server PROPERTY name,
+     * marking matched against the event, and GoalEventPredicate kept its own map
+     * of four v1 names -- and none of the three agreed with what gets stored.
      *
+     * A COLUMN ALREADY IN USE IS KEPT IN THE LIST even when the trigger does not
+     * carry it, and labelled as not carried. Dropping it would silently rewrite
+     * the condition to whatever happened to be first in the picker the next time
+     * anyone saved the form, which is a worse failure than showing something
+     * that cannot match.
+     *
+     * @param  string $event_name  the trigger event
+     * @param  array  $conditions  this goal event's stored conditions
      * @return array  list of { name, label }
      */
-    public static function conditionProperties() {
+    public static function conditionProperties( $event_name, array $conditions = array() ) {
 
-        $helpers = \OWA\Core\CoreAPI::getInstance( 'owa_trackingEventHelpers',
-            OWA_BASE_CLASS_DIR . 'trackingEventHelpers.php' );
+        $available = \OWA\Module\Base\Classes\GoalVocabulary::columnsForEvent( $event_name );
 
-        $names = array();
+        $out = array();
 
-        foreach ( array( 'clientProperties', 'serverProperties' ) as $group ) {
+        foreach ( $available as $name => $label ) {
 
-            if ( ! method_exists( $helpers, $group ) ) {
+            $out[] = array( 'name' => $name, 'label' => $label );
+        }
+
+        foreach ( $conditions as $condition ) {
+
+            $name = (string) ( $condition['condition_property'] ?? '' );
+
+            if ( $name === '' || isset( $available[ $name ] ) ) {
 
                 continue;
             }
 
-            foreach ( array_keys( (array) $helpers->$group() ) as $name ) {
-
-                $names[ $name ] = $name;
-            }
-        }
-
-        /*
-         * page_uri first and always present. It is what every migrated goal
-         * tests, so it must be selectable even if the registry is unavailable
-         * -- otherwise editing a migrated goal would silently offer no property
-         * that matches the one it has.
-         */
-        unset( $names[ \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI ] );
-
-        ksort( $names );
-
-        $out = array( array(
-            'name'  => \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI,
-            'label' => 'Page URL',
-        ) );
-
-        foreach ( $names as $name ) {
-
-            $out[] = array( 'name' => $name, 'label' => ucwords( str_replace( '_', ' ', $name ) ) );
+            $out[] = array(
+                'name'  => $name,
+                'label' => \OWA\Module\Base\Classes\GoalVocabulary::label( $name )
+                           . ' -- not carried by ' . $event_name,
+            );
         }
 
         return $out;

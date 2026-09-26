@@ -172,8 +172,8 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * Computed once for both chart types rather than once each. There is
      * deliberately NO fallback to the first metric of the query: half the
      * shipped trends name no chartMetric and draw no area chart on purpose --
-     * they are a headline and a row of boxes -- so a fallback would start
-     * drawing charts on thirty-two reports that have never had one.
+     * they are a row of metric boxes and nothing else -- so a fallback would
+     * start drawing charts on thirty-two reports that have never had one.
      *
      * A widget that DOES need a chart therefore has to name its metric, which
      * is why a pie may not inherit a report metric set. See
@@ -406,21 +406,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.sparkline.metric = 'visits';
-<?php if ( ! empty( $owa_w['headline'] ) ): ?>
-        <?php
-            /*
-             * A sentence with named slots, not a template. renderHeadline does
-             * the substituting, so a definition carries no jqote and cannot
-             * hand a template engine source of its own -- which is what has to
-             * be true before a report definition can be authored by a user.
-             *
-             * json_encode, not a quoted echo: a headline is prose and will
-             * contain apostrophes.
-             */
-        ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['renderHeadline', <?php echo json_encode( $owa_w['headline'] ); ?>, '<?php $view->out( $owa_id, false ); ?>-title']);
-<?php endif; ?>
+        <?php echo $owa_id; ?>.options.sparkline.metric = 'sessions';
 <?php
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>
@@ -646,13 +632,26 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
     if ( $owa_hm_path !== '' ):
 
-        $owa_hm_constraints = 'pagePath==' . urlencode( $owa_hm_path );
+        /*
+         * CLICKS ONLY, said as a constraint.
+         *
+         * This asked for `metrics=domClicks`, which no metric declares -- so the
+         * name never resolved and the heatmap's fetch could not run. The filter it
+         * wanted is an ordinary constraint on the event, and eventCount already
+         * counts rows: without it, grouping by clickX and clickY would fold every
+         * non-click row of the page into one bucket at NULL,NULL.
+         *
+         * Comma-separated, which is what parseConstraintsString() splits on. The
+         * path is urlencoded, so a path containing a comma cannot split the pair.
+         */
+        $owa_hm_constraints = 'pagePath==' . urlencode( $owa_hm_path )
+            . ',eventName==click';
 
         $owa_hm_api = $view->makeOverlayApiLink( array(
             'do'             => 'reports',
             'module'         => 'base',
             'version'        => 'v1',
-            'metrics'        => 'domClicks',
+            'metrics'        => 'eventCount',
             'dimensions'     => 'clickX,clickY',
             'constraints'    => $owa_hm_constraints,
             'resultsPerPage' => 1000,

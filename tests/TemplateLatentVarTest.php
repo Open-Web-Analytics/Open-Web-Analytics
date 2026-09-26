@@ -105,17 +105,17 @@ final class TemplateLatentVarTest extends TestCase
             'tabs' => [
                 'site_usage' => [
                     'tab_label'          => 'Site Usage',
-                    'metrics'            => 'visits',
-                    'sort'               => 'visits-',
-                    'trendchartmetric'   => 'visits',
+                    'metrics'            => 'sessions',
+                    'sort'               => 'sessions-',
+                    'trendchartmetric'   => 'sessions',
                 ],
             ],
-            'metrics'          => 'visits',
+            'metrics'          => 'sessions',
             'dimensions'       => 'browser',
             'sort'             => '',   // the view sets no sort -> fall back to the tab's
             'resultsPerPage'   => 25,
             'dimensionLink'    => '',
-            'trendChartMetric' => 'visits',
+            'trendChartMetric' => 'sessions',
             'trendTitle'       => '',
             'constraints'      => '',
             'gridTitle'        => '',
@@ -127,8 +127,8 @@ final class TemplateLatentVarTest extends TestCase
         ]);
 
         // Two API links per tab: the trend (always sorted by date) then the grid.
-        $this->assertSame(['date', 'visits-'], array_column($t->apiCalls, 'sort'));
-        $this->assertStringContainsString("var dimurl = 'API?sort=visits-'", $out);
+        $this->assertSame(['date', 'sessions-'], array_column($t->apiCalls, 'sort'));
+        $this->assertStringContainsString("var dimurl = 'API?sort=sessions-'", $out);
         // Against the $tag typo this read 'API?sort=<none>'.
         $this->assertStringNotContainsString('sort=<none>', $out);
     }
@@ -148,14 +148,14 @@ final class TemplateLatentVarTest extends TestCase
 
         $out = $this->render($t, 'report_dimensionalTrend.php', [
             'tabs' => [
-                'site_usage' => ['tab_label' => 'Site Usage', 'metrics' => 'visits', 'sort' => 'visits-'],
+                'site_usage' => ['tab_label' => 'Site Usage', 'metrics' => 'sessions', 'sort' => 'sessions-'],
             ],
-            'metrics'          => 'visits',
+            'metrics'          => 'sessions',
             'dimensions'       => 'browser',
             'sort'             => 'pageViews-',
             'resultsPerPage'   => 25,
             'dimensionLink'    => '',
-            'trendChartMetric' => 'visits',
+            'trendChartMetric' => 'sessions',
             'trendTitle'       => '',
             'constraints'      => '',
             'gridTitle'        => '',
@@ -376,7 +376,9 @@ final class TemplateLatentVarTest extends TestCase
                      */
                     'headline' => 'New Goal Event', 'siteId' => 'abc123',
                     'goalEvent' => [], 'goalEventId' => '',
-                    'conditionProperties' => [ [ 'name' => 'page_uri', 'label' => 'Page URL' ] ],
+                    'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path' ] ],
+                    'triggerEvent' => 'page_view',
+                    'triggerEvents' => [ 'page_view', 'click' ],
                     'funnelSteps' => [], 'goalGroups' => [ 1 => 'Goal Group 1' ],
                     'conditions' => [], 'validation_errors' => [],
                 ],

@@ -144,9 +144,26 @@ class GoalEvent extends \OWA\Core\Entity {
         return false;
     }
 
-    /** What 1.x's single implemented goal type watches. */
+    /**
+     * What 1.x's single implemented goal type watched, in 1.x's words.
+     *
+     * A v1 event type and a v1 property name. Update025 wrote both when it
+     * migrated the twenty numbered slots, and Update049 translates them:
+     * base.page_request is page_view, and page_uri is the page_path column.
+     * Kept because that is what those rows SAY, and a migration reading them has
+     * to name the thing it is reading.
+     */
     const TRIGGER_PAGE_VIEW = 'base.page_request';
     const PROPERTY_PAGE_URI = 'page_uri';
+
+    /**
+     * What a goal event triggers on when nobody chose.
+     *
+     * A v2 event name, because this is what gets STORED on a save -- and
+     * trigger_event_type is a gate at ingest now, so a v1 name here would match
+     * no row at all.
+     */
+    const TRIGGER_DEFAULT = 'page_view';
 
     function __construct() {
 
@@ -375,44 +392,146 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * Did this event BEGIN the goal event?
+     * Delete this goal event AND the conditions that belong to it.
      *
-     * Separate from matchesEvent() because starting and completing are
-     * different questions with different answers, and 1.x records both.
+     * Entity::delete() removes one row from one table, so every delete until
+     * now left the conditions behind with nothing able to reach them. Measured
+     * on the test install before the fix: 31 of 40 condition rows pointed at a
+     * goal event that no longer existed.
      *
-     * No start condition means no start -- the same rule as matching, and for
-     * the same reason: a vacuously true rule would mark every event as
-     * beginning every goal event on the site.
+     * ON THE ENTITY rather than in GoalEventDelete, because that controller is
+     * not the only caller: the e2e fixtures and GoalManager delete goal events
+     * too, and a cascade living in one of several callers is a cascade that
+     * happens sometimes.
+     *
+     * BY ANY COLUMN, because the inherited signature allows it. The ids are
+     * resolved first, so delete( $property_id, 'property_id' ) cascades as well
+     * as delete( $id ) does.
+     *
+     * CONDITIONS GO ONE AT A TIME, BY ID. GoalEventCondition is cachable, and
+     * Entity::delete() evicts the key it was given -- so a single
+     * delete( $goal_event_id, 'goal_event_id' ) would clear the wrong key and
+     * leave every condition still in cache under its own id.
+     *
+     * @param  mixed  $value
+     * @param  string $col
+     * @return bool
      */
-    public function startedByEvent( $event ) {
+    public function delete( $value = '', $col = 'id' ) {
 
-        $conditions = $this->loadConditions( self::ROLE_START );
+        if ( empty( $value ) ) {
 
-        if ( ! $conditions ) {
+            $value = $this->get( 'id' );
+        }
+
+        foreach ( $this->conditionIdsFor( $col, $value ) as $condition_id ) {
+
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition->delete( $condition_id );
+        }
+
+        return parent::delete( $value, $col );
+    }
+
+    /**
+     * The condition ids belonging to whichever goal events ( $col, $value )
+     * names -- every role, which is why this is not loadConditions().
+     *
+     * @param  string $col
+     * @param  mixed  $value
+     * @return array
+     */
+    protected function conditionIdsFor( $col, $value ) {
+
+        if ( empty( $value ) ) {
+
+            return array();
+        }
+
+        $ids = array( $value );
+
+        if ( $col !== 'id' ) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $this->getTableName() );
+            $db->selectColumn( 'id' );
+            $db->where( $col, $value );
+
+            $ids = array_column( (array) $db->getAllRows(), 'id' );
+        }
+
+        $out = array();
+
+        foreach ( $ids as $id ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $entity->getTableName() );
+            $db->selectColumn( 'id' );
+            $db->where( 'goal_event_id', $id );
+
+            foreach ( (array) $db->getAllRows() as $row ) {
+
+                $out[] = $row['id'];
+            }
+        }
+
+        return $out;
+    }
+    /**
+     * Does this ROW satisfy the goal event?
+     *
+     * THE ROW, NOT THE EVENT, and that is the whole point of moving this. A
+     * condition used to be matched against the tracking event, which meant it
+     * could only test what the beacon and the property callbacks had produced.
+     * Half the vocabulary an author would reach for does not exist until the
+     * row is assembled: device_type is derived in the handler from the
+     * user-agent parse, and the tagged_* columns are transcribed there too. A
+     * goal on "mobile" or "organic" was therefore unexpressible, and a goal
+     * declared on one of those names matched nothing without saying so.
+     *
+     * The row is complete at Ingest::STORE_POST -- deviceColumns() and
+     * taggedColumns() are merged -- so a condition can name any column the row
+     * has. This is also what GA marks on: a key event is decided by the event
+     * parameters, which is what the stored row is.
+     *
+     * THE TRIGGER IS A GATE NOW. trigger_event_type has been stored since
+     * Update025 and read by NOTHING, so a goal declared on a page view was
+     * evaluated against every event on the site -- clicks, scrolls,
+     * session_start, everything. It mostly went unnoticed because a condition
+     * on a page column finds that column NULL on a click, but a goal on, say,
+     * host would have fired on every event type there is. An empty trigger
+     * still means every event: that is what a row written before the column
+     * existed says.
+     *
+     * AN ABSENT OR NULL COLUMN CANNOT ANSWER, so it does not match -- whatever
+     * the operator. Passing NULL through to compare() would make `not` true for
+     * every row that simply does not carry the column: a condition meant to
+     * exclude one medium would mark every event with no medium at all, which is
+     * most of them. The cost is that "medium is not set" is not expressible as
+     * a condition, and that is the right way round.
+     *
+     * @param  array $row         the assembled raw row
+     * @param  array|null $conditions  the conditions, already loaded, or null to
+     *                                 load them -- the caller passes them when
+     *                                 it is matching many rows against the same
+     *                                 goal event, which is ingest's shape.
+     * @return bool
+     */
+    public function matchesRow( array $row, $conditions = null ) {
+
+        $trigger = (string) $this->get( 'trigger_event_type' );
+
+        if ( $trigger !== '' && $trigger !== (string) ( $row['event_type'] ?? '' ) ) {
 
             return false;
         }
 
-        foreach ( $conditions as $condition ) {
+        if ( $conditions === null ) {
 
-            if ( ! $condition->matches( $event->get( $condition->get( 'condition_property' ) ) ) ) {
-
-                return false;
-            }
+            $conditions = $this->loadConditions();
         }
-
-        return true;
-    }
-
-    /**
-     * Does this event satisfy the goal event?
-     *
-     * @param  object $event  the tracking event
-     * @return bool
-     */
-    public function matchesEvent( $event ) {
-
-        $conditions = $this->loadConditions();
 
         /*
          * NO conditions means no match, not every match.
@@ -432,7 +551,10 @@ class GoalEvent extends \OWA\Core\Entity {
 
         foreach ( $conditions as $condition ) {
 
-            $matched = $condition->matches( $event->get( $condition->get( 'condition_property' ) ) );
+            $property = (string) $condition->get( 'condition_property' );
+
+            $matched = isset( $row[ $property ] )
+                       && $condition->matches( $row[ $property ] );
 
             if ( $any && $matched ) {
 

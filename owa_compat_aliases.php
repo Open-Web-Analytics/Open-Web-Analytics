@@ -208,7 +208,6 @@ function owa_compat_class_map(): array
         'owa_campaignHandlers' => 'OWA\\Module\\Base\\Handler\\CampaignHandlers',
         'owa_clickHandlers' => 'OWA\\Module\\Base\\Handler\\ClickHandlers',
         'owa_commerceTransactionHandlers' => 'OWA\\Module\\Base\\Handler\\CommerceTransactionHandlers',
-        'owa_conversionHandlers' => 'OWA\\Module\\Base\\Handler\\ConversionHandlers',
         'owa_documentHandlers' => 'OWA\\Module\\Base\\Handler\\DocumentHandlers',
         'owa_feedRequestHandlers' => 'OWA\\Module\\Base\\Handler\\FeedRequestHandlers',
         'owa_hostHandlers' => 'OWA\\Module\\Base\\Handler\\HostHandlers',

@@ -8,26 +8,16 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from campaigns."
+            }
         },
         {
             "type": "grid",
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "campaign",
-                "sort": "visits-",
+                "dimensions": "sessionCampaign",
+                "sort": "sessions-",
                 "resultsPerPage": 30
-            },
-            "link": {
-                "linkColumn": "campaign",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "campaign-detail",
-                    "campaign": "%s"
-                },
-                "valueColumns": "campaign"
             }
         }
     ],

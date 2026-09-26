@@ -31,6 +31,9 @@ final class WireSurfaceEnumeratedTest extends TestCase
     private const NOT_TRACKING_PROPERTIES = array();
 
     /** @return array every name the tracker emits, across all event types */
+    /** The wire this branch's tracker emits; OWATracker.BEACON_FORMAT_VERSION. */
+    private const CURRENT_BEACON_FORMAT_VERSION = '2';
+
     private function emitted(): array
     {
         $contracts = json_decode(
@@ -39,16 +42,29 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
         $this->assertIsArray( $contracts, 'the beacon contract fixture is unreadable' );
 
+        /*
+         * VERSION 2 ONLY. The registry is keyed by beacon format version and
+         * each version is a standalone record of what that tracker emitted.
+         * This asks what the CURRENT wire carries, so an older version's
+         * properties are not its business -- they are the compat layer's, and
+         * mixing them in is how a retired property looked like part of the
+         * current vocabulary in the first place.
+         */
+        $current = (array) ( $contracts[ self::CURRENT_BEACON_FORMAT_VERSION ] ?? array() );
+
+        $this->assertNotEmpty( $current,
+            'no contract for beacon format version ' . self::CURRENT_BEACON_FORMAT_VERSION );
+
         $names = array();
 
-        foreach ( $contracts as $event_type => $fields ) {
+        foreach ( $current as $event_type => $fields ) {
 
             if ( $event_type === '_comment' ) {
 
                 continue;
             }
 
-            $names = array_merge( $names, $fields );
+            $names = array_merge( $names, (array) $fields );
         }
 
         return array_values( array_unique( $names ) );
@@ -68,9 +84,26 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
         $undeclared = array();
 
+        /*
+         * A BRIDGED NAME COUNTS AS DECLARED, and it has to.
+         *
+         * The registry is the v2 vocabulary: it declares what v2 CALLS things.
+         * A name the tracker sends under an older or shorter spelling is declared
+         * by its rename -- `nps` for num_prior_sessions, `page_url` for
+         * page_location -- and Compat::apply() puts the current spelling on the
+         * event before any reader. Requiring the registry to declare both would
+         * put every compat spelling back into the v2 vocabulary, which is the
+         * thing the rename map exists to keep out of it.
+         *
+         * The allowlist at log.php already reads it this way, through the same
+         * method, so the two agree about what may arrive.
+         */
+        $bridged = \OWA\Module\Base\Classes\Beacon\Compat::bridgedNames();
+
         foreach ( $this->emitted() as $name ) {
 
             if ( isset( $declared[ $name ] )
+                 || in_array( $name, $bridged, true )
                  || array_key_exists( $name, self::NOT_TRACKING_PROPERTIES ) ) {
 
                 continue;
@@ -128,60 +161,37 @@ final class WireSurfaceEnumeratedTest extends TestCase
      */
     public function testBothSidesAreActuallyPopulated(): void
     {
-        $this->assertGreaterThan( 40, count( $this->emitted() ),
+        /*
+         * 40 now: the wire lost landing_url, session_referer, the three
+         * dom_element_* the click no longer collects and the purchase's three
+         * billing-address fields, each because nothing read it. The guard is
+         * against the FIXTURE not being read, so it tracks the wire down rather
+         * than pinning a number the wire is supposed to be able to shrink.
+         */
+        $this->assertGreaterThan( 35, count( $this->emitted() ),
             'Far fewer beacon fields than expected -- the fixture is not being read.' );
 
-        $this->assertGreaterThan( 100, count( $this->declared() ),
+        /*
+         * The floor was 100 while the dead ingest derivations were still
+         * declared: the five cube-pass readings, the v1 handler inputs
+         * (page_uri, full_host, is_browser, is_robot, latitude, longitude,
+         * prior_page), the v1 date parts and the cv halves. It came down to 85
+         * when those went.
+         *
+         * Then eight more: the registry holds only what v2 CALLS things, so the
+         * compat spellings left it -- page_url and nps for the two renames, and
+         * page_type, ad_type, tagged_ad_type, feed_subscription_id,
+         * time_since_last_session and browser, none of which any v2 reader or
+         * dimension touches. 80 is the current vocabulary and the guard still
+         * catches the config not being read.
+         *
+         * Then 84, when landing_url and session_referer came off the wire: the
+         * tags are parsed from page_location on the session-starting beacon, which
+         * is the same URL, and the session's referrer is the referer_host of its
+         * first row.
+         */
+        $this->assertGreaterThan( 70, count( $this->declared() ),
             'Far fewer declared properties than expected -- the config is not being read.' );
-    }
-    /**
-     * The top-up, for slots the config does not declare.
-     *
-     * The pairs are in the config now, but how MANY of them there are is the
-     * maxCustomVars setting rather than a constant -- FactTable builds its cv
-     * columns from the same setting -- so an install that raises it would have
-     * columns with no property definition. This covers those, and must not
-     * overwrite what the config already says.
-     */
-    public function testTheGeneratedCustomVariablePropertiesKeepTheirShape(): void
-    {
-        $helpers = new Helpers();
-        $max     = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
-
-        $this->assertGreaterThan( 0, $max, 'maxCustomVars is what bounds the loop.' );
-
-        $generated = $helpers->addCustomVariableProperties( array() );
-
-        $this->assertCount(
-            $max * 2, $generated,
-            'Each slot needs a name and a value property.' );
-
-        /* The config is authoritative: a declared slot is left exactly alone. */
-        $declared = array( 'cv1_name' => array( 'required' => 'untouched' ) );
-
-        $this->assertSame(
-            array( 'required' => 'untouched' ),
-            $helpers->addCustomVariableProperties( $declared )['cv1_name'],
-            'The top-up overwrote a definition the config had already made.' );
-
-        for ( $slot = 1; $slot <= $max; $slot++ ) {
-
-            foreach ( array( 'name', 'value' ) as $half ) {
-
-                $property = $generated[ "cv{$slot}_{$half}" ] ?? null;
-
-                $this->assertIsArray( $property, "cv{$slot}_{$half} is not generated." );
-
-                $this->assertTrue( $property['required'] );
-                $this->assertSame( 'string', $property['data_type'] );
-                $this->assertSame( '(not set)', $property['default_value'],
-                    'An unset slot must read as (not set), not as empty.' );
-                $this->assertContains(
-                    'owa_trackingEventHelpers::lowercaseString', $property['callbacks'],
-                    "cv{$slot}_{$half} is lowercased so the same variable does not "
-                    . 'split into two dimensions by case.' );
-            }
-        }
     }
 
     /** The slot itself must not survive the split, or it would ride on as junk. */

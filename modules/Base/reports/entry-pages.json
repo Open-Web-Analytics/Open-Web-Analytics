@@ -8,26 +8,25 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits to the site through all entry pages."
+            }
         },
         {
             "type": "grid",
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "entryPagePath,entryPageTitle",
-                "sort": "visits-",
+                "dimensions": "landingPage,landingPageTitle",
+                "sort": "sessions-",
                 "resultsPerPage": 30
             },
             "link": {
-                "linkColumn": "entryPagePath",
+                "linkColumn": "landingPage",
                 "template": {
                     "do": "base.report",
                     "reportId": "document",
                     "pagePath": "%s"
                 },
-                "valueColumns": "entryPagePath"
+                "valueColumns": "landingPage"
             }
         }
     ]

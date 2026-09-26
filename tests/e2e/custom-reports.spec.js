@@ -383,7 +383,7 @@ test.describe('custom reports', () => {
             await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
 
             // Several pills in the one field, which is the point of it.
-            await chooseInChosen(page, 'dlgMetrics', 'visits');
+            await chooseInChosen(page, 'dlgMetrics', 'sessions');
             await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(2);
 
             // Each pill carries its own remove.
@@ -1019,7 +1019,7 @@ test.describe('custom reports', () => {
 
             await startWidget(page, 'grid');
 
-            await chooseInChosen(page, 'dlgMetrics', 'visits');
+            await chooseInChosen(page, 'dlgMetrics', 'sessions');
             await chooseInChosen(page, 'dlgDimensions', 'browserType');
 
             await fillConstraintRow(page,
@@ -1295,14 +1295,14 @@ test.describe('custom reports', () => {
             await openBuilderOnGrid(page);
 
             // Both are on offer to begin with.
-            await expect(page.locator('#dlgMetrics option[value="visits"]')).toHaveCount(1);
+            await expect(page.locator('#dlgMetrics option[value="sessions"]')).toHaveCount(1);
             await expect(page.locator('#dlgMetrics option[value="feedRequests"]')).toHaveCount(1);
 
-            await chooseInChosen(page, 'dlgMetrics', 'visits');
+            await chooseInChosen(page, 'dlgMetrics', 'sessions');
 
             // ...and once visits is chosen, feed requests are gone.
             await expect(page.locator('#dlgMetrics option[value="feedRequests"]')).toHaveCount(0);
-            await expect(page.locator('#dlgMetrics option[value="uniqueVisitors"]')).toHaveCount(1);
+            await expect(page.locator('#dlgMetrics option[value="totalUsers"]')).toHaveCount(1);
 
             // ...while clicks, which the cube serves beside visits, stays.
             await expect(page.locator('#dlgMetrics option[value="domClicks"]')).toHaveCount(1);
@@ -1312,7 +1312,7 @@ test.describe('custom reports', () => {
         test('the pickers stop at four', async ({ page }) => {
             await openBuilderOnGrid(page);
 
-            for (const m of ['visits', 'uniqueVisitors', 'pageViews', 'uniquePageViews']) {
+            for (const m of ['sessions', 'totalUsers', 'pageViews', 'uniquePageViews']) {
                 await chooseInChosen(page, 'dlgMetrics', m);
             }
 
@@ -1465,7 +1465,7 @@ test.describe('custom reports', () => {
             await page.fill('#customReportName', reportName('Carded'));
 
             // A new report starts with a grid block; this report is one card.
-            await onlyWidget(page, 'trend-card', { title: 'Visits', metrics: ['visits'] });
+            await onlyWidget(page, 'trend-card', { title: 'Visits', metrics: ['sessions'] });
 
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
@@ -1522,7 +1522,7 @@ test.describe('custom reports', () => {
          * builder was throwing it away -- narrowMetrics() rebuilds the option
          * list on every change, `$select.val()` answers in OPTION order, and
          * the options were in registry order. So picking visits, then unique
-         * visitors, then page views stored `pageViews,uniqueVisitors,visits`:
+         * visitors, then page views stored `pageViews,totalUsers,visits`:
          * the author's first choice became the last box, and the chart drew the
          * one they picked last.
          *
@@ -1542,7 +1542,7 @@ test.describe('custom reports', () => {
             // Deliberately NOT alphabetical: registry order is
             // pageViews < uniqueVisitors < visits, so an alphabetised list is
             // the exact reverse of this and the assertions can tell them apart.
-            const CHOSEN = ['visits', 'uniqueVisitors', 'pageViews', 'bounceRate'];
+            const CHOSEN = ['sessions', 'totalUsers', 'pageViews', 'bounceRate'];
 
             await onlyWidget(page, 'trend-card', { title: 'Ordered', metrics: CHOSEN });
 
@@ -1563,7 +1563,7 @@ test.describe('custom reports', () => {
                 .filter(e => e.classList.contains('owa_metricInfoboxCharted'))
                 .map(e => e.getAttribute('data-metric')));
 
-            expect(charted).toEqual(['visits']);
+            expect(charted).toEqual(['sessions']);
 
             // One row: every box shares a top edge.
             const tops = await boxes.evaluateAll(els =>
@@ -1605,7 +1605,7 @@ test.describe('custom reports', () => {
             await expect(page.locator('input[name="siteId"]')).not.toHaveValue('');
 
             await page.fill('#customReportName', reportName('Navigated'));
-            await onlyWidget(page, 'trend-card', { title: 'N', metrics: ['visits'] });
+            await onlyWidget(page, 'trend-card', { title: 'N', metrics: ['sessions'] });
 
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
@@ -1938,7 +1938,7 @@ test.describe('custom reports', () => {
 
             await onlyWidget(page, 'trend', {
                 title: 'Visits by medium',
-                metrics: ['visits'],
+                metrics: ['sessions'],
                 dimensions: ['medium'],
             });
 
@@ -1951,7 +1951,7 @@ test.describe('custom reports', () => {
             });
 
             expect(stored.widgets[0].query.dimensions).toBe('date,medium');
-            expect(stored.widgets[0].chartMetric).toBe('visits');
+            expect(stored.widgets[0].chartMetric).toBe('sessions');
 
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
@@ -2050,7 +2050,7 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
             await page.fill('#customReportName', name);
-            await onlyWidget(page, 'trend', { metrics: ['visits'], dimensions: ['medium'] });
+            await onlyWidget(page, 'trend', { metrics: ['sessions'], dimensions: ['medium'] });
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
 
@@ -2231,7 +2231,7 @@ test.describe('custom reports', () => {
             // ...and a metric-boxes widget, which was the first one noticed.
             await addWidget(page, 'metric-boxes', {
                 title: 'Totals',
-                metrics: ['visits'],
+                metrics: ['sessions'],
             });
 
             await page.click('#customReportSubmit');
@@ -2346,7 +2346,7 @@ test.describe('custom reports', () => {
 
             await onlyWidget(page, 'metric-boxes', {
                 title: 'Totals',
-                metrics: ['visits', 'uniqueVisitors', 'pageViews'],
+                metrics: ['sessions', 'totalUsers', 'pageViews'],
             });
 
             await page.click('#customReportSubmit');

@@ -8,26 +8,16 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits for all ads."
+            }
         },
         {
             "type": "grid",
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "ad,entryPagePath",
-                "sort": "visits-",
+                "dimensions": "sessionAd,landingPage",
+                "sort": "sessions-",
                 "resultsPerPage": 25
-            },
-            "link": {
-                "linkColumn": "ad",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "ad-detail",
-                    "ad": "%s"
-                },
-                "valueColumns": "ad"
             }
         }
     ]

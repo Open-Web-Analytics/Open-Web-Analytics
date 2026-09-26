@@ -204,7 +204,7 @@ describe('SPA route changes', () => {
 
         window.history.pushState({}, '', '/route-b');
 
-        const views = sent.filter(e => e.event_type === 'base.page_request');
+        const views = sent.filter(e => e.event_type === 'page_view');
         expect(views).toHaveLength(1);
         expect(views[0].page_url).toContain('/route-b');
     });
@@ -219,7 +219,7 @@ describe('SPA route changes', () => {
 
         window.history.replaceState({ filter: 'x' }, '', '/route-c');
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(0,
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0,
             'replaceState is used to store UI state, and each of those is not a page view.');
     });
 
@@ -238,7 +238,7 @@ describe('SPA route changes', () => {
 
         expect(sent[0].event_type).toBe('user_engagement');
         expect(sent[0].engagement_msec).toBe(7000);
-        expect(sent[1].event_type).toBe('base.page_request');
+        expect(sent[1].event_type).toBe('page_view');
 
         atTime(t, 7500);
         expect(t.consumeEngagementDelta()).toBe(500,
@@ -256,6 +256,6 @@ describe('SPA route changes', () => {
 
         window.history.pushState({}, '', '/route-g');
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(1);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1);
     });
 });

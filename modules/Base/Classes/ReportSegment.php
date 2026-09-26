@@ -75,7 +75,7 @@ class ReportSegment {
 
     /** The dimension that names each kind of subject. */
     const SUBJECT_DIMENSIONS = array(
-        'visitor' => 'visitorId',
+        'visitor' => 'clientId',
         'session' => 'sessionId',
     );
 
@@ -152,7 +152,7 @@ class ReportSegment {
 
         $rsm = new ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
+        $rsm->metrics = $rsm->metricsStringToArray( 'sessions' );
         $rsm->setSiteId( $this->siteId );
         $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );
         $rsm->setLimit( 1 );
@@ -214,7 +214,7 @@ class ReportSegment {
 
         $rsm = new ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
+        $rsm->metrics = $rsm->metricsStringToArray( 'sessions' );
         $rsm->setDimensions( $rsm->dimensionsStringToArray( $dimension ) );
         $rsm->setSiteId( $this->siteId );
         $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );

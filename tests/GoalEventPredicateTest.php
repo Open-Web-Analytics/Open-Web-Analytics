@@ -4,6 +4,22 @@ use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Entity\GoalEvent;
 use OWA\Module\Base\Classes\GoalEventPredicate;
 
+/*
+ * BOOTED, BUT NOT CONNECTED, and the two are different things.
+ *
+ * This file used to touch no framework at all: the compiler took a stubbed goal
+ * event and read a const map of four property names, so nothing had to exist.
+ * The check is GoalVocabulary now -- the same one the builder, the save and
+ * marking use -- and that answers from the raw entity's own columns, which needs
+ * the framework up. The alternative was to keep a second hand-written list of
+ * columns here, which is the drift the vocabulary exists to remove.
+ *
+ * No DATABASE is needed, which is what testItCompilesWithoutAConnection below
+ * still pins: bootstrap_owa.php boots configless when there is no owa-config.php,
+ * which is the shape of CI's unit job.
+ */
+require_once __DIR__ . '/bootstrap_owa.php';
+
 /**
  * A goal event compiled into a funnel step.
  *
@@ -21,10 +37,10 @@ final class GoalEventPredicateTest extends TestCase
     /**
      * A goal event carrying the given conditions, without touching a database.
      *
-     * Stubs rather than the real entities: an Entity's constructor declares its
-     * columns with the OWA_DTD_* constants, which are not defined in the
-     * configless run CI uses -- so building one here would make this file pass
-     * on this box and error in CI.
+     * Stubs rather than the real entities, because the compiler's whole surface
+     * is three getters and a list -- and because a goal event built for real
+     * would need a row, a Property and a condition table to read back, none of
+     * which any of these assertions is about.
      *
      * The compiler asks a goal event for its conditions and its ALL/ANY, and
      * asks a condition for three values. That is the whole surface, and these
@@ -79,17 +95,30 @@ final class GoalEventPredicateTest extends TestCase
     {
         $p = new GoalEventPredicate;
 
-        return array( $p->compile( $this->goalEvent( $conditions, $match ) ), $p );
+        /*
+         * The funnel's own alias, passed in rather than defaulted: the predicate
+         * is compiled into someone else's query and the two agreeing about what
+         * the alias means is the contract.
+         */
+        return array( $p->compile( $this->goalEvent( $conditions, $match ),
+            \OWA\Module\Base\Controller\VisualizationFunnel::ALIAS ), $p );
     }
 
-    /** page_uri is the document's uri, and the value is BOUND, never inlined. */
+    /**
+     * A condition column IS a cube column, and the value is BOUND, never inlined.
+     *
+     * Nothing translates: the cube carries every raw column under its own name,
+     * so `page_path` is `page_path`. There used to be a map of four v1 property
+     * names to four owa_document columns here, which is the table the funnel
+     * joined and which v2 ingest does not write.
+     */
     public function testAnExactPageConditionBecomesAColumnComparison(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_EXACT, '/thanks' ) ) );
+            array( 'page_path', GoalEvent::MATCH_EXACT, '/thanks' ) ) );
 
         $this->assertNotNull( $out );
-        $this->assertStringContainsString( 'd.uri', $out['sql'] );
+        $this->assertStringContainsString( 'e.page_path', $out['sql'] );
         $this->assertStringContainsString( '?', $out['sql'] );
         $this->assertSame( array( '/thanks' ), $out['params'] );
 
@@ -99,39 +128,69 @@ final class GoalEventPredicateTest extends TestCase
     }
 
     /**
-     * A condition the funnel cannot express REFUSES, and names the property.
+     * A condition naming something that is not a column REFUSES, by name.
      *
      * Dropping it would silently WIDEN the goal event: "purchase over 50 from
      * the pricing page" would become "from the pricing page" and report a
      * bigger number that looks entirely plausible. Silently discarded
      * constraints have produced exactly that kind of wrong answer here before.
+     *
+     * page_type is the case that exists in the field: a v1 document
+     * classification with no column on the v2 row, which Update049 leaves in
+     * place -- switching its goal off -- precisely so the name survives to be
+     * shown to whoever has to rewrite it.
+     *
+     * It is also the registry check standing between a stored name and a column
+     * name interpolated into SQL.
      */
-    public function testAConditionTheFunnelCannotExpressIsRefusedByName(): void
+    public function testAConditionThatIsNotAColumnIsRefusedByName(): void
     {
         list( $out, $p ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_EXACT, '/basket' ),
-            array( 'medium',   GoalEvent::MATCH_EXACT, 'organic-search' ) ) );
+            array( 'page_path', GoalEvent::MATCH_EXACT, '/basket' ),
+            array( 'page_type', GoalEvent::MATCH_EXACT, 'attachment' ) ) );
 
         $this->assertNull( $out,
-            'A goal event testing a property the funnel cannot reach compiled anyway, so the '
+            'A goal event testing something that is not a column compiled anyway, so the '
             . 'funnel counts a WIDER condition than the goal event means.' );
 
-        $this->assertSame( 'medium', $p->getError(),
+        $this->assertSame( 'page_type', $p->getError(),
             'The refusal does not name the property, so nobody can tell what to change.' );
+    }
+
+    /**
+     * ...and the columns that used to be refused now compile.
+     *
+     * tagged_medium and device_type are the two that make the point: neither was
+     * expressible before, one because the map held four names and the other
+     * because it is derived in the row handler and never existed as a property at
+     * all. Both are cube columns.
+     */
+    public function testTheColumnsTheOldMapCouldNotReachNowCompile(): void
+    {
+        foreach ( array( 'tagged_medium', 'device_type', 'revenue', 'element_id' )
+                  as $column ) {
+
+            list( $out ) = $this->compile( array(
+                array( $column, GoalEvent::MATCH_EXACT, 'x' ) ) );
+
+            $this->assertNotNull( $out, "$column is a cube column and did not compile." );
+
+            $this->assertStringContainsString( 'e.' . $column, $out['sql'] );
+        }
     }
 
     /** ALL and ANY are what the goal event says, not what the compiler prefers. */
     public function testConditionsCombineTheWayTheGoalEventSays(): void
     {
         list( $all ) = $this->compile( array(
-            array( 'page_uri',   GoalEvent::MATCH_EXACT, '/a' ),
+            array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
             array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ALL );
 
         $this->assertStringContainsString( ' AND ', $all['sql'] );
         $this->assertStringNotContainsString( ' OR ', $all['sql'] );
 
         list( $any ) = $this->compile( array(
-            array( 'page_uri',   GoalEvent::MATCH_EXACT, '/a' ),
+            array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
             array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ANY );
 
         $this->assertStringContainsString( ' OR ', $any['sql'] );
@@ -141,7 +200,7 @@ final class GoalEventPredicateTest extends TestCase
     /**
      * NO conditions matches NOTHING.
      *
-     * matchesEvent() answers the same for the same reason: an empty rule is
+     * matchesRow() answers the same for the same reason: an empty rule is
      * vacuously true, and a half-written goal event that counted every event on
      * the site would be loudly wrong only after the fact. Compiled rather than
      * refused, because it is not an error -- it is a goal event that genuinely
@@ -160,7 +219,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testAnUnknownOperatorMatchesNothing(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', 'sideways', '/a' ) ) );
+            array( 'page_path', 'sideways', '/a' ) ) );
 
         $this->assertStringContainsString( '0 = 1', $out['sql'],
             'An unrecognised operator compiles to something that can match, while compare() '
@@ -182,7 +241,7 @@ final class GoalEventPredicateTest extends TestCase
         foreach ( array( GoalEvent::MATCH_CONTAINS, GoalEvent::MATCH_BEGINS,
                          GoalEvent::MATCH_REGEX ) as $operator ) {
 
-            list( $out ) = $this->compile( array( array( 'page_uri', $operator, '' ) ) );
+            list( $out ) = $this->compile( array( array( 'page_path', $operator, '' ) ) );
 
             $this->assertStringContainsString( '0 = 1', $out['sql'],
                 "An empty $operator target compiles to something that matches, while compare() "
@@ -203,7 +262,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testContainsHasNoPatternLanguage(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_CONTAINS, '50%_off' ) ) );
+            array( 'page_path', GoalEvent::MATCH_CONTAINS, '50%_off' ) ) );
 
         $this->assertStringContainsString( 'LOCATE', $out['sql'] );
         $this->assertStringNotContainsString( 'LIKE', $out['sql'] );
@@ -226,15 +285,27 @@ final class GoalEventPredicateTest extends TestCase
         $this->assertTrue( GoalEvent::compare( null, GoalEvent::MATCH_NOT, 'Checkout' ) );
     }
 
-    /** Every property the compiler accepts is one a funnel step can be written on. */
-    public function testEveryAcceptedPropertyCompiles(): void
+    /**
+     * Every column the vocabulary offers compiles.
+     *
+     * The builder, the save validation, marking and this all read
+     * GoalVocabulary, so a column any of them accepts has to be one a funnel step
+     * can be written on -- otherwise a goal saved through the form refuses to
+     * draw, and the author is told to change something the form offered them.
+     */
+    public function testEveryColumnTheVocabularyOffersCompiles(): void
     {
-        foreach ( array_keys( GoalEventPredicate::COLUMNS ) as $property ) {
+        $columns = \OWA\Module\Base\Classes\GoalVocabulary::columns();
+
+        $this->assertGreaterThan( 20, count( $columns ),
+            'the vocabulary came back nearly empty, so this would prove nothing' );
+
+        foreach ( $columns as $column ) {
 
             list( $out ) = $this->compile( array(
-                array( $property, GoalEvent::MATCH_EXACT, 'x' ) ) );
+                array( $column, GoalEvent::MATCH_EXACT, 'x' ) ) );
 
-            $this->assertNotNull( $out, "$property is listed as accepted but does not compile." );
+            $this->assertNotNull( $out, "$column is offered but does not compile." );
         }
     }
 
@@ -255,7 +326,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testItCompilesWithoutAConnection(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_uri', GoalEvent::MATCH_CONTAINS, '/checkout' ) ) );
+            array( 'page_path', GoalEvent::MATCH_CONTAINS, '/checkout' ) ) );
 
         $this->assertNotNull( $out );
         $this->assertNotSame( '', $out['sql'] );

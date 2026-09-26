@@ -127,7 +127,7 @@ class Metric extends \OWA\Core\Base {
     
     var $name;
     
-    var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency');
+    var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds');
 
     var $type, $entity, $all_columns;
         
@@ -293,7 +293,7 @@ class Metric extends \OWA\Core\Base {
                     /*
                      * A CONDITION IS THE SAME SCAN, not a subquery. Most of the
                      * v2 vocabulary is "count the rows that are X" --
-                     * pageViews, domClicks, downloads, transactions, keyEvents
+                     * pageViews, downloads, transactions, goalConversions
                      * -- and an event table answers that by testing a column on
                      * each row it is already reading. Measured on this box:
                      * EXPLAIN says select_type=SIMPLE, Using where; Using index.
@@ -345,7 +345,37 @@ class Metric extends \OWA\Core\Base {
                     break;
                 
                 case 'sum':
-                    $statement = $db->sum( $this->getColumn() );
+
+                    /*
+                     * Conditioned the same way count is, and for the same
+                     * reason: summing a column over rows that are not the thing
+                     * being measured answers a different question. Revenue sits
+                     * on a purchase row, so `sum(revenue)` unconditioned would
+                     * be right only for as long as nothing else ever writes to
+                     * that column -- which is a property of today's data, not a
+                     * statement of what the metric means.
+                     *
+                     * ELSE 0, not ELSE NULL, matching count: a grouping with no
+                     * matching rows earned nothing, and 0 is the answer a report
+                     * row wants. The two agree wherever any row matches, so the
+                     * choice only shows up on the empty case.
+                     */
+                    if ( $this->hasCondition() ) {
+
+                        $where = $this->renderCondition();
+
+                        // '' means the condition could not be rendered, and
+                        // summing every row instead would be a metric quietly
+                        // answering a different question.
+                        $statement = $where === ''
+                            ? null
+                            : sprintf( 'sum(CASE WHEN %s THEN %s ELSE 0 END)',
+                                  $where, $this->getColumn() );
+
+                    } else {
+
+                        $statement = $db->sum( $this->getColumn() );
+                    }
                     break;
 
                 /*

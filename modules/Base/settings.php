@@ -157,7 +157,6 @@ return array(
             'description' =>
                 'Controls the logging of requests made by named users.',
         ),
-        'log_owa_user_names' => array( 'default' => true ),
         'log_robots' => array(
             'default'  => false,
             'storable' => true,
@@ -170,6 +169,11 @@ return array(
                 . 'spiders. Turning this feature on will dramatically increase the '
                 . 'number of requests that are processed and logged.',
         ),
+        /*
+         * Whether user_id is stored. It gated user_name and user_email, which are
+         * custom user properties now (PLAN.html §2.26.1), so it moves to the one
+         * identity field left in the release vocabulary -- see gateUserId().
+         */
         'log_visitor_pii' => array( 'default' => true ),
         'logo_image_path' => array( 'default' => 'base/i/owa-logo-100w.png' ),
         'mailer-from' => array( 'default' => '' ),
@@ -197,6 +201,34 @@ return array(
                 'This is the e-mail address that new visitor e-mails will be sent to.',
         ),
         'ns' => array( 'default' => 'owa_' ),
+
+        /*
+         * The URL parameter names a campaign tag arrives under.
+         *
+         * EMPTY MEANS ns-PREFIXED, which is what OWA has always done: owa_source,
+         * owa_medium and so on, honouring a custom `ns`. Setting it names the
+         * parameters explicitly instead, which is how a site opts into GA's --
+         * utm_source, utm_medium, utm_campaign, utm_term, utm_content -- without
+         * having to change its links.
+         *
+         * PROPERTY-SCOPED, because a Property is a website and its links are its
+         * own. The install default covers the common case of one convention
+         * everywhere; a Property that arrived from a GA setup overrides it.
+         *
+         * It has to be a SERVER setting. The tracker used to parse the tags and
+         * had setCampaignSourceKey() and friends for exactly this, but the parse
+         * moved server-side and the server built its own ns-prefixed list -- so a
+         * site calling those setters was renaming a key nothing read, and its
+         * campaigns silently stopped being attributed.
+         *
+         * Keyed by ROLE, not by parameter name, so the two ends cannot disagree
+         * about which tag is the medium.
+         */
+        'campaignKeys' => array(
+            'default'  => array(),
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+        ),
         'numGoalGroups' => array( 'default' => 5 ),
         'numGoals' => array( 'default' => 15 ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5' ),
@@ -313,6 +345,36 @@ return array(
         'useStaticConfigOnly' => array( 'default' => false ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true ),
         'user_id_illegal_chars' => array( 'default' => array( ' ', ';', '\'', '"', '|', ')', '(' ) ),
-        'v2_event_types' => array( 'default' => array( 'user_engagement', 'scroll', 'file_download', 'form_start', 'form_submit', 'view_search_results', 'exception', 'custom_event' ) ),
+        /*
+         * EVERY EVENT NAME v2 SENDS, and three of them were missing.
+         *
+         * This held only the events with no v1 equivalent. The four that were
+         * RENAMED -- page_view, click, purchase, custom_event -- were registered
+         * under their v1 spellings alone (base.page_request, dom.click,
+         * ecommerce.transaction, track.action), and 4b93b248 made the tracker send
+         * the new names. Only custom_event happened to be listed here as well.
+         *
+         * So a real page_view, click or purchase beacon from the current tracker
+         * was REFUSED at the door: CoreAPI::trackingEventTypes() merges this list
+         * with the v1 one and logEvent() checks it, so the event never reached a
+         * handler. Measured: logEvent('page_view') returned false and wrote no
+         * row, while logEvent('base.page_request') wrote three.
+         *
+         * Nothing caught it because every PHP fixture and test fires the v1
+         * dispatch name. The e2e specs were the only thing driving a real tracker,
+         * and their own assertions were matching v1 names too, so they timed out
+         * waiting for a beacon and reported an empty database instead.
+         *
+         * All three consumers merge THIS setting -- trackingEventTypes(), the
+         * EventRawHandlers registration and the base.processRequest processor --
+         * so the names belong here rather than in three lists.
+         */
+        'v2_event_types' => array( 'default' => array(
+            // renamed from v1; the old spellings stay registered for a cached tracker
+            'page_view', 'click', 'purchase', 'custom_event',
+            // new in v2
+            'user_engagement', 'scroll', 'file_download', 'form_start', 'form_submit',
+            'view_search_results', 'exception',
+        ) ),
         'wiki_url' => array( 'default' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ),    ),
 );

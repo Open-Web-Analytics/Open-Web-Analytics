@@ -29,7 +29,6 @@
     "owa_commerceTransactionHandlers",
     "owa_configurableMetric",
     "owa_controller",
-    "owa_conversionHandlers",
     "owa_coreAPI",
     "owa_date",
     "owa_db",

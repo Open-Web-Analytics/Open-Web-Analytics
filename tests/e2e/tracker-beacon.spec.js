@@ -69,8 +69,8 @@ test.describe('the built tracker fires beacons on the wire', () => {
     test('the page_request beacon is sent to log.php with the site id', async ({ page }) => {
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
 
-        const pageview = beacons.find((u) => /[?&]event_type=base\.page_request/.test(u));
-        expect(pageview, 'no base.page_request beacon was sent').toBeTruthy();
+        const pageview = beacons.find((u) => /[?&]event_type=page_view/.test(u));
+        expect(pageview, 'no page_view beacon was sent').toBeTruthy();
         expect(pageview).toContain('/log.php?');
         expect(pageview).toMatch(/[?&]site_id=e2e-tracker-harness/);
         // Session/visitor identity the server needs to attribute the hit.
@@ -78,9 +78,9 @@ test.describe('the built tracker fires beacons on the wire', () => {
         expect(pageview).toMatch(/[?&]session_id=\d+/);
     });
 
-    test('a click drives a dom.click beacon with the clicked element + site id', async ({ page }) => {
+    test('a click drives a click beacon with the clicked element + site id', async ({ page }) => {
         // Enable click tracking on the live tracker instance, then click the target.
-        // trackClicks() binds the window click handler that assembles dom.click.
+        // trackClicks() binds the window click handler that assembles the click event.
         await page.waitForFunction(() => typeof window.OWATracker !== 'undefined', null, { timeout: 20_000 });
         await page.evaluate(() => window.OWATracker.trackClicks());
 
@@ -88,8 +88,8 @@ test.describe('the built tracker fires beacons on the wire', () => {
         await page.locator('#tracked-btn').click();
 
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(before);
-        const click = beacons.find((u) => /[?&]event_type=dom\.click/.test(u));
-        expect(click, 'no dom.click beacon was sent').toBeTruthy();
+        const click = beacons.find((u) => /[?&]event_type=click/.test(u));
+        expect(click, 'no click beacon was sent').toBeTruthy();
         // The clicked element's identity + the full state pipeline (site/session)
         // must ride the click beacon -- these appear AFTER target_url in the query
         // string, so their presence also proves the beacon wasn't truncated.
@@ -102,7 +102,7 @@ test.describe('the built tracker fires beacons on the wire', () => {
 
     test("a clicked link whose href has '#' and '&' still sends a complete beacon", async ({ page }) => {
         // Regression for the value-truncation bug, end to end in a real browser.
-        // The link's href ('#sec?a=1&b=2') becomes the dom.click target_url. With
+        // The link's href ('#sec?a=1&b=2') becomes the click's target_url. With
         // raw GET values the '#' made the browser drop the rest of the beacon URL
         // as a fragment, so nothing after target_url reached the server. Now that
         // values are url-encoded, the whole href rides as one token and the params
@@ -114,8 +114,8 @@ test.describe('the built tracker fires beacons on the wire', () => {
         await page.locator('#tracked-link').click();
 
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(before);
-        const click = beacons.slice(before).find((u) => /[?&]event_type=dom\.click/.test(u));
-        expect(click, 'no dom.click beacon was sent for the fragment link').toBeTruthy();
+        const click = beacons.slice(before).find((u) => /[?&]event_type=click/.test(u));
+        expect(click, 'no click beacon was sent for the fragment link').toBeTruthy();
 
         // The browser resolves the href to an absolute URL, so target_url ends in
         // the encoded fragment. Its structural chars must be percent-encoded on the

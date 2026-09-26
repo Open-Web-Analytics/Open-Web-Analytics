@@ -4,12 +4,18 @@ const path = require('path');
 /**
  * One slice per LABEL, not one per row.
  *
- * A boolean column holds three values: 1, 0 and NULL each group separately in
- * SQL, so `isRepeatVisitor` comes back as three rows on any site with history
- * predating the derivation fix. The dashboard's Visitor Types pie folds 0 and
- * NULL together with valueLabels because they mean the same thing -- this
- * visitor had not been here before -- and the pie drew that as two slices both
- * labelled "New", splitting the total between them.
+ * THE REPORT THAT NEEDED THIS IS GONE. The dashboard's Visitor Types pie
+ * grouped by `isRepeatVisitor`, a nullable tinyint whose 1, 0 and NULL each
+ * group separately in SQL, and folded 0 and NULL onto one name with a
+ * valueLabels map -- and drew two slices both labelled "New", splitting the
+ * total between them. v2 stores the label instead (Cube\NewVsReturningStep),
+ * so that dimension and its map are both deleted and no shipped report sets
+ * valueLabels any more.
+ *
+ * The folding stays because it is a documented option of a configurable widget
+ * -- resultSetExplorer declares it, and a custom report may still set it -- so
+ * the dimension name below is deliberately an arbitrary key rather than a real
+ * one. What is pinned is the widget's behaviour, not a vocabulary.
  *
  * Driven against the BUILT bundle rather than a copy of the loop, so it cannot
  * pass while the shipped pie does something else. jsdom cannot paint, which
@@ -49,7 +55,7 @@ describe('a pie draws one slice per label', () => {
         const resultSet = {
             guid: 'pie-test',
             resultsRows: rows.map(([value, formatted, visits]) => ({
-                isRepeatVisitor: { value, formatted_value: formatted },
+                dimensionUnderTest: { value, formatted_value: formatted },
                 visits: { value: visits },
             })),
             aggregates: { visits: { value: rows.reduce((t, r) => t + r[2], 0) } },
@@ -58,7 +64,7 @@ describe('a pie draws one slice per label', () => {
         const pie = new OWA.pieChart();
 
         pie.mergeOptions({
-            dimension: 'isRepeatVisitor',
+            dimension: 'dimensionUnderTest',
             metric: 'visits',
             numSlices: 10,
             valueLabels: valueLabels,
@@ -71,7 +77,8 @@ describe('a pie draws one slice per label', () => {
 
     /*
      * The shape that produced the bug, exactly: three rows, 1 / 0 / NULL, with
-     * the last two folded onto one label by the report's own value map.
+     * the last two folded onto one label by the report's own value map. Kept as
+     * the case because it is the one that was observed failing.
      */
     test('rows folded onto one label are one slice carrying their total', () => {
         if (!OWA) return;

@@ -135,6 +135,7 @@ class ResultSetManager extends \OWA\Core\Base {
             'percentage'     => array($this, 'formatPercentage'),
             'integer'         => array($this, 'numberFormatter'),
             'boolean'         => array($this, 'booleanFormatter'),
+            'milliseconds'    => array($this, 'formatMilliseconds'),
             'currency'        => array($this, 'formatCurrency')
         );
         
@@ -1016,8 +1017,23 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $dim = $service->getDenormalizedDimension($name, $entity->getName());
 
         if ($dim) {
-            //apply table aliasing to dimension column
-            $dim['column'] = $entity->getTableAlias().'.'.$dim['column'];
+            /*
+             * A dimension registered as an EXPRESSION already carries its own
+             * SQL, with %1$s wherever the alias belongs. Writing the alias in
+             * FRONT of it -- which is what every column dimension needs -- turns
+             * CONCAT(...) into event.CONCAT(...), and MySQL reads that as a call
+             * to a function named CONCAT in a schema named event.
+             */
+            /*
+             * Two arguments, because a date part reading the clock needs the
+             * timezone as well as the alias. An expression that does not use
+             * the second simply ignores it, which is how one substitution
+             * serves both kinds.
+             */
+            $dim['column'] = ! empty( $dim['expression'] )
+                ? sprintf( $dim['column'], $entity->getTableAlias(),
+                    \OWA\Module\Base\Classes\DimensionExpression::timezone() )
+                : $entity->getTableAlias().'.'.$dim['column'];
         } else {
 
             // check for normalized dim
@@ -1068,10 +1084,16 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function setSort($column, $order) {
-
-        //$this->params['orderby'][] = array($this->getColumnName($column), $order);
-    }
+    /*
+     * setSort() WAS HERE and did nothing: its one statement was commented out,
+     * so every call silently produced an unsorted result. Nothing in the
+     * application called it -- ReportsRest goes through
+     * setSorts( sortStringToArray( ... ) ), which is the working path -- so the
+     * only thing it did was read like the obvious way to sort and then not
+     * sort, which cost one test in this suite its meaning before it was
+     * noticed. Deleted rather than implemented, because the plural is already
+     * the one everything uses.
+     */
 
     function setSorts($array) {
 
@@ -1494,11 +1516,54 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     const NOT_SET_LABEL = '(not set)';
 
+    /**
+     * And a value the PIPELINE could not work out reads as "(unknown)".
+     *
+     * A different statement from absence, which is why it gets a different
+     * word. "(not set)" says the row carried nothing; this says a build had
+     * something to read and could not reach an answer -- a visitor whose
+     * acquisition was never captured, or an event whose prior_sessions never
+     * arrived. Folding the two onto one label would lose the distinction that
+     * Classes\V2Event::UNRESOLVED exists to record.
+     *
+     * The sentinel is a control byte, so without this it rendered as NOTHING:
+     * a blank axis label and an unlabelled pie slice. V2Event's own docblock
+     * had described this rendering since the sentinel was introduced, and
+     * nothing implemented it -- every cube column that resolves can emit it,
+     * source and medium included.
+     */
+    const UNKNOWN_LABEL = '(unknown)';
+
     function formatDimensionValue( $data_type, $value ) {
 
         if ( $value === null || $value === '' ) {
 
             return self::NOT_SET_LABEL;
+        }
+
+        if ( $value === \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) {
+
+            return self::UNKNOWN_LABEL;
+        }
+
+        /*
+         * A dimension built from several columns can carry the sentinel in ONE
+         * of its parts -- `(unknown) / referral` is a true statement about a
+         * session whose source never resolved but whose medium did. The
+         * whole-value comparison above cannot see that, so before this was
+         * here a source/medium pair with an unresolved half rendered as ` / `:
+         * a label that looks empty and says nothing, which is the failure the
+         * sentinel was given a label to avoid in the first place.
+         *
+         * Only a joined dimension can reach this. V2Event::strip() removes
+         * control bytes from every observed value, and a pass writes the
+         * sentinel alone or not at all, so no single column holds it beside
+         * other text.
+         */
+        if ( strpos( (string) $value, \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) !== false ) {
+
+            return str_replace( \OWA\Module\Base\Classes\V2Event::UNRESOLVED,
+                self::UNKNOWN_LABEL, (string) $value );
         }
 
         return $this->formatValue( $data_type, $value );
@@ -1549,12 +1614,77 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return date("G:i:s",mktime(0,0,($value)));
     }
 
+    /**
+     * Milliseconds as a duration.
+     *
+     * THE STORED VALUE STAYS MILLISECONDS, which is what the beacon carries --
+     * `engagement_msec`, accrued on the device, the same field and unit GA
+     * collects as engagement_time_msec. Only the display converts, so this is
+     * the same rule "(not set)" follows: the row holds the observation and the
+     * renderer decides how to say it.
+     *
+     * NOT formatSeconds(). That is date("G:i:s", mktime(0,0,$s)), which reads
+     * an hour-of-day back out and therefore WRAPS at 24 hours -- a total
+     * engagement time of 25 hours renders as 1:00:00. Fine for the per-visit
+     * averages it was written for, wrong for a sum across a reporting period,
+     * and this type carries both.
+     *
+     * @param int|null $value milliseconds
+     * @return string
+     */
+    function formatMilliseconds($value) {
+
+        if ( $value === null || $value === '' ) {
+
+            return $value;
+        }
+
+        $seconds = (int) round( $value / 1000 );
+
+        $days    = intdiv( $seconds, 86400 );
+        $hours   = intdiv( $seconds % 86400, 3600 );
+        $minutes = intdiv( $seconds % 3600, 60 );
+        $rest    = $seconds % 60;
+
+        if ( $days ) {
+
+            return sprintf( '%dd %d:%02d:%02d', $days, $hours, $minutes, $rest );
+        }
+
+        if ( $hours ) {
+
+            return sprintf( '%d:%02d:%02d', $hours, $minutes, $rest );
+        }
+
+        return sprintf( '%d:%02d', $minutes, $rest );
+    }
+
+    /**
+     * NULL STAYS NULL, like numberFormatter above.
+     *
+     * A ratio answers NULL on a zero denominator, deliberately: "no visits, so
+     * pages per visit is not a number" is a different answer from "pages per
+     * visit is zero". Formatting that NULL as 0.00% throws the distinction away
+     * at the last step, and reads as a measured zero -- which for a conversion
+     * rate claims people came and did not buy, rather than that nobody came.
+     */
     function formatPercentage($value) {
+
+        if ( $value === null ) {
+
+            return $value;
+        }
 
         return number_format($value * 100, 2).'%';
     }
 
+    /** NULL stays NULL, for the same reason formatPercentage does. */
     function formatCurrency($value) {
+
+        if ( $value === null ) {
+
+            return $value;
+        }
 
         return \OWA\Core\Lib::formatCurrency(
                 $value,

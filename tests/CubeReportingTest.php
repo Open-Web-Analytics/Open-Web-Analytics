@@ -100,13 +100,23 @@ final class CubeReportingTest extends TestCase
          * accident and proves none of them.
          */
         $rows = [
-            // event_type,      path,   visitor,           session,           prior, msec
-            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 100],
-            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 250],
-            ['page_view',     '/two', self::VISITOR,     self::SESSION,     0, 400],
-            ['session_start', '/one', self::VISITOR,     self::SESSION,     0,   0],
-            ['page_view',     '/two', self::VISITOR + 1, self::SESSION + 1, 3, 750],
-            ['click',         '/two', self::VISITOR + 1, self::SESSION + 1, 3,   0],
+            // event_type,      path,   visitor,           session,           prior, msec, revenue
+            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 100, null],
+            ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 250, null],
+            ['page_view',     '/two', self::VISITOR,     self::SESSION,     0, 400, null],
+            ['session_start', '/one', self::VISITOR,     self::SESSION,     0,   0, null],
+            ['page_view',     '/two', self::VISITOR + 1, self::SESSION + 1, 3, 750, null],
+            ['click',         '/two', self::VISITOR + 1, self::SESSION + 1, 3,   0, null],
+
+            /*
+             * Two purchases, BOTH in one of the two sessions. That asymmetry is
+             * the point: transactions (2) differs from the sessions that
+             * converted (1), so a conversion rate computed against the wrong
+             * denominator gives 200% instead of 50% and the fixture says which.
+             * Revenue differs between them so a sum is not a doubled single.
+             */
+            ['purchase',      '/buy', self::VISITOR + 1, self::SESSION + 1, 3,   0, 2500],
+            ['purchase',      '/buy', self::VISITOR + 1, self::SESSION + 1, 3,   0, 1500],
         ];
 
         foreach ($rows as $i => $row) {
@@ -131,6 +141,7 @@ final class CubeReportingTest extends TestCase
                 'ts'              => $ts + $i,
                 'yyyymmdd'        => $day,
                 'page_path'       => $row[1],
+                'revenue'         => $row[6],
             ]);
 
             if (!$event->create()) {
@@ -271,7 +282,7 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame([], (array) $rs->errors);
 
-        $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+        $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
             'the fixture holds six events');
 
         $byName = [];
@@ -291,7 +302,7 @@ final class CubeReportingTest extends TestCase
          */
         ksort($byName);
 
-        $this->assertSame(['click' => 1, 'page_view' => 4, 'session_start' => 1], $byName);
+        $this->assertSame(['click' => 1, 'page_view' => 4, 'purchase' => 2, 'session_start' => 1], $byName);
 
         $this->assertSame((int) $rs->aggregates['eventCount']['value'], $sum,
             'the breakdown must sum to its total');
@@ -326,7 +337,7 @@ final class CubeReportingTest extends TestCase
         // orders by nothing, and the two drivers returned the tie differently.
         ksort($byPath);
 
-        $this->assertSame(['/one' => 3, '/two' => 3], $byPath,
+        $this->assertSame(['/buy' => 2, '/one' => 3, '/two' => 3], $byPath,
             'the cube answers, with its own column and no join');
 
         $this->assertSame('base.event',
@@ -389,16 +400,43 @@ final class CubeReportingTest extends TestCase
             'the table must not be able to empty itself unnoticed');
 
         $missing = [];
+        $joined  = 0;
 
         foreach ($declared as $name => $d) {
 
-            if (!isset($columns[$d['column']])) {
-                $missing[$name] = $d['column'];
+            // A dimension is a column, several columns joined, or a component
+            // of a date. Whichever it is, every column it reads has to exist --
+            // the expression is built from them without anything checking.
+            if (isset($d['parts'])) {
+
+                $joined++;
+
+                foreach ((array) $d['parts'] as $part) {
+
+                    if (!isset($columns[$part])) {
+                        $missing[$name . '.' . $part] = $part;
+                    }
+                }
+
+                continue;
+            }
+
+            // A date part defaults to reading yyyymmdd; naming a column means
+            // reading that one instead, which is how the clock parts get `ts`.
+            $column = isset($d['datePart'])
+                ? ($d['column'] ?? 'yyyymmdd')
+                : $d['column'];
+
+            if (!isset($columns[$column])) {
+                $missing[$name] = $column;
             }
         }
 
         $this->assertSame([], $missing,
             'these dimensions name columns the cube does not have');
+
+        $this->assertGreaterThan(0, $joined,
+            'the joined form must stay exercised here, not merely supported');
     }
 
     /** And each declaration carries what registerDimension() is given. */
@@ -406,10 +444,50 @@ final class CubeReportingTest extends TestCase
     {
         foreach (self::declaredDimensions() as $name => $d) {
 
-            foreach (['column', 'label', 'family', 'description'] as $key) {
+            if (isset($d['parts'])) {
+                $required = ['parts'];
+            } elseif (isset($d['datePart'])) {
+                $required = ['datePart'];
+            } else {
+                $required = ['column'];
+            }
+
+            foreach (array_merge($required, ['label', 'family', 'description']) as $key) {
 
                 $this->assertArrayHasKey($key, $d, $name . ' is missing ' . $key);
-                $this->assertNotSame('', (string) $d[$key], $name . ' has an empty ' . $key);
+                $this->assertNotEmpty($d[$key], $name . ' has an empty ' . $key);
+            }
+
+            // The three forms are alternatives. A declaration carrying two says
+            // one thing to the registry and another to a reader.
+            if (isset($d['parts'])) {
+
+                $this->assertArrayNotHasKey('column', $d,
+                    $name . ' declares both parts and a column; only parts is read.');
+
+                $this->assertArrayNotHasKey('datePart', $d,
+                    $name . ' declares two kinds of expression.');
+
+                $this->assertGreaterThan(1, count((array) $d['parts']),
+                    $name . ' joins fewer than two columns, so it is just a column.');
+
+            } elseif (isset($d['datePart'])) {
+
+                // A date part MAY name a column -- that is how the clock parts
+                // read `ts` rather than the yyyymmdd default -- so unlike the
+                // joined form the two are not in conflict.
+                $this->assertArrayNotHasKey('separator', $d,
+                    $name . ' declares a separator but nothing to separate.');
+
+                $this->assertContains($d['datePart'], array_merge(
+                    array_keys(\OWA\Module\Base\Classes\DimensionExpression::PARTS),
+                    \OWA\Module\Base\Classes\DimensionExpression::CLOCK_PARTS),
+                    $name . ' names a date part nothing can render.');
+
+            } else {
+
+                $this->assertArrayNotHasKey('separator', $d,
+                    $name . ' declares a separator but nothing to separate.');
             }
         }
     }
@@ -423,15 +501,74 @@ final class CubeReportingTest extends TestCase
      */
     public function testTheColumnDimensionsResolveInAQuery(): void
     {
-        foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'visitorId'] as $dim) {
+        foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'clientId'] as $dim) {
 
             $rs = $this->manager('eventCount', $dim)->getResults();
 
             $this->assertSame([], (array) $rs->errors, $dim . ' did not resolve');
 
-            $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+            $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
                 $dim . ' changed the total, so it is filtering rather than grouping');
         }
+    }
+
+    /**
+     * A report can be FILTERED by a metric, not only sorted by one.
+     *
+     * Every v2 metric that counts a kind of event carries a condition, and the
+     * SQL it generates for itself therefore contains a string literal:
+     * `sum(CASE WHEN event.event_type = 'page_view' THEN 1 ELSE 0 END)`. That
+     * expression is the operand of the HAVING clause, and it used to be run
+     * through the value escaper on its way there, which turned every quote into
+     * an escaped one and made the statement unparseable. So `pageViews > 1` --
+     * the ordinary act of hiding the long tail of a report -- returned nothing
+     * at all, on every conditional metric there is.
+     *
+     * It did not surface as a syntax error, which is why it lasted: the added
+     * backslashes desynchronised the placeholder count and the driver's binding
+     * guard refused the statement first.
+     */
+    public function testAReportCanBeFilteredByAConditionalMetric(): void
+    {
+        $rows = function (string $constraint): array {
+
+            $rsm = $this->manager('pageViews', 'pagePath');
+            $rsm->setConstraints($rsm->parseConstraintsString($constraint));
+
+            $rs = $rsm->getResults();
+
+            $this->assertSame([], (array) $rs->errors, $constraint . ' did not resolve');
+
+            $out = [];
+
+            foreach ($rs->getResultsRows() as $row) {
+                $out[$row['pagePath']['value']] = (int) $row['pageViews']['value'];
+            }
+
+            /*
+             * Sorted by key, because the query carries no ORDER BY and a
+             * GROUP BY promises no row order. Comparing with assertSame made
+             * this depend on the order the engine happened to return -- which
+             * is not the same under PDO and mysqli, so it passed on one driver
+             * and failed on the other for a reason that has nothing to do with
+             * what the case is about.
+             */
+            ksort($out);
+
+            return $out;
+        };
+
+        // The fixture: /one has two page views, /two has two, /buy has none.
+        $this->assertSame(['/one' => 2, '/two' => 2], $rows('pageViews>1'));
+
+        // A threshold nothing clears returns nothing -- which is the answer the
+        // broken clause also gave, so the assertion above is what distinguishes
+        // them and this one only guards the boundary.
+        $this->assertSame([], $rows('pageViews>2'));
+
+        // And the filter is on the metric, not on the rows it counts: /buy has
+        // events but no page views, so it is absent above and present here.
+        $this->assertArrayHasKey('/buy', $rows('eventCount>1'));
     }
 
     /**
@@ -446,7 +583,7 @@ final class CubeReportingTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray(
-            'eventCount,pageViews,domClicks,visits,uniqueVisitors,newVisitors,returningVisitors,engagementTime');
+            'eventCount,pageViews,sessions,totalUsers,newUsers,totalEngagementTime');
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(25);
@@ -465,14 +602,12 @@ final class CubeReportingTest extends TestCase
         ksort($got);
 
         $expected = [
-            'eventCount'        => 6,   // every row
+            'eventCount'        => 8,   // every row
             'pageViews'         => 4,   // event_type = page_view
-            'domClicks'         => 1,   // event_type = click
-            'visits'            => 2,   // distinct session_id
-            'uniqueVisitors'    => 2,   // distinct visitor_id
-            'newVisitors'       => 1,   // prior_sessions = 0
-            'returningVisitors' => 1,   // prior_sessions > 0
-            'engagementTime'    => 1500, // 100 + 250 + 400 + 750
+            'sessions'            => 2,   // distinct session_id
+            'totalUsers'    => 2,   // distinct visitor_id
+            'newUsers'       => 1,   // prior_sessions = 0
+            'totalEngagementTime' => 1500, // 100 + 250 + 400 + 750
         ];
 
         ksort($expected);
@@ -501,7 +636,7 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame(4, (int) $rs->aggregates['pageViews']['value']);
 
-        $this->assertSame(6, (int) $rs->aggregates['eventCount']['value'],
+        $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
             'the condition on one metric must not narrow the rows the others see');
     }
 
@@ -585,7 +720,7 @@ final class CubeReportingTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray(
-            'pageViews,visits,uniqueVisitors,eventCount,pagesPerVisit,sessionsPerUser,eventsPerSession');
+            'pageViews,sessions,totalUsers,eventCount,pageViewsPerSession,sessionsPerUser,eventsPerSession');
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(25);
@@ -594,10 +729,88 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame([], (array) $rs->errors);
 
-        // 4 page views, 2 sessions, 2 visitors, 6 events
-        $this->assertSame(2.0, (float) $rs->aggregates['pagesPerVisit']['value'],  '4 / 2');
+        // 4 page views, 2 sessions, 2 visitors, 8 events
+        $this->assertSame(2.0, (float) $rs->aggregates['pageViewsPerSession']['value'],  '4 / 2');
         $this->assertSame(1.0, (float) $rs->aggregates['sessionsPerUser']['value'], '2 / 2');
-        $this->assertSame(3.0, (float) $rs->aggregates['eventsPerSession']['value'], '6 / 2');
+        $this->assertSame(4.0, (float) $rs->aggregates['eventsPerSession']['value'], '8 / 2');
+    }
+
+    /**
+     * The commerce metrics compute what the fixture holds.
+     *
+     * TWO PURCHASES IN ONE OF THE TWO SESSIONS, deliberately. If both numbers
+     * agreed, a conversion rate computed against the wrong denominator would
+     * pass: 2 transactions over 2 sessions is 100% whichever way you read it.
+     * With the purchases in one session, transactions (2) and converting
+     * sessions (1) differ, and 2/2 = 100% is visibly wrong against the 50% a
+     * per-session rate would give.
+     *
+     * The rate here is transactions/visits, which is 100% -- TWO purchases
+     * against TWO visits. That is what the metric is declared to mean, and it
+     * is GA's shape too; a "share of sessions that converted" is a different
+     * metric and would need a distinct count of converting sessions.
+     */
+    public function testTheCommerceMetricsComputeWhatTheFixtureHolds(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray(
+            'transactions,transactionRevenue,revenuePerTransaction,revenuePerSession,ecommerceConversionRate');
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $this->assertSame(2, (int) $rs->aggregates['transactions']['value'],
+            'two purchase rows');
+
+        // 2500 + 1500, in minor units. Different amounts, so a sum cannot pass
+        // by doubling one of them.
+        $this->assertSame(4000, (int) $rs->aggregates['transactionRevenue']['value']);
+
+        $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerTransaction']['value'],
+            '4000 / 2');
+
+        $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerSession']['value'],
+            '4000 / 2 visits');
+
+        $this->assertSame(1.0, (float) $rs->aggregates['ecommerceConversionRate']['value'],
+            '2 transactions / 2 visits');
+    }
+
+    /**
+     * Revenue is summed only over PURCHASES, not over every row.
+     *
+     * The condition is the whole point: `sum(revenue)` unconditioned happens to
+     * be right today only because nothing else writes that column, which is a
+     * property of the data rather than a statement of what the metric means.
+     */
+    public function testRevenueIgnoresRowsThatAreNotPurchases(): void
+    {
+        $db    = owa_coreAPI::dbSingleton();
+        $table = Cubes::tableFor(self::PROPERTY);
+
+        // Put revenue on a PAGE VIEW, which no purchase metric should see.
+        $db->query(sprintf(
+            "UPDATE %s SET revenue = 9999 WHERE event_type = 'page_view' LIMIT 1", $table));
+
+        try {
+            $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+            $rsm->metrics = $rsm->metricsStringToArray('transactionRevenue');
+            $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+            $rsm->setSiteId(self::SITE);
+
+            $rs = $rsm->getResults();
+
+            $this->assertSame(4000, (int) $rs->aggregates['transactionRevenue']['value'],
+                'a page view carrying revenue must not reach a purchase metric');
+        } finally {
+            $db->query(sprintf(
+                "UPDATE %s SET revenue = NULL WHERE event_type = 'page_view'", $table));
+        }
     }
 
     /**
@@ -613,7 +826,7 @@ final class CubeReportingTest extends TestCase
         $rounded = owa_coreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzRounded', 'label' => 'R', 'data_type' => 'decimal',
             'metric_type' => 'ratio', 'entity' => 'base.event',
-            'numerator' => 'eventCount', 'denominator' => 'visits', 'precision' => 2,
+            'numerator' => 'eventCount', 'denominator' => 'sessions', 'precision' => 2,
         ]);
 
         $this->assertSame(0.33, $rounded->computeRatio(1, 3));
@@ -622,7 +835,7 @@ final class CubeReportingTest extends TestCase
         $exact = owa_coreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzExact', 'label' => 'E', 'data_type' => 'decimal',
             'metric_type' => 'ratio', 'entity' => 'base.event',
-            'numerator' => 'eventCount', 'denominator' => 'visits',
+            'numerator' => 'eventCount', 'denominator' => 'sessions',
         ]);
 
         $this->assertEqualsWithDelta(1 / 3, $exact->computeRatio(1, 3), 0.0000001,
@@ -644,7 +857,7 @@ final class CubeReportingTest extends TestCase
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray('visits,pagesPerVisit');
+        $rsm->metrics = $rsm->metricsStringToArray('sessions,pageViewsPerSession');
         // A day the fixture wrote nothing on.
         $rsm->setTimePeriod('date_range', '20200101', '20200101');
         $rsm->setSiteId(self::SITE);
@@ -652,9 +865,9 @@ final class CubeReportingTest extends TestCase
 
         $rs = $rsm->getResults();
 
-        $this->assertSame(0, (int) $rs->aggregates['visits']['value']);
+        $this->assertSame(0, (int) $rs->aggregates['sessions']['value']);
 
-        $this->assertNull($rs->aggregates['pagesPerVisit']['value'],
+        $this->assertNull($rs->aggregates['pageViewsPerSession']['value'],
             'a ratio with nothing to divide by has no value, and 0 would be a claim');
     }
 
@@ -668,9 +881,9 @@ final class CubeReportingTest extends TestCase
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray('pagesPerVisit');
+        $rsm->metrics = $rsm->metricsStringToArray('pageViewsPerSession');
         $rsm->setDimensions($rsm->dimensionsStringToArray('pagePath'));
-        $rsm->setSorts($rsm->sortStringToArray('pagesPerVisit-'));
+        $rsm->setSorts($rsm->sortStringToArray('pageViewsPerSession-'));
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(5);
@@ -712,7 +925,7 @@ final class CubeReportingTest extends TestCase
         $this->assertStringContainsString('round(', $column,
             'and the declared precision with them');
 
-        $this->assertStringNotContainsString('pagesPerVisit', $column,
+        $this->assertStringNotContainsString('pageViewsPerSession', $column,
             'sorting by the alias would sort on a column the query does not select');
     }
 

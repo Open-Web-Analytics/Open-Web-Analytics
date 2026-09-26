@@ -1,0 +1,28 @@
+{
+    "title": "Events",
+    "metrics": "eventCount,sessions,totalUsers",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "eventCount",
+            "query": {
+                "dimensions": "date",
+                "sort": "date",
+                "metrics": "eventCount"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "names",
+            "container": "event-names",
+            "title": "Event Names",
+            "query": {
+                "metrics": "eventCount,sessions,totalUsers",
+                "dimensions": "eventName",
+                "sort": "eventCount-"
+            }
+        }
+    ]
+}

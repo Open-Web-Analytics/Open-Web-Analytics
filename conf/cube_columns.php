@@ -35,6 +35,9 @@
  *            social lists -- the reading that has to stay rebuildable.
  *   is_exit  the session's last event, once the session has closed.
  *   literal  one value for the whole build.
+ *   new_vs_returning
+ *            whether the session was the visitor's first, as the label a
+ *            report groups by rather than a flag a renderer has to name.
  *   compute  PHP works it out; see Classes\Cube\ComputeStep.
  *
  * `absent` names the test that is true when the visitor's ACQUISITION was never
@@ -81,6 +84,16 @@ return array(
     'landing_page_title'    => array( 'kind' => 'copy', 'from' => 'session.page_title' ),
 
     'is_exit' => array( 'kind' => 'is_exit' ),
+
+    /*
+     * New or Returning, read off prior_sessions on the row itself -- so no
+     * join, and no second authority for a fact the row already carries.
+     *
+     * Stamped as the LABEL. The reporting engine groups by a column and the
+     * dimension registry has no slot for value labels, so a stored code has no
+     * way to become two named buckets; see Classes\Cube\NewVsReturningStep.
+     */
+    'new_vs_returning' => array( 'kind' => 'new_vs_returning' ),
 
     // The visitor's acquisition, from the visitor store -- a build's only read
     // outside the partition, and the reason that store exists.

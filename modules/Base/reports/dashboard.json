@@ -1,6 +1,6 @@
 {
     "title": "Dashboard",
-    "metrics": "visits,uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
+    "metrics": "sessions,totalUsers,pageViews,pageViewsPerSession",
     "widgets": [
         {
             "type": "trend-card",
@@ -8,9 +8,9 @@
             "container": "trend-chart",
             "title": "Site Metrics",
             "showTitle": true,
-            "chartMetric": "uniqueVisitors",
+            "chartMetric": "totalUsers",
             "query": {
-                "metrics": "uniqueVisitors,pageViews,bounceRate,pagesPerVisit,visitDuration",
+                "metrics": "totalUsers,pageViews,pageViewsPerSession",
                 "dimensions": "date",
                 "sort": "date"
             }
@@ -46,16 +46,11 @@
             "title": "Visitor Types",
             "colspan": 3,
             "query": {
-                "metrics": "visits",
-                "dimensions": "isRepeatVisitor",
-                "sort": "visits-"
+                "metrics": "sessions",
+                "dimensions": "newVsReturning",
+                "sort": "sessions-"
             },
-            "chartMetric": "visits",
-            "valueLabels": {
-                "1": "Repeat",
-                "0": "New",
-                "": "New"
-            }
+            "chartMetric": "sessions"
         },
         {
             "type": "pie",
@@ -63,36 +58,11 @@
             "container": "visitor-mediums",
             "title": "Traffic Sources",
             "colspan": 3,
-            "chartMetric": "visits",
+            "chartMetric": "sessions",
             "query": {
-                "metrics": "visits",
-                "dimensions": "medium",
-                "sort": "visits-"
-            }
-        },
-        {
-            "type": "grid",
-            "id": "actions",
-            "container": "actions-trend",
-            "title": "Actions",
-            "colspan": 3,
-            "query": {
-                "metrics": "actions",
-                "dimensions": "actionGroup,actionName",
-                "sort": "actions-",
-                "resultsPerPage": 5
-            },
-            "link": {
-                "linkColumn": "actionGroup",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "action-group",
-                    "actionGroup": "%s"
-                },
-                "valueColumns": "actionGroup"
-            },
-            "more": {
-                "reportId": "action-tracking"
+                "metrics": "sessions",
+                "dimensions": "sessionMedium",
+                "sort": "sessions-"
             }
         },
         {
@@ -103,14 +73,14 @@
             "colspan": 3,
             "constraints": [
                 {
-                    "dimension": "medium",
+                    "dimension": "sessionMedium",
                     "value": "referral"
                 }
             ],
             "query": {
-                "metrics": "visits",
-                "dimensions": "referralWebSite",
-                "sort": "visits-",
+                "metrics": "sessions",
+                "dimensions": "referrerHost",
+                "sort": "sessions-",
                 "resultsPerPage": 10
             },
             "more": {
@@ -124,9 +94,9 @@
             "container": "latest-visits",
             "title": "Latest Visits",
             "query": {
-                "metrics": "pagesPerVisit,visitDuration",
-                "dimensions": "ipAddress,hostName,entryPagePath,medium,source,city,country,priorVisitCount",
-                "sort": "visits-",
+                "metrics": "pageViewsPerSession",
+                "dimensions": "ipAddress,hostName,landingPage,sessionSourceMedium,city,country,priorSessionCount",
+                "sort": "sessions-",
                 "resultsPerPage": 10
             },
             "more": {

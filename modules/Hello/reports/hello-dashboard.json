@@ -1,6 +1,6 @@
 {
     "title": "Hello Dashboard",
-    "metrics": "visits,uniqueVisitors,pageViews",
+    "metrics": "sessions,totalUsers,pageViews",
     "widgets": [
         {
             "type": "trend-card",
@@ -8,9 +8,9 @@
             "container": "trend-chart",
             "title": "Traffic",
             "showTitle": true,
-            "chartMetric": "visits",
+            "chartMetric": "sessions",
             "query": {
-                "metrics": "visits,uniqueVisitors,pageViews",
+                "metrics": "sessions,totalUsers,pageViews",
                 "dimensions": "date",
                 "sort": "date"
             }

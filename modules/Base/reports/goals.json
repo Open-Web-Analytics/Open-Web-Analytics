@@ -1,6 +1,6 @@
 {
     "title": "Goals",
-    "metrics": "visits,goalCompletionsAll,goalConversionRateAll,goalAbandonRateAll,goalValueAll",
+    "metrics": "sessions,goalConversions,goalConversionRatePerSession",
     "widgets": [
         {
             "type": "trend",
@@ -11,8 +11,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "goalCompletionsAll",
-            "headline": "There were {goalCompletionsAll.formatted} {goalCompletionsAll|goal|goals} completed."
+            "chartMetric": "goalConversions"
         },
         {
             "type": "metric-boxes",
@@ -22,7 +21,7 @@
             "colspan": 6,
             "boxWidth": "150px",
             "query": {
-                "metrics": "@activeGoalCompletions"
+                "metrics": "goalConversions"
             },
             "showTitle": true
         }

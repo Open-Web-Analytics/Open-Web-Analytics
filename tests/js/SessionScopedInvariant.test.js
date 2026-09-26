@@ -112,7 +112,7 @@ describe('session-scoped properties do not vary within a session', () => {
         first.trackPageView('https://example.com/one');
 
         const action = first.makeEvent();
-        action.setEventType('track.action');
+        action.setEventType('custom_event');
         first.trackEvent(action);
 
         first.sendAccepted();
@@ -244,7 +244,6 @@ describe('session-scoped properties do not vary within a session', () => {
         // The registry is only a contract if it is complete. A property added to
         // a collector without a scope would otherwise be silently unguarded.
         const t = newTracker();
-        OWA.setState(t.storeName('s'), 'session_referer', 'x');
 
         const emitted = Object.keys(t.collectStateProperties())
             .concat(Object.keys(t.collectPageProperties()))
@@ -272,11 +271,31 @@ describe('session-scoped properties do not vary within a session', () => {
         [
             'session_id',
             'prior_session_id',
-            'is_new_visitor',
+            // is_new_visitor was here. Removed with the flag: v2 materialises
+            // a first_visit EVENT from the request-scoped
+            // is_new_visitor_created, and nothing wants a session-scoped
+            // restatement of it -- the acquisition write reads
+            // prior_sessions == 0, which rides every beacon.
             'psts',
             'sts',
-            'session_referer',
+            /*
+             * session_referer AND landing_url were here, and both are gone --
+             * taken twice, as this tripwire demands.
+             *
+             * Each was written once at session start and re-sent from state on
+             * every beacon of the session, so the server could attribute from any
+             * event. It never needed either: the tags are parsed from
+             * page_location on the session-starting beacon, which is the same URL
+             * landing_url held, and the session's referrer is the referer_host of
+             * its first row -- read by the pass through the window it already
+             * opens for the landing page. HTTP_REFERER still rides every beacon.
+             */
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
+
+        // ...and the two that left, asserted absent so their removal cannot be
+        // undone by accident.
+        ['session_referer', 'landing_url']
+            .forEach((prop) => expect(withScope('session')).not.toContain(prop));
 
         // Written once and never rewritten. first_session_date is derived from
         // an anchor that never changes, so it qualifies too.

@@ -80,7 +80,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test.skip(!SELFHOST,
         'Provisions a site, clicks and a domstream; runs only under the self-host e2e runner.');
 
-    /** @type {{site_id:string, document_id:string, page_path:string, constraints:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
+    /** @type {{site_id:string, page_path:string, constraints:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
     let fx;
 
     test.beforeAll(() => {

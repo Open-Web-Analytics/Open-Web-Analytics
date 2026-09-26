@@ -321,7 +321,33 @@ class Entity {
             return $value;
         }
         
-        return self::storageDefaultFor( $column ) ?? $value;
+        $label = self::storageDefaultFor( $column );
+        
+        if ( $label !== null ) {
+            
+            return $label;
+        }
+        
+        /*
+         * WHITESPACE IS NOT A VALUE, whether or not a label is declared.
+         *
+         * Every other flavour of absence -- null, '', false -- is passed through
+         * to be stored as itself, and a column holding '' or NULL reads as
+         * absence everywhere. '   ' does not: it is three bytes that look like a
+         * value, sort like a value and group as their own row in a report.
+         *
+         * The label used to catch this on the way past, so removing the last
+         * declared label left the one case that has to be normalised with
+         * nothing normalising it. The pipeline still trims before this is
+         * reached; this is the entity's own guard for a caller that hands
+         * setProperties() a value directly.
+         */
+        if ( is_string( $value ) && $value !== '' && trim( $value ) === '' ) {
+            
+            return null;
+        }
+        
+        return $value;
     }
     
     /**
@@ -1357,13 +1383,42 @@ class Entity {
     
     /**
      * The DbColumn object behind a column name.
+     *
+     * REFUSES A COLUMN THE ENTITY DOES NOT DECLARE, by name, because the two
+     * callers that reach here with one are both migrations and both mean the
+     * same mistake.
+     *
+     * An update that DROPS a column has a down() which must put it back -- and
+     * by then the entity no longer declares it, because removing it is what
+     * up() did. So addColumn()/addColumnIfMissing() ask here for a definition
+     * that cannot exist. Undefined array key, a DbColumn that is null, and a
+     * down() that reports failure without saying why; the upgrade cycle is the
+     * only job that runs it, so it surfaces far from the change that caused it.
+     *
+     * The fix is always the same and the message says it: a down() restoring a
+     * removed column spells out its own type, the way Update039 and Update046
+     * do. Naming that here means the next one is a sentence rather than an
+     * afternoon.
+     *
+     * @param string $column_name
+     * @return \OWA\Module\Base\Classes\DbColumn
+     * @throws \InvalidArgumentException
      */
     function getColumn($column_name) {
     
         if (empty($this->properties)) {
             return $this->$column_name;
         }
-        
+
+        if ( ! array_key_exists( $column_name, $this->properties ) ) {
+
+            throw new \InvalidArgumentException( sprintf(
+                '%s does not declare a column called "%s". If this is an update\'s '
+              . 'down() restoring a column its up() removed, the entity cannot '
+              . 'describe it any more -- spell the type out in the update itself.',
+                get_class( $this ), $column_name ) );
+        }
+
         return $this->properties[$column_name];
     }
     

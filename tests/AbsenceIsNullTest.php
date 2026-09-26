@@ -70,7 +70,7 @@ final class AbsenceIsNullTest extends TestCase
      */
     public function testHavingIsLeftAlone(): void
     {
-        $this->assertStringNotContainsString( 'IS NULL', $this->clause( 'HAVING', '!=', 'visits', 5 ) );
+        $this->assertStringNotContainsString( 'IS NULL', $this->clause( 'HAVING', '!=', 'sessions', 5 ) );
     }
 
     /**
@@ -108,6 +108,33 @@ final class AbsenceIsNullTest extends TestCase
         $this->assertSame( '(not set)', $rsm->formatDimensionValue( 'string', null ) );
         $this->assertSame( '(not set)', $rsm->formatDimensionValue( 'string', '' ) );
         $this->assertSame( 'london',    $rsm->formatDimensionValue( 'string', 'london' ) );
+    }
+
+    /**
+     * A value the PIPELINE could not resolve is "(unknown)", not "(not set)".
+     *
+     * Two different statements, so two different words: absence means the row
+     * carried nothing, while V2Event::UNRESOLVED means a build had something to
+     * read and could not reach an answer. The sentinel is a control byte, so
+     * before this it rendered as an EMPTY label -- a blank pie slice, on every
+     * cube dimension that can resolve.
+     */
+    public function testAnUnresolvedDimensionRendersAsUnknown(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $this->assertSame( '(unknown)', $rsm->formatDimensionValue(
+            'string', \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) );
+
+        // And it is NOT folded onto absence, which would lose the distinction
+        // the sentinel exists to record.
+        $this->assertNotSame(
+            $rsm->formatDimensionValue( 'string', null ),
+            $rsm->formatDimensionValue( 'string', \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) );
+
+        // An ordinary value is untouched, so the branch above cannot be
+        // swallowing everything.
+        $this->assertSame( 'New', $rsm->formatDimensionValue( 'string', 'New' ) );
     }
 
     /**

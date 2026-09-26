@@ -71,7 +71,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             // not -- see the encoding regression test below). event_type/site_id
             // contain no structural chars so they ride verbatim; the page url's
             // ':' and '/' become %3A / %2F.
-            expect(url).toMatch(/[?&]event_type=base\.page_request/);
+            expect(url).toMatch(/[?&]event_type=page_view/);
             expect(url).toMatch(/[?&]site_id=transport-site/);
             expect(url).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://site.example/p'))));
         } finally {
@@ -101,7 +101,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             expect(spy.sent).toHaveLength(1);
             const url = spy.sent[0];
-            expect(url).toMatch(/[?&]event_type=ecommerce\.transaction/);
+            expect(url).toMatch(/[?&]event_type=purchase/);
             // prepareRequestData flattens an array-of-objects to
             // <param>[<i>][<key>]=value -- brackets ride the wire verbatim.
             expect(url).toContain('ct_line_items[0][li_sku]=SKU-1');
@@ -226,7 +226,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
                 t.trackPageView('https://site.example/p');
 
                 expect(posted).toHaveLength(1);
-                expect(posted[0]['event_type']).toBe('base.page_request');
+                expect(posted[0]['event_type']).toBe('page_view');
             } finally {
                 navigator.sendBeacon = origBeacon;
                 spy.restore();
@@ -258,7 +258,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
     function seedDomStream(t, n) {
         for (let i = 0; i < n; i++) {
             const e = t.makeEvent();
-            e.setEventType('dom.click');
+            e.setEventType('click');
             e.set('dom_element_tag', 'a');
             t.addToEventQueue(e);
         }
@@ -311,7 +311,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             const data = posted[0];
             expect(data['event_type']).toBe('dom.stream');
             // cdPost does NOT encode -- the '{' '"' ':' ride verbatim in the form value.
-            expect(data['stream_events']).toContain('"event_type":"dom.click"');
+            expect(data['stream_events']).toContain('"event_type":"click"');
             expect(data['stream_length']).toBe(12);
         } finally {
             spy.restore();

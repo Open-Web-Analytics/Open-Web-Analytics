@@ -2207,6 +2207,9 @@ class CoreAPI {
         // Tracking Event processing STAGE 1
         // sets any necessary environmental properties from SERVER global
         $teh = \OWA\Core\CoreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $event = \OWA\Module\Base\Classes\Ingest::at(
+            \OWA\Module\Base\Classes\Ingest::EDGE_PRE, $event );
+
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
 		
@@ -2269,6 +2272,14 @@ class CoreAPI {
             return false;
         }
         
+        /*
+         * The last point that can see the request. Everything after this either
+         * goes to a file queue -- drained later, possibly elsewhere, with
+         * $_SERVER long gone -- or straight to the processor.
+         */
+        $event = \OWA\Module\Base\Classes\Ingest::at(
+            \OWA\Module\Base\Classes\Ingest::EDGE_POST, $event );
+
         // queue for later or process event straight away
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'queue_events' ) ||
              \OWA\Core\CoreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
@@ -3293,10 +3304,26 @@ class CoreAPI {
         $ed->attachFilter($filter_name, $callback, $priority);
     }
 
-    public static function filter( $filter_name, $value ) {
+    /**
+     * Run a filter, passing any further arguments to each listener as context.
+     *
+     * VARIADIC, because EventDispatch::filter() has always supported context
+     * arguments -- it reads func_get_args() and hands array_slice($args, 1) to
+     * each listener, chaining only the first -- and this wrapper's fixed
+     * two-argument signature silently dropped them. Every filter point in the
+     * application went through here, so the capability existed and was
+     * unreachable.
+     *
+     * @param  string $filter_name
+     * @param  mixed  $value    chained through the listeners
+     * @param  mixed  ...$context  passed to every listener, unchanged
+     * @return mixed
+     */
+    public static function filter( $filter_name, $value, ...$context ) {
 
         $ed = \OWA\Core\CoreAPI::getEventDispatch();
-        return $ed->filter( $filter_name, $value );
+
+        return $ed->filter( $filter_name, $value, ...$context );
     }
     
     public static function loadEntitiesFromArray( $items, $entity_name ) {

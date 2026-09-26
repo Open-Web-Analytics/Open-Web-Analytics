@@ -93,18 +93,12 @@ describe('the configured lifetime is what the registry answers with', () => {
         expect(OWA.state.getExpirationDays('v')).toBe(90);
     });
 
-    test('the campaign store is configurable too, and the others are left alone', () => {
-
-        const tracker = new OWATracker({ cookie_domain_set: true, site_id: 'exp-site' });
-
-        tracker.setOption('stateStoreExpirations', { c: 14 });
-
-        expect(OWA.state.getExpirationDays('c')).toBe(14);
-        // Naming one store must not disturb another: the snippet only emits the
-        // settings that differ from their default, so the map is routinely
-        // partial.
-        expect(OWA.state.getExpirationDays('v')).toBe(364);
-    });
+    /*
+     * The campaign-store case was here. There is no 'c' store any more: it held
+     * the client's attribution stack, which the server never read, and it went
+     * with the attribution models. The cases around this still cover that
+     * naming one store does not disturb another.
+     */
 
     /**
      * The session store is per site -- it is registered as 's_<siteId>'. The

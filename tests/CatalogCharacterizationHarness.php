@@ -37,10 +37,25 @@ namespace OWA\Tests;
  */
 final class CatalogCharacterizationHarness
 {
-    /** Declarative keys of a dimension registration; anything else is scaffolding. */
+    /**
+     * Declarative keys of a dimension registration; anything else is scaffolding.
+     *
+     * `expression` is recorded even though `column` is derived alongside it,
+     * because it is not decoration: its PRESENCE is what makes
+     * lookupDimension() substitute the table alias into the SQL rather than
+     * write it in front. An expression registered without it would record
+     * identically to one registered with it and produce `event.CONCAT(...)` at
+     * query time, so leaving it out would mean the recording could not see the
+     * difference between a dimension that works and one that cannot run.
+     *
+     * `parts` and `datePart` ride along as the declaration each was built
+     * from, so a change of separator or of basis column is visible as itself
+     * rather than only as a diff in generated SQL.
+     */
     private const DIMENSION_KEYS = array(
         'name', 'entity', 'column', 'family', 'label', 'description',
         'foreign_key_name', 'data_type', 'denormalized',
+        'expression', 'parts', 'datePart',
     );
 
     /** Declarative keys of a metric implementation. */

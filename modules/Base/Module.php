@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 43;
+        $this->required_schema_version = 52;
         return parent::__construct();
     }
 
@@ -92,11 +92,38 @@ class Module extends \OWA\Core\Module {
 
         $this->registerTrackingProperties( 'environmental', $environmental );
 
-        $regular = \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties();
+        /*
+         * REGISTERED HERE, not in registerFilters(), because of when each
+         * runs. registerFilters() is called from Service::initializeFramework()
+         * and this method runs during module REGISTRATION, which is earlier --
+         * so a filter attached there is attached after the maps it would
+         * contribute to have already been built, and contributes nothing.
+         *
+         * This is therefore the hook point for a property contributor, and it
+         * is before the maps are built by construction rather than by luck.
+         */
+        \OWA\Core\CoreAPI::registerFilter( 'tracking_properties_regular',
+            array( '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeClientProperties' ) );
+
+        \OWA\Core\CoreAPI::registerFilter( 'tracking_properties_derived',
+            array( '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeDerivedProperties' ) );
+
+        /*
+         * Filtered as the maps are BUILT, not where they are used, so
+         * everything downstream sees the same set: the allowlist at log.php
+         * reads the regular map, and ProcessEvent reads the derived one.
+         *
+         * A compat layer contributes here what an older tracker still sends
+         * and the current vocabulary no longer declares. tracking_properties
+         * .json stays the statement of what v2 itself carries.
+         */
+        $regular = \OWA\Core\CoreAPI::filter( 'tracking_properties_regular',
+            \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties() );
 
         $this->registerTrackingProperties( 'regular', $regular );
 
-        $derived = \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties();
+        $derived = \OWA\Core\CoreAPI::filter( 'tracking_properties_derived',
+            \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties() );
 
         $this->registerTrackingProperties( 'derived', $derived );
 
@@ -115,6 +142,33 @@ class Module extends \OWA\Core\Module {
         }
 
         $this->registerFilter('tracker_tag_cmds', $this, 'addTrackerCmds', 0);
+
+        /*
+         * The beacon compat layer contributes what an older generation still
+         * sends and the current format no longer declares. Through a FILTER
+         * because the wire keeps moving -- browsers cache trackers, so every
+         * change leaves a generation sending the old shape. What gets dropped
+         * is an entry once nothing carries it; this hook stays.
+         */
+
+        /*
+         * GOAL MARKING, at the point where the row is complete.
+         *
+         * It used to be a step inside EventRawHandlers::row(), computed from the
+         * event while the row literal was still being built -- so device_type and
+         * the tagged_* columns, which are merged in afterwards, were not in scope
+         * when conditions were matched. A goal on "mobile" or "organic" could not
+         * work and did not say so.
+         *
+         * A LISTENER, so the raw handler no longer knows what a goal is: it
+         * assembles a row and hands it to the point. Registered here because
+         * registerFilters() runs from Service::initializeFramework(), which
+         * Caller's constructor calls in every role -- including the logger role
+         * the beacon endpoint runs in, and the drain of a queued file.
+         */
+        \OWA\Core\CoreAPI::registerFilter(
+            \OWA\Module\Base\Classes\Ingest::STORE_POST,
+            array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ) );
     }
 
     function addTrackerCmds( $cmds ) {
@@ -565,1732 +619,34 @@ class Module extends \OWA\Core\Module {
      *
      * The following lines register various data metrics.
      */
-    function registerMetrics() {
-
-        $fact_table_entities = array(
-            'base.session',
-            'base.request',
-            'base.action_fact',
-            'base.domstream',
-            'base.click',
-            'base.commerce_transaction_fact',
-            'base.commerce_line_item_fact'
-        );
-
-        // page views
-        $this->registerMetricDefinition(array(
-            'name'            => 'pageViews',
-            'label'            => 'Page Views',
-            'description'    => 'The total number of pages viewed.',
-            'group'            => 'Site Usage',
-            'entity'        => 'base.request',
-            'metric_type'    => 'count',
-            'data_type'        => 'integer',
-            'column'        => 'id'
-
-        ));
-
-        $this->registerMetricDefinition(array(
-            'name'            => 'pageViews',
-            'label'            => 'Page Views',
-            'description'    => 'The total number of pages viewed.',
-            'group'            => 'Site Usage',
-            'entity'        => 'base.session',
-            'metric_type'    => 'sum',
-            'data_type'        => 'integer',
-            'column'        => 'num_pageviews'
-
-        ));
-
-
-        // unique visitors
-        foreach($fact_table_entities as $factEntity ) {
-
-            $this->registerMetricDefinition(array(
-                'name'            => 'uniqueVisitors',
-                'label'            => 'Unique Visitors',
-                'description'    => 'The total number of unique visitors.',
-                'group'            => 'Site Usage',
-                'entity'        => $factEntity,
-                'metric_type'    => 'distinct_count',
-                'data_type'        => 'integer',
-                'column'        => 'visitor_id'
-
-            ));
-            
-            $this->registerMetricDefinition(array(
-                'name'            => 'visitors',
-                'label'            => 'Visitors',
-                'description'    => 'The total number of visitors.',
-                'group'            => 'Site Usage',
-                'entity'        => $factEntity,
-                'metric_type'    => 'count',
-                'data_type'        => 'integer',
-                'column'        => 'visitor_id'
-
-            ));
-
-        }
-
-        // visits
-
-        // owa_session uses a different column name and has it's own metric registration above.
-        $this->registerMetricDefinition(array(
-            'name'            => 'visits',
-            'label'            => 'Visits',
-            'description'    => 'The total number of visits, also called sessions.',
-            'group'            => 'Site Usage',
-            'entity'        => 'base.session',
-            'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
-            'data_type'        => 'integer', // 'integer', 'currency'
-            'column'        => 'id'
-
-        ));
-
-        $this->registerMetricDefinition(array(
-            'name'            => 'visits',
-            'label'            => 'Visits',
-            'description'    => 'The total number of visits, also called sessions.',
-            'group'            => 'Site Usage',
-            'entity'        => 'base.request',
-            'metric_type'    => 'distinct_count', // 'count', 'distinct_count', 'sum', or 'calculated'
-            'data_type'        => 'integer', // 'integer', 'currency'
-            'column'        => 'session_id'
-
-        ));
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'newVisitors',
-            'label'       => 'New Visitors',
-            'description' => 'The total number of new visitors',
-            'group'       => 'Site Usage',
-            'metric_type' => 'boolean_true_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.session',
-            'column'      => 'is_new_visitor',
-        ) );
-
-        $this->registerMetric(
-            'repeatVisitors',
-            'base.repeatVisitors',
-            '',
-            'Repeat Visitors',
-            'The total number of repeat visitors: unique visitors with two or more visits.',
-            'Site Usage'
-        );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'bounces',
-            'label'       => 'Bounces',
-            'description' => 'The total number of visits with a single page view',
-            'group'       => 'Site Usage',
-            'metric_type' => 'boolean_true_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.session',
-            'column'      => 'is_bounce',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'              => 'visitDuration',
-            'label'             => 'Visit Duration',
-            'description'       => 'The average duration of visits, measured between the first and last page view of each visit.',
-            'group'             => 'Site Usage',
-            'metric_type'       => 'avg_difference',
-            'data_type'         => 'timestamp',
-            'entity'            => 'base.session',
-            'column'            => 'last_req',
-            'subtrahend_column' => 'timestamp',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'uniquePageViews',
-            'label'       => 'Unique Page Views',
-            'description' => 'The total number of unique pages viewed.',
-            'group'       => 'Site Usage',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.request',
-            'column'      => 'document_id',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'          => 'bounceRate',
-            'label'         => 'Bounce Rate',
-            'description'   => 'The percentage of visits that were bounces: single page view visits divided by entry pages.',
-            'group'         => 'Site Usage',
-            'metric_type'   => 'calculated',
-            'data_type'     => 'percentage',
-            'formula'       => 'bounces / visits',
-            'child_metrics' => array( 'bounces', 'visits' ),
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'          => 'pagesPerVisit',
-            'label'         => 'Pages Per Visit',
-            'description'   => 'The average pages viewed per visit: page views divided by visits.',
-            'group'         => 'Site Usage',
-            'metric_type'   => 'calculated',
-            'data_type'     => 'decimal',
-            'formula'       => 'round(pageViews / visits, 2)',
-            'child_metrics' => array( 'pageViews', 'visits' ),
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'actions',
-            'label'       => 'Actions',
-            'description' => 'The total number of action events, an action being an analyst-defined event performed by a user.',
-            'group'       => 'Actions',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.action_fact',
-            'column'      => 'id',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'uniqueActions',
-            'label'       => 'Unique Actions',
-            'description' => 'Total number of unique action events.',
-            'group'       => 'Actions',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.action_fact',
-            'column'      => 'action_name',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'actionsValue',
-            'label'       => 'Action Value',
-            'description' => 'Total value of all action events.',
-            'group'       => 'Actions',
-            'metric_type' => 'sum',
-            'data_type'   => 'integer',
-            'entity'      => 'base.action_fact',
-            'column'      => 'numeric_value',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'feedRequests',
-            'label'       => 'Feed Requests',
-            'description' => 'Total number of feed requests.',
-            'group'       => 'Feeds',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.feed_request',
-            'column'      => 'id',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'feedReaders',
-            'label'       => 'Feed Readers',
-            'description' => 'Total number of feed readers.',
-            'group'       => 'Feeds',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.feed_request',
-            'column'      => 'feed_reader_guid',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'feedSubscriptions',
-            'label'       => 'Feed Subscriptions',
-            'description' => 'Total number of feed subscribers.',
-            'group'       => 'Feeds',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.feed_request',
-            'column'      => 'subscription_id',
-        ) );
-
-        // goals
-        $gcount = \OWA\Core\CoreAPI::getSetting('base', 'numGoals');
-        for ($num = 1; $num <= $gcount;$num++) {
-            $params = array('goal_number' => $num);
-
-            $metric_name = 'goal'.$num.'Completions';
-            $this->registerMetric(
-                $metric_name,
-                'base.goalNCompletions',
-                $params,
-                "Goal $num Completions",
-                "The total number of goal $num completions.",
-                'Goals'
-            );
-
-            $metric_name = 'goal'.$num.'Starts';
-            $this->registerMetric(
-                $metric_name,
-                'base.goalNStarts',
-                $params,
-                "Goal $num Starts",
-                "The total number of goal $num starts.",
-                'Goals'
-            );
-
-            $metric_name = 'goal'.$num.'Value';
-            $this->registerMetric(
-                $metric_name,
-                'base.goalNValue',
-                $params,
-                "Goal $num Value",
-                "The total value of goal $num achieved.",
-                'Goals'
-            );
-        }
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'goalCompletionsAll',
-            'label'       => 'Goal Completions',
-            'description' => 'The total number of goal completions.',
-            'group'       => 'Goals',
-            'metric_type' => 'sum',
-            'data_type'   => 'integer',
-            'entity'      => 'base.session',
-            'column'      => 'num_goals',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'goalStartsAll',
-            'label'       => 'Goal Starts',
-            'description' => 'The total number of goal starts.',
-            'group'       => 'Goals',
-            'metric_type' => 'sum',
-            'data_type'   => 'integer',
-            'entity'      => 'base.session',
-            'column'      => 'num_goal_starts',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'goalValueAll',
-            'label'       => 'Goal Value',
-            'description' => 'The total value of all goals achieved.',
-            'group'       => 'Goals',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.session',
-            'column'      => 'goals_value',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'          => 'goalConversionRateAll',
-            'label'         => 'Goal Conversion Rate',
-            'description'   => 'The rate of goals achieved in all visits: goal completions divided by goal starts.',
-            'group'         => 'Goals',
-            'metric_type'   => 'calculated',
-            'data_type'     => 'percentage',
-            'formula'       => 'goalCompletionsAll / visits',
-            'child_metrics' => array( 'goalCompletionsAll', 'visits' ),
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'          => 'goalAbandonRateAll',
-            'label'         => 'Goal Abandon Rate',
-            'description'   => 'The rate of goal abandons in all visits.',
-            'group'         => 'Goals',
-            'metric_type'   => 'calculated',
-            'data_type'     => 'percentage',
-            'formula'       => 'goalStartsAll / goalCompletionsAll',
-            'child_metrics' => array( 'goalCompletionsAll', 'goalStartsAll' ),
-        ) );
-
-        // ecommerce metrics
-        $this->registerMetricDefinition( array(
-            'name'        => 'lineItemQuantity',
-            'label'       => 'Item Quantity',
-            'description' => 'The total number of items purchased.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'integer',
-            'entity'      => 'base.commerce_line_item_fact',
-            'column'      => 'quantity',
-        ) );
-        $this->registerMetricDefinition( array(
-            'name'        => 'lineItemQuantity',
-            'label'       => 'Item Quantity',
-            'description' => 'The total number of items purchased.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'integer',
-            'entity'      => 'base.session',
-            'column'      => 'commerce_items_quantity',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'lineItemRevenue',
-            'label'       => 'Item Revenue',
-            'description' => 'Total revenue from items purchased.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.commerce_line_item_fact',
-            'column'      => 'item_revenue',
-        ) );
-        $this->registerMetricDefinition( array(
-            'name'        => 'lineItemRevenue',
-            'label'       => 'Item Revenue',
-            'description' => 'Total revenue from items purchased.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.session',
-            'column'      => 'commerce_items_revenue',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'transactions',
-            'label'       => 'Transactions',
-            'description' => 'Total number of transactions.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.commerce_transaction_fact',
-            'column'      => 'id',
-        ) );
-        $this->registerMetricDefinition( array(
-            'name'        => 'transactions',
-            'label'       => 'Transactions',
-            'description' => 'Total number of transactions.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'integer',
-            'entity'      => 'base.session',
-            'column'      => 'commerce_trans_count',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'transactionRevenue',
-            'label'       => 'Revenue',
-            'description' => 'Total revenue from all transactions.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.commerce_transaction_fact',
-            'column'      => 'total_revenue',
-        ) );
-        $this->registerMetricDefinition( array(
-            'name'        => 'transactionRevenue',
-            'label'       => 'Revenue',
-            'description' => 'Total revenue from all transactions.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.session',
-            'column'      => 'commerce_trans_revenue',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'taxRevenue',
-            'label'       => 'Tax Revenue',
-            'description' => 'Total revenue from taxes.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.commerce_transaction_fact',
-            'column'      => 'tax_revenue',
-        ) );
-        $this->registerMetricDefinition( array(
-            'name'        => 'taxRevenue',
-            'label'       => 'Tax Revenue',
-            'description' => 'Total revenue from taxes.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.session',
-            'column'      => 'commerce_tax_revenue',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'shippingRevenue',
-            'label'       => 'Shipping Revenue',
-            'description' => 'Total revenue from shipping.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.commerce_transaction_fact',
-            'column'      => 'shipping_revenue',
-        ) );
-        $this->registerMetricDefinition( array(
-            'name'        => 'shippingRevenue',
-            'label'       => 'Shipping Revenue',
-            'description' => 'Total revenue from shipping.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'currency',
-            'entity'      => 'base.session',
-            'column'      => 'commerce_shipping_revenue',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'uniqueLineItems',
-            'label'       => 'Unique Items',
-            'description' => 'Total number of unique items purchased.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'distinct_count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.commerce_transaction_fact',
-            'column'      => 'sku',
-        ) );
-        $this->registerMetricDefinition( array(
-            'name'        => 'uniqueLineItems',
-            'label'       => 'Unique Items',
-            'description' => 'Total number of unique items purchased.',
-            'group'       => 'E-commerce',
-            'metric_type' => 'sum',
-            'data_type'   => 'integer',
-            'entity'      => 'base.session',
-            'column'      => 'commerce_items_count',
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'          => 'revenuePerTransaction',
-            'label'         => 'Revenue Per Transaction',
-            'description'   => 'Average revenue per transaction.',
-            'group'         => 'E-commerce',
-            'metric_type'   => 'calculated',
-            'data_type'     => 'currency',
-            'formula'       => 'transactionRevenue / transactions',
-            'child_metrics' => array( 'transactionRevenue', 'transactions' ),
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'          => 'revenuePerVisit',
-            'label'         => 'Revenue Per Visit',
-            'description'   => 'Average revenue generated per visit.',
-            'group'         => 'E-commerce',
-            'metric_type'   => 'calculated',
-            'data_type'     => 'currency',
-            'formula'       => 'transactionRevenue / visits',
-            'child_metrics' => array( 'transactionRevenue', 'visits' ),
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'          => 'ecommerceConversionRate',
-            'label'         => 'E-commerce Conversion Rate',
-            'description'   => 'The rate of visits that resulted in an e-commerce transaction.',
-            'group'         => 'E-commerce',
-            'metric_type'   => 'calculated',
-            'data_type'     => 'percentage',
-            'formula'       => 'transactions / visits',
-            'child_metrics' => array( 'transactions', 'visits' ),
-        ) );
-
-        $this->registerMetricDefinition( array(
-            'name'        => 'domClicks',
-            'label'       => 'Clicks',
-            'description' => 'Total number of clicks on DOM elements.',
-            'group'       => 'Clicks',
-            'metric_type' => 'count',
-            'data_type'   => 'integer',
-            'entity'      => 'base.click',
-            'column'      => 'id',
-        ) );
-    }
-
-    function registerDimensions() {
-
-        // fact table entity names used by a number of dimensions.
-        $fact_table_entities = array(
-            'base.action_fact',
-            'base.request',
-            'base.session',
-            'base.domstream',
-            'base.click',
-            'base.commerce_transaction_fact',
-            'base.commerce_line_item_fact'
-        );
-
-
-        // Time Dimensions
-        $this->registerDimension(
-            'date',
-            $fact_table_entities,
-            'yyyymmdd',
-            'Date',
-            'time',
-            'The full date.',
-            '',
-            true,
-            'yyyymmdd'
-        );
-
-        $this->registerDimension(
-            'day',
-            $fact_table_entities,
-            'day',
-            'Day',
-            'time',
-            'The day of the month (1-31).',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'month',
-            $fact_table_entities,
-            'month',
-            'Month',
-            'time',
-            // yyyymm -- 202608, not 8. The COLUMN is called month and the
-            // description said 1-12 for fifteen years, which is the reason to
-            // avoid it as a chart axis and is not true: it orders correctly
-            // across a year boundary, which is what a trend by month needs.
-            'The month, as yyyymm.',
-            '',
-            true,
-            'yyyymm'
-        );
-
-        $this->registerDimension(
-            'year',
-            $fact_table_entities,
-            'year',
-            'Year',
-            'time',
-            'The four digit year.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'dayofweek',
-            $fact_table_entities,
-            'dayofweek',
-            'Day of Week',
-            'time',
-            'The day of the week (1-7).',
-            '',
-            true);
-
-        $this->registerDimension(
-            'dayofyear',
-            $fact_table_entities,
-            'dayofyear',
-            'Day of Year',
-            'time',
-            'The day of the year (1-365).',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'weekofyear',
-            $fact_table_entities,
-            'weekofyear',
-            'Week of Year',
-            'time',
-            'The week of the year (1-52).',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'date',
-            'base.feed_request',
-            'yyyymmdd',
-            'Date',
-            'time',
-            'A date string in YYYYMMDD format (e.g. 20200415).',
-            '',
-            true,
-            'yyyymmdd'
-        );
-
-        $this->registerDimension(
-            'day',
-            'base.feed_request',
-            'day',
-            'Day',
-            'time',
-            'The day of the month (1-31).',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'month',
-            'base.feed_request',
-            'month',
-            'Month',
-            'time',
-            'The month, as yyyymm.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'year',
-            'base.feed_request',
-            'year',
-            'Year',
-            'time',
-            'The four digit year.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'dayofweek',
-            'base.feed_request',
-            'dayofweek',
-            'Day of Week',
-            'time',
-            'The day of the week.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'dayofyear',
-            'base.feed_request',
-            'dayofyear',
-            'Day of Year',
-            'time',
-            'The day of the year.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'weekofyear',
-            'base.feed_request',
-            'weekofyear',
-            'Week of Year',
-            'date',
-            'The week of the year.',
-            '',
-            true
-        );
-
-        // Site Dimensions
-        $this->registerDimension(
-            'siteId',
-            $fact_table_entities,
-            'site_id',
-            'Site ID',
-            'site',
-            'The ID of the the web site.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'siteDomain',
-            'base.site',
-            'domain',
-            'Site Domain',
-            'site',
-            'The domain of the web site.'
-        );
-
-        $this->registerDimension(
-            'siteName',
-            'base.site',
-            'name',
-            'Site Name',
-            'site',
-            'The name of the site.'
-        );
-
-        $this->registerDimension(
-            'siteId',
-            'base.feed_request',
-            'site_id',
-            'Site ID',
-            'site',
-            'The ID of the the web site.',
-            '',
-            true
-        );
-
-        // Visitor Dimensions
-        $this->registerDimension(
-            'visitorId',
-            'base.visitor',
-            'id',
-            'Visitor ID',
-            'visitor',
-            'The ID of the visitor.'
-        );
-
-        /*
-         * Denormalized, like every other column that lives ON the fact row --
-         * `date` is registered against this same list the same way.
-         *
-         * It was registered normalized, which means "join this dimension's own
-         * table through a foreign key". There is no foreign key here because
-         * user_name is not a separate table: it is a tracking property with
-         * required => true, so every event carries it and it is written to all
-         * seven fact tables. The result was a dimension that related to nothing,
-         * offered by the picker and then refused at save as an impossible
-         * combination.
-         *
-         * Note this reads the value AS AT THE EVENT. Its sibling userEmail is
-         * registered against base.visitor and so reads the visitor's stored
-         * identity, which VisitorHandlers writes only when the visitor row is
-         * created. The two answer different questions on purpose.
-         */
-        $this->registerDimension(
-            'userName',
-            $fact_table_entities,
-            'user_name',
-            'User Name',
-            'visitor',
-            'A generic string used to store the user name of the visitor.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'userEmail',
-            'base.visitor',
-            'user_email',
-            'Email Address',
-            'visitor',
-            'A generic string used to store the email address of the visitor.'
-        );
-
-        /*
-         * Acquisition -- how the visitor first arrived, as opposed to how this
-         * session did.
-         *
-         * Registered against base.visitor like userEmail, so a report joins the
-         * fact row to owa_visitor and reads the literal off it: ONE hop. The
-         * columns hold strings rather than dimension keys precisely so there is
-         * no second hop to owa_source_dim, which with an INNER join would be
-         * another way for a fact to disappear from a report.
-         *
-         * These are NOT the same as source/medium/campaign registered on the
-         * fact tables. Those answer "where did this session come from"; these
-         * answer "where did this person come from, ever", and they do not change
-         * when the visitor comes back through a different campaign. Both are
-         * worth having and combining them is the point -- revenue by acquisition
-         * source, conversions by first medium.
-         */
-        $visitor_acquisition = array(
-            array( 'acquisitionSource',      'first_session_source',
-                   'Acquisition Source',
-                   'The source that first brought this visitor to the site.' ),
-            array( 'acquisitionMedium',      'first_session_medium',
-                   'Acquisition Medium',
-                   'The medium that first brought this visitor to the site.' ),
-            array( 'acquisitionCampaign',    'first_session_campaign',
-                   'Acquisition Campaign',
-                   'The campaign that first brought this visitor to the site.' ),
-            array( 'acquisitionAd',          'first_session_ad',
-                   'Acquisition Ad',
-                   'The ad that first brought this visitor to the site.' ),
-            array( 'acquisitionSearchTerms', 'first_session_search_terms',
-                   'Acquisition Search Terms',
-                   'The search terms that first brought this visitor to the site.' ),
-        );
-
-        foreach ( $visitor_acquisition as $dimension ) {
-
-            list( $name, $column, $label, $description ) = $dimension;
-
-            $this->registerDimension(
-                $name,
-                'base.visitor',
-                $column,
-                $label,
-                'visitor',
-                $description
-            );
-        }
-
-        $this->registerDimension(
-            'isRepeatVisitor',
-            $fact_table_entities,
-            'is_repeat_visitor',
-            'Repeat Visitor',
-            'visitor',
-            'A boolean indicating whether the visitor has had two or more visits.',
-            '',
-            true,
-            // Declared boolean so it FORMATS as Yes/No wherever it is shown.
-            // The column stores 1 for true and NULL for false, so without this
-            // a pie slice is labelled with an empty string.
-            'boolean'
-        );
-
-        $this->registerDimension(
-            'isNewVisitor',
-            $fact_table_entities,
-            'is_new_visitor',
-            'New Visitor',
-            'visitor',
-            'A boolean indicating whether the visitor has had only one visit.',
-            '',
-            true
-        );
-
-        // Visit/Session Dimensions
-        $this->registerDimension(
-            'sessionId',
-            'base.session',
-            'id',
-            'Session ID',
-            'visit-special',
-            'The ID of the session/visit.'
-        );
-
-        $this->registerDimension(
-            'entryPageUrl',
-            'base.document',
-            'url',
-            'Entry Page URL',
-            'visit',
-            'The url of the page first viewed during a visit.',
-            'first_page_id'
-        );
-
-        $this->registerDimension(
-            'entryPagePath',
-            'base.document',
-            'uri',
-            'Entry Page Path',
-            'visit',
-            'The path portion of the URL of the page first viewed during a visit.',
-            'first_page_id'
-        );
-
-        $this->registerDimension(
-            'entryPageTitle',
-            'base.document',
-            'page_title',
-            'Entry Page Title',
-            'visit',
-            'The title of the page first viewed during a visit.',
-            'first_page_id'
-        );
-
-        $this->registerDimension(
-            'entryPageType',
-            'base.document',
-            'page_type',
-            'Entry Page Type',
-            'visit',
-            'The page type of the page first viewed during a visit.',
-            'first_page_id'
-        );
-
-        $this->registerDimension(
-            'exitPageUrl',
-            'base.document',
-            'url',
-            'Exit Page URL',
-            'visit',
-            'The url of the page last viewed during a visit.',
-            'last_page_id'
-        );
-
-        $this->registerDimension(
-            'exitPagePath',
-            'base.document',
-            'uri',
-            'Exit Page Path',
-            'visit',
-            'The path of the page last viewed during a visit.',
-            'last_page_id'
-        );
-
-        $this->registerDimension(
-            'exitPageTitle',
-            'base.document',
-            'page_title',
-            'Exit Page Title',
-            'visit',
-            'The title of the page last viewed during a visit.',
-            'last_page_id'
-        );
-
-        $this->registerDimension(
-            'exitPageType',
-            'base.document',
-            'page_type',
-            'Exit Page Type',
-            'visit',
-            'The page type of the page last viewed during a visit.',
-            'last_page_id'
-        );
-
-        $this->registerDimension(
-            'daysSinceLastVisit',
-            $fact_table_entities,
-            'days_since_prior_session',
-            'Days Since Last Visit',
-            'visit',
-            'The number of days since the last visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'daysSinceFirstVisit',
-            $fact_table_entities,
-            'days_since_first_session',
-            'Days Since First Visit',
-            'visit',
-            'The number of days since the first visit of the user.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'priorVisitCount',
-            $fact_table_entities,
-            'num_prior_sessions',
-            'Prior Visits',
-            'visit',
-            'The number of prior visits, excluding the current one.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'pagesViewsInVisit',
-            'base.session',
-            'num_pageviews',
-            'Pages Viewed In Visit',
-            'visit',
-            'The number of pages viewed in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'revenueInVisit',
-            'base.session',
-            'commerce_trans_revenue',
-            'Revenue in Visit',
-            'visit',
-            'Revenue generate from e-commerce transactions in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'itemRevenueInVisit',
-            'base.session',
-            'commerce_item_revenue',
-            'Item Revenue in Visit',
-            'visit',
-            'Revenue generate from e-commerce transaction items in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'shippingRevenueInVisit',
-            'base.session',
-            'commerce_shipping_revenue',
-            'Shipping Revenue in Visit',
-            'visit',
-            'Revenue generate from e-commerce shipping in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'taxRevenueInVisit',
-            'base.session',
-            'commerce_tax_revenue',
-            'Tax Revenue in Visit',
-            'visit',
-            'Revenue generate from e-commerce tax in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'transactionsInVisit',
-            'base.session',
-            'commerce_trans_count',
-            'Transactions in Visit',
-            'visit',
-            'Number of e-commerce transactions completed in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'itemQuantityInVisit',
-            'base.session',
-            'commerce_items_quantity',
-            'Item Quantity in Visit',
-            'visit',
-            'Number of e-commerce items purchased completed in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'distinctItemsInVisit',
-            'base.session',
-            'commerce_items_count',
-            'Distinct Items in Visit',
-            'visit',
-            'Number of distinct items purchased in Visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'goalsInVisit',
-            'base.session',
-            'num_goals',
-            'Goals in Visit',
-            'visit',
-            'Goals completed in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'goalStartsInVisit',
-            'base.session',
-            'num_goal_starts',
-            'Goal Starts in Visit',
-            'visit',
-            'Goals started in a visit.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'goalValueInVisit',
-            'base.session',
-            'goals_value',
-            'Goal Value in Visit',
-            'visit',
-            'Total value from all goals in a visit.',
-            '',
-            true
-        );
-
-
-
-        // System/Technology Dimensions
-        $this->registerDimension(
-            'browserVersion',
-            'base.ua',
-            'browser',
-            'Browser Version',
-            'system',
-            'The browser version of the visitor.'
-        );
-
-        $this->registerDimension(
-            'browserType',
-            'base.ua',
-            'browser_type',
-            'Browser Type',
-            'system',
-            'The browser type of the visitor.'
-        );
-
-        $this->registerDimension(
-            'osType',
-            'base.os',
-            'name',
-            'Operating System',
-            'system',
-            'The operating System of the visitor.'
-        );
-
-        $this->registerDimension(
-            'language',
-            $fact_table_entities,
-            'language',
-            'Language',
-            'system',
-            'The language of the visit.',
-            '',
-            true
-        );
-
-        // Geo Dimensions
-        $this->registerDimension(
-            'city',
-            'base.location_dim',
-            'city',
-            'City',
-            'geo',
-            'The city of the visitor.'
-        );
-
-        $this->registerDimension(
-            'country',
-            'base.location_dim',
-            'country',
-            'Country',
-            'geo',
-            'The country of the visitor.'
-        );
-
-        $this->registerDimension(
-            'latitude',
-            'base.location_dim',
-            'latitude',
-            'Latitude',
-            'geo',
-            'The latitude of the visitor.'
-        );
-
-        $this->registerDimension(
-            'longitude',
-            'base.location_dim',
-            'longitude',
-            'Longitude',
-            'geo',
-            'The longitude of the visitor.'
-        );
-
-        $this->registerDimension(
-            'countryCode',
-            'base.location_dim',
-            'country_code',
-            'Country Code',
-            'geo',
-            'The country code for the inferred country location of visitors.'
-        );
-
-        $this->registerDimension(
-            'stateRegion',
-            'base.location_dim',
-            'state',
-            'State/Region',
-            'geo',
-            'The state or region of the visitor.'
-        );
-
-        // Network Dimensions
-        $this->registerDimension(
-            'ipAddress',
-            $fact_table_entities,
-            'ip_address',
-            'IP Address',
-            'network',
-            'The IP address of the visitor.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'hostName',
-            'base.host',
-            'host',
-            'Host Name',
-            'network',
-            'The host name of the network used by the visitor.'
-        );
-
-        // Campaign Dimensions
-        $this->registerDimension(
-            'medium',
-            $fact_table_entities,
-            'medium',
-            'Medium',
-            'campaign',
-            'A high-level classification of the traffic source through which a visitor arrives at a website. Possible values are: Direct, organic-search, etc.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'source',
-            'base.source_dim',
-            'source_domain',
-            'Source',
-            'campaign',
-            'The origin of traffic. Possible values are the domain of referring websites (foo.com) or app search engines (Google), etc.'
-        );
-
-        $this->registerDimension(
-            'campaign',
-            'base.campaign_dim',
-            'name',
-            'Campaign',
-            'campaign',
-            'The campaign that originated the visit.'
-        );
-
-        $this->registerDimension(
-            'ad',
-            'base.ad_dim',
-            'name',
-            'Ad',
-            'campaign',
-            'The name of the ad that originated the visit.'
-        );
-
-        $this->registerDimension(
-            'adType',
-            'base.ad_dim',
-            'type',
-            'Ad Type',
-            'campaign',
-            'The type of ad that originated the visit.'
-        );
-
-        $this->registerDimension(
-            'referralPageUrl',
-            'base.referer',
-            'url',
-            'Referral Page URL',
-            'campaign',
-            'The url of the referring web page.'
-        );
-
-        $this->registerDimension(
-            'referralPageTitle',
-            'base.referer',
-            'page_title',
-            'Referral Page Title',
-            'campaign',
-            'The page title of the url that referred visitors to the tracked website.'
-        );
-
-        $this->registerDimension(
-            'referralSearchTerms',
-            'base.search_term_dim',
-            'terms',
-            'Search Terms',
-            'campaign',
-            'The search term that led visitors to the tracked website.',
-            'referring_search_term_id'
-        );
-
-        $this->registerDimension(
-            'referralLinkText',
-            'base.referer',
-            'refering_anchortext',
-            'Referral Link Text',
-            'campaign',
-            'The anchor text of the link that referred visitors to the tracked website.'
-        );
-
-        $this->registerDimension(
-            'isSearchEngine',
-            'base.referer',
-            'is_searchengine',
-            'Search Engine',
-            'campaign',
-            'A boolean indicating if the referring url is a search engine.'
-        );
-
-        $this->registerDimension(
-            'referralWebSite',
-            'base.referer',
-            'site',
-            'Referral Web Site',
-            'campaign',
-            'The full domain of the referring web site.'
-        );
-
-        $this->registerDimension(
-            'latestAttributions',
-            'base.session',
-            'latest_attributions',
-            'Latest Attributions',
-            'campaign-special',
-            'The latest campaign attributions.',
-            '',
-            true
-        );
-
-        // Page Content
-        $this->registerDimension(
-            'priorPageUrl',
-            'base.document',
-            'url',
-            'Prior Page URL',
-            'content',
-            'The url of the page viewed before the current page view.',
-            'prior_document_id'
-        );
-
-        $this->registerDimension(
-            'priorPagePath',
-            'base.document',
-            'uri',
-            'Prior Page Path',
-            'content',
-            'The URI of the prior page.',
-            'prior_document_id'
-        );
-
-        $this->registerDimension(
-            'priorPageTitle',
-            'base.document',
-            'page_title',
-            'Prior Page Title',
-            'content',
-            'The title of the prior page.',
-            'prior_document_id'
-        );
-
-        $this->registerDimension(
-            'priorPageType',
-            'base.document',
-            'page_type',
-            'Prior Page Type',
-            'content',
-            'The type of page viewed before the current page view.',
-            'prior_document_id'
-        );
-
-        $this->registerDimension(
-            'pageUrl',
-            'base.document',
-            'url',
-            'Page URL',
-            'content',
-            'The URL of the web page.',
-            'document_id'
-        );
-
-        $this->registerDimension(
-            'pagePath',
-            'base.document',
-            'uri',
-            'Page Path',
-            'content',
-            'The path of the web page.',
-            'document_id'
-        );
-
-        $this->registerDimension(
-            'pageTitle',
-            'base.document',
-            'page_title',
-            'Page Title',
-            'content',
-            'The title of the web page.',
-            'document_id'
-        );
-
-        $this->registerDimension(
-            'pageType',
-            'base.document',
-            'page_type',
-            'Page Type',
-            'content',
-            'The page type of the web page.',
-            'document_id'
-        );
-
-        // Action Event Dimensions
-        $this->registerDimension(
-            'actionName',
-            'base.action_fact',
-            'action_name',
-            'Action Name',
-            'actions',
-            'The name of the action.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'actionGroup',
-            'base.action_fact',
-            'action_group',
-            'Action Group',
-            'actions',
-            'The group that an action belongs to.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'actionLabel',
-            'base.action_fact',
-            'action_label',
-            'Action Label',
-            'actions',
-            'The label associated with an action.',
-            '',
-            true
-        );
-
-        // Ecommerce Dimensions
-        $this->registerDimension(
-            'productName',
-            'base.commerce_line_item_fact',
-            'product_name',
-            'Product Name',
-            'ecommerce',
-            'The name of the product purchased.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'productSku',
-            'base.commerce_line_item_fact',
-            'sku',
-            'Product SKU',
-            'ecommerce',
-            'The SKU code of the product purchased.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'productCategory',
-            'base.commerce_line_item_fact',
-            'category',
-            'Product Category',
-            'ecommerce',
-            'The category of product purchased.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'transactionOriginator',
-            'base.commerce_transaction_fact',
-            'order_source',
-            'Originator',
-            'ecommerce',
-            'The store or location that originated the transaction.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'transactionId',
-            'base.commerce_transaction_fact',
-            'order_id',
-            'Transaction ID',
-            'ecommerce',
-            'The id of the e-commerce transaction.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'transactionGateway',
-            'base.commerce_transaction_fact',
-            'gateway',
-            'Payment Gateway',
-            'ecommerce',
-            'The payment gateway/provider used to clear the transaction.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'daysToTransaction',
-            'base.commerce_transaction_fact',
-            'days_since_first_session',
-            'Days To Purchase',
-            'ecommerce',
-            'The number of days since the first visit and an e-commerce transaction.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'daysToTransaction',
-            'base.commerce_transaction_fact',
-            'days_since_first_session',
-            'Days To Purchase',
-            'ecommerce',
-            'The number of days since the first visit and an e-commerce transaction.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'visitsToTransaction',
-            'base.commerce_transaction_fact',
-            'num_prior_sessions',
-            'Visits To Purchase',
-            'ecommerce',
-            'The number of visits before the transaction occurred.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'timestamp',
-            'base.commerce_transaction_fact',
-            'timestamp',
-            'Time',
-            'ecommerce-special',
-            'The timestamp of the transaction.',
-            '',
-            true
-        );
-
-        // Click Dimensions
-        /*
-         * The click's coordinates on the page.
-         *
-         * Declared so a heatmap is an ordinary dimensional query --
-         * `metrics=domClicks&dimensions=clickX,clickY&constraints=pagePath==/x`
-         * -- rather than a bespoke report with hand-built SQL. pagePath already
-         * resolves through document_id, which owa_click carries, so the join is
-         * the registry's to make.
-         *
-         * Grouping is the point, not a side effect: one page on a live install
-         * holds 345,620 clicks, and the heatmap only ever needed each distinct
-         * point and how often it was hit. As a dimension pair that is a GROUP
-         * BY, and the count arrives as the metric.
-         */
-        $this->registerDimension(
-            'clickX',
-            'base.click',
-            'click_x',
-            'Click X',
-            'dom',
-            'The horizontal position of the click on the page.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'clickY',
-            'base.click',
-            'click_y',
-            'Click Y',
-            'dom',
-            'The vertical position of the click on the page.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'domElementId',
-            'base.click',
-            'dom_element_id',
-            'Dom ID',
-            'dom',
-            'The id of the dom element.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'domElementName',
-            'base.click',
-            'dom_element_name',
-            'Dom Name',
-            'dom',
-            'The name of the dom element.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'domElementText',
-            'base.click',
-            'dom_element_text',
-            'Dom Text',
-            'dom',
-            'The text associated the dom element.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'domElementValue',
-            'base.click',
-            'dom_element_value',
-            'Dom Value',
-            'dom',
-            'The value of the dom element.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'domElementTag',
-            'base.click',
-            'dom_element_tag',
-            'Dom Tag',
-            'dom',
-            'The html tag of the dom element.',
-            '',
-            true
-        );
-
-        $this->registerDimension(
-            'domElementClass',
-            'base.click',
-            'dom_element_class',
-            'Dom Class',
-            'dom',
-            'The class of the dom element.',
-            '',
-            true
-        );
-
-        // Feed Dimensions
-        $this->registerDimension(
-            'feedType',
-            'base.feed_request',
-            'feed_format',
-            'Feed Type',
-            'feed',
-            'The type or format of the feed.',
-            '',
-            true
-        );
-
-        // Custom variable Dimensions
-        $cv_max = \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
-        for ($i = 1; $i <= $cv_max;$i++) {
-
-            $cvar_name_col = 'cv'.$i.'_name';
-            $cvar_name_label = "Custom Var $i Name";
-            $cvar_name_description = "The name of custom variable $i.";
-            $this->registerDimension(
-                    'customVarName'.$i,
-                    array(
-                        'base.action_fact',
-                        'base.request',
-                        'base.session',
-                        'base.domstream',
-                        'base.click',
-                        'base.commerce_transaction_fact',
-                        'base.commerce_line_item_fact'
-                    ),
-                    $cvar_name_col,
-                    $cvar_name_label,
-                    'custom variables',
-                    $cvar_name_description,
-                    '',
-                    true,
-                    'string'
-            );
-
-            $cvar_value_col = 'cv'.$i.'_value';
-            $cvar_value_label = "Custom Var $i Value";
-            $cvar_value_description = "The value of custom variable $i.";
-            $this->registerDimension(
-                    'customVarValue'.$i,
-                    array(
-                        'base.action_fact',
-                        'base.request',
-                        'base.session',
-                        'base.domstream',
-                        'base.click',
-                        'base.commerce_transaction_fact',
-                        'base.commerce_line_item_fact'
-                    ),
-                    $cvar_value_col,
-                    $cvar_value_label,
-                    'custom variables',
-                    $cvar_value_description,
-                    '',
-                    true,
-                    'string'
-            );
-        }
-
-    }
+    /**
+     * The v1 metric vocabulary was here.
+     *
+     * REMOVED. v2's metrics replace it -- declared in config/metrics.php and
+     * resolved against the Property's cube -- and the reports that existed
+     * under v1 are driven by those now. There is no second vocabulary to keep
+     * working: the migrator denormalises v1's tracking data into v2's raw
+     * store, so no v1 reporting path survives it.
+     *
+     * Keeping both was not neutral. A name registered against BOTH a v1 fact
+     * table and the cube resolved to whichever the report's base entity
+     * happened to be, so a metric could exist for one report and not another,
+     * and a report mixing a v1-only metric with a cube-only one failed with no
+     * error anywhere -- the metric boxes simply did not render. That cost more
+     * to reason about than the vocabulary was worth.
+     *
+     * git history has the implementations if one is ever needed for comparison.
+     */
+    function registerMetrics() {}
+
+    /**
+     * And the v1 dimension vocabulary, removed for the same reason.
+     *
+     * config/dimensions.php declares v2's, every one a column read against the
+     * cube. Report configs naming an old name are caught by the report
+     * characterization tests rather than by a runtime fallback.
+     */
+    function registerDimensions() {}
 
     /**
      * The dimensions that read a Property's reporting cube.
@@ -2327,25 +683,32 @@ class Module extends \OWA\Core\Module {
      */
     function registerReports() {
 
-        $this->registerReport( 'action-detail', 'reports/action-detail.json' );
-        $this->registerReport( 'action-group', 'reports/action-group.json' );
-        $this->registerReport( 'action-groups', 'reports/action-groups.json' );
-        $this->registerReport( 'action-tracking', 'reports/action-tracking.json' );
-        $this->registerReport( 'ad-detail', 'reports/ad-detail.json' );
-        $this->registerReport( 'ad-type-detail', 'reports/ad-type-detail.json' );
-        $this->registerReport( 'ad-types', 'reports/ad-types.json' );
         $this->registerReport( 'ads', 'reports/ads.json' );
-        $this->registerReport( 'anchortext', 'reports/anchortext.json' );
-        $this->registerReport( 'attribution-history', 'reports/attribution-history.json' );
         $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
         $this->registerReport( 'browsers', 'reports/browsers.json' );
-        $this->registerReport( 'campaign-detail', 'reports/campaign-detail.json' );
         $this->registerReport( 'campaigns', 'reports/campaigns.json' );
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
-        $this->registerReport( 'days-to-purchase', 'reports/days-to-purchase.json' );
         $this->registerReport( 'document', 'reports/document.json' );
+        /*
+         * EVENTS, grouped by name, and it replaces the v1 action reports.
+         *
+         * 1.x had an Actions report over owa_action_fact with actionName,
+         * actionLabel and actionGroup dimensions and an `actions` metric. NONE of
+         * those exist on v2 and none should: a tracked action is a `custom_event`
+         * row like any other event, and what separates it from a page view is
+         * event_type -- the column `eventName` is registered against. So "what
+         * happened on this site, and how often" is one report over one dimension
+         * instead of a report per event family.
+         *
+         * An action's own name, label and group ride `params`, and params ARE the
+         * custom dimensions -- site-defined keys, promoted to a cube column by
+         * Classes\Cube\Dimensions. So there is nothing for this release's
+         * vocabulary to declare, and the reports that grouped by them are removed
+         * rather than reimplemented.
+         */
+        $this->registerReport( 'events', 'reports/events.json' );
         $this->registerReport( 'clicks', 'reports/clicks.json' );
         $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
         $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
@@ -2353,7 +716,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
         $this->registerReport( 'entry-pages', 'reports/entry-pages.json' );
         $this->registerReport( 'exit-pages', 'reports/exit-pages.json' );
-        $this->registerReport( 'feeds', 'reports/feeds.json' );
         $this->registerReport( 'geolocation', 'reports/geolocation.json' );
         $this->registerReport( 'goals', 'reports/goals.json' );
         $this->registerReport( 'hosts', 'reports/hosts.json' );
@@ -2362,21 +724,14 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'os', 'reports/os.json' );
         $this->registerReport( 'page-types', 'reports/page-types.json' );
         $this->registerReport( 'pages', 'reports/pages.json' );
-        $this->registerReport( 'product-categories', 'reports/product-categories.json' );
-        $this->registerReport( 'product-skus', 'reports/product-skus.json' );
-        $this->registerReport( 'products', 'reports/products.json' );
         $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
         $this->registerReport( 'revenue', 'reports/revenue.json' );
         $this->registerReport( 'search-engines', 'reports/search-engines.json' );
-        $this->registerReport( 'source-detail', 'reports/source-detail.json' );
         $this->registerReport( 'sources', 'reports/sources.json' );
         $this->registerReport( 'traffic', 'reports/traffic.json' );
         $this->registerReport( 'transactions', 'reports/transactions.json' );
         $this->registerReport( 'visitors', 'reports/visitors.json' );
-        $this->registerReport( 'visitors-age', 'reports/visitors-age.json' );
         $this->registerReport( 'visitors-loyalty', 'reports/visitors-loyalty.json' );
-        $this->registerReport( 'visitors-recency', 'reports/visitors-recency.json' );
-        $this->registerReport( 'visits-to-purchase', 'reports/visits-to-purchase.json' );
     }
 
     function registerNavigation() {
@@ -2420,33 +775,59 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3, 'view_reports_ecommerce');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), 'Average Order Value', 4, 'view_reports_ecommerce');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), 'Conversion Rate', 5, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'products' ), 'Products', 6, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-skus' ), 'Product SKUs', 7, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'product-categories' ), 'Product Categories', 8, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'visits-to-purchase' ), 'Visits To Purchase', 9, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'days-to-purchase' ), 'Days To Purchase', 10, 'view_reports_ecommerce');
+        /*
+         * days-to-purchase and visits-to-purchase go with them. Each is one
+         * dimension -- daysToTransaction, visitsToTransaction -- measuring the
+         * gap between acquisition and a purchase, and v2 has built neither. The
+         * anchors are on the row (visitor_fsts, prior_sessions), so these come
+         * back as computed dimensions rather than needing schema.
+         */
+
+        /*
+         * THE PRODUCT REPORTS ARE GONE, and this is a capability gap rather
+         * than a tidy-up. v2's raw row carries ONE revenue figure per purchase
+         * and no line items, so productName, productSku, productCategory,
+         * lineItemRevenue, lineItemQuantity, shippingRevenue and taxRevenue
+         * have nothing to read. 1.x had owa_commerce_line_item_fact for this.
+         *
+         * Restoring them needs an item-level shape in the schema -- GA carries
+         * itemRevenue, itemsPurchased and friends -- not a report definition.
+         */
 
         //Content
         $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Pages', 1);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'feeds' ), 'Feeds', 7);
+        /*
+         * The Feeds link was here. base.feed_request is in V2Event::NOT_EVENTS
+         * -- the type never reaches owa_event_raw at all -- and nothing has
+         * written a feed request since 2021. A nav entry to a report with no
+         * data source is worse than no entry.
+         */
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
 
 
-        //Actions
-        $this->addNavigationSubGroup('Action Tracking', $this->reportRef( 'action-tracking' ), 'Action Tracking', 1, 'view_reports', 'Reports','fa fa-hand-pointer');
-        $this->addNavigationLinkInSubGroup('Action Tracking', $this->reportRef( 'action-groups' ), 'Action Groups', 2);
+        /*
+         * ACTION TRACKING was here, and the data still flows -- track.action
+         * maps onto custom_event and its properties land in owa_event_raw's
+         * `params`. What cannot ship is the REPORTS: they group by actionGroup,
+         * actionName and actionLabel, which are params paths, and the cube
+         * reaches a params path through a REGISTERED custom dimension
+         * (Cube\JsonStep) that adds a column per Property. That is an
+         * installation's choice, so it cannot be a shipped dimension, and a
+         * shipped report cannot depend on one.
+         *
+         * An install that wants these registers action_group and friends as
+         * custom dimensions and builds its own report over them.
+         */
 
         //Visitors
         $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'hosts' ), 'Domains', 2);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-recency' ), 'Visitor Recency', 4);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-age' ), 'Visitor Age', 5);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);
@@ -2454,14 +835,11 @@ class Module extends \OWA\Core\Module {
         //Traffic
         $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'anchortext' ), 'Inbound Link Text', 2);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'campaigns' ), 'Campaigns', 5);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ads' ), 'Ad Performance', 6);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ad-types' ), 'Ad Types', 7);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'creative-performance' ), 'Creative Performance', 8);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'attribution-history' ), 'Attribution History', 8);
 
         //Goals
         $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
@@ -2482,88 +860,41 @@ class Module extends \OWA\Core\Module {
      */
     function _registerEventHandlers() {
 
-        // Page Requests
-        $this->registerEventHandler(array('base.page_request'), 'requestHandlers');
-        // Sessions
-        $this->registerEventHandler(array('base.page_request_logged'), 'sessionHandlers');
-        // Clicks
-        $this->registerEventHandler('dom.click', 'clickHandlers');
-        // Feed requests
-        $this->registerEventHandler('base.feed_request', 'feedRequestHandlers');
-
-        // actions
-        $this->registerEventHandler('track.action', 'actionHandler');
-
-        // ecommerce
-
-        // handles new ecommerce transactions
-        $this->registerEventHandler('ecommerce.transaction', 'commerceTransactionHandlers');
-
-        // updates session once ecommerce transactions are persisted
-        $this->registerEventHandler(array(
-                'ecommerce.transaction_persisted',
-                'ecommerce.async_transaction_persisted'),
-            'sessionCommerceSummaryHandlers'
-        );
-
-        $this->registerEventHandler('base.new_session', 'visitorUpdateHandlers');
-
-
-        // register standard dimension handlers to listen for events
-        // that populate fact tables.
-
-        // Note: ecommerce.async_transaction_persisted events are ommited here
-        // because it the event gets alll non ecommerce dimensional properties
-        // from a previously persisted session entity
-        $fact_events = array(
-            'base.page_request_logged',
-            'base.new_session',
-            'dom.stream_logged',
-            'dom.click_logged',
-            'track.action_logged',
-            'ecommerce.transaction_persisted'
-        );
-
-        $standard_dimension_handlers = array(
-            'refererHandlers',
-            'searchTermHandlers',
-            'osHandlers',
-            'sourceHandlers',
-            'campaignHandlers',
-            'adHandlers',
-            'userAgentHandlers',
-            'hostHandlers',
-            'visitorHandlers',
-            'locationHandlers'
-        );
-
-        foreach ($standard_dimension_handlers as $handler) {
-
-            $this->registerEventHandler($fact_events, $handler);
-        }
-
-        // Documents
-        $this->registerEventHandler(
-            array(
-                'base.page_request_logged',
-                'base.feed_request_logged',
-                'track.action',
-                'dom.stream',
-                'dom.click',
-                'ecommerce.transaction'
-            ),
-            'documentHandlers'
-        );
-
-        // Goal Conversions
-        $this->registerEventHandler(
-            array(
-                'base.new_session',
-                'base.session_update',
-                'ecommerce.transaction_persisted'
-            ),
-            'conversionHandlers'
-        );
+        /*
+         * THE v1 INGEST CHAIN WAS HERE, and this is 2.25 step 4.
+         *
+         * It was: base.page_request -> requestHandlers writes owa_request and
+         * raises base.page_request_logged -> sessionHandlers writes owa_session
+         * and raises base.new_session -> ten dimension handlers and the
+         * document, conversion, commerce and visitor-update handlers populate
+         * the star schema. Clicks, actions and feed requests ran their own
+         * copies of the same shape.
+         *
+         * NOTHING READ ITS OUTPUT. The v1 metric and dimension vocabularies are
+         * gone, so owa_request, owa_session, the dimension tables and the fact
+         * tables were write-only -- and it is not free to keep: the queue is a
+         * RETRY queue, reached when a handler returns EVENT_FAILED, and this
+         * install had accumulated 50 failures in two hours from a chain filling
+         * tables nobody queries.
+         *
+         * base.new_session, the one signal anything outside v1 wanted, is
+         * raised by Handler\EventRawHandlers::announce() now -- from the
+         * ingest that materialises the marker, one hop instead of three, and
+         * beside base.new_visitor and base.new_page_view. Both were raised
+         * twice while the two chains overlapped, which is what
+         * IngestAnnouncementsTest caught.
+         *
+         * WHAT GOES WITH IT, and is not replaced:
+         *   - GOAL CONVERSIONS. conversionHandlers evaluated them, and v2 never
+         *     materialises a goal event -- is_goal_event is written 0 on every
+         *     row. So goalConversions and the rates over it already answered zero
+         *     before this, and goal evaluation is a v2 gap either way.
+         *   - v1's tables stop being WRITTEN. They are not dropped: the
+         *     migrator reads them, and their history is the only copy of what
+         *     was collected before v2 ingest existed.
+         *
+         * git history has every handler if one is ever wanted.
+         */
 
         /*
          * Notification handler.

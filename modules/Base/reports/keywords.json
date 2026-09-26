@@ -8,16 +8,15 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from search engines."
+            }
         },
         {
             "type": "grid",
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "referralSearchTerms",
-                "sort": "visits-",
+                "dimensions": "sessionSearchTerms",
+                "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }

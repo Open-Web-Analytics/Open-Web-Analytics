@@ -74,32 +74,20 @@ final class ReportCharacterizationHarness
      * re-keying it to report ids would rewrite the evidence.
      */
     public const CONVERTED = array(
-        'action-detail'             => 'ReportActionDetail',
-        'action-group'              => 'ReportActionGroup',
-        'action-groups'             => 'ReportActionGroups',
-        'action-tracking'           => 'ReportActionTracking',
-        'attribution-history'       => 'ReportAttributionHistory',
         'document'                  => 'ReportDocument',
         'visitors'                  => 'ReportVisitors',
         'dom-clicks'                => 'ReportDomClicks',
         'campaigns'                 => 'ReportCampaigns',
-        'ad-detail'                 => 'ReportAdDetail',
-        'ad-type-detail'            => 'ReportAdTypeDetail',
-        'ad-types'                  => 'ReportAdTypes',
         'ads'                       => 'ReportAds',
-        'anchortext'                => 'ReportAnchortext',
         'avg-order-value'           => 'ReportAvgOrderValue',
         'browsers'                  => 'ReportBrowsers',
-        'campaign-detail'           => 'ReportCampaignDetail',
         'content'                   => 'ReportContent',
         'dashboard'                 => 'ReportDashboard',
         'creative-performance'      => 'ReportCreativePerformance',
-        'days-to-purchase'          => 'ReportDaysToPurchase',
         'ecommerce'                 => 'ReportEcommerce',
         'ecommerce-conversion-rate' => 'ReportEcommerceConversionRate',
         'entry-pages'               => 'ReportEntryPages',
         'exit-pages'                => 'ReportExitPages',
-        'feeds'                     => 'ReportFeeds',
         'geolocation'               => 'ReportGeolocation',
         'goals'                     => 'ReportGoals',
         'hosts'                     => 'ReportHosts',
@@ -107,20 +95,13 @@ final class ReportCharacterizationHarness
         'os'                        => 'ReportOs',
         'page-types'                => 'ReportPageTypes',
         'pages'                     => 'ReportPages',
-        'product-categories'        => 'ReportProductCategories',
-        'product-skus'              => 'ReportProductSkus',
-        'products'                  => 'ReportProducts',
         'referring-sites'           => 'ReportReferringSites',
         'revenue'                   => 'ReportRevenue',
         'search-engines'            => 'ReportSearchEngines',
-        'source-detail'             => 'ReportSourceDetail',
         'sources'                   => 'ReportSources',
         'traffic'                   => 'ReportTraffic',
         'transactions'              => 'ReportTransactions',
-        'visitors-age'              => 'ReportVisitorsAge',
         'visitors-loyalty'          => 'ReportVisitorsLoyalty',
-        'visitors-recency'          => 'ReportVisitorsRecency',
-        'visits-to-purchase'        => 'ReportVisitsToPurchase',
     );
 
     /**
@@ -135,7 +116,7 @@ final class ReportCharacterizationHarness
      * things -- a converted report has a recorded standard to meet, an authored
      * one has only its own baseline.
      */
-    public const AUTHORED = array( 'clicks', 'latest-visits' );
+    public const AUTHORED = array( 'clicks', 'events', 'latest-visits' );
 
     public const SENTINEL = 'characterization_sentinel';
 

@@ -8,16 +8,15 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from all sources."
+            }
         },
         {
             "type": "grid",
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "priorVisitCount",
-                "sort": "priorVisitCount",
+                "dimensions": "priorSessionCount",
+                "sort": "priorSessionCount",
                 "resultsPerPage": 25
             }
         }

@@ -1,6 +1,6 @@
 {
     "title": "Latest Visits",
-    "metrics": "visits,pagesPerVisit,visitDuration",
+    "metrics": "sessions,pageViewsPerSession",
     "widgets": [
         {
             "type": "grid",
@@ -8,8 +8,8 @@
             "container": "dimension-grid",
             "title": "Latest Visits Profile",
             "query": {
-                "dimensions": "ipAddress,entryPageUrl,medium,source,city,country,priorVisitCount",
-                "sort": "visits-",
+                "dimensions": "ipAddress,landingPageLocation,sessionSourceMedium,city,country,priorSessionCount",
+                "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }

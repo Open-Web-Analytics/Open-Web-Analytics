@@ -21,6 +21,13 @@ class TrackingEventHelpers {
      */
     const TRIMMED_TYPES = array( 'string', 'url', '' );
 
+    /** OS families that only ship on a phone, and only on a desktop. */
+    const MOBILE_OS = array( 'android', 'ios', 'windows phone', 'blackberry os',
+                             'firefox os', 'kaios', 'harmonyos' );
+
+    const DESKTOP_OS = array( 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
+                              'chrome os', 'fedora', 'debian', 'freebsd' );
+
     const ABSENT_VALUE_LABEL = '(not set)';
 
 
@@ -58,14 +65,6 @@ class TrackingEventHelpers {
 
     }
 
-    public function translateKeys( $event ) {
-
-        foreach ( $this->translations as $k => $v ) {
-
-            $event->set( $v, $event->get( $k ));
-            $event->delete( $k );
-        }
-    }
 
 /*
     public function setEnvironmentals( $event ) {
@@ -135,7 +134,46 @@ class TrackingEventHelpers {
      * @param string $scope one of request, client, server
      * @return array
      */
-    private static function propertyConfig( $scope ) {
+    /** The three answers to "how does this property's value get set". */
+    const SET_BY = array( 'client', 'request', 'event' );
+
+    /** What an `events` list holds when the property rides every beacon. */
+    const EVERY_EVENT = '*';
+
+    /**
+     * The registry, filtered to one kind of setter.
+     *
+     * THE FILE IS FLAT NOW, and every entry says how its value gets set:
+     *
+     *   client   the tracker sends it, and `from` holds the transport keys. The
+     *            only names a beacon may carry are these, which makes admission
+     *            a property of the registry rather than of a list maintained
+     *            beside it.
+     *   request  the server reads it off the request, and `from` holds the
+     *            $_SERVER keys in the precedence they are tried -- or `clock`.
+     *   event    derived from other properties, and `from` names them.
+     *
+     * ONE `from`, THREE NAMESPACES, and `set_by` says which: a wire key, a
+     * request key, or a property name. It is a SET because several of them
+     * genuinely are: ip_address tries five $_SERVER keys in order, and an event
+     * property can derive from more than one.
+     *
+     * Those three were the file's top-level grouping -- request / client /
+     * server -- which made the answer implicit in an entry's POSITION, and the
+     * position was doing a second job as the dependency order, since a callback
+     * reads whatever is already on the event. `from` states the dependency, so
+     * the two stop being the same fact.
+     *
+     * `column` is the fourth axis: the raw column the value lands in, present
+     * only when it differs from the property name. That relationship was in
+     * three other places -- GoalVocabulary::SOURCE, the row builder's literal,
+     * and the per-event param list -- and the purchase params went missing
+     * because two of them disagreed.
+     *
+     * @param  string $set_by  one of SET_BY
+     * @return array  name => definition
+     */
+    private static function propertyConfig( $set_by ) {
 
         if ( self::$property_config === null ) {
 
@@ -151,24 +189,292 @@ class TrackingEventHelpers {
 
             /* 'note' documents the entry for whoever edits the file; it is not
                part of the definition the pipeline consumes. */
-            foreach ( $config as $name => $properties ) {
+            foreach ( $config as $property => $definition ) {
 
-                foreach ( $properties as $property => $definition ) {
-
-                    unset( $config[ $name ][ $property ]['note'] );
-                }
+                unset( $config[ $property ]['note'] );
             }
 
             self::$property_config = $config;
         }
 
-        if ( ! isset( self::$property_config[ $scope ] ) ) {
+        if ( ! in_array( $set_by, self::SET_BY, true ) ) {
 
             throw new \InvalidArgumentException(
-                "There is no '$scope' scope in the tracking property config." );
+                "There is no '$set_by' setter in the tracking property config." );
         }
 
-        return self::$property_config[ $scope ];
+        $out = array();
+
+        foreach ( self::$property_config as $property => $definition ) {
+
+            if ( ( $definition['set_by'] ?? '' ) === $set_by ) {
+
+                $out[ $property ] = $definition;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Every declaration, whatever sets it. */
+    public static function allProperties() {
+
+        $out = array();
+
+        foreach ( self::SET_BY as $set_by ) {
+
+            $out = array_merge( $out, self::propertyConfig( $set_by ) );
+        }
+
+        return $out;
+    }
+
+    /**
+     * The raw column a property lands in, or '' when it lands in none.
+     *
+     * SPELLED OUT ON EVERY ENTRY, never inferred. This used to answer the
+     * property's own name whenever the key was absent, which read as "the column
+     * has the same name" -- and 32 of the 90 properties have no column at all, so
+     * it confidently answered `last_req`, `form_id` and `session_referer`, none of
+     * which exist. A guess that is right 58 times out of 90 is worse than no
+     * answer, because nothing downstream can tell which kind it got.
+     *
+     * @param  string $property
+     * @return string  '' when the property reaches no column
+     */
+    public static function columnFor( $property ) {
+
+        $all = self::allProperties();
+
+        return (string) ( $all[ $property ]['column'] ?? '' );
+    }
+
+    /**
+     * The params key a property lands under, or '' when it is not a param.
+     *
+     * The other half of the destination. A property lands in a column, or in the
+     * params document, or nowhere -- and the third case is a real answer: the
+     * clock anchors, the marker flags and the landing URL are consumed during
+     * ingest and stored by nothing.
+     *
+     * The KEY, not the property name, because they differ: ct_gateway is reached
+     * as params.gateway, ct_line_items as params.items. That difference is what
+     * the row builder's hand-written per-event list got wrong -- it named the
+     * column spellings while the wire sent the ct_ ones, so every purchase stored
+     * its currency and no amount.
+     *
+     * @param  string $property
+     * @return string
+     */
+    public static function paramFor( $property ) {
+
+        $all = self::allProperties();
+
+        return (string) ( $all[ $property ]['param'] ?? '' );
+    }
+
+    /**
+     * The params an event of this name carries, as property name => params key.
+     *
+     * Read from the registry, so the wire name, the params key and the event
+     * scoping are one declaration. EventRawHandlers::declaredParams() was a map
+     * written by hand beside all three.
+     *
+     * @param  string $event_name
+     * @return array  property name => params key
+     */
+    public static function paramsForEvent( $event_name ) {
+
+        $out = array();
+
+        foreach ( self::propertiesForEvent( $event_name ) as $property ) {
+
+            $key = self::paramFor( $property );
+
+            if ( $key !== '' ) {
+
+                $out[ $property ] = $key;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The transport keys a property may arrive under. Empty when it cannot
+     * arrive at all.
+     *
+     * A `client` property's `from` set is the wire; every other kind's names
+     * something the request or the event supplies, and a beacon carrying one of
+     * those names is asserting a value it has no business setting -- its own
+     * city, its own region, its own campaign source. That refusal is now the
+     * absence of a client declaration rather than a denylist beside it.
+     *
+     * @param  string $property
+     * @return string[]
+     */
+    public static function wireKeysFor( $property ) {
+
+        $all = self::allProperties();
+
+        $definition = $all[ $property ] ?? array();
+
+        return ( ( $definition['set_by'] ?? '' ) === 'client' )
+            ? (array) ( $definition['from'] ?? array() )
+            : array();
+    }
+
+    /**
+     * What a property derives from: wire keys, request keys or property names,
+     * according to its `set_by`.
+     *
+     * @param  string $property
+     * @return string[]
+     */
+    public static function sourcesFor( $property ) {
+
+        $all = self::allProperties();
+
+        return (array) ( $all[ $property ]['from'] ?? array() );
+    }
+
+    /**
+     * The properties an event of this name may carry.
+     *
+     * WHY THIS EXISTS. Three namespaces nearly-but-don't align here: the wire
+     * (~130 registered properties), the raw row (59 columns), and the
+     * dimension vocabulary. Nothing stated which properties belong to which
+     * event, so a goal condition could be written against `medium` on a
+     * page_view -- a reading the cube pass derives, which no row carries and
+     * no ingest-time match can ever satisfy. Nine such conditions exist on
+     * this installation, every one of them unsatisfiable, and nothing could
+     * have refused them at save time.
+     *
+     * `events` in the config is that statement. Absent means the property is
+     * carried by every event, which is the common case -- site_id, visitor_id,
+     * page_location. A list means only those events: file_name is a property
+     * of file_download and of nothing else.
+     *
+     * An EMPTY list means no event carries it, and that is not the same as
+     * having no entry. source, medium, campaign, ad and search_terms are
+     * derived by the cube pass, so no beacon carries them and no row stores
+     * them -- but the registry entry is still load-bearing three times over:
+     * it puts the name in serverOwnedProperties(), which is what refuses a
+     * request that tries to set `source` directly and forge its own
+     * attribution; it carries the default (medium defaults to 'direct'); and
+     * the v1 dimension entities derive their ids from these names.
+     *
+     * So the entry states two independent facts -- the name is RESERVED, and
+     * no event CARRIES it. Deleting the entry to assert the second would
+     * destroy the first, which was tried: it makes attribution settable from
+     * the wire and TaggedAttributionTest goes red.
+     *
+     * @param  string $event_name  a v2 event name
+     * @return string[]            property names, sorted
+     */
+    public static function propertiesForEvent( $event_name ) {
+
+        $event_name = (string) $event_name;
+
+        if ( $event_name === '' ) {
+
+            throw new \InvalidArgumentException(
+                'An event name is required; there is no vocabulary without one.' );
+        }
+
+        $out = array();
+
+        foreach ( self::SET_BY as $scope ) {
+
+            foreach ( self::propertyConfig( $scope ) as $name => $definition ) {
+
+                /*
+                 * `["*"]` is every event, a list is only those, and an EMPTY
+                 * list is none -- which is how a reading that no beacon carries
+                 * declares itself.
+                 *
+                 * The star is written out rather than implied by an absent key.
+                 * Absence read as "every event" is how numeric_value, declared
+                 * with a default of 0 and no event list, ended up on every page
+                 * view carrying a param the event never had; a property that
+                 * rides every beacon now says so.
+                 *
+                 * Absence is still tolerated and still means every event, so a
+                 * module shipping its own registry is not broken by the rule --
+                 * but nothing in core relies on it, and the format test refuses
+                 * an entry that omits the key.
+                 */
+                if ( ! array_key_exists( 'events', $definition ) ) {
+
+                    $out[ $name ] = true;
+
+                    continue;
+                }
+
+                $events = (array) $definition['events'];
+
+                if ( in_array( self::EVERY_EVENT, $events, true )
+                     || in_array( $event_name, $events, true ) ) {
+
+                    $out[ $name ] = true;
+                }
+            }
+        }
+
+        $out = array_keys( $out );
+
+        sort( $out );
+
+        return $out;
+    }
+
+    /**
+     * Every event name the registry knows.
+     *
+     * The union of the `events` lists, which makes the property declarations the
+     * source for this too: a name is in the vocabulary because some property is
+     * declared for it. There is no separate list of event names to keep in step,
+     * and a name that appears nowhere in the registry is one no event carries a
+     * property for.
+     *
+     * Ordinary events only, by construction: the markers the server raises --
+     * session_start, first_visit -- carry properties of their own and appear
+     * here, while a v1 type that is not an event at all (dom.stream) declares
+     * none and does not.
+     *
+     * @return string[]  sorted
+     */
+    public static function eventNames() {
+
+        $out = array();
+
+        foreach ( self::SET_BY as $scope ) {
+
+            foreach ( self::propertyConfig( $scope ) as $definition ) {
+
+                if ( ! array_key_exists( 'events', $definition ) ) {
+
+                    continue;
+                }
+
+                foreach ( (array) $definition['events'] as $name ) {
+
+                    // The star says "every event", so it names none of them.
+                    if ( $name === self::EVERY_EVENT ) {
+
+                        continue;
+                    }
+
+                    $out[ $name ] = true;
+                }
+            }
+        }
+
+        $out = array_keys( $out );
+
+        sort( $out );
+
+        return $out;
     }
 
     /**
@@ -226,7 +532,7 @@ class TrackingEventHelpers {
      */
     public static function serverProperties() {
 
-        return self::propertyConfig( 'server' );
+        return self::propertyConfig( 'event' );
 
     }
 
@@ -274,6 +580,96 @@ class TrackingEventHelpers {
             (array) $service->getMap( 'tracking_properties_derived' )
                 + (array) $service->getMap( 'tracking_properties_environmental' ),
             self::clientSettableProperties() );
+    }
+
+    /**
+     * The prefixes a site's own values arrive under.
+     *
+     * Scope and type live in the NAME, so these four are the whole custom
+     * surface -- and because they are a namespace rather than a list, a gate
+     * can admit them without knowing a single one of a site's keys. That is
+     * what makes an allowlist possible here at all; GA relies on exactly the
+     * same property of `ep.` and `up.`.
+     */
+    const CUSTOM_PREFIXES = array( 'ep_', 'epn_', 'up_', 'upn_' );
+
+    /** A custom name must survive becoming a JSON key; the tracker's rule. */
+    const CUSTOM_NAME_PATTERN = '/^[A-Za-z][A-Za-z0-9_]{0,39}$/';
+
+    /**
+     * Keep only what a request is ALLOWED to set.
+     *
+     * WHY THIS REPLACES A DENYLIST. rejectServerOwnedParams() refuses names
+     * the server computes and lets everything else through -- its own note
+     * said so: "Unregistered names still pass through: this refuses to let a
+     * request OVERWRITE a derivation, it does not restrict what a site may
+     * send." So any name nobody had registered reached the event, and the gate
+     * failed open for exactly the inputs nobody had thought about. OWA has
+     * made this mistake before, in the settings registry, for the same reason.
+     *
+     * Two things are admitted and nothing else:
+     *
+     *   - a name some event declares, which the property registry now states
+     *   - a custom value under one of the four prefixes, whose name is legal
+     *
+     * A site's own keys are therefore unrestricted, which is the freedom the
+     * denylist was protecting -- they simply have to say which bag they are
+     * in, which the tracker already does.
+     *
+     * @param  array $params
+     * @return array  the admitted subset
+     */
+    public static function admitRequestParams( array $params ) {
+
+        $allowed = self::clientSettableProperties();
+
+        /*
+         * Plus the names the beacon compat layer renames on the way in. They
+         * are legitimate inbound names for an older generation, and three of
+         * the four are not registered properties at all -- they exist only as
+         * the FROM side of a rename, so nothing else can vouch for them.
+         *
+         * Missed on the first cut of this gate: the denylist it replaced passed
+         * anything unregistered, so those three arrived by accident and
+         * Compat::apply() renamed them. Refusing them here made the bridge
+         * unreachable without breaking a single test, because no test sent one.
+         */
+        foreach ( \OWA\Module\Base\Classes\Beacon\Compat::bridgedNames() as $bridged ) {
+
+            $allowed[ $bridged ] = true;
+        }
+
+        $kept = array();
+
+        foreach ( $params as $name => $value ) {
+
+            $name = (string) $name;
+
+            if ( array_key_exists( $name, $allowed ) ) {
+
+                $kept[ $name ] = $value;
+
+                continue;
+            }
+
+            foreach ( self::CUSTOM_PREFIXES as $prefix ) {
+
+                if ( strpos( $name, $prefix ) !== 0 ) {
+
+                    continue;
+                }
+
+                if ( preg_match( self::CUSTOM_NAME_PATTERN,
+                        substr( $name, strlen( $prefix ) ) ) ) {
+
+                    $kept[ $name ] = $value;
+                }
+
+                continue 2;
+            }
+        }
+
+        return $kept;
     }
 
     public static function rejectServerOwnedParams( array $params ) {
@@ -330,26 +726,27 @@ class TrackingEventHelpers {
 
     public function setTrackerProperties( $event, $properties ) {
 
+        /*
+         * OLD SPELLINGS FIRST, once, before anything below reads a value.
+         *
+         * This used to be `alternative_key`, applied per property inside the
+         * loop and gated on the canonical value being FALSY -- which cannot
+         * tell "absent" from "present and false", needed the 0 and "0" cases
+         * carved out by hand, and could never be used for a boolean at all.
+         * Classes\Beacon\Compat asks whether the key is THERE, which has no
+         * such hole, and it is one place rather than a branch per property.
+         */
+        \OWA\Module\Base\Classes\Beacon\Compat::apply( $event );
+
         $this->registerCallbacks( $properties, 0 );
 
         $eq = \OWA\Core\CoreAPI::getEventDispatch();
 
         foreach ( $properties as $name => $property ) {
 
+            // Already normalised by Compat::apply() above, so the canonical
+            // name is the only one this has to know about.
             $value = $event->get( $name );
-
-            // if no value try alternate key
-
-            if ( ! $value && $value !== 0 && $value !== "0" ) {
-
-                if ( isset( $property['alternative_key'] ) &&  $property['alternative_key'] ) {
-
-                    $value = $event->get( $property['alternative_key'] );
-                    // should we delete the original key on the event? if so:
-                    //$event->delete( $name );
-                    \OWA\Core\CoreAPI::debug('alt key value: '.$value);
-                }
-            }
 
 
             // sanitize properties by datatype
@@ -531,44 +928,6 @@ class TrackingEventHelpers {
         return $var;
     }
 
-    /**
-     * Top up the custom variable properties for any slot the config does not
-     * declare.
-     *
-     * The pairs live in tracking_properties.json like everything else, but the
-     * number of them is the maxCustomVars SETTING rather than a constant --
-     * FactTable builds its cv columns from the same setting -- so an install
-     * that raises it would otherwise have slots with columns and no property
-     * definition. The config covers the shipped slots; this covers the rest,
-     * and skips anything already declared so the config stays authoritative.
-     */
-    function addCustomVariableProperties( $properties ) {
-
-        $maxCustomVars = \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
-
-        for ( $i = 1; $i <= $maxCustomVars; $i++ ) {
-
-            foreach ( array( 'name', 'value' ) as $half ) {
-
-                $key = 'cv' . $i . '_' . $half;
-
-                if ( array_key_exists( $key, $properties ) ) {
-
-                    continue;
-                }
-
-                $properties[ $key ] = array(
-
-                    'required'        => true,
-                    'data_type'        => 'string',
-                    'callbacks'        => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                    'default_value'    => '(not set)'
-                );
-            }
-        }
-
-        return $properties;
-    }
 
     function translateCustomVariables( $event ) {
 
@@ -605,10 +964,20 @@ class TrackingEventHelpers {
         return $ua;
     }
 
-    static function httpHostDefault() {
-
-        return \OWA\Core\CoreAPI::getServerParam('HTTP_HOST');
-    }
+    /*
+     * httpHostDefault() stood here, and goes with the HTTP_HOST property.
+     *
+     * It returned the Host header of the BEACON request -- this OWA instance's
+     * own hostname, the same value on every event of every site an install
+     * tracks. There are three hosts on a tracking event and only two say
+     * anything about the visit: the PAGE's (`host`, cut from page_location) and
+     * the VISITOR's network (`remote_host`, reverse DNS). This was the third, it
+     * never had a column, and no dimension or metric named it.
+     *
+     * Where the install's own hostname is genuinely wanted it is a SETTING
+     * rather than an observation -- Lib and Settings read $_SERVER['HTTP_HOST']
+     * for that, and still do.
+     */
 
     static function languageDefault() {
 
@@ -700,15 +1069,21 @@ class TrackingEventHelpers {
         return $chosen_ip;
     }
 
-    static function timestampDefault() {
-
-        return \OWA\Core\CoreAPI::getRequestTimestamp();
-    }
-
-    static function microtimeDefault() {
-
-        return microtime();
-    }
+    /*
+     * timestampDefault() and microtimeDefault() stood here, and are removed with
+     * the last property either could be attached to.
+     *
+     * Both answered a spelling of ONE instant that `ts` already carries: the edge
+     * receipt, in microseconds, environmental so a request cannot set it and a
+     * queue drain cannot restamp it. timestampDefault() returned the same instant
+     * in seconds and reached no column; microtimeDefault() returned PHP's
+     * space-separated microtime() string and reached nothing at all.
+     *
+     * They were unregistered when their properties left the registry, and
+     * `timestamp` has now left it too -- it is device-local state in the tracker,
+     * read by isNewSession() and fsts and never sent. So there is no definition
+     * left for either to be named by. See edgeTimestampMicroseconds() below.
+     */
 
     /**
      * Edge receipt in microseconds, for owa_event_raw.ts.
@@ -741,165 +1116,46 @@ class TrackingEventHelpers {
      * The event carries content. Nothing derived rides along on it.
      */
 
-    /**
-     * Days since the prior session, derived from the interval the tracker
-     * measured.
+    /*
+     * THE DAY-COUNT DERIVATIONS WERE HERE, and are removed with their
+     * properties: deriveDaysSinceFirstSession(), deriveDaysSincePriorSession(),
+     * and the three helpers only they used -- dateFromTimestamp(),
+     * daysBetweenDates() and sessionDateOf().
      *
-     * STRAIGHT 24-HOUR PERIODS, not calendar days, and that is forced rather
-     * than chosen: this value must be IDENTICAL on every event sharing a
-     * session_id. Calendar days cannot be, because counting date boundaries
-     * needs two absolute times and the events carry only one -- their own
-     * timestamp -- plus a session-scoped interval. Anchoring
-     * `then = timestamp - elapsed` is exact on the event that OPENED the
-     * session but lands later for every event after it, so two hits either side
-     * of a midnight would disagree about the same session. Depending only on
-     * the interval, which is the same on all of them, is what makes the value
-     * stable.
+     * THEY WERE NOT v1 HOLDOVERS. The client used to compute both counts and the
+     * server accepted the integers on faith; 2026-08-22 moved the arithmetic
+     * here, so the client sends three raw ANCHORS -- fsts, psts, sts -- and the
+     * server derives the offsets and can re-derive them. That was a deliberate
+     * increase in trust and it worked.
      *
-     * Identical arithmetic to what the tracker used to do, so nothing about the
-     * daysSinceLastVisit dimension changes meaning -- only where it is computed.
-     * One value on the wire now feeds both this and timeSinceLastVisit, instead
-     * of the same interval being measured twice on the client.
+     * What they never got was a DESTINATION. Neither property declared a column
+     * or a param, and no dimension or metric read either, so both were computed
+     * on every event and discarded. The anchors, meanwhile, are stored:
+     * visitor_fsts, prior_session_start_ts and session_start_ts.
      *
-     * $days already holds whatever an older tracker sent as 'dsps' -- see the
-     * alternative_key on this property -- so returning it unchanged is the
-     * fallback for trackers cached from before the interval existed.
+     * So the offsets go and the anchors stay, which is the shape the audit
+     * against GA argued for -- ship the anchor, derive the offset downstream. On
+     * the cube that is arithmetic between two columns of one row at query time:
+     * no join, no dimension table, and a corrected calculation re-applies to
+     * history instead of being frozen into a row.
+     *
+     * Anything reviving a daysSince* dimension should derive it there, from
+     * yyyymmdd and the anchor, not restore a write-path callback.
      */
-    /**
-     * Days since the visitor's first session, from the date they sent.
+
+    /*
+     * setRepeatVisitorFlag() was here, and resolveEntryPage() below it.
      *
-     * The tracker sends first_session_date as YYYYMMDD, not a timestamp and not
-     * an elapsed count. The anchor is stamped by the VISITOR's clock, and
-     * coarsening to a day is what limits the damage: a clock wrong by minutes or
-     * hours yields the same date, so only an error crossing midnight costs
-     * anything, and only ever one day, once. GA exposes firstSessionDate the
-     * same way and for the same reason.
-     *
-     * Counted against the SERVER's calendar, the one every other date part on
-     * the row uses. The two calendars can differ by a day at the edges; that is
-     * the bounded cost of the anchor being the visitor's.
-     *
-     * This value is per-EVENT, not per-session: it is "days since first visit as
-     * of this event", so it legitimately ticks over at midnight during a long
-     * session. That is why the registry declares it page-scoped.
-     *
-     * $days already holds whatever an older tracker sent as 'dsfs' -- see the
-     * alternative_key -- so returning it unchanged is the fallback for trackers
-     * cached from before the date existed.
+     * Both derived a v1 column from a flag the tracker no longer sends --
+     * is_repeat_visitor from is_new_visitor, is_entry_page from
+     * is_new_session. Removed with their inputs rather than left computing:
+     * `! $event->get('is_new_visitor')` on an absent flag is `! false`, so
+     * every session would have been marked a repeat visit, and every page a
+     * non-entry. Wrong data is worse than a missing column.
      */
-    /**
-     * A unix timestamp as YYYYMMDD, or null if it is not usable.
-     *
-     * The tracker sends the raw anchors -- fsts, psts, sts -- rather than dates,
-     * so no granularity is lost on the way and anything else that wants the
-     * precise instant still has it. Everything downstream of here works at DAY
-     * level, which is what limits the damage: these anchors are stamped by the
-     * VISITOR's clock, and a date absorbs anything short of an error that
-     * crosses midnight.
-     *
-     * Converted with the SERVER's timezone, so these day boundaries are the
-     * same ones every other date part on the row uses.
-     */
-    static function dateFromTimestamp( $timestamp ) {
 
-        $timestamp = (int) $timestamp;
 
-        return $timestamp > 0 ? date( 'Ymd', $timestamp ) : null;
-    }
 
-    /**
-     * Whole days between two YYYYMMDD dates, or null if either is unusable.
-     *
-     * Day-level arithmetic on purpose: converting first and subtracting days is
-     * what makes midnight a non-event, where subtracting the timestamps and
-     * dividing would make a two-hour gap spanning midnight look like no days at
-     * all.
-     */
-    static function daysBetweenDates( $from, $to ) {
-
-        if ( ! preg_match( '/^\d{8}$/', (string) $from ) || ! preg_match( '/^\d{8}$/', (string) $to ) ) {
-
-            return null;
-        }
-
-        $a = strtotime( substr( $from, 0, 4 ) . '-' . substr( $from, 4, 2 ) . '-' . substr( $from, 6, 2 ) );
-        $b = strtotime( substr( $to, 0, 4 ) . '-' . substr( $to, 4, 2 ) . '-' . substr( $to, 6, 2 ) );
-
-        if ( $a === false || $b === false ) {
-
-            return null;
-        }
-
-        // round, not floor: a day is 23 or 25 hours across a DST boundary.
-        return (int) round( ( $b - $a ) / 86400 );
-    }
-
-    /**
-     * The date the current session began, as the tracker reported it, falling
-     * back to the server's date for trackers that predate the field.
-     */
-    static function sessionDateOf( $event ) {
-
-        $sent = self::dateFromTimestamp( $event->get( 'sts' ) );
-
-        return $sent !== null ? $sent : date( 'Ymd', (int) $event->get( 'timestamp' ) );
-    }
-
-    static function deriveDaysSinceFirstSession( $days, $event ) {
-
-        $count = self::daysBetweenDates(
-            self::dateFromTimestamp( $event->get( 'fsts' ) ),
-            self::sessionDateOf( $event )
-        );
-
-        return $count === null ? $days : $count;
-    }
-
-    static function deriveDaysSincePriorSession( $days, $event ) {
-
-        $count = self::daysBetweenDates(
-            self::dateFromTimestamp( $event->get( 'psts' ) ),
-            self::sessionDateOf( $event )
-        );
-
-        return $count === null ? $days : $count;
-    }
-
-    /**
-     * Is this session's visitor a returning one?
-     *
-     * Returns a BOOLEAN both ways. It used to return true for a repeat visitor
-     * and fall off the end for a new one, so the "false" case was NULL -- and
-     * `is_repeat_visitor` is a required derived property, so every new
-     * visitor's session stored NULL rather than 0.
-     *
-     * That is not merely untidy. NULL and 0 are two distinct values for a
-     * two-state fact, so anything GROUPing on the column -- the isRepeatVisitor
-     * dimension, and any pie or grid built on it -- gets three buckets and
-     * reports "No" twice.
-     */
-    static function setRepeatVisitorFlag( $flag, $event ) {
-
-        return ! $event->get( 'is_new_visitor' );
-    }
-
-    static function deriveYear( $year, $event ) {
-
-        return date( "Y", $event->get('timestamp') );
-
-    }
-
-    static function deriveMonth( $month, $event ) {
-
-        return date("Ym", $event->get('timestamp') );
-
-    }
-
-    static function deriveDay( $day, $event ) {
-
-        return date("d", $event->get('timestamp') );
-
-    }
 
     static function deriveYyyymmdd( $yyyymmdd, $event ) {
 
@@ -914,83 +1170,29 @@ class TrackingEventHelpers {
         // date() with a null timestamp yields 1970, which is worse than useless
         // because it looks like real data. Falling back to now is honest: the
         // server assigns event time anyway when the client does not supply one.
-        $timestamp = $event->get('timestamp');
+        //
+        // FROM `ts`, which is the edge stamp in MICROseconds and the only server
+        // clock reading there is. There used to be a second-resolution twin --
+        // the `timestamp` property, from the same microtime() call so the two
+        // could not straddle a boundary -- and this was its one live reader. Two
+        // spellings of one instant, where one of them reached a column and the
+        // other reached nothing.
+        $ts = (int) $event->get( 'ts' );
 
-        if ( ! $timestamp ) {
-
-            $timestamp = time();
-        }
+        $timestamp = $ts > 0 ? intdiv( $ts, 1000000 ) : time();
 
         return date("Ymd", $timestamp );
 
     }
 
-    static function deriveDayOfWeek( $dayofweek, $event ) {
 
-        return date("D", $event->get('timestamp') );
 
-    }
 
-    static function deriveDayOfYear( $dayofyear, $event ) {
 
-        return date("z", $event->get('timestamp') );
 
-    }
 
-    static function deriveWeekOfYear( $weekofyear, $event ) {
 
-        return date("W", $event->get('timestamp') );
 
-    }
-
-    static function deriveHour( $hour, $event ) {
-
-        return date("G", $event->get('timestamp') );
-
-    }
-
-    static function deriveMinute( $minute, $event ) {
-
-        return date("i", $event->get('timestamp') );
-
-    }
-
-    static function deriveSecond( $second, $event ) {
-
-        return date("s", $event->get('timestamp') );
-
-    }
-
-    static function deriveSec( $sec, $event ) {
-
-        list( $msec, $sec ) = explode( " ", (string) $event->get( 'microtime' ) );
-        return $sec;
-    }
-
-    static function deriveMsec( $msec, $event ) {
-
-        list( $msec, $sec ) = explode( " ", (string) $event->get( 'microtime' ) );
-        return $msec;
-    }
-
-    static function derivePageUri( $page_uri, $event ) {
-
-        $page_parse = parse_url( $event->get( 'page_url' ) );
-
-        if ( ! array_key_exists( 'path', $page_parse ) || empty( $page_parse['path'] ) ) {
-
-            $page_parse['path'] = '/';
-        }
-
-        if ( array_key_exists( 'query', $page_parse ) || ! empty( $page_parse['query'] ) ) {
-
-            return sprintf( '%s?%s', $page_parse['path'], $page_parse['query'] );
-
-        } else {
-
-            return $page_parse['path'] ;
-        }
-    }
     
     
     /**
@@ -1106,44 +1308,763 @@ class TrackingEventHelpers {
 	    return \OWA\Core\CoreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
     }
 
+
+
     /**
-     * Keep the page URL that arrived, before anything is stripped from it.
+     * A canonical URL that is safe to store and to render.
      *
-     * Registered on page_url AHEAD of makeUrlCanonical, and returns its input
-     * untouched -- it exists for the side effect.
+     * This method decodes HTML entities so that parse_url() sees the real URL,
+     * and its return value goes to the event untouched -- setTrackerProperties()
+     * only re-applies the declared type when a callback answers null. So
+     * whatever survives the decode is what reaches the column, and a value that
+     * arrived encoded comes back out raw.
      *
-     * makeUrlCanonical removes the campaign parameters along with whatever a
-     * site put in query_string_filters, which is right for v1: page_url IS the
-     * page's identity there, and two spellings of one page must not become two
-     * documents. v2's raw store needs the other thing. page_location is the
-     * EVIDENCE the campaign tags are parsed out of, so that a parser fix, or a
-     * site changing its campaign keys, can be re-applied to history -- and a
-     * URL whose query has already been removed cannot answer that question a
-     * second time.
+     * The answer is not to escape it. A URL is not HTML, and escaping it for one
+     * output context breaks it for the others -- it also has to survive as an
+     * href, in a CSV, and in a JSON response. What a URL HAS is a grammar, and
+     * the characters below cannot legally appear raw in one: a browser
+     * percent-encodes them before the request is ever made. So percent-encoding
+     * them is not a mangling, it is the URL written correctly, and the value
+     * stays inert in every context rather than in one.
      *
-     * A SEPARATE CALLBACK rather than a line inside makeUrlCanonical, because
-     * that one is registered on three properties -- page_url, target_url and
-     * prior_page -- and is handed no name, so it cannot tell which one it is
-     * filtering. It would have had to guess, and guessing wrong stores the
-     * previous page's URL as this page's location.
+     * Existing percent-escapes are left alone -- '%' is not in the replacement
+     * set -- so %3C stays %3C instead of becoming %253C.
      *
-     * The TRACKER also sends page_location directly, which is the path that
-     * survives every filter by construction. This is the fallback for beacons
-     * from a tracker cached before that shipped, and the guard is what gives
-     * the transmitted value precedence.
-     *
-     * @param string $url
-     * @param object $event
-     * @return string the url, unchanged
+     * The scheme is checked separately, because 'javascript:' and 'data:' carry
+     * no dangerous characters at all and no amount of encoding addresses them.
+     * A rejected URL is recorded as absent rather than stored, which is the
+     * honest record: we did not observe a page we can represent.
      */
-    static function keepCompleteUrl( $url, $event ) {
+    const STORABLE_URL_SCHEMES = array( 'http', 'https' );
 
-        if ( $url && ! $event->get( 'page_location' ) ) {
+    static function makeUrlStorageSafe( $url ) {
 
-            $event->set( 'page_location', $url );
+        if ( $url === null || $url === '' ) {
+
+            return $url;
         }
 
-        return $url;
+        $url = (string) $url;
+
+        /*
+         * Control characters first, and before the scheme is read. Browsers
+         * strip tab, newline and carriage return from inside a scheme, so
+         * "java	script:" is javascript: to a browser while parse_url() sees
+         * something else entirely -- the check and the consumer have to agree
+         * about what the string is.
+         */
+        $url = preg_replace( '/[\x00-\x1F\x7F]/', '', $url );
+
+        /*
+         * The scheme is read off the string, not via parse_url().
+         *
+         * parse_url() applies the grammar, so anything it considers malformed
+         * yields NO scheme -- and a check that only fires when a scheme parses
+         * is skipped by exactly the inputs worth checking. Sanitising upstream
+         * turns "java\tscript:" into "java_script:", which parse_url() reports
+         * no scheme for at all; the guard then passes it through.
+         *
+         * Everything before the first ':' is the claimed scheme, provided no
+         * '/' comes first -- that condition is what keeps a relative URL, or a
+         * path containing a colon, from being read as one.
+         */
+        $colon = strpos( $url, ':' );
+        $slash = strpos( $url, '/' );
+
+        if ( $colon !== false && ( $slash === false || $colon < $slash ) ) {
+
+            $scheme = strtolower( substr( $url, 0, $colon ) );
+
+            if ( ! in_array( $scheme, self::STORABLE_URL_SCHEMES, true ) ) {
+
+                \OWA\Core\CoreAPI::debug(
+                    'Not recording a URL with the scheme: ' . $scheme );
+
+                return '';
+            }
+        }
+
+        return str_replace(
+            array( '<',   '>',   '"',   "'",   '`',   ' ' ),
+            array( '%3C', '%3E', '%22', '%27', '%60', '%20' ),
+            $url );
+    }
+
+    static function utfEncodeProperty( $string, $event ) {
+	if(is_null($string)){
+            return $string;
+        }
+
+        return \OWA\Core\Lib::utf8Encode( trim( $string ) );
+    }
+
+
+    static function getHostDomain( $host, $event ) {
+
+        $fullhost = $event->get( 'full_host' );
+
+        if ( $fullhost ) {
+
+            // Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
+            if ($fullhost === 'localhost') {
+
+                $host = 'localhost';
+
+            } else {
+
+                // lookup the registered domain using the Public Suffix List.
+                $host = \OWA\Core\CoreAPI::getRegisteredDomain( $fullhost );
+                \OWA\Core\CoreAPI::debug("Registered domain is: $host");
+            }
+
+            return $host;
+        }
+    }
+
+    /**
+     * THE ONE PARSE, asked for by agent.
+     *
+     * Seven properties are readings of the user agent, and each is set by its own
+     * callback -- independently, from the registry, like every other property.
+     * That is only affordable because the parser is a singleton memoised per
+     * AGENT: one request parses once however many of the seven ask, and a process
+     * walking several events parses once per distinct agent instead of once,
+     * wrongly. The agent comes off the EVENT rather than $_SERVER, which is the
+     * difference between a live beacon and one drained from the queue later.
+     *
+     * @param  object $event
+     * @return object
+     */
+    private static function browscapFor( $event ) {
+
+        return \OWA\Core\CoreAPI::serviceSingleton()->getBrowscap(
+            $event->get( 'HTTP_USER_AGENT' ) );
+    }
+
+    static function resolveBrowserType( $browser_type, $event ) {
+
+        return self::browscapFor( $event )->getUaFamily();
+    }
+
+    static function resolveBrowserVersion( $version, $event ) {
+
+        return self::browscapFor( $event )->getUaVersion();
+    }
+
+    static function resolveOs ( $os, $event ) {
+
+        return self::browscapFor( $event )->getOsFamily();
+    }
+
+    static function resolveOsVersion( $version, $event ) {
+
+        return self::browscapFor( $event )->getOsVersion();
+    }
+
+    /**
+     * Desktop, mobile or tablet -- DERIVED, because ua-parser has no such field.
+     *
+     * Its device rules answer brand, model and family, and 'Other' is its word
+     * for "no rule matched" -- which is an answer about a desktop browser and an
+     * absence about a phone. The OS family is what tells those apart, so the rule
+     * reads it and falls through to NULL rather than guessing desktop: a wrong
+     * 'desktop' is indistinguishable from a real one.
+     */
+    static function resolveDeviceType( $type, $event ) {
+
+        $bcap = self::browscapFor( $event );
+
+        $family = strtolower( (string) $bcap->getDeviceFamily() );
+
+        if ( $family === 'ipad' || strpos( $family, 'tablet' ) !== false ) {
+
+            return 'tablet';
+        }
+
+        $os = strtolower( (string) $bcap->getOsFamily() );
+
+        if ( in_array( $os, self::MOBILE_OS, true ) ) {
+
+            return 'mobile';
+        }
+
+        if ( in_array( $os, self::DESKTOP_OS, true ) ) {
+
+            return 'desktop';
+        }
+
+        return null;
+    }
+
+    /** 'Other' is the parser saying it has no rule, not a brand. */
+    static function resolveDeviceBrand( $brand, $event ) {
+
+        $value = (string) self::browscapFor( $event )->getDeviceBrand();
+
+        return strtolower( $value ) === 'other' ? null : $value;
+    }
+
+    /** As the brand: 'Other' is an absence wearing a value. */
+    static function resolveDeviceModel( $model, $event ) {
+
+        $value = (string) self::browscapFor( $event )->getDeviceModel();
+
+        return strtolower( $value ) === 'other' ? null : $value;
+    }
+
+
+    /*
+     * GEO IS DERIVED FROM THE OBSERVED IP AND CANNOT BE SUPPLIED.
+     *
+     * All four of these opened by returning their own current value if it was
+     * truthy -- a client-override path, so a proxy could state a visitor's
+     * location and skip the lookup. It was unreachable twice over: none of the
+     * four declares client_settable, so admitRequestParams() refuses it at
+     * log.php, and LocationHandlers -- the v1 handler that read a supplied
+     * country -- is not registered.
+     *
+     * A branch guarding a capability with no way in reads like the capability
+     * exists. If supplying geo is wanted back it needs client_settable set,
+     * which is a decision about trust, not this branch restored.
+     */
+    static function resolveCountry ( $country, $event ) {
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
+
+        return $location->getCountry();
+    }
+
+    static function resolveCity ( $city, $event ) {
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getCity();
+    }
+
+
+
+    static function resolveCountryCode ( $country_code, $event ) {
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getCountryCode();
+    }
+
+    static function resolveState ( $state, $event ) {
+
+        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+
+        return $location->getState();
+    }
+
+    static function lowercaseString ( $string, $event ) {
+	if(is_null($string)){
+            return($string);
+        }
+
+        return strtolower( trim( $string ) );
+    }
+
+
+    static function setSearchTerms ( $search_terms, $event ) {
+
+        if ( $search_terms && $search_terms != '(not set)' ) {
+
+            return trim( strtolower( $search_terms ) );
+        }
+    }
+
+    /*
+     * setUserName() and setEmailAddress() STOOD HERE, and go with the two
+     * properties they resolved.
+     *
+     * user_name and user_email are no longer part of v2's declared vocabulary.
+     * They are ordinary CUSTOM USER PROPERTIES now -- a site sends
+     * up_user_name, it lands in the visitor store's JSON beside every other
+     * user property, and it becomes queryable by being registered. PLAN.html
+     * §2.26.1 is what settles that: v2 offers site authors exactly two scopes,
+     * event and user, and a value describing the PERSON is the second one.
+     *
+     * The temporality that made a column wrong is handled there rather than by a
+     * scope: §2.26.5 stores each user property with when it was SET, so
+     * `cd_<name>_set_ts <= ts` answers "was this already true at this event" --
+     * which is the question a display name needs and a session boundary only
+     * approximates.
+     *
+     * log_owa_user_names GOES WITH THEM. It enabled the fallback that stamped
+     * whoever was logged into OWA onto events of a TRACKED site, which was never
+     * a visitor's identity, and it was read here and nowhere else.
+     *
+     * log_visitor_pii STAYS, and moves to what it should always have gated:
+     * user_id. That is the site's own identifier for a person -- the one field
+     * with a column, the one that persists in the visitor store, and the one that
+     * outlives a cookie, which is what makes it the only honest basis for joining
+     * a person's devices and equally the thing a privacy switch has to be able to
+     * turn off. A custom user property is the site's own decision, made by
+     * choosing to send it; user_id is part of the release vocabulary, so the
+     * install gets a say. See gateUserId().
+     */
+
+    /**
+     * user_id, unless the install has turned visitor PII off.
+     *
+     * DELETES RATHER THAN RETURNING NULL, which is the lesson the two callbacks
+     * above taught on their way out: setTrackerProperties() declines to write a
+     * null back, so whatever the beacon put on the event is still there for the
+     * row builder to read. A gate that returns nothing leaves the value in place.
+     *
+     * @param  string|null $user_id
+     * @param  object      $event
+     * @return string|null
+     */
+    static function gateUserId( $user_id, $event ) {
+
+        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+
+            $event->delete( 'user_id' );
+
+            return null;
+        }
+
+        return $user_id;
+    }
+
+    /**
+     * The campaign parameters a site owner writes on a landing URL, and the
+     * wire property each one becomes.
+     *
+     * SUFFIXES, not whole names: the public parameter is the `ns` setting plus
+     * the suffix, because `ns` is what keeps OWA's names off a tracked page's
+     * own query string. Changing `ns` changes every campaign URL in the wild,
+     * which is exactly why the list is built from it rather than hard-coded.
+     *
+     * Mirrors the tracker's `campaignKeys`. Note owa_search_terms becomes
+     * tagged_TERMS, not tagged_search_terms -- the one place the two halves do
+     * not share a stem.
+     */
+    const CAMPAIGN_KEYS = array(
+        'source'       => 'tagged_source',
+        'medium'       => 'tagged_medium',
+        'campaign'     => 'tagged_campaign',
+        'search_terms' => 'tagged_terms',
+        'ad'           => 'tagged_ad',
+        'ad_type'      => 'tagged_ad_type',
+    );
+
+    /** Parsed landing URLs, keyed by site and URL. */
+    private static $landingTags = array();
+
+    /** Resolved campaign key maps, keyed by site. */
+    private static $campaignKeys = array();
+
+    /**
+     * What the landing URL claimed for one campaign property.
+     *
+     * The tracker used to parse the landing URL against campaignKeys and send
+     * six tagged_* parameters on every beacon of the session. It now carries
+     * the URL itself and the parse happens here, which is what makes the answer
+     * re-derivable: a fix to this parser, or a site changing `ns`, applies on
+     * reprocess instead of being frozen in whatever a browser decided months
+     * ago.
+     *
+     * AN EVENT'S OWN tagged_* STILL WINS. Trackers are cached in browsers and
+     * installs upgrade at their own pace, so beacons from the old tracker keep
+     * arriving long after the new one ships; treating what it sent as
+     * authoritative is what makes this change invisible to them. The parse is
+     * the fallback, which is also the right precedence on its own terms -- a
+     * value that was actually transmitted beats one re-derived from evidence.
+     *
+     * @param object $event
+     * @param string $name  a value of CAMPAIGN_KEYS
+     * @return string|null
+     */
+    /**
+     * One campaign tag off the URL THE SESSION LANDED ON.
+     *
+     * PARSED FROM page_location, not from a landing_url the tracker re-sent. On
+     * the session-starting beacon they are the same string -- the tracker set
+     * landing_url to getCurrentUrl() and page_location comes from the same call --
+     * and this only ever runs on that beacon, so reading the URL the event already
+     * carries takes a session-scoped field off the wire for the life of every
+     * session. GA does not carry one either: no GA cookie holds a URL, and session
+     * source is fixed by the session's FIRST EVENT.
+     *
+     * THE EVIDENCE, NOT THE READING. page_location is stored exactly as it
+     * arrived; page_query has the Profile's dropped parameters removed, so a site
+     * filtering owa_source out of its query strings would lose the very tag this
+     * reads.
+     *
+     * ONLY ON THE LANDING BEACON. is_new_session_start is a property of the
+     * BEACON, and a landing page view expands into three rows -- page_view,
+     * session_start, first_visit -- so all three keep a copy and the pass reads
+     * whichever it finds first.
+     *
+     * @param  object $event
+     * @param  string $name  a tagged_* property name
+     * @return string|null
+     */
+    static function taggedValue( $event, $name ) {
+
+        if ( ! $event->get( 'is_new_session_start' ) ) {
+
+            return null;
+        }
+
+        $landing = $event->get( 'page_location' );
+
+        if ( ! $landing || ! is_string( $landing ) ) {
+
+            return null;
+        }
+
+        /*
+         * MEMOISED PER SITE AS WELL AS PER URL. The key map is a Property
+         * setting, so the same URL parses differently for two Properties -- one
+         * reading owa_source and one utm_source -- and a memo keyed on the URL
+         * alone would hand the first site's answer to the second.
+         */
+        $site_id = (string) $event->get( 'site_id' );
+        $memo    = $site_id . '|' . $landing;
+
+        if ( ! isset( self::$landingTags[ $memo ] ) ) {
+
+            self::$landingTags[ $memo ] = self::parseLandingTags(
+                $landing, self::campaignKeysFor( $site_id ) );
+        }
+
+        return isset( self::$landingTags[ $memo ][ $name ] )
+            ? self::$landingTags[ $memo ][ $name ]
+            : null;
+    }
+
+    /*
+     * The five tags, each set by its own callback off the one memoised parse.
+     *
+     * Independently and from the registry, like every other property: the row
+     * builder is handed a formed event and persists it, rather than computing
+     * five values inside a helper of its own.
+     */
+    static function resolveTaggedSource( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_source' );
+    }
+
+    static function resolveTaggedMedium( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_medium' );
+    }
+
+    static function resolveTaggedCampaign( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_campaign' );
+    }
+
+    static function resolveTaggedAd( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_ad' );
+    }
+
+    /**
+     * tagged_terms is the one whose halves do not share a stem -- owa_search_terms
+     * on the URL, tagged_terms on the wire, tagged_search_terms as the column.
+     */
+    static function resolveTaggedTerms( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_terms' );
+    }
+
+    /**
+     * Pull the campaign parameters out of one landing URL.
+     *
+     * @param string $landing
+     * @return array wire property name => value
+     */
+    /**
+     * The URL parameter each campaign role arrives under, for this site.
+     *
+     * EMPTY SETTING MEANS ns-PREFIXED, which is what OWA has always done and
+     * what honours a custom `ns`. A site that sets it names the parameters
+     * explicitly instead -- utm_source, utm_medium, utm_campaign, utm_term,
+     * utm_content -- so a Property that came from a GA setup keeps its links.
+     *
+     * Read at PROFILE scope so the chain walks Profile -> Property -> Install:
+     * the install default covers one convention everywhere, and a Property
+     * overrides it.
+     *
+     * Only the roles CAMPAIGN_KEYS names are read, so a setting cannot invent a
+     * tag the pipeline has nowhere to put. A role the setting omits keeps its
+     * ns-prefixed name rather than being dropped, so a partial override is
+     * partial rather than destructive.
+     *
+     * @param  string $site_id
+     * @return array  public parameter name => tagged_* property
+     */
+    private static function campaignKeysFor( $site_id ) {
+
+        if ( isset( self::$campaignKeys[ $site_id ] ) ) {
+
+            return self::$campaignKeys[ $site_id ];
+        }
+
+        $configured = \OWA\Core\CoreAPI::getSetting(
+            'base', 'campaignKeys', 'profile', $site_id );
+
+        $configured = is_array( $configured ) ? $configured : array();
+
+        $ns  = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $map = array();
+
+        foreach ( self::CAMPAIGN_KEYS as $role => $property ) {
+
+            $public = isset( $configured[ $role ] ) && is_string( $configured[ $role ] )
+                   && trim( $configured[ $role ] ) !== ''
+                ? trim( $configured[ $role ] )
+                : $ns . $role;
+
+            $map[ $public ] = $property;
+        }
+
+        return self::$campaignKeys[ $site_id ] = $map;
+    }
+
+    private static function parseLandingTags( $landing, array $keys ) {
+
+        $uri = self::parse_url( $landing );
+
+        if ( empty( $uri['query'] ) ) {
+
+            return array();
+        }
+
+        $params = array();
+
+        parse_str( $uri['query'], $params );
+
+        $tags = array();
+
+        foreach ( $keys as $public => $property ) {
+
+            // Absent and empty are the same claim: the URL said nothing. An
+            // empty owa_campaign= must not read as a campaign named ''.
+            if ( ! isset( $params[ $public ] ) || ! is_string( $params[ $public ] ) ) {
+
+                continue;
+            }
+
+            $value = trim( $params[ $public ] );
+
+            if ( $value === '' ) {
+
+                continue;
+            }
+
+            $tags[ $property ] = $value;
+        }
+
+        return $tags;
+    }
+
+
+
+
+
+    /** As resolveCampaign(). Read by AdHandlers beside ad. */
+    static function resolveAdType( $ad_type, $event ) {
+
+        $tagged = self::taggedValue( $event, 'tagged_ad_type' );
+
+        return $tagged ? trim( $tagged ) : $ad_type;
+    }
+
+
+    /*
+     * ---- URL READINGS -----------------------------------------------------
+     *
+     * Six columns are readings of a URL the beacon sent, and each is now set by
+     * its own callback off the property it reads -- page_location for the page's
+     * three, HTTP_REFERER for the referrer's two, target_url for the click
+     * target's one. They used to be cut inside the row builder, which meant the
+     * registry declared six properties that nothing produced and the row builder
+     * knew how to parse a URL.
+     *
+     * NO MEMO, unlike the user agent's seven and the campaign tags' five. Those
+     * share a parse worth keeping: browscap loads a rule set, and the tag parse
+     * walks a settings-derived key map. parse_url is a C function costing 0.27us
+     * on a tagged URL -- measured, 300k iterations -- so the memo's own string
+     * concatenation and isset() would cost about what it saved. Three URLs
+     * parsed twice each is under a microsecond an event.
+     *
+     * THE THREE READINGS OF page_location ARE INDEPENDENT. path, query and host
+     * are disjoint substrings and no callback here reads another's output, so
+     * their order in the registry is free -- which is what makes six separate
+     * callbacks a mechanical substitution for one procedure rather than a
+     * rewrite with a sequence to preserve.
+     */
+
+    /**
+     * The page's path, canonicalised.
+     *
+     * THE READING IS CANONICALISED; THE EVIDENCE IS NOT. page_location is stored
+     * exactly as it arrived, because it is what a corrected parse gets
+     * re-applied to. This is what reports group by, and a reading that varies
+     * where the page does not is a broken report -- /store, /store/ and
+     * /store/index.html are one page.
+     */
+    static function derivePagePath( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'page_location' ) );
+
+        return \OWA\Module\Base\Classes\V2Event::canonicalPath(
+            $parts['path'], (string) \OWA\Core\CoreAPI::getSetting(
+                'base', 'default_page', 'profile', $event->getSiteId() ) );
+    }
+
+    /**
+     * The page's query string, with the Profile's dropped parameters removed.
+     *
+     * owa_state and the campaign keys are OWA's own plumbing and have no business
+     * appearing in somebody's page report. The tags are still recoverable: they
+     * are parsed out of page_location, which keeps them.
+     */
+    static function derivePageQuery( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'page_location' ) );
+
+        return \OWA\Module\Base\Classes\V2Event::filterQuery(
+            $parts['query'], self::droppedQueryParams( $event->getSiteId() ) );
+    }
+
+    /**
+     * The page's own host -- not this server's (HTTP_HOST) and not the visitor's
+     * network (REMOTE_HOST).
+     *
+     * Falls back to whatever the property already held, which is what the row
+     * builder's `?:` did. Nothing on the v2 path sets it: host is set_by event,
+     * so admitRequestParams() refuses a beacon that names it. The fallback is
+     * kept because a caller building an event in process can still set one, and
+     * the column is declared required.
+     */
+    static function deriveHost( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'page_location' ) );
+
+        return $parts['host'] ?: $value;
+    }
+
+    /**
+     * The referrer's host, and what the cube pass classifies source and medium
+     * from.
+     *
+     * The referrer is deliberately left alone beyond its host and query: it is
+     * somebody else's URL, and collapsing it against THIS site's default page
+     * would be a category error.
+     */
+    static function deriveRefererHost( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'HTTP_REFERER' ) );
+
+        return $parts['host'];
+    }
+
+    /** The referrer's query string, unfiltered -- see deriveRefererHost(). */
+    static function deriveRefererQuery( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'HTTP_REFERER' ) );
+
+        return $parts['query'];
+    }
+
+    /**
+     * The click target's host, so an outbound click is a comparison against host
+     * rather than a string test.
+     *
+     * Reads target_url AFTER makeUrlCanonical() has filtered it, which is what
+     * the row builder did: target_url is a client property and this is a derived
+     * one, so the scopes settle the order.
+     */
+    static function deriveTargetHost( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'target_url' ) );
+
+        return $parts['host'];
+    }
+
+    /**
+     * A money property as the minor units its column stores.
+     *
+     * ONE CALLBACK FOR ALL THREE -- ct_total, ct_tax, ct_shipping -- because it
+     * converts its own value and reads nothing else. event_raw.revenue, tax and
+     * shipping are BIGINTs of minor units with the currency beside them, because
+     * a float column sums to something nobody can reconcile.
+     *
+     * The conversion used to happen in the row builder, which is the last place
+     * it could: a property whose value is not what its column stores is a
+     * property the registry cannot describe.
+     */
+    static function toMinorUnits( $value, $event ) {
+
+        return \OWA\Module\Base\Classes\V2Event::minorUnits( $value );
+    }
+
+    /**
+     * The query parameters that come out of a stored page_query, for one site.
+     *
+     * OWA's own control parameters, plus the site's query_string_filters at both
+     * install and Profile scope. NOT utm_*: those are the site's own tagging
+     * rather than ours, v1 keeps them, and so does GA.
+     *
+     * The list is per site and settings change, so what a report shows depends on
+     * the list as it was when the row was written. Making a corrected list
+     * re-apply to history means filtering in the build instead, which is the
+     * argument the cube exists for and is deferred rather than dismissed
+     * (2.28.2).
+     *
+     * @param  string $site_id
+     * @return string[]
+     */
+    public static function droppedQueryParams( $site_id ) {
+
+        $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+
+        $drop = array(
+            $ns . 'source',
+            $ns . 'medium',
+            $ns . 'campaign',
+            $ns . 'ad',
+            $ns . 'ad_type',
+            $ns . 'overlay',
+            $ns . 'state',
+            $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
+        );
+
+        foreach ( array(
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $site_id ),
+        ) as $configured ) {
+
+            if ( ! $configured ) {
+
+                continue;
+            }
+
+            foreach ( explode( ',', (string) $configured ) as $name ) {
+
+                $name = trim( $name );
+
+                if ( $name !== '' ) {
+
+                    $drop[] = $name;
+                }
+            }
+        }
+
+        return $drop;
     }
 
     /**
@@ -1274,645 +2195,6 @@ class TrackingEventHelpers {
 
          return self::makeUrlStorageSafe( $url );
 
-    }
-
-    /**
-     * A canonical URL that is safe to store and to render.
-     *
-     * This method decodes HTML entities so that parse_url() sees the real URL,
-     * and its return value goes to the event untouched -- setTrackerProperties()
-     * only re-applies the declared type when a callback answers null. So
-     * whatever survives the decode is what reaches the column, and a value that
-     * arrived encoded comes back out raw.
-     *
-     * The answer is not to escape it. A URL is not HTML, and escaping it for one
-     * output context breaks it for the others -- it also has to survive as an
-     * href, in a CSV, and in a JSON response. What a URL HAS is a grammar, and
-     * the characters below cannot legally appear raw in one: a browser
-     * percent-encodes them before the request is ever made. So percent-encoding
-     * them is not a mangling, it is the URL written correctly, and the value
-     * stays inert in every context rather than in one.
-     *
-     * Existing percent-escapes are left alone -- '%' is not in the replacement
-     * set -- so %3C stays %3C instead of becoming %253C.
-     *
-     * The scheme is checked separately, because 'javascript:' and 'data:' carry
-     * no dangerous characters at all and no amount of encoding addresses them.
-     * A rejected URL is recorded as absent rather than stored, which is the
-     * honest record: we did not observe a page we can represent.
-     */
-    const STORABLE_URL_SCHEMES = array( 'http', 'https' );
-
-    static function makeUrlStorageSafe( $url ) {
-
-        if ( $url === null || $url === '' ) {
-
-            return $url;
-        }
-
-        $url = (string) $url;
-
-        /*
-         * Control characters first, and before the scheme is read. Browsers
-         * strip tab, newline and carriage return from inside a scheme, so
-         * "java	script:" is javascript: to a browser while parse_url() sees
-         * something else entirely -- the check and the consumer have to agree
-         * about what the string is.
-         */
-        $url = preg_replace( '/[\x00-\x1F\x7F]/', '', $url );
-
-        /*
-         * The scheme is read off the string, not via parse_url().
-         *
-         * parse_url() applies the grammar, so anything it considers malformed
-         * yields NO scheme -- and a check that only fires when a scheme parses
-         * is skipped by exactly the inputs worth checking. Sanitising upstream
-         * turns "java\tscript:" into "java_script:", which parse_url() reports
-         * no scheme for at all; the guard then passes it through.
-         *
-         * Everything before the first ':' is the claimed scheme, provided no
-         * '/' comes first -- that condition is what keeps a relative URL, or a
-         * path containing a colon, from being read as one.
-         */
-        $colon = strpos( $url, ':' );
-        $slash = strpos( $url, '/' );
-
-        if ( $colon !== false && ( $slash === false || $colon < $slash ) ) {
-
-            $scheme = strtolower( substr( $url, 0, $colon ) );
-
-            if ( ! in_array( $scheme, self::STORABLE_URL_SCHEMES, true ) ) {
-
-                \OWA\Core\CoreAPI::debug(
-                    'Not recording a URL with the scheme: ' . $scheme );
-
-                return '';
-            }
-        }
-
-        return str_replace(
-            array( '<',   '>',   '"',   "'",   '`',   ' ' ),
-            array( '%3C', '%3E', '%22', '%27', '%60', '%20' ),
-            $url );
-    }
-
-    static function utfEncodeProperty( $string, $event ) {
-	if(is_null($string)){
-            return $string;
-        }
-
-        return \OWA\Core\Lib::utf8Encode( trim( $string ) );
-    }
-
-    /**
-     * Resolve hostname from IP address
-     *
-     * @access public
-     */
-    static function resolveFullHost( $full_host, $event ) {
-
-        if (
-        		( $event->get('REMOTE_HOST') === '(not set)' || $event->get('REMOTE_HOST') === 'localhost' )
-				&& $event->get( 'ip_address' )
-				&& \OWA\Core\CoreAPI::getSetting(
-						'base', 'resolve_hosts', 'profile', $event->get('site_id') )
-
-        ) {
-			
-			$remote_host = '';
-            // get ip address
-            $ip_address = $event->get( 'ip_address' );
-            
-            if ( \OWA\Core\Lib::isNotPrivateIp( $ip_address ) ) {
-	            
-	            // valid v4 or v6 IP address
-	            
-	            if ( \OWA\Core\Lib::isValidIpv6( $ip_address ) ) {
-		            
-		            // is v6 format
-		            $result = @dns_get_record( $ip_address, DNS_AAAA );
-
-	                if ( is_array( $result ) && isset( $result[0] ) && isset( $result[0]['host'] ) ) {
-	
-	                    $remote_host = $result[0]['host'];
-	                }
-		            
-	            } else {
-		            
-		            // must be v4.
-		            $remote_host = @gethostbyaddr( $ip_address );
-	            }
-	        }
- 
-            // if we get a host back that is not an ip address or unknown
-            if ( $remote_host && $remote_host != $ip_address && $remote_host != 'unknown' ) {
-
-                return $remote_host;
-            }
-        }
-    }
-
-    static function getHostDomain( $host, $event ) {
-
-        $fullhost = $event->get( 'full_host' );
-
-        if ( $fullhost ) {
-
-            // Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
-            if ($fullhost === 'localhost') {
-
-                $host = 'localhost';
-
-            } else {
-
-                // lookup the registered domain using the Public Suffix List.
-                $host = \OWA\Core\CoreAPI::getRegisteredDomain( $fullhost );
-                \OWA\Core\CoreAPI::debug("Registered domain is: $host");
-            }
-
-            return $host;
-        }
-    }
-
-    static function resolveBrowserType( $browser_type, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getUaFamily();
-    }
-
-    static function isBrowser( $is_browser , $event ) {
-
-        if ( $event->get( 'browser_type' ) ) {
-
-            return true;
-        }
-    }
-
-    static function resolveBrowserVersion( $version, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getUaVersion();
-    }
-
-    static function isRobot ( $is_robot, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->isRobot();
-    }
-
-    static function resolveOs ( $os, $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getOsFamily();
-
-    }
-
-    static function resolveEntryPage( $is_entry_page, $event ) {
-	    
-        return $event->get('is_new_session') ? true : false;
-    }
-
-    static function resolveCountry ( $country, $event ) {
-
-        // if country is set manually, use it
-        if ($country) {
-            return $country;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-
-        return $location->getCountry();
-    }
-
-    static function resolveCity ( $city, $event ) {
-
-        // if city is set manually, use it
-        if ($city) {
-            return $city;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getCity();
-    }
-
-    static function resolveLatitude ( $latitude, $event ) {
-
-        // if latitude is set manually, use it
-        if ($latitude) {
-            return $latitude;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getLatitude();
-    }
-
-    static function resolveLongitude ( $longitude, $event ) {
-
-        // if longitude is set manually, use it
-        if ($longitude) {
-            return $longitude;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getLongitude();
-    }
-
-    static function resolveCountryCode ( $country_code, $event ) {
-
-        // if country_code is set manually, use it
-        if ($country_code) {
-            return $country_code;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getCountryCode();
-    }
-
-    static function resolveState ( $state, $event ) {
-
-        // if state is set manually, use it
-        if ($state) {
-            return $state;
-        }
-
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getState();
-    }
-
-    static function lowercaseString ( $string, $event ) {
-	if(is_null($string)){
-            return($string);
-        }
-
-        return strtolower( trim( $string ) );
-    }
-
-    static function setPriorPage ( $prior_page, $event ) {
-
-        // if prior_page is set manually, use it
-        if ($prior_page) {
-            return $prior_page;
-        }
-
-        if ( $event->get( 'HTTP_REFERER' ) ) {
-            // @todo is this parse done somewhere else already? source?
-            $referer_parse = \OWA\Core\Lib::parse_url( $event->get('HTTP_REFERER') );
-
-            $http_host = $event->get( 'HTTP_HOST' );
-
-            if ( isset($referer_parse['host'] ) && $referer_parse['host'] === $http_host ) {
-
-                return $event->get('HTTP_REFERER');
-            }
-        }
-
-        return null;
-    }
-
-    static function setSearchTerms ( $search_terms, $event ) {
-
-        if ( $search_terms && $search_terms != '(not set)' ) {
-
-            return trim( strtolower( $search_terms ) );
-        }
-    }
-
-    static function setUserName( $user_name, $event ) {
-
-        // record and filter personally identifiable info (PII)
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-
-            // set user name if one does not already exist on event
-            if ( ! $user_name && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
-
-                $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-                $user_name = $cu->user->get( 'user_id' );
-            }
-
-            return $user_name;
-        }
-    }
-
-    static function setEmailAddress ( $email_address, $event ) {
-
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-
-            if ( ! $email_address && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
-
-                $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-                $email_address = $cu->user->get( 'email_address' );
-            }
-
-            return $email_address;
-        }
-    }
-
-    /**
-     * The campaign parameters a site owner writes on a landing URL, and the
-     * wire property each one becomes.
-     *
-     * SUFFIXES, not whole names: the public parameter is the `ns` setting plus
-     * the suffix, because `ns` is what keeps OWA's names off a tracked page's
-     * own query string. Changing `ns` changes every campaign URL in the wild,
-     * which is exactly why the list is built from it rather than hard-coded.
-     *
-     * Mirrors the tracker's `campaignKeys`. Note owa_search_terms becomes
-     * tagged_TERMS, not tagged_search_terms -- the one place the two halves do
-     * not share a stem.
-     */
-    const CAMPAIGN_KEYS = array(
-        'source'       => 'tagged_source',
-        'medium'       => 'tagged_medium',
-        'campaign'     => 'tagged_campaign',
-        'search_terms' => 'tagged_terms',
-        'ad'           => 'tagged_ad',
-        'ad_type'      => 'tagged_ad_type',
-    );
-
-    /** Parsed landing URLs, keyed by the URL. */
-    private static $landingTags = array();
-
-    /**
-     * What the landing URL claimed for one campaign property.
-     *
-     * The tracker used to parse the landing URL against campaignKeys and send
-     * six tagged_* parameters on every beacon of the session. It now carries
-     * the URL itself and the parse happens here, which is what makes the answer
-     * re-derivable: a fix to this parser, or a site changing `ns`, applies on
-     * reprocess instead of being frozen in whatever a browser decided months
-     * ago.
-     *
-     * AN EVENT'S OWN tagged_* STILL WINS. Trackers are cached in browsers and
-     * installs upgrade at their own pace, so beacons from the old tracker keep
-     * arriving long after the new one ships; treating what it sent as
-     * authoritative is what makes this change invisible to them. The parse is
-     * the fallback, which is also the right precedence on its own terms -- a
-     * value that was actually transmitted beats one re-derived from evidence.
-     *
-     * @param object $event
-     * @param string $name  a value of CAMPAIGN_KEYS
-     * @return string|null
-     */
-    static function taggedValue( $event, $name ) {
-
-        $sent = $event->get( $name );
-
-        if ( $sent ) {
-
-            return $sent;
-        }
-
-        $landing = $event->get( 'landing_url' );
-
-        if ( ! $landing || ! is_string( $landing ) ) {
-
-            return null;
-        }
-
-        if ( ! isset( self::$landingTags[ $landing ] ) ) {
-
-            self::$landingTags[ $landing ] = self::parseLandingTags( $landing );
-        }
-
-        return isset( self::$landingTags[ $landing ][ $name ] )
-            ? self::$landingTags[ $landing ][ $name ]
-            : null;
-    }
-
-    /**
-     * Pull the campaign parameters out of one landing URL.
-     *
-     * @param string $landing
-     * @return array wire property name => value
-     */
-    private static function parseLandingTags( $landing ) {
-
-        $uri = self::parse_url( $landing );
-
-        if ( empty( $uri['query'] ) ) {
-
-            return array();
-        }
-
-        $params = array();
-
-        parse_str( $uri['query'], $params );
-
-        $ns   = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
-        $tags = array();
-
-        foreach ( self::CAMPAIGN_KEYS as $suffix => $property ) {
-
-            $public = $ns . $suffix;
-
-            // Absent and empty are the same claim: the URL said nothing. An
-            // empty owa_campaign= must not read as a campaign named ''.
-            if ( ! isset( $params[ $public ] ) || ! is_string( $params[ $public ] ) ) {
-
-                continue;
-            }
-
-            $value = trim( $params[ $public ] );
-
-            if ( $value === '' ) {
-
-                continue;
-            }
-
-            $tags[ $property ] = $value;
-        }
-
-        return $tags;
-    }
-
-    /**
-     * Resolve the traffic source.
-     *
-     * The tracker reports what the landing URL was tagged with; the server
-     * decides what the source IS. Those used to be the same property name, so
-     * a value in the column recorded no trace of which half produced it and
-     * the callback had to open by respecting its own current value. Now the
-     * claim arrives as tagged_source and the answer is written here.
-     *
-     * Precedence: an explicit tag wins, else classify the referer.
-     */
-    static function resolveSource( $source, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_source' );
-
-        if ( $tagged ) {
-
-            return strtolower( trim( $tagged ) );
-        }
-
-        $referer = $event->get( 'session_referer' );
-
-        if ( ! $referer ) {
-
-            return $source;
-        }
-
-        $uri = self::parse_url( $referer );
-
-        if ( empty( $uri['host'] ) ) {
-
-            return $source;
-        }
-
-        return strtolower( self::stripWwwFromDomain( $uri['host'] ) );
-    }
-
-    /**
-     * Resolve the medium. See resolveSource() for the claim/answer split.
-     *
-     * Precedence: an explicit tag wins, else classify the referer as a search
-     * engine, a social network or a plain referral, else leave the declared
-     * default of direct.
-     */
-    static function resolveMedium( $medium, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_medium' );
-
-        if ( $tagged ) {
-
-            return strtolower( trim( $tagged ) );
-        }
-
-        $referer = $event->get( 'session_referer' );
-
-        if ( ! $referer ) {
-
-            return $medium;
-        }
-
-        $uri = self::parse_url( $referer );
-
-        if ( empty( $uri['host'] ) ) {
-
-            return $medium;
-        }
-
-        $host = $uri['host'];
-
-        if ( self::isSearchEngine( $host ) ) {
-
-            return 'organic-search';
-        }
-
-        if ( self::isSocialNetwork( $host ) ) {
-
-            return 'social-network';
-        }
-
-        return 'referral';
-    }
-
-    /**
-     * Resolve the campaign name.
-     *
-     * There is nothing to derive it from -- a campaign exists only because a
-     * URL was tagged with one -- so this is the claim, passed through. It is a
-     * callback rather than a bare property so that campaign is registered at
-     * all: it reached CampaignHandlers on the wire for years without appearing
-     * in any property map, which meant no declared type and no way for the
-     * wire filter to have an opinion about it.
-     */
-    static function resolveCampaign( $campaign, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_campaign' );
-
-        return $tagged ? trim( $tagged ) : $campaign;
-    }
-
-    /** As resolveCampaign(). Read by AdHandlers. */
-    static function resolveAd( $ad, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_ad' );
-
-        return $tagged ? trim( $tagged ) : $ad;
-    }
-
-    /** As resolveCampaign(). Read by AdHandlers beside ad. */
-    static function resolveAdType( $ad_type, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_ad_type' );
-
-        return $tagged ? trim( $tagged ) : $ad_type;
-    }
-
-    /**
-     * Resolve the search terms someone arrived on.
-     *
-     * Note this is acquisition, not site-internal search -- the v2 plan (§1.10)
-     * flags that those two facts share this one name and should not.
-     *
-     * Precedence: an explicit tag wins, else read the query param the
-     * referring search engine is known to use.
-     */
-    static function resolveSearchTerms( $terms, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_terms' );
-
-        if ( $tagged ) {
-
-            return trim( strtolower( $tagged ) );
-        }
-
-        $referer = $event->get( 'session_referer' );
-
-        if ( ! $referer ) {
-
-            return $terms;
-        }
-
-        $uri = self::parse_url( $referer );
-
-        if ( empty( $uri['query_params'] ) || empty( $uri['host'] ) ) {
-
-            return $terms;
-        }
-
-        foreach ( self::getSearchEngineList() as $engine ) {
-
-            if ( stripos( $uri['host'], $engine['domain'] ) === false ) {
-
-                continue;
-            }
-
-            $param = $engine['query_param'];
-
-            if ( ! isset( $uri['query_params'][ $param ] ) ) {
-
-                /* A known engine that sent no term: it withheld it (https
-                   referrers usually do), which is a different fact from never
-                   having searched. */
-                return '(not provided)';
-            }
-
-            // urldecode to turn the '+' separators back into spaces
-            return trim( urldecode( strtolower( $uri['query_params'][ $param ] ) ) );
-        }
-
-        return $terms;
     }
 
 }

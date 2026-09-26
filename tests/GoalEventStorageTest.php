@@ -325,20 +325,20 @@ final class GoalEventStorageTest extends TestCase
     public function testConditionsCombineWithAllOrAny(): void
     {
         $goalEvent = $this->makeGoalEventWithConditions( array(
-            array( 'page_uri', 'begins', '/checkout' ),
-            array( 'ct_total', 'gt',     '50' ),
+            array( 'page_path', 'begins', '/checkout' ),
+            array( 'revenue',   'gt',     '50' ),
         ) );
 
-        $over  = $this->fakeEvent( array( 'page_uri' => '/checkout/done', 'ct_total' => '60' ) );
-        $under = $this->fakeEvent( array( 'page_uri' => '/checkout/done', 'ct_total' => '40' ) );
+        $over  = $this->row( array( 'page_path' => '/checkout/done', 'revenue' => '60' ) );
+        $under = $this->row( array( 'page_path' => '/checkout/done', 'revenue' => '40' ) );
 
-        $this->assertTrue(  $goalEvent->matchesEvent( $over ) );
-        $this->assertFalse( $goalEvent->matchesEvent( $under ),
+        $this->assertTrue(  $goalEvent->matchesRow( $over ) );
+        $this->assertFalse( $goalEvent->matchesRow( $under ),
             'Under ALL, one failing condition must fail the whole rule.' );
 
         $goalEvent->set( 'condition_match', 'any' );
 
-        $this->assertTrue( $goalEvent->matchesEvent( $under ),
+        $this->assertTrue( $goalEvent->matchesRow( $under ),
             'Under ANY, one matching condition is enough.' );
     }
 
@@ -353,8 +353,119 @@ final class GoalEventStorageTest extends TestCase
     {
         $goalEvent = $this->makeGoalEventWithConditions( array() );
 
-        $this->assertFalse( $goalEvent->matchesEvent(
-            $this->fakeEvent( array( 'page_uri' => '/anything' ) ) ) );
+        $this->assertFalse( $goalEvent->matchesRow(
+            $this->row( array( 'page_path' => '/anything' ) ) ) );
+    }
+
+    /**
+     * THE TRIGGER GATES THE MATCH.
+     *
+     * trigger_event_type has been stored since Update025 and was read by
+     * NOTHING, so a goal declared on a page view was evaluated against every
+     * event on the site. It went unnoticed because a condition on a page column
+     * finds that column NULL on a click -- but a condition on host, or on
+     * device_type, would have fired on scrolls, clicks and session_start alike,
+     * counting several conversions for one visit to one page.
+     */
+    public function testAGoalOnlyMatchesItsTriggerEventType(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'host', 'exact', 'example.com' ),
+        ) );
+
+        $goalEvent->set( 'trigger_event_type', 'page_view' );
+
+        $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view', 'host' => 'example.com' ) ) ) );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'click', 'host' => 'example.com' ) ) ),
+            'A goal triggered on a page view counted a click as a conversion.' );
+    }
+
+    /**
+     * An EMPTY trigger still means every event type.
+     *
+     * That is what a row written before the column existed says, and reading it
+     * as "matches nothing" would silently switch off every goal on an install
+     * that predates it.
+     */
+    public function testAnEmptyTriggerMatchesAnyEventType(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'host', 'exact', 'example.com' ),
+        ) );
+
+        $goalEvent->set( 'trigger_event_type', '' );
+
+        foreach ( array( 'page_view', 'click', 'scroll' ) as $type ) {
+
+            $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+                'event_type' => $type, 'host' => 'example.com' ) ) ),
+                "An empty trigger refused $type." );
+        }
+    }
+
+    /**
+     * A COLUMN THE ROW DOES NOT CARRY CANNOT ANSWER, so it does not match --
+     * whatever the operator.
+     *
+     * The operator is the point. Handing NULL to compare() makes `not` TRUE for
+     * every row that simply has no value there: a condition meant to exclude one
+     * medium would mark every event with no medium at all, which is most of
+     * them. Both spellings of absence are checked because the row has both -- a
+     * key that is not there at all, and a column that is there and NULL, which
+     * is what tagged_medium is on every event but the landing one.
+     */
+    public function testAnAbsentOrNullColumnDoesNotMatchEvenUnderNot(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'tagged_medium', 'not', 'organic' ),
+        ) );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view' ) ) ),
+            'A row with no tagged_medium key matched "medium is not organic".' );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view', 'tagged_medium' => null ) ) ),
+            'A row whose tagged_medium is NULL matched "medium is not organic".' );
+
+        $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+            'event_type' => 'page_view', 'tagged_medium' => 'cpc' ) ) ),
+            'and a row that does carry a different medium must still match' );
+    }
+
+    /**
+     * THE ROW-ONLY COLUMNS ARE MATCHABLE, which is the reason marking moved.
+     *
+     * device_type is derived in the handler from the user-agent parse and the
+     * tagged_* columns are transcribed there; neither exists as an event
+     * property. Matching from the event could not see them at all, so "a signup
+     * from mobile" was not expressible -- and a goal declared on it matched
+     * nothing without saying so.
+     */
+    public function testAConditionCanTestAColumnThatOnlyExistsOnTheRow(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'device_type',   'exact', 'mobile' ),
+            array( 'tagged_medium', 'exact', 'organic' ),
+        ) );
+
+        $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+            'device_type' => 'mobile', 'tagged_medium' => 'organic' ) ) ) );
+
+        $this->assertFalse( $goalEvent->matchesRow( $this->row( array(
+            'device_type' => 'desktop', 'tagged_medium' => 'organic' ) ) ) );
+    }
+
+    /** A raw row, with the keys a condition is allowed to name. */
+    private function row( array $columns )
+    {
+        return array_merge( array(
+            'event_type' => 'page_view',
+            'site_id'    => $this->siteId,
+        ), $columns );
     }
 
     /** The migration writes the 1.x triple as a condition row. */
@@ -417,17 +528,172 @@ final class GoalEventStorageTest extends TestCase
     /** @var array ids to clean up */
     private array $createdConditions = [];
 
-    /** Something with ->get(), which is all matchesEvent() asks of an event. */
-    private function fakeEvent( array $properties )
-    {
-        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-        $event->setProperties( $properties );
+    /* ---------------- deleting ---------------- */
 
-        return $event;
+    /**
+     * DELETING A GOAL EVENT DELETES ITS CONDITIONS.
+     *
+     * It did not. Entity::delete() removes one row from one table and nothing
+     * overrode it, so every goal event ever deleted left its conditions behind
+     * with nothing able to reach them: a condition row carries no site_id and no
+     * property_id, and is reachable only through its goal event.
+     *
+     * The count on the test install when it was found: 31 of 40 condition rows
+     * pointed at a goal event that no longer existed, left by e2e fixtures that
+     * create a goal and delete it. The reason nobody noticed is that an
+     * unreachable row is also an invisible one -- until one of those 64-bit ids
+     * collides with a new goal event's and a condition somebody deleted starts
+     * deciding what converts.
+     */
+    public function testDeletingAGoalEventDeletesItsConditions(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'begins', '/thanks' ),
+            array( 'medium', 'exact', 'organic-search' ),
+        ) );
+
+        $id = $goalEvent->get( 'id' );
+
+        $this->assertCount( 2, $this->conditionRowsFor( $id ),
+            'the fixture did not store its conditions, so this would pass on nothing' );
+
+        $goalEvent->delete( $id );
+
+        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+            'The goal event is gone and its conditions are still there -- unreachable, '
+            . 'because nothing but the goal event points at them.' );
+    }
+
+    /**
+     * ANY ROLE, not just the matching ones.
+     *
+     * loadConditions() filters by role, so a cascade written in terms of it
+     * would delete the match conditions and leave the start ones -- the same
+     * leak, narrower.
+     */
+    public function testTheCascadeTakesStartConditionsToo(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'exact', '/checkout' ),
+        ) );
+
+        $id = $goalEvent->get( 'id' );
+
+        $start = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $start->set( 'id', $start->generateId( 'goal_event_condition:' . $id . ':start' ) );
+        $start->set( 'goal_event_id', $id );
+        $start->set( 'sort_order', 9 );
+        $start->set( 'role', \OWA\Module\Base\Entity\GoalEvent::ROLE_START );
+        $start->set( 'condition_property', 'page_uri' );
+        $start->set( 'condition_operator', 'exact' );
+        $start->set( 'condition_value', '/cart' );
+        $start->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $start->create();
+
+        $this->createdConditions[] = $start->get( 'id' );
+
+        $this->assertCount( 2, $this->conditionRowsFor( $id ) );
+
+        $goalEvent->delete( $id );
+
+        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+            'A start condition survived the cascade.' );
+    }
+
+    /**
+     * DELETE BY A COLUMN OTHER THAN id CASCADES AS WELL.
+     *
+     * Entity::delete( $value, $col ) accepts any column, so a caller can remove
+     * every goal event belonging to a Property in one call. A cascade that only
+     * understood the id would leak on exactly the delete that removes the most
+     * rows.
+     */
+    public function testDeletingByPropertyIdCascades(): void
+    {
+        $goalEvent = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'exact', '/one' ),
+        ) );
+
+        $id = $goalEvent->get( 'id' );
+
+        $this->assertCount( 1, $this->conditionRowsFor( $id ) );
+
+        /*
+         * The Property really does own it -- makeGoalEventWithConditions sets
+         * property_id -- so this is the live shape and not an invented column.
+         */
+        $goalEvent->delete( $this->propertyId, 'property_id' );
+
+        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+            'Deleting by property_id left the conditions behind.' );
+    }
+
+    /**
+     * Update048 deletes the orphans that accumulated before the cascade existed,
+     * and ONLY those.
+     *
+     * The second half is the part worth asserting: a cleanup that also removed a
+     * live goal event's conditions would silently stop that goal converting, and
+     * the install would look tidy.
+     */
+    public function testTheCleanupTakesOrphansAndLeavesLiveConditions(): void
+    {
+        $live = $this->makeGoalEventWithConditions( array(
+            array( 'page_uri', 'exact', '/live' ),
+        ) );
+
+        $liveId = $live->get( 'id' );
+
+        // An orphan: a condition whose goal_event_id names nothing.
+        $orphan = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $orphanId = $orphan->generateId( 'goal_event_condition:orphan-probe:' . uniqid( '', true ) );
+        $orphan->set( 'id', $orphanId );
+        $orphan->set( 'goal_event_id', '9' . substr( (string) $orphanId, 1 ) );
+        $orphan->set( 'sort_order', 1 );
+        $orphan->set( 'condition_property', 'page_uri' );
+        $orphan->set( 'condition_operator', 'exact' );
+        $orphan->set( 'condition_value', '/orphan' );
+        $orphan->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $orphan->create();
+
+        $this->createdConditions[] = $orphanId;
+
+        $update = new \OWA\Module\Base\Update\Update048;
+
+        $this->assertTrue( $update->up(), 'the cleanup reported failure' );
+
+        $this->assertCount( 1, $this->conditionRowsFor( $liveId ),
+            'The cleanup deleted a live goal event\'s condition, which stops it converting.' );
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory(
+            'base.goal_event_condition' )->getTableName() );
+        $db->selectColumn( 'id' );
+        $db->where( 'id', $orphanId );
+
+        $this->assertSame( array(), (array) $db->getAllRows(),
+            'The orphan survived the cleanup.' );
+
+        // Idempotent: a second run finds nothing left to do.
+        $this->assertTrue( $update->up(), 'a second run of the cleanup failed' );
+
+        $this->assertCount( 1, $this->conditionRowsFor( $liveId ),
+            'The second run deleted the live condition.' );
+    }
+
+    /** The condition rows pointing at one goal event, by query, not by cache. */
+    private function conditionRowsFor( $goalEventId )
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory(
+            'base.goal_event_condition' )->getTableName() );
+        $db->selectColumn( 'id' );
+        $db->where( 'goal_event_id', $goalEventId );
+
+        return (array) $db->getAllRows();
     }
 
     /* ---------------- funnels ---------------- */
-
     /**
      * 1.x funnel steps are deliberately NOT migrated.
      *

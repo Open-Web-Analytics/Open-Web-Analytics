@@ -56,9 +56,9 @@ final class ConstraintRefusalTest extends TestCase
     public function testAValidDimensionConstraintIsApplied(): void
     {
         $rsm = $this->rsm();
-        $rsm->setConstraints($rsm->constraintsStringToArray('medium==direct'));
+        $rsm->setConstraints($rsm->constraintsStringToArray('sessionMedium==direct'));
 
-        $this->assertContains('medium', $this->appliedNames($rsm));
+        $this->assertContains('sessionMedium', $this->appliedNames($rsm));
         $this->assertSame([], $this->errorsOf($rsm));
     }
 
@@ -94,9 +94,9 @@ final class ConstraintRefusalTest extends TestCase
     public function testAConstraintWithNoValueIsRefused(): void
     {
         $rsm = $this->rsm();
-        $rsm->setConstraints($rsm->constraintsStringToArray('medium=='));
+        $rsm->setConstraints($rsm->constraintsStringToArray('sessionMedium=='));
 
-        $this->assertNotContains('medium', $this->appliedNames($rsm));
+        $this->assertNotContains('sessionMedium', $this->appliedNames($rsm));
 
         $errors = $this->errorsOf($rsm);
 
@@ -111,7 +111,7 @@ final class ConstraintRefusalTest extends TestCase
     public function testBothRefusalsBehaveAlike(): void
     {
         $missingValue = $this->rsm();
-        $missingValue->setConstraints($missingValue->constraintsStringToArray('medium=='));
+        $missingValue->setConstraints($missingValue->constraintsStringToArray('sessionMedium=='));
 
         $unknownName = $this->rsm();
         $unknownName->setConstraints($unknownName->constraintsStringToArray('bogusDimension==direct'));
@@ -132,9 +132,9 @@ final class ConstraintRefusalTest extends TestCase
     public function testAGoodConstraintSurvivesABadOneBesideIt(): void
     {
         $rsm = $this->rsm();
-        $rsm->setConstraints($rsm->constraintsStringToArray('medium==direct,bogusDimension==x'));
+        $rsm->setConstraints($rsm->constraintsStringToArray('sessionMedium==direct,bogusDimension==x'));
 
-        $this->assertContains('medium', $this->appliedNames($rsm));
+        $this->assertContains('sessionMedium', $this->appliedNames($rsm));
         $this->assertNotContains('bogusDimension', $this->appliedNames($rsm));
         $this->assertCount(1, $this->errorsOf($rsm));
     }

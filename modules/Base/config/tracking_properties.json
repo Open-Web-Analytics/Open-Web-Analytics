@@ -1,903 +1,1138 @@
 {
-    "request": {
-        "REMOTE_HOST": {
-            "callbacks": [
-                "owa_trackingEventHelpers::remoteHostDefault"
-            ],
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string",
-            "filter": true
-        },
-        "HTTP_USER_AGENT": {
-            "callbacks": [
-                "owa_trackingEventHelpers::userAgentDefault"
-            ],
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string",
-            "filter": true
-        },
-        "HTTP_HOST": {
-            "callbacks": [
-                "owa_trackingEventHelpers::httpHostDefault"
-            ],
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string",
-            "filter": true
-        },
-        "language": {
-            "callbacks": [
-                "owa_trackingEventHelpers::languageDefault"
-            ],
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string",
-            "filter": true
-        },
-        "ip_address": {
-            "callbacks": [
-                "owa_trackingEventHelpers::ipAddressDefault"
-            ],
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string",
-            "filter": true
-        },
-        "timestamp": {
-            "callbacks": [
-                "owa_trackingEventHelpers::timestampDefault"
-            ],
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "integer",
-            "filter": false
-        },
-        "microtime": {
-            "callbacks": [
-                "owa_trackingEventHelpers::microtimeDefault"
-            ],
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string",
-            "filter": false
-        },
-        "ts": {
-            "callbacks": [
-                "owa_trackingEventHelpers::edgeTimestampMicroseconds"
-            ],
-            "required": true,
-            "data_type": "integer",
-            "filter": false,
-            "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
-        }
+    "REMOTE_HOST": {
+        "set_by": "request",
+        "from": [
+            "REMOTE_HOST"
+        ],
+        "column": "remote_host",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "filter": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::remoteHostDefault"
+        ],
+        "note": "The visitor’s NETWORK host, reverse DNS of their address — not the page’s host and not this server’s. v1 reduced it to a registered domain through the Public Suffix List and reported it as the `host` dimension (\"the visitor came from some host\"); v2 gave that name to the page’s host, so this needs a column of its own. Usually empty in practice: Apache only fills REMOTE_HOST with HostnameLookups On, which is off by default."
     },
-    "client": {
-        "event_type": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What happened. The tracker sends it and log.php also reads it with getRequestParam to call setEventType(), which sets a MEMBER -- getEventType() prefers that member and falls back to this property. Declared required:false with no default so the two cannot disagree: a default here would fabricate an event_type on events that carry their type on the member instead. It is already a column on the queue table, and v2 logs it on the fact row."
-        },
-        "page_type": {
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string"
-        },
-        "page_url": {
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "url",
-            "callbacks": [
-                "owa_trackingEventHelpers::keepCompleteUrl",
-                "owa_trackingEventHelpers::makeUrlCanonical"
-            ]
-        },
-        "page_location": {
-            "required": false,
-            "data_type": "url",
-            "callbacks": [],
-            "note": "The complete page URL, query included, with nothing stripped. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks on purpose: a filter here would defeat the column. Falls back to keepCompleteUrl() for beacons from a tracker cached before this shipped."
-        },
-        "page_title": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::utfEncodeProperty"
-            ],
-            "data_type": "string",
-            "default_value": "(not set)"
-        },
-        "fsts": {
-            "required": false,
-            "callbacks": [],
-            "data_type": "integer",
-            "default_value": false
-        },
-        "psts": {
-            "required": false,
-            "callbacks": [],
-            "data_type": "integer",
-            "default_value": false
-        },
-        "sts": {
-            "required": false,
-            "callbacks": [],
-            "data_type": "integer",
-            "default_value": false
-        },
-        "days_since_first_session": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDaysSinceFirstSession"
-            ],
-            "data_type": "integer",
-            "default_value": false,
-            "alternative_key": "dsfs"
-        },
-        "time_since_last_session": {
-            "required": false,
-            "callbacks": [],
-            "data_type": "integer",
-            "default_value": false
-        },
-        "days_since_prior_session": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDaysSincePriorSession"
-            ],
-            "data_type": "integer",
-            "default_value": false,
-            "alternative_key": "dsps"
-        },
-        "num_prior_sessions": {
-            "required": true,
-            "callbacks": [],
-            "data_type": "integer",
-            "default_value": false,
-            "alternative_key": "nps"
-        },
-        "is_new_visitor": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false
-        },
-        "is_new_session": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false,
-            "note": "PAGE scoped: every event from the page the session started on carries it. Decides is_entry_page, and is the fallback for is_new_session_start on trackers cached from before the two were split."
-        },
-        "is_new_session_start": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false,
-            "note": "REQUEST scoped: rides exactly the one beacon that created the session, and is what SessionHandlers branches create-vs-update on."
-        },
-        "is_new_visitor_created": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false,
-            "note": "REQUEST scoped: marks the one request that minted the visitor. Nothing consumes it yet -- it exists so v2 can raise first_visit from the request that actually created the visitor. Do not drop it as unused."
-        },
-        "user_name": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::setUserName"
-            ],
-            "default_value": "(not set)"
-        },
-        "user_email": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::setEmailAddress"
-            ],
-            "default_value": "(not set)",
-            "alternative_key": "email_address"
-        },
-        "HTTP_REFERER": {
-            "required": false,
-            "data_type": "url",
-            "callbacks": []
-        },
-        "target_url": {
-            "required": false,
-            "data_type": "url",
-            "callbacks": [
-                "owa_trackingEventHelpers::makeUrlCanonical"
-            ]
-        },
-        "session_referer": {
-            "required": false,
-            "data_type": "url",
-            "callbacks": [],
-            "note": "Carried straight from the wire -- no callback, no default -- so it is on the event before the property pass starts. The old \"must come after session_referer\" comments on source/medium/search_terms described a constraint that never existed."
-        },
-        "landing_url": {
-            "required": false,
-            "data_type": "url",
-            "callbacks": [],
-            "note": "The URL the session landed on, carried for the whole session so the server can resolve campaign tags from it on every beacon -- not just the first, where page_url would do. Replaces the six tagged_* params the tracker used to parse and re-send. Carried rather than derived because raw is the realtime surface: a value only a later pass produces does not exist for a live query. See resolveSource/taggedValue."
-        },
-        "tagged_source": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
-        },
-        "tagged_medium": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
-        },
-        "tagged_campaign": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
-        },
-        "tagged_ad": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
-        },
-        "tagged_ad_type": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
-        },
-        "tagged_terms": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope."
-        },
-        "feed_subscription_id": {
-            "required": false,
-            "callbacks": [],
-            "default_value": null,
-            "alternative_key": "sid"
-        },
-        "attribs": {
-            "required": false,
-            "data_type": "json",
-            "callbacks": "",
-            "default_value": ""
-        },
-        "click_x": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "click_y": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_x": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_y": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "page_width": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "page_height": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_class": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_id": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_name": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_tag": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_text": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "dom_element_value": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by dom.click only. Column type from base.click."
-        },
-        "action_name": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
-        },
-        "action_label": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
-        },
-        "action_group": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
-        },
-        "numeric_value": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by track.action only. Column type from base.action_fact."
-        },
-        "ct_order_id": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
-        },
-        "ct_order_source": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
-        },
-        "ct_gateway": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
-        },
-        "ct_city": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
-        },
-        "ct_state": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
-        },
-        "ct_country": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
-        },
-        "ct_total": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
-        },
-        "ct_tax": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
-        },
-        "ct_shipping": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
-        },
-        "ct_line_items": {
-            "required": false,
-            "callbacks": [],
-            "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first."
-        },
-        "site_id": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "The tracked site. logEvent refuses an event naming a site this installation does not have. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
-        },
-        "session_id": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Minted by the tracker. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
-        },
-        "visitor_id": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Minted by the tracker and held in the v store. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
-        },
-        "nps": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Number of prior sessions, carried from the visitor store."
-        },
-        "last_req": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Timestamp of the previous request, on the CLIENT clock. It is subtracted from a server clock downstream, so it is not interchangeable with timestamp."
-        },
-        "cv1": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Custom variable slot 1, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
-        },
-        "cv2": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Custom variable slot 2, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
-        },
-        "cv3": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Custom variable slot 3, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
-        },
-        "cv4": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Custom variable slot 4, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
-        },
-        "cv5": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Custom variable slot 5, sent by the tracker as \"name=value\" in a single param. translateCustomVariables() splits it into the server-scope pair below and deletes it."
-        },
-        "client_ts_usec": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "The client's own clock at send, microseconds. Subtracted from the server's receipt time into owa_event_raw.clock_offset_usec, so skew is a stored number rather than a silent error. NOT used as the event time: the server assigns that."
-        },
-        "engagement_msec": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection."
-        },
-        "content_group": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Author-assigned grouping of pages. Page-scoped: set per page, so it cannot leak onto the next one."
-        },
-        "consent_state": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "granted or denied, as the page declared it at send. Per event because it can change mid-session; absent stays absent, because no consent recorded is not the same as consent denied."
-        },
-        "user_id": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "The site's OWN id for a logged-in person -- not user_name, which is a display name. The one field that outlives a cookie, and forward-only: events collected before someone identified themselves stay anonymous."
-        },
-        "currency": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "ISO 4217, stored beside revenue. Without it a multi-currency store sums minor units of different things."
-        },
-        "scroll_depth": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Percentage of the document reached, on a scroll event. One event per threshold per page."
-        },
-        "element_path": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "A CSS-ish path to the clicked element. dom_element_id is real on 0.09% of clicks and populated on 94%, so a path is what actually identifies what was clicked."
-        },
-        "search_term": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Site-search term, on a view_search_results event. Reaches reporting as the params.search_term path."
-        },
-        "file_name": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "On a file_download event."
-        },
-        "file_extension": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "On a file_download event."
-        },
-        "form_id": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
-        },
-        "form_name": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "On form_start / form_submit."
-        }
+    "HTTP_USER_AGENT": {
+        "set_by": "request",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "raw_ua",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "filter": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::userAgentDefault"
+        ]
     },
-    "server": {
-        "year": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveYear"
-            ]
-        },
-        "month": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveMonth"
-            ]
-        },
-        "day": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDay"
-            ]
-        },
-        "yyyymmdd": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveYyyymmdd"
-            ]
-        },
-        "dayofweek": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDayOfWeek"
-            ]
-        },
-        "dayofyear": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveDayOfYear"
-            ]
-        },
-        "weekofyear": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveWeekOfYear"
-            ]
-        },
-        "hour": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveHour"
-            ]
-        },
-        "minute": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveMinute"
-            ]
-        },
-        "second": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveSecond"
-            ]
-        },
-        "sec": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveSec"
-            ]
-        },
-        "msec": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::deriveMsec"
-            ]
-        },
-        "page_uri": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::derivePageUri"
-            ]
-        },
-        "is_repeat_visitor": {
-            "required": true,
-            "data_type": "boolean",
-            "default_value": false,
-            "callbacks": [
-                "owa_trackingEventHelpers::setRepeatVisitorFlag"
-            ]
-        },
-        "full_host": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveFullHost"
-            ],
-            "default_value": "(not set)"
-        },
-        "host": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::getHostDomain"
-            ],
-            "default_value": "(not set)"
-        },
-        "browser_type": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveBrowserType"
-            ]
-        },
-        "is_browser": {
-            "required": true,
-            "data_type": "boolean",
-            "callbacks": [
-                "owa_trackingEventHelpers::isBrowser"
-            ],
-            "default_value": false,
-            "note": "A second guard only: required + default_value false already turns the null this callback returns into false. The type matters if either of those is ever removed -- which is how is_repeat_visitor wrote NULL from 2015, back when a falsy default_value was skipped by a truthy test."
-        },
-        "browser": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveBrowserVersion"
-            ],
-            "default_value": "(unknown)"
-        },
-        "is_robot": {
-            "required": true,
-            "data_type": "boolean",
-            "callbacks": [
-                "owa_trackingEventHelpers::isRobot"
-            ],
-            "default_value": false,
-            "note": "A second guard only: required + default_value false already turns the null this callback returns into false. The type matters if either of those is ever removed -- which is how is_repeat_visitor wrote NULL from 2015, back when a falsy default_value was skipped by a truthy test."
-        },
-        "os": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveOs"
-            ],
-            "default_value": "(unknown)"
-        },
-        "is_entry_page": {
-            "required": true,
-            "data_type": "boolean",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveEntryPage"
-            ],
-            "default_value": false,
-            "note": "A second guard only: required + default_value false already turns the null this callback returns into false. The type matters if either of those is ever removed -- which is how is_repeat_visitor wrote NULL from 2015, back when a falsy default_value was skipped by a truthy test."
-        },
-        "country": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveCountry"
-            ],
-            "default_value": false
-        },
-        "city": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveCity"
-            ],
-            "default_value": false
-        },
-        "state": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveState"
-            ],
-            "default_value": false
-        },
-        "latitude": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveLatitude"
-            ],
-            "default_value": false
-        },
-        "longitude": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveLongitude"
-            ],
-            "default_value": false
-        },
-        "country_code": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveCountryCode"
-            ],
-            "default_value": false
-        },
-        "prior_page": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::setPriorPage",
-                "owa_trackingEventHelpers::makeUrlCanonical"
-            ],
-            "default_value": false
-        },
-        "source": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveSource"
-            ],
-            "note": "The answer. tagged_source if the URL carried one, else the session_referer host."
-        },
-        "medium": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "direct",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveMedium"
-            ],
-            "note": "The answer. tagged_medium if the URL carried one, else the referer classified as referral / organic-search / social-network, else direct."
-        },
-        "campaign": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveCampaign"
-            ],
-            "note": "Was on the wire but registered nowhere until this entry, so nothing typed it and nothing could reject a forged one."
-        },
-        "ad": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveAd"
-            ],
-            "note": "As campaign: on the wire, previously unregistered."
-        },
-        "ad_type": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveAdType"
-            ],
-            "note": "As campaign: on the wire, previously unregistered. Read by AdHandlers alongside ad."
-        },
-        "search_terms": {
-            "required": true,
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveSearchTerms"
-            ],
-            "note": "The answer. tagged_terms if the URL carried one, else the query param the referring search engine used."
-        },
-        "cv1_name": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The name half of custom variable 1, produced by splitting cv1. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv1_name directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv1_value": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The value half of custom variable 1, produced by splitting cv1. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv1_value directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv2_name": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The name half of custom variable 2, produced by splitting cv2. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv2_name directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv2_value": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The value half of custom variable 2, produced by splitting cv2. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv2_value directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv3_name": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The name half of custom variable 3, produced by splitting cv3. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv3_name directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv3_value": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The value half of custom variable 3, produced by splitting cv3. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv3_value directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv4_name": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The name half of custom variable 4, produced by splitting cv4. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv4_name directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv4_value": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The value half of custom variable 4, produced by splitting cv4. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv4_value directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv5_name": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The name half of custom variable 5, produced by splitting cv5. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv5_name directly used to survive the wire filter AND clobber the split result."
-        },
-        "cv5_value": {
-            "required": true,
-            "data_type": "string",
-            "default_value": "(not set)",
-            "callbacks": [
-                "owa_trackingEventHelpers::lowercaseString"
-            ],
-            "note": "The value half of custom variable 5, produced by splitting cv5. Lowercased so one variable cannot split into two dimensions by case. Server scope because the server derives it: a request posting cv5_value directly used to survive the wire filter AND clobber the split result."
-        }
+    "language": {
+        "set_by": "request",
+        "from": [
+            "HTTP_ACCEPT_LANGUAGE"
+        ],
+        "column": "language",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "filter": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::languageDefault"
+        ]
+    },
+    "ip_address": {
+        "set_by": "request",
+        "from": [
+            "HTTP_CLIENT_IP",
+            "HTTP_X_FORWARDED_FOR",
+            "HTTP_X_CLUSTER_CLIENT_IP",
+            "HTTP_FORWARDED_FOR",
+            "REMOTE_ADDR"
+        ],
+        "column": "ip_address",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "filter": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::ipAddressDefault"
+        ]
+    },
+    "ts": {
+        "set_by": "request",
+        "from": [
+            "clock"
+        ],
+        "column": "ts",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": true,
+        "filter": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::edgeTimestampMicroseconds"
+        ],
+        "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
+    },
+    "event_type": {
+        "set_by": "client",
+        "from": [
+            "event_type"
+        ],
+        "column": "event_type",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "What happened. The tracker sends it and log.php also reads it with getRequestParam to call setEventType(), which sets a MEMBER -- getEventType() prefers that member and falls back to this property. Declared required:false with no default so the two cannot disagree: a default here would fabricate an event_type on events that carry their type on the member instead. It is already a column on the queue table, and v2 logs it on the fact row."
+    },
+    "page_location": {
+        "set_by": "client",
+        "from": [
+            "page_location"
+        ],
+        "column": "page_location",
+        "events": [
+            "*"
+        ],
+        "data_type": "url",
+        "required": false,
+        "callbacks": [],
+        "note": "The complete page URL, query included, with nothing stripped. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks on purpose: a filter here would defeat the column. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
+    },
+    "page_title": {
+        "set_by": "client",
+        "from": [
+            "page_title"
+        ],
+        "column": "page_title",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::utfEncodeProperty"
+        ]
+    },
+    "fsts": {
+        "set_by": "client",
+        "from": [
+            "fsts"
+        ],
+        "column": "visitor_fsts",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": []
+    },
+    "psts": {
+        "set_by": "client",
+        "from": [
+            "psts"
+        ],
+        "column": "prior_session_start_ts",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": []
+    },
+    "sts": {
+        "set_by": "client",
+        "from": [
+            "sts"
+        ],
+        "column": "session_start_ts",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": []
+    },
+    "beacon_version": {
+        "set_by": "client",
+        "from": [
+            "beacon_version"
+        ],
+        "column": "beacon_version",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "The tracker's BEACON FORMAT generation, sent on every beacon and stored on the row. Not a contract and not consulted at ingest: it is the evidence for deciding when a compat bridge can be deleted, which is otherwise a guess about how long a customer's cache policy lets an old tracker live. NULL means a tracker from before versioning -- generation 0 -- which is every tracker in the wild at the time this shipped."
+    },
+    "event_seq": {
+        "set_by": "client",
+        "from": [
+            "event_seq"
+        ],
+        "column": "event_seq",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "REQUEST scoped: the event's position in its session, counted on the device and stamped when the event is built. The cube sorts a session on this rather than on ts, because ts is edge receipt and a late beacon would otherwise sort after events that happened after it. Not required -- a tracker cached from before this sends nothing and the row keeps NULL, which the sort reads as 'no device order' rather than as position zero."
+    },
+    "num_prior_sessions": {
+        "set_by": "client",
+        "from": [
+            "nps"
+        ],
+        "column": "prior_sessions",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": true,
+        "callbacks": []
+    },
+    "is_new_session_start": {
+        "set_by": "client",
+        "from": [
+            "is_new_session_start"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "boolean",
+        "required": true,
+        "default_value": false,
+        "callbacks": [],
+        "note": "REQUEST scoped: rides exactly the one beacon that created the session, and is what SessionHandlers branches create-vs-update on."
+    },
+    "is_new_visitor_created": {
+        "set_by": "client",
+        "from": [
+            "is_new_visitor_created"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "boolean",
+        "required": true,
+        "default_value": false,
+        "callbacks": [],
+        "note": "REQUEST scoped: marks the one request that minted the visitor. Nothing consumes it yet -- it exists so v2 can raise first_visit from the request that actually created the visitor. Do not drop it as unused."
+    },
+    "HTTP_REFERER": {
+        "set_by": "client",
+        "from": [
+            "HTTP_REFERER"
+        ],
+        "column": "referer_url",
+        "events": [
+            "*"
+        ],
+        "data_type": "url",
+        "required": false,
+        "callbacks": []
+    },
+    "target_url": {
+        "set_by": "client",
+        "from": [
+            "target_url"
+        ],
+        "column": "target_url",
+        "events": [
+            "click",
+            "file_download"
+        ],
+        "data_type": "url",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::makeUrlCanonical"
+        ]
+    },
+    "tagged_source": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "tagged_source",
+        "events": [
+            "page_view",
+            "session_start",
+            "first_visit"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedSource"
+        ],
+        "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
+    },
+    "tagged_medium": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "tagged_medium",
+        "events": [
+            "page_view",
+            "session_start",
+            "first_visit"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedMedium"
+        ],
+        "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
+    },
+    "tagged_campaign": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "tagged_campaign",
+        "events": [
+            "page_view",
+            "session_start",
+            "first_visit"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedCampaign"
+        ],
+        "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
+    },
+    "tagged_ad": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "tagged_ad",
+        "events": [
+            "page_view",
+            "session_start",
+            "first_visit"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedAd"
+        ],
+        "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
+    },
+    "tagged_terms": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "tagged_search_terms",
+        "events": [
+            "page_view",
+            "session_start",
+            "first_visit"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedTerms"
+        ],
+        "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
+    },
+    "click_x": {
+        "set_by": "client",
+        "from": [
+            "click_x"
+        ],
+        "column": "click_x",
+        "events": [
+            "click"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by dom.click only. Column type from base.click."
+    },
+    "click_y": {
+        "set_by": "client",
+        "from": [
+            "click_y"
+        ],
+        "column": "click_y",
+        "events": [
+            "click"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by dom.click only. Column type from base.click."
+    },
+    "page_width": {
+        "set_by": "client",
+        "from": [
+            "page_width"
+        ],
+        "column": "page_width",
+        "events": [
+            "click"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x, click_y and element_path.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
+    },
+    "page_height": {
+        "set_by": "client",
+        "from": [
+            "page_height"
+        ],
+        "column": "page_height",
+        "events": [
+            "click"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x, click_y and element_path.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
+    },
+    "dom_element_class": {
+        "set_by": "client",
+        "from": [
+            "dom_element_class"
+        ],
+        "param": "element_class",
+        "events": [
+            "click"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by dom.click only. Column type from base.click."
+    },
+    "dom_element_id": {
+        "set_by": "client",
+        "from": [
+            "dom_element_id"
+        ],
+        "column": "element_id",
+        "events": [
+            "click"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by dom.click only. Column type from base.click."
+    },
+    "dom_element_name": {
+        "set_by": "client",
+        "from": [
+            "dom_element_name"
+        ],
+        "param": "element_name",
+        "events": [
+            "click"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by dom.click only. Column type from base.click."
+    },
+    "dom_element_tag": {
+        "set_by": "client",
+        "from": [
+            "dom_element_tag"
+        ],
+        "column": "element_tag",
+        "events": [
+            "click"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by dom.click only. Column type from base.click."
+    },
+    "dom_element_text": {
+        "set_by": "client",
+        "from": [
+            "dom_element_text"
+        ],
+        "param": "element_text",
+        "events": [
+            "click"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by dom.click only. Column type from base.click."
+    },
+    "action_name": {
+        "set_by": "client",
+        "from": [
+            "action_name"
+        ],
+        "param": "action_name",
+        "events": [
+            "custom_event"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by track.action only. Column type from base.action_fact."
+    },
+    "action_label": {
+        "set_by": "client",
+        "from": [
+            "action_label"
+        ],
+        "param": "action_label",
+        "events": [
+            "custom_event"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by track.action only. Column type from base.action_fact."
+    },
+    "action_group": {
+        "set_by": "client",
+        "from": [
+            "action_group"
+        ],
+        "param": "action_group",
+        "events": [
+            "custom_event"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by track.action only. Column type from base.action_fact."
+    },
+    "numeric_value": {
+        "set_by": "client",
+        "from": [
+            "numeric_value"
+        ],
+        "param": "numeric_value",
+        "events": [
+            "custom_event"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by track.action only. Column type from base.action_fact."
+    },
+    "ct_order_id": {
+        "set_by": "client",
+        "from": [
+            "ct_order_id"
+        ],
+        "column": "transaction_id",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+    },
+    "ct_order_source": {
+        "set_by": "client",
+        "from": [
+            "ct_order_source"
+        ],
+        "param": "order_source",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+    },
+    "ct_gateway": {
+        "set_by": "client",
+        "from": [
+            "ct_gateway"
+        ],
+        "param": "gateway",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
+    },
+    "ct_total": {
+        "set_by": "client",
+        "from": [
+            "ct_total"
+        ],
+        "column": "revenue",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::toMinorUnits"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
+    },
+    "ct_tax": {
+        "set_by": "client",
+        "from": [
+            "ct_tax"
+        ],
+        "column": "tax",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::toMinorUnits"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
+    },
+    "ct_shipping": {
+        "set_by": "client",
+        "from": [
+            "ct_shipping"
+        ],
+        "column": "shipping",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::toMinorUnits"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
+    },
+    "ct_line_items": {
+        "set_by": "client",
+        "from": [
+            "ct_line_items"
+        ],
+        "param": "items",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "json",
+        "required": false,
+        "callbacks": [],
+        "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first."
+    },
+    "site_id": {
+        "set_by": "client",
+        "from": [
+            "site_id"
+        ],
+        "column": "site_id",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "The tracked site. logEvent refuses an event naming a site this installation does not have. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
+    },
+    "session_id": {
+        "set_by": "client",
+        "from": [
+            "session_id"
+        ],
+        "column": "session_id",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Minted by the tracker. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
+    },
+    "visitor_id": {
+        "set_by": "client",
+        "from": [
+            "visitor_id"
+        ],
+        "column": "visitor_id",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Minted by the tracker and held in the v store. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
+    },
+    "engagement_msec": {
+        "set_by": "client",
+        "from": [
+            "engagement_msec"
+        ],
+        "column": "engagement_msec",
+        "events": [
+            "user_engagement",
+            "page_view"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection."
+    },
+    "content_group": {
+        "set_by": "client",
+        "from": [
+            "content_group"
+        ],
+        "column": "content_group",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Author-assigned grouping of pages. Page-scoped: set per page, so it cannot leak onto the next one."
+    },
+    "consent_state": {
+        "set_by": "client",
+        "from": [
+            "consent_state"
+        ],
+        "column": "consent_state",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "granted or denied, as the page declared it at send. Per event because it can change mid-session; absent stays absent, because no consent recorded is not the same as consent denied."
+    },
+    "user_id": {
+        "set_by": "client",
+        "from": [
+            "user_id"
+        ],
+        "column": "user_id",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::gateUserId"
+        ],
+        "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, which is what makes it the only honest basis for joining a person's devices, and equally what makes it the thing log_visitor_pii gates: an install that turns visitor PII off must be able to stop storing it. gateUserId() DELETES the property rather than returning null, because a null is not written back and would leave the beacon's value in place. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
+    },
+    "currency": {
+        "set_by": "client",
+        "from": [
+            "currency"
+        ],
+        "column": "currency",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "ISO 4217, stored beside revenue. Without it a multi-currency store sums minor units of different things."
+    },
+    "scroll_depth": {
+        "set_by": "client",
+        "from": [
+            "scroll_depth"
+        ],
+        "column": "scroll_depth",
+        "events": [
+            "scroll"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "Percentage of the document reached, on a scroll event. One event per threshold per page."
+    },
+    "element_path": {
+        "set_by": "client",
+        "from": [
+            "element_path"
+        ],
+        "column": "element_path",
+        "events": [
+            "click"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "A CSS-ish path to the clicked element. dom_element_id is real on 0.09% of clicks and populated on 94%, so a path is what actually identifies what was clicked."
+    },
+    "search_term": {
+        "set_by": "client",
+        "from": [
+            "search_term"
+        ],
+        "param": "search_term",
+        "events": [
+            "view_search_results"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Site-search term, on a view_search_results event. Reaches reporting as the params.search_term path."
+    },
+    "file_name": {
+        "set_by": "client",
+        "from": [
+            "file_name"
+        ],
+        "param": "file_name",
+        "events": [
+            "file_download"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "On a file_download event."
+    },
+    "file_extension": {
+        "set_by": "client",
+        "from": [
+            "file_extension"
+        ],
+        "param": "file_extension",
+        "events": [
+            "file_download"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "On a file_download event."
+    },
+    "form_id": {
+        "set_by": "client",
+        "from": [
+            "form_id"
+        ],
+        "param": "form_id",
+        "events": [
+            "form_start",
+            "form_submit"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
+    },
+    "form_name": {
+        "set_by": "client",
+        "from": [
+            "form_name"
+        ],
+        "param": "form_name",
+        "events": [
+            "form_start",
+            "form_submit"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "On form_start / form_submit."
+    },
+    "yyyymmdd": {
+        "set_by": "event",
+        "from": [
+            "ts"
+        ],
+        "column": "yyyymmdd",
+        "events": [
+            "*"
+        ],
+        "data_type": "integer",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveYyyymmdd"
+        ]
+    },
+    "host": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "host",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveHost"
+        ],
+        "note": "The PAGE’s host. Not HTTP_HOST, which is this server’s, and not REMOTE_HOST, which is the visitor’s network. Falls back to whatever the property already held; nothing on the wire can set it, since set_by event means admitRequestParams() refuses a beacon that names it."
+    },
+    "browser_type": {
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "browser_type",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveBrowserType"
+        ]
+    },
+    "os": {
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "os",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveOs"
+        ]
+    },
+    "country": {
+        "set_by": "event",
+        "from": [
+            "ip_address"
+        ],
+        "column": "country",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveCountry"
+        ]
+    },
+    "city": {
+        "set_by": "event",
+        "from": [
+            "ip_address"
+        ],
+        "column": "city",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveCity"
+        ]
+    },
+    "state": {
+        "set_by": "event",
+        "from": [
+            "ip_address"
+        ],
+        "column": "region",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveState"
+        ]
+    },
+    "country_code": {
+        "set_by": "event",
+        "from": [
+            "ip_address"
+        ],
+        "column": "country_code",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": true,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveCountryCode"
+        ]
+    },
+    "page_path": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "page_path",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::derivePagePath"
+        ],
+        "note": "The path, canonicalised: the Profile’s default page and the trailing slash collapse. Set by its own callback off page_location, like every other property -- it used to be cut inside the row builder, which is how the registry came to declare a property nothing produced."
+    },
+    "page_query": {
+        "set_by": "event",
+        "from": [
+            "page_location"
+        ],
+        "column": "page_query",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::derivePageQuery"
+        ],
+        "note": "The query string with the Profile’s dropped parameters removed -- owa_state and the campaign keys are OWA’s own plumbing and have no business in somebody’s page report. The tags stay recoverable: they are parsed out of page_location, which keeps them."
+    },
+    "referer_host": {
+        "set_by": "event",
+        "from": [
+            "HTTP_REFERER"
+        ],
+        "column": "referer_host",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveRefererHost"
+        ],
+        "note": "The referrer’s host, and what the cube pass classifies source and medium from. Left alone beyond the host: it is somebody else’s URL, and canonicalising it against THIS site’s default page would be a category error."
+    },
+    "referer_query": {
+        "set_by": "event",
+        "from": [
+            "HTTP_REFERER"
+        ],
+        "column": "referer_query",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveRefererQuery"
+        ],
+        "note": "The referrer’s query string, unfiltered -- see referer_host."
+    },
+    "target_host": {
+        "set_by": "event",
+        "from": [
+            "target_url"
+        ],
+        "column": "target_host",
+        "events": [
+            "click",
+            "file_download"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveTargetHost"
+        ],
+        "note": "The click target’s host, so an outbound click is a comparison against host rather than a string test. Read after makeUrlCanonical() has filtered target_url, which the scopes settle: target_url is a client property and this is a derived one."
+    },
+    "browser_version": {
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "browser_version",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveBrowserVersion"
+        ],
+        "note": "From the one user-agent parse in the row builder. It used to be read from a property resolved through an argument-less browscap accessor, which memoises the first parse in the process."
+    },
+    "os_version": {
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "os_version",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveOsVersion"
+        ]
+    },
+    "device_type": {
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "device_type",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveDeviceType"
+        ],
+        "note": "Derived, not read: ua-parser has no such field, and ‘Other’ is its word for no rule matching. The OS family is what tells a desktop from a phone, and NULL is what an unknown gets rather than a guess at desktop."
+    },
+    "device_brand": {
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "device_brand",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveDeviceBrand"
+        ]
+    },
+    "device_model": {
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT"
+        ],
+        "column": "device_model",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveDeviceModel"
+        ]
     }
 }

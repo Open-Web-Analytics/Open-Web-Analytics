@@ -4,7 +4,7 @@
     "params": {
         "pagePath": {}
     },
-    "metrics": "visits,pageViews",
+    "metrics": "sessions,pageViews",
     "widgets": [
         {
             "type": "trend",
@@ -20,36 +20,7 @@
                     "dimension": "pagePath",
                     "fromParam": "pagePath"
                 }
-            ],
-            "headline": "There were {pageViews.formatted} page views for this page."
-        },
-        {
-            "type": "grid",
-            "id": "priorpages",
-            "container": "priorpages",
-            "title": "Prior Pages Viewed",
-            "query": {
-                "metrics": "visits",
-                "dimensions": "priorPagePath,priorPageTitle",
-                "sort": "visits-",
-                "resultsPerPage": 15
-            },
-            "constraints": [
-                {
-                    "dimension": "pagePath",
-                    "fromParam": "pagePath"
-                }
-            ],
-            "link": {
-                "linkColumn": "priorPagePath",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "priorPagePath"
-            },
-            "colspan": 3
+            ]
         },
         {
             "type": "grid",
@@ -57,9 +28,9 @@
             "container": "nextpages",
             "title": "Next Pages Viewed",
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "pagePath,pageTitle",
-                "sort": "visits-",
+                "sort": "sessions-",
                 "resultsPerPage": 15
             },
             "constraints": [

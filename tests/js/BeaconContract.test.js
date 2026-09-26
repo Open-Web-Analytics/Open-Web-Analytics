@@ -131,20 +131,20 @@ function emittedKeys(spec) {
  * The scenario used to be implicit, and unstated scenarios are not scenarios:
  * every emitter ran against whatever the previous test had left in the shared
  * in-memory state store, so the three non-pageview contracts omitted
- * is_new_session only because base.page_request happened to run first in file
+ * is_new_session only because page_view happened to run first in file
  * order. Run alone, each of them failed -- before any of this work. Naming the
  * scenario is what makes the contract mean something.
  */
 const EMITTERS = {
-    'base.page_request': {
+    'page_view': {
         session: 'new',
         fire: (t) => t.trackPageView('https://example.com/p'),
     },
-    'track.action': {
+    'custom_event': {
         session: 'established',
         fire: (t) => t.trackAction('g', 'n', 'l', 5),
     },
-    'dom.click': {
+    'click': {
         session: 'established',
         fire: (t) => {
             t.setOption('logClicksAsTheyHappen', true);
@@ -156,7 +156,7 @@ const EMITTERS = {
             document.body.removeChild(a);
         },
     },
-    'ecommerce.transaction': {
+    'purchase': {
         session: 'established',
         fire: (t) => {
             t.addTransaction('o1', 'web', 1, 0, 0, 'gw');
@@ -169,7 +169,7 @@ const EMITTERS = {
 describe('tracker beacon contract', () => {
     for (const [eventType, spec] of Object.entries(EMITTERS)) {
         test(`${eventType} emits exactly its contracted property set`, () => {
-            const expected = CONTRACTS[eventType];
+            const expected = CONTRACTS['2'][eventType];
             expect(expected).toBeDefined();
             const actual = emittedKeys(spec);
             // Deep-equal on the sorted key arrays: catches added, dropped or
@@ -181,7 +181,7 @@ describe('tracker beacon contract', () => {
 
     test('every contracted event_type carries the event_type field itself', () => {
         for (const eventType of Object.keys(EMITTERS)) {
-            expect(CONTRACTS[eventType]).toContain('event_type');
+            expect(CONTRACTS['2'][eventType]).toContain('event_type');
         }
     });
 });

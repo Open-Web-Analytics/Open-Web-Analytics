@@ -19,19 +19,74 @@ namespace OWA\Module\Base\Classes;
 class V2Event {
 
     /**
-     * v1 event type -> v2 event name.
+     * The event-name renames, read from conf/beacon_compat.php.
      *
      * v2 speaks the vocabulary the market already speaks; arguing about the
      * names is not where this project should spend its budget. A name already
      * in that vocabulary passes through untouched, which is what lets the
-     * tracker send `scroll` or `file_download` directly without a line here.
+     * tracker send `scroll` or `file_download` directly with no entry at all.
+     *
+     * A const here was the only enumerable bridge of the seven, and it was
+     * enumerable by accident rather than design -- nothing tied it to the other
+     * six. They are indexed together now, and this one is APPLIED from there.
+     *
+     * Memoised because name() runs once per beacon and loadConf() stats two
+     * paths and includes a file on every call.
+     *
+     * @var array|null
      */
-    const TYPE_MAP = array(
-        'base.page_request'       => 'page_view',
-        'dom.click'               => 'click',
-        'ecommerce.transaction'   => 'purchase',
-        'track.action'            => 'custom_event',
-    );
+    private static $type_map = null;
+
+    /** @return array old event type => v2 name */
+    public static function typeMap() {
+
+        if ( self::$type_map === null ) {
+
+            $conf = (array) \OWA\Core\CoreAPI::loadConf(
+                'beacon_compat.php', 'beacon.compat' );
+
+            self::$type_map = isset( $conf['event_names'] )
+                ? (array) $conf['event_names']
+                : array();
+        }
+
+        return self::$type_map;
+    }
+
+    /**
+     * A decimal money amount as minor units.
+     *
+     * event_raw.revenue is a BIGINT of minor units with the currency beside it,
+     * because a float column sums to something nobody can reconcile and a
+     * multi-currency store adds minor units of different things. The wire
+     * carries the author's decimal -- ct_total is 12.50 -- so something has to
+     * convert, and until now nothing did: the row read a property named
+     * `revenue`, which the registry does not declare, so every purchase stored
+     * NULL.
+     *
+     * round() BEFORE the cast. (int) truncates, so 12.50 * 100 in binary
+     * floating point becomes 1249 -- the classic money-in-floats error, and one
+     * that under-reports every single time rather than averaging out.
+     *
+     * Not a number is NULL, not 0: a store that sent something unparseable did
+     * not sell nothing. That branch is unreachable from the wire, though --
+     * ct_total is declared with data_type integer, which applies `$var + 0`, so
+     * 'free' has already become 0 by the time the row is built. What NULL
+     * actually distinguishes here is a purchase that sent no total at all.
+     *
+     * @param  mixed $value
+     * @return int|null
+     */
+    public static function minorUnits( $value ) {
+
+        if ( $value === null || $value === false || $value === ''
+             || ! is_numeric( $value ) ) {
+
+            return null;
+        }
+
+        return (int) round( ( (float) $value ) * 100 );
+    }
 
     /** Raised by the server from flags on a page_view. No browser sends them. */
     const MARKER_SESSION_START = 'session_start';
@@ -75,9 +130,11 @@ class V2Event {
 
         $event_type = (string) $event_type;
 
-        if ( isset( self::TYPE_MAP[ $event_type ] ) ) {
+        $map = self::typeMap();
 
-            return self::TYPE_MAP[ $event_type ];
+        if ( isset( $map[ $event_type ] ) ) {
+
+            return $map[ $event_type ];
         }
 
         /*

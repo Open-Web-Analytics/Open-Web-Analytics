@@ -104,8 +104,18 @@ final class LegacyClassNameContractTest extends TestCase
          * pre() returns false.
          */
         'owa_processFirstRequestController',
-    ];
 
+        /*
+         * REMOVED on the v2 branch with the v1 conversion evaluator.
+         *
+         * It read a goal event's conditions against the tracking event and set
+         * goal_N on the owa_session row. Both ends are v1: v2 writes no session
+         * row, and a conversion is a flag on the raw event -- one flag, because
+         * an event meeting two goals is still one event. The handler was already
+         * unregistered, so nothing has called it on this branch at all.
+         */
+        'owa_conversionHandlers',
+    ];
     private const RETIRED = [
         /*
          * RETIRED 2026-09-13: 132 concrete controllers, views and entities.

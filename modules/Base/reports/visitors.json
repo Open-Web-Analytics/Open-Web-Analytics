@@ -1,19 +1,18 @@
 {
     "title": "Visitors",
-    "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visits,visitDuration",
+    "metrics": "totalUsers,newUsers,sessions",
     "widgets": [
         {
             "type": "trend-card",
             "id": "trend",
             "container": "trend-chart",
             "colspan": 12,
-            "chartMetric": "uniqueVisitors",
+            "chartMetric": "totalUsers",
             "query": {
-                "metrics": "uniqueVisitors,newVisitors,repeatVisitors,visitDuration",
+                "metrics": "totalUsers,newUsers",
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {uniqueVisitors.formatted} {uniqueVisitors|visitor|visitors} to this web site."
+            }
         },
         {
             "type": "grid-card",
@@ -22,9 +21,9 @@
             "title": "Browser Types",
             "colspan": 6,
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "browserType",
-                "sort": "visits-"
+                "sort": "sessions-"
             }
         },
         {
@@ -33,9 +32,9 @@
             "container": "visitor-domains",
             "title": "Domains",
             "query": {
-                "metrics": "uniqueVisitors",
+                "metrics": "totalUsers",
                 "dimensions": "hostName",
-                "sort": "uniqueVisitors-"
+                "sort": "totalUsers-"
             },
             "more": {
                 "reportId": "hosts",
@@ -48,42 +47,12 @@
             "container": "visitor-loyalty",
             "title": "Visitor Loyalty",
             "query": {
-                "metrics": "uniqueVisitors",
-                "dimensions": "priorVisitCount",
-                "sort": "priorVisitCount"
+                "metrics": "totalUsers",
+                "dimensions": "priorSessionCount",
+                "sort": "priorSessionCount"
             },
             "more": {
                 "reportId": "visitors-loyalty",
-                "label": "View Full Report \u00bb"
-            }
-        },
-        {
-            "type": "grid-card",
-            "id": "recency",
-            "container": "visitor-recency",
-            "title": "Visitor Recency",
-            "query": {
-                "metrics": "uniqueVisitors",
-                "dimensions": "daysSinceLastVisit",
-                "sort": "daysSinceLastVisit"
-            },
-            "more": {
-                "reportId": "visitors-recency",
-                "label": "View Full Report \u00bb"
-            }
-        },
-        {
-            "type": "grid-card",
-            "id": "age",
-            "container": "visitor-age",
-            "title": "Visitor Age",
-            "query": {
-                "metrics": "uniqueVisitors",
-                "dimensions": "daysSinceFirstVisit",
-                "sort": "daysSinceFirstVisit"
-            },
-            "more": {
-                "reportId": "visitors-age",
                 "label": "View Full Report \u00bb"
             }
         }

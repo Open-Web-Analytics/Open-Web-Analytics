@@ -47,7 +47,7 @@ class OWATracker  {
 	    // Resolved per tracker, not a fixed list: each tracker contributes its
 	    // OWN session store, so cross-domain linking carries site A's session
 	    // and site B's session rather than one store both of them fought over.
-	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
+	    this.sharableStateStores =  ['v', 's', 'b'],
 
 	    /*
 	     * Every property the tracker derives from state, on two axes.
@@ -99,19 +99,40 @@ class OWATracker  {
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
 		    prior_session_id:        { scope: 'session', permanent: false },
-		    is_new_visitor:          { scope: 'session', permanent: false },
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
-		    session_referer:         { scope: 'session', permanent: false },
-		    landing_url:             { scope: 'session', permanent: false },
+		    /*
+		     * session_referer AND landing_url WERE HERE, and being in this map is
+		     * what put them on every beacon of a session.
+		     *
+		     * Both were re-sent from session state so the server could attribute
+		     * the session from any event. It never needed either: the tags are
+		     * parsed from page_location on the session-starting beacon, which is
+		     * the same URL landing_url held, and the session's referrer is the
+		     * referer_host of its first row, which the pass already reads through
+		     * the window it opens for the landing page. GA carries neither -- no
+		     * GA cookie holds a URL, and session source is fixed by the session's
+		     * first event.
+		     *
+		     * So this removes a URL and a referrer from the cookie and from every
+		     * beacon of every session, for a read the pass performs anyway.
+		     */
 		    nps:                     { scope: 'session', permanent: false },
-		    attribs:                 { scope: 'session', permanent: false },
+		    /*
+		     * attribs WAS HERE, and being in this map is what put it on the
+		     * beacon. It is the campaign attribution history, and the only
+		     * thing that ever read it server-side was SessionHandlers --
+		     * `latest_attributions` on the v1 session row -- which is not
+		     * registered on v2. It reached no raw column and no cube pass.
+		     *
+		     * The whole client-side attribution stack went with it: the two
+		     * models, the 'c' cookie, maxPriorCampaigns and
+		     * trafficAttributionMode. The server resolves tags from page_location on the session-starting beacon.
+		     */
 		    // The site may set a different one, so it is not permanent.
-		    user_name:               { scope: 'session', permanent: false },
 
 		    // Rewritten every page load.
 		    last_req:                { scope: 'page',    permanent: false },
-		    is_new_session:          { scope: 'page',    permanent: false },
 		    page_url:                { scope: 'page',    permanent: false },
 		    page_title:              { scope: 'page',    permanent: false },
 		    page_type:               { scope: 'page',    permanent: false },
@@ -126,9 +147,7 @@ class OWATracker  {
 	    // time when tracker is unloaded
 	    this.endTime =  null;
 	    // campaign state holder
-	    this.campaignState  =  [];
 	    // flag for new campaign status
-	    this.isNewCampaign =  false;
 	    // flag for new session status
 	    this.isNewSessionFlag =  false;
 	    /*
@@ -136,34 +155,35 @@ class OWATracker  {
 	     * sent. Distinct from is_new_session, which is page-scoped and rides
 	     * every event from the session's first page:
 	     *
-	     *   is_new_session_start  this REQUEST created the session. True for
-	     *                         exactly one event, which is what a server
-	     *                         deciding create-vs-update needs.
-	     *   is_new_session        this event happened on the page where the
-	     *                         session started. True for all of them, which
-	     *                         is what a per-event dimension needs.
+	     * True for exactly one beacon, which is what materialising a
+	     * session_start event needs.
 	     *
-	     * One flag cannot answer both, and it was answering the second while
-	     * being read as the first -- so a second trackPageView() on the same
-	     * page re-entered logSession() for a session that already existed.
+	     * THE PAGE-SCOPED TWIN IS GONE. is_new_session rode every event from
+	     * the session's first page, and existed because v1's session listener
+	     * decided create-vs-update on it -- badly, since "we are on the landing
+	     * page" is true several times, so a second trackPageView() re-entered
+	     * logSession() for a session that already existed. Splitting the two
+	     * fixed that; removing v1's listener removes the need for a second flag
+	     * at all.
+	     *
+	     * Nothing session-scoped is sent as a flag now. The tracker reports the
+	     * EVENT -- this request started a session -- and the pass spreads what
+	     * belongs to the whole session across its rows.
 	     */
 	    this.pendingSessionStart = false;
 	    /*
 	     * The visitor half of the same pair, and the same distinction:
 	     *
-	     *   is_new_visitor_created  this REQUEST minted the visitor. One event.
-	     *   is_new_visitor          this SESSION was the visitor's first. Every
-	     *                           event of it.
+	     * This REQUEST minted the visitor, true for one beacon, and first_visit
+	     * is materialised from it -- which is what GA does with its _fv flag.
 	     *
-	     * Nothing consumes the first one yet. It exists so v2 can raise a
-	     * first_visit event from the request that actually created the visitor,
-	     * which is what GA does with its _fv flag -- the session column and the
-	     * is_repeat_visitor dimension both want the session-scoped one, so
-	     * neither can answer "was this the moment". Do not remove it as unused.
+	     * Its session-scoped twin is gone too. The one thing that still wanted
+	     * it -- writing the visitor's acquisition from any event of the first
+	     * session -- reads prior_sessions == 0 instead, which rides every
+	     * beacon and says the same thing.
 	     */
 	    this.pendingVisitorCreated = false;
 	    // flag for whether or not traffic has been attributed
-	    this.isTrafficAttributed =  false;
 	    this.linkedStateSet =  false;
 	    this.hashCookiesToDomain =  true;
 	    	    
@@ -282,7 +302,11 @@ class OWATracker  {
 	     * only know the logical one.
 	     */
 	    OWA.registerStateStore('v', 364, '', 'json', { owner: this, logical: 'v' });
-	    OWA.registerStateStore('c', 60, '', 'json', { owner: this, logical: 'c' });
+	    /*
+	     * The 'c' campaign store is GONE. It held the attribution stack the
+	     * client used to compute, which the server never read -- see
+	     * setTrafficAttribution().
+	     */
 
 	    // The session store does not load its cookie on first touch, and does
 	    // not write one until the session has been accepted for delivery.
@@ -330,13 +354,11 @@ class OWATracker  {
 	        logDomStreamPercentage: 100,
 	        domstreamLoggingInterval: 3000,
 	        domstreamEventThreshold: 10,
-	        maxPriorCampaigns: 5,
 	        /*
 	         * Whether the #fragment is part of a page's URL. It is not, by
 	         * default, which is GA's default too -- see getCurrentUrl().
 	         */
 	        trackUrlFragments: false,
-	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
 	        /*
 	         * Scroll depths, as percentages, that each raise ONE scroll event.
@@ -386,25 +408,20 @@ class OWATracker  {
 	        stateStoreExpirations: {},
 	        cookiePersistence: true,
 	        /*
-	         * 'public' is the parameter a marketer puts in a campaign URL and can
-	         * never move -- those links are already published. 'private' keys the
-	         * campaign params. 'full' is the property name on the wire AND the key
-	         * in the session store, and it is deliberately tagged_*: what the
-	         * tracker reports is what the landing URL CLAIMED, and the server
-	         * decides the answer. They used to share one name, so a value in the
-	         * column recorded no trace of which half produced it.
+	         * campaignKeys WAS HERE, with six setters beside it.
 	         *
-	         * 'full' is now only the name the parse produces for the attribution
-	         * MODEL below -- it no longer names a session-store key or a wire
-	         * property, because the server parses landing_url instead.
+	         * THE v2 TRACKER KNOWS NOTHING ABOUT ATTRIBUTION. It sends
+	         * landing_url and session_referer; the server parses the tags out of
+	         * the landing URL and decides source, medium and campaign. So the
+	         * key list belongs where the parse is, and is now the `campaignKeys`
+	         * setting -- scoped to a Property, so a site whose links use GA's
+	         * utm_* can say so without changing its links.
+	         *
+	         * Keeping the setters here was worse than not having them: the
+	         * server built its own ns-prefixed list and never consulted these,
+	         * so a site calling setCampaignSourceKey('utm_source') renamed a key
+	         * nothing read and its campaigns silently stopped being attributed.
 	         */
-	        campaignKeys: [
-	                { public: 'owa_medium', private: 'md', full: 'tagged_medium' },
-	                { public: 'owa_campaign', private: 'cn', full: 'tagged_campaign' },
-	                { public: 'owa_source', private: 'sr', full: 'tagged_source' },
-	                { public: 'owa_search_terms', private: 'tr', full: 'tagged_terms' },
-	                { public: 'owa_ad', private: 'ad', full: 'tagged_ad' },
-	                { public: 'owa_ad_type', private: 'at', full: 'tagged_ad_type' } ],
 	        logger_endpoint: '',
 	        api_endpoint: '',
 	        maxCustomVars: 5,
@@ -807,17 +824,47 @@ class OWATracker  {
     }
 
     /**
-     * Convienence method for setting user name
+     * The person's display name, as a custom USER property.
      *
-     * Visitor-scoped: an identified user outlives the page and the session, so
-     * 'v' is where they belong. This DOES mean the value is now written to the
-     * visitor cookie, which a global event property never was -- it is
-     * long-lived state on the visitor's machine rather than a per-page label.
+     * @deprecated Use setUserProperty('user_name', value).
+     *
+     * IT USED TO WRITE THE VISITOR COOKIE -- OWA.setState('v', 'user_name') --
+     * on the reasoning that an identified user outlives the page and the session.
+     * That was wrong twice over. A display name is TEMPORAL: it can change, and a
+     * different person can sign in on the same browser, so a cookie holding it
+     * outlives the value's own meaning -- the exact failure v1's persisted custom
+     * variables had. And it made the value visitor-scoped TRANSPORT feeding an
+     * event-scoped destination, while trackingProperties declared it `session`, a
+     * scope v2 does not offer for custom values at all (PLAN.html §2.26.1).
+     *
+     * setUserProperty() is page-lifetime and in memory, like GA's user
+     * properties: nothing is written to a cookie, and the `up_` prefix routes it
+     * to the visitor store at INGEST, where it is recorded with when it was set
+     * (§2.26.5). So what persists is a server record that can say "this was true
+     * from here on" rather than a cookie that cannot.
      */
     setUserName( value ) {
 
-        OWA.setState( 'v', 'user_name', String( value ).trim() );
+        /*
+         * THE PAGE STORE, under the user-property prefix.
+         *
+         * Not setUserProperty(), which writes globalEventProperties -- and that is
+         * per-TRACKER instance state, so a second tracker on the page would not
+         * see it. This method's cross-tracker behaviour is deliberate and has a
+         * test: a site calls it once and every tracker on the page reports it.
+         *
+         * The 'd' store keeps that and drops the cookie, which is the whole point:
+         * it is registered persist:'never', so it is page-lifetime in memory and
+         * shared through the OWA singleton, exactly like setPageTitle(). And
+         * because collectPageProperties() copies the store onto the event key by
+         * key, the prefixed name arrives as up_user_name -- admitted by prefix,
+         * routed to the visitor store by writeUserProperties(), and stamped with
+         * when it was set. No compat layer in the path.
+         */
+        OWA.setState( 'd', OWATracker.USER_PROPERTY_PREFIX + 'user_name',
+            String( value ).trim() );
     }
+
 
     /**
      * The site's OWN id for a logged-in person.
@@ -1197,7 +1244,7 @@ class OWATracker  {
     log() {
 
         var event = new OwaEvent
-        event.setEventType("base.page_request");
+        event.setEventType( 'page_view' );
         return this.logEvent(event);
     }
     
@@ -1214,6 +1261,7 @@ class OWATracker  {
         if (this.active) {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
+
             var url = this._assembleRequestUrl(properties);
             var limit = this.getOption('getRequestCharacterLimit');
             if ( url.length > limit ) {
@@ -1906,7 +1954,7 @@ class OWATracker  {
 
         var click = new OwaEvent();
         // set event type
-        click.setEventType("dom.click");
+        click.setEventType( 'click' );
 
         //clicked DOM element properties
         var targ = this._getTarget(e);
@@ -1917,11 +1965,15 @@ class OWATracker  {
         }
         click.set("dom_element_name", dom_name);
 
-        var dom_value = '(not set)';
-        if ( targ.hasAttribute('value') && targ.value.length > 0 ) {
-            dom_value = targ.value;
-        }
-        click.set("dom_element_value", dom_value);
+        /*
+         * THE ELEMENT'S VALUE IS NOT COLLECTED.
+         *
+         * A click on an input would have shipped whatever the visitor had typed
+         * into it, and no report has ever shown it: it reached no column, and the
+         * server's registry declares no destination for it. GA collects nothing
+         * equivalent. "We store it but nothing reads it" is the worst version of
+         * that trade.
+         */
 
         var dom_id = '(not set)';
         if ( targ.id && targ.id.length > 0 ) {
@@ -1949,8 +2001,12 @@ class OWATracker  {
         // The stored selector. See getElementPath().
         click.set( 'element_path', this.getElementPath( targ ) );
         // set coordinates
-        click.set("dom_element_x", this.findPosX(targ) + '');
-        click.set("dom_element_y", this.findPosY(targ) + '');
+        /*
+         * The ELEMENT's position is not collected either. The heatmap is an
+         * ordinary dimensional query over click_x and click_y -- the CLICK's
+         * coordinates, set below -- and the element's own offsets reached only
+         * v1's owa_click columns, which v2 ingest does not write.
+         */
         var coords = this.getCoords(e);
         click.set('click_x', coords.x);
         click.set('click_y', coords.y);
@@ -2449,7 +2505,6 @@ class OWATracker  {
         event.set('key_value', key_value);
         event.set('key_code', key_code);
         event.set("dom_element_name", targ.name);
-        event.set("dom_element_value", targ.value);
         event.set("dom_element_id", targ.id);
         event.set("dom_element_tag", String( targ.tagName ).toLowerCase());
         //console.log("Keypress: %s %d", key_value, key_code);
@@ -2538,181 +2593,44 @@ class OWATracker  {
         this.streamBindings.push(name);
     }
 
-    // gets campaign related properties from request scope.
-    getCampaignProperties() {
+    /*
+     * getCampaignProperties() WAS HERE and had no caller left.
+     *
+     * The tracker does not read owa_* tags off the URL at all any more. It
+     * sends nothing of the kind: taggedValue() parses the tags out of page_location
+     * server-side -- where a corrected rule reaches data already collected,
+     * which the browser cannot do. The parse survived only because the
+     * attribution models called it, and they are gone for the same reason:
+     * nothing they computed ever reached the server.
+     */
 
-        // load GET params from URL
-        if (!this.urlParams.length > 0)    {
-            this.urlParams = Util.parseUrlParams(document.URL);
-            OWA.debug('GET: '+ JSON.stringify(this.urlParams));
-        }
 
-        // look for attributes in the url of the page
-        var campaignKeys = this.getOption('campaignKeys');
 
-        // pull campaign params from _GET
-        var campaign_params = {};
 
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-			
-			// anytime we see a campaign param on the URL its a new campaign.
-            if ( this.urlParams.hasOwnProperty(campaignKeys[i].public) ) {
 
-                campaign_params[campaignKeys[i].private] = this.urlParams[campaignKeys[i].public];
-                //OWA.debug('campaign params obj: ' + JSON.stringify(campaign_params));
-                this.isNewCampaign = true;
-            }
-        }
 
-        // check for incomplete combos and backfill values if needed
-        if (campaign_params['at'] && !campaign_params['ad']) {
-            campaign_params['ad'] = '(not set)';
-        }
 
-        if (campaign_params['ad'] && !campaign_params['at']) {
-            campaign_params['at'] = '(not set)';
-        }
 
-        return campaign_params;
-    }
 
-    setCampaignSessionState( properties ) {
 
-        var campaignKeys = this.getOption('campaignKeys');
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-            if ( properties.hasOwnProperty(campaignKeys[i].private) ) {
-
-                OWA.setState( this.storeName('s'), campaignKeys[i].full, properties[campaignKeys[i].private]);
-            }
-        }
-    }
-
-    directAttributionModel(campaign_params) {
-
-        if ( this.isNewCampaign ) {
-            OWA.debug( 'campaign state length: %s', this.campaignState.length );
-            // add the new campaing params to the prior touches array
-            this.campaignState.push( campaign_params );
-
-            // if there is prior campaign touches, check to see if there is room for one more touch
-            if ( this.campaignState.length > this.options.maxPriorCampaigns ) {
-                // splice array to make room for the new one
-                var removed = this.campaignState.splice( 0, 1 );
-                OWA.debug('Too many prior campaigns in state store. Dropping oldest to make room.');
-                //OWA.debug('campaign state array post slice: ' + JSON.stringify( this.campaignState ) );
-            }
-
-            // set/reset the campaign cookie.
-            this.setCampaignCookie( this.campaignState );
-
-            // set flag
-            this.isTrafficAttributed = true;
-            /*
-             * The parsed tags are NOT persisted to session state any more, and
-             * that is what takes them off the wire: the session store is what
-             * rides every beacon. The server resolves them from landing_url.
-             *
-             * The parse itself stays, because the attribution MODEL below still
-             * runs on it -- campaignState and the `c` cookie are a separate
-             * retirement, decided for v2 and not bundled here.
-             */
-            // return values just in case
-            return campaign_params;
-        }
-    }
-
-    originalAttributionModel( campaign_params ) {
-
-        // orignal touch was set previously. jus use that.
-        if ( this.campaignState.length > 0 ) {
-            // do nothing
-            OWA.debug( 'Original attribution detected.' );
-            // set the attributes from the first campaign touch
-
-            campaign_params = this.campaignState[0];
-            // set flag
-            this.isTrafficAttributed = true;
-
-        // no orginal touch, set one if its a new campaign touch
-        } else {
-            OWA.debug( 'Setting Original Campaign touch.' );
-            if ( this.isNewCampaign ) {
-
-                this.campaignState.push( campaign_params );
-                // set cookie
-                this.setCampaignCookie( this.campaignState );
-                // set flag
-                this.isTrafficAttributed = true;
-            }
-        }
-        // persist state to session store
-        // Not persisted to session state -- see directAttributionModel().
-        // return values just in case
-        return campaign_params;
-
-    }
-
-    setCampaignMediumKey( key ) {
-
-        this.options.campaignKeys[0].public = key;
-    }
-
-    setCampaignNameKey( key ) {
-
-        this.options.campaignKeys[1].public = key;
-    }
-
-    setCampaignSourceKey( key ) {
-
-        this.options.campaignKeys[2].public = key;
-    }
-
-    setCampaignSearchTermsKey( key ) {
-
-        this.options.campaignKeys[3].public = key;
-    }
-
-    setCampaignAdKey( key ) {
-
-        this.options.campaignKeys[4].public = key;
-    }
-
-    setCampaignAdTypeKey( key ) {
-
-        this.options.campaignKeys[5].public = key;
-    }
-
+    /**
+     * Record what the session arrived from.
+     *
+     * THE CLIENT NO LONGER ATTRIBUTES ANYTHING. This loaded a campaign stack
+     * out of the `c` cookie, parsed the URL's owa_* tags, ran one of two
+     * attribution models over them and wrote the stack back -- and none of it
+     * reached the server. NO tracker generation ever put the tags on the wire:
+     * the server parses the tags out of the landing beacon's own page_location
+     * in taggedColumns(), where a corrected rule can reach data already
+     * collected.
+     *
+     * So the models, the stack, the cookie, maxPriorCampaigns and
+     * trafficAttributionMode were a browser deciding an answer nobody read.
+     * What remains is the one thing that does ride the beacon and that the
+     * server cannot derive: the referrer this session arrived on.
+     */
     setTrafficAttribution( event, callback ) {
 
-        var campaignState = OWA.getState( 'c', 'attribs' );
-
-        if (campaignState) {
-            this.campaignState = campaignState;
-        }
-
-        var campaign_params = this.getCampaignProperties();
-
-        // choose attribution mode.
-        switch ( this.options.trafficAttributionMode ) {
-
-            case 'direct':
-                OWA.debug( 'Applying "Direct" Traffic Attribution Model' );
-                campaign_params = this.directAttributionModel( campaign_params );
-                break;
-            case 'original':
-                OWA.debug( 'Applying "Original" Traffic Attribution Model' );
-                campaign_params = this.originalAttributionModel( campaign_params );
-                break;
-            default:
-                OWA.debug( 'Applying Default (Direct) Traffic Attribution Model' );
-                this.directAttributionModel( campaign_params );
-        }
-
-        // if one of the attribution methods attributes the traffic them
-        if ( this.isTrafficAttributed ) {
-
-            OWA.debug( 'Attributed Traffic to: %s', JSON.stringify( campaign_params ) );
-        }
 
         /*
          * The session's referrer is recorded whether or not a campaign was
@@ -2746,28 +2664,6 @@ class OWATracker  {
          * own session, which is the scope contract broken, not just a wrong
          * value. It is written once and re-sent from session state thereafter.
          */
-        if ( this.isNewSessionFlag === true ) {
-
-            OWA.setState( this.storeName('s'), 'referer', document.referrer );
-
-            /*
-             * The URL this session landed on, written once and re-sent from
-             * session state for the rest of it -- the same contract as
-             * `referer` above, and for the same reason: a session-scoped
-             * property must be identical on every event sharing a session_id.
-             *
-             * It replaces the six tagged_* parameters this tracker used to
-             * parse out of the URL and re-send on every beacon. The server
-             * parses it instead, which is what makes the answer re-derivable:
-             * a parser fix, or a site changing `ns`, then applies on reprocess
-             * rather than being frozen in whatever this page load decided.
-             *
-             * The whole URL rather than just its query string, because the
-             * landing page is evidence in its own right and page_url on a later
-             * beacon is a different page.
-             */
-            OWA.setState( this.storeName('s'), 'landing_url', this.getCurrentUrl() );
-        }
 
         // apply traffic attribution realted properties to events
         // all properties should be set in the state store by this point.
@@ -2778,10 +2674,6 @@ class OWATracker  {
         // values from the same place, for every event and every tracker.
 
 
-        // attribs is not copied onto a global here any more. campaignState is
-        // loaded from 'c' at the top of this method and written back by
-        // setCampaignCookie() immediately after every mutation, so the store
-        // holds the same value -- collectStateProperties() reads it from there.
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2791,10 +2683,6 @@ class OWATracker  {
 
 
 
-    setCampaignCookie( values ) {
-	    
-        OWA.setState( 'c', 'attribs', values, '', 'json' );
-    }
     
 
     /**
@@ -2808,7 +2696,7 @@ class OWATracker  {
     addTransaction( order_id, order_source, total, tax, shipping, gateway, city, state, country ) {
 	    
         this.ecommerce_transaction = new OwaEvent();
-        this.ecommerce_transaction.setEventType( 'ecommerce.transaction' );
+        this.ecommerce_transaction.setEventType( 'purchase' );
         this.ecommerce_transaction.set( 'ct_order_id', order_id );
         this.ecommerce_transaction.set( 'ct_order_source', order_source );
         this.ecommerce_transaction.set( 'ct_total', total );
@@ -2816,15 +2704,21 @@ class OWATracker  {
         this.ecommerce_transaction.set( 'ct_shipping', shipping );
         this.ecommerce_transaction.set( 'ct_gateway', gateway );
         this.ecommerce_transaction.set( 'page_url', this.getCurrentUrl() );
-        // Billing address, under the ct_ prefix its sibling transaction fields
-        // already use. These used to be sent as city/state/country, which are
-        // the names of the SERVER-DERIVED geolocation properties -- so a
-        // transaction's billing address silently replaced the location derived
-        // from the visitor's IP, and only on transactions. Two different facts
-        // cannot share three names.
-        this.ecommerce_transaction.set( 'ct_city', city );
-        this.ecommerce_transaction.set( 'ct_state', state );
-        this.ecommerce_transaction.set( 'ct_country', country );
+
+        /*
+         * THE BILLING ADDRESS IS NOT COLLECTED.
+         *
+         * city, state and country are still accepted as arguments, because this
+         * is a public API called positionally and dropping three parameters
+         * would shift `gateway` under `city` in every integration that passes
+         * them. They are discarded here instead.
+         *
+         * Not collected because nothing reports on them: a billing address is
+         * not a reporting dimension, GA carries no equivalent, and v2's country
+         * and city are the geolocation readings from the observed IP. The two
+         * facts used to share three names, so a transaction's billing address
+         * silently replaced the visitor's location -- and only on transactions.
+         */
 
         OWA.debug('setting up ecommerce transaction');
 
@@ -2858,26 +2752,44 @@ class OWATracker  {
         }
     }
 
+    /**
+     * How many sessions this visitor had BEFORE this one.
+     *
+     * Counts from zero, which is the whole difficulty: a visitor's first
+     * session stores 0, so "never counted" and "counted once" are not
+     * distinguishable by truthiness. This used to write the STRING "0" the
+     * first time and a NUMBER every time after, and read it back with
+     * `! nps` -- which worked only because "0" is truthy in JavaScript while
+     * 0 is not. The value's type was carrying the distinction, and anything
+     * that normalised the store -- a JSON round-trip, a store that coerces
+     * numeric-looking strings -- would have turned the first session's 0 back
+     * into "absent" and reset the count on every visit. Every session would
+     * then report prior_sessions = 0, and newVsReturning would read New
+     * forever, with nothing anywhere saying so.
+     *
+     * Absence is now tested for directly and the value is a number both ways.
+     * A store still holding the old "0" reads as seen and increments to 1,
+     * which is the right answer for it.
+     *
+     * Reading 0 back out is safe on the wire: collectStateProperties() omits a
+     * property only when it is undefined or '', never when it is falsy.
+     */
     setNumberPriorSessions( event, callback ) {
 
         OWA.debug('setting number of prior sessions');
-        // if check for nps value in vistor cookie.
-        var nps = OWA.getState( 'v', 'nps' );
-        // set value to 1 if not found as it means its he first session.
+
+        var store = this.storeName( 'v' );
+        var nps   = OWA.getState( store, 'nps' );
 
         if ( this.isNewSessionFlag ) {
 
-            if ( ! nps ) {
-                nps = "0";
-            } else {
-                // increment visit count and persist to state store
-                nps = nps * 1;
-                nps++;
-            }
+            var counted = nps !== undefined && nps !== null && nps !== ''
+                       && ! isNaN( nps * 1 );
 
-            OWA.setState( 'v', 'nps', nps, true );
+            nps = counted ? ( nps * 1 ) + 1 : 0;
+
+            OWA.setState( store, 'nps', nps, true );
         }
-
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2903,22 +2815,6 @@ class OWATracker  {
         if ( ! visitor_id ) {
             visitor_id = Util.generateRandomGuid();
 
-            /*
-             * Session state: it says this session was the visitor's FIRST, not
-             * that this request minted them, and the store's lifetime is what
-             * makes that true.
-             *
-             * On a new session the persisted copy is discarded and memory kept,
-             * so a returning visitor's stale flag goes and a genuinely new
-             * one's survives. Written here, ahead of that discard, because
-             * setVisitorId runs before setSessionId in the chain.
-             *
-             * On a later page of the SAME session it hydrates back, which is
-             * the fix: as a per-page global it vanished, so the server derived
-             * is_repeat_visitor = true on page two of a visitor's very first
-             * session while the session row still said is_new_visitor.
-             */
-            OWA.setState( this.storeName('s'), 'is_new_visitor', true );
             this.pendingVisitorCreated = true;
             OWA.debug('Creating new visitor id');
         }
@@ -3152,7 +3048,6 @@ class OWATracker  {
             session_id = Util.generateRandomGuid();
             // it's a new session. generate new session ID
                //mark new session flag on current request
-            OWA.setState( 'd', 'is_new_session', true );
             this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( this.storeName('s'), 'sid', session_id, true );
@@ -3175,7 +3070,6 @@ class OWATracker  {
         if ( ! session_id ) {
             session_id = Util.generateRandomGuid();
             //mark new session flag on current request
-            OWA.setState( 'd', 'is_new_session', true );
             this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( this.storeName('s'), 'sid', session_id, true );
@@ -3244,6 +3138,30 @@ class OWATracker  {
     static get EVENT_PROPERTY_PREFIX() { return 'ep_'; }
     static get USER_PROPERTY_PREFIX()  { return 'up_'; }
 
+    /**
+     * And the numeric halves, which GA spells `epn.` and `upn.`.
+     *
+     * THE TYPE IS IN THE NAME for the same reason the scope is: a query string
+     * has no numbers, so without a prefix every value arrives as text and
+     * `params` stores "42" where the site set 42. Nothing downstream can tell
+     * that from a string that merely looks numeric -- a version, a postcode,
+     * an order id with leading zeros -- so guessing at the far end is worse
+     * than being told at this one.
+     */
+    static get EVENT_PROPERTY_NUMBER_PREFIX() { return 'epn_'; }
+    static get USER_PROPERTY_NUMBER_PREFIX()  { return 'upn_'; }
+
+    /*
+     * THERE IS NO CAP HERE, deliberately. How many custom properties an event
+     * may carry is enforced at INGEST, because the tracker is not the only
+     * thing that can post to the endpoint and a limit only this file honours
+     * is a limit only well-behaved callers meet. It was implemented in both
+     * places first, which is worse than either: two numbers that can drift,
+     * and a client-side one that reads like a guarantee while guaranteeing
+     * nothing.
+     */
+
+
     /** Names must survive becoming a JSON key and then a column. */
     static get PROPERTY_NAME_PATTERN() { return /^[A-Za-z][A-Za-z0-9_]{0,39}$/; }
 
@@ -3270,7 +3188,17 @@ class OWATracker  {
             return;
         }
 
-        this.setGlobalEventProperty( OWATracker.EVENT_PROPERTY_PREFIX + name, String( value ) );
+        /*
+         * A JS number goes to the numeric prefix, as gtag routes one to
+         * `epn.`. NaN and Infinity are NOT numbers here: neither survives
+         * JSON, so both would arrive as null and read as absence.
+         */
+        var numeric = typeof value === 'number' && isFinite( value );
+
+        var key = ( numeric ? OWATracker.EVENT_PROPERTY_NUMBER_PREFIX
+                            : OWATracker.EVENT_PROPERTY_PREFIX ) + name;
+
+        this.setGlobalEventProperty( key, numeric ? value : String( value ) );
     }
 
     /**
@@ -3299,7 +3227,17 @@ class OWATracker  {
             return;
         }
 
-        this.setGlobalEventProperty( OWATracker.USER_PROPERTY_PREFIX + name, String( value ) );
+        /*
+         * A JS number goes to the numeric prefix, as gtag routes one to
+         * `upn.`. NaN and Infinity are NOT numbers here: neither survives
+         * JSON, so both would arrive as null and read as absence.
+         */
+        var numeric = typeof value === 'number' && isFinite( value );
+
+        var key = ( numeric ? OWATracker.USER_PROPERTY_NUMBER_PREFIX
+                            : OWATracker.USER_PROPERTY_PREFIX ) + name;
+
+        this.setGlobalEventProperty( key, numeric ? value : String( value ) );
     }
 
     /**
@@ -3393,13 +3331,7 @@ class OWATracker  {
             { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'referer', name: 'session_referer' },
-            // The landing URL, session-scoped like the referer beside it. It is
-            // what the server parses campaign tags out of, now that the tracker
-            // no longer parses them itself.
-            { store: 's', key: 'landing_url', name: 'landing_url' },
             { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
-            { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' },
             { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
         ];
@@ -3410,30 +3342,34 @@ class OWATracker  {
             // a site-scoped one lives under '<name>_<siteId>'
             var value = OWA.getState( this.storeName( map[i].store ), map[i].key );
 
-            // Defined rather than truthy: nps is legitimately the string "0"
-            // on a visitor's first session, and dsfs is 0 on their first day.
+            // Defined rather than truthy: nps is legitimately 0 on a
+            // visitor's first session, and dsfs is 0 on their first day.
             if ( value !== undefined && value !== '' ) {
                 collected[ map[i].name ] = value;
             }
         }
 
-        // Defined-only, not non-empty: '' is the honest answer on a visitor's
-        // first ever request, and the property is in the beacon contract, so it
-        // has to be present as '' rather than missing.
-        var prior_last_req = OWA.getState( this.storeName('s'), 'prior_last_req' );
+        /*
+         * last_req is no longer collected onto the event.
+         *
+         * THE STORE KEY STAYS. `s.last_req` is how the DEVICE decides a session
+         * has timed out -- isNewSession() compares it with this request -- and
+         * `prior_last_req` still holds the previous session's last hit so the
+         * boundary can read it before it is overwritten. Both are state; neither
+         * needs to be on the wire.
+         *
+         * What the SERVER did with it: v1's logSession() wrote
+         * prior_session_lastreq and six date parts formatted from it, and
+         * visitDuration was AVG(last_req - timestamp). Those handlers are
+         * unregistered, and engagement_msec replaced visitDuration because the
+         * old one could not see the final page. Nothing on v2 reads it, and the
+         * prior session's start arrives as `psts` with a column of its own.
+         *
+         * It was also the one CLIENT-clock value reaching the schema, subtracted
+         * from a SERVER clock -- see project_clock_provenance. Removing it ends
+         * that mixing rather than documenting it.
+         */
 
-        if ( prior_last_req !== undefined ) {
-            collected.last_req = prior_last_req;
-        }
-
-        // The accumulated attribution history. Stored as an array; the wire
-        // format is JSON, and it is omitted entirely when empty rather than
-        // being sent as "[]".
-        var campaign_state = OWA.getState( 'c', 'attribs' );
-
-        if ( campaign_state && campaign_state.length > 0 ) {
-            collected.attribs = JSON.stringify( campaign_state );
-        }
 
         /*
          * The visitor's first-visit DATE, derived from the stored anchor rather
@@ -3466,7 +3402,7 @@ class OWATracker  {
         // they cannot go in the map above.
         /*
          * The tagged_* keys are no longer collected, because nothing writes
-         * them to session state any more -- the server parses landing_url
+         * them to session state any more -- the server parses page_location
          * instead. The loop that stood here read six keys that are now always
          * absent.
          *
@@ -3584,22 +3520,18 @@ class OWATracker  {
         }
 
         /*
-         * The client's own clock at send, in microseconds.
+         * client_ts_usec was stamped here and is not sent any more.
          *
-         * The server stamps its receipt time and stores the DIFFERENCE, so
-         * skew becomes a number instead of a silent error. 1.x subtracts a
-         * client clock from a server one and records no provenance for either,
-         * so a device an hour out produces a session length nobody can identify
-         * as wrong.
+         * It existed for ONE column: the server subtracted it from its own
+         * receipt time into owa_event_raw.clock_offset_usec, so skew would be a
+         * stored number rather than a silent error. Update046 dropped that
+         * column -- ordering is settled by event_seq, a counter that needs no
+         * clock -- and the field went on being sent for every beacon afterwards,
+         * read by nothing on either side. The tracker never read it back either.
          *
-         * Date.now() is milliseconds; the extra three digits are zeros and not
-         * a claim of precision the browser does not have. What matters is the
-         * UNIT matching the column, so the subtraction is meaningful.
+         * If skew is wanted again it needs the column back, and then this line;
+         * sending the number to nowhere is not a step toward that.
          */
-        if ( ! event.get( 'client_ts_usec' ) ) {
-
-            event.set( 'client_ts_usec', Date.now() * 1000 );
-        }
 
         /*
          * ENGAGEMENT RIDES EVERY EVENT, as a delta.
@@ -3683,11 +3615,15 @@ class OWATracker  {
          * prefixes remove.
          */
 
-        // user_name lives on the visitor, not the page.
-        var user_name = OWA.getState( 'v', 'user_name' );
-        if ( user_name ) {
-            collected.user_name = user_name;
-        }
+        /*
+         * user_name is no longer collected from the visitor store.
+         *
+         * setUserName() routes to setUserProperty() now, so the value is already
+         * on the event as up_user_name by the time this runs -- the same path
+         * every other custom user property takes. Reading it back out of a cookie
+         * here is what made it visitor-scoped transport for an event-scoped
+         * destination.
+         */
 
         for ( var name in collected ) {
 
@@ -3778,6 +3714,14 @@ class OWATracker  {
          */
         this.advanceLastRequestTime( event );
 
+        // Per event, and for the same reason: a page's events must not share a
+        // position any more than they share a last-request time.
+        this.stampEventSequence( event );
+
+        // Which beacon format this is. Every event, because a row is what the
+        // question gets asked of, not a session.
+        event.set( 'beacon_version', OWATracker.BEACON_FORMAT_VERSION );
+
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
         }
@@ -3794,6 +3738,89 @@ class OWATracker  {
     advanceLastRequestTime( event ) {
 
         OWA.setState( this.storeName('s'), 'last_req', event.get( 'timestamp' ) || this.getTimestamp(), true );
+    }
+
+    /**
+     * The event's position in its session, counted on the DEVICE.
+     *
+     * WHY A COUNTER AND NOT A TIME. The server stamps `ts` at edge receipt --
+     * it is environmental, so a request cannot set it and a queue drain cannot
+     * restamp it -- and the cube's window sorts a session on that. So events
+     * order by ARRIVAL, and a beacon that lands late sorts after ones that
+     * happened after it. The unload beacon is the standing example: it puts
+     * is_exit on the wrong event and mis-orders any funnel spanning it.
+     *
+     * A client TIMESTAMP would not fix that. A device clock can be wrong,
+     * skewed, or set by hand, and two events a second apart can carry times in
+     * the wrong order. A counter is monotonic whatever the clock says, which is
+     * the only property the sort actually needs. (GA sends the same thing --
+     * `_s`, the hit number within the session -- and still cannot order events
+     * inside one upload batch, because they share a timestamp.)
+     *
+     * STAMPED AT CREATION, NOT AT SEND. This runs on the event as it is built,
+     * so a beacon that is deferred, queued or retried carries the number it had
+     * when it happened. Incrementing at transport time would reproduce exactly
+     * the bug it exists to fix.
+     *
+     * Per EVENT, not per page: it sits beside advanceLastRequestTime() outside
+     * the stateInit guard for that reason. Inside it, every event of a page
+     * would share one number.
+     *
+     * Counts from 1, so 0 is never a legitimate value and absence stays
+     * distinguishable -- unlike nps, which counts from zero and needed the
+     * explicit test this one does not.
+     *
+     * TWO TABS SHARE THE STORE, so both can read n and write n+1, and a
+     * duplicate is possible. Not solved here: the cube's sort keeps `id` as its
+     * final tiebreak, so a duplicate is ordered deterministically rather than
+     * arbitrarily, and the pair is still ordered correctly against every other
+     * event of the session. A lock would cost more than the collision does.
+     */
+    /**
+     * The beacon FORMAT generation this tracker speaks.
+     *
+     * Bumped when the shape of a beacon changes in a way a server has to bridge
+     * -- a renamed token, a changed unit, a re-encoded value -- and not for
+     * ordinary releases. One integer for the whole message, the way GA's
+     * collect carries `v=2` (and `v=1` for Universal), rather than a flag per
+     * field.
+     *
+     * IT IS NOT CONSULTED TO DECIDE WHETHER A BEACON IS ACCEPTABLE. Whether one
+     * beacon can become a row is the server's identity guard, which knows
+     * nothing of versions. This exists so that "has generation N died out yet"
+     * is a query against stored rows instead of a guess about how long a
+     * customer's cache policy lets an old tracker live -- and OWA, unlike GA,
+     * does not control that policy.
+     *
+     * ALIGNED TO THE OWA MAJOR, so a beacon format version and the tracker
+     * generation that emitted it are the same number. 2 is this wire. 1 is the
+     * v1 line, which predates the field, sends nothing and lands as NULL.
+     *
+     * Each version's emitted set is recorded standalone in
+     * tests/fixtures/beacon_contracts.json -- a version does not inherit from
+     * another, because the point of keeping an old one is to know what
+     * actually arrived.
+     */
+    static get BEACON_FORMAT_VERSION() {
+
+        return 2;
+    }
+
+    stampEventSequence( event ) {
+
+        var store = this.storeName( 's' );
+        var seq   = OWA.getState( store, 'seq' );
+
+        seq = ( seq === undefined || seq === null || seq === '' || isNaN( seq * 1 ) )
+            ? 1
+            : ( seq * 1 ) + 1;
+
+        OWA.setState( store, 'seq', seq, true );
+
+        // On the event rather than collected from the store later: the value is
+        // THIS event's, and a second tab writing between the two reads would
+        // otherwise hand it somebody else's number.
+        event.set( 'event_seq', seq );
     }
 
     /**
@@ -3868,7 +3895,7 @@ class OWATracker  {
             event.set('page_url', url);
         }
 
-        event.setEventType( "base.page_request" );
+        event.setEventType( 'page_view' );
 
         return this.trackEvent( event );
     }
@@ -3877,7 +3904,7 @@ class OWATracker  {
 
         var event = new OwaEvent;
 
-        event.setEventType('track.action');
+        event.setEventType( 'custom_event' );
         event.set('action_group', action_group);
         event.set('action_name', action_name);
         event.set('action_label', action_label);

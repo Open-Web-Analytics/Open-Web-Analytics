@@ -58,6 +58,20 @@ const E2E_REFERERS = [
     'https://www.bing.com/search?q=owa+analytics',
 ];
 
+/*
+ * Which referrer produces which medium, for the fixtures that need a session OF
+ * a given medium.
+ *
+ * The attribution chain classifies the medium from the referring host, so this is
+ * the fixture's own input paired with what it promises the specs. It exists
+ * because on v2 the medium is a CUBE column and the cube is built after the
+ * fixtures that want one -- see sessionByReferer().
+ */
+const E2E_MEDIUM_REFERERS = [
+    'organic-search' => 0,   // google
+    'referral'       => 1,   // news.ycombinator.com
+];
+
 // E-commerce fixture. enableEcommerceReporting is a PER-SITE setting, so the
 // seeder turns it on for the fixture site -- the global base setting of the same
 // name has been false since it was introduced and is not what any report reads.
@@ -462,8 +476,86 @@ function seed(): array
     $out['clicks_seeded']  = seedClicks();
     $out['actions_seeded'] = seedActions();
 
+    // 12. The Property's reporting cube, built from the raw rows the seeding
+    //     above just produced. Without it every v2 dimension resolves to a
+    //     table that does not exist, and a widget reading one draws NOTHING --
+    //     silently, because a cube query that cannot name its table fails
+    //     before it returns rows. The dashboard's Visitor Types pie was the
+    //     first widget to move, and it simply vanished.
+    $out['cube'] = seedCube();
+
     $out['status']            = 'seeded';
     return $out;
+}
+
+/**
+ * Build the fixture Property's cube.
+ *
+ * A PROPERTY ALREADY EXISTS -- createNewSite() mints one, because a site is an
+ * Observation Profile (see unseedPropertyIfEmpty). What does not exist is the
+ * TABLE: a cube is created by the build job on a Property's first data, and
+ * nothing in this fixture ran one. So v2 reporting had no end-to-end coverage
+ * at all, and the first report to read the cube failed in a way no spec could
+ * see until it counted the things on the page.
+ *
+ * Built from whatever raw rows the seeding produced rather than from seeded
+ * ones of its own: ingest writes owa_event_raw alongside the v1 tables on the
+ * same logEvent() call, so the cube is derived from the same traffic the v1
+ * reports are, and the two cannot disagree about what happened.
+ */
+function seedCube(): array
+{
+    $site = owa_coreAPI::entityFactory('base.site');
+    $site->load(E2E_SITE_ID, 'site_id');
+
+    $property_id = (string) $site->get('property_id');
+
+    if (! $property_id) {
+
+        return array('status' => 'no property on the fixture site');
+    }
+
+    $db  = owa_coreAPI::dbSingleton();
+    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+
+    $span = $db->get_row(sprintf(
+        "SELECT MIN(yyyymmdd) AS lo, MAX(yyyymmdd) AS hi FROM %s WHERE site_id = '%s'",
+        $raw, $db->prepare(E2E_SITE_ID)));
+
+    if (empty($span['lo'])) {
+
+        return array('status' => 'no raw rows to build from');
+    }
+
+    if (! $db->tableExists(\OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id))
+        && ! \OWA\Module\Base\Classes\Cube\Cubes::create($property_id)) {
+
+        return array('status' => 'could not create the cube');
+    }
+
+    $builder = new \OWA\Module\Base\Classes\Cube\Builder($property_id);
+    $rows    = 0;
+    $failed  = array();
+
+    foreach ($builder->partitions((int) $span['lo'], (int) $span['hi']) as $partition) {
+
+        $result = $builder->rebuild($partition);
+
+        if (empty($result['ok'])) {
+
+            $failed[] = $partition['name'];
+            continue;
+        }
+
+        $rows += (int) $result['rows'];
+    }
+
+    return array(
+        'property'   => $property_id,
+        'days'       => $span['lo'] . '-' . $span['hi'],
+        'rows_built' => $rows,
+        'failed'     => $failed,
+    );
 }
 
 /**
@@ -649,19 +741,26 @@ function seedDomstreams(): array
 
     foreach ($recordings as $i => $recording) {
 
-        $found = $db->get_results(
-            "SELECT id, visitor_id, medium, yyyymmdd FROM owa_session"
-            . " WHERE site_id = '" . $db->prepare($site_id) . "'"
-            . " AND medium = '" . $db->prepare($recording['medium']) . "' LIMIT 1"
-        );
+        /*
+         * The visit this recording hangs off, found by the REFERRER that gives it
+         * the medium the fixture promises. This asked owa_session for a row with
+         * that medium, and v2 writes no such row -- so both recordings were
+         * skipped on every run and the nine domstream specs had nothing to read.
+         */
+        $index = E2E_MEDIUM_REFERERS[$recording['medium']] ?? null;
 
-        if (!is_array($found) || !$found) {
-            $out[] = ['medium' => $recording['medium'], 'skipped' => 'no visit with this medium'];
+        $session = $index === null
+            ? null : sessionByReferer($site_id, E2E_REFERERS[$index]);
+
+        if (!$session) {
+            $out[] = ['medium' => $recording['medium'],
+                      'skipped' => 'no visit referred by ' . ( $index === null
+                          ? 'an unmapped medium' : E2E_REFERERS[$index] )];
             continue;
         }
 
-        $session = (array) $found[0];
-        $guid    = numericGuid();
+        $session['medium'] = $recording['medium'];
+        $guid              = numericGuid();
 
         // Idempotent the way the rest of the seeder is: a recording already
         // present for this page and visit is left alone rather than doubled.
@@ -1013,7 +1112,16 @@ function teardown(): array
     // site_id is an md5 hex string (no escaping needed), but use the query
     // builder's parameterized where() rather than string interpolation anyway.
     $removed = [];
-    foreach (['owa_request', 'owa_session', 'owa_action_fact', 'owa_click', 'owa_domstream',
+    /*
+     * owa_event_raw FIRST, because it is the one every v2 report reads. It was
+     * missing from this list: the v1 tables were all that got cleared, so a
+     * re-seed stacked new raw rows on top of the previous run's and every exact
+     * count a spec asserts drifted upward. The v1 tables stay in the list --
+     * they are empty on this branch, so clearing them costs one no-op DELETE
+     * each and keeps teardown correct on a branch where the chain is registered.
+     */
+    foreach ([rawTable(),
+              'owa_request', 'owa_session', 'owa_action_fact', 'owa_click', 'owa_domstream',
               'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
         try {
             $db = owa_coreAPI::dbSingleton();
@@ -1108,6 +1216,33 @@ function teardown(): array
         }
     } catch (\Throwable $e) { $removed['owa_site_user'] = 'skip: ' . $e->getMessage(); }
 
+    /*
+     * The Property's cube, before the site goes -- unseedPropertyIfEmpty()
+     * runs off the site's property_id, so once the site is gone there is
+     * nothing left to name the table with and it would survive every later
+     * run holding the previous one's rows.
+     */
+    try {
+        $cubeSite = owa_coreAPI::entityFactory('base.site');
+        $cubeSite->load(E2E_SITE_ID, 'site_id');
+        $property = (string) $cubeSite->get('property_id');
+
+        if ($property) {
+            $db    = owa_coreAPI::dbSingleton();
+            $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property);
+
+            // The staging and side tables too: a build that died between
+            // creating one and swapping it leaves them behind, and the next
+            // build derives staging from the live cube's DDL rather than from
+            // whatever is sitting there.
+            foreach (array('', '_rebuild', '_computed') as $suffix) {
+                $db->query(sprintf('DROP TABLE IF EXISTS %s%s', $table, $suffix));
+            }
+
+            $removed['cube'] = $table . ' dropped';
+        }
+    } catch (\Throwable $e) { $removed['cube'] = 'skip: ' . $e->getMessage(); }
+
     // Remove the fixture users (analyst + admin) and site.
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_USER_ID, 'user_id'); } catch (\Throwable $e) {}
     try { owa_coreAPI::entityFactory('base.user')->delete(E2E_ADMIN_ID, 'user_id'); } catch (\Throwable $e) {}
@@ -1146,15 +1281,17 @@ function teardown(): array
  * grid AND a non-flat timeseries (the sparkline KPI boxes and the Flot area /
  * trend charts need >1 day of data or they collapse to a single point).
  *
- * TIME-TRAVEL: OWA stamps every event with the request timestamp, not a value
- * the caller sets on the event. The 'timestamp' property has a registered
- * filter (owa_trackingEventHelpers::timestampDefault) that IGNORES whatever is
- * on the event and returns owa_coreAPI::getRequestTimestamp() -- i.e. the
- * requestContainer singleton's timestamp (set once to time()). Every fact-table
- * time dimension (year/month/day/yyyymmdd/hour) is then DERIVED from that at log
- * time (owa_trackingEventHelpers::deriveYyyymmdd et al.). So to backdate an
- * event we must move the singleton's clock before logEvent(); setting a
- * 'timestamp' prop alone is silently overwritten.
+ * TIME-TRAVEL: OWA stamps every event with the request clock, not a value the
+ * caller sets on the event. `ts` is owa_trackingEventHelpers::edgeTimestampMicro
+ * seconds() -- the requestContainer singleton's receipt time, in MICROSECONDS,
+ * taken once per process -- and yyyymmdd is derived from ts at log time. So to
+ * backdate an event we must move the singleton's clock before logEvent().
+ *
+ * THROUGH setTimestamp(), which moves both of the container's clock fields. This
+ * assigned ->timestamp directly, which is the seconds field; v2 reads the
+ * microsecond one. Measured: every event below landed on TODAY, so the four-day
+ * spread this docblock describes collapsed to a single point -- exactly the flat
+ * timeseries the spread exists to avoid -- and nothing errored.
  *
  * The plan below fires exactly E2E_PAGEVIEWS (8) pageviews: 4 pages x 2 views
  * each (keeps the pages-grid contract -- 4 rows, count "2" per page), arranged
@@ -1177,9 +1314,14 @@ function seedTransactions(): int
     $site_id = E2E_SITE_ID;
     $seeded  = 0;
     foreach (E2E_TXNS as $txn) {
-        $existing = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
-        $existing->load($txn['order_id'], 'order_id');
-        if ($existing->wasPersisted()) {
+        /*
+         * Idempotent on the RAW row, not on the v1 fact.
+         *
+         * The fact table is empty on this branch, so this guard never tripped and
+         * a re-seed wrote each order again -- and the commerce assertions use
+         * exact revenue totals, so a second run doubled every one of them.
+         */
+        if (purchaseAlreadySeeded($txn['order_id'])) {
             continue;
         }
         // Midday on its day, matching seedPageviews() so both land inside the
@@ -1192,6 +1334,61 @@ function seedTransactions(): int
         // SESSION rather than off these tables -- so facts with session_id 0
         // report as zero revenue no matter how much is in the fact rows.
         $session = sessionForDay($site_id, (int) date('Ymd', $ts));
+
+        /*
+         * THE v2 PURCHASE, through the real beacon.
+         *
+         * This function wrote the v1 fact tables ONLY, on the reasoning that the
+         * facts "have to be reportable, not realistic" -- which was true while
+         * logEvent() wrote owa_event_raw alongside them on the same call. It does
+         * not any more: the v1 chain is unregistered, so raw had no `purchase`
+         * row for either order and every v2 commerce metric read an empty table.
+         * revenue, tax, shipping and transaction_id are columns ON THE RAW ROW.
+         *
+         * Fired before the entity writes below, so a failure to log is visible in
+         * the count rather than masked by v1 rows that report fine on a branch
+         * where nothing reads them.
+         *
+         * Amounts go on the wire as the author's DECIMAL -- ct_total is 42.60 --
+         * because toMinorUnits() is what converts them to what the column stores.
+         * Passing cents here would report a hundredfold.
+         */
+        $rc = owa_coreAPI::requestContainerSingleton();
+        $rc->setTimestamp($ts);
+
+        $purchase = owa_coreAPI::supportClassFactory('base', 'event');
+        $purchase->setEventType('ecommerce.transaction');
+        $purchase->setProperties([
+            'site_id'         => $site_id,
+            'session_id'      => $session['id'] ?? numericGuid(),
+            'visitor_id'      => $session['visitor_id'] ?? numericGuid(),
+            'guid'            => numericGuid(),
+            'page_url'        => E2E_SITE_DOMAIN . '/checkout',
+            'page_location'   => E2E_SITE_DOMAIN . '/checkout',
+            'page_title'      => 'E2E Checkout',
+            'HTTP_USER_AGENT' => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
+            'ip_address'      => '203.0.113.30',
+            'ct_order_id'     => $txn['order_id'],
+            'ct_order_source' => 'e2e-fixture',
+            'ct_gateway'      => 'e2e',
+            'ct_total'        => $txn['revenue'],
+            'ct_tax'          => $txn['tax'],
+            'ct_shipping'     => $txn['shipping'],
+            'currency'        => 'USD',
+            'ct_line_items'   => json_encode(array_map(function ($item) {
+                return [
+                    'sku'      => $item['sku'],
+                    'name'     => $item['name'],
+                    'category' => $item['category'],
+                    'price'    => $item['price'],
+                    'quantity' => $item['qty'],
+                ];
+            }, $txn['items'])),
+        ]);
+
+        owa_coreAPI::logEvent('ecommerce.transaction', $purchase);
+
+        $rc->setTimestamp(time());
 
         $t = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
         $t->set('id', numericGuid());
@@ -1240,23 +1437,6 @@ function seedTransactions(): int
         }
     }
     return $seeded;
-}
-
-/**
- * The session row seeded for a given day, or null.
- *
- * seedPageviews() creates one session per visit day, and the transaction days
- * are chosen to line up with two of them.
- */
-function sessionForDay(string $site_id, int $yyyymmdd): ?array
-{
-    $db = owa_coreAPI::dbSingleton();
-    $db->connect();
-    $rows = $db->get_results(
-        "SELECT id, visitor_id FROM owa_session WHERE site_id = '" . $db->prepare($site_id) . "'"
-        . " AND yyyymmdd = " . (int) $yyyymmdd . " LIMIT 1"
-    );
-    return is_array($rows) && $rows ? (array) $rows[0] : null;
 }
 
 /**
@@ -1359,6 +1539,18 @@ function seedPageviews(int $n): int
 
     $count = 0;
 
+    /*
+     * Per visitor, what they had done BEFORE the visit being seeded: how many
+     * sessions, and when they were first seen.
+     *
+     * Counted here rather than asserted per visit, so the plan above stays a list
+     * of visits and cannot disagree with the counts. The visits are seeded in
+     * chronological order, which is what makes a running tally correct -- and the
+     * order is load-bearing for the funnel fixture as well.
+     */
+    $sessions_so_far = [];
+    $first_seen_at   = [];
+
     foreach ($visits as $visit) {
         $session_id = numericGuid();
         $visitor_id = $visitors[$visit['visitor']];
@@ -1367,6 +1559,13 @@ function seedPageviews(int $n): int
         $day_base = time() - ($visit['day_ago'] * 86400);
         $day_base = $day_base - ($day_base % 86400) + 43200; // 12:00 UTC that day
 
+        $who             = $visit['visitor'];
+        $prior_sessions  = $sessions_so_far[$who] ?? 0;
+        $first_seen      = $first_seen_at[$who] ?? $day_base;
+
+        $sessions_so_far[$who] = $prior_sessions + 1;
+        $first_seen_at[$who]   = $first_seen;
+
         foreach (array_values($visit['pages']) as $i => $page) {
             if ($count >= $n) {
                 break 2;
@@ -1374,38 +1573,77 @@ function seedPageviews(int $n): int
             $url     = E2E_SITE_DOMAIN . $page;
             $isFirst = ($i === 0);
 
-            // Backdate the request clock; timestampDefault() reads this and the
-            // derived time dimensions follow. Pageviews within a visit are a few
-            // minutes apart so their order (and the session duration) is sane.
-            $rc->timestamp = $day_base + ($i * 120);
+            // Backdate the request clock; `ts` reads it and the derived time
+            // dimensions follow. Pageviews within a visit are a few minutes apart
+            // so their order (and the session duration) is sane.
+            $rc->setTimestamp($day_base + ($i * 120));
+
+            /*
+             * THE REFERRER IS THE VISIT'S OWN, on the first page, and the
+             * previous page of the visit after that.
+             *
+             * This sent the visit's real referrer as `session_referer` and
+             * hardcoded HTTP_REFERER to a bare 'https://www.google.com/'. Both
+             * halves are now wrong. session_referer LEFT THE REGISTRY -- the
+             * server parses the campaign tags out of page_location and reads the
+             * per-event referrer for the rest -- so the three E2E_REFERERS went
+             * nowhere, and the only external host raw ever saw was that literal,
+             * without the query string that makes it a search. Measured: two rows
+             * from www.google.com and nothing from news.ycombinator.com or
+             * www.bing.com, so the medium spread this fixture promises (organic 2,
+             * referral 1, direct 2) did not exist.
+             *
+             * HTTP_REFERER is the one input now, and it is per EVENT: the session's
+             * referrer is the first row's, which is what the cube's window reads.
+             */
+            $referer = $isFirst
+                ? ( $visit['referer'] ?? '' )
+                : E2E_SITE_DOMAIN . $visit['pages'][$i - 1];
 
             $props = [
                 'site_id'          => $site_id,
                 'session_id'       => $session_id,
                 'visitor_id'       => $visitor_id,
-                'is_new_session'   => $isFirst,
-                'is_new_visitor'   => $isFirst && $visit['new_visitor'],
+
                 /*
-                 * is_repeat_visitor is deliberately NOT set here.
+                 * THE REQUEST-SCOPED FLAGS, which is what v2 materialises its
+                 * marker rows from.
                  *
-                 * The seeder fires real events through logEvent, so the value
-                 * is DERIVED from is_new_visitor like any tracked hit. Passing
-                 * it explicitly made it worse, not better -- the tracker
-                 * property pipeline processes a supplied value differently
-                 * from an absent one, and the rows came out NULL where leaving
-                 * it alone gives 0. A fixture that sets it would also stop
-                 * exercising the derivation this suite exists to cover.
+                 * This set is_new_session and is_new_visitor -- the PAGE- and
+                 * session-scoped v1 twins, which v2 removed. Nothing read them, so
+                 * no beacon ever raised a session_start or a first_visit and raw
+                 * held page_view rows only. Anything counting sessions or new users
+                 * as EVENTS saw an empty table.
                  */
+                'is_new_session_start'   => $isFirst,
+                'is_new_visitor_created' => $isFirst && $visit['new_visitor'],
+
+                /*
+                 * The visitor's session count BEFORE this one, which is the column
+                 * new_vs_returning and newUsers both read. Absent, it stored NULL,
+                 * and NULL is not New -- the pass renders it as unresolved, so the
+                 * Visitor Types pie had one bucket for a gap in the beacon.
+                 */
+                'num_prior_sessions' => $prior_sessions,
+
+                /*
+                 * The session and first-visit anchors. Columns of their own
+                 * (session_start_ts, visitor_fsts) and the only way a report can
+                 * say when a session began without a session table.
+                 */
+                'sts'  => $day_base,
+                'fsts' => $first_seen,
+
                 'page_url'         => $url,
+                'page_location'    => $url,
                 'page_title'       => 'E2E ' . ($page === '/' ? 'Home' : trim($page, '/')),
                 'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'],
-                'HTTP_REFERER'     => ($isFirst && $visit['new_visitor']) ? 'https://www.google.com/' : $url,
                 'ip_address'       => '203.0.113.' . (10 + $visit['visitor']),
                 'guid'             => numericGuid(),
             ];
 
-            if (!empty($visit['referer'])) {
-                $props['session_referer'] = $visit['referer'];
+            if ($referer !== '') {
+                $props['HTTP_REFERER'] = $referer;
             }
 
             $event = owa_coreAPI::supportClassFactory('base', 'event');
@@ -1419,7 +1657,7 @@ function seedPageviews(int $n): int
     }
 
     // Restore the request clock so anything later in this process sees "now".
-    $rc->timestamp = time();
+    $rc->setTimestamp(time());
     return $count;
 }
 
@@ -1440,7 +1678,7 @@ function seedPageviews(int $n): int
 function seedClicks(): array
 {
     $expected = array_sum(array_column(E2E_CLICKS, 'n'));
-    $existing = countSiteRows('owa_click');
+    $existing = countRawRows('click');
 
     /*
      * IDEMPOTENT, like the pageviews above and for the same reason: every click
@@ -1481,7 +1719,7 @@ function seedClicks(): array
 
         for ($i = 0; $i < $click['n']; $i++) {
 
-            $rc->timestamp = $day + ($offset * 60);
+            $rc->setTimestamp($day + ($offset * 60));
             $offset++;
 
             $url = E2E_SITE_DOMAIN . $click['page'];
@@ -1516,11 +1754,11 @@ function seedClicks(): array
         }
     }
 
-    $rc->timestamp = time();
+    $rc->setTimestamp(time());
 
     return [
         'clicks'       => $written,
-        'rows_in_db'   => countSiteRows('owa_click'),
+        'rows_in_db'   => countRawRows('click'),
         // What the reports should say, derived from the fixture rather than
         // written down twice.
         'by_element'   => clickTotals('id'),
@@ -1554,7 +1792,7 @@ function clickTotals(string $key): array
 function seedActions(): array
 {
     $expected = array_sum(array_column(E2E_ACTIONS, 'n'));
-    $existing = countSiteRows('owa_action_fact');
+    $existing = countRawRows('custom_event');
 
     /* Idempotent for the same reason as the clicks above. */
     if ($existing > 0) {
@@ -1585,7 +1823,7 @@ function seedActions(): array
 
         for ($i = 0; $i < $action['n']; $i++) {
 
-            $rc->timestamp = $day + ($offset * 60);
+            $rc->setTimestamp($day + ($offset * 60));
             $offset++;
 
             $event = owa_coreAPI::supportClassFactory('base', 'event');
@@ -1611,11 +1849,11 @@ function seedActions(): array
         }
     }
 
-    $rc->timestamp = time();
+    $rc->setTimestamp(time());
 
     return [
         'actions'       => $written,
-        'rows_in_db'    => countSiteRows('owa_action_fact'),
+        'rows_in_db'    => countRawRows('custom_event'),
         /*
          * The three answers the three metrics should give. Computed from the
          * fixture so the numbers cannot drift apart from the data, and kept
@@ -1628,17 +1866,131 @@ function seedActions(): array
     ];
 }
 
-/** How many rows of a fact table belong to the fixture site. */
-function countSiteRows(string $table): int
+
+/*
+ * ---- WHERE THE FIXTURE LOOKS FOR ITS OWN DATA -----------------------------
+ *
+ * THE v1 STAR TABLES ARE EMPTY ON THIS BRANCH, and this fixture was reading
+ * them. owa_request, owa_session, owa_click and owa_action_fact are written by
+ * the v1 event chain, which came out of Module.php -- measured on the dev
+ * install, the newest row in owa_session predates that commit and owa_event_raw
+ * is current. So every lookup below used to answer "nothing found", silently:
+ * seedDomstreams() skipped both recordings, and the click and action
+ * idempotency guards never tripped, which meant a re-seed DOUBLED them while
+ * reporting rows_in_db: 0.
+ *
+ * A session on v2 is not a row. It is the set of owa_event_raw rows sharing a
+ * session_id, and its start is a session_start row. So "find me a session" is a
+ * query against raw, and these three accessors are the only place that knows it.
+ */
+
+/** The raw table, asked for rather than spelled out. */
+function rawTable(): string
+{
+    return owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+}
+
+/**
+ * One session of the fixture site, as { id, visitor_id, yyyymmdd }.
+ *
+ * `id` is the session_id, because on v2 that IS the session's identity -- there
+ * is no separate primary key to look up. Ordered so the answer is stable across
+ * runs: an unordered LIMIT 1 lets the optimiser decide what the fixture promises.
+ *
+ * @param string   $site_id
+ * @param string   $and      extra SQL predicate, already escaped, or ''
+ * @return array|null
+ */
+function sessionFromRaw(string $site_id, string $and = ''): ?array
 {
     $db = owa_coreAPI::dbSingleton();
-    $db->selectFrom($table);
-    $db->selectColumn('COUNT(*) AS c');
-    $db->where('site_id', E2E_SITE_ID);
+    $db->connect();
 
-    $row = $db->getOneRow();
+    $rows = $db->get_results(
+        "SELECT session_id AS id, visitor_id, yyyymmdd FROM " . rawTable()
+        . " WHERE site_id = '" . $db->prepare($site_id) . "'"
+        . ( $and === '' ? '' : ' AND ' . $and )
+        . " ORDER BY ts LIMIT 1"
+    );
 
-    return (int) ($row['c'] ?? 0);
+    return is_array($rows) && $rows ? (array) $rows[0] : null;
+}
+
+/**
+ * The session seeded for a given day, or null.
+ *
+ * seedPageviews() creates one session per visit day, and the transaction days
+ * are chosen to line up with two of them.
+ */
+function sessionForDay(string $site_id, int $yyyymmdd): ?array
+{
+    return sessionFromRaw($site_id, 'yyyymmdd = ' . (int) $yyyymmdd);
+}
+
+/**
+ * The session that arrived from a given referring URL.
+ *
+ * SELECTED ON THE REFERRER, NOT ON THE MEDIUM, and that is a change of input
+ * rather than a loosening. v1 stored `medium` on the session row, so the fixture
+ * could ask for one directly. On v2 the medium is a CUBE column -- the pass
+ * classifies it from referer_host -- and the cube is built at the END of seeding,
+ * after the recordings this feeds. Asking raw for a medium it does not carry is
+ * how this came to select nothing.
+ *
+ * The referrer is the INPUT the pipeline derives the medium from, so selecting on
+ * it still selects on the thing that makes the fixture's promise true, and it is
+ * available before the cube exists. E2E_MEDIUM_REFERERS keeps the pairing in one
+ * place so the promise stays explicit.
+ */
+function sessionByReferer(string $site_id, string $referer_url): ?array
+{
+    $db   = owa_coreAPI::dbSingleton();
+    $host = (string) parse_url($referer_url, PHP_URL_HOST);
+
+    if ($host === '') {
+        return null;
+    }
+
+    return sessionFromRaw($site_id, "referer_host = '" . $db->prepare($host) . "'");
+}
+
+/**
+ * Raw rows for the fixture site, optionally of one event type.
+ *
+ * Replaces countSiteRows('owa_click') and countSiteRows('owa_action_fact'),
+ * which counted tables nothing writes. The event type is the v2 name -- a click
+ * is `click` and a tracked action is `custom_event` -- so this is the same
+ * question asked where the answer now lives.
+ */
+function countRawRows(?string $event_type = null): int
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->connect();
+
+    $rows = $db->get_results(
+        "SELECT COUNT(*) AS c FROM " . rawTable()
+        . " WHERE site_id = '" . $db->prepare(E2E_SITE_ID) . "'"
+        . ( $event_type === null
+            ? '' : " AND event_type = '" . $db->prepare($event_type) . "'" )
+    );
+
+    return is_array($rows) && $rows ? (int) ((array) $rows[0])['c'] : 0;
+}
+
+/** Whether raw already carries the purchase for this order id. */
+function purchaseAlreadySeeded(string $order_id): bool
+{
+    $db = owa_coreAPI::dbSingleton();
+    $db->connect();
+
+    $rows = $db->get_results(
+        "SELECT COUNT(*) AS c FROM " . rawTable()
+        . " WHERE site_id = '" . $db->prepare(E2E_SITE_ID) . "'"
+        . " AND event_type = 'purchase'"
+        . " AND transaction_id = '" . $db->prepare($order_id) . "'"
+    );
+
+    return is_array($rows) && $rows && (int) ((array) $rows[0])['c'] > 0;
 }
 
 /** Numeric GUID in the tracker's format (BIGINT-safe): <time><6rand><3rand>. */

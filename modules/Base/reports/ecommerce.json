@@ -1,6 +1,6 @@
 {
     "title": "Ecommerce",
-    "metrics": "visits,transactions,transactionRevenue,ecommerceConversionRate,revenuePerVisit,revenuePerTransaction",
+    "metrics": "sessions,transactions,transactionRevenue,ecommerceConversionRate,revenuePerSession,revenuePerTransaction",
     "widgets": [
         {
             "type": "trend",
@@ -10,45 +10,28 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "transactions",
-            "headline": "There were {transactions.formatted} {transactions|transaction|transactions} completed."
-        },
-        {
-            "type": "grid-card",
-            "id": "productName",
-            "container": "productNameExplorer",
-            "title": "Top Products",
-            "colspan": 6,
-            "query": {
-                "metrics": "lineItemRevenue",
-                "dimensions": "productName",
-                "sort": "lineItemRevenue-"
-            },
-            "more": {
-                "reportId": "products",
-                "label": "View Full Report \u00bb"
-            }
+            "chartMetric": "transactions"
         },
         {
             "type": "grid",
-            "id": "source",
+            "id": "sessionSource",
             "container": "sourceExplorer",
             "title": "Revenue by Source",
             "colspan": 6,
             "query": {
                 "metrics": "transactions,transactionRevenue",
-                "dimensions": "source",
+                "dimensions": "sessionSource",
                 "sort": "transactionRevenue-",
                 "resultsPerPage": 5
             },
             "link": {
-                "linkColumn": "source",
+                "linkColumn": "sessionSource",
                 "template": {
                     "do": "base.report",
                     "reportId": "sources",
-                    "source": "%s"
+                    "sessionSource": "%s"
                 },
-                "valueColumns": "source"
+                "valueColumns": "sessionSource"
             }
         }
     ]

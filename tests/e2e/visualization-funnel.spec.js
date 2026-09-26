@@ -189,7 +189,7 @@ test.describe('visualization: funnel', () => {
         await openFunnelAs(page, 'session');
         const bySession = (await page.locator('.funnelStepCount').allTextContents())
             .map((c) => parseInt(c.trim(), 10));
-        await expect(page.locator('.visitorCountLabel').first()).toHaveText('visits');
+        await expect(page.locator('.visitorCountLabel').first()).toHaveText('sessions');
 
         expect(bySession[0]).toBeGreaterThan(byVisitor[0]);
     });

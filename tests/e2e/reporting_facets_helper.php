@@ -31,10 +31,21 @@
  * The expected values are RETURNED rather than hardcoded in the spec, so the
  * fixture and its assertions cannot drift apart.
  *
- * Sessions are written directly rather than driven through the tracker: this
- * exercises the REPORTING engine, and tracker-beacon.spec.js already covers
- * ingestion. yyyymmdd is set explicitly -- it is NOT NULL, it is the partition
- * key, and a fixture that omits it is testing something the product never does.
+ * SESSIONS ARE DRIVEN THROUGH logEvent NOW, and the change was forced rather than
+ * chosen. They used to be base.session rows written straight to the table, with
+ * source_id and medium set on them -- which was defensible while this exercised
+ * only the reporting engine. v2 has no session table and no source dimension:
+ * a session is a session_start row in owa_event_raw, and source and medium are
+ * columns the cube pass derives. So there was nowhere to write the distribution
+ * to, and every facet here measured an empty table.
+ *
+ * Each session is one tagged landing page view, and the cube is built at the end.
+ * The tags are what state the distribution -- MediumStep is
+ * COALESCE(tagged_medium, classify(referer_host)), so a tag wins over the
+ * classification, which is also the only way to express google.com under two
+ * different mediums. provision() then VERIFIES the cube reproduced what
+ * DISTRIBUTION declares and fails loudly if not, so a classification change
+ * cannot quietly turn a wrong number into the expected one.
  */
 
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -114,26 +125,69 @@ function provision(): array
     $byMedium = [];
     $pairs    = [];
 
-    foreach (DISTRIBUTION as $source => $mediums) {
+    $rc = owa_coreAPI::requestContainerSingleton();
+    $ns = (string) owa_coreAPI::getSetting('base', 'ns');
 
-        $source_pk = sourceDim($source);
+    foreach (DISTRIBUTION as $source => $mediums) {
 
         foreach ($mediums as $medium => $count) {
 
             for ($i = 0; $i < $count; $i++) {
 
                 $n++;
-                $sess = owa_coreAPI::entityFactory('base.session');
-                $sess->set('id', $sess->generateId(FIXTURE_TAG . "-$source-$medium-$i"));
-                $sess->set('site_id', $site_id);
-                $sess->set('visitor_id', $sess->generateId(FIXTURE_TAG . "-visitor-$n"));
-                $sess->set('source_id', $source_pk);
-                $sess->set('medium', $medium);
-                $sess->set('timestamp', $now - $n);
-                $sess->set('last_req', $now - $n);
-                $sess->set('yyyymmdd', $yyyymmdd);
-                $sess->set('num_pageviews', 1);
-                $sess->create();
+
+                /*
+                 * ONE TAGGED LANDING PAGE VIEW PER SESSION, through logEvent.
+                 *
+                 * This wrote base.session rows with source_id and medium columns,
+                 * and v2 has neither: the session is a session_start row in
+                 * owa_event_raw, and source and medium are CUBE columns the pass
+                 * derives. So the whole distribution existed only in a table
+                 * nothing reads, and all nine facet specs measured an empty one.
+                 *
+                 * TAGGED RATHER THAN CLASSIFIED FROM THE REFERRER. MediumStep is
+                 * COALESCE(tagged_medium, classify(referer_host)) -- the tag wins
+                 * -- so tagging states the distribution exactly while still going
+                 * through the real path: ingest parses the tags out of
+                 * page_location, and the pass coalesces. Classifying instead would
+                 * tie this fixture to the search-engine list, which is the one
+                 * part of that step designed to change, and it could not express
+                 * google.com/cpc at all -- the same source under two mediums is
+                 * what makes the distribution asymmetric.
+                 *
+                 * The referrer is set to match, so a row reads as it would in life
+                 * and nothing here depends on which of the two the pass prefers.
+                 */
+                $session_id = fixtureGuid();
+                $visitor_id = fixtureGuid();
+
+                $landing = FIXTURE_DOMAIN . '/facets/' . $n
+                    . '?' . $ns . 'source=' . rawurlencode($source)
+                    . '&' . $ns . 'medium=' . rawurlencode($medium);
+
+                $rc->setTimestamp($now - $n);
+
+                $event = owa_coreAPI::supportClassFactory('base', 'event');
+                $event->setEventType('base.page_request');
+                $event->setProperties([
+                    'site_id'                => $site_id,
+                    'session_id'             => $session_id,
+                    'visitor_id'             => $visitor_id,
+                    'guid'                   => fixtureGuid(),
+                    'page_url'               => $landing,
+                    'page_location'          => $landing,
+                    'page_title'             => 'Facets ' . $n,
+                    'HTTP_REFERER'           => 'https://' . $source . '/',
+                    'HTTP_USER_AGENT'        => $_SERVER['HTTP_USER_AGENT'],
+                    'ip_address'             => '203.0.113.44',
+                    'is_new_session_start'   => true,
+                    'is_new_visitor_created' => true,
+                    'num_prior_sessions'     => 0,
+                    'sts'                    => $now - $n,
+                    'fsts'                   => $now - $n,
+                ]);
+
+                owa_coreAPI::logEvent('base.page_request', $event);
             }
 
             $bySource[$source] = ($bySource[$source] ?? 0) + $count;
@@ -142,8 +196,38 @@ function provision(): array
         }
     }
 
+    $rc->setTimestamp($now);
+
     arsort($bySource);
     arsort($byMedium);
+
+    /*
+     * THE CUBE, and then a check that it says what this fixture promised.
+     *
+     * Every facet assertion reads the cube, so a fixture that seeds raw and stops
+     * hands the specs an empty table with no explanation. Building it here is the
+     * same step seed_reporting_fixtures.php ends with, for the same reason.
+     *
+     * The verification is not the fixture describing the query plan -- the thing
+     * this file's header refuses. It is the opposite: the distribution is DECLARED
+     * in DISTRIBUTION, and this fails loudly if the pipeline did not reproduce it,
+     * rather than letting the specs report a wrong number as the expected one.
+     */
+    $cube = buildFixtureCube($site_id);
+
+    if (! empty($cube['status'])) {
+        fwrite(STDERR, "[reporting_facets_helper] cube not built: {$cube['status']}\n");
+        exit(4);
+    }
+
+    $produced = cubeDistribution($site_id);
+
+    if ($produced !== ['by_source' => $bySource, 'by_medium' => $byMedium]) {
+        fwrite(STDERR, "[reporting_facets_helper] the cube does not match DISTRIBUTION.\n"
+            . '  declared: ' . json_encode(['by_source' => $bySource, 'by_medium' => $byMedium]) . "\n"
+            . '  produced: ' . json_encode($produced) . "\n");
+        exit(5);
+    }
 
     return [
         'site_id'  => $site_id,
@@ -166,23 +250,123 @@ function provision(): array
     ];
 }
 
-/** The dimension row a session's source_id points at. */
-function sourceDim(string $domain)
-{
-    $d = owa_coreAPI::entityFactory('base.source_dim');
-    $pk = $d->generateId($domain);
-    $d->set('id', $pk);
-    $d->set('source_domain', $domain);
-    $d->create();
+/*
+ * sourceDim() stood here and is removed with the session rows it existed for.
+ *
+ * It minted a base.source_dim row so a session's source_id had something to point
+ * at. v2 stores no dimension key: the source is a column ON the cube row, derived
+ * by SourceStep from the tag or the referrer, so there is nothing to join and
+ * nothing to pre-create.
+ */
 
-    return $pk;
+/** Numeric GUID in the tracker's format (BIGINT-safe). */
+function fixtureGuid(): string
+{
+    return ((string) time())
+        . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT)
+        . str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
+}
+
+/** Build the fixture Property's cube over whatever raw rows exist. */
+function buildFixtureCube(string $site_id): array
+{
+    $site = owa_coreAPI::entityFactory('base.site');
+    $site->load($site_id, 'site_id');
+
+    $property_id = (string) $site->get('property_id');
+
+    if (! $property_id) {
+        return ['status' => 'no property on the fixture site'];
+    }
+
+    $db  = db();
+    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+
+    $span = $db->get_row(sprintf(
+        "SELECT MIN(yyyymmdd) AS lo, MAX(yyyymmdd) AS hi FROM %s WHERE site_id = '%s'",
+        $raw, $db->prepare($site_id)));
+
+    if (empty($span['lo'])) {
+        return ['status' => 'no raw rows to build from'];
+    }
+
+    if (! $db->tableExists(\OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id))
+        && ! \OWA\Module\Base\Classes\Cube\Cubes::create($property_id)) {
+        return ['status' => 'could not create the cube'];
+    }
+
+    $builder = new \OWA\Module\Base\Classes\Cube\Builder($property_id);
+    $rows    = 0;
+
+    foreach ($builder->partitions((int) $span['lo'], (int) $span['hi']) as $partition) {
+
+        $result = $builder->rebuild($partition);
+
+        if (empty($result['ok'])) {
+            return ['status' => 'partition ' . $partition['name'] . ' failed to build'];
+        }
+
+        $rows += (int) $result['rows'];
+    }
+
+    return ['property' => $property_id, 'rows_built' => $rows];
+}
+
+/**
+ * Sessions per source and per medium, AS THE CUBE HAS THEM.
+ *
+ * Counted off session_start rows so one session counts once, which is what the
+ * specs assert -- counting every event would multiply by pages per session.
+ */
+function cubeDistribution(string $site_id): array
+{
+    $site = owa_coreAPI::entityFactory('base.site');
+    $site->load($site_id, 'site_id');
+
+    $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor((string) $site->get('property_id'));
+    $db    = db();
+
+    $out = [];
+
+    foreach (['by_source' => 'source', 'by_medium' => 'medium'] as $key => $column) {
+
+        $rows = $db->get_results(sprintf(
+            "SELECT %1\$s AS v, COUNT(DISTINCT session_id) AS c FROM %2\$s"
+            . " WHERE site_id = '%3\$s' AND event_type = 'session_start'"
+            . ' GROUP BY %1\$s ORDER BY c DESC',
+            $column, $table, $db->prepare($site_id)));
+
+        $counts = [];
+
+        foreach ((array) $rows as $r) {
+            $r = (array) $r;
+            $counts[(string) $r['v']] = (int) $r['c'];
+        }
+
+        $out[$key] = $counts;
+    }
+
+    return $out;
 }
 
 function cleanup(): array
 {
     $site_id = md5(FIXTURE_DOMAIN);
 
-    foreach (['owa_session', 'owa_request'] as $table) {
+    /*
+     * The cube first, because dropping it needs the Property the site row carries
+     * and the site row goes below.
+     */
+    $site = owa_coreAPI::entityFactory('base.site');
+    $site->load($site_id, 'site_id');
+
+    if ($site->get('property_id')) {
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor((string) $site->get('property_id'));
+        try { db()->query('DROP TABLE IF EXISTS ' . $table); } catch (\Throwable $e) {}
+    }
+
+    foreach ([owa_coreAPI::entityFactory('base.event_raw')->getTableName(),
+              'owa_session', 'owa_request'] as $table) {
         $db = db();
         $db->deleteFrom($table);
         $db->where('site_id', $site_id);

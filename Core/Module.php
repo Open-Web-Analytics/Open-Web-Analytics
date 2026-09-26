@@ -1417,7 +1417,8 @@ abstract class Module {
     function registerDimension(
             $dim_name, $entity_names, $column, $label, $family,
             $description = '', $foreign_key_name = '',
-            $denormalized = false, $data_type = 'string') {
+            $denormalized = false, $data_type = 'string',
+            array $options = array()) {
 
         if ( ! is_array( $entity_names ) ) {
             $entity_names = array($entity_names);
@@ -1425,7 +1426,7 @@ abstract class Module {
 
         foreach ($entity_names as $entity) {
 
-            $dim = array(
+            $dim = array_merge( $options, array(
                 'family'             => $family,
                 'name'                 => $dim_name,
                 'entity'             => $entity,
@@ -1435,7 +1436,7 @@ abstract class Module {
                 'foreign_key_name'     => $foreign_key_name,
                 'data_type'         => $data_type,
                 'denormalized'         => $denormalized
-            );
+            ) );
 
             if ($denormalized) {
                 $this->denormalizedDimensions[$dim_name][$entity] = $dim;
@@ -1487,10 +1488,44 @@ abstract class Module {
 
         foreach ( (array) $declaration['dimensions'] as $name => $d ) {
 
+            /*
+             * A dimension is a COLUMN or an EXPRESSION, and there are now two
+             * kinds of expression: several columns joined (`parts`) and one
+             * component of a date (`datePart`). What they share is the only
+             * thing the reporting seam needs to know -- the emitted SQL carries
+             * an alias placeholder, so lookupDimension() substitutes into it
+             * instead of writing the alias in front. `expression` says that
+             * once, rather than the seam learning each kind's key.
+             */
+            $options = array();
+
+            if ( isset( $d['parts'] ) ) {
+
+                $options['parts']      = (array) $d['parts'];
+                $options['expression'] = true;
+
+                $column = \OWA\Module\Base\Classes\DimensionExpression::sql(
+                    $options['parts'],
+                    isset( $d['separator'] ) ? $d['separator'] : ' / ' );
+
+            } elseif ( isset( $d['datePart'] ) ) {
+
+                $options['datePart']   = (string) $d['datePart'];
+                $options['expression'] = true;
+
+                $column = \OWA\Module\Base\Classes\DimensionExpression::datePart(
+                    isset( $d['column'] ) ? $d['column'] : 'yyyymmdd',
+                    $options['datePart'] );
+
+            } else {
+
+                $column = $d['column'];
+            }
+
             $this->registerDimension(
                 $name,
                 isset( $d['entity'] ) ? $d['entity'] : $declaration['entity'],
-                $d['column'],
+                $column,
                 $d['label'],
                 $d['family'],
                 isset( $d['description'] ) ? $d['description'] : '',
@@ -1503,7 +1538,8 @@ abstract class Module {
                  * name, which it would have to say.
                  */
                 isset( $d['denormalized'] ) ? (bool) $d['denormalized'] : true,
-                isset( $d['data_type'] ) ? $d['data_type'] : 'string' );
+                isset( $d['data_type'] ) ? $d['data_type'] : 'string',
+                $options );
         }
     }
 

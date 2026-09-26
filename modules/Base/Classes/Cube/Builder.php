@@ -817,13 +817,57 @@ class Builder {
             $columns[] = sprintf( 'FIRST_VALUE(w.%s) OVER session_w AS %s', $column, $alias );
         }
 
+        // The last event OF THE SESSION, in device order -- which is what
+        // is_exit means and what the window's sort now decides.
         $columns[] = 'LAST_VALUE(w.id) OVER session_w AS session_last_id';
-        $columns[] = 'LAST_VALUE(w.ts) OVER session_w AS session_last_ts';
 
+        /*
+         * But the most recent ARRIVAL, which is a different question.
+         *
+         * This feeds the idle-timeout test -- "has this session gone quiet long
+         * enough to call its exit final" -- and that is about wall-clock
+         * recency, not about position. LAST_VALUE was the same thing as MAX
+         * while the sort was on ts; once the sort is on event_seq it is not,
+         * and a session whose latest beacon arrived late would have been judged
+         * closed on an earlier timestamp.
+         */
+        $columns[] = 'MAX(w.ts) OVER session_w AS session_last_ts';
+
+        /*
+         * DEVICE ORDER FIRST, arrival order second.
+         *
+         * `ts` is stamped at edge receipt, so sorting a session on it orders
+         * events by when they ARRIVED rather than by when they happened. A
+         * beacon that lands late -- the unload beacon is the standing case --
+         * sorts after events that occurred after it, which puts is_exit on the
+         * wrong row and mis-orders any funnel spanning it.
+         *
+         * event_seq is counted on the device as each event is built, so it says
+         * what the sort needs and no clock can be wrong about it.
+         *
+         * COALESCE to 0, not to ts -- the two are not comparable scales, and a
+         * fallback that mixed them would sort a microsecond timestamp above
+         * every real position. 0 is below every position (they count from 1),
+         * so:
+         *
+         *   - a session whose rows all carry a sequence sorts by it, with ts
+         *     breaking ties between duplicates from two tabs;
+         *   - a session from a tracker cached from before this has 0 on every
+         *     row, so ts orders it and nothing changes;
+         *   - a session spanning a tracker upgrade puts its un-sequenced rows
+         *     first, in arrival order. Rare, bounded to one session, and the
+         *     alternative -- sorting them last -- would move a real exit onto
+         *     an older event.
+         *
+         * `id` stays the final tiebreak so the sort is deterministic: it is
+         * derived from the event's own inputs, so a rebuild reaches the same
+         * answer as the build before it.
+         */
         return sprintf(
             'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d%s '
           . 'WINDOW session_w AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
-          . 'ORDER BY w.ts, w.id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)',
+          . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, w.id '
+          . 'ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)',
             implode( ', ', $columns ),
             $this->tables['raw'],
             (int) $from,

@@ -61,14 +61,16 @@ final class EventRawIngestionTest extends IngestionTestCase
             'site_id'    => $this->site,
             'visitor_id' => $visitor,
             'session_id' => $session,
-            'page_url'   => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
+            // page_url as well as page_location, because Compat::apply() is
+            // meant to leave page_location alone when a beacon carries both.
+            // landing_url is NOT here: the tracker stopped sending it, and the
+            // fixture claiming a property the registry no longer declares is
+            // how a deleted field goes on looking alive.
+            'page_url'      => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
             'page_location' => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
-            'landing_url'   => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
             'page_title'    => 'V2 A',
-            'HTTP_REFERER'  => 'https://www.example.net/x',
-            'is_new_session'         => true,
+            'HTTP_REFERER'  => 'https://www.example.net/x?q=shoes',
             'is_new_session_start'   => true,
-            'is_new_visitor'         => true,
             'is_new_visitor_created' => true,
             'fsts' => time(),
             'sts'  => time(),
@@ -109,6 +111,46 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->trackForCleanup('base.visitor_acquisition', $visitor, 'visitor_id');
 
         return $byType;
+    }
+
+    /**
+     * An event with no NAME is refused, like one with no visitor.
+     *
+     * The id is derived from five things -- site, visitor, session, ts and the
+     * event name -- and the guard checked four. The column does not catch it
+     * either: event_type is NOT NULL, and '' satisfies that. So every nameless
+     * event of one visitor in one microsecond would derive the SAME id and
+     * collide onto one row, which is what the guard's own comment says it
+     * exists to prevent.
+     *
+     * DRIVEN AT row() RATHER THAN THROUGH A BEACON, deliberately. Dispatch will
+     * not route an event with no type to a handler, so the public path cannot
+     * reach this line -- a test that fired a nameless beacon would pass with
+     * the guard REMOVED, proving only that dispatch drops it. Measured: it did.
+     * This is a backstop against a caller passing an empty name, and the only
+     * honest way to test a backstop is to call it.
+     */
+    public function testAnEventWithNoNameIsRefused(): void
+    {
+        $handler = new \OWA\Module\Base\Handler\EventRawHandlers;
+
+        $method = new ReflectionMethod($handler, 'row');
+        $method->setAccessible(true);
+
+        $event = new \OWA\Module\Base\Classes\Event;
+        $event->setProperties([
+            'site_id'    => $this->site,
+            'visitor_id' => $this->uniqueGuid(),
+            'session_id' => $this->uniqueSessionId(),
+            'ts'         => (int) (microtime(true) * 1000000),
+        ]);
+
+        $this->assertNull($method->invoke($handler, $event, ''),
+            'an event that cannot name itself is not an observation');
+
+        // And the same event WITH a name is accepted, so the assertion above
+        // is not passing because the fixture is malformed.
+        $this->assertNotNull($method->invoke($handler, $event, 'page_view'));
     }
 
     /**
@@ -180,6 +222,160 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A display name is a custom USER property, and reaches the visitor store.
+     *
+     * These two tests asserted it reached `params` as a declared property with
+     * `log_visitor_pii` gating it. Both premises are gone: user_name and
+     * user_email left the release vocabulary to become ordinary custom user
+     * properties (PLAN.html §2.26.1 -- v2 offers site authors event and user
+     * scope and nothing else, and a value describing the PERSON is the second),
+     * and the gate moved to user_id, which is the identity field that still has a
+     * column.
+     *
+     * So the path under test is the `up_` one, which is the same path any other
+     * user property takes -- the point being that a name needs no special case
+     * once it stops being special.
+     */
+    public function testADisplayNameIsAUserProperty(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $this->firePageView([
+            'visitor_id'   => $visitor,
+            'up_user_name' => 'Alice',
+        ]);
+
+        $store = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $store->load($visitor, 'visitor_id');
+
+        $this->assertTrue($store->wasPersisted(), 'no visitor record was written');
+
+        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+
+        $this->assertSame('Alice', $properties['user_name']['v'] ?? null,
+            'a user property must reach the visitor store under its bare name');
+
+        $this->assertArrayHasKey('ts', (array) ($properties['user_name'] ?? array()),
+            'and carry when it was set, which is what makes a temporal value answerable');
+    }
+
+    /**
+     * And the bare name an OLDER tracker sends still lands there.
+     *
+     * setUserName() wrote the visitor cookie and the value rode every beacon as
+     * `user_name`, with no prefix. That name now declares nothing, so without a
+     * bridge admitRequestParams() would drop it -- conf/beacon_compat.php renames
+     * it onto up_user_name, which is the shape the current tracker sends directly.
+     */
+    public function testAnOlderTrackersBareUserNameIsBridged(): void
+    {
+        $visitor = $this->uniqueGuid();
+
+        $this->firePageView([
+            'visitor_id' => $visitor,
+            'user_name'  => 'Bob',
+        ]);
+
+        $store = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $store->load($visitor, 'visitor_id');
+
+        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+
+        $this->assertSame('Bob', $properties['user_name']['v'] ?? null,
+            'the compat rename did not reach the visitor store');
+    }
+
+    /**
+     * log_visitor_pii gates user_id, which is where it belongs.
+     *
+     * user_id is the site's own identifier for a person: it has a column, it
+     * persists, and it outlives a cookie. An install that turns visitor PII off
+     * must be able to stop storing it.
+     *
+     * gateUserId() DELETES the property rather than returning null. A null is not
+     * written back by setTrackerProperties(), so a gate that merely returns
+     * nothing leaves the beacon's value on the event for the row builder to read
+     * -- which is exactly how the old user_name gate failed.
+     */
+    public function testThePiiGateStopsUserIdBeingStored(): void
+    {
+        $before = owa_coreAPI::getSetting('base', 'log_visitor_pii');
+
+        $with = $this->firePageView(['user_id' => 'person-42'])['page_view'];
+
+        $this->assertSame('person-42', $with['user_id'],
+            'with PII logging on, user_id is stored');
+
+        owa_coreAPI::setSetting('base', 'log_visitor_pii', false);
+
+        try {
+            $without = $this->firePageView(['user_id' => 'person-42'])['page_view'];
+
+            $this->assertNull($without['user_id'],
+                'with PII logging off, user_id must not be stored');
+
+        } finally {
+            owa_coreAPI::setSetting('base', 'log_visitor_pii', $before);
+        }
+    }
+
+    /**
+     * The referrer is read for its host and its query, and edited no further.
+     *
+     * The host is what the cube pass classifies source and medium from, so it is
+     * the reading that has to be there. Beyond that the URL is SOMEBODY ELSE'S,
+     * and canonicalising it against this site's default page or filtering it
+     * against this site's parameter list would be a category error -- their
+     * ?q=shoes is the search term, not plumbing to strip.
+     */
+    public function testTheReferrerIsReadForItsHostAndQuery(): void
+    {
+        $row = $this->firePageView()['page_view'];
+
+        $this->assertSame('https://www.example.net/x?q=shoes', $row['referer_url'],
+            'the referrer is stored exactly as the browser sent it');
+
+        $this->assertSame('www.example.net', $row['referer_host']);
+        $this->assertSame('q=shoes', $row['referer_query'],
+            'their parameter survives -- the dropped list is this site\'s, not theirs');
+    }
+
+    /**
+     * An off-site click's target host, so outbound is a comparison rather than a
+     * string test.
+     *
+     * target_host is derived AFTER makeUrlCanonical() has been over target_url,
+     * which the property scopes settle: target_url is client-set and target_host
+     * is event-set, so the filter has run by the time the host is read. The two
+     * therefore cannot disagree about which URL they describe.
+     */
+    public function testAClickReadsItsTargetHost(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('dom.click', [
+            'site_id'       => $this->site,
+            'visitor_id'    => $visitor,
+            'session_id'    => $session,
+            'page_url'      => 'https://owa-test-site/v2/a',
+            'page_location' => 'https://owa-test-site/v2/a',
+            'target_url'    => 'https://shop.example.org/cart?sku=9',
+            'fsts'          => time(),
+            'sts'           => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['click'] ?? null;
+
+        $this->assertNotNull($row, 'dom.click stores a row named click');
+
+        $this->assertSame('shop.example.org', $row['target_host']);
+        $this->assertSame('owa-test-site', $row['host'],
+            'and the page host is the page\'s, not the target\'s');
+    }
+
+    /**
      * The path collapses, so one page is one row in a page report.
      *
      * /store, /store/ and /store/index.html are the case v1 handles and v2 did
@@ -241,17 +437,8 @@ final class EventRawIngestionTest extends IngestionTestCase
     {
         $row = $this->firePageView()['page_view'];
 
-        $this->assertNull($row['clock_offset_usec']);
         $this->assertNull($row['engagement_msec']);
         $this->assertNull($row['scroll_depth']);
-    }
-
-    public function testClockSkewIsRecordedWhenTheBeaconCarriesAClientClock(): void
-    {
-        $rows = $this->firePageView(['client_ts_usec' => 1000000]);
-
-        $this->assertGreaterThan(0, (int) $rows['page_view']['clock_offset_usec'],
-            'Server receipt minus a 1970 client clock is a large positive offset.');
     }
 
     /**
@@ -283,7 +470,8 @@ final class EventRawIngestionTest extends IngestionTestCase
             (int) $rows['page_view']['visitor_id']));
 
         $this->assertSame('spring', $row['acq_campaign']);
-        $this->assertSame('https://www.example.net/x', $row['acq_referer_url']);
+        $this->assertSame('https://www.example.net/x?q=shoes', $row['acq_referer_url'],
+            'the acquisition keeps the referrer whole, query included');
         /*
          * Derived from the ROW's own date, not from today's. An earlier test in
          * the suite moves the request container's clock -- which is what
@@ -509,5 +697,154 @@ final class EventRawIngestionTest extends IngestionTestCase
         ]);
 
         $this->assertSame([], $this->rowsFor($this->site, $visitor, $session));
+    }
+
+    /**
+     * A PURCHASE STORES ITS REVENUE, in minor units.
+     *
+     * It stored NULL. row() read a property named `revenue`, which the registry
+     * does not declare and no tracker sends -- the wire name is ct_total, and has
+     * been since 1.x. So every purchase ever ingested by v2 recorded its currency
+     * and no amount, and nothing said so because absence is a legitimate value in
+     * that column.
+     *
+     * 12.50 is the value to test with rather than a round number: the column is
+     * minor units, so the conversion multiplies by 100, and (int) truncation of
+     * the binary float gives 1249 instead of 1250. A round amount would pass
+     * either way.
+     */
+    public function testAPurchaseStoresItsRevenueInMinorUnits(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'    => $this->site,
+            'visitor_id' => $visitor,
+            'session_id' => $session,
+            'page_url'   => 'https://owa-test-site/v2/thanks',
+            'ct_order_id' => 'A-1',
+            'ct_total'    => '12.50',
+            'currency'    => 'USD',
+        ]);
+
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertArrayHasKey('purchase', $rows, 'the purchase was not stored at all');
+
+        $this->assertSame('1250', (string) $rows['purchase']['revenue'],
+            'The purchase stored no revenue. The row reads ct_total -- the name the '
+            . 'registry declares for this event -- not a property called revenue.');
+
+        $this->assertSame('USD', $rows['purchase']['currency'],
+            'minor units without the currency sum different things together');
+    }
+
+    /**
+     * THE REST OF THE TRANSACTION LANDS: three columns and three params.
+     *
+     * It landed nowhere. The per-event param list named `transaction_id, tax,
+     * shipping, gateway, items` and the wire sends `ct_order_id, ct_tax,
+     * ct_shipping, ct_gateway, ct_line_items`, so every lookup missed, `params`
+     * came back NULL, and a NULL params column is indistinguishable from an
+     * event that carried none.
+     *
+     * Tax and shipping are COLUMNS because each is a summed metric and a metric
+     * needs a column to sum; transaction_id is a column because it is what makes
+     * a purchase countable once. The gateway and the order source are labels
+     * nobody adds up, so they are params -- under the names a report reaches,
+     * without 1.x's ct_ prefix.
+     */
+    public function testAPurchaseStoresItsOrderTaxAndShipping(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'    => $this->site,
+            'visitor_id' => $visitor,
+            'session_id' => $session,
+            'page_url'   => 'https://owa-test-site/v2/thanks',
+            'ct_order_id'      => 'ORD-1234',
+            'ct_total'         => '25.00',
+            'ct_tax'           => '2.50',
+            'ct_shipping'      => '4.99',
+            'ct_gateway'       => 'stripe',
+            'ct_order_source'  => 'web',
+            'currency'         => 'USD',
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['purchase'] ?? null;
+
+        $this->assertNotNull($row, 'the purchase was not stored at all');
+
+        $this->assertSame('ORD-1234', $row['transaction_id']);
+        $this->assertSame('250', (string) $row['tax'], 'tax is minor units');
+        $this->assertSame('499', (string) $row['shipping'], 'shipping is minor units');
+
+        $params = json_decode((string) $row['params'], true);
+
+        $this->assertIsArray($params, 'params did not arrive as JSON: ' . var_export($row['params'], true));
+
+        $this->assertSame('stripe', $params['gateway'] ?? null,
+            'the gateway is reached as params.gateway, without the ct_ prefix');
+        $this->assertSame('web', $params['order_source'] ?? null);
+
+        $this->assertArrayNotHasKey('ct_gateway', $params,
+            "1.x's wire prefix must not reach the reporting vocabulary");
+    }
+
+    /**
+     * THE BILLING ADDRESS IS NOT COLLECTED, and the allowlist is what refuses it.
+     *
+     * city, state and country are the SERVER-DERIVED geolocation readings from
+     * the observed IP. A transaction used to send its billing address under those
+     * three names, silently replacing the visitor's location on purchase rows
+     * only. They were then moved to ct_* prefixes, and now they are not declared
+     * at all: nothing reports on a billing address and GA carries no equivalent.
+     */
+    public function testTheBillingAddressIsRefused(): void
+    {
+        $admitted = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams([
+            'ct_city'    => 'Boston',
+            'ct_state'   => 'MA',
+            'ct_country' => 'US',
+            'ct_total'   => '10.00',
+        ]);
+
+        $this->assertSame(['ct_total' => '10.00'], $admitted,
+            'a name the registry does not declare must not reach the event');
+    }
+
+    /**
+     * A purchase that sent NO total stores NULL, not 0.
+     *
+     * The two have to be distinguishable: 0 is a free order, NULL is a store
+     * that did not tell us. Asserted for the ABSENT case because that is the one
+     * the pipeline can still express -- ct_total is declared with data_type
+     * integer, and that applies `$var + 0`, so a total of 'free' has already
+     * become 0 before the row is built. The conversion's own not-a-number branch
+     * is therefore unreachable from the wire, and 0 in this column can mean
+     * either a free order or a garbled one.
+     */
+    public function testAPurchaseWithNoTotalStoresNullNotZero(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'    => $this->site,
+            'visitor_id' => $visitor,
+            'session_id' => $session,
+            'page_url'   => 'https://owa-test-site/v2/thanks',
+            'ct_order_id' => 'A-2',
+            'currency'    => 'USD',
+        ]);
+
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertArrayHasKey('purchase', $rows);
+
+        $this->assertNull($rows['purchase']['revenue']);
     }
 }

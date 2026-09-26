@@ -1,27 +1,36 @@
 // @ts-check
 /**
- * The click and action reports, drawn from clicks and actions that were
- * actually recorded.
+ * The click reports, drawn from clicks that were actually recorded.
  *
  * WHAT THIS COVERS THAT NOTHING DID
  *
- * Until the fixture grew clicks and actions, these reports had no data to draw
- * and no test that looked at them.
+ * Until the fixture grew clicks, these reports had no data to draw and no test
+ * that looked at them.
  *
  * The heatmap was NOT in the same position, and it is worth being exact about
  * that: overlay_e2e_helper.php seeds clicks and overlay-cross-origin.spec.js
  * asserts the overlay's own query comes back non-empty. That path was covered.
- * What was not covered was every OTHER way these clicks are counted -- by
- * element, by page, by tag, by class -- and the action metrics entirely.
- *
- * The arithmetic lives in ClickAndActionMetricsTest, which asks the reporting
- * stack for these metrics by name against its own site. This file is about the
- * other half: that the REPORTS put those numbers on a screen.
+ * What was not was every OTHER way these clicks are counted -- by element, by
+ * page, by tag, by class.
  *
  * The fixture is asymmetric on purpose -- 6 clicks, 5 on one element, 4 on one
- * page, 3 at one coordinate, and three action metrics that must answer 4, 2 and
- * 22 -- so an assertion cannot pass by landing on a number that is right for
- * another reason.
+ * page, 3 at one coordinate -- so an assertion cannot pass by landing on a
+ * number that is right for another reason.
+ *
+ * THE ACTION REPORTS WERE HERE AND ARE REMOVED, not ported. 1.x reported actions
+ * over owa_action_fact with actionName, actionLabel and actionGroup dimensions
+ * and an `actions` metric; v2 has none of those and should have none. A tracked
+ * action is a `custom_event` row like any other event, separated from a page view
+ * by event_type, so it is counted by the Events report grouping on eventName --
+ * and an action's own name, label and group ride `params`, which ARE the custom
+ * dimensions. These two tests opened reportId 'action-tracking', which no longer
+ * exists, and their arithmetic cited ClickAndActionMetricsTest, which does not
+ * either.
+ *
+ * Every report here is ALSO now constrained on eventName==click. Without it a
+ * grid grouping by domElementId folds every page view, marker and purchase into
+ * one bucket at NULL, and eventCount for that bucket is every other event on the
+ * site.
  */
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openConfiguredReport } = require('./fixtures');
@@ -107,62 +116,5 @@ test.describe('the click reports draw recorded clicks', () => {
         const body = (await page.locator('body').textContent()).replace(/\s+/g, ' ');
 
         expect(body).toContain(`There were ${FIXTURE.clicks.byPage['/pricing']} dom clicks`);
-    });
-});
-
-test.describe('the action reports draw recorded actions', () => {
-
-    test.beforeEach(async ({ page }) => {
-        await login(page);
-    });
-
-    /**
-     * The three action metrics answer three different questions, and the report
-     * shows all three: 4 actions, 2 distinct names, 22 of value.
-     *
-     * That they DISAGREE is the assertion. A report that showed 4, 4 and 4
-     * would look perfectly reasonable and would mean two of the three metrics
-     * were answering someone else's question.
-     */
-    test('the Actions report shows counts, unique names and value', async ({ page }) => {
-        await openConfiguredReport(page, { reportId: 'action-tracking' });
-
-        await expect(page.locator('.owa_reportSectionContent').first())
-            .toBeVisible({ timeout: 20_000 });
-
-        const body = await page.locator('body').textContent();
-
-        expect(body, 'the action names are missing').toContain('submit');
-        expect(body, 'the action groups are missing').toContain('signup');
-
-        /*
-         * The value total. 22 is the only one of the three numbers that cannot
-         * arise from a miscount of the other two, which is why it is the one
-         * asserted exactly.
-         */
-        expect(body).toContain(String(FIXTURE.actions.value));
-    });
-
-    /** Grouped by group: signup 3, commerce 1 -- the same four, split. */
-    test('actions group by their action group', async ({ page }) => {
-        await openConfiguredReport(page, { reportId: 'action-groups' });
-
-        await expect(page.locator('.ui-jqgrid').first()).toBeVisible({ timeout: 20_000 });
-
-        const rows = page.locator('tr.jqgrow');
-        await expect(rows.first()).toBeVisible({ timeout: 20_000 });
-
-        const text = (await rows.allTextContents()).join(' | ');
-
-        for (const group of Object.keys(FIXTURE.actions.byGroup)) {
-            expect(text, `the ${group} group is missing from the grid`).toContain(group);
-        }
-
-        /*
-         * LOWERCASE, because the handler normalises on the way in. Seeded as
-         * 'Signup'; a capitalised row would mean two spellings of one group
-         * become two rows.
-         */
-        expect(text).not.toContain('Signup');
     });
 });

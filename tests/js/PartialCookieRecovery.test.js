@@ -114,9 +114,9 @@ describe('one OWA cookie cleared but not the other', () => {
         // The point of the whole file. Visitor identity comes from 'v' and must
         // not be re-minted because 's' is missing.
         expect(beacon.visitor_id).toBe(VISITOR_VID);
-        expect(beacon.is_new_visitor).toBeFalsy();
+        expect(beacon.is_new_visitor_created).toBeFalsy();
         // ...while the session correctly starts fresh.
-        expect(beacon.is_new_session).toBe(true);
+        expect(beacon.is_new_session_start).toBe(true);
         expect(beacon.session_id).toBeTruthy();
         expect(beacon.session_id).not.toBe(SESSION_SID);
     });
@@ -128,11 +128,11 @@ describe('one OWA cookie cleared but not the other', () => {
 
         // A visitor who cannot be identified is genuinely a new visitor -- there
         // is nothing to recover them from, and this is the honest answer.
-        expect(beacon.is_new_visitor).toBe(true);
+        expect(beacon.is_new_visitor_created).toBe(true);
         expect(beacon.visitor_id).toBeTruthy();
         // But the session the server already knows about survives intact.
         expect(beacon.session_id).toBe(SESSION_SID);
-        expect(beacon.is_new_session).toBeFalsy();
+        expect(beacon.is_new_session_start).toBeFalsy();
     });
 
     /*
@@ -150,7 +150,7 @@ describe('one OWA cookie cleared but not the other', () => {
 
         const beacon = pageView(newTracker());
 
-        expect(beacon.is_new_visitor).toBe(true);
-        expect(beacon.is_new_session).toBe(true);
+        expect(beacon.is_new_visitor_created).toBe(true);
+        expect(beacon.is_new_session_start).toBe(true);
     });
 });

@@ -468,7 +468,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
          * console line to say why.
          */
         const refused = await page.evaluate(
-            () => window.siteTrend.areaChart.changeMetric('visits'));
+            () => window.siteTrend.areaChart.changeMetric('sessions'));
 
         expect(refused).toBe(false);
 

@@ -49,6 +49,17 @@ final class CubeBuildTest extends TestCase
     const VISITOR_LONG_HOST = 7771000000000006;
     const VISITOR_SEARCHER  = 7771000000000007;
     const VISITOR_TAGGED_SEARCH = 7771000000000008;
+    /** Its events arrive in the wrong order; event_seq says the right one. */
+    const VISITOR_LATE_BEACON    = 7771000000000014;
+
+    /** Its newest ARRIVAL is not its last event by sequence. */
+    const VISITOR_OPEN_LATE      = 7771000000000016;
+
+    /** A session spanning a tracker upgrade: some rows sequenced, some not. */
+    const VISITOR_MIXED_SEQ      = 7771000000000015;
+
+    const VISITOR_FIRST_SESSION  = 7771000000000012;
+    const VISITOR_RETURNING      = 7771000000000013;
     const VISITOR_SECOND_PROFILE = 7771000000000010;
     const VISITOR_FOREIGN        = 7771000000000011;
 
@@ -258,7 +269,6 @@ final class CubeBuildTest extends TestCase
             'page_location' => 'https://example.test/two',
             'page_path'     => '/two',
             'page_title'    => 'Two',
-            'prev_event_ts' => $t,
         ]);
 
         $this->seed('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000, [
@@ -335,6 +345,96 @@ final class CubeBuildTest extends TestCase
             'page_location' => 'https://example.test/open',
             'page_path'     => '/open',
             'page_title'    => 'Open',
+        ]);
+
+        // The two new_vs_returning cases that have an answer. Every other row
+        // in this fixture leaves prior_sessions unset, which is the third.
+        $this->seed('page_view', self::VISITOR_FIRST_SESSION, 8881000000000012, $t, [
+            'page_location'  => 'https://example.test/first',
+            'page_path'      => '/first',
+            'page_title'     => 'First',
+            'prior_sessions' => 0,
+        ]);
+
+        $this->seed('page_view', self::VISITOR_RETURNING, 8881000000000013, $t, [
+            'page_location'  => 'https://example.test/again',
+            'page_path'      => '/again',
+            'page_title'     => 'Again',
+            'prior_sessions' => 4,
+        ]);
+
+        /*
+         * A session whose beacons ARRIVE in the wrong order.
+         *
+         * Two page views. /second happened second -- event_seq 2 says so -- but
+         * its beacon was deferred and reached the edge FIRST, so /second holds
+         * the EARLIER ts. Sorting on ts alone therefore makes /first the
+         * session's last event and stamps is_exit on it, which is the bug.
+         */
+        $this->seed('page_view', self::VISITOR_LATE_BEACON, 8881000000000014, $t, [
+            'page_location' => 'https://example.test/second',
+            'page_path'     => '/second',
+            'page_title'    => 'Second',
+            'event_seq'     => 2,
+        ]);
+
+        $this->seed('page_view', self::VISITOR_LATE_BEACON, 8881000000000014, $t + 30000000, [
+            'page_location' => 'https://example.test/first',
+            'page_path'     => '/first',
+            'page_title'    => 'First',
+            'event_seq'     => 1,
+        ]);
+
+        /*
+         * A session that spans a tracker upgrade: its first beacon went out
+         * before event_seq existed and carries none, the next two carry 1 and
+         * 2. The un-sequenced row must sort FIRST -- it arrived first and
+         * nothing says otherwise -- so the exit is still the highest sequence.
+         * Coalescing a missing sequence to anything ABOVE a real position would
+         * hand the exit to the oldest event in the session.
+         */
+        $this->seed('page_view', self::VISITOR_MIXED_SEQ, 8881000000000015, $t, [
+            'page_location' => 'https://example.test/pre-upgrade',
+            'page_path'     => '/pre-upgrade',
+            'page_title'    => 'Pre upgrade',
+        ]);
+
+        $this->seed('page_view', self::VISITOR_MIXED_SEQ, 8881000000000015, $t + 10000000, [
+            'page_location' => 'https://example.test/mid',
+            'page_path'     => '/mid',
+            'page_title'    => 'Mid',
+            'event_seq'     => 1,
+        ]);
+
+        $this->seed('page_view', self::VISITOR_MIXED_SEQ, 8881000000000015, $t + 20000000, [
+            'page_location' => 'https://example.test/last',
+            'page_path'     => '/last',
+            'page_title'    => 'Last',
+            'event_seq'     => 2,
+        ]);
+
+        /*
+         * Still OPEN, but its last event by sequence is old.
+         *
+         * seq 2 happened long ago; seq 1's beacon was deferred and only just
+         * arrived, so the session's most recent ARRIVAL is inside the idle
+         * window even though its final event is not. The idle test must read
+         * the newest arrival -- MAX(ts) -- and leave the session open. Reading
+         * the ts of the last event BY SEQUENCE would call it closed and stamp
+         * an exit on a session that received a beacon seconds ago.
+         */
+        $this->seed('page_view', self::VISITOR_OPEN_LATE, 8881000000000016, $t, [
+            'page_location' => 'https://example.test/open-late-end',
+            'page_path'     => '/open-late-end',
+            'page_title'    => 'Open late end',
+            'event_seq'     => 2,
+        ]);
+
+        $this->seed('page_view', self::VISITOR_OPEN_LATE, 8881000000000016, $this->t_open, [
+            'page_location' => 'https://example.test/open-late-start',
+            'page_path'     => '/open-late-start',
+            'page_title'    => 'Open late start',
+            'event_seq'     => 1,
         ]);
 
         // The SAME Property's second profile. Its rows belong in this cube.
@@ -675,9 +775,173 @@ final class CubeBuildTest extends TestCase
         $out = $db->get_row(sprintf("SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
             $this->cube(), $db->prepare(self::SITE), $this->yyyymmdd));
 
-        $this->assertSame(10, (int) $in['n']);
+        $this->assertSame(19, (int) $in['n']);
         $this->assertSame((int) $in['n'], (int) $out['n'],
             'A build enriches. It creates nothing and drops nothing.');
+    }
+
+    /**
+     * new_vs_returning is stamped as the LABEL a report groups by.
+     *
+     * Asserted on the stored strings rather than on a flag, because the label
+     * IS the contract: the reporting engine emits `GROUP BY <column>` and
+     * nothing else, and the dimension registry has no slot for value labels --
+     * so anything but a label here cannot be grouped into named buckets at all.
+     * v1 spelled it as two booleans over a nullable tinyint and the dashboard
+     * pie drew two slices both called New.
+     */
+    public function testNewVsReturningIsStampedAsTheLabelAReportGroupsBy(): void
+    {
+        $t = $this->t0;
+
+        $this->assertSame('New',
+            $this->built('page_view', self::VISITOR_FIRST_SESSION, 8881000000000012, $t)['new_vs_returning'],
+            'prior_sessions = 0 is the visitor\'s first session');
+
+        $this->assertSame('Returning',
+            $this->built('page_view', self::VISITOR_RETURNING, 8881000000000013, $t)['new_vs_returning'],
+            'prior_sessions > 0 is any session after it');
+    }
+
+    /**
+     * A row whose prior_sessions never arrived is UNKNOWN, not New.
+     *
+     * ingest writes NULL when the tracker sent nothing numeric for it
+     * (Handler\EventRawHandlers::number()). Reading that as a first visit would
+     * turn a gap in the beacon into a claim about the visitor, and it would do
+     * it silently -- the New bucket would just be bigger. The acquisition
+     * columns answer an unknown with the same sentinel.
+     */
+    public function testAMissingPriorSessionsIsUnknownRatherThanNew(): void
+    {
+        $row = $this->built('page_view', self::VISITOR_DIRECT, 8881000000000003, $this->t0);
+
+        $this->assertSame(\OWA\Module\Base\Classes\V2Event::UNRESOLVED, $row['new_vs_returning'],
+            'NULL prior_sessions is an unknown, and an unknown is the sentinel');
+
+        $this->assertNotSame('New', $row['new_vs_returning']);
+    }
+
+    /**
+     * And the column holds nothing else. Three values, so a GROUP BY has three
+     * buckets and a chart needs no map folding them together.
+     */
+    public function testNewVsReturningHoldsOnlyTheThreeKnownValues(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $found = array();
+
+        foreach ((array) $db->get_results(sprintf(
+                'SELECT DISTINCT new_vs_returning AS v FROM %s', $this->cube())) as $row) {
+
+            $found[] = $row['v'];
+        }
+
+        sort($found);
+
+        $expected = array('New', 'Returning', \OWA\Module\Base\Classes\V2Event::UNRESOLVED);
+        sort($expected);
+
+        $this->assertSame($expected, $found);
+    }
+
+    /**
+     * is_exit follows DEVICE order, not arrival order.
+     *
+     * The fixture's late-beacon session arrives back to front: the event that
+     * happened second reaches the edge first and so carries the earlier `ts`.
+     * Sorting on ts alone calls the wrong event the session's last one.
+     *
+     * This is the whole reason event_seq exists, so it is asserted on the
+     * stored is_exit rather than on the SQL: what matters is which row a report
+     * will count as an exit.
+     */
+    public function testIsExitFollowsDeviceOrderRatherThanArrivalOrder(): void
+    {
+        $t = $this->t0;
+
+        $second = $this->built('page_view', self::VISITOR_LATE_BEACON, 8881000000000014, $t);
+        $first  = $this->built('page_view', self::VISITOR_LATE_BEACON, 8881000000000014, $t + 30000000);
+
+        // Sanity: the fixture really is back to front, or this asserts nothing.
+        $this->assertSame('/second', $second['page_path']);
+        $this->assertSame('/first', $first['page_path']);
+        $this->assertLessThan((int) $first['ts'], (int) $second['ts'],
+            'the later event must hold the EARLIER ts for this to be the case under test');
+
+        $this->assertSame(1, (int) $second['is_exit'],
+            'the event with the highest event_seq is the exit, whatever order it arrived in');
+
+        $this->assertSame(0, (int) $first['is_exit'],
+            'and the one that arrived last is not, despite holding the latest ts');
+    }
+
+    /**
+     * A session with no sequence at all still orders by arrival.
+     *
+     * Every other visitor in this fixture is seeded without event_seq, which is
+     * what a tracker cached from before it sends. Those sessions must behave
+     * exactly as they did -- the COALESCE puts them all at 0 together, so ts
+     * decides.
+     */
+    public function testASessionWithNoSequenceKeepsArrivalOrder(): void
+    {
+        $t = $this->t0;
+
+        $this->assertNull($this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t)['event_seq'],
+            'this session carries no sequence, or it is not the case under test');
+
+        $this->assertSame(1, (int) $this->built('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000)['is_exit'],
+            'the latest arrival is still the exit when nothing says otherwise');
+    }
+
+    /**
+     * A session spanning a tracker upgrade puts its UN-sequenced rows first.
+     *
+     * They arrived first and nothing says otherwise, so 0 is the only safe
+     * floor: a missing sequence treated as ABOVE a real position would make the
+     * oldest event in the session its exit. Bounded to the one session that
+     * spans the upgrade, which is why it needs asserting rather than reasoning
+     * about.
+     */
+    public function testAnUnsequencedRowSortsBelowEverySequencedOne(): void
+    {
+        $t = $this->t0;
+
+        $pre  = $this->built('page_view', self::VISITOR_MIXED_SEQ, 8881000000000015, $t);
+        $last = $this->built('page_view', self::VISITOR_MIXED_SEQ, 8881000000000015, $t + 20000000);
+
+        $this->assertNull($pre['event_seq'], 'the pre-upgrade row must carry no sequence');
+        $this->assertSame(2, (int) $last['event_seq']);
+
+        $this->assertSame(1, (int) $last['is_exit'],
+            'the highest sequence is the exit');
+
+        $this->assertSame(0, (int) $pre['is_exit'],
+            'a row with NO sequence must not outrank one that has it');
+    }
+
+    /**
+     * The idle test reads the newest ARRIVAL, not the last event by sequence.
+     *
+     * Two different questions, and they stopped having the same answer the
+     * moment the window's sort moved off ts. "Which event is last" is device
+     * order; "has this session gone quiet" is wall-clock recency. This session
+     * ends (by sequence) on an old event while its most recent beacon landed
+     * seconds ago -- so it is still open, and nothing in it is an exit yet.
+     */
+    public function testAnOpenSessionIsJudgedOnItsNewestArrival(): void
+    {
+        $end = $this->built('page_view', self::VISITOR_OPEN_LATE, 8881000000000016, $this->t0);
+
+        $this->assertSame(2, (int) $end['event_seq'],
+            'this is the session\'s last event by sequence, or the case is not set up');
+
+        $this->assertSame(0, (int) $end['is_exit'],
+            'the session received a beacon seconds ago, so its exit is not settled -- '
+          . 'reading the last-by-sequence timestamp instead of the newest arrival '
+          . 'would close it early');
     }
 
     public function testTheSessionsTagsAreStampedOnEveryRowOfIt(): void
@@ -937,21 +1201,6 @@ final class CubeBuildTest extends TestCase
         $row = $this->built('page_view', self::VISITOR_OPEN, 8881000000000004, $this->t_open);
 
         $this->assertSame(0, (int) $row['is_exit']);
-    }
-
-    public function testPrevEventTsIsCopiedFromRawRatherThanDerived(): void
-    {
-        // It is an observation now, carried on the beacon and corrected to
-        // server time at ingest -- a build copies it like any raw column. The
-        // second window function it used to need cost 128 of 195 seconds at a
-        // million rows, for this one value.
-        $t = $this->t0;
-
-        $first  = $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t);
-        $second = $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t + 60000000);
-
-        $this->assertNull($first['prev_event_ts'], 'nothing was carried on the first event');
-        $this->assertSame($t, (int) $second['prev_event_ts']);
     }
 
     public function testBuiltAtIsStampedAndConstantWithinThePartition(): void

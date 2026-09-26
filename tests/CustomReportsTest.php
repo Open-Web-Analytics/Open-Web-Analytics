@@ -64,13 +64,13 @@ final class CustomReportsTest extends TestCase
     {
         return array(
             'title'   => 'A Custom Report',
-            'metrics' => 'visits,uniqueVisitors',
+            'metrics' => 'sessions,totalUsers',
             'widgets' => array(
                 array(
                     'type'        => 'trend',
                     'id'          => 'trend',
                     'container'   => 'trend-chart',
-                    'chartMetric' => 'visits',
+                    'chartMetric' => 'sessions',
                     'query'       => array('dimensions' => 'date', 'sort' => 'date'),
                 ),
                 array(
@@ -152,7 +152,7 @@ final class CustomReportsTest extends TestCase
                 'notASort',
             ),
             'unknown name in the report metric set' => array(
-                function (array &$d) { $d['metrics'] = 'visits,notAMetric'; },
+                function (array &$d) { $d['metrics'] = 'sessions,notAMetric'; },
                 'notAMetric',
             ),
             'one bad name among good ones' => array(
@@ -193,8 +193,8 @@ final class CustomReportsTest extends TestCase
                 'type'        => $type,
                 'id'          => 'w',
                 'container'   => 'w',
-                'chartMetric' => 'visits',
-                'query'       => array('metrics' => 'visits', 'dimensions' => 'date'),
+                'chartMetric' => 'sessions',
+                'query'       => array('metrics' => 'sessions', 'dimensions' => 'date'),
             ));
 
             $this->assertSame('', CustomReports::validate($definition),
@@ -246,17 +246,59 @@ final class CustomReportsTest extends TestCase
          * The guard still has work to do, so it is exercised with a set that
          * genuinely has no common table.
          */
-        $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'visits,feedRequests';
+        /*
+         * THE SECOND TABLE IS BUILT, not borrowed.
+         *
+         * `sessions,feedRequests` was the example, and feedRequests is gone
+         * with the v1 vocabulary -- so the check now fails with "not a known
+         * metric", a different refusal that would let this test pass while the
+         * guard it names did nothing. Every metric v2 declares lives on the
+         * cube, so there is no longer a pair in the shipped vocabulary that
+         * shares no table.
+         *
+         * The guard still has work to do -- summary tables are coming, and
+         * ResultSetManager picks a table per summary level for exactly that
+         * reason -- so the condition is created rather than looked for.
+         */
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $restore = $service->metrics;
 
-        $error = CustomReports::validate($definition);
+        $service->metrics['probeOnAnotherTable'] = array( array(
+            'name'   => 'probeOnAnotherTable',
+            'class'  => 'base.configurableMetric',
+            'params' => array(
+                'name'        => 'probeOnAnotherTable',
+                'label'       => 'Probe',
+                'description' => '',
+                'group'       => 'Test',
+                'entity'      => 'base.session',
+                'metric_type' => 'count',
+                'data_type'   => 'integer',
+                'column'      => 'id',
+            ),
+            'label'       => 'Probe',
+            'description' => '',
+            'group'       => 'Test',
+        ) );
 
-        $this->assertNotSame('', $error, 'visits and feed requests share no table');
+        try {
+            $definition = $this->definition();
+            $definition['widgets'][1]['query']['metrics'] = 'sessions,probeOnAnotherTable';
 
-        // BOTH SIDES named: which field broke it, and what it clashed with.
-        // Listing everything asked for tells an author nothing to act on.
-        $this->assertStringContainsString('feedRequests', $error);
-        $this->assertStringContainsString('visits', $error);
+            $error = CustomReports::validate($definition);
+
+            $this->assertNotSame('', $error,
+                'a cube metric and one on another table share no table');
+
+            // BOTH SIDES named: which field broke it, and what it clashed with.
+            // Listing everything asked for tells an author nothing to act on.
+            $this->assertStringContainsString('probeOnAnotherTable', $error);
+            $this->assertStringContainsString('sessions', $error);
+        } finally {
+            // The registry is a singleton; a probe left in it leaks into every
+            // later test in the run.
+            $service->metrics = $restore;
+        }
     }
 
     /**
@@ -266,7 +308,7 @@ final class CustomReportsTest extends TestCase
     public function testACombinationV1CouldNotServeIsNowAnswerable(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,domClicks';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,goalConversions';
 
         $this->assertSame('', CustomReports::validate($definition),
             'the cube carries sessions, visitors and clicks, so one table serves all three');
@@ -274,7 +316,7 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $this->assertSame(array('base.event'),
-            $rsm->compatibleEntities(array('visits', 'uniqueVisitors', 'domClicks'), array()),
+            $rsm->compatibleEntities(array('sessions', 'totalUsers', 'goalConversions'), array()),
             'and it is the cube that serves it');
     }
 
@@ -282,7 +324,7 @@ final class CustomReportsTest extends TestCase
     public function testMetricsSharingAFactTableAreAccepted(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,pageViews';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews';
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -296,24 +338,22 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         /*
-         * pagePath is on the request but not the session, so it decides which
-         * table answers -- it does not make the query impossible. The cube
-         * carries both, so it qualifies too: the assertion is what is IN the
-         * set, not that the set has one member, because the set grows as the
-         * cube takes over the vocabulary.
+         * ONE TABLE ANSWERS NOW, and the reduction still runs.
+         *
+         * base.request used to qualify alongside the cube -- v1 registered
+         * sessions and pagePath against it. With one vocabulary the set has one
+         * member, so what is asserted is that the reduction REACHES the
+         * dimension and does not empty on a legitimate pairing.
          */
-        $entities = $rsm->compatibleEntities(array('visits'), array('pagePath'));
+        $entities = $rsm->compatibleEntities(array('sessions'), array('pagePath'));
 
-        $this->assertContains('base.request', $entities);
-        $this->assertContains('base.event', $entities);
-        $this->assertNotContains('base.session', $entities,
-            'the session has no pagePath, which is the point of the reduction');
+        $this->assertSame(array('base.event'), $entities);
 
         // ...and a dimension no fact table carries leaves nothing.
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $this->assertSame(array(),
-            $rsm->compatibleEntities(array('visits'), array('notARealDimension')));
+            $rsm->compatibleEntities(array('sessions'), array('notARealDimension')));
     }
 
     /** The offender is the field that emptied the set, not the whole list. */
@@ -322,24 +362,49 @@ final class CustomReportsTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         /*
-         * `domClicks` was the offender here until the cube carried it beside
-         * visits. A set that still has no common table exercises the same
-         * reporting: it is the LAST name added that emptied the set, and the
-         * message names what it clashed with.
+         * THE CLASH IS BUILT. Every metric v2 declares lives on the cube, so
+         * the shipped vocabulary no longer contains a pair that clashes --
+         * looking for one would make this pass on an empty search rather than
+         * on the reporting it names.
          */
-        $clash = $rsm->firstIncompatible(array('visits', 'uniqueVisitors', 'feedRequests'));
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $restore = $service->metrics;
 
-        $this->assertNotNull($clash);
-        $this->assertSame('feedRequests', $clash['name'], 'the LAST one added is what broke it');
-        $this->assertSame('metric', $clash['kind']);
-        $this->assertContains('visits', $clash['with']);
+        $service->metrics['probeOnAnotherTable'] = array( array(
+            'name'   => 'probeOnAnotherTable',
+            'class'  => 'base.configurableMetric',
+            'params' => array(
+                'name'        => 'probeOnAnotherTable',
+                'label'       => 'Probe',
+                'description' => '',
+                'group'       => 'Test',
+                'entity'      => 'base.session',
+                'metric_type' => 'count',
+                'data_type'   => 'integer',
+                'column'      => 'id',
+            ),
+            'label' => 'Probe', 'description' => '', 'group' => 'Test',
+        ) );
+
+        try {
+            $clash = $rsm->firstIncompatible(
+                array('sessions', 'totalUsers', 'probeOnAnotherTable'));
+
+            $this->assertNotNull($clash);
+            $this->assertSame('probeOnAnotherTable', $clash['name'],
+                'the LAST one added is what broke it');
+            $this->assertSame('metric', $clash['kind']);
+            $this->assertContains('sessions', $clash['with']);
+        } finally {
+            $service->metrics = $restore;
+        }
     }
 
     public function testACompatibleSetHasNoClash(): void
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
-        $this->assertNull($rsm->firstIncompatible(array('visits', 'uniqueVisitors')));
+        $this->assertNull($rsm->firstIncompatible(array('sessions', 'totalUsers')));
     }
 
     // ------------------------------------------------------------------
@@ -359,8 +424,10 @@ final class CustomReportsTest extends TestCase
 
         /*
          * The dimension is dropped for the metric-count cases so that only the
-         * COUNT is under test. Left in, a four-metric set including bounceRate
-         * fails for a different and correct reason -- bounceRate is measured on
+         * COUNT is under test, so every metric in the set has to be one that
+         * exists and shares a table -- otherwise the set fails for a different
+         * and correct reason and says nothing about the limit. bounceRate was
+         * here and has no v2 definition yet; it used to be measured on
          * the session and pagePath lives on the request, so they cannot be
          * grouped together. That is the compatibility rule doing its job, and
          * it would make this test look like a limit failure.
@@ -369,11 +436,11 @@ final class CustomReportsTest extends TestCase
         unset( $definition['widgets'][1]['query']['dimensions'] );
         unset( $definition['widgets'][1]['query']['sort'] );
 
-        $definition['widgets'][1]['query']['metrics'] = 'visits,uniqueVisitors,pageViews,bounceRate';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews,goalConversions';
         $this->assertSame('', CustomReports::validate($definition), 'four metrics is allowed');
 
         $definition['widgets'][1]['query']['metrics'] =
-            'visits,uniqueVisitors,pageViews,bounceRate,visitDuration';
+            'sessions,totalUsers,pageViews,goalConversions,totalEngagementTime';
         $this->assertStringContainsString('4 is the most',
             CustomReports::validate($definition), 'five metrics is refused');
 
@@ -385,7 +452,7 @@ final class CustomReportsTest extends TestCase
         $this->assertSame('', CustomReports::validate($definition), 'four dimensions is allowed');
 
         $definition['widgets'][1]['query']['dimensions'] =
-            'pagePath,browserType,city,country,medium';
+            'pagePath,browserType,city,country,sessionMedium';
         $this->assertStringContainsString('4 is the most',
             CustomReports::validate($definition), 'five dimensions is refused');
     }
@@ -460,7 +527,7 @@ final class CustomReportsTest extends TestCase
     {
         return array(
             'two metrics' => array(
-                array('metrics' => 'pageViews,uniquePageViews', 'dimensions' => 'pagePath'),
+                array('metrics' => 'pageViews,pageViews', 'dimensions' => 'pagePath'),
                 '2 metrics',
             ),
             'no metric' => array(
@@ -486,7 +553,7 @@ final class CustomReportsTest extends TestCase
     {
         $definition = $this->definition();
         $definition['widgets'][1]['query'] = array(
-            'metrics'    => 'pageViews,uniquePageViews',
+            'metrics'    => 'pageViews,pageViews',
             'dimensions' => 'pagePath,pageTitle',
         );
 
@@ -558,28 +625,34 @@ final class CustomReportsTest extends TestCase
      * A card's rows lead to the report that details that dimension.
      *
      * DERIVED from what the destination declares, not from a list kept here. A
-     * detail report says it is read under a constraint -- source-detail names
-     * `{dimension: source, fromParam: source}` -- so the report itself already
-     * knows what a link into it has to carry.
+     * detail report says it is read under a constraint -- dom-clicks names
+     * `{dimension: pagePath, fromParam: pagePath}` -- so the report itself
+     * already knows what a link into it has to carry.
+     *
+     * It read source-detail, then campaign-detail, then ad-detail, as each was
+     * removed. The MECHANISM is what is under test, not the report it happens
+     * to name, so it follows the shape rather than dying with one instance.
+     * dom-clicks is now the ONLY shipped report of that shape: if it goes too,
+     * this needs a fixture report of its own rather than a fourth move.
      */
     public function testLinkTargetsComeFromWhatTheDestinationDeclares(): void
     {
         $targets = CustomReports::linkTargetsByDimension();
 
-        $this->assertArrayHasKey('source', $targets);
+        $this->assertArrayHasKey('pagePath', $targets);
 
-        $ids = array_column($targets['source'], 'id');
+        $ids = array_column($targets['pagePath'], 'id');
 
-        $this->assertContains('source-detail', $ids);
+        $this->assertContains('dom-clicks', $ids);
 
-        $target = $targets['source'][array_search('source-detail', $ids, true)];
+        $target = $targets['pagePath'][array_search('dom-clicks', $ids, true)];
 
-        $this->assertSame('source', $target['param'],
+        $this->assertSame('pagePath', $target['param'],
             'the link carries the parameter the destination is read under');
 
         // The name without the value it is about: the title is
-        // "Source Detail: " and the value is per request.
-        $this->assertSame('Source Detail', $target['label']);
+        // "Dom Clicks: " and the value is per request.
+        $this->assertSame('Dom Clicks', $target['label']);
     }
 
     /**
@@ -843,11 +916,11 @@ final class CustomReportsTest extends TestCase
     public function testAFullReportLinkToADetailReportIsRefused(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['more'] = array( 'reportId' => 'source-detail' );
+        $definition['widgets'][1]['more'] = array( 'reportId' => 'dom-clicks' );
 
         $error = CustomReports::validate($definition);
 
-        $this->assertStringContainsString('source', $error);
+        $this->assertStringContainsString('pagePath', $error);
         $this->assertStringContainsString('Link the rows instead', $error);
     }
 
@@ -911,19 +984,19 @@ final class CustomReportsTest extends TestCase
                 'notADimension==direct', 'not a dimension or a metric'),
 
             'unknown name beside a good one' => array(
-                'medium==organic-search,notADimension==x', 'notADimension'),
+                'sessionMedium==organic-search,notADimension==x', 'notADimension'),
 
             // Parseable, but no value. "A missing value is not a request for
             // everything" -- ResultSetManager's own words.
             'no value' => array(
-                'medium==', 'gives no value'),
+                'sessionMedium==', 'gives no value'),
 
             /*
              * NOT PARSEABLE AT ALL. Each of these contributes no constraint and
              * raises no error, so the widget silently answers unfiltered.
              */
             'no operator' => array(
-                'medium', 'names no operator'),
+                'sessionMedium', 'names no operator'),
 
             'operator but no name' => array(
                 '==direct', 'names nothing to constrain on'),
@@ -957,12 +1030,12 @@ final class CustomReportsTest extends TestCase
     public static function goodConstraintProvider(): array
     {
         return array(
-            'equality'                 => array('medium==organic-search'),
+            'equality'                 => array('sessionMedium==organic-search'),
             'a metric'                 => array('pageViews>5'),
-            'contains, not in the UI'  => array('medium=@news'),
+            'contains, not in the UI'  => array('sessionMedium=@news'),
             'gte, not in the UI'       => array('pageViews>=5'),
-            'two of them'              => array('medium==organic-search,browserType=@Chrome'),
-            'a trailing comma'         => array('medium==organic-search,'),
+            'two of them'              => array('sessionMedium==organic-search,browserType=@Chrome'),
+            'a trailing comma'         => array('sessionMedium==organic-search,'),
         );
     }
 
@@ -981,7 +1054,7 @@ final class CustomReportsTest extends TestCase
 
             $definition = $this->definition();
 
-            $definition['widgets'][1]['constraints'] = 'medium' . $operator . 'organic-search';
+            $definition['widgets'][1]['constraints'] = 'sessionMedium' . $operator . 'organic-search';
 
             $this->assertSame('', CustomReports::validate($definition),
                 sprintf('the engine parses "%s", so validation must accept it', $operator));
@@ -1012,7 +1085,7 @@ final class CustomReportsTest extends TestCase
 
         unset($definition['metrics']);
 
-        $definition['widgets'][0]['query']['metrics'] = 'visits';
+        $definition['widgets'][0]['query']['metrics'] = 'sessions';
         $definition['widgets'][1]['query']['metrics'] = '';
 
         $says = CustomReports::validate($definition);
@@ -1034,7 +1107,7 @@ final class CustomReportsTest extends TestCase
 
         unset($definition['metrics']);
 
-        $definition['widgets'][0]['query']['metrics'] = 'visits';
+        $definition['widgets'][0]['query']['metrics'] = 'sessions';
 
         unset($definition['widgets'][1]['query']['metrics']);
 
@@ -1059,7 +1132,7 @@ final class CustomReportsTest extends TestCase
     {
         $definition = $this->definition();
 
-        $this->assertSame('visits,uniqueVisitors', $definition['metrics'],
+        $this->assertSame('sessions,totalUsers', $definition['metrics'],
             'the fixture has to carry a set for this test to be about anything');
         $this->assertArrayNotHasKey('metrics', $definition['widgets'][0]['query'],
             '...and a widget that names none of its own');
@@ -1094,15 +1167,15 @@ final class CustomReportsTest extends TestCase
         $this->assertContains('pie', CustomReports::SINGLE_FIELD_TYPES);
 
         $definition = $this->definition();
-        $definition['metrics'] = 'visits,uniqueVisitors';
+        $definition['metrics'] = 'sessions,totalUsers';
         $definition['widgets'][1] = array(
             'type' => 'pie', 'id' => 'p', 'container' => 'p',
-            'query' => array('dimensions' => 'medium'),
+            'query' => array('dimensions' => 'sessionMedium'),
         );
 
         $this->assertStringContainsString('0 metrics', CustomReports::validate($definition));
 
-        $definition['widgets'][1]['query']['metrics'] = 'visits';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions';
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -1130,7 +1203,7 @@ final class CustomReportsTest extends TestCase
         $this->assertContains('trend-card', CustomReports::OWN_METRIC_TYPES);
 
         $definition = $this->definition();
-        $definition['metrics'] = 'visits,uniqueVisitors';
+        $definition['metrics'] = 'sessions,totalUsers';
         $definition['widgets'][1] = array(
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
             'query' => array('dimensions' => 'date'),
@@ -1141,7 +1214,7 @@ final class CustomReportsTest extends TestCase
         $this->assertStringContainsString('Trend card', $says);
         $this->assertStringContainsString('does not take the report metric set', $says);
 
-        $definition['widgets'][1]['query']['metrics'] = 'visits';
+        $definition['widgets'][1]['query']['metrics'] = 'sessions';
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -1160,8 +1233,8 @@ final class CustomReportsTest extends TestCase
         $definition = $this->definition();
         $definition['widgets'][1] = array(
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
-            'chartMetric' => 'visits',
-            'query' => array('metrics' => 'visits,uniqueVisitors', 'dimensions' => 'date'),
+            'chartMetric' => 'sessions',
+            'query' => array('metrics' => 'sessions,totalUsers', 'dimensions' => 'date'),
         );
 
         $this->assertSame('', CustomReports::validate($definition));
@@ -1183,8 +1256,8 @@ final class CustomReportsTest extends TestCase
         $definition = $this->definition();
         $definition['widgets'][1] = array(
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
-            'chartMetric' => 'visits',
-            'query' => array('metrics' => 'visits', 'dimensions' => 'date,medium'),
+            'chartMetric' => 'sessions',
+            'query' => array('metrics' => 'sessions', 'dimensions' => 'date,sessionMedium'),
         );
 
         $this->assertStringContainsString('Trend card',
@@ -1286,15 +1359,20 @@ final class CustomReportsTest extends TestCase
         $metrics = \OWA\Module\Base\Controller\CustomReportEdit::metricEntities();
 
         $this->assertNotEmpty($metrics);
-        $this->assertContains('base.click', $metrics['domClicks']);
-        $this->assertNotContains('base.click', $metrics['visits']);
+        // Every metric resolves against the cube, so the map is uniform now.
+        // What matters is that the builder is GIVEN one -- a builder working
+        // from a different map than the save check would offer combinations
+        // the save then refuses.
+        $this->assertSame(array('base.event'), $metrics['sessions']);
+        $this->assertSame(array('base.event'), $metrics['pageViews']);
 
         $dimensions = \OWA\Module\Base\Controller\CustomReportEdit::dimensionEntities();
 
         $this->assertNotEmpty($dimensions);
-        $this->assertContains('base.request', $dimensions['pagePath']);
-        $this->assertNotContains('base.session', $dimensions['pagePath'],
-            'pagePath is not on the session, which is why it narrows the choice of table');
+        // One vocabulary, so every dimension maps to the cube. The point of
+        // the assertion is that the builder HAS the map, not that the map is
+        // plural -- it goes plural again when summaries land.
+        $this->assertSame(array('base.event'), $dimensions['pagePath']);
     }
 
     public function testAtMostTenWidgets(): void

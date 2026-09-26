@@ -129,7 +129,7 @@ final class V2EventTest extends TestCase
 
     public function testEventTypeFitsItsColumn(): void
     {
-        foreach (\OWA\Module\Base\Classes\V2Event::TYPE_MAP as $name) {
+        foreach (\OWA\Module\Base\Classes\V2Event::typeMap() as $name) {
             $this->assertLessThanOrEqual(24, strlen($name),
                 'event_type is VARCHAR(24); a longer name would be trimmed and stop matching.');
         }
