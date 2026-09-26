@@ -321,7 +321,33 @@ class Entity {
             return $value;
         }
         
-        return self::storageDefaultFor( $column ) ?? $value;
+        $label = self::storageDefaultFor( $column );
+        
+        if ( $label !== null ) {
+            
+            return $label;
+        }
+        
+        /*
+         * WHITESPACE IS NOT A VALUE, whether or not a label is declared.
+         *
+         * Every other flavour of absence -- null, '', false -- is passed through
+         * to be stored as itself, and a column holding '' or NULL reads as
+         * absence everywhere. '   ' does not: it is three bytes that look like a
+         * value, sort like a value and group as their own row in a report.
+         *
+         * The label used to catch this on the way past, so removing the last
+         * declared label left the one case that has to be normalised with
+         * nothing normalising it. The pipeline still trims before this is
+         * reached; this is the entity's own guard for a caller that hands
+         * setProperties() a value directly.
+         */
+        if ( is_string( $value ) && $value !== '' && trim( $value ) === '' ) {
+            
+            return null;
+        }
+        
+        return $value;
     }
     
     /**

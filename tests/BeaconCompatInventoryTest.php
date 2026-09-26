@@ -241,8 +241,19 @@ final class BeaconCompatInventoryTest extends TestCase
 
                 $this->assertTrue( $property['required'] );
                 $this->assertSame( 'string', $property['data_type'] );
-                $this->assertSame( '(not set)', $property['default_value'],
-                    'An unset slot must read as (not set), not as empty.' );
+
+                /*
+                 * NO STORAGE SENTINEL, and the axes are declared like any other
+                 * entry. It used to carry default_value '(not set)', which only
+                 * ever reached v1's NOT NULL text columns -- a nullable column is
+                 * opted out of the substitution -- while the reporting layer
+                 * renders absence as that same label at read time.
+                 */
+                $this->assertArrayNotHasKey( 'default_value', $property,
+                    'a contributed property must not invent a storage label either' );
+
+                $this->assertSame( 'client', $property['set_by'] );
+                $this->assertSame( array( "cv{$slot}_{$half}" ), $property['from'] );
                 $this->assertContains(
                     'owa_trackingEventHelpers::lowercaseString', $property['callbacks'],
                     "cv{$slot}_{$half} is lowercased so the same variable does not "

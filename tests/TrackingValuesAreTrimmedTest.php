@@ -166,16 +166,25 @@ final class TrackingValuesAreTrimmedTest extends TestCase
          * ...and the column treats it as absence either way. The entity is the
          * last line of defence here: a caller that hands setProperties() a value
          * directly has not been through the pipeline's trim, and a column that
-         * stored '   ' would be neither a value nor the label every other empty
-         * row carries.
+         * stored '   ' would be a value that looks like one and is not.
+         *
+         * ABSENCE IS NULL, not a label. page_title declared '(not set)' as its
+         * default until the sentinels came out of the registry: on the v2 path
+         * that label was never applied to the event and never reached a nullable
+         * column, and the reporting layer renders absence as that same string at
+         * read time. What this asserts is that whitespace does not survive as a
+         * value -- which is the part that matters and is unchanged.
          */
         foreach ( array( '   ', "\t", '', null, false ) as $nothing ) {
 
             $document = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
             $document->setProperties( array( 'page_title' => $nothing ) );
 
-            $this->assertSame( Helpers::ABSENT_VALUE_LABEL, $document->get( 'page_title' ),
-                var_export( $nothing, true ) . ' should store as absence' );
+            $stored = $document->get( 'page_title' );
+
+            $this->assertTrue( $stored === null || $stored === '' || $stored === false,
+                var_export( $nothing, true ) . ' should store as absence, not as '
+                . var_export( $stored, true ) );
         }
     }
 

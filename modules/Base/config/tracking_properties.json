@@ -9,7 +9,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "filter": true,
         "callbacks": [
             "owa_trackingEventHelpers::remoteHostDefault"
@@ -26,7 +25,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "filter": true,
         "callbacks": [
             "owa_trackingEventHelpers::userAgentDefault"
@@ -42,7 +40,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "filter": true,
         "callbacks": [
             "owa_trackingEventHelpers::httpHostDefault"
@@ -58,7 +55,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "filter": true,
         "callbacks": [
             "owa_trackingEventHelpers::languageDefault"
@@ -78,7 +74,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "filter": true,
         "callbacks": [
             "owa_trackingEventHelpers::ipAddressDefault"
@@ -94,7 +89,6 @@
         ],
         "data_type": "integer",
         "required": true,
-        "default_value": "(not set)",
         "filter": false,
         "callbacks": [
             "owa_trackingEventHelpers::timestampDefault"
@@ -110,7 +104,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "filter": false,
         "callbacks": [
             "owa_trackingEventHelpers::microtimeDefault"
@@ -168,7 +161,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "callbacks": [
             "owa_trackingEventHelpers::utfEncodeProperty"
         ]
@@ -317,7 +309,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "callbacks": [
             "owa_trackingEventHelpers::setUserName"
         ],
@@ -333,7 +324,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "callbacks": [
             "owa_trackingEventHelpers::setEmailAddress"
         ],
@@ -1026,7 +1016,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(not set)",
         "callbacks": []
     },
     "browser_type": {
@@ -1053,7 +1042,6 @@
         ],
         "data_type": "string",
         "required": true,
-        "default_value": "(unknown)",
         "callbacks": [
             "owa_trackingEventHelpers::resolveOs"
         ]

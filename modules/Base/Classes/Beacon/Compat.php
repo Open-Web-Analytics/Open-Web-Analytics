@@ -151,11 +151,20 @@ class Compat {
                     continue;
                 }
 
+                /*
+                 * NO STORAGE SENTINEL. It used to declare '(not set)', which
+                 * reached only v1's NOT NULL text columns -- a nullable column
+                 * is opted out of the substitution, so no v2 column ever
+                 * received it, and the reporting layer renders absence as that
+                 * same label at read time.
+                 */
                 $properties[ $key ] = array(
-                    'required'      => true,
-                    'data_type'     => 'string',
-                    'callbacks'     => array( 'owa_trackingEventHelpers::lowercaseString' ),
-                    'default_value' => '(not set)',
+                    'set_by'    => 'client',
+                    'from'      => array( $key ),
+                    'events'    => array( \OWA\Module\Base\Classes\TrackingEventHelpers::EVERY_EVENT ),
+                    'required'  => true,
+                    'data_type' => 'string',
+                    'callbacks' => array( 'owa_trackingEventHelpers::lowercaseString' ),
                 );
             }
         }

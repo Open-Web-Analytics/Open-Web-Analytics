@@ -6,185 +6,124 @@ use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 
 /**
- * "(not set)" is how a v1 column stores absence, not how an event carries it.
+ * NO PROPERTY DECLARES A STORAGE SENTINEL, and this file is what keeps it that
+ * way.
  *
- * The label used to be applied before dispatch, so the literal was the value
- * every reader saw and nothing could tell "no value" from a value that happens
- * to be that string. It is applied at the column now: v1 rows are byte-identical
- * to before -- there is nothing to backfill -- while the event carries absence
- * as absence, which is what v2 needs to read off the same pipeline.
+ * "(not set)" and "(unknown)" were declared as `default_value` on twelve
+ * properties, and on the v2 path they did nothing at all:
+ *
+ *   - "(not set)" was never applied to the event -- setTrackerProperties()
+ *     skips it by name -- and never reached a raw column either, because
+ *     applyStorageDefault() opts out of any NULLABLE column and every v2 column
+ *     is one. Measured on the live table: zero rows carry it, in any column.
+ *   - "(unknown)" WAS applied, to os, and the row builder's text() then mapped
+ *     it straight back to NULL. A value invented at ingest so it could be
+ *     removed before storage.
+ *
+ * Their only live consumer was v1's NOT NULL text columns, which nothing on this
+ * branch writes -- and the reporting layer produces both labels at render time
+ * anyway: ResultSetManager::NOT_SET_LABEL for a row that carried nothing and
+ * UNKNOWN_LABEL for a build that could not resolve one. So the round trip was
+ * ingest inventing a label, storage refusing it, and reporting re-creating it.
+ *
+ * What survives is the distinction the sentinels were confused with: a default
+ * that is a REAL value still belongs on the event.
  */
 final class AbsentValueIsStorageOnlyTest extends TestCase
 {
-    /** The properties that declare the label. */
-    public static function labelled(): array
+    private const SENTINELS = array( '(not set)', '(unknown)' );
+
+    public function testNoPropertyDeclaresAStorageSentinel(): void
     {
-        $out = array();
+        $declared = array();
 
-        foreach ( array_merge( Helpers::requestProperties(),
-                               Helpers::clientProperties(),
-                               Helpers::serverProperties() ) as $name => $definition ) {
+        foreach ( Helpers::allProperties() as $name => $definition ) {
 
-            if ( isset( $definition['default_value'] )
-                 && $definition['default_value'] === Helpers::ABSENT_VALUE_LABEL ) {
+            if ( ! array_key_exists( 'default_value', $definition ) ) {
 
-                $out[ $name ] = array( $name );
+                continue;
+            }
+
+            if ( in_array( $definition['default_value'], self::SENTINELS, true ) ) {
+
+                $declared[] = $name . ' => ' . $definition['default_value'];
             }
         }
 
-        return $out;
+        $this->assertSame( array(), $declared,
+            "These declare a label as their default. A label is what the reporting layer "
+            . "renders for absence; on the event and in a v2 column, absence is absence:\n  "
+            . implode( "\n  ", $declared ) );
+    }
+
+    /** The labels live in the reporting layer, which is where they are produced. */
+    public function testTheLabelsBelongToReadTime(): void
+    {
+        $this->assertSame( '(not set)',
+            \OWA\Module\Base\Classes\ResultSetManager::NOT_SET_LABEL );
+
+        $this->assertSame( '(unknown)',
+            \OWA\Module\Base\Classes\ResultSetManager::UNKNOWN_LABEL );
     }
 
     /**
-     * There are 16 of them; a change to that set should be deliberate.
+     * A v1 text column no longer receives a label, and that is the deliberate
+     * consequence rather than a broken substitution.
      *
-     * It was 26 while the ten cv{n} halves were declared in the config; they
-     * are the compat layer's now, because the tracker emits no cv key. It was
-     * 16 until the dead ingest derivations went -- source, medium, page_uri and
-     * the rest, computed on every beacon and read only by v1 handlers. 13 until
-     * page_url and page_type left the registry with the other compat spellings:
-     * the registry holds what v2 CALLS things, and page_url is a rename now.
+     * Asserted because the two look identical from outside: "we removed the
+     * convention" and "applyStorageDefault stopped working" both show up as a
+     * NULL where a label used to be. The mechanism in Core\Entity is untouched --
+     * it simply has nothing left to apply.
      */
-    public function testTheLabelledSetIsWhatWeThinkItIs(): void
+    public function testAV1TextColumnNoLongerReceivesALabel(): void
     {
-        $this->assertCount( 11, self::labelled() );
+        $session = \OWA\Core\CoreAPI::entityFactory( 'base.session' );
+
+        $session->setProperties( array( 'host' => null, 'user_name' => false ) );
+
+        foreach ( array( 'host', 'user_name' ) as $column ) {
+
+            $this->assertNotSame( Helpers::ABSENT_VALUE_LABEL, $session->get( $column ),
+                "base.session.$column still receives the label, so something still declares it" );
+        }
     }
 
     /**
-     * The pipeline does not write the label onto the event.
+     * A default that is a REAL value still applies on the event, and that is the
+     * distinction the sentinels blurred.
      *
-     * @dataProvider labelled
+     * The two request-scoped flags default false -- which says something -- and
+     * false is only applicable because the apply is guarded by array_key_exists
+     * rather than by truthiness.
      */
-    public function testThePipelineLeavesItAbsent( string $property ): void
+    public function testARealDefaultStillAppliesOnTheEvent(): void
     {
-        $definitions = array_merge( Helpers::requestProperties(),
-                                    Helpers::clientProperties(),
-                                    Helpers::serverProperties() );
+        $definitions = Helpers::requestProperties();
 
-        $teh   = new Helpers();
-        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+        $checked = 0;
 
-        $teh->setTrackerProperties( $event, array( $property => $definitions[ $property ] ) );
+        foreach ( Helpers::allProperties() as $name => $definition ) {
 
-        $this->assertNotSame( Helpers::ABSENT_VALUE_LABEL, $event->get( $property ),
-            "$property arrived on the event carrying the storage label" );
-    }
+            if ( ! array_key_exists( 'default_value', $definition ) ) {
 
-    /** But a v1 text column still receives it, so nothing on disk moves. */
-    public function testATextColumnStillStoresTheLabel(): void
-    {
-        $cases = array(
-            /*
-             * cv1_name was here and is not a case any more. It is a column on
-             * base.session -- a v1 entity whose writers are the v1 event
-             * chain, none of which is registered -- and keeping it meant
-             * Core\Entity reaching into a module's beacon compat layer to
-             * preserve a default on a table nothing populates. The label
-             * behaviour is still covered by the columns beside it.
-             */
-            'base.session'  => array( 'host', 'user_name' ),
-            'base.document' => array( 'page_title' ),
-            /*
-             * full_host left this list with the property. It was a
-             * reverse-DNS name computed on every beacon and read only by v1
-             * handlers, reaching no raw column and no cube pass.
-             */
-            'base.host'     => array( 'host' ),
-        );
-
-        foreach ( $cases as $entity_name => $columns ) {
-
-            $entity = \OWA\Core\CoreAPI::entityFactory( $entity_name );
-
-            // every flavour of absence an event can hand over
-            $entity->setProperties( array(
-                'host' => null, 'full_host' => '', 'cv1_name' => false,
-                'user_name' => false, 'page_title' => false ) );
-
-            foreach ( $columns as $column ) {
-                $this->assertSame( Helpers::ABSENT_VALUE_LABEL, $entity->get( $column ),
-                    "$entity_name.$column should still store the label" );
+                continue;
             }
+
+            $checked++;
+
+            $this->assertSame( 'boolean', $definition['data_type'],
+                "$name declares a default; every remaining one is a boolean flag" );
+
+            $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+
+            ( new Helpers() )->setTrackerProperties( $event, array( $name => $definition ) );
+
+            $this->assertFalse( $event->get( $name ),
+                "$name should carry its own false default" );
         }
-    }
 
-    /**
-     * A numeric column never takes it.
-     *
-     * timestamp declares the label like the rest, but with strict mode off
-     * MySQL would coerce a non-numeric string to 0 without complaint -- the same
-     * silent coercion that once let a city name reach a boolean column.
-     */
-    public function testANumericColumnNeverTakesTheLabel(): void
-    {
-        $request = \OWA\Core\CoreAPI::entityFactory( 'base.request' );
-        $request->setProperties( array( 'timestamp' => false ) );
-
-        $this->assertNotSame( Helpers::ABSENT_VALUE_LABEL, $request->get( 'timestamp' ) );
-    }
-
-    /**
-     * Defaults that are real values still belong to the event.
-     *
-     * os defaults to '(unknown)' -- that says something, rather than standing in
-     * for the lack of a value, so it is still applied before dispatch where every
-     * reader sees it.
-     *
-     * `browser` was the other example and is gone from the registry. It carried
-     * the VERSION, resolved through a browscap the argument-less accessor
-     * memoises per process, and the row builder read it into browser_version
-     * while deviceColumns() computed the same column from the event's own user
-     * agent -- which `$row +=` then discarded. One parse, in the handler, is what
-     * survives.
-     *
-     * medium was the headline example here and is gone: it is not a tracking
-     * property any more. The cube pass resolves it, and MediumStep is where
-     * 'direct' is decided now -- asserted on built rows in CubeBuildTest.
-     */
-    public function testRealDefaultsStillApplyOnTheEvent(): void
-    {
-        $definitions = Helpers::serverProperties();
-
-        $teh   = new Helpers();
-        $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
-
-        // os is resolved from the user agent, which the runner supplies -- so
-        // assert the weaker but still meaningful thing: whatever it ends up with
-        // is a real value, never the storage label and never absence.
-        foreach ( array( 'os' ) as $name ) {
-
-            $teh->setTrackerProperties( $event, array( $name => $definitions[ $name ] ) );
-
-            $this->assertNotSame( Helpers::ABSENT_VALUE_LABEL, $event->get( $name ) );
-            $this->assertNotEmpty( $event->get( $name ),
-                "$name should carry a resolved value or its own '(unknown)' default" );
-        }
-    }
-
-    /**
-     * The lookup does not depend on module registration.
-     *
-     * It first read the registered tracking-property service maps, which are
-     * populated by module registration and came back EMPTY in a CLI context --
-     * so every column would have stored NULL where existing rows hold the label,
-     * and the test suite would have gone on passing. It reads the property
-     * definitions directly instead, which answer the same everywhere.
-     */
-    public function testTheLookupDoesNotDependOnRegisteredMaps(): void
-    {
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $this->assertNotEmpty(
-            array_merge( Helpers::requestProperties(),
-                         Helpers::clientProperties(),
-                         Helpers::serverProperties() ),
-            'the property definitions must be readable without the service maps' );
-
-        $method = new ReflectionMethod( '\OWA\Core\Entity', 'storageDefaultFor' );
-        $method->setAccessible( true );
-
-        $this->assertSame( Helpers::ABSENT_VALUE_LABEL, $method->invoke( null, 'host' ) );
-        $this->assertNull( $method->invoke( null, 'medium' ),
-            'medium declares a real default and must not be treated as a storage label' );
+        $this->assertSame( 2, $checked,
+            'Exactly two properties declare a default now -- the two new-visit flags. '
+            . 'A change to that set should be deliberate.' );
     }
 }
