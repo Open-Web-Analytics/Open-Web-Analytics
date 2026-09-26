@@ -127,7 +127,46 @@ class TrackingEventHelpers {
      * @param string $scope one of request, client, server
      * @return array
      */
-    private static function propertyConfig( $scope ) {
+    /** The three answers to "how does this property's value get set". */
+    const SET_BY = array( 'client', 'request', 'event' );
+
+    /** What an `events` list holds when the property rides every beacon. */
+    const EVERY_EVENT = '*';
+
+    /**
+     * The registry, filtered to one kind of setter.
+     *
+     * THE FILE IS FLAT NOW, and every entry says how its value gets set:
+     *
+     *   client   the tracker sends it, and `from` holds the transport keys. The
+     *            only names a beacon may carry are these, which makes admission
+     *            a property of the registry rather than of a list maintained
+     *            beside it.
+     *   request  the server reads it off the request, and `from` holds the
+     *            $_SERVER keys in the precedence they are tried -- or `clock`.
+     *   event    derived from other properties, and `from` names them.
+     *
+     * ONE `from`, THREE NAMESPACES, and `set_by` says which: a wire key, a
+     * request key, or a property name. It is a SET because several of them
+     * genuinely are: ip_address tries five $_SERVER keys in order, and an event
+     * property can derive from more than one.
+     *
+     * Those three were the file's top-level grouping -- request / client /
+     * server -- which made the answer implicit in an entry's POSITION, and the
+     * position was doing a second job as the dependency order, since a callback
+     * reads whatever is already on the event. `from` states the dependency, so
+     * the two stop being the same fact.
+     *
+     * `column` is the fourth axis: the raw column the value lands in, present
+     * only when it differs from the property name. That relationship was in
+     * three other places -- GoalVocabulary::SOURCE, the row builder's literal,
+     * and the per-event param list -- and the purchase params went missing
+     * because two of them disagreed.
+     *
+     * @param  string $set_by  one of SET_BY
+     * @return array  name => definition
+     */
+    private static function propertyConfig( $set_by ) {
 
         if ( self::$property_config === null ) {
 
@@ -143,24 +182,99 @@ class TrackingEventHelpers {
 
             /* 'note' documents the entry for whoever edits the file; it is not
                part of the definition the pipeline consumes. */
-            foreach ( $config as $name => $properties ) {
+            foreach ( $config as $property => $definition ) {
 
-                foreach ( $properties as $property => $definition ) {
-
-                    unset( $config[ $name ][ $property ]['note'] );
-                }
+                unset( $config[ $property ]['note'] );
             }
 
             self::$property_config = $config;
         }
 
-        if ( ! isset( self::$property_config[ $scope ] ) ) {
+        if ( ! in_array( $set_by, self::SET_BY, true ) ) {
 
             throw new \InvalidArgumentException(
-                "There is no '$scope' scope in the tracking property config." );
+                "There is no '$set_by' setter in the tracking property config." );
         }
 
-        return self::$property_config[ $scope ];
+        $out = array();
+
+        foreach ( self::$property_config as $property => $definition ) {
+
+            if ( ( $definition['set_by'] ?? '' ) === $set_by ) {
+
+                $out[ $property ] = $definition;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Every declaration, whatever sets it. */
+    public static function allProperties() {
+
+        $out = array();
+
+        foreach ( self::SET_BY as $set_by ) {
+
+            $out = array_merge( $out, self::propertyConfig( $set_by ) );
+        }
+
+        return $out;
+    }
+
+    /**
+     * The raw column a property lands in.
+     *
+     * The property's own name unless the entry says otherwise. Declared rather
+     * than inferred, because the two differ for twenty-odd properties and every
+     * place that guessed got at least one of them wrong.
+     *
+     * @param  string $property
+     * @return string
+     */
+    public static function columnFor( $property ) {
+
+        $all = self::allProperties();
+
+        return (string) ( $all[ $property ]['column'] ?? $property );
+    }
+
+    /**
+     * The transport keys a property may arrive under. Empty when it cannot
+     * arrive at all.
+     *
+     * A `client` property's `from` set is the wire; every other kind's names
+     * something the request or the event supplies, and a beacon carrying one of
+     * those names is asserting a value it has no business setting -- its own
+     * city, its own region, its own campaign source. That refusal is now the
+     * absence of a client declaration rather than a denylist beside it.
+     *
+     * @param  string $property
+     * @return string[]
+     */
+    public static function wireKeysFor( $property ) {
+
+        $all = self::allProperties();
+
+        $definition = $all[ $property ] ?? array();
+
+        return ( ( $definition['set_by'] ?? '' ) === 'client' )
+            ? (array) ( $definition['from'] ?? array() )
+            : array();
+    }
+
+    /**
+     * What a property derives from: wire keys, request keys or property names,
+     * according to its `set_by`.
+     *
+     * @param  string $property
+     * @return string[]
+     */
+    public static function sourcesFor( $property ) {
+
+        $all = self::allProperties();
+
+        return (array) ( $all[ $property ]['from'] ?? array() );
     }
 
     /**
@@ -209,22 +323,25 @@ class TrackingEventHelpers {
 
         $out = array();
 
-        foreach ( array( 'request', 'client', 'server' ) as $scope ) {
+        foreach ( self::SET_BY as $scope ) {
 
             foreach ( self::propertyConfig( $scope ) as $name => $definition ) {
 
                 /*
-                 * Absent means every event; a list means only those; an EMPTY
-                 * list means none, which is how a cube-pass reading declares
-                 * that no event carries it.
+                 * `["*"]` is every event, a list is only those, and an EMPTY
+                 * list is none -- which is how a reading that no beacon carries
+                 * declares itself.
                  *
-                 * array_key_exists rather than isset because isset() is false
-                 * for a declared NULL -- `"events": null` would read as absent
-                 * and therefore as every event, the opposite answer. It is NOT
-                 * needed for the empty list: isset([]) is true. That was the
-                 * stated reason here until a mutation showed both spellings
-                 * behaving identically on [], which is the only reason anyone
-                 * looked.
+                 * The star is written out rather than implied by an absent key.
+                 * Absence read as "every event" is how numeric_value, declared
+                 * with a default of 0 and no event list, ended up on every page
+                 * view carrying a param the event never had; a property that
+                 * rides every beacon now says so.
+                 *
+                 * Absence is still tolerated and still means every event, so a
+                 * module shipping its own registry is not broken by the rule --
+                 * but nothing in core relies on it, and the format test refuses
+                 * an entry that omits the key.
                  */
                 if ( ! array_key_exists( 'events', $definition ) ) {
 
@@ -233,7 +350,10 @@ class TrackingEventHelpers {
                     continue;
                 }
 
-                if ( in_array( $event_name, (array) $definition['events'], true ) ) {
+                $events = (array) $definition['events'];
+
+                if ( in_array( self::EVERY_EVENT, $events, true )
+                     || in_array( $event_name, $events, true ) ) {
 
                     $out[ $name ] = true;
                 }
@@ -267,7 +387,7 @@ class TrackingEventHelpers {
 
         $out = array();
 
-        foreach ( array( 'request', 'client', 'server' ) as $scope ) {
+        foreach ( self::SET_BY as $scope ) {
 
             foreach ( self::propertyConfig( $scope ) as $definition ) {
 
@@ -277,6 +397,12 @@ class TrackingEventHelpers {
                 }
 
                 foreach ( (array) $definition['events'] as $name ) {
+
+                    // The star says "every event", so it names none of them.
+                    if ( $name === self::EVERY_EVENT ) {
+
+                        continue;
+                    }
 
                     $out[ $name ] = true;
                 }
@@ -345,7 +471,7 @@ class TrackingEventHelpers {
      */
     public static function serverProperties() {
 
-        return self::propertyConfig( 'server' );
+        return self::propertyConfig( 'event' );
 
     }
 

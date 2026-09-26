@@ -39,15 +39,9 @@ final class BeaconCompatInventoryTest extends TestCase
         $declared = json_decode( (string) file_get_contents(
             OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
 
-        $flat = array();
-
-        foreach ( (array) $declared as $scope => $properties ) {
-
-            foreach ( (array) $properties as $name => $property ) {
-
-                $flat[ $name ] = $property;
-            }
-        }
+        // The file is flat: every entry declares `set_by` rather than sitting in
+        // a group that implied it.
+        $flat = (array) $declared;
 
         return $flat;
     }

@@ -41,22 +41,36 @@ final class TaggedAttributionTest extends TestCase
         return $event;
     }
 
-    public function testTheClaimIsSettableFromTheWire(): void
+    /**
+     * THE CLAIM IS NOT SETTABLE FROM THE WIRE EITHER, and this test asserted the
+     * opposite until the registry could say why.
+     *
+     * A tagged_* value is `set_by: event`, derived `from: ["landing_url"]`, and
+     * carries no wire key -- so the gate refuses the name. What a beacon may
+     * report is the URL it landed on; the tags are read out of that URL by the
+     * server, for the Property's own campaign keys.
+     *
+     * The distinction this file was built on -- a request may state a CLAIM and
+     * not the ANSWER -- survives; it is just drawn one step earlier. A beacon
+     * asserting tagged_source is asserting attribution, and no recorded tracker
+     * has ever sent one: neither wire contract carries any tagged_* field.
+     */
+    public function testTheClaimIsNotSettableFromTheWire(): void
     {
-        $kept = Helpers::rejectServerOwnedParams( array(
+        $admitted = Helpers::admitRequestParams( array(
             'tagged_source'   => 'newsletter',
             'tagged_medium'   => 'email',
             'tagged_campaign' => 'summer',
             'tagged_ad'       => 'creative-a',
-            'tagged_ad_type'  => 'cpc',
             'tagged_terms'    => 'blue widgets',
+            'landing_url'     => 'https://example.test/?owa_source=newsletter',
         ) );
 
         $this->assertSame(
-            array( 'tagged_source', 'tagged_medium', 'tagged_campaign',
-                   'tagged_ad', 'tagged_ad_type', 'tagged_terms' ),
-            array_keys( $kept ),
-            'The tracker must be able to report what the landing URL was tagged with.' );
+            array( 'landing_url' => 'https://example.test/?owa_source=newsletter' ),
+            $admitted,
+            'A beacon may report the URL it landed on. The tags are the server\'s reading '
+            . 'of that URL, so a request asserting one is asserting its own attribution.' );
     }
 
     /**

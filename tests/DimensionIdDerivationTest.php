@@ -91,10 +91,8 @@ final class DimensionIdDerivationTest extends TestCase
         $config = json_decode(
             (string) file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
 
-        $known = array();
-        foreach ( (array) $config as $scope => $properties ) {
-            $known = array_merge( $known, array_keys( (array) $properties ) );
-        }
+        // Flat: the file's keys ARE the property names.
+        $known = array_keys( (array) $config );
 
         /*
          * A BRIDGED NAME IS A REAL NAME. The registry declares what v2 calls

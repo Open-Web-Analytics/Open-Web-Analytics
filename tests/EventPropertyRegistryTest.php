@@ -171,13 +171,15 @@ final class EventPropertyRegistryTest extends TestCase
         static $all = null;
 
         if ($all === null) {
+            /*
+             * FLAT. The file grouped properties by request / client / server,
+             * which made "how does this value get set" an implicit fact about an
+             * entry's position; every entry declares `set_by` now.
+             */
             $declared = json_decode(
                 (string) file_get_contents(OWA_DIR . 'modules/Base/config/tracking_properties.json'), true);
 
-            $all = array_merge(
-                array_keys($declared['request']),
-                array_keys($declared['client']),
-                array_keys($declared['server']));
+            $all = array_keys((array) $declared);
         }
 
         return in_array($name, $all, true);

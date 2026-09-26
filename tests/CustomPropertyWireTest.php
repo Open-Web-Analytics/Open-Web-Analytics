@@ -80,14 +80,30 @@ final class CustomPropertyWireTest extends TestCase
             $name . ' was admitted; the name has to survive becoming a JSON key');
     }
 
-    /** A registered, client-settable property still gets through. */
+    /**
+     * A registered, client-settable property still gets through -- and one the
+     * server derives does not.
+     *
+     * tagged_source was the second example here, on the reasoning that a campaign
+     * tag is the site's to send. It is `set_by: event` now, derived from
+     * landing_url, with no wire key: the tag is the server's reading of a URL the
+     * beacon does report, so admitting the reading would let a request assert its
+     * own attribution. content_group is the replacement -- author-assigned, and
+     * genuinely the client's to state.
+     */
     public function testARegisteredClientPropertyIsAdmitted(): void
     {
-        $kept = Helpers::admitRequestParams(['page_url' => 'http://example.test/', 'tagged_source' => 'news']);
+        $kept = Helpers::admitRequestParams([
+            'page_location' => 'http://example.test/',
+            'content_group' => 'docs',
+            'tagged_source' => 'news',
+        ]);
 
-        $this->assertArrayHasKey('page_url', $kept);
-        $this->assertArrayHasKey('tagged_source', $kept,
-            'a campaign tag is the site\'s to send; only the RESOLVED source is not');
+        $this->assertArrayHasKey('page_location', $kept);
+        $this->assertArrayHasKey('content_group', $kept);
+
+        $this->assertArrayNotHasKey('tagged_source', $kept,
+            'a derived property has no wire key, so the gate refuses the name');
     }
 
     // ---- the type, and the cap -------------------------------------------
