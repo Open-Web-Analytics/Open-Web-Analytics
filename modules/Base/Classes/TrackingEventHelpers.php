@@ -1574,69 +1574,59 @@ class TrackingEventHelpers {
         }
     }
 
+    /*
+     * setUserName() and setEmailAddress() STOOD HERE, and go with the two
+     * properties they resolved.
+     *
+     * user_name and user_email are no longer part of v2's declared vocabulary.
+     * They are ordinary CUSTOM USER PROPERTIES now -- a site sends
+     * up_user_name, it lands in the visitor store's JSON beside every other
+     * user property, and it becomes queryable by being registered. PLAN.html
+     * §2.26.1 is what settles that: v2 offers site authors exactly two scopes,
+     * event and user, and a value describing the PERSON is the second one.
+     *
+     * The temporality that made a column wrong is handled there rather than by a
+     * scope: §2.26.5 stores each user property with when it was SET, so
+     * `cd_<name>_set_ts <= ts` answers "was this already true at this event" --
+     * which is the question a display name needs and a session boundary only
+     * approximates.
+     *
+     * log_owa_user_names GOES WITH THEM. It enabled the fallback that stamped
+     * whoever was logged into OWA onto events of a TRACKED site, which was never
+     * a visitor's identity, and it was read here and nowhere else.
+     *
+     * log_visitor_pii STAYS, and moves to what it should always have gated:
+     * user_id. That is the site's own identifier for a person -- the one field
+     * with a column, the one that persists in the visitor store, and the one that
+     * outlives a cookie, which is what makes it the only honest basis for joining
+     * a person's devices and equally the thing a privacy switch has to be able to
+     * turn off. A custom user property is the site's own decision, made by
+     * choosing to send it; user_id is part of the release vocabulary, so the
+     * install gets a say. See gateUserId().
+     */
+
     /**
-     * THE PII GATE HAS TO DELETE, NOT JUST RETURN NOTHING.
+     * user_id, unless the install has turned visitor PII off.
      *
-     * Both of these return null when log_visitor_pii is off, and that stopped
-     * being enough the moment the two properties became client-settable. A
-     * callback's null does not REMOVE anything: setTrackerProperties() declines
-     * to write it back, so whatever the beacon put on the event is still there,
-     * and params() reads the event. So with PII logging off a supplied name was
-     * stored anyway -- measured, and the reason this comment exists.
+     * DELETES RATHER THAN RETURNING NULL, which is the lesson the two callbacks
+     * above taught on their way out: setTrackerProperties() declines to write a
+     * null back, so whatever the beacon put on the event is still there for the
+     * row builder to read. A gate that returns nothing leaves the value in place.
      *
-     * It could not happen before, for a reason that was never the gate: both were
-     * declared set_by request, which made them server-owned, so
-     * admitRequestParams() dropped them at the endpoint. The refusal was a side
-     * effect of a wrong `set_by`, and correcting that exposed the gate as
-     * incomplete.
-     *
-     * Deleting here rather than at the endpoint because every path passes through
-     * a callback: log.php's allowlist does not see an event built in process by a
-     * queue drain, a fixture or another module.
-     *
-     * @param  string|null $user_name  whatever the beacon supplied, if anything
+     * @param  string|null $user_id
      * @param  object      $event
      * @return string|null
      */
-    static function setUserName( $user_name, $event ) {
+    static function gateUserId( $user_id, $event ) {
 
-        // record and filter personally identifiable info (PII)
         if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 
-            $event->delete( 'user_name' );
+            $event->delete( 'user_id' );
 
             return null;
         }
 
-        // set user name if one does not already exist on event
-        if ( ! $user_name && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
-
-            $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-            $user_name = $cu->user->get( 'user_id' );
-        }
-
-        return $user_name;
-    }
-
-    /** As setUserName(), including why the gate deletes. */
-    static function setEmailAddress ( $email_address, $event ) {
-
-        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
-
-            $event->delete( 'user_email' );
-
-            return null;
-        }
-
-        if ( ! $email_address && \OWA\Core\CoreAPI::getSetting( 'base', 'log_owa_user_names' ) ) {
-
-            $cu = \OWA\Core\CoreAPI::getCurrentUser();
-
-            $email_address = $cu->user->get( 'email_address' );
-        }
-
-        return $email_address;
+        return $user_id;
     }
 
     /**

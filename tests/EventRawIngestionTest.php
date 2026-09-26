@@ -222,58 +222,100 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * A site-supplied user name reaches params, and it could not before.
+     * A display name is a custom USER property, and reaches the visitor store.
      *
-     * user_name was declared set_by REQUEST, from the authenticated OWA session.
-     * That made it an environmental property, and environmental properties are
-     * server-owned -- so admitRequestParams() refused whatever the beacon carried
-     * and the callback then filled it from whoever was logged into OWA, which on
-     * a tracked site is nobody. OWA.setUserName() writes it to the visitor store
-     * and it rides every later beacon, and every one of those values was dropped
-     * at the endpoint.
+     * These two tests asserted it reached `params` as a declared property with
+     * `log_visitor_pii` gating it. Both premises are gone: user_name and
+     * user_email left the release vocabulary to become ordinary custom user
+     * properties (PLAN.html §2.26.1 -- v2 offers site authors event and user
+     * scope and nothing else, and a value describing the PERSON is the second),
+     * and the gate moved to user_id, which is the identity field that still has a
+     * column.
      *
-     * A PARAM rather than a column: PII that nothing groups by.
+     * So the path under test is the `up_` one, which is the same path any other
+     * user property takes -- the point being that a name needs no special case
+     * once it stops being special.
      */
-    public function testASuppliedUserNameReachesParams(): void
+    public function testADisplayNameIsAUserProperty(): void
     {
-        $row = $this->firePageView([ 'user_name' => 'Peter Adams' ])['page_view'];
+        $visitor = $this->uniqueGuid();
 
-        $params = json_decode( (string) $row['params'], true );
+        $this->firePageView([
+            'visitor_id'   => $visitor,
+            'up_user_name' => 'Alice',
+        ]);
 
-        $this->assertIsArray( $params, 'the row carried no params at all' );
+        $store = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $store->load($visitor, 'visitor_id');
 
-        $this->assertSame( 'Peter Adams', $params['user_name'] ?? null,
-            'a user name the beacon supplied must reach params' );
+        $this->assertTrue($store->wasPersisted(), 'no visitor record was written');
 
-        $this->assertArrayNotHasKey( 'user_name', $row,
-            'and it is a param, not a column' );
+        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+
+        $this->assertSame('Alice', $properties['user_name']['v'] ?? null,
+            'a user property must reach the visitor store under its bare name');
+
+        $this->assertArrayHasKey('ts', (array) ($properties['user_name'] ?? array()),
+            'and carry when it was set, which is what makes a temporal value answerable');
     }
 
     /**
-     * And the PII gate still governs it, now that the value can be supplied.
+     * And the bare name an OLDER tracker sends still lands there.
      *
-     * The callback returns nothing at all unless log_visitor_pii is on, which is
-     * what kept an OWA admin's name out of the fact table. Making the property
-     * client-settable widens WHO can offer a value, so the gate has to apply to a
-     * supplied one too -- otherwise turning PII logging off would stop the
-     * fallback and leave the beacon's own claim untouched.
+     * setUserName() wrote the visitor cookie and the value rode every beacon as
+     * `user_name`, with no prefix. That name now declares nothing, so without a
+     * bridge admitRequestParams() would drop it -- conf/beacon_compat.php renames
+     * it onto up_user_name, which is the shape the current tracker sends directly.
      */
-    public function testThePiiGateAppliesToASuppliedName(): void
+    public function testAnOlderTrackersBareUserNameIsBridged(): void
     {
-        $before = owa_coreAPI::getSetting( 'base', 'log_visitor_pii' );
+        $visitor = $this->uniqueGuid();
 
-        owa_coreAPI::setSetting( 'base', 'log_visitor_pii', false );
+        $this->firePageView([
+            'visitor_id' => $visitor,
+            'user_name'  => 'Bob',
+        ]);
+
+        $store = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $store->load($visitor, 'visitor_id');
+
+        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+
+        $this->assertSame('Bob', $properties['user_name']['v'] ?? null,
+            'the compat rename did not reach the visitor store');
+    }
+
+    /**
+     * log_visitor_pii gates user_id, which is where it belongs.
+     *
+     * user_id is the site's own identifier for a person: it has a column, it
+     * persists, and it outlives a cookie. An install that turns visitor PII off
+     * must be able to stop storing it.
+     *
+     * gateUserId() DELETES the property rather than returning null. A null is not
+     * written back by setTrackerProperties(), so a gate that merely returns
+     * nothing leaves the beacon's value on the event for the row builder to read
+     * -- which is exactly how the old user_name gate failed.
+     */
+    public function testThePiiGateStopsUserIdBeingStored(): void
+    {
+        $before = owa_coreAPI::getSetting('base', 'log_visitor_pii');
+
+        $with = $this->firePageView(['user_id' => 'person-42'])['page_view'];
+
+        $this->assertSame('person-42', $with['user_id'],
+            'with PII logging on, user_id is stored');
+
+        owa_coreAPI::setSetting('base', 'log_visitor_pii', false);
 
         try {
-            $row = $this->firePageView([ 'user_name' => 'Peter Adams' ])['page_view'];
+            $without = $this->firePageView(['user_id' => 'person-42'])['page_view'];
 
-            $params = json_decode( (string) $row['params'], true ) ?: array();
-
-            $this->assertArrayNotHasKey( 'user_name', $params,
-                'with PII logging off, a supplied user name must not be stored' );
+            $this->assertNull($without['user_id'],
+                'with PII logging off, user_id must not be stored');
 
         } finally {
-            owa_coreAPI::setSetting( 'base', 'log_visitor_pii', $before );
+            owa_coreAPI::setSetting('base', 'log_visitor_pii', $before);
         }
     }
 

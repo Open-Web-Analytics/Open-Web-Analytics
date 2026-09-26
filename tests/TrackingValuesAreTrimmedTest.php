@@ -72,7 +72,14 @@ final class TrackingValuesAreTrimmedTest extends TestCase
              * from them tests the compat layer, not this one.
              */
             'content group'   => array( 'content_group', '  Docs  ',      'Docs' ),
-            'user name'       => array( 'user_name',  '  Peter Adams  ',  'Peter Adams' ),
+            /*
+             * user_name was here, and it is no longer a declared property: it is a
+             * custom USER property now (PLAN.html §2.26.1), so it arrives as
+             * up_user_name and is trimmed by the tracker before it is sent. An
+             * example drawn from it would test the custom path, not this one --
+             * the same reason cv1_value came out above.
+             */
+            'consent state'   => array( 'consent_state', '  granted  ', 'granted' ),
             'a url'           => array( 'target_url', '  https://x.test/a  ', 'https://x.test/a' ),
         );
     }

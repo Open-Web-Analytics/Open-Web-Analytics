@@ -2800,7 +2800,6 @@ namespace OWA\Module\Base\Classes;
                 'scheduler_enabled'                    => true,
                 'maxCustomVars'                        => 5, //sdk
                 'update_session_user_name'            => true, // updates the session with latest user_name value
-                'log_owa_user_names'                => true,  // logs the OWA user name as the user_name property on events
                 'logo_image_path'                    => 'base/i/owa-logo-100w.png',
                 // Content-derived dimension ids are 63-bit. This flag marks an
                 // installation whose existing ids are the old 32-bit crc32
@@ -2824,11 +2823,21 @@ namespace OWA\Module\Base\Classes;
                  * side is retired at cutover, and a merged list would have to
                  * be untangled then.
                  *
-                 * page_view, click and purchase are NOT here: they arrive under
-                 * their v1 names and Classes\V2Event maps them. Only the names
-                 * that have no v1 spelling need admitting.
+                 * THE RENAMED FOUR ARE HERE NOW. This said "page_view, click and
+                 * purchase are NOT here: they arrive under their v1 names and
+                 * Classes\V2Event maps them", which was true until 4b93b248 made
+                 * the tracker emit v2 names. After it, a real page_view beacon was
+                 * refused by logEvent() -- trackingEventTypes() merges this list
+                 * and page_view was in neither half. The v1 spellings stay in
+                 * tracking_event_types for a tracker cached from before that.
                  */
                 'v2_event_types'                    => [
+                    // renamed from v1
+                    'page_view',
+                    'click',
+                    'purchase',
+                    'custom_event',
+                    // new in v2
                     'user_engagement',
                     'scroll',
                     'file_download',
@@ -2836,7 +2845,6 @@ namespace OWA\Module\Base\Classes;
                     'form_submit',
                     'view_search_results',
                     'exception',
-                    'custom_event',
                 ],
                 'tracking_event_types'              => [
                     'dom.click', 

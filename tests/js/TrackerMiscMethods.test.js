@@ -135,13 +135,22 @@ describe('page-property convenience setters', () => {
         expect(OWA.getState('d', 'page_type')).toBe('article');
     });
 
-    test('setUserName trims and stores it visitor-scoped', () => {
-        // An identified user outlives the page and the session. Note this now
-        // reaches the visitor COOKIE, which a global event property never did.
+    test('setUserName trims and stores it page-scoped, under the up_ prefix', () => {
+        /*
+         * It wrote the visitor COOKIE, on the reasoning that an identified user
+         * outlives the page and the session. A display name is temporal -- it
+         * changes, and a different person signs in on the same browser -- so a
+         * cookie holding it outlives its own meaning.
+         *
+         * The page store is persist:'never', so nothing is written to disk, and
+         * the up_ prefix routes the value to the visitor store at INGEST, where
+         * it is recorded with when it was set.
+         */
         const t = newTracker();
         t.setUserName(' bob ');
 
-        expect(OWA.getState('v', 'user_name')).toBe('bob');
+        expect(OWA.getState('d', 'up_user_name')).toBe('bob');
+        expect(OWA.getState('v', 'user_name')).toBeFalsy();
     });
 
     test('a second tracker on the page reports what the first one was told', () => {
@@ -157,7 +166,9 @@ describe('page-property convenience setters', () => {
 
         expect(event.get('page_title')).toBe('Pricing');
         expect(event.get('page_type')).toBe('landing');
-        expect(event.get('user_name')).toBe('bob');
+        // Prefixed now: user_name is a custom USER property, and the page store
+        // is what keeps it shared across trackers without a cookie.
+        expect(event.get('up_user_name')).toBe('bob');
     });
 
     test('the page store overrides the DOM, which is the base layer', () => {

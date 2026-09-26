@@ -110,7 +110,25 @@ return array(
          */
         array( 'role' => 'wire',   'from' => 'page_url', 'to' => 'page_location' ),
 
-        array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'user_email' ),
+        /*
+         * The two identity fields that became CUSTOM USER PROPERTIES.
+         *
+         * user_name and user_email were declared properties of the release
+         * vocabulary; they are not any more (PLAN.html §2.26.1 -- two scopes, and
+         * a value describing the person is the user one). So a beacon carrying
+         * either under its bare name names nothing, and admitRequestParams()
+         * would drop it: the bare spellings are not registered and carry no `up_`
+         * prefix to be admitted by.
+         *
+         * Renamed onto the prefix instead, which puts them exactly where a site
+         * calling setUserProperty() puts them today. `user_name` is LEGACY rather
+         * than wire: the current tracker's setUserName() routes through
+         * setUserProperty(), so it sends up_user_name and never reaches this.
+         * `email_address` was already legacy -- its rename used to point at the
+         * declared user_email property and now points at the prefix.
+         */
+        array( 'role' => 'legacy', 'from' => 'user_name',     'to' => 'up_user_name' ),
+        array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'up_user_email' ),
 
         /*
          * dsfs -> days_since_first_session and dsps -> days_since_prior_session

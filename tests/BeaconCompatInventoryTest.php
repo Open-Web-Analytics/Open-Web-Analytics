@@ -192,20 +192,82 @@ final class BeaconCompatInventoryTest extends TestCase
     }
 
     /**
-     * Every indexed rename names a property the registry actually declares.
+     * Every indexed rename names something the endpoint will actually admit.
      *
-     * A rename to a property that no longer exists is a bridge to nowhere --
-     * the value arrives, resolves, and is dropped for want of a column.
+     * A rename to a name nothing accepts is a bridge to nowhere -- the value
+     * arrives, resolves, and is dropped.
+     *
+     * TWO KINDS OF TARGET, and the second is new. A declared property is the
+     * original case. The other is a CUSTOM-PREFIX key: user_name and user_email
+     * left the release vocabulary to become custom user properties (PLAN.html
+     * §2.26.1), so their bridges point at up_user_name and up_user_email, which
+     * no registry entry declares and admitRequestParams() admits by prefix.
+     *
+     * Checked against the same two rules the endpoint uses -- the registry, then
+     * CUSTOM_PREFIXES plus CUSTOM_NAME_PATTERN -- rather than a second list here,
+     * so a bridge this test accepts is one the gate accepts.
      */
-    public function testEveryIndexedRenameTargetsALiveProperty(): void
+    public function testEveryIndexedRenameTargetsSomethingAdmissible(): void
     {
         $properties = $this->properties();
 
         foreach ( $this->renames() as $from => $to ) {
 
-            $this->assertArrayHasKey( $to, $properties,
-                $from . ' is bridged to ' . $to . ', which the registry does not declare' );
+            if ( array_key_exists( $to, $properties ) ) {
+
+                continue;
+            }
+
+            $this->assertTrue( $this->isAdmissibleCustomKey( $to ),
+                $from . ' is bridged to ' . $to . ', which is neither a declared '
+                . 'property nor a legal custom-prefix key' );
         }
+    }
+
+    /** The endpoint's own rule for a custom key, asked of it rather than restated. */
+    private function isAdmissibleCustomKey( string $name ): bool
+    {
+        $helpers = \OWA\Module\Base\Classes\TrackingEventHelpers::class;
+
+        foreach ( $helpers::CUSTOM_PREFIXES as $prefix ) {
+
+            if ( strpos( $name, $prefix ) !== 0 ) {
+
+                continue;
+            }
+
+            return (bool) preg_match( $helpers::CUSTOM_NAME_PATTERN,
+                substr( $name, strlen( $prefix ) ) );
+        }
+
+        return false;
+    }
+
+    /**
+     * And a bridge onto the custom namespace really is admitted.
+     *
+     * The rule above is read off the endpoint's constants; this drives the
+     * endpoint itself, so the two cannot agree about a name the gate rejects.
+     */
+    public function testACustomPrefixBridgeIsAdmitted(): void
+    {
+        $bridged = array();
+
+        foreach ( $this->renames() as $from => $to ) {
+
+            if ( ! array_key_exists( $to, $this->properties() ) ) {
+
+                $bridged[ $from ] = 'probe-' . $from;
+            }
+        }
+
+        $this->assertNotEmpty( $bridged,
+            'no rename targets the custom namespace; this test would pass vacuously' );
+
+        $admitted = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams( $bridged );
+
+        $this->assertSame( $bridged, $admitted,
+            'the endpoint refused a name the compat index bridges from' );
     }
 
     /**

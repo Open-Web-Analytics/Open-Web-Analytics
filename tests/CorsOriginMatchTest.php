@@ -65,8 +65,8 @@ final class CorsOriginMatchTest extends TestCase
     public function testTheOriginIsEchoedBackVerbatim(): void
     {
         $this->assertSame(
-            'http://www.peteradamsphoto.com',
-            $this->match('http://www.peteradamsphoto.com', ['http://www.peteradamsphoto.com'])
+            'http://www.alice.example',
+            $this->match('http://www.alice.example', ['http://www.alice.example'])
         );
     }
 

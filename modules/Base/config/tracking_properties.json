@@ -236,38 +236,6 @@
         "callbacks": [],
         "note": "REQUEST scoped: marks the one request that minted the visitor. Nothing consumes it yet -- it exists so v2 can raise first_visit from the request that actually created the visitor. Do not drop it as unused."
     },
-    "user_name": {
-        "set_by": "client",
-        "from": [
-            "user_name"
-        ],
-        "param": "user_name",
-        "events": [
-            "*"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [
-            "owa_trackingEventHelpers::setUserName"
-        ],
-        "note": "A display name the SITE supplies, through OWA.setUserName(), which writes it to the visitor store so it rides every later beacon. Not user_id, which is the site’s own identifier for the person and has a column. IT WAS DECLARED set_by request, from the authenticated OWA session, and that made the tracker’s own setter dead: an environmental property is server-owned, so admitRequestParams() refused the value the beacon carried and the callback then filled it from whoever was logged into OWA — on a tracked site, nobody. Client-set, so the wire value is admitted. The callback stays and still gates on log_visitor_pii, which now gates the SUPPLIED value too, and still falls back to the OWA user when log_owa_user_names is on. A param, not a column: PII nothing groups by, and params is where a value with no dimension belongs."
-    },
-    "user_email": {
-        "set_by": "client",
-        "from": [
-            "user_email"
-        ],
-        "param": "user_email",
-        "events": [
-            "*"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [
-            "owa_trackingEventHelpers::setEmailAddress"
-        ],
-        "note": "As user_name: client-supplied, PII-gated, and a param rather than a column. No tracker method sets it today — a site passes it through globalEventProperties — and it is client-settable so that such a value is admitted rather than silently refused. log_visitor_pii gates it, and log_owa_user_names still backfills the logged-in OWA user’s address. An older tracker sends it as email_address; Classes\\Beacon\\Compat renames it."
-    },
     "HTTP_REFERER": {
         "set_by": "client",
         "from": [
@@ -769,8 +737,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "The site's OWN id for a logged-in person -- not user_name, which is a display name. The one field that outlives a cookie, and forward-only: events collected before someone identified themselves stay anonymous."
+        "callbacks": [
+            "owa_trackingEventHelpers::gateUserId"
+        ],
+        "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, which is what makes it the only honest basis for joining a person's devices, and equally what makes it the thing log_visitor_pii gates: an install that turns visitor PII off must be able to stop storing it. gateUserId() DELETES the property rather than returning null, because a null is not written back and would leave the beacon's value in place. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
     },
     "currency": {
         "set_by": "client",

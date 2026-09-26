@@ -315,7 +315,7 @@ final class SettingsPersistenceTest extends TestCase
     public static function configFileOnlyValueProvider(): array
     {
         return [
-            'stale path from another server' => ['/home/padams/gone/owa-data/logs/'],
+            'stale path from another server' => ['/home/olduser/gone/owa-data/logs/'],
             'dangling .tpl name'             => ['wrapper_default.tpl'],
             'value equal to the default'     => [''],
             'null'                           => [null],
@@ -404,7 +404,7 @@ final class SettingsPersistenceTest extends TestCase
         return [
             // A user turning something ON where the default is off.
             "'1' vs false"      => ['1', false, 'an enabled setting must survive a false default'],
-            "text vs ''"        => ['peter@example.com', '', 'a real value must survive an empty default'],
+            "text vs ''"        => ['alice@example.com', '', 'a real value must survive an empty default'],
             // The one PHP 8 loose-comparison trap left: two numeric strings in
             // different notation are == but are NOT the same stored value.
             "'1e2' vs '100'"    => ['1e2', '100', "numeric strings in different notation must not be collapsed"],

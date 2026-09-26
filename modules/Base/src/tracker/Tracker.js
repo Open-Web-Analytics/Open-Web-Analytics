@@ -130,7 +130,6 @@ class OWATracker  {
 		     * trafficAttributionMode. The server resolves tags from page_location on the session-starting beacon.
 		     */
 		    // The site may set a different one, so it is not permanent.
-		    user_name:               { scope: 'session', permanent: false },
 
 		    // Rewritten every page load.
 		    last_req:                { scope: 'page',    permanent: false },
@@ -825,17 +824,47 @@ class OWATracker  {
     }
 
     /**
-     * Convienence method for setting user name
+     * The person's display name, as a custom USER property.
      *
-     * Visitor-scoped: an identified user outlives the page and the session, so
-     * 'v' is where they belong. This DOES mean the value is now written to the
-     * visitor cookie, which a global event property never was -- it is
-     * long-lived state on the visitor's machine rather than a per-page label.
+     * @deprecated Use setUserProperty('user_name', value).
+     *
+     * IT USED TO WRITE THE VISITOR COOKIE -- OWA.setState('v', 'user_name') --
+     * on the reasoning that an identified user outlives the page and the session.
+     * That was wrong twice over. A display name is TEMPORAL: it can change, and a
+     * different person can sign in on the same browser, so a cookie holding it
+     * outlives the value's own meaning -- the exact failure v1's persisted custom
+     * variables had. And it made the value visitor-scoped TRANSPORT feeding an
+     * event-scoped destination, while trackingProperties declared it `session`, a
+     * scope v2 does not offer for custom values at all (PLAN.html §2.26.1).
+     *
+     * setUserProperty() is page-lifetime and in memory, like GA's user
+     * properties: nothing is written to a cookie, and the `up_` prefix routes it
+     * to the visitor store at INGEST, where it is recorded with when it was set
+     * (§2.26.5). So what persists is a server record that can say "this was true
+     * from here on" rather than a cookie that cannot.
      */
     setUserName( value ) {
 
-        OWA.setState( 'v', 'user_name', String( value ).trim() );
+        /*
+         * THE PAGE STORE, under the user-property prefix.
+         *
+         * Not setUserProperty(), which writes globalEventProperties -- and that is
+         * per-TRACKER instance state, so a second tracker on the page would not
+         * see it. This method's cross-tracker behaviour is deliberate and has a
+         * test: a site calls it once and every tracker on the page reports it.
+         *
+         * The 'd' store keeps that and drops the cookie, which is the whole point:
+         * it is registered persist:'never', so it is page-lifetime in memory and
+         * shared through the OWA singleton, exactly like setPageTitle(). And
+         * because collectPageProperties() copies the store onto the event key by
+         * key, the prefixed name arrives as up_user_name -- admitted by prefix,
+         * routed to the visitor store by writeUserProperties(), and stamped with
+         * when it was set. No compat layer in the path.
+         */
+        OWA.setState( 'd', OWATracker.USER_PROPERTY_PREFIX + 'user_name',
+            String( value ).trim() );
     }
+
 
     /**
      * The site's OWN id for a logged-in person.
@@ -3586,11 +3615,15 @@ class OWATracker  {
          * prefixes remove.
          */
 
-        // user_name lives on the visitor, not the page.
-        var user_name = OWA.getState( 'v', 'user_name' );
-        if ( user_name ) {
-            collected.user_name = user_name;
-        }
+        /*
+         * user_name is no longer collected from the visitor store.
+         *
+         * setUserName() routes to setUserProperty() now, so the value is already
+         * on the event as up_user_name by the time this runs -- the same path
+         * every other custom user property takes. Reading it back out of a cookie
+         * here is what made it visitor-scoped transport for an event-scoped
+         * destination.
+         */
 
         for ( var name in collected ) {
 
