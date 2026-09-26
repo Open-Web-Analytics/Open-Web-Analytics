@@ -632,13 +632,26 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
     if ( $owa_hm_path !== '' ):
 
-        $owa_hm_constraints = 'pagePath==' . urlencode( $owa_hm_path );
+        /*
+         * CLICKS ONLY, said as a constraint.
+         *
+         * This asked for `metrics=domClicks`, which no metric declares -- so the
+         * name never resolved and the heatmap's fetch could not run. The filter it
+         * wanted is an ordinary constraint on the event, and eventCount already
+         * counts rows: without it, grouping by clickX and clickY would fold every
+         * non-click row of the page into one bucket at NULL,NULL.
+         *
+         * Comma-separated, which is what parseConstraintsString() splits on. The
+         * path is urlencoded, so a path containing a comma cannot split the pair.
+         */
+        $owa_hm_constraints = 'pagePath==' . urlencode( $owa_hm_path )
+            . ',eventName==click';
 
         $owa_hm_api = $view->makeOverlayApiLink( array(
             'do'             => 'reports',
             'module'         => 'base',
             'version'        => 'v1',
-            'metrics'        => 'domClicks',
+            'metrics'        => 'eventCount',
             'dimensions'     => 'clickX,clickY',
             'constraints'    => $owa_hm_constraints,
             'resultsPerPage' => 1000,

@@ -691,6 +691,24 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         $this->registerReport( 'document', 'reports/document.json' );
+        /*
+         * EVENTS, grouped by name, and it replaces the v1 action reports.
+         *
+         * 1.x had an Actions report over owa_action_fact with actionName,
+         * actionLabel and actionGroup dimensions and an `actions` metric. NONE of
+         * those exist on v2 and none should: a tracked action is a `custom_event`
+         * row like any other event, and what separates it from a page view is
+         * event_type -- the column `eventName` is registered against. So "what
+         * happened on this site, and how often" is one report over one dimension
+         * instead of a report per event family.
+         *
+         * An action's own name, label and group ride `params`, and params ARE the
+         * custom dimensions -- site-defined keys, promoted to a cube column by
+         * Classes\Cube\Dimensions. So there is nothing for this release's
+         * vocabulary to declare, and the reports that grouped by them are removed
+         * rather than reimplemented.
+         */
+        $this->registerReport( 'events', 'reports/events.json' );
         $this->registerReport( 'clicks', 'reports/clicks.json' );
         $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
         $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );

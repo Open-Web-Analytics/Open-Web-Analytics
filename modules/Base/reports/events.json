@@ -1,6 +1,6 @@
 {
-    "title": "Clicks",
-    "metrics": "eventCount",
+    "title": "Events",
+    "metrics": "eventCount,sessions,totalUsers",
     "widgets": [
         {
             "type": "trend",
@@ -15,22 +15,14 @@
         },
         {
             "type": "grid",
-            "id": "elements",
-            "container": "clicked-elements",
-            "title": "Clicked Elements",
+            "id": "names",
+            "container": "event-names",
+            "title": "Event Names",
             "query": {
-                "metrics": "eventCount",
-                "dimensions": "pagePath,domElementId",
+                "metrics": "eventCount,sessions,totalUsers",
+                "dimensions": "eventName",
                 "sort": "eventCount-"
             }
         }
-    ],
-    "settings": {
-        "constraints": [
-            {
-                "dimension": "eventName",
-                "value": "click"
-            }
-        ]
-    }
+    ]
 }

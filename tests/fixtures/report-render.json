@@ -255,6 +255,7 @@
             {
                 "var": "trendurl",
                 "query": {
+                    "constraints": "eventName==click",
                     "dimensions": "date",
                     "do": "reports",
                     "format": "json",
@@ -270,6 +271,7 @@
             {
                 "var": "elementsurl",
                 "query": {
+                    "constraints": "eventName==click",
                     "dimensions": "pagePath,domElementId",
                     "do": "reports",
                     "format": "json",
@@ -393,6 +395,7 @@
             {
                 "var": "clickedelementsurl",
                 "query": {
+                    "constraints": "eventName==click",
                     "dimensions": "domElementId",
                     "do": "reports",
                     "format": "json",
@@ -725,7 +728,7 @@
             {
                 "var": "trendurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "date",
                     "do": "reports",
                     "format": "json",
@@ -741,7 +744,7 @@
             {
                 "var": "domidsurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "domElementId",
                     "do": "reports",
                     "format": "json",
@@ -758,7 +761,7 @@
             {
                 "var": "domnamesurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "domElementId",
                     "do": "reports",
                     "format": "json",
@@ -775,7 +778,7 @@
             {
                 "var": "htmltagsurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "domElementTag",
                     "do": "reports",
                     "format": "json",
@@ -1005,6 +1008,65 @@
             "site_usage_trend.makeAreaChart -> site_usage_trend-chart",
             "site_usage_trend.makeMetricBoxes -> site_usage_trend-metrics",
             "site_usage_dim.refreshGrid"
+        ]
+    },
+    "events": {
+        "subview": "base.reportWidgets",
+        "queries": [
+            {
+                "var": "trendurl",
+                "query": {
+                    "dimensions": "date",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "eventCount",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "date",
+                    "version": "v1"
+                }
+            },
+            {
+                "var": "namesurl",
+                "query": {
+                    "dimensions": "eventName",
+                    "do": "reports",
+                    "format": "json",
+                    "metrics": "eventCount,sessions,totalUsers",
+                    "module": "base",
+                    "nonce": "<nonce>",
+                    "period": "last_thirty_days",
+                    "siteId": "1",
+                    "sort": "eventCount-",
+                    "version": "v1"
+                }
+            }
+        ],
+        "control": {
+            "container": false,
+            "panels": [],
+            "registered": 0,
+            "built": 0,
+            "loads": 2,
+            "loadsWithUrl": 0,
+            "urls": 2
+        },
+        "explorers": [
+            {
+                "var": "trend",
+                "container": "trend-chart"
+            },
+            {
+                "var": "names",
+                "container": "event-names"
+            }
+        ],
+        "commands": [
+            "trend.makeAreaChart -> trend-chart",
+            "trend.makeMetricBoxes -> trend-metrics",
+            "names.refreshGrid"
         ]
     },
     "exit-pages": {
@@ -2325,7 +2387,7 @@
             {
                 "var": "trendurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "date",
                     "do": "reports",
                     "format": "json",
@@ -2341,7 +2403,7 @@
             {
                 "var": "domidsurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "domElementId",
                     "do": "reports",
                     "format": "json",
@@ -2358,7 +2420,7 @@
             {
                 "var": "domnamesurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "domElementId",
                     "do": "reports",
                     "format": "json",
@@ -2375,7 +2437,7 @@
             {
                 "var": "htmltagsurl",
                 "query": {
-                    "constraints": "pagePath==characterization_sentinel",
+                    "constraints": "pagePath==characterization_sentinel,eventName==click",
                     "dimensions": "domElementTag",
                     "do": "reports",
                     "format": "json",

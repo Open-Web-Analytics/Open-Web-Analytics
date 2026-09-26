@@ -55,6 +55,10 @@
             {
                 "dimension": "pagePath",
                 "fromParam": "pagePath"
+            },
+            {
+                "dimension": "eventName",
+                "value": "click"
             }
         ]
     }

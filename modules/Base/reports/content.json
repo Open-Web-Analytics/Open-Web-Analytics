@@ -26,7 +26,7 @@
             },
             "more": {
                 "reportId": "pages",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -42,7 +42,7 @@
             },
             "more": {
                 "reportId": "page-types",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -57,7 +57,7 @@
             },
             "more": {
                 "reportId": "entry-pages",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -72,7 +72,7 @@
             },
             "more": {
                 "reportId": "exit-pages",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -85,9 +85,15 @@
                 "dimensions": "domElementId",
                 "sort": "eventCount-"
             },
+            "constraints": [
+                {
+                    "dimension": "eventName",
+                    "value": "click"
+                }
+            ],
             "more": {
                 "reportId": "clicks",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {

@@ -4,9 +4,9 @@
         "metricImplementations": 25,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 70,
-        "dimensionEntriesDenormalized": 70,
-        "accessorDimensionNames": 70
+        "dimensionNamesDenormalized": 72,
+        "dimensionEntriesDenormalized": 72,
+        "accessorDimensionNames": 72
     },
     "metrics": {
         "averageEngagementTimePerSession": [
@@ -710,6 +710,32 @@
                 "description": "Where the click led.",
                 "foreign_key_name": "",
                 "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "clickX": {
+            "base.event": {
+                "name": "clickX",
+                "entity": "base.event",
+                "column": "click_x",
+                "family": "event",
+                "label": "Click X",
+                "description": "How far across the page the click landed, in pixels.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true
+            }
+        },
+        "clickY": {
+            "base.event": {
+                "name": "clickY",
+                "entity": "base.event",
+                "column": "click_y",
+                "family": "event",
+                "label": "Click Y",
+                "description": "How far down the page the click landed, in pixels.",
+                "foreign_key_name": "",
+                "data_type": "integer",
                 "denormalized": true
             }
         },
@@ -1666,6 +1692,28 @@
             "description": "Where the click led.",
             "foreign_key_name": "",
             "data_type": "string",
+            "denormalized": true
+        },
+        "clickX": {
+            "name": "clickX",
+            "entity": "base.event",
+            "column": "click_x",
+            "family": "event",
+            "label": "Click X",
+            "description": "How far across the page the click landed, in pixels.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true
+        },
+        "clickY": {
+            "name": "clickY",
+            "entity": "base.event",
+            "column": "click_y",
+            "family": "event",
+            "label": "Click Y",
+            "description": "How far down the page the click landed, in pixels.",
+            "foreign_key_name": "",
+            "data_type": "integer",
             "denormalized": true
         },
         "clientId": {

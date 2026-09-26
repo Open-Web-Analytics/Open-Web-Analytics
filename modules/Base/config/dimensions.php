@@ -296,6 +296,24 @@ return array(
                 'family' => 'event', 'description' => 'The tag name of the element that was clicked.' ),
             'elementPath' => array( 'column' => 'element_path', 'label' => 'Element Path',
                 'family' => 'event', 'description' => 'The selector locating the element that was clicked.' ),
+            /*
+             * THE CLICK'S COORDINATES, which the heatmap groups by.
+             *
+             * Unregistered until now, while report_widgets.php has been asking the
+             * reports API for `dimensions=clickX,clickY` -- and a name that does
+             * not resolve through this registry never reaches SQL, by design. So
+             * the heatmap's own fetch could not succeed on v2 and the overlay drew
+             * an empty canvas.
+             *
+             * A coordinate is only meaningful against the viewport it was measured
+             * in, which is why page_width and page_height ride the same click row.
+             */
+            'clickX' => array( 'column' => 'click_x', 'label' => 'Click X',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'How far across the page the click landed, in pixels.' ),
+            'clickY' => array( 'column' => 'click_y', 'label' => 'Click Y',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'How far down the page the click landed, in pixels.' ),
             'clickTarget' => array( 'column' => 'target_url', 'label' => 'Click Target',
                 'family' => 'event', 'description' => 'Where the click led.' ),
             'linkDomain' => array( 'column' => 'target_host', 'label' => 'Link Domain',

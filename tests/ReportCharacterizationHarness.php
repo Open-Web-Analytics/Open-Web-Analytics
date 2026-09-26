@@ -116,7 +116,7 @@ final class ReportCharacterizationHarness
      * things -- a converted report has a recorded standard to meet, an authored
      * one has only its own baseline.
      */
-    public const AUTHORED = array( 'clicks', 'latest-visits' );
+    public const AUTHORED = array( 'clicks', 'events', 'latest-visits' );
 
     public const SENTINEL = 'characterization_sentinel';
 
