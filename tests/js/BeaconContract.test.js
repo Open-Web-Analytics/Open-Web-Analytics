@@ -140,9 +140,18 @@ const EMITTERS = {
         session: 'new',
         fire: (t) => t.trackPageView('https://example.com/p'),
     },
-    'custom_event': {
+    /*
+     * A SITE-NAMED custom event, which is what replaced custom_event.
+     *
+     * v1 had one event type for everything a site tracked -- custom_event, told
+     * apart by an action_name field -- and v2 retires it: the name IS the name, and
+     * the label and value are `ep_` parameters describing it. So the key here is a
+     * representative name rather than a fixed one, because a site chooses it; what
+     * the contract pins is the property SET such an event carries.
+     */
+    'my_custom_event': {
         session: 'established',
-        fire: (t) => t.trackAction('g', 'n', 'l', 5),
+        fire: (t) => t.trackCustomEvent( 'my_custom_event', { ep_label: 'x', epn_value: 5 } ),
     },
     'click': {
         session: 'established',

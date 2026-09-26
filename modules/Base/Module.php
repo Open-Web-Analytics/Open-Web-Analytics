@@ -929,16 +929,26 @@ class Module extends \OWA\Core\Module {
          * and that one have to agree -- the guard there is what holds if a
          * module registers a new tracking event type.
          */
+        /*
+         * EVERY TRACKING EVENT, as a namespace rather than a list.
+         *
+         * This enumerated four v1 dispatch names and then whatever
+         * v2_event_types held -- a hand-kept set beside the property registry. Two
+         * things went wrong with that. A renamed event stayed registered under its
+         * old name only, so when the tracker began sending v2 names every beacon
+         * was dropped. And a CUSTOM event cannot be listed at all, because its
+         * name belongs to the site.
+         *
+         * Tracking events dispatch under `tracking.` now: logEvent() sets the key
+         * on the event as it arrives. A v1 beacon keeps its own spelling --
+         * tracking.base.page_request -- because the wildcard catches it either way,
+         * which is why the v1 list is gone rather than maintained.
+         *
+         * The handler's own guard is what refuses a beacon with no site, visitor,
+         * session or instant; the namespace decides only that it is asked.
+         */
         $this->registerEventHandler(
-            array_merge(
-                array(
-                    'base.page_request',
-                    'dom.click',
-                    'track.action',
-                    'ecommerce.transaction',
-                ),
-                (array) \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' )
-            ),
+            \OWA\Core\CoreAPI::anyTrackingEvent(),
             /*
              * Passed as an OBJECT, where every handler above is passed by name.
              *
@@ -978,7 +988,21 @@ class Module extends \OWA\Core\Module {
          * not opted in these are still dropped -- by logEvent()'s
          * tracking_event_types check, below.
          */
-        $this->addEventProcessor( \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' ), 'base.processRequest');
+        /*
+         * The first-class v2 names, derived from the property registry. A CUSTOM
+         * event cannot be listed here -- its name is the site's -- so
+         * CoreAPI::getEventProcessor() defaults to this same processor for any
+         * type the endpoint accepts. Both paths reach one controller because
+         * nothing about processing differs.
+         */
+        /*
+         * One processor for the whole namespace. The first-class names could be
+         * listed -- they are derived -- but a custom event's cannot, and
+         * CoreAPI::getEventProcessor() resolves a dispatch name the same way
+         * notify() resolves listeners, so registering the namespace covers both
+         * and says so in one line.
+         */
+        $this->addEventProcessor( \OWA\Core\CoreAPI::anyTrackingEvent(), 'base.processRequest');
         
         // @todo still needed?
     }

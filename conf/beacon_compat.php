@@ -59,7 +59,20 @@ return array(
         'base.page_request'     => 'page_view',
         'dom.click'             => 'click',
         'ecommerce.transaction' => 'purchase',
-        'track.action'          => 'custom_event',
+        /*
+         * track.action -> custom_event is REMOVED with the event type itself.
+         *
+         * v1 had one event type for everything a site tracked, told apart by an
+         * action_name field. v2 retires that shape: an event name is a name, and
+         * the group, label and value are parameters describing it -- GA's model,
+         * and the reason eventName is a dimension. So there is no custom_event to
+         * rename TO.
+         *
+         * A tracker cached from before this sends track.action, which is not a
+         * legal custom event name (the dot fails the pattern) and is not
+         * first-class, so it is refused rather than stored under a name that means
+         * nothing. Decided: no compat for it.
+         */
     ),
 
     /*

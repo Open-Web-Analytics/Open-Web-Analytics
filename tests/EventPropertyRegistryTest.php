@@ -28,11 +28,18 @@ final class EventPropertyRegistryTest extends TestCase
     /** Every v2 event name that reaches owa_event_raw. */
     private static function storableEvents(): array
     {
-        return array_merge(
-            array_values(V2Event::typeMap()),
-            (array) owa_coreAPI::getSetting('base', 'v2_event_types'),
-            [V2Event::MARKER_SESSION_START, V2Event::MARKER_FIRST_VISIT]
-        );
+        /*
+         * DERIVED FROM THE REGISTRY, which is now the only statement of what a
+         * first-class event is: an event is one exactly when some property declares
+         * it. This merged V2Event::typeMap() with a v2_event_types SETTING -- a
+         * hand-kept list beside the registry, which is the thing that let a renamed
+         * event fall out of the gate entirely. The setting is gone, and reading it
+         * here yielded '' and then an empty event name.
+         *
+         * The markers need no special case: session_start and first_visit are
+         * declared by the tagged_* properties, so eventNames() already has them.
+         */
+        return Helpers::eventNames();
     }
 
     /**

@@ -2137,13 +2137,25 @@ class CoreAPI {
      * @return boolean
      */
     /**
-     * Every event type this installation accepts from a tracker.
+     * The FIRST-CLASS event types: the ones with a property registry.
      *
-     * The union of v1's list and v2's. Two lists rather than one because they
-     * have different lifetimes -- v1's whole side is retired at cutover, and a
-     * merged list would have to be untangled then -- but every check that asks
-     * "is this a tracking event" has to ask about both, or a v2 event is
-     * refused at the door.
+     * DERIVED, not listed. An event is first-class exactly when some property in
+     * modules/Base/config/tracking_properties.json declares it, so the vocabulary
+     * and the gate cannot disagree -- which they did, expensively. v2_event_types
+     * was a hand-kept list beside the registry, and when the tracker started
+     * sending v2 names the four RENAMED events were in neither it nor v1's list:
+     * logEvent() refused page_view, click and purchase outright, so every beacon
+     * the current tracker sent was dropped. A derived list cannot fall behind a
+     * rename because the rename IS the list.
+     *
+     * v1's names stay a setting. They are not derived from anything -- no v2
+     * property declares base.page_request -- and they have their own lifetime:
+     * the whole v1 side is retired at cutover, where a merged list would have to
+     * be untangled.
+     *
+     * THIS IS ALSO THE RESERVED SET. A custom event may not take one of these
+     * names, which is GA's rule and for GA's reason: its reserved event names are
+     * exactly its own first-class ones. See isTrackingEventType().
      *
      * @return array
      */
@@ -2151,7 +2163,80 @@ class CoreAPI {
 
         return array_merge(
             (array) \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_event_types' ),
-            (array) \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' ) );
+            (array) \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
+    }
+
+    /**
+     * Whether an event type may be accepted from a tracker at all.
+     *
+     * TWO WAYS IN, which is the change. A first-class name is one the registry
+     * declares. Anything else is admitted if it is a legal CUSTOM event name,
+     * because the tracker can emit one with any name -- trackCustomEvent() --
+     * and a site's own events have to reach the pipeline. They were being
+     * refused: trackingEventTypes() was an allowlist, so every custom event a
+     * site defined was dropped at the door.
+     *
+     * GA's rule, character for character: "Event names must start with a letter.
+     * Use only letters, numbers, and underscores. Don't use spaces", at most 40
+     * characters, case-sensitive. That is the same pattern a custom PROPERTY name
+     * must match, which is also GA's rule for a parameter -- so it is stated once
+     * and reused rather than written twice.
+     *
+     * A first-class name reaching the second test would pass it, so the order
+     * matters only for reading; what makes the reserved set work is the TRACKER
+     * refusing to send one (OWATracker.RESERVED_EVENT_NAMES), because the server
+     * cannot tell a site's `click` from its own.
+     *
+    /**
+     * The namespace every tracking event is dispatched under.
+     *
+     * Not stored anywhere. owa_event_raw.event_type holds the name the TRACKER
+     * set -- page_view, my_site_signup -- because that is the data and the
+     * eventName dimension reads it.
+     */
+    const TRACKING_DISPATCH_NAMESPACE = 'tracking';
+
+    /** Every tracking event, for a handler that cannot enumerate them. */
+    public static function anyTrackingEvent() {
+
+        return self::TRACKING_DISPATCH_NAMESPACE
+            . \OWA\Module\Base\Classes\EventDispatch::NAMESPACE_WILDCARD;
+    }
+
+    /**
+     * Whether an event type may be accepted from a tracker at all.
+     *
+     * TWO WAYS IN. A first-class name is one the property registry declares --
+     * trackingEventTypes() derives that set, so the vocabulary and the gate cannot
+     * drift. Anything else is admitted if it is a legal CUSTOM event name, because
+     * the tracker can emit one with any name (trackCustomEvent) and a site's own
+     * events have to reach the pipeline. They were being refused: the gate was an
+     * allowlist, so every custom event a site defined was dropped at the door.
+     *
+     * GA's rule, character for character: "Event names must start with a letter.
+     * Use only letters, numbers, and underscores. Don't use spaces", at most 40
+     * characters, case-sensitive. That is the same pattern a custom PROPERTY name
+     * must match -- also GA's rule for a parameter -- so it is stated once.
+     *
+     * ADMISSION ONLY. This says nothing about routing: an internal event called
+     * install_complete would pass the second test, which is exactly why the
+     * dispatch key is set by logEvent() rather than inferred from a name.
+     *
+     * @param  string $event_type
+     * @return bool
+     */
+    public static function isTrackingEventType( $event_type ) {
+
+        $event_type = (string) $event_type;
+
+        if ( in_array( $event_type, \OWA\Core\CoreAPI::trackingEventTypes(), true ) ) {
+
+            return true;
+        }
+
+        return (bool) preg_match(
+            \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN,
+            $event_type );
     }
 
     public static function logEvent( $event_type, $message = '') {
@@ -2159,7 +2244,7 @@ class CoreAPI {
         \OWA\Core\CoreAPI::debug("Logging new event $event_type");
 		
         // Check to ensure that the event is in fact a tracking event
-        if ( ! in_array( $event_type, \OWA\Core\CoreAPI::trackingEventTypes() ) ) {
+        if ( ! \OWA\Core\CoreAPI::isTrackingEventType( $event_type ) ) {
             
             \OWA\Core\CoreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
             return false;
@@ -2179,6 +2264,24 @@ class CoreAPI {
 	        
             $event = $message;
         }
+
+        /*
+         * NAME THE DISPATCH KEY, here and nowhere else.
+         *
+         * This is the only entry point that knows a tracker sent this, so it is
+         * the only place that can say so -- and saying it once means nothing
+         * downstream has to derive it. A handler that wants every tracking event
+         * registers for the `tracking.` namespace, which is the only shape that
+         * covers a site's own event names as well as OWA's.
+         *
+         * NOT RENAMED. A v1 beacon keeps its own spelling here --
+         * tracking.base.page_request -- because the wildcard catches it either
+         * way; mapping it to the v2 name would be a second place that knows the
+         * compat table for no gain. V2Event::name() still does that where it
+         * matters, on the way into the event_type COLUMN.
+         */
+        $event->setDispatchName(
+            \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.' . $event_type );
         
         /*
          * Named-user logging is a per-Profile decision, so this check runs
@@ -2291,7 +2394,7 @@ class CoreAPI {
         } else {
 
             // lookup which event processor to use to process this event type
-            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event->getEventType() );
+            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
            
 			\OWA\Core\CoreAPI::debug('About to perform action: '.$processor_action);
 			\OWA\Core\CoreAPI::debug($event);
@@ -2557,19 +2660,77 @@ class CoreAPI {
 
     }
 
-    public static function getEventProcessor($event_type) {
+    /**
+     * @param object|string $event  an event, preferably; a bare type cannot say
+     *                              whether it is a tracking event, so a string
+     *                              resolves only by its own name
+     */
+    public static function getEventProcessor($event) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $processor = $service->getMapValue('event_processors', $event_type);
+
+        // Registered under the DISPATCH name, like the listeners.
+        $dispatch_name = is_object( $event )
+            ? $event->getDispatchName() : (string) $event;
+
+        $processor = $service->getMapValue( 'event_processors', $dispatch_name );
+
+        if ( ! $processor ) {
+
+            /*
+             * The namespace, walked outside in, the way notify() resolves
+             * listeners -- so `tracking.*` answers for every tracking event and a
+             * custom name needs no registration of its own.
+             */
+            $processor = self::namespacedProcessor( $service, $dispatch_name );
+        }
 
         if ( $processor ) {
 
             return $processor;
-        
-        } else {
-            
-            \OWA\Core\CoreAPI::debug("no event processor found for $event_type");
         }
+
+        \OWA\Core\CoreAPI::debug("no event processor found for $dispatch_name");
+    }
+
+    /**
+     * A processor registered for a namespace the dispatch name falls under.
+     *
+     * The same walk EventDispatch::listenersFor() does, for the same reason: a
+     * custom event's name belongs to the site, so nothing can register for it, and
+     * a flat map keyed by exact name leaves it with no processor at all --
+     * performAction(null) then does nothing and the event is accepted and
+     * discarded without an error.
+     *
+     * @param  object $service
+     * @param  string $dispatch_name
+     * @return mixed  the processor, or null
+     */
+    private static function namespacedProcessor( $service, $dispatch_name ) {
+
+        $segments = explode( '.', (string) $dispatch_name );
+
+        // A name is not its own namespace.
+        array_pop( $segments );
+
+        $prefix = '';
+
+        foreach ( $segments as $segment ) {
+
+            $prefix .= $segment;
+
+            $processor = $service->getMapValue( 'event_processors',
+                $prefix . \OWA\Module\Base\Classes\EventDispatch::NAMESPACE_WILDCARD );
+
+            if ( $processor ) {
+
+                return $processor;
+            }
+
+            $prefix .= '.';
+        }
+
+        return null;
     }
 
     /**

@@ -8,7 +8,7 @@ require_once __DIR__ . '/IngestionTestCase.php';
  * THE BUG THIS EXISTS FOR. 4b93b248 made the v2 tracker emit v2 event names --
  * page_view, click, purchase -- and the server admitted them under their v1
  * spellings only. CoreAPI::trackingEventTypes() merges tracking_event_types (the
- * v1 names) with v2_event_types, and the four RENAMED events were in neither
+ * v1 names) with a hand-kept list, and the four RENAMED events were in neither
  * half except custom_event, which happened to be listed. So logEvent() refused a
  * real page_view at the door: measured, it returned false and wrote no row, while
  * the same event dispatched as base.page_request wrote three.
@@ -93,13 +93,19 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
      */
     public function testTheGateAcceptsIt( string $name ): void
     {
-        $accepted = (array) owa_coreAPI::trackingEventTypes();
+        /*
+         * THE ADMISSION RULE, not the first-class list. This asserted membership of
+         * trackingEventTypes(), which is only half the gate: a site-named custom
+         * event is admitted by its NAME matching GA's pattern, not by being
+         * declared, so a contract shape for one failed a list check correctly.
+         */
+        $this->assertNotEmpty( (array) owa_coreAPI::trackingEventTypes(),
+            'the first-class list is empty; this test would pass vacuously' );
 
-        $this->assertNotEmpty( $accepted );
-
-        $this->assertContains( $name, $accepted,
-            "The tracker emits $name and logEvent() will refuse it: it is in neither "
-            . 'tracking_event_types nor v2_event_types.' );
+        $this->assertTrue( owa_coreAPI::isTrackingEventType( $name ),
+            "The tracker emits $name and logEvent() will refuse it: it is neither a "
+            . 'first-class name the property registry declares nor a legal custom '
+            . 'event name.' );
     }
 
     /**

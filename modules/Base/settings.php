@@ -345,36 +345,5 @@ return array(
         'useStaticConfigOnly' => array( 'default' => false ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true ),
         'user_id_illegal_chars' => array( 'default' => array( ' ', ';', '\'', '"', '|', ')', '(' ) ),
-        /*
-         * EVERY EVENT NAME v2 SENDS, and three of them were missing.
-         *
-         * This held only the events with no v1 equivalent. The four that were
-         * RENAMED -- page_view, click, purchase, custom_event -- were registered
-         * under their v1 spellings alone (base.page_request, dom.click,
-         * ecommerce.transaction, track.action), and 4b93b248 made the tracker send
-         * the new names. Only custom_event happened to be listed here as well.
-         *
-         * So a real page_view, click or purchase beacon from the current tracker
-         * was REFUSED at the door: CoreAPI::trackingEventTypes() merges this list
-         * with the v1 one and logEvent() checks it, so the event never reached a
-         * handler. Measured: logEvent('page_view') returned false and wrote no
-         * row, while logEvent('base.page_request') wrote three.
-         *
-         * Nothing caught it because every PHP fixture and test fires the v1
-         * dispatch name. The e2e specs were the only thing driving a real tracker,
-         * and their own assertions were matching v1 names too, so they timed out
-         * waiting for a beacon and reported an empty database instead.
-         *
-         * All three consumers merge THIS setting -- trackingEventTypes(), the
-         * EventRawHandlers registration and the base.processRequest processor --
-         * so the names belong here rather than in three lists.
-         */
-        'v2_event_types' => array( 'default' => array(
-            // renamed from v1; the old spellings stay registered for a cached tracker
-            'page_view', 'click', 'purchase', 'custom_event',
-            // new in v2
-            'user_engagement', 'scroll', 'file_download', 'form_start', 'form_submit',
-            'view_search_results', 'exception',
-        ) ),
         'wiki_url' => array( 'default' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ),    ),
 );

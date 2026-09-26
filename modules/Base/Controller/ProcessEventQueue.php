@@ -104,7 +104,7 @@ class ProcessEventQueue extends \OWA\Core\Controller\Cli {
 
                             // process event if needed
                             // lookup which event processor to use to process this event type
-                            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event->getEventType() );
+                            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
 
                             if ( $processor_action ) {
 

@@ -2816,36 +2816,6 @@ namespace OWA\Module\Base\Classes;
                 'allow_slowly_changing_dimensions'	=> true,
                 'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
-                /*
-                 * v2's event names. Kept as their own list rather than merged
-                 * into tracking_event_types, so that what v1 collects and what
-                 * v2 collects stay legible as two sets -- the whole of v1's
-                 * side is retired at cutover, and a merged list would have to
-                 * be untangled then.
-                 *
-                 * THE RENAMED FOUR ARE HERE NOW. This said "page_view, click and
-                 * purchase are NOT here: they arrive under their v1 names and
-                 * Classes\V2Event maps them", which was true until 4b93b248 made
-                 * the tracker emit v2 names. After it, a real page_view beacon was
-                 * refused by logEvent() -- trackingEventTypes() merges this list
-                 * and page_view was in neither half. The v1 spellings stay in
-                 * tracking_event_types for a tracker cached from before that.
-                 */
-                'v2_event_types'                    => [
-                    // renamed from v1
-                    'page_view',
-                    'click',
-                    'purchase',
-                    'custom_event',
-                    // new in v2
-                    'user_engagement',
-                    'scroll',
-                    'file_download',
-                    'form_start',
-                    'form_submit',
-                    'view_search_results',
-                    'exception',
-                ],
                 'tracking_event_types'              => [
                     'dom.click', 
                     'ecommerce.transaction', 

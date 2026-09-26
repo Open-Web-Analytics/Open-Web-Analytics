@@ -78,6 +78,34 @@ final class WireSurfaceEnumeratedTest extends TestCase
             Helpers::serverProperties() );
     }
 
+    /**
+     * A site's own key, admitted by PREFIX rather than by being declared.
+     *
+     * The registry states what v2 calls things; a custom event's parameters are
+     * named by the site, so they cannot be in it -- they carry `ep_` / `epn_` /
+     * `up_` / `upn_` and the endpoint admits them on that. The contract shape for a
+     * site-named custom event therefore contains keys nothing declares, which is
+     * correct rather than an omission.
+     *
+     * Checked with the endpoint's own two constants, so this cannot accept a key
+     * admitRequestParams() would refuse.
+     */
+    private function isCustomKey( string $name ): bool
+    {
+        foreach ( Helpers::CUSTOM_PREFIXES as $prefix ) {
+
+            if ( strpos( $name, $prefix ) !== 0 ) {
+
+                continue;
+            }
+
+            return (bool) preg_match( Helpers::CUSTOM_NAME_PATTERN,
+                substr( $name, strlen( $prefix ) ) );
+        }
+
+        return false;
+    }
+
     public function testEveryPropertyOnTheWireIsDeclared(): void
     {
         $declared = $this->declared();
@@ -104,6 +132,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
             if ( isset( $declared[ $name ] )
                  || in_array( $name, $bridged, true )
+                 || $this->isCustomKey( $name )
                  || array_key_exists( $name, self::NOT_TRACKING_PROPERTIES ) ) {
 
                 continue;
@@ -162,13 +191,15 @@ final class WireSurfaceEnumeratedTest extends TestCase
     public function testBothSidesAreActuallyPopulated(): void
     {
         /*
-         * 40 now: the wire lost landing_url, session_referer, the three
-         * dom_element_* the click no longer collects and the purchase's three
-         * billing-address fields, each because nothing read it. The guard is
-         * against the FIXTURE not being read, so it tracks the wire down rather
-         * than pinning a number the wire is supposed to be able to shrink.
+         * 33 now, and it keeps shrinking on purpose. The wire has lost
+         * landing_url, session_referer, three dom_element_* the click no longer
+         * collects, the purchase's three billing-address fields, timestamp,
+         * client_ts_usec, last_req and the whole custom_event shape -- each
+         * because nothing read it. The guard is against the FIXTURE not being
+         * read, so it tracks the wire down rather than pinning a number the wire
+         * is supposed to be able to shrink.
          */
-        $this->assertGreaterThan( 35, count( $this->emitted() ),
+        $this->assertGreaterThan( 25, count( $this->emitted() ),
             'Far fewer beacon fields than expected -- the fixture is not being read.' );
 
         /*

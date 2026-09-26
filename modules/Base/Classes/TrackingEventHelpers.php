@@ -117,6 +117,13 @@ class TrackingEventHelpers {
     private static $property_config;
 
     /**
+     * The derived first-class event names, built once per process.
+     *
+     * @var array|null
+     */
+    private static $event_names = null;
+
+    /**
      * The property definitions, read from modules/Base/config/tracking_properties.json.
      *
      * The file is the single enumeration of what a tracking event may carry:
@@ -446,6 +453,21 @@ class TrackingEventHelpers {
      */
     public static function eventNames() {
 
+        /*
+         * MEMOISED, because this is on the beacon path twice.
+         *
+         * logEvent()'s gate and ProcessEvent::isTrackingEvent() both ask, and
+         * without this each walked every definition in all three scopes to rebuild
+         * the same list -- measured at 20us a call, so ~40us per beacon deriving a
+         * value that cannot change within a process. propertyConfig() already
+         * memoises the file read, so the source is fixed once loaded and this adds
+         * no staleness the config did not already have.
+         */
+        if ( self::$event_names !== null ) {
+
+            return self::$event_names;
+        }
+
         $out = array();
 
         foreach ( self::SET_BY as $scope ) {
@@ -473,6 +495,8 @@ class TrackingEventHelpers {
         $out = array_keys( $out );
 
         sort( $out );
+
+        self::$event_names = $out;
 
         return $out;
     }

@@ -3840,6 +3840,29 @@ class OWATracker  {
      */
     trackCustomEvent(event_type, properties, block) {
 
+        if ( ! OWATracker.isLegalCustomEventName( event_type ) ) {
+
+            return;
+        }
+
+        return this.raiseEvent( event_type, properties, block );
+    }
+
+    /**
+     * Send an event by name, with no reserved-name check.
+     *
+     * THE INTERNAL HALF of trackCustomEvent(). The guard there exists to stop a
+     * SITE claiming a name OWA defines -- once a beacon arrives the server cannot
+     * tell a site's `click` from its own. OWA raising its OWN first-class event is
+     * not that case, and routing it through the public method made the tracker
+     * refuse form_start, form_submit, view_search_results and exception, which are
+     * reserved precisely because they are ours.
+     *
+     * Measured as four failing specs the moment the guard was added, which is the
+     * distinction the two methods now carry.
+     */
+    raiseEvent( event_type, properties, block ) {
+
         var event = this.makeEvent();
         event.setEventType( event_type );
 
@@ -3848,6 +3871,64 @@ class OWATracker  {
         }
 
         return this.trackEvent( event, block );
+    }
+
+    /**
+     * The event names v2 defines for itself, which a custom event may not take.
+     *
+     * GA does exactly this, and its reserved list IS its first-class list --
+     * page_view, click, scroll, file_download, form_start, form_submit,
+     * session_start, first_visit, user_engagement, view_search_results. Reusing
+     * one of them would put a site's own counts into a report measuring
+     * something else, and on the server it would claim a property vocabulary the
+     * event does not have.
+     *
+     * KEPT IN STEP BY A TEST, not by hand: the server derives the same set from
+     * the property registry -- an event is first-class exactly when some property
+     * declares it -- and TrackerReservedEventNamesTest asserts the two agree. So
+     * adding a first-class event on the server fails here until this is updated,
+     * which is the only direction that can go wrong silently.
+     *
+     * The two markers are included though no browser sends them: they are event
+     * TYPES on stored rows, materialised by the server, so a custom event using
+     * one would be indistinguishable from the real thing.
+     */
+    static get RESERVED_EVENT_NAMES() {
+        return [
+            'page_view', 'click', 'purchase',
+            'user_engagement', 'scroll', 'file_download',
+            'form_start', 'form_submit', 'view_search_results',
+            'session_start', 'first_visit'
+        ];
+    }
+
+    /**
+     * GA's rule, character for character: "Event names must start with a letter.
+     * Use only letters, numbers, and underscores. Don't use spaces", and 40
+     * characters. Case-sensitive, so my_event and My_Event are two events.
+     *
+     * The same pattern the server applies to a custom PROPERTY name, which is
+     * also GA's rule for a parameter -- one rule, stated once on each side.
+     */
+    static isLegalCustomEventName( name ) {
+
+        name = String( name === undefined || name === null ? '' : name );
+
+        if ( ! /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test( name ) ) {
+
+            OWA.debug( 'Custom event name must start with a letter, contain only letters, digits and underscores, and be at most 40 characters: ' + name );
+
+            return false;
+        }
+
+        if ( OWATracker.RESERVED_EVENT_NAMES.indexOf( name ) !== -1 ) {
+
+            OWA.debug( 'Custom event name is reserved by OWA and cannot be used: ' + name );
+
+            return false;
+        }
+
+        return true;
     }
 
     trackEvent(event, block) {
@@ -3900,17 +3981,43 @@ class OWATracker  {
         return this.trackEvent( event );
     }
 
+    /**
+     * A tracked action.
+     *
+     * @deprecated Use trackCustomEvent( name, { ep_*: ... } ).
+     *
+     * THE ACTION'S NAME IS NOW THE EVENT'S NAME. This sent event_type
+     * 'custom_event' with the name as a property, which is v1's shape: one event
+     * type for everything a site tracks, told apart by a field. v2 retires it --
+     * an event name is a name, and the group, label and value are parameters
+     * describing it, which is GA's model and the reason eventName is a dimension.
+     *
+     * So this maps onto trackCustomEvent(): the name becomes the event, and the
+     * other three become custom event properties in `params`. A site that was
+     * calling it keeps working and its data lands under its own action names
+     * instead of pooled under one.
+     *
+     * An action name that is not a legal event name, or that collides with a
+     * reserved one, is refused by trackCustomEvent() rather than silently
+     * reshaped.
+     */
     trackAction(action_group, action_name, action_label, numeric_value) {
 
-        var event = new OwaEvent;
+        var properties = {};
 
-        event.setEventType( 'custom_event' );
-        event.set('action_group', action_group);
-        event.set('action_name', action_name);
-        event.set('action_label', action_label);
-        event.set('numeric_value', numeric_value);
-        this.trackEvent(event);
-        OWA.debug("Action logged");
+        if ( action_group !== undefined && action_group !== null && action_group !== '' ) {
+            properties.ep_action_group = String( action_group );
+        }
+
+        if ( action_label !== undefined && action_label !== null && action_label !== '' ) {
+            properties.ep_action_label = String( action_label );
+        }
+
+        if ( typeof numeric_value === 'number' && isFinite( numeric_value ) ) {
+            properties.epn_numeric_value = numeric_value;
+        }
+
+        return this.trackCustomEvent( action_name, properties );
     }
 
     /**
@@ -4000,7 +4107,7 @@ class OWATracker  {
 
             started.push( form );
 
-            that.trackCustomEvent( 'form_start', that.formProperties( form ) );
+            that.raiseEvent( 'form_start', that.formProperties( form ) );
 
         }, true );
 
@@ -4010,7 +4117,7 @@ class OWATracker  {
 
             if ( form ) {
 
-                that.trackCustomEvent( 'form_submit', that.formProperties( form ) );
+                that.raiseEvent( 'form_submit', that.formProperties( form ) );
             }
 
         }, true );
@@ -4056,7 +4163,7 @@ class OWATracker  {
 
             if ( term ) {
 
-                return this.trackCustomEvent( 'view_search_results', { search_term: term } );
+                return this.raiseEvent( 'view_search_results', { search_term: term } );
             }
         }
     }
@@ -4088,10 +4195,18 @@ class OWATracker  {
 
             try {
 
-                that.trackCustomEvent( 'exception', {
-                    description: String( message ).substring( 0, 255 ),
-                    source:      String( source || '' ).substring( 0, 255 ),
-                    line:        line || 0
+                /*
+                 * PREFIXED, because these are custom event properties.
+                 *
+                 * They were sent bare -- description, source, line -- and not one
+                 * of them is a declared property or carries a prefix, so
+                 * admitRequestParams() dropped all three and every exception event
+                 * arrived carrying nothing but its site id. Measured.
+                 */
+                that.raiseEvent( 'exception', {
+                    ep_description: String( message ).substring( 0, 255 ),
+                    ep_source:      String( source || '' ).substring( 0, 255 ),
+                    epn_line:       line || 0
                 } );
 
             } catch ( e ) {

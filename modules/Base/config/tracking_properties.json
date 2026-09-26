@@ -481,62 +481,6 @@
         "callbacks": [],
         "note": "Carried by dom.click only. Column type from base.click."
     },
-    "action_name": {
-        "set_by": "client",
-        "from": [
-            "action_name"
-        ],
-        "param": "action_name",
-        "events": [
-            "custom_event"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried by track.action only. Column type from base.action_fact."
-    },
-    "action_label": {
-        "set_by": "client",
-        "from": [
-            "action_label"
-        ],
-        "param": "action_label",
-        "events": [
-            "custom_event"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried by track.action only. Column type from base.action_fact."
-    },
-    "action_group": {
-        "set_by": "client",
-        "from": [
-            "action_group"
-        ],
-        "param": "action_group",
-        "events": [
-            "custom_event"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried by track.action only. Column type from base.action_fact."
-    },
-    "numeric_value": {
-        "set_by": "client",
-        "from": [
-            "numeric_value"
-        ],
-        "param": "numeric_value",
-        "events": [
-            "custom_event"
-        ],
-        "data_type": "integer",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried by track.action only. Column type from base.action_fact."
-    },
     "ct_order_id": {
         "set_by": "client",
         "from": [

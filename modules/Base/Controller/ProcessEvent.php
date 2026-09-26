@@ -173,12 +173,19 @@ class ProcessEvent extends \OWA\Core\Controller {
         }
     }
     
+    /**
+     * ONE RULE, ASKED OF ONE PLACE.
+     *
+     * This kept its own copy of the test -- in_array() against
+     * trackingEventTypes() -- which is an allowlist, so a custom event admitted by
+     * logEvent() was refused again here and never dispatched. Three places asked
+     * "is this a tracking event" with three copies of the answer; they now share
+     * CoreAPI::isTrackingEventType(), which admits a first-class name or a legal
+     * custom one.
+     */
     function isTrackingEvent() {
-        
-        if ( in_array( $this->event->getEventType(), \OWA\Core\CoreAPI::trackingEventTypes() ) ) {
-            
-            return true;
-        }
+
+        return \OWA\Core\CoreAPI::isTrackingEventType( $this->event->getEventType() );
     }
 }
 

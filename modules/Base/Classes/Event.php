@@ -49,6 +49,33 @@ class Event {
     var $eventType;
 
     /**
+     * The key the listener system routes this event on -- NOT its name.
+     *
+     * `event_type` is what the tracker set and what a report groups by: it is
+     * stored in owa_event_raw.event_type and read by the eventName dimension. The
+     * dispatch key is plumbing, shared with OWA's internal events
+     * (install_complete, base.set_password). They were the same string, which
+     * worked while every event name was known at registration time -- and v2 ended
+     * that, because a site can send an event with any legal name and a handler
+     * wanting them all has nothing to enumerate.
+     *
+     * SET ONCE, ON THE WAY IN, by CoreAPI::logEvent(): the only entry point that
+     * knows a tracker sent this. Nothing downstream derives it. Two earlier
+     * attempts did derive it and both were wrong -- inferring "is this a tracking
+     * event" from the NAME matches install_complete, which replaced the install
+     * handler with ingest; and resolving through V2Event::name() flattens a dot,
+     * which turned dom.stream into tracking.dom_stream and routed it past its own
+     * handler.
+     *
+     * A CLASS VAR, deliberately not in $properties: the property bag is the wire
+     * surface, and OWA's routing state does not belong in it. Survives the queue
+     * the way eventType does, the event being serialised whole.
+     *
+     * @var string
+     */
+    var $dispatchName = '';
+
+    /**
      * Time since last request.
      *
      * Used to tell if a new session should be created.
@@ -382,6 +409,30 @@ class Event {
 
     function setEventType($value) {
         $this->eventType = $value;
+    }
+
+    /** Route this event under a dispatch key. Called by logEvent(). */
+    function setDispatchName( $value ) {
+
+        $this->dispatchName = (string) $value;
+    }
+
+    /**
+     * The dispatch key, falling back to the event type.
+     *
+     * An event OWA raises internally never had one set and its name has always
+     * been its routing key, so the fallback is the existing behaviour rather than
+     * a new default.
+     */
+    function getDispatchName() {
+
+        return $this->dispatchName !== '' ? $this->dispatchName : $this->getEventType();
+    }
+
+    /** Did this event arrive from a tracker? True once logEvent() has named it. */
+    function isTrackingEvent() {
+
+        return $this->dispatchName !== '';
     }
 
     function cleanProperties() {

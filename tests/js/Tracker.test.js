@@ -22,16 +22,49 @@ describe('OWATracker event assembly', () => {
         tracker.trackEvent = (event) => { captured.push(event); };
     });
 
-    test('trackAction assembles a custom_event event with all fields', () => {
-        tracker.trackAction('test group', 'test action', 'this is just a test', 10);
+    /**
+     * trackAction sends the action's OWN NAME as the event, with the rest as
+     * parameters.
+     *
+     * It used to send event_type 'custom_event' and put the name in an
+     * action_name field: v1's one-event-type-for-everything shape, told apart by
+     * a property. v2 retires it -- an event name is a name, and the group, label
+     * and value describe it, which is GA's model and why eventName is a dimension.
+     */
+    test('trackAction sends the action name as the event, with ep_ parameters', () => {
+        tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('custom_event');
-        expect(e.get('action_group')).toBe('test group');
-        expect(e.get('action_name')).toBe('test action');
-        expect(e.get('action_label')).toBe('this is just a test');
-        expect(e.get('numeric_value')).toBe(10);
+        expect(e.get('event_type')).toBe('newsletter_opt_in');
+        expect(e.get('ep_action_group')).toBe('signup');
+        expect(e.get('ep_action_label')).toBe('footer form');
+        expect(e.get('epn_numeric_value')).toBe(10);
+
+        // The old spellings are gone, not merely unread.
+        expect(e.get('action_name')).toBeUndefined();
+        expect(e.get('action_group')).toBeUndefined();
+        expect(e.get('numeric_value')).toBeUndefined();
+    });
+
+    /**
+     * AND AN ACTION NAME THAT IS NOT A LEGAL EVENT NAME IS REFUSED.
+     *
+     * The migration cost, stated as a test. v1 action names were free text, so
+     * 'test action' was ordinary; an event name may not contain a space -- GA's
+     * rule, which v2 adopts -- so a site passing one now sends nothing and gets a
+     * debug line saying why.
+     *
+     * Refused rather than reshaped on purpose: silently turning 'test action' into
+     * 'test_action' would invent a name the site never chose and split its history
+     * across two of them.
+     */
+    test('trackAction refuses an action name that is not a legal event name', () => {
+        tracker.trackAction('group', 'test action', 'label', 1);
+        tracker.trackAction('group', '9_starts_numeric', 'label', 1);
+        tracker.trackAction('group', 'page_view', 'label', 1);
+
+        expect(captured).toHaveLength(0);
     });
 
     test('trackPageView assembles a page_view event', () => {
