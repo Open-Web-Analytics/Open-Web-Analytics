@@ -1280,33 +1280,20 @@ test.describe('custom reports', () => {
             await expect(overlay).toHaveCSS('position', 'fixed');
         });
 
-        /**
-         * The pickers only offer what can be asked for alongside what is
-         * already chosen, because offering more would invite a selection the
-         * save then refuses.
+        /*
+         * THERE IS NO METRIC-NARROWING TEST HERE ANY MORE.
          *
-         * CLICKS AND VISITS NO LONGER QUALIFY as the example. They were counted
-         * in different fact tables, and the reporting cube carries both -- so
-         * one table serves the pair and the picker is right to keep offering
-         * it. That widening is the point of the cube (PLAN 2.13), so the
-         * narrowing is exercised with a pair that still has no common table.
+         * The picker narrows to what can be asked for alongside what is already
+         * chosen, and the narrowing is decided by which fact tables a metric can
+         * be computed from. Every metric registered on v2 declares
+         * `base.event` -- one cube, one table -- so no pair of them is
+         * incompatible and the picker correctly narrows to nothing. The pairs
+         * this used to use (visits/feedRequests, domClicks) are v1 metrics that
+         * no longer exist.
+         *
+         * The reduction itself is still exercised where it lives, in
+         * ResultSetManager, which does not need a browser to answer it.
          */
-        test('the metric picker stops offering incompatible metrics', async ({ page }) => {
-            await openBuilderOnGrid(page);
-
-            // Both are on offer to begin with.
-            await expect(page.locator('#dlgMetrics option[value="sessions"]')).toHaveCount(1);
-            await expect(page.locator('#dlgMetrics option[value="feedRequests"]')).toHaveCount(1);
-
-            await chooseInChosen(page, 'dlgMetrics', 'sessions');
-
-            // ...and once visits is chosen, feed requests are gone.
-            await expect(page.locator('#dlgMetrics option[value="feedRequests"]')).toHaveCount(0);
-            await expect(page.locator('#dlgMetrics option[value="totalUsers"]')).toHaveCount(1);
-
-            // ...while clicks, which the cube serves beside visits, stays.
-            await expect(page.locator('#dlgMetrics option[value="domClicks"]')).toHaveCount(1);
-        });
 
         /** The same narrowing reaches dimensions, and the caps are enforced. */
         test('the pickers stop at four', async ({ page }) => {

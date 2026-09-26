@@ -622,7 +622,7 @@ class ReportsRest extends \OWA\Core\ReportController {
      *
      * A heatmap is now an ordinary dimensional query:
      *
-     *   metrics=domClicks&dimensions=clickX,clickY&constraints=pagePath==/x
+     *   metrics=eventCount&dimensions=clickX,clickY&constraints=pagePath==/x,eventName==click
      *
      * which the resolver joins click->document on its own, because pagePath is
      * registered against document_id. That deletes ~80 lines of hand-built SQL,

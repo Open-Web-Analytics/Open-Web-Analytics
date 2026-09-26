@@ -20,10 +20,12 @@
  *
  * WHAT THE ROWS LOOK LIKE NOW
  *
- * The heatmap is an ordinary dimensional query -- domClicks grouped by clickX
- * and clickY -- so identical coordinates arrive ALREADY GROUPED with a count,
- * instead of one row per click. The count is the weight a point is drawn with,
- * which is what makes a hot spot hot.
+ * The heatmap is an ordinary dimensional query -- eventCount grouped by clickX
+ * and clickY, constrained to eventName==click -- so identical coordinates arrive
+ * ALREADY GROUPED with a count, instead of one row per click. The count is the
+ * weight a point is drawn with, so the metric's NAME is load-bearing: a reader
+ * looking for a key the request never asked for silently weighs every point 1
+ * and flattens the map.
  */
 
 // jsdom gives us no canvas, and none is needed: these tests are about which
@@ -66,7 +68,7 @@ function row(x, y, clicks) {
     return {
         clickX: { result_type: 'dimension', name: 'clickX', value: String(x) },
         clickY: { result_type: 'dimension', name: 'clickY', value: String(y) },
-        domClicks: { result_type: 'metric', name: 'domClicks', value: String(clicks) },
+        eventCount: { result_type: 'metric', name: 'eventCount', value: String(clicks) },
     };
 }
 
@@ -103,9 +105,24 @@ describe('reading the dimensional result set', () => {
 
     test('a row with no coordinates is skipped rather than plotted as NaN', () => {
         const hm = makeHeatmap(Heatmap, freshRecorder());
-        hm.clicks = { resultsRows: [{ domClicks: { value: '3' } }, row(5, 6, 1)] };
+        hm.clicks = { resultsRows: [{ eventCount: { value: '3' } }, row(5, 6, 1)] };
 
         expect(hm.getClicks()).toEqual([{ x: 5, y: 6, weight: 1 }]);
+    });
+
+    test('the weight is read from the metric the request asks for', () => {
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+
+        // What the fetch used to ask for. No metric declares it, so a reader
+        // keyed to the old name falls back to 1 on every row and the map has no
+        // hot spots at all -- a broken heatmap that still draws.
+        hm.clicks = { resultsRows: [{
+            clickX: { value: '100' },
+            clickY: { value: '200' },
+            domClicks: { value: '9' },
+        }] };
+
+        expect(hm.getClicks()).toEqual([{ x: 100, y: 200, weight: 1 }]);
     });
 
     test('an empty or unfetched result set yields no points, not a throw', () => {

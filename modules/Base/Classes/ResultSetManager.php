@@ -533,10 +533,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                  *
                  * Every metric can be computed from one or more fact tables,
                  * and a query is answered from ONE of them -- so a combination
-                 * is only askable if the metrics share a table. `domClicks`
-                 * comes from the click table alone; `visits` from the session
-                 * or the request; there is no table that has both, so asking
-                 * for them together is not a thin result, it is not a question.
+                 * is only askable if the metrics share a table. A click-table
+                 * metric and a session-table one have no table that holds both,
+                 * so asking for them together is not a thin result, it is not a
+                 * question.
                  *
                  * It used to be addError(), which puts it with the routine
                  * misses that reports swallow -- so an impossible set came back
@@ -791,7 +791,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * Why a field cannot join the ones already reconciled.
      *
      * NAMES BOTH SIDES. "This combination cannot be queried" tells a reader
-     * nothing they can act on; "domClicks cannot be combined with visits,
+     * nothing they can act on; "scrollDepth cannot be combined with visits,
      * uniqueVisitors" tells them which one to take out. The offender is the
      * field being added when the set of possible fact tables became empty, and
      * the others are what it has to be compatible with.

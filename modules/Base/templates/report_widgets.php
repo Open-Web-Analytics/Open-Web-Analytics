@@ -621,8 +621,8 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * the browser there with an #owa_overlay fragment; the tracker on that page
      * reads the fragment and fetches the clicks.
      *
-     * The api_url is an ORDINARY dimensional query now -- domClicks grouped by
-     * clickX and clickY, constrained on the page -- so the overlay token binds
+     * The api_url is an ORDINARY dimensional query now -- eventCount grouped by
+     * clickX and clickY, constrained on the page and to clicks -- so the token binds
      * to `constraints`, a normal request parameter, rather than to a bespoke
      * report's document_id. Identical coordinates group, so a page with
      * hundreds of thousands of clicks answers with the few thousand distinct

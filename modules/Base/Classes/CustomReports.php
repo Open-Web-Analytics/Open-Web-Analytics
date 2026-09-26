@@ -772,9 +772,9 @@ class CustomReports {
      *
      * Every metric is computed from one or more FACT TABLES, and a query is
      * answered from one of them -- so a set is only askable if its metrics
-     * share a table. `domClicks` is measured in the click table alone and
-     * `visits` in the session or the request; no table holds both, so asking
-     * for them together is not a thin result, it is not a question.
+     * share a table. A click-table metric and a session-table one have no table
+     * that holds both, so asking for them together is not a thin result, it is
+     * not a question.
      *
      * The answer comes from ResultSetManager, which performs exactly this
      * reduction when it chooses a base entity. Asking IT rather than keeping a
