@@ -257,6 +257,24 @@ class TrackingEventHelpers {
     }
 
     /**
+     * The declared data type of a property, or '' when it declares none.
+     *
+     * Read by the row builder to know that a `json` property arrives as a STRING
+     * and has to be decoded before it is nested in the params document -- see
+     * EventRawHandlers::params().
+     *
+     * @param  string $property
+     * @return string
+     */
+    public static function dataTypeFor( $property ) {
+
+        $all = self::allProperties();
+
+        return isset( $all[ $property ]['data_type'] )
+            ? (string) $all[ $property ]['data_type'] : '';
+    }
+
+    /**
      * The params key a property lands under, or '' when it is not a param.
      *
      * The other half of the destination. A property lands in a column, or in the

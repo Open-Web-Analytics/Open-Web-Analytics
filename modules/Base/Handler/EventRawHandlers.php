@@ -488,10 +488,46 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             $value = $event->get( $wire );
 
-            if ( $value !== null && $value !== false && $value !== '' ) {
+            if ( $value === null || $value === false || $value === '' ) {
 
-                $params[ $key ] = $value;
+                continue;
             }
+
+            /*
+             * A `json` PROPERTY IS DECODED BEFORE IT IS NESTED, or it lands as a
+             * string inside a string.
+             *
+             * ct_line_items arrives from the wire as JSON TEXT, and Sanitize::
+             * cleanJson() validates it and hands the text back. Assigning that here
+             * meant json_encode() escaped it again, so the column held
+             * {"items": "[{\"sku\": ...}]"} -- the value of $.items being one
+             * scalar string. Measured on a seeded purchase. JSON_TABLE over
+             * '$.items[*]' then sees a single string rather than a row per line
+             * item, which is why the Products report has nothing to read.
+             *
+             * Decoded, so the document nests: {"items": [{"sku": ...}]}.
+             *
+             * A document that will not decode keeps its raw text rather than being
+             * dropped -- evidence a site sent something is worth more than a tidy
+             * column -- and says so once per beacon.
+             */
+            if ( \OWA\Module\Base\Classes\TrackingEventHelpers::dataTypeFor( $wire ) === 'json'
+                 && is_string( $value ) ) {
+
+                $decoded = json_decode( $value, true );
+
+                if ( is_array( $decoded ) ) {
+
+                    $value = $decoded;
+
+                } else {
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        'v2 ingest: %s did not decode as JSON; stored as text.', $wire ) );
+                }
+            }
+
+            $params[ $key ] = $value;
         }
 
         if ( ! $params ) {

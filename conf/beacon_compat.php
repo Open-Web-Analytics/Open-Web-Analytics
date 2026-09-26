@@ -135,10 +135,11 @@ return array(
          *
          * Renamed onto the prefix instead, which puts them exactly where a site
          * calling setUserProperty() puts them today. `user_name` is LEGACY rather
-         * than wire: the current tracker's setUserName() routes through
-         * setUserProperty(), so it sends up_user_name and never reaches this.
-         * `email_address` was already legacy -- its rename used to point at the
-         * declared user_email property and now points at the prefix.
+         * than wire: the current tracker's setUserName() writes the PAGE store
+         * under the up_ prefix, so the beacon already carries up_user_name and
+         * never reaches this. `email_address` was already legacy -- its rename used
+         * to point at the declared user_email property and now points at the
+         * prefix.
          */
         array( 'role' => 'legacy', 'from' => 'user_name',     'to' => 'up_user_name' ),
         array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'up_user_email' ),

@@ -869,11 +869,13 @@ class OWATracker  {
     /**
      * The site's OWN id for a logged-in person.
      *
-     * NOT setUserName, which is a display name and a visitor-store value.
-     * user_id is the one field that outlives a cookie, which is what makes it
-     * the only honest basis for joining a person's devices -- the alternative
-     * is a probabilistic join producing numbers nobody can check, and v2 does
-     * not do that.
+     * NOT setUserName, which is a display NAME and a custom user property --
+     * page-lifetime, and recorded server side with when it was set. user_id is the
+     * one field that outlives a cookie, which is what makes it the only honest
+     * basis for joining a person's devices -- the alternative is a probabilistic
+     * join producing numbers nobody can check, and v2 does not do that. It is also
+     * why log_visitor_pii gates this one and not the display name: an install must
+     * be able to stop storing the identifier.
      *
      * FORWARD-ONLY. Events collected before someone identified themselves stay
      * anonymous forever. Relabelling a visitor's earlier events would mean
@@ -3618,11 +3620,11 @@ class OWATracker  {
         /*
          * user_name is no longer collected from the visitor store.
          *
-         * setUserName() routes to setUserProperty() now, so the value is already
-         * on the event as up_user_name by the time this runs -- the same path
-         * every other custom user property takes. Reading it back out of a cookie
-         * here is what made it visitor-scoped transport for an event-scoped
-         * destination.
+         * setUserName() writes the PAGE store under the up_ prefix, so
+         * collectPageProperties() has already put it on the event as up_user_name
+         * by the time this runs -- the same shape every other custom user property
+         * arrives in. Reading it back out of a cookie here is what made it
+         * visitor-scoped transport for a value that is page-scoped and temporal.
          */
 
         for ( var name in collected ) {

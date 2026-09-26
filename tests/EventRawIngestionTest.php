@@ -320,6 +320,83 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * Line items nest as a real array, so JSON_TABLE can read one row per item.
+     *
+     * ct_line_items arrives from the wire as JSON TEXT, and Sanitize::cleanJson()
+     * validates it and hands the text back. The row builder assigned that straight
+     * into the params map, so json_encode() escaped it a second time and the column
+     * held {"items": "[{\"sku\": ...}]"} -- the value at $.items being one scalar
+     * string. Measured on a seeded purchase.
+     *
+     * JSON_TABLE over '$.items[*]' then produces nothing usable, which is why the
+     * Products report had no line items to report on. Asserted both ways: the
+     * document nests, and the server can expand it.
+     */
+    public function testLineItemsNestAndExpandWithJsonTable(): void
+    {
+        $order = 'items-' . $this->uniqueGuid();
+
+        $items = array(
+            array( 'sku' => 'SKU-A', 'name' => 'Widget', 'price' => 10.20, 'quantity' => 2 ),
+            array( 'sku' => 'SKU-B', 'name' => 'Gadget', 'price' => 5.50,  'quantity' => 1 ),
+        );
+
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'       => $this->site,
+            'visitor_id'    => $visitor,
+            'session_id'    => $session,
+            'guid'          => $this->uniqueGuid(),
+            'page_url'      => 'https://owa-test-site/checkout',
+            'page_location' => 'https://owa-test-site/checkout',
+            'page_title'    => 'Checkout',
+            'ct_order_id'   => $order,
+            'ct_total'      => '25.90',
+            'currency'      => 'USD',
+            'ct_line_items' => json_encode($items),
+        ]);
+
+        $db  = owa_coreAPI::dbSingleton();
+        $row = (array) $db->get_row(sprintf(
+            "SELECT id, params FROM owa_event_raw WHERE site_id = '%s' AND session_id = %d "
+            . "AND event_type = 'purchase'", $this->site, (int) $session));
+
+        $this->assertNotEmpty($row, 'the purchase was not stored');
+        $this->trackForCleanup('base.event_raw', (string) $row['id'], 'id');
+
+        $params = json_decode((string) $row['params'], true);
+
+        $this->assertIsArray($params['items'] ?? null,
+            'items must nest as an array; a JSON string here is the double-encoding bug');
+
+        $this->assertCount(2, $params['items']);
+        $this->assertSame('SKU-A', $params['items'][0]['sku']);
+
+        /*
+         * AND THE SERVER CAN EXPAND IT. The shape above could be right while the
+         * query the Products report needs still fails, so this asks MySQL rather
+         * than trusting the document.
+         */
+        $expanded = (array) $db->get_results(sprintf(
+            "SELECT li.sku, li.quantity FROM owa_event_raw e,"
+            . " JSON_TABLE(e.params, '$.items[*]' COLUMNS ("
+            . "   sku VARCHAR(64) PATH '$.sku',"
+            . "   quantity INT PATH '$.quantity')) li"
+            . " WHERE e.site_id = '%s' AND e.session_id = %d AND e.event_type = 'purchase'"
+            . " ORDER BY li.sku", $this->site, (int) $session));
+
+        $this->assertCount(2, $expanded,
+            'JSON_TABLE must yield one row per line item');
+
+        $first = (array) $expanded[0];
+
+        $this->assertSame('SKU-A', $first['sku']);
+        $this->assertEquals(2, $first['quantity']);
+    }
+
+    /**
      * The referrer is read for its host and its query, and edited no further.
      *
      * The host is what the cube pass classifies source and medium from, so it is
