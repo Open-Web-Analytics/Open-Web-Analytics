@@ -184,7 +184,38 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
-     * Build one raw row.
+     * Build one raw row -- A MAPPING, NOT A DERIVATION.
+     *
+     * Every column is one property read off a formed event and coerced to what
+     * the column stores. Nothing here works a value out: the registry declares
+     * how each property is set and a callback sets it, so this method's whole
+     * job is property name -> column name.
+     *
+     * It did not start that way. Sixteen columns were computed in here -- five
+     * readings of the user agent, five campaign tags, six readings of a URL and
+     * the three money conversions -- two of them in helper methods whose result
+     * was merged with `+=`, which silently discards a key the literal already
+     * set. That is how browser_version came to be the parser's answer in one
+     * place and the beacon's claim in another.
+     *
+     * The rule now, and RowIsAMappingTest holds it: if a column exists, a
+     * property backs it, and the property's value is what lands there. Two
+     * things follow. A column cannot appear that no property declares, which is
+     * the `revenue` bug -- this read a property of that name, the registry
+     * declares none, and every purchase stored NULL. And the event handed to
+     * Ingest::STORE_PRE is complete, so anything wanting to decide something
+     * about a row can listen there rather than being a step in here.
+     *
+     * Four columns are not a property read, and RowIsAMappingTest lists each
+     * with its reason: `id`, a hash OF the properties; `event_type`, which the
+     * EXPANSION names -- one beacon becomes a page_view plus its session_start
+     * and first_visit markers, so the property cannot answer for all three;
+     * `is_goal_event`, raised by Classes\GoalMarking at Ingest::STORE_POST; and
+     * `params`, which is by definition everything with no column.
+     *
+     * A fifth, `browser`, is a duplicate of browser_type that no dimension
+     * reads. It is on that list as a known exception rather than covered by a
+     * loose rule, so deleting the column closes the entry.
      *
      * @param object $event
      * @param string $name  the v2 event name
@@ -215,44 +246,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         /*
-         * The COMPLETE URL, not the canonical one. page_url has had the
-         * campaign parameters and the site's query_string_filters stripped out
-         * of it by the time a handler sees it, which is right for v1's document
-         * identity and wrong for evidence -- the tags are parsed out of this.
-         * page_location is sent by the v2 tracker and stashed by
-         * TrackingEventHelpers::keepCompleteUrl() for older beacons; page_url
-         * is the last resort, and then the query is genuinely gone.
-         */
-        // Compat::apply() has already put page_url under page_location for a
-        // beacon that only carries the old name, so this reads one field.
-        $location = $event->get( 'page_location' );
-
-        $page = \OWA\Module\Base\Classes\V2Event::parseUrl( $location );
-        $target = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'target_url' ) );
-        $referer = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'HTTP_REFERER' ) );
-
-        /*
-         * THE READINGS ARE CANONICALISED; THE EVIDENCE IS NOT.
-         *
-         * page_location is stored exactly as it arrived, because it is what a
-         * corrected parse gets re-applied to. page_path and page_query are what
-         * reports group by, and a reading that varies where the page does not
-         * is a broken report -- /store, /store/ and /store/index.html are one
-         * page, and owa_state is OWA's own plumbing appearing in somebody's
-         * page report.
-         *
-         * The referrer is deliberately left alone beyond its host: it is
-         * somebody else's URL, and collapsing it against THIS site's default
-         * page would be a category error.
+         * getSiteId() prefers `siteId` over `site_id`, where the guard above
+         * reads `site_id`. Left as it was: the id hash and the stored column
+         * agree with each other, which is the part that matters, and changing
+         * which of the two names wins is not a change to the row builder.
          */
         $site_id = $event->getSiteId();
-
-        $page['path'] = \OWA\Module\Base\Classes\V2Event::canonicalPath(
-            $page['path'], (string) \OWA\Core\CoreAPI::getSetting(
-                'base', 'default_page', 'profile', $site_id ) );
-
-        $page['query'] = \OWA\Module\Base\Classes\V2Event::filterQuery(
-            $page['query'], $this->droppedQueryParams( $site_id ) );
 
         $row = array(
 
@@ -275,14 +274,14 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'event_seq'      => $this->number( $event->get( 'event_seq' ) ),
             'beacon_version' => $this->number( $event->get( 'beacon_version' ) ),
 
-            'page_location' => $this->text( $location ),
-            'page_path'     => $page['path'],
-            'page_query'    => $page['query'],
+            'page_location' => $this->text( $event->get( 'page_location' ) ),
+            'page_path'     => $this->text( $event->get( 'page_path' ) ),
+            'page_query'    => $this->text( $event->get( 'page_query' ) ),
             'page_title'    => $this->text( $event->get( 'page_title' ) ),
             'content_group' => $this->text( $event->get( 'content_group' ) ),
             'referer_url'   => $this->text( $event->get( 'HTTP_REFERER' ) ),
-            'referer_host'  => $referer['host'],
-            'referer_query' => $referer['query'],
+            'referer_host'  => $this->text( $event->get( 'referer_host' ) ),
+            'referer_query' => $this->text( $event->get( 'referer_query' ) ),
 
             'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
@@ -299,7 +298,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'city'         => $this->text( $event->get( 'city' ) ),
             'region'       => $this->text( $event->get( 'state' ) ),
 
-            'host'          => $page['host'] ?: $this->text( $event->get( 'host' ) ),
+            'host'          => $this->text( $event->get( 'host' ) ),
             'ip_address'    => $this->text( $event->get( 'ip_address' ) ),
             'consent_state' => $this->text( $event->get( 'consent_state' ) ),
 
@@ -315,7 +314,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'tagged_search_terms' => $this->text( $event->get( 'tagged_terms' ) ),
 
             'target_url'  => $this->text( $event->get( 'target_url' ) ),
-            'target_host' => $target['host'],
+            'target_host' => $this->text( $event->get( 'target_host' ) ),
 
             'element_path' => $this->text( $event->get( 'element_path' ) ),
             'element_tag'  => $this->text( $event->get( 'dom_element_tag' ) ),
@@ -339,18 +338,17 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'is_goal_event' => 0,
 
             /*
-             * ct_total, converted -- NOT a property named `revenue`, which is
-             * what this read and which the registry does not declare. So the
-             * column was NULL on every purchase ever stored. ct_total is the
-             * name the wire has carried since 1.x and the one the registry
-             * declares for the purchase event; the column is minor units.
+             * ct_total, ct_tax and ct_shipping are the names the wire has
+             * carried since 1.x and the ones the registry declares for the
+             * purchase event; the columns are minor units, and toMinorUnits()
+             * has already converted each property to what its column stores.
+             *
+             * This read a property named `revenue`, which the registry does not
+             * declare, so the column was NULL on every purchase ever stored.
              */
-            'revenue'  => \OWA\Module\Base\Classes\V2Event::minorUnits(
-                $event->get( 'ct_total' ) ),
-            'tax'      => \OWA\Module\Base\Classes\V2Event::minorUnits(
-                $event->get( 'ct_tax' ) ),
-            'shipping' => \OWA\Module\Base\Classes\V2Event::minorUnits(
-                $event->get( 'ct_shipping' ) ),
+            'revenue'  => $this->number( $event->get( 'ct_total' ) ),
+            'tax'      => $this->number( $event->get( 'ct_tax' ) ),
+            'shipping' => $this->number( $event->get( 'ct_shipping' ) ),
             'currency' => $this->text( $event->get( 'currency' ) ),
 
             /*
@@ -1023,65 +1021,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * @param mixed $value
      * @return string|null
      */
-    /**
-     * Query parameters that do not belong in a page report.
-     *
-     * Three lists in one: OWA's own control parameters, the installation's
-     * query_string_filters, and the site's. The same set v1 strips in
-     * makeUrlCanonical(), read the same way -- getSiteSetting() is a scoped
-     * read of the configuration already in memory, so this costs the write path
-     * nothing.
-     *
-     * NOT utm_*. Those are the site's own tagging rather than ours, v1 keeps
-     * them, and so does GA.
-     *
-     * The list is per site and settings change, so what a report shows depends
-     * on the list as it was when the row was written. Making a corrected list
-     * re-apply to history means filtering in the build instead, which is the
-     * argument the cube exists for and is deferred rather than dismissed
-     * (2.28.2).
-     *
-     * @param string $site_id
-     * @return string[]
-     */
-    protected function droppedQueryParams( $site_id ) {
-
-        $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
-
-        $drop = array(
-            $ns . 'source',
-            $ns . 'medium',
-            $ns . 'campaign',
-            $ns . 'ad',
-            $ns . 'ad_type',
-            $ns . 'overlay',
-            $ns . 'state',
-            $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
-        );
-
-        foreach ( array(
-            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
-            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $site_id ),
-        ) as $configured ) {
-
-            if ( ! $configured ) {
-
-                continue;
-            }
-
-            foreach ( explode( ',', (string) $configured ) as $name ) {
-
-                $name = trim( $name );
-
-                if ( $name !== '' ) {
-
-                    $drop[] = $name;
-                }
-            }
-        }
-
-        return $drop;
-    }
 
     protected function text( $value ) {
 

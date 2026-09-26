@@ -1943,6 +1943,196 @@ class TrackingEventHelpers {
     }
 
 
+    /*
+     * ---- URL READINGS -----------------------------------------------------
+     *
+     * Six columns are readings of a URL the beacon sent, and each is now set by
+     * its own callback off the property it reads -- page_location for the page's
+     * three, HTTP_REFERER for the referrer's two, target_url for the click
+     * target's one. They used to be cut inside the row builder, which meant the
+     * registry declared six properties that nothing produced and the row builder
+     * knew how to parse a URL.
+     *
+     * NO MEMO, unlike the user agent's seven and the campaign tags' five. Those
+     * share a parse worth keeping: browscap loads a rule set, and the tag parse
+     * walks a settings-derived key map. parse_url is a C function costing 0.27us
+     * on a tagged URL -- measured, 300k iterations -- so the memo's own string
+     * concatenation and isset() would cost about what it saved. Three URLs
+     * parsed twice each is under a microsecond an event.
+     *
+     * THE THREE READINGS OF page_location ARE INDEPENDENT. path, query and host
+     * are disjoint substrings and no callback here reads another's output, so
+     * their order in the registry is free -- which is what makes six separate
+     * callbacks a mechanical substitution for one procedure rather than a
+     * rewrite with a sequence to preserve.
+     */
+
+    /**
+     * The page's path, canonicalised.
+     *
+     * THE READING IS CANONICALISED; THE EVIDENCE IS NOT. page_location is stored
+     * exactly as it arrived, because it is what a corrected parse gets
+     * re-applied to. This is what reports group by, and a reading that varies
+     * where the page does not is a broken report -- /store, /store/ and
+     * /store/index.html are one page.
+     */
+    static function derivePagePath( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'page_location' ) );
+
+        return \OWA\Module\Base\Classes\V2Event::canonicalPath(
+            $parts['path'], (string) \OWA\Core\CoreAPI::getSetting(
+                'base', 'default_page', 'profile', $event->getSiteId() ) );
+    }
+
+    /**
+     * The page's query string, with the Profile's dropped parameters removed.
+     *
+     * owa_state and the campaign keys are OWA's own plumbing and have no business
+     * appearing in somebody's page report. The tags are still recoverable: they
+     * are parsed out of page_location, which keeps them.
+     */
+    static function derivePageQuery( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'page_location' ) );
+
+        return \OWA\Module\Base\Classes\V2Event::filterQuery(
+            $parts['query'], self::droppedQueryParams( $event->getSiteId() ) );
+    }
+
+    /**
+     * The page's own host -- not this server's (HTTP_HOST) and not the visitor's
+     * network (REMOTE_HOST).
+     *
+     * Falls back to whatever the property already held, which is what the row
+     * builder's `?:` did. Nothing on the v2 path sets it: host is set_by event,
+     * so admitRequestParams() refuses a beacon that names it. The fallback is
+     * kept because a caller building an event in process can still set one, and
+     * the column is declared required.
+     */
+    static function deriveHost( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'page_location' ) );
+
+        return $parts['host'] ?: $value;
+    }
+
+    /**
+     * The referrer's host, and what the cube pass classifies source and medium
+     * from.
+     *
+     * The referrer is deliberately left alone beyond its host and query: it is
+     * somebody else's URL, and collapsing it against THIS site's default page
+     * would be a category error.
+     */
+    static function deriveRefererHost( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'HTTP_REFERER' ) );
+
+        return $parts['host'];
+    }
+
+    /** The referrer's query string, unfiltered -- see deriveRefererHost(). */
+    static function deriveRefererQuery( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'HTTP_REFERER' ) );
+
+        return $parts['query'];
+    }
+
+    /**
+     * The click target's host, so an outbound click is a comparison against host
+     * rather than a string test.
+     *
+     * Reads target_url AFTER makeUrlCanonical() has filtered it, which is what
+     * the row builder did: target_url is a client property and this is a derived
+     * one, so the scopes settle the order.
+     */
+    static function deriveTargetHost( $value, $event ) {
+
+        $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'target_url' ) );
+
+        return $parts['host'];
+    }
+
+    /**
+     * A money property as the minor units its column stores.
+     *
+     * ONE CALLBACK FOR ALL THREE -- ct_total, ct_tax, ct_shipping -- because it
+     * converts its own value and reads nothing else. event_raw.revenue, tax and
+     * shipping are BIGINTs of minor units with the currency beside them, because
+     * a float column sums to something nobody can reconcile.
+     *
+     * The conversion used to happen in the row builder, which is the last place
+     * it could: a property whose value is not what its column stores is a
+     * property the registry cannot describe.
+     */
+    static function toMinorUnits( $value, $event ) {
+
+        return \OWA\Module\Base\Classes\V2Event::minorUnits( $value );
+    }
+
+    /**
+     * The query parameters that come out of a stored page_query, for one site.
+     *
+     * OWA's own control parameters, plus the site's query_string_filters at both
+     * install and Profile scope. NOT utm_*: those are the site's own tagging
+     * rather than ours, v1 keeps them, and so does GA.
+     *
+     * The list is per site and settings change, so what a report shows depends on
+     * the list as it was when the row was written. Making a corrected list
+     * re-apply to history means filtering in the build instead, which is the
+     * argument the cube exists for and is deferred rather than dismissed
+     * (2.28.2).
+     *
+     * @param  string $site_id
+     * @return string[]
+     */
+    public static function droppedQueryParams( $site_id ) {
+
+        $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+
+        $drop = array(
+            $ns . 'source',
+            $ns . 'medium',
+            $ns . 'campaign',
+            $ns . 'ad',
+            $ns . 'ad_type',
+            $ns . 'overlay',
+            $ns . 'state',
+            $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
+        );
+
+        foreach ( array(
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $site_id ),
+        ) as $configured ) {
+
+            if ( ! $configured ) {
+
+                continue;
+            }
+
+            foreach ( explode( ',', (string) $configured ) as $name ) {
+
+                $name = trim( $name );
+
+                if ( $name !== '' ) {
+
+                    $drop[] = $name;
+                }
+            }
+        }
+
+        return $drop;
+    }
+
     /**
      * Filter function Strips a URL of certain defined session or tracking params
      *

@@ -61,14 +61,16 @@ final class EventRawIngestionTest extends IngestionTestCase
             'site_id'    => $this->site,
             'visitor_id' => $visitor,
             'session_id' => $session,
-            'page_url'   => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
+            // page_url as well as page_location, because Compat::apply() is
+            // meant to leave page_location alone when a beacon carries both.
+            // landing_url is NOT here: the tracker stopped sending it, and the
+            // fixture claiming a property the registry no longer declares is
+            // how a deleted field goes on looking alive.
+            'page_url'      => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
             'page_location' => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
-            'landing_url'   => 'https://owa-test-site/v2/a?owa_campaign=spring&keep=me',
             'page_title'    => 'V2 A',
-            'HTTP_REFERER'  => 'https://www.example.net/x',
-            'is_new_session_start'         => true,
+            'HTTP_REFERER'  => 'https://www.example.net/x?q=shoes',
             'is_new_session_start'   => true,
-            'is_new_visitor_created'         => true,
             'is_new_visitor_created' => true,
             'fsts' => time(),
             'sts'  => time(),
@@ -220,6 +222,62 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * The referrer is read for its host and its query, and edited no further.
+     *
+     * The host is what the cube pass classifies source and medium from, so it is
+     * the reading that has to be there. Beyond that the URL is SOMEBODY ELSE'S,
+     * and canonicalising it against this site's default page or filtering it
+     * against this site's parameter list would be a category error -- their
+     * ?q=shoes is the search term, not plumbing to strip.
+     */
+    public function testTheReferrerIsReadForItsHostAndQuery(): void
+    {
+        $row = $this->firePageView()['page_view'];
+
+        $this->assertSame('https://www.example.net/x?q=shoes', $row['referer_url'],
+            'the referrer is stored exactly as the browser sent it');
+
+        $this->assertSame('www.example.net', $row['referer_host']);
+        $this->assertSame('q=shoes', $row['referer_query'],
+            'their parameter survives -- the dropped list is this site\'s, not theirs');
+    }
+
+    /**
+     * An off-site click's target host, so outbound is a comparison rather than a
+     * string test.
+     *
+     * target_host is derived AFTER makeUrlCanonical() has been over target_url,
+     * which the property scopes settle: target_url is client-set and target_host
+     * is event-set, so the filter has run by the time the host is read. The two
+     * therefore cannot disagree about which URL they describe.
+     */
+    public function testAClickReadsItsTargetHost(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('dom.click', [
+            'site_id'       => $this->site,
+            'visitor_id'    => $visitor,
+            'session_id'    => $session,
+            'page_url'      => 'https://owa-test-site/v2/a',
+            'page_location' => 'https://owa-test-site/v2/a',
+            'target_url'    => 'https://shop.example.org/cart?sku=9',
+            'fsts'          => time(),
+            'sts'           => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['click'] ?? null;
+
+        $this->assertNotNull($row, 'dom.click stores a row named click');
+
+        $this->assertSame('shop.example.org', $row['target_host']);
+        $this->assertSame('owa-test-site', $row['host'],
+            'and the page host is the page\'s, not the target\'s');
+    }
+
+    /**
      * The path collapses, so one page is one row in a page report.
      *
      * /store, /store/ and /store/index.html are the case v1 handles and v2 did
@@ -314,7 +372,8 @@ final class EventRawIngestionTest extends IngestionTestCase
             (int) $rows['page_view']['visitor_id']));
 
         $this->assertSame('spring', $row['acq_campaign']);
-        $this->assertSame('https://www.example.net/x', $row['acq_referer_url']);
+        $this->assertSame('https://www.example.net/x?q=shoes', $row['acq_referer_url'],
+            'the acquisition keeps the referrer whole, query included');
         /*
          * Derived from the ROW's own date, not from today's. An earlier test in
          * the suite moves the request container's clock -- which is what

@@ -663,8 +663,10 @@
         ],
         "data_type": "integer",
         "required": false,
-        "callbacks": [],
-        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+        "callbacks": [
+            "owa_trackingEventHelpers::toMinorUnits"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
     "ct_tax": {
         "set_by": "client",
@@ -677,8 +679,10 @@
         ],
         "data_type": "integer",
         "required": false,
-        "callbacks": [],
-        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+        "callbacks": [
+            "owa_trackingEventHelpers::toMinorUnits"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
     "ct_shipping": {
         "set_by": "client",
@@ -691,8 +695,10 @@
         ],
         "data_type": "integer",
         "required": false,
-        "callbacks": [],
-        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric: it applies $var + 0, so 12.50 stays 12.5 rather than truncating, and the handler rounds and converts to the stored value."
+        "callbacks": [
+            "owa_trackingEventHelpers::toMinorUnits"
+        ],
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
     "ct_line_items": {
         "set_by": "client",
@@ -986,7 +992,10 @@
         ],
         "data_type": "string",
         "required": true,
-        "callbacks": []
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveHost"
+        ],
+        "note": "The PAGE’s host. Not HTTP_HOST, which is this server’s, and not REMOTE_HOST, which is the visitor’s network. Falls back to whatever the property already held; nothing on the wire can set it, since set_by event means admitRequestParams() refuses a beacon that names it."
     },
     "browser_type": {
         "set_by": "event",
@@ -1089,8 +1098,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "The path, canonicalised: the Profile default page and the trailing slash collapse. Cut in the row builder from page_location, not by a callback."
+        "callbacks": [
+            "owa_trackingEventHelpers::derivePagePath"
+        ],
+        "note": "The path, canonicalised: the Profile’s default page and the trailing slash collapse. Set by its own callback off page_location, like every other property -- it used to be cut inside the row builder, which is how the registry came to declare a property nothing produced."
     },
     "page_query": {
         "set_by": "event",
@@ -1103,8 +1114,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "The query string with the Profile’s dropped parameters removed. Cut in the row builder."
+        "callbacks": [
+            "owa_trackingEventHelpers::derivePageQuery"
+        ],
+        "note": "The query string with the Profile’s dropped parameters removed -- owa_state and the campaign keys are OWA’s own plumbing and have no business in somebody’s page report. The tags stay recoverable: they are parsed out of page_location, which keeps them."
     },
     "referer_host": {
         "set_by": "event",
@@ -1117,8 +1130,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "The referrer’s host, and what the cube pass classifies source and medium from."
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveRefererHost"
+        ],
+        "note": "The referrer’s host, and what the cube pass classifies source and medium from. Left alone beyond the host: it is somebody else’s URL, and canonicalising it against THIS site’s default page would be a category error."
     },
     "referer_query": {
         "set_by": "event",
@@ -1131,7 +1146,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": []
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveRefererQuery"
+        ],
+        "note": "The referrer’s query string, unfiltered -- see referer_host."
     },
     "target_host": {
         "set_by": "event",
@@ -1145,8 +1163,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "The click target’s host, so an outbound click is a comparison against host rather than a string test."
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveTargetHost"
+        ],
+        "note": "The click target’s host, so an outbound click is a comparison against host rather than a string test. Read after makeUrlCanonical() has filtered target_url, which the scopes settle: target_url is a client property and this is a derived one."
     },
     "browser_version": {
         "set_by": "event",
