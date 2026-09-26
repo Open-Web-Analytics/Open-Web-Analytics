@@ -101,8 +101,22 @@ class OWATracker  {
 		    prior_session_id:        { scope: 'session', permanent: false },
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
-		    session_referer:         { scope: 'session', permanent: false },
-		    landing_url:             { scope: 'session', permanent: false },
+		    /*
+		     * session_referer AND landing_url WERE HERE, and being in this map is
+		     * what put them on every beacon of a session.
+		     *
+		     * Both were re-sent from session state so the server could attribute
+		     * the session from any event. It never needed either: the tags are
+		     * parsed from page_location on the session-starting beacon, which is
+		     * the same URL landing_url held, and the session's referrer is the
+		     * referer_host of its first row, which the pass already reads through
+		     * the window it opens for the landing page. GA carries neither -- no
+		     * GA cookie holds a URL, and session source is fixed by the session's
+		     * first event.
+		     *
+		     * So this removes a URL and a referrer from the cookie and from every
+		     * beacon of every session, for a read the pass performs anyway.
+		     */
 		    nps:                     { scope: 'session', permanent: false },
 		    /*
 		     * attribs WAS HERE, and being in this map is what put it on the
@@ -113,7 +127,7 @@ class OWATracker  {
 		     *
 		     * The whole client-side attribution stack went with it: the two
 		     * models, the 'c' cookie, maxPriorCampaigns and
-		     * trafficAttributionMode. The server resolves tags from landing_url.
+		     * trafficAttributionMode. The server resolves tags from page_location on the session-starting beacon.
 		     */
 		    // The site may set a different one, so it is not permanent.
 		    user_name:               { scope: 'session', permanent: false },
@@ -2554,7 +2568,7 @@ class OWATracker  {
      * getCampaignProperties() WAS HERE and had no caller left.
      *
      * The tracker does not read owa_* tags off the URL at all any more. It
-     * sends landing_url, and taggedColumns() parses the tags out of it
+     * sends nothing of the kind: taggedValue() parses the tags out of page_location
      * server-side -- where a corrected rule reaches data already collected,
      * which the browser cannot do. The parse survived only because the
      * attribution models called it, and they are gone for the same reason:
@@ -2577,7 +2591,7 @@ class OWATracker  {
      * out of the `c` cookie, parsed the URL's owa_* tags, ran one of two
      * attribution models over them and wrote the stack back -- and none of it
      * reached the server. NO tracker generation ever put the tags on the wire:
-     * v1 and v2 both send landing_url and the server parses the tags out of it
+     * the server parses the tags out of the landing beacon's own page_location
      * in taggedColumns(), where a corrected rule can reach data already
      * collected.
      *
@@ -2621,28 +2635,6 @@ class OWATracker  {
          * own session, which is the scope contract broken, not just a wrong
          * value. It is written once and re-sent from session state thereafter.
          */
-        if ( this.isNewSessionFlag === true ) {
-
-            OWA.setState( this.storeName('s'), 'referer', document.referrer );
-
-            /*
-             * The URL this session landed on, written once and re-sent from
-             * session state for the rest of it -- the same contract as
-             * `referer` above, and for the same reason: a session-scoped
-             * property must be identical on every event sharing a session_id.
-             *
-             * It replaces the six tagged_* parameters this tracker used to
-             * parse out of the URL and re-send on every beacon. The server
-             * parses it instead, which is what makes the answer re-derivable:
-             * a parser fix, or a site changing `ns`, then applies on reprocess
-             * rather than being frozen in whatever this page load decided.
-             *
-             * The whole URL rather than just its query string, because the
-             * landing page is evidence in its own right and page_url on a later
-             * beacon is a different page.
-             */
-            OWA.setState( this.storeName('s'), 'landing_url', this.getCurrentUrl() );
-        }
 
         // apply traffic attribution realted properties to events
         // all properties should be set in the state store by this point.
@@ -3310,11 +3302,6 @@ class OWATracker  {
             { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'referer', name: 'session_referer' },
-            // The landing URL, session-scoped like the referer beside it. It is
-            // what the server parses campaign tags out of, now that the tracker
-            // no longer parses them itself.
-            { store: 's', key: 'landing_url', name: 'landing_url' },
             { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
             { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
@@ -3374,7 +3361,7 @@ class OWATracker  {
         // they cannot go in the map above.
         /*
          * The tagged_* keys are no longer collected, because nothing writes
-         * them to session state any more -- the server parses landing_url
+         * them to session state any more -- the server parses page_location
          * instead. The loop that stood here read six keys that are now always
          * absent.
          *

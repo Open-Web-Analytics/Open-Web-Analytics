@@ -97,7 +97,9 @@ describe('tracker referred pageview beacon contracts', () => {
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
         // Guard the mutually-exclusive invariant explicitly.
-        expect(actual).toContain('session_referer');
+        // The referrer rides as HTTP_REFERER; the session-scoped copy is gone.
+        expect(actual).toContain('HTTP_REFERER');
+        expect(actual).not.toContain('session_referer');
         expect(actual).not.toContain('tagged_campaign');
     });
 
@@ -118,24 +120,35 @@ describe('tracker referred pageview beacon contracts', () => {
         expect(actual).not.toContain('tagged_campaign');
         expect(actual).not.toContain('tagged_source');
         expect(actual).not.toContain('tagged_terms');
-        expect(actual).toContain('landing_url');
 
-        // And it is the LANDING url, with the tags still on it -- not a
-        // stripped path. This is the assertion that would catch the value
-        // being collected from the wrong place, which the key's presence alone
+        /*
+         * AND NO landing_url EITHER, which this asserted until the field came
+         * off the wire.
+         *
+         * The tags are still parsed by the server, but out of page_location on
+         * the session-starting beacon -- which is the same URL landing_url held,
+         * because both came from getCurrentUrl(). Re-sending it from session
+         * state for the life of the session bought nothing.
+         */
+        expect(actual).not.toContain('landing_url');
+        expect(actual).not.toContain('session_referer');
+
+        // The evidence the server parses: the tags are ON page_location, not
+        // stripped from it. This is the assertion that would catch the value
+        // being collected from the wrong place, which a key's presence alone
         // would not.
         const sent = emittedValues((t) => t.trackPageView(location.href));
-        expect(sent.landing_url).toContain('owa_campaign=summer');
-        expect(sent.landing_url).toContain('owa_source=news');
-        expect(sent.landing_url).toContain('owa_search_terms=blue');
+        expect(sent.page_location).toContain('owa_campaign=summer');
+        expect(sent.page_location).toContain('owa_source=news');
+        expect(sent.page_location).toContain('owa_search_terms=blue');
 
-        // ...and the referrer alongside it. This asserted `not.toContain`
-        // until the campaign gate was removed: attribution used to suppress
-        // referrer inference, which was right while the BROWSER picked a
-        // winner between them. The server picks now -- tagged_* first, then
-        // the referrer -- and it needs the referrer in its own right for
-        // owa_referer.url, is_searchengine and the referring-sites report.
-        // So the two are no longer mutually exclusive.
-        expect(actual).toContain('session_referer');
+        /*
+         * The referrer still rides every beacon as HTTP_REFERER, which is what
+         * the server classifies from -- the SESSION's referrer is the
+         * referer_host of its first row, read by the pass through the window it
+         * already opens for the landing page. A session-scoped copy on every
+         * beacon was the thing being paid for twice.
+         */
+        expect(actual).toContain('HTTP_REFERER');
     });
 });

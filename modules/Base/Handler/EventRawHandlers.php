@@ -286,18 +286,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
-            /*
-             * browser_version is NOT here, and was: it read the property
-             * `browser`, which v1 resolved through Service::getBrowscap() with NO
-             * ARGUMENT -- and that memoises the first parse made in the process
-             * and otherwise falls back to $_SERVER, so a queued beacon drained
-             * later was versioned by whatever user agent the drain saw first.
-             *
-             * deviceColumns() computes it from the event's OWN user agent, and
-             * `$row +=` keeps the left-hand value for a duplicate key -- so the
-             * correct value was computed and then silently discarded on every
-             * event. Leaving the key out is what lets the right one through.
-             */
+            'browser_version' => $this->text( $event->get( 'browser_version' ) ),
+            'os_version'      => $this->text( $event->get( 'os_version' ) ),
+            'device_type'     => $this->text( $event->get( 'device_type' ) ),
+            'device_brand'    => $this->text( $event->get( 'device_brand' ) ),
+            'device_model'    => $this->text( $event->get( 'device_model' ) ),
             'os'              => $this->text( $event->get( 'os' ) ),
             'language'        => $this->text( $event->get( 'language' ) ),
 
@@ -314,6 +307,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'click_y'     => $this->number( $event->get( 'click_y' ) ),
             'page_width'  => $this->number( $event->get( 'page_width' ) ),
             'page_height' => $this->number( $event->get( 'page_height' ) ),
+
+            'tagged_source'       => $this->text( $event->get( 'tagged_source' ) ),
+            'tagged_medium'       => $this->text( $event->get( 'tagged_medium' ) ),
+            'tagged_campaign'     => $this->text( $event->get( 'tagged_campaign' ) ),
+            'tagged_ad'           => $this->text( $event->get( 'tagged_ad' ) ),
+            'tagged_search_terms' => $this->text( $event->get( 'tagged_terms' ) ),
 
             'target_url'  => $this->text( $event->get( 'target_url' ) ),
             'target_host' => $target['host'],
@@ -366,156 +365,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'params' => $this->params( $event ),
         );
 
-        $row += $this->deviceColumns( $event );
-        $row += $this->taggedColumns( $event, $name );
-
         return $row;
-    }
-
-    /**
-     * browser / os version and the device, from the one user-agent parse.
-     *
-     * Split out because all six come from the same parser object and asking it
-     * once is the point -- resolveBrowserType() and friends each fetch the
-     * browscap singleton separately, which is free only because it is cached.
-     *
-     * device_type is DERIVED here rather than read: ua-parser has no such
-     * field. Its device rules answer brand, model and family, and 'Other' is
-     * its word for "no rule matched" -- an answer about a desktop browser and
-     * an absence about a phone. The OS family is what tells those apart, so the
-     * rule reads the OS first and falls through to NULL rather than guessing
-     * desktop, because a wrong 'desktop' is indistinguishable from a real one.
-     *
-     * @param object $event
-     * @return array
-     */
-    protected function deviceColumns( $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $bcap    = $service->getBrowscap( $event->get( 'HTTP_USER_AGENT' ) );
-
-        $brand = $this->text( $bcap->getDeviceBrand() );
-        $model = $this->text( $bcap->getDeviceModel() );
-        $os    = strtolower( (string) $bcap->getOsFamily() );
-
-        $mobile_os = array( 'android', 'ios', 'windows phone', 'blackberry os',
-                            'firefox os', 'kaios', 'harmonyos' );
-
-        $desktop_os = array( 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
-                             'chrome os', 'fedora', 'debian', 'freebsd' );
-
-        $family = strtolower( (string) $bcap->getDeviceFamily() );
-
-        if ( $family === 'ipad' || strpos( $family, 'tablet' ) !== false ) {
-
-            $device_type = 'tablet';
-
-        } elseif ( in_array( $os, $mobile_os, true ) ) {
-
-            $device_type = 'mobile';
-
-        } elseif ( in_array( $os, $desktop_os, true ) ) {
-
-            $device_type = 'desktop';
-
-        } else {
-
-            $device_type = null;
-        }
-
-        return array(
-            'browser_version' => $this->text( $bcap->getUaVersion() ),
-            'os_version'      => $this->text( $bcap->getOsVersion() ),
-            'device_type'     => $device_type,
-            // 'Other' is the parser saying it has no rule, not a brand.
-            'device_brand'    => strtolower( (string) $brand ) === 'other' ? null : $brand,
-            'device_model'    => strtolower( (string) $model ) === 'other' ? null : $model,
-        );
-    }
-
-    /**
-     * The tagged_* columns -- evidence, on the landing event only.
-     *
-     * The landing URL rides the landing beacon and no other, so the tags reach
-     * exactly one raw row per session and every later row holds NULL. The pass
-     * reads that first event anyway, for the landing page, so carrying the
-     * reading across the session adds no read.
-     *
-     * Transcription, never classification: what the URL CLAIMED. The answer
-     * over it -- tag if there was one, else the referrer classified -- is the
-     * pass's, on the cube row, where correcting the classifier is a
-     * reprocess rather than an edit.
-     *
-     * @param object $event
-     * @param string $name
-     * @return array
-     */
-    protected function taggedColumns( $event, $name ) {
-
-        $absent = array(
-            'tagged_source'       => null,
-            'tagged_medium'       => null,
-            'tagged_campaign'     => null,
-            'tagged_ad'           => null,
-            'tagged_search_terms' => null,
-        );
-
-        /*
-         * Which event is the landing one. session_start is materialised from
-         * the session's first page_view and first_visit from the visitor's, so
-         * all three of these are the same beacon -- the landing beacon -- and
-         * each keeps its own copy, since a build reads whichever of them it
-         * finds first.
-         */
-        // ONE FLAG. The page-scoped twin used to be ORed in so every event of
-        // the landing page kept a copy of the tags -- redundant, because the
-        // pass spreads them: Columns::SESSION reads tagged_* through
-        // FIRST_VALUE over the session, so one tagged row is enough.
-        $is_landing = $event->get( 'is_new_session_start' );
-
-        if ( ! $is_landing ) {
-
-            return $absent;
-        }
-
-        /*
-         * TrackingEventHelpers::taggedValue() is the parse, and it already has
-         * the precedence right: a tagged_* the beacon actually SENT wins, and
-         * the parse of landing_url is the fallback. Trackers are cached in
-         * browsers, so beacons from before the parse moved to the server keep
-         * arriving; a value that was transmitted beats one re-derived from
-         * evidence.
-         *
-         * tagged_terms is the one key whose two halves do not share a stem --
-         * owa_search_terms on the URL, tagged_terms on the wire -- and v2 names
-         * the column tagged_search_terms. Mapped here rather than renaming
-         * either side, since both are already in the wild.
-         *
-         * tagged_ad_type is parsed by that helper and deliberately NOT stored:
-         * v2's raw table has `ad` and no ad_type, and a column that exists only
-         * to receive a value v1 happened to collect is how the star schema got
-         * its width.
-         */
-        return array(
-            'tagged_source'       => $this->tagged( $event, 'tagged_source' ),
-            'tagged_medium'       => $this->tagged( $event, 'tagged_medium' ),
-            'tagged_campaign'     => $this->tagged( $event, 'tagged_campaign' ),
-            'tagged_ad'           => $this->tagged( $event, 'tagged_ad' ),
-            'tagged_search_terms' => $this->tagged( $event, 'tagged_terms' ),
-        );
-    }
-
-    /**
-     * One tagged value off the landing URL, or null.
-     *
-     * @param object $event
-     * @param string $name  a wire property name, e.g. tagged_source
-     * @return string|null
-     */
-    protected function tagged( $event, $name ) {
-
-        return $this->text(
-            \OWA\Module\Base\Classes\TrackingEventHelpers::taggedValue( $event, $name ) );
     }
 
     /**

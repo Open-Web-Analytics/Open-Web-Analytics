@@ -244,7 +244,6 @@ describe('session-scoped properties do not vary within a session', () => {
         // The registry is only a contract if it is complete. A property added to
         // a collector without a scope would otherwise be silently unguarded.
         const t = newTracker();
-        OWA.setState(t.storeName('s'), 'session_referer', 'x');
 
         const emitted = Object.keys(t.collectStateProperties())
             .concat(Object.keys(t.collectPageProperties()))
@@ -279,8 +278,24 @@ describe('session-scoped properties do not vary within a session', () => {
             // prior_sessions == 0, which rides every beacon.
             'psts',
             'sts',
-            'session_referer',
+            /*
+             * session_referer AND landing_url were here, and both are gone --
+             * taken twice, as this tripwire demands.
+             *
+             * Each was written once at session start and re-sent from state on
+             * every beacon of the session, so the server could attribute from any
+             * event. It never needed either: the tags are parsed from
+             * page_location on the session-starting beacon, which is the same URL
+             * landing_url held, and the session's referrer is the referer_host of
+             * its first row -- read by the pass through the window it already
+             * opens for the landing page. HTTP_REFERER still rides every beacon.
+             */
         ].forEach((prop) => expect(withScope('session')).toContain(prop));
+
+        // ...and the two that left, asserted absent so their removal cannot be
+        // undone by accident.
+        ['session_referer', 'landing_url']
+            .forEach((prop) => expect(withScope('session')).not.toContain(prop));
 
         // Written once and never rewritten. first_session_date is derived from
         // an anchor that never changes, so it qualifies too.

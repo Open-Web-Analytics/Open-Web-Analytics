@@ -161,7 +161,14 @@ final class WireSurfaceEnumeratedTest extends TestCase
      */
     public function testBothSidesAreActuallyPopulated(): void
     {
-        $this->assertGreaterThan( 40, count( $this->emitted() ),
+        /*
+         * 40 now: the wire lost landing_url, session_referer, the three
+         * dom_element_* the click no longer collects and the purchase's three
+         * billing-address fields, each because nothing read it. The guard is
+         * against the FIXTURE not being read, so it tracks the wire down rather
+         * than pinning a number the wire is supposed to be able to shrink.
+         */
+        $this->assertGreaterThan( 35, count( $this->emitted() ),
             'Far fewer beacon fields than expected -- the fixture is not being read.' );
 
         /*
@@ -177,8 +184,13 @@ final class WireSurfaceEnumeratedTest extends TestCase
          * time_since_last_session and browser, none of which any v2 reader or
          * dimension touches. 80 is the current vocabulary and the guard still
          * catches the config not being read.
+         *
+         * Then 84, when landing_url and session_referer came off the wire: the
+         * tags are parsed from page_location on the session-starting beacon, which
+         * is the same URL, and the session's referrer is the referer_host of its
+         * first row.
          */
-        $this->assertGreaterThan( 75, count( $this->declared() ),
+        $this->assertGreaterThan( 70, count( $this->declared() ),
             'Far fewer declared properties than expected -- the config is not being read.' );
     }
 

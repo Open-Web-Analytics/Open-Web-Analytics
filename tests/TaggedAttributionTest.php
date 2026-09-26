@@ -63,14 +63,16 @@ final class TaggedAttributionTest extends TestCase
             'tagged_campaign' => 'summer',
             'tagged_ad'       => 'creative-a',
             'tagged_terms'    => 'blue widgets',
-            'landing_url'     => 'https://example.test/?owa_source=newsletter',
+            'page_location'   => 'https://example.test/?owa_source=newsletter',
         ) );
 
         $this->assertSame(
-            array( 'landing_url' => 'https://example.test/?owa_source=newsletter' ),
+            array( 'page_location' => 'https://example.test/?owa_source=newsletter' ),
             $admitted,
-            'A beacon may report the URL it landed on. The tags are the server\'s reading '
-            . 'of that URL, so a request asserting one is asserting its own attribution.' );
+            'A beacon reports the URL of the page. The tags are the server\'s reading of '
+            . 'that URL on the session-starting beacon, so a request asserting one is '
+            . 'asserting its own attribution. landing_url was the field this used to '
+            . 'admit; it is off the wire, because page_location is the same string there.' );
     }
 
     /**

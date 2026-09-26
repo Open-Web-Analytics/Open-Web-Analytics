@@ -96,7 +96,7 @@ afterEach(() => {
 
 
 
-describe('the session referrer is recorded independently of the campaign', () => {
+describe('the referrer reaches the server on every beacon, campaign or not', () => {
 
     function withReferrer(value) {
         Object.defineProperty(document, 'referrer', {
@@ -104,76 +104,76 @@ describe('the session referrer is recorded independently of the campaign', () =>
         });
     }
 
-    function storedReferer(t) {
-        return OWA.getState(t.storeName('s'), 'referer');
-    }
-
     afterEach(() => { withReferrer(''); });
 
     /*
-     * The regression. A landing page carrying campaign tags recorded NO
-     * referrer, because the write sat in the `else` of `if (isTrafficAttributed)`.
-     * That was right while the browser decided attribution -- campaign beat
-     * referrer -- but since #812 the server resolves, and it needs the referrer
-     * for owa_referer.url, is_searchengine and the referring-sites report. The
-     * server already decides precedence via tagged_*, so recording the referrer
-     * cannot override the campaign.
+     * WHAT THIS USED TO TEST, and why the subject changed.
+     *
+     * The regression it was written for: a landing page carrying campaign tags
+     * recorded NO referrer, because the write sat in the `else` of
+     * `if (isTrafficAttributed)`. Right while the browser decided attribution --
+     * campaign beat referrer -- and wrong once the server resolved, because the
+     * server needs the referrer in its own right for is_searchengine and the
+     * referring-sites report.
+     *
+     * The mechanism it tested is gone: the tracker no longer writes a
+     * session-scoped `referer` into state, and session_referer is off the wire.
+     * The referrer is per-event evidence now -- HTTP_REFERER, on every beacon,
+     * from that page's own document.referrer -- and the SESSION's referrer is
+     * the referer_host of its first row, which the pass reads through the window
+     * it already opens for the landing page.
+     *
+     * So what survives is the claim that matters: no campaign gate, anywhere,
+     * between the referrer and the server.
      */
-    test('a campaign-tagged landing page still records its referrer', () => {
+    test('a campaign-tagged landing page still sends its referrer', () => {
 
         withReferrer('https://partner.example/post');
         setUrl('/landing?owa_campaign=spring&owa_medium=email');
 
         const t = newTracker();
-        t.isNewSessionFlag = true;
 
-        t.setTrafficAttribution({}, function () {});
-
-        // isTrafficAttributed went with the attribution models: nothing sets
-        // it, because the client no longer decides anything.
-        expect(storedReferer(t)).toBe('https://partner.example/post');
+        expect(t.collectPageProperties()['HTTP_REFERER'])
+            .toBe('https://partner.example/post');
     });
 
-    test('an untagged landing page still records its referrer', () => {
+    test('an untagged landing page sends it too', () => {
 
         withReferrer('https://news.example/article');
         setUrl('/landing');
 
         const t = newTracker();
-        t.isNewSessionFlag = true;
 
-        t.setTrafficAttribution({}, function () {});
-
-        expect(storedReferer(t)).toBe('https://news.example/article');
+        expect(t.collectPageProperties()['HTTP_REFERER'])
+            .toBe('https://news.example/article');
     });
 
     /*
-     * session_referer is declared `scope: 'session'`, and the rule for that
-     * scope is that the value must be IDENTICAL on every event sharing a
-     * session_id. Writing it again mid-session would make a session-scoped
-     * value vary within its own session -- the scope contract broken, not
-     * merely a wrong value. (It would also be wrong on its own terms: the
-     * browser reports one of this site's own pages as the referrer.)
+     * And a later page in the same session sends ITS OWN referrer, which is one
+     * of this site's own pages.
+     *
+     * That used to be forbidden -- session_referer was declared `scope:
+     * 'session'` and had to be identical on every event sharing a session_id, so
+     * writing it again mid-session broke the scope contract. With the field gone
+     * there is no session-scoped value to violate: each beacon reports what the
+     * browser told it, and the server takes the session's referrer from the first
+     * row. The internal referrer on later beacons is exactly the evidence that
+     * makes "first row" the right rule.
      */
-    test('a later page in the same session does not overwrite it', () => {
+    test('a later page in the same session sends its own referrer', () => {
 
         withReferrer('https://news.example/article');
         setUrl('/landing');
 
         const t = newTracker();
-        t.isNewSessionFlag = true;
-        t.setTrafficAttribution({}, function () {});
 
-        expect(storedReferer(t)).toBe('https://news.example/article');
+        expect(t.collectPageProperties()['HTTP_REFERER'])
+            .toBe('https://news.example/article');
 
-        // second page view: same session, and the browser now reports the
-        // previous page of this very site as the referrer.
         withReferrer('https://cv.example/landing');
         setUrl('/second');
 
-        t.isNewSessionFlag = false;
-        t.setTrafficAttribution({}, function () {});
-
-        expect(storedReferer(t)).toBe('https://news.example/article');
+        expect(t.collectPageProperties()['HTTP_REFERER'])
+            .toBe('https://cv.example/landing');
     });
 });

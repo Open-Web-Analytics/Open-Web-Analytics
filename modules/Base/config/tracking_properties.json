@@ -338,40 +338,10 @@
             "owa_trackingEventHelpers::makeUrlCanonical"
         ]
     },
-    "session_referer": {
-        "set_by": "client",
-        "from": [
-            "session_referer"
-        ],
-        "events": [
-            "page_view",
-            "session_start",
-            "first_visit"
-        ],
-        "data_type": "url",
-        "required": false,
-        "callbacks": [],
-        "note": "Carried straight from the wire -- no callback, no default -- so it is on the event before the property pass starts. The old \"must come after session_referer\" comments on source/medium/search_terms described a constraint that never existed."
-    },
-    "landing_url": {
-        "set_by": "client",
-        "from": [
-            "landing_url"
-        ],
-        "events": [
-            "page_view",
-            "session_start",
-            "first_visit"
-        ],
-        "data_type": "url",
-        "required": false,
-        "callbacks": [],
-        "note": "The URL the session landed on, carried for the whole session so the server can resolve campaign tags from it on every beacon -- not just the first, where page_url would do. Replaces the six tagged_* params the tracker used to parse and re-send. Carried rather than derived because raw is the realtime surface: a value only a later pass produces does not exist for a live query. See resolveSource/taggedValue."
-    },
     "tagged_source": {
         "set_by": "event",
         "from": [
-            "landing_url"
+            "page_location"
         ],
         "column": "tagged_source",
         "events": [
@@ -381,13 +351,15 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedSource"
+        ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_medium": {
         "set_by": "event",
         "from": [
-            "landing_url"
+            "page_location"
         ],
         "column": "tagged_medium",
         "events": [
@@ -397,13 +369,15 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedMedium"
+        ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_campaign": {
         "set_by": "event",
         "from": [
-            "landing_url"
+            "page_location"
         ],
         "column": "tagged_campaign",
         "events": [
@@ -413,13 +387,15 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedCampaign"
+        ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_ad": {
         "set_by": "event",
         "from": [
-            "landing_url"
+            "page_location"
         ],
         "column": "tagged_ad",
         "events": [
@@ -429,13 +405,15 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedAd"
+        ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_terms": {
         "set_by": "event",
         "from": [
-            "landing_url"
+            "page_location"
         ],
         "column": "tagged_search_terms",
         "events": [
@@ -445,7 +423,9 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveTaggedTerms"
+        ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "click_x": {
@@ -1179,7 +1159,9 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveBrowserVersion"
+        ],
         "note": "From the one user-agent parse in the row builder. It used to be read from a property resolved through an argument-less browscap accessor, which memoises the first parse in the process."
     },
     "os_version": {
@@ -1193,7 +1175,9 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": []
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveOsVersion"
+        ]
     },
     "device_type": {
         "set_by": "event",
@@ -1206,7 +1190,9 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveDeviceType"
+        ],
         "note": "Derived, not read: ua-parser has no such field, and ‘Other’ is its word for no rule matching. The OS family is what tells a desktop from a phone, and NULL is what an unknown gets rather than a guess at desktop."
     },
     "device_brand": {
@@ -1220,7 +1206,9 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": []
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveDeviceBrand"
+        ]
     },
     "device_model": {
         "set_by": "event",
@@ -1233,6 +1221,8 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": []
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveDeviceModel"
+        ]
     }
 }

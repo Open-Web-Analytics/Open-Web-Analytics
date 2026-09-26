@@ -89,24 +89,68 @@ class Service extends \OWA\Core\Base {
 
     }
 
-    function setBrowscap($b) {
+    /**
+     * An explicitly injected parser, which outranks the memo. Handing null
+     * CLEARS the memo, which is what a caller processing a second event with a
+     * different agent needs.
+     *
+     * @param object|null $b
+     */
+    function setBrowscap( $b ) {
+
+        if ( $b === null ) {
+
+            $this->browscap        = null;
+            $this->browscap_by_ua  = array();
+
+            return;
+        }
 
         $this->browscap = $b;
     }
 
-    function getBrowscap( $ua = '') {
+    /** @var array<string,object> user agent => its parse */
+    private $browscap_by_ua = array();
 
-        if (empty($this->browscap)) {
-	        
-	        if ( ! $ua ) {
-		        
-		        $ua = $this->request->getServerParam('HTTP_USER_AGENT');
-	        }
-	        
-            $this->browscap = \OWA\Core\CoreAPI::supportClassFactory('base', 'browscap', $ua);
+    /**
+     * The user-agent parse, memoised PER AGENT.
+     *
+     * It used to memoise the first parse a process made and then ignore every
+     * $ua it was given afterwards -- so a queue drain, which walks many events in
+     * one process, versioned all of them by whichever agent it happened to see
+     * first. Every reading came from that one parse: browser, browser_version,
+     * os, os_version and the three device columns.
+     *
+     * Keyed by the agent instead. One parse per distinct agent, which is the
+     * memo the callers were promised: a single request still parses once however
+     * many properties ask, and a drain parses once per distinct visitor agent
+     * rather than once, wrongly.
+     *
+     * @param  string $ua  the agent to parse; the request's own when empty
+     * @return object
+     */
+    function getBrowscap( $ua = '' ) {
+
+        // An injected parser wins, so a test can hand over a stub.
+        if ( ! empty( $this->browscap ) ) {
+
+            return $this->browscap;
         }
 
-        return $this->browscap;
+        if ( ! $ua ) {
+
+            $ua = $this->request->getServerParam( 'HTTP_USER_AGENT' );
+        }
+
+        $key = (string) $ua;
+
+        if ( ! isset( $this->browscap_by_ua[ $key ] ) ) {
+
+            $this->browscap_by_ua[ $key ] =
+                \OWA\Core\CoreAPI::supportClassFactory( 'base', 'browscap', $ua );
+        }
+
+        return $this->browscap_by_ua[ $key ];
     }
 
     function _loadModules() {

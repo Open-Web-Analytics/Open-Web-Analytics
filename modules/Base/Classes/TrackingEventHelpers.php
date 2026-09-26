@@ -21,6 +21,13 @@ class TrackingEventHelpers {
      */
     const TRIMMED_TYPES = array( 'string', 'url', '' );
 
+    /** OS families that only ship on a phone, and only on a desktop. */
+    const MOBILE_OS = array( 'android', 'ios', 'windows phone', 'blackberry os',
+                             'firefox os', 'kaios', 'harmonyos' );
+
+    const DESKTOP_OS = array( 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
+                              'chrome os', 'fedora', 'debian', 'freebsd' );
+
     const ABSENT_VALUE_LABEL = '(not set)';
 
 
@@ -1503,34 +1510,95 @@ class TrackingEventHelpers {
         }
     }
 
-    static function resolveBrowserType( $browser_type, $event ) {
+    /**
+     * THE ONE PARSE, asked for by agent.
+     *
+     * Seven properties are readings of the user agent, and each is set by its own
+     * callback -- independently, from the registry, like every other property.
+     * That is only affordable because the parser is a singleton memoised per
+     * AGENT: one request parses once however many of the seven ask, and a process
+     * walking several events parses once per distinct agent instead of once,
+     * wrongly. The agent comes off the EVENT rather than $_SERVER, which is the
+     * difference between a live beacon and one drained from the queue later.
+     *
+     * @param  object $event
+     * @return object
+     */
+    private static function browscapFor( $event ) {
 
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getUaFamily();
+        return \OWA\Core\CoreAPI::serviceSingleton()->getBrowscap(
+            $event->get( 'HTTP_USER_AGENT' ) );
     }
 
+    static function resolveBrowserType( $browser_type, $event ) {
+
+        return self::browscapFor( $event )->getUaFamily();
+    }
 
     static function resolveBrowserVersion( $version, $event ) {
 
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $bcap = $service->getBrowscap();
-
-        return $bcap->getUaVersion();
+        return self::browscapFor( $event )->getUaVersion();
     }
-
 
     static function resolveOs ( $os, $event ) {
 
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        return self::browscapFor( $event )->getOsFamily();
+    }
 
-        $bcap = $service->getBrowscap();
+    static function resolveOsVersion( $version, $event ) {
 
-        return $bcap->getOsFamily();
+        return self::browscapFor( $event )->getOsVersion();
+    }
 
+    /**
+     * Desktop, mobile or tablet -- DERIVED, because ua-parser has no such field.
+     *
+     * Its device rules answer brand, model and family, and 'Other' is its word
+     * for "no rule matched" -- which is an answer about a desktop browser and an
+     * absence about a phone. The OS family is what tells those apart, so the rule
+     * reads it and falls through to NULL rather than guessing desktop: a wrong
+     * 'desktop' is indistinguishable from a real one.
+     */
+    static function resolveDeviceType( $type, $event ) {
+
+        $bcap = self::browscapFor( $event );
+
+        $family = strtolower( (string) $bcap->getDeviceFamily() );
+
+        if ( $family === 'ipad' || strpos( $family, 'tablet' ) !== false ) {
+
+            return 'tablet';
+        }
+
+        $os = strtolower( (string) $bcap->getOsFamily() );
+
+        if ( in_array( $os, self::MOBILE_OS, true ) ) {
+
+            return 'mobile';
+        }
+
+        if ( in_array( $os, self::DESKTOP_OS, true ) ) {
+
+            return 'desktop';
+        }
+
+        return null;
+    }
+
+    /** 'Other' is the parser saying it has no rule, not a brand. */
+    static function resolveDeviceBrand( $brand, $event ) {
+
+        $value = (string) self::browscapFor( $event )->getDeviceBrand();
+
+        return strtolower( $value ) === 'other' ? null : $value;
+    }
+
+    /** As the brand: 'Other' is an absence wearing a value. */
+    static function resolveDeviceModel( $model, $event ) {
+
+        $value = (string) self::browscapFor( $event )->getDeviceModel();
+
+        return strtolower( $value ) === 'other' ? null : $value;
     }
 
 
@@ -1676,16 +1744,39 @@ class TrackingEventHelpers {
      * @param string $name  a value of CAMPAIGN_KEYS
      * @return string|null
      */
+    /**
+     * One campaign tag off the URL THE SESSION LANDED ON.
+     *
+     * PARSED FROM page_location, not from a landing_url the tracker re-sent. On
+     * the session-starting beacon they are the same string -- the tracker set
+     * landing_url to getCurrentUrl() and page_location comes from the same call --
+     * and this only ever runs on that beacon, so reading the URL the event already
+     * carries takes a session-scoped field off the wire for the life of every
+     * session. GA does not carry one either: no GA cookie holds a URL, and session
+     * source is fixed by the session's FIRST EVENT.
+     *
+     * THE EVIDENCE, NOT THE READING. page_location is stored exactly as it
+     * arrived; page_query has the Profile's dropped parameters removed, so a site
+     * filtering owa_source out of its query strings would lose the very tag this
+     * reads.
+     *
+     * ONLY ON THE LANDING BEACON. is_new_session_start is a property of the
+     * BEACON, and a landing page view expands into three rows -- page_view,
+     * session_start, first_visit -- so all three keep a copy and the pass reads
+     * whichever it finds first.
+     *
+     * @param  object $event
+     * @param  string $name  a tagged_* property name
+     * @return string|null
+     */
     static function taggedValue( $event, $name ) {
 
-        $sent = $event->get( $name );
+        if ( ! $event->get( 'is_new_session_start' ) ) {
 
-        if ( $sent ) {
-
-            return $sent;
+            return null;
         }
 
-        $landing = $event->get( 'landing_url' );
+        $landing = $event->get( 'page_location' );
 
         if ( ! $landing || ! is_string( $landing ) ) {
 
@@ -1694,10 +1785,9 @@ class TrackingEventHelpers {
 
         /*
          * MEMOISED PER SITE AS WELL AS PER URL. The key map is a Property
-         * setting now, so the same landing URL parses differently for two
-         * Properties -- one reading owa_source and one utm_source -- and a memo
-         * keyed on the URL alone would hand the first site's answer to the
-         * second.
+         * setting, so the same URL parses differently for two Properties -- one
+         * reading owa_source and one utm_source -- and a memo keyed on the URL
+         * alone would hand the first site's answer to the second.
          */
         $site_id = (string) $event->get( 'site_id' );
         $memo    = $site_id . '|' . $landing;
@@ -1711,6 +1801,42 @@ class TrackingEventHelpers {
         return isset( self::$landingTags[ $memo ][ $name ] )
             ? self::$landingTags[ $memo ][ $name ]
             : null;
+    }
+
+    /*
+     * The five tags, each set by its own callback off the one memoised parse.
+     *
+     * Independently and from the registry, like every other property: the row
+     * builder is handed a formed event and persists it, rather than computing
+     * five values inside a helper of its own.
+     */
+    static function resolveTaggedSource( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_source' );
+    }
+
+    static function resolveTaggedMedium( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_medium' );
+    }
+
+    static function resolveTaggedCampaign( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_campaign' );
+    }
+
+    static function resolveTaggedAd( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_ad' );
+    }
+
+    /**
+     * tagged_terms is the one whose halves do not share a stem -- owa_search_terms
+     * on the URL, tagged_terms on the wire, tagged_search_terms as the column.
+     */
+    static function resolveTaggedTerms( $value, $event ) {
+
+        return self::taggedValue( $event, 'tagged_terms' );
     }
 
     /**

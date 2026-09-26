@@ -3,13 +3,25 @@
 require_once __DIR__ . '/IngestionTestCase.php';
 
 /**
- * The server resolves campaign tags by parsing the landing URL.
+ * The server resolves campaign tags by parsing the landing beacon's own URL.
  *
  * The tracker used to parse `campaignKeys` itself and send six tagged_*
- * parameters on every beacon of the session. It now carries the URL and the
- * parse happens here, which is what makes the answer re-derivable: a fix to the
- * parser, or a site changing `ns`, applies on reprocess instead of being frozen
- * in whatever a browser decided months ago.
+ * parameters on every beacon of the session. Then it sent landing_url instead and
+ * the parse moved here -- which is what makes the answer re-derivable: a fix to
+ * the parser, or a site changing `ns`, applies on reprocess instead of being
+ * frozen in whatever a browser decided months ago.
+ *
+ * NOW IT SENDS NEITHER. On the session-starting beacon page_location IS the
+ * landing URL -- the tracker set landing_url from getCurrentUrl() and
+ * page_location comes from the same call -- and that beacon is the only one this
+ * parse ever ran on, because taggedValue() gates on is_new_session_start. So it
+ * reads the URL the event already carries, and a session-scoped copy stops riding
+ * every beacon for the life of every session. GA carries neither: no GA cookie
+ * holds a URL, and session source is fixed by the session's first event.
+ *
+ * page_location rather than page_query, deliberately: the query has the
+ * Profile's dropped parameters removed, so a site filtering owa_source out of its
+ * query strings would lose the very tag this reads.
  */
 final class LandingUrlCampaignParseTest extends IngestionTestCase
 {
@@ -24,12 +36,16 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         return $ns;
     }
 
-    /** @return object an event carrying exactly these properties */
+    /**
+     * @return object an event carrying exactly these properties, on the LANDING
+     *                beacon -- the only beacon the parse runs on, so every case
+     *                here has to be one
+     */
     private function event(array $properties)
     {
         $event = owa_coreAPI::supportClassFactory('base', 'event');
         $event->setEventType('base.page_request');
-        $event->setProperties($properties);
+        $event->setProperties($properties + ['is_new_session_start' => true]);
 
         return $event;
     }
@@ -39,7 +55,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     {
         $ns    = $this->ns();
         $event = $this->event([
-            'landing_url' => 'https://example.test/welcome?' . http_build_query([
+            'page_location' => 'https://example.test/welcome?' . http_build_query([
                 $ns . 'source'       => 'news',
                 $ns . 'medium'       => 'email',
                 $ns . 'campaign'     => 'summer',
@@ -69,7 +85,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     {
         $ns    = $this->ns();
         $event = $this->event([
-            'landing_url' => 'https://example.test/welcome?'
+            'page_location' => 'https://example.test/welcome?'
                 . $ns . 'source=news&' . $ns . 'medium=email&' . $ns . 'campaign=summer',
         ]);
 
@@ -88,34 +104,36 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     }
 
     /**
-     * THE COMPATIBILITY ONE. What an older tracker sent wins over the parse.
+     * WHAT THE BEACON CLAIMS IS IGNORED, and this asserted the opposite.
      *
-     * Trackers are cached in browsers and installs upgrade at their own pace,
-     * so beacons carrying tagged_* keep arriving long after the new tracker
-     * ships. Preferring them is what makes this change invisible to those
-     * installs -- and it is the right precedence anyway, since a value that was
-     * actually transmitted beats one re-derived from evidence.
+     * A tagged_* the beacon sent used to win over the parse, on the reasoning
+     * that trackers are cached in browsers and a transmitted value beats one
+     * re-derived from evidence. But no recorded tracker has ever sent one --
+     * neither wire contract carries a tagged_* field -- and with no wire key in
+     * the registry the gate refuses the name outright, so the branch was
+     * unreachable as well as unused.
+     *
+     * What it would have meant, had anything sent one: a beacon asserting its own
+     * attribution. The URL is the evidence; the tags are the server's reading.
      *
      * The two deliberately disagree here, so the assertion cannot pass by both
      * paths returning the same thing.
      */
-    public function testWhatTheTrackerSentWinsOverTheParse(): void
+    public function testWhatTheBeaconClaimsIsIgnored(): void
     {
         $ns    = $this->ns();
         $event = $this->event([
-            'tagged_source'   => 'from-the-tracker',
-            'tagged_campaign' => 'old-tracker-campaign',
-            'landing_url'     => 'https://example.test/x?'
+            'tagged_source'   => 'from-the-beacon',
+            'tagged_campaign' => 'beacon-campaign',
+            'page_location'   => 'https://example.test/x?'
                 . $ns . 'source=from-the-url&' . $ns . 'campaign=url-campaign&'
                 . $ns . 'medium=only-in-the-url',
         ]);
 
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
-        $this->assertSame('from-the-tracker',     $H::taggedValue($event, 'tagged_source'));
-        $this->assertSame('old-tracker-campaign', $H::taggedValue($event, 'tagged_campaign'));
-
-        // ...and a key the old tracker did NOT send still falls through.
+        $this->assertSame('from-the-url',    $H::taggedValue($event, 'tagged_source'));
+        $this->assertSame('url-campaign',    $H::taggedValue($event, 'tagged_campaign'));
         $this->assertSame('only-in-the-url', $H::taggedValue($event, 'tagged_medium'));
     }
 
@@ -124,7 +142,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     {
         $ns    = $this->ns();
         $event = $this->event([
-            'landing_url' => 'https://example.test/x?' . $ns . 'campaign=&' . $ns . 'source=%20',
+            'page_location' => 'https://example.test/x?' . $ns . 'campaign=&' . $ns . 'source=%20',
         ]);
 
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
@@ -169,7 +187,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 
         $event = $this->event([
             'site_id'     => 'ga-keys-site',
-            'landing_url' => 'https://example.test/p?utm_source=newsletter&utm_medium=email'
+            'page_location' => 'https://example.test/p?utm_source=newsletter&utm_medium=email'
                 . '&utm_campaign=spring&utm_term=shoes&utm_content=banner1'
                 . '&' . $this->ns() . 'source=ignored',
         ]);
@@ -210,14 +228,14 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 
         owa_coreAPI::configSingleton()->set('base', 'campaignKeys', []);
 
-        $first = $this->event([ 'site_id' => 'memo-site-one', 'landing_url' => $url ]);
+        $first = $this->event([ 'site_id' => 'memo-site-one', 'page_location' => $url ]);
 
         $this->assertSame('owa_answer', $H::taggedValue($first, 'tagged_source'),
             'the default map reads the ns-prefixed parameter');
 
         owa_coreAPI::configSingleton()->set('base', 'campaignKeys', [ 'source' => 'utm_source' ]);
 
-        $second = $this->event([ 'site_id' => 'memo-site-two', 'landing_url' => $url ]);
+        $second = $this->event([ 'site_id' => 'memo-site-two', 'page_location' => $url ]);
 
         $this->assertSame('utm_answer', $H::taggedValue($second, 'tagged_source'),
             'the second site got the first site\'s cached answer, so the parse memo is '
@@ -236,7 +254,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 
         $event = $this->event([
             'site_id'     => 'partial-keys-site',
-            'landing_url' => 'https://example.test/p?utm_source=newsletter&' . $ns . 'medium=email',
+            'page_location' => 'https://example.test/p?utm_source=newsletter&' . $ns . 'medium=email',
         ]);
 
         $this->assertSame('newsletter', $H::taggedValue($event, 'tagged_source'),

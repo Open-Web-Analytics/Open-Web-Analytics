@@ -37,7 +37,16 @@ final class DimensionIdDerivationTest extends TestCase
         'base.os'              => array( array( 'os' ),              'unknown' ),
         'base.document'        => array( array( 'page_url' ),        'unknown' ),
         'base.location_dim'    => array( array( 'country', 'state', 'city' ), 'unknown' ),
-        'base.referer'         => array( array( 'session_referer' ), 'not_applicable' ),
+        /*
+         * base.referer WAS HERE, keyed on session_referer.
+         *
+         * That property is gone: it was written once at session start and re-sent
+         * from session state on every beacon so the server could attribute from
+         * any event, and the server never needed it -- the session's referrer is
+         * the referer_host of its first row, which the pass reads through the
+         * window it already opens for the landing page. The v1 entity remains and
+         * nothing writes it, like the other four below.
+         */
     );
 
     /** OWA entity name -> class. deriveId() is static, so nothing is instantiated. */
