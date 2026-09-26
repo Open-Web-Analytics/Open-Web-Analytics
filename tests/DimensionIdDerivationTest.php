@@ -96,6 +96,20 @@ final class DimensionIdDerivationTest extends TestCase
             $known = array_merge( $known, array_keys( (array) $properties ) );
         }
 
+        /*
+         * A BRIDGED NAME IS A REAL NAME. The registry declares what v2 calls
+         * things, and a spelling an older or shorter beacon uses is declared by
+         * its rename -- page_url for page_location, nps for num_prior_sessions.
+         * base.document is a v1 entity keyed on page_url, so without this it
+         * would read as keying on nothing, which is a different fault from the
+         * one this test looks for.
+         *
+         * The allowlist and WireSurfaceEnumeratedTest read it the same way,
+         * through the same method.
+         */
+        $known = array_merge( $known,
+            \OWA\Module\Base\Classes\Beacon\Compat::bridgedNames() );
+
         foreach ( $key as $property ) {
             $this->assertContains( $property, $known,
                 "$name keys on '$property', which no module registers as a tracking property" );

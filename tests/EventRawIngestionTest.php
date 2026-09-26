@@ -584,6 +584,82 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * THE REST OF THE TRANSACTION LANDS: three columns and three params.
+     *
+     * It landed nowhere. The per-event param list named `transaction_id, tax,
+     * shipping, gateway, items` and the wire sends `ct_order_id, ct_tax,
+     * ct_shipping, ct_gateway, ct_line_items`, so every lookup missed, `params`
+     * came back NULL, and a NULL params column is indistinguishable from an
+     * event that carried none.
+     *
+     * Tax and shipping are COLUMNS because each is a summed metric and a metric
+     * needs a column to sum; transaction_id is a column because it is what makes
+     * a purchase countable once. The gateway and the order source are labels
+     * nobody adds up, so they are params -- under the names a report reaches,
+     * without 1.x's ct_ prefix.
+     */
+    public function testAPurchaseStoresItsOrderTaxAndShipping(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'    => $this->site,
+            'visitor_id' => $visitor,
+            'session_id' => $session,
+            'page_url'   => 'https://owa-test-site/v2/thanks',
+            'ct_order_id'      => 'ORD-1234',
+            'ct_total'         => '25.00',
+            'ct_tax'           => '2.50',
+            'ct_shipping'      => '4.99',
+            'ct_gateway'       => 'stripe',
+            'ct_order_source'  => 'web',
+            'currency'         => 'USD',
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['purchase'] ?? null;
+
+        $this->assertNotNull($row, 'the purchase was not stored at all');
+
+        $this->assertSame('ORD-1234', $row['transaction_id']);
+        $this->assertSame('250', (string) $row['tax'], 'tax is minor units');
+        $this->assertSame('499', (string) $row['shipping'], 'shipping is minor units');
+
+        $params = json_decode((string) $row['params'], true);
+
+        $this->assertIsArray($params, 'params did not arrive as JSON: ' . var_export($row['params'], true));
+
+        $this->assertSame('stripe', $params['gateway'] ?? null,
+            'the gateway is reached as params.gateway, without the ct_ prefix');
+        $this->assertSame('web', $params['order_source'] ?? null);
+
+        $this->assertArrayNotHasKey('ct_gateway', $params,
+            "1.x's wire prefix must not reach the reporting vocabulary");
+    }
+
+    /**
+     * THE BILLING ADDRESS IS NOT COLLECTED, and the allowlist is what refuses it.
+     *
+     * city, state and country are the SERVER-DERIVED geolocation readings from
+     * the observed IP. A transaction used to send its billing address under those
+     * three names, silently replacing the visitor's location on purchase rows
+     * only. They were then moved to ct_* prefixes, and now they are not declared
+     * at all: nothing reports on a billing address and GA carries no equivalent.
+     */
+    public function testTheBillingAddressIsRefused(): void
+    {
+        $admitted = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams([
+            'ct_city'    => 'Boston',
+            'ct_state'   => 'MA',
+            'ct_country' => 'US',
+            'ct_total'   => '10.00',
+        ]);
+
+        $this->assertSame(['ct_total' => '10.00'], $admitted,
+            'a name the registry does not declare must not reach the event');
+    }
+
+    /**
      * A purchase that sent NO total stores NULL, not 0.
      *
      * The two have to be distinguishable: 0 is a free order, NULL is a store

@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 23,
-        "metricImplementations": 23,
+        "metricNames": 25,
+        "metricImplementations": 25,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 70,
@@ -492,6 +492,62 @@
                     "name": "sessionsPerUser",
                     "numerator": "sessions",
                     "precision": 2,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "shippingRevenue": [
+            {
+                "name": "shippingRevenue",
+                "class": "base.configurableMetric",
+                "label": "Shipping",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "shipping",
+                    "condition": [
+                        "event_type",
+                        "purchase"
+                    ],
+                    "data_type": "currency",
+                    "denominator": "",
+                    "description": "Total shipping charged on completed purchases.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Shipping",
+                    "metric_type": "sum",
+                    "name": "shippingRevenue",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "taxRevenue": [
+            {
+                "name": "taxRevenue",
+                "class": "base.configurableMetric",
+                "label": "Tax",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "tax",
+                    "condition": [
+                        "event_type",
+                        "purchase"
+                    ],
+                    "data_type": "currency",
+                    "denominator": "",
+                    "description": "Total tax collected on completed purchases.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Tax",
+                    "metric_type": "sum",
+                    "name": "taxRevenue",
+                    "numerator": "",
+                    "precision": "",
                     "subtrahend_column": ""
                 }
             }

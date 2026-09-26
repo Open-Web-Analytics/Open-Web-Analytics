@@ -34,7 +34,7 @@ final class GoalVocabularyTest extends TestCase
     {
         $declared = $this->declaredProperties();
 
-        $this->assertGreaterThan( 80, count( $declared ),
+        $this->assertGreaterThan( 70, count( $declared ),
             'the property registry is not being read, so this would pass vacuously' );
 
         $orphans = [];

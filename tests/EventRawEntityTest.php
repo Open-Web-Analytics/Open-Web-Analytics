@@ -42,7 +42,7 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(59, $columns);
+        $this->assertCount(62, $columns);
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
@@ -59,6 +59,13 @@ final class EventRawEntityTest extends TestCase
             // Which tracker generation wrote the row -- the evidence a compat
             // bridge can ever be deleted on.
             'beacon_version',
+            /*
+             * The purchase, past its total: tax and shipping are SUMMED metrics
+             * and a metric needs a column to sum, and transaction_id is what
+             * makes a purchase countable once. The gateway and the order source
+             * are params, because nothing adds them up.
+             */
+            'transaction_id', 'tax', 'shipping',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }

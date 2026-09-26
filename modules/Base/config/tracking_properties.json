@@ -80,19 +80,6 @@
             "callbacks": [],
             "note": "What happened. The tracker sends it and log.php also reads it with getRequestParam to call setEventType(), which sets a MEMBER -- getEventType() prefers that member and falls back to this property. Declared required:false with no default so the two cannot disagree: a default here would fabricate an event_type on events that carry their type on the member instead. It is already a column on the queue table, and v2 logs it on the fact row."
         },
-        "page_type": {
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "string"
-        },
-        "page_url": {
-            "default_value": "(not set)",
-            "required": true,
-            "data_type": "url",
-            "callbacks": [
-                "owa_trackingEventHelpers::makeUrlCanonical"
-            ]
-        },
         "page_location": {
             "required": false,
             "data_type": "url",
@@ -130,12 +117,6 @@
             "callbacks": [
                 "owa_trackingEventHelpers::deriveDaysSinceFirstSession"
             ],
-            "data_type": "integer",
-            "default_value": false
-        },
-        "time_since_last_session": {
-            "required": false,
-            "callbacks": [],
             "data_type": "integer",
             "default_value": false
         },
@@ -273,17 +254,6 @@
                 "first_visit"
             ]
         },
-        "tagged_ad_type": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "What the landing URL was tagged with. A claim, not a conclusion: the tracker lifts it off the URL and reports it. The server resolves the answer into the bare name in the server scope.",
-            "events": [
-                "page_view",
-                "session_start",
-                "first_visit"
-            ]
-        },
         "tagged_terms": {
             "required": false,
             "data_type": "string",
@@ -294,11 +264,6 @@
                 "session_start",
                 "first_visit"
             ]
-        },
-        "feed_subscription_id": {
-            "required": false,
-            "callbacks": [],
-            "default_value": null
         },
         "click_x": {
             "required": false,
@@ -465,33 +430,6 @@
                 "purchase"
             ]
         },
-        "ct_city": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
-            "events": [
-                "purchase"
-            ]
-        },
-        "ct_state": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
-            "events": [
-                "purchase"
-            ]
-        },
-        "ct_country": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [],
-            "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country.",
-            "events": [
-                "purchase"
-            ]
-        },
         "ct_total": {
             "required": false,
             "data_type": "integer",
@@ -544,12 +482,6 @@
             "data_type": "string",
             "callbacks": [],
             "note": "Minted by the tracker and held in the v store. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
-        },
-        "nps": {
-            "required": false,
-            "data_type": "integer",
-            "callbacks": [],
-            "note": "Number of prior sessions, carried from the visitor store."
         },
         "last_req": {
             "required": false,
@@ -675,9 +607,7 @@
         },
         "host": {
             "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::getHostDomain"
-            ],
+            "callbacks": [],
             "default_value": "(not set)"
         },
         "browser_type": {
@@ -685,13 +615,6 @@
             "callbacks": [
                 "owa_trackingEventHelpers::resolveBrowserType"
             ]
-        },
-        "browser": {
-            "required": true,
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveBrowserVersion"
-            ],
-            "default_value": "(unknown)"
         },
         "os": {
             "required": true,
@@ -727,14 +650,6 @@
                 "owa_trackingEventHelpers::resolveCountryCode"
             ],
             "default_value": false
-        },
-        "ad_type": {
-            "required": false,
-            "data_type": "string",
-            "callbacks": [
-                "owa_trackingEventHelpers::resolveAdType"
-            ],
-            "note": "As campaign: on the wire, previously unregistered. Read by AdHandlers alongside ad."
         }
     }
 }

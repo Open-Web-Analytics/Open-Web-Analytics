@@ -127,7 +127,7 @@ final class ServerOwnedPropertyTest extends TestCase
 
         $this->assertNotEmpty( $serverOwned );
 
-        foreach ( array( 'browser', 'country', 'ip_address', 'timestamp' ) as $name ) {
+        foreach ( array( 'browser_type', 'country', 'ip_address', 'timestamp' ) as $name ) {
 
             $this->assertArrayHasKey( $name, $serverOwned );
         }

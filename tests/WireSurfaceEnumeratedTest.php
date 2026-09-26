@@ -84,9 +84,26 @@ final class WireSurfaceEnumeratedTest extends TestCase
 
         $undeclared = array();
 
+        /*
+         * A BRIDGED NAME COUNTS AS DECLARED, and it has to.
+         *
+         * The registry is the v2 vocabulary: it declares what v2 CALLS things.
+         * A name the tracker sends under an older or shorter spelling is declared
+         * by its rename -- `nps` for num_prior_sessions, `page_url` for
+         * page_location -- and Compat::apply() puts the current spelling on the
+         * event before any reader. Requiring the registry to declare both would
+         * put every compat spelling back into the v2 vocabulary, which is the
+         * thing the rename map exists to keep out of it.
+         *
+         * The allowlist at log.php already reads it this way, through the same
+         * method, so the two agree about what may arrive.
+         */
+        $bridged = \OWA\Module\Base\Classes\Beacon\Compat::bridgedNames();
+
         foreach ( $this->emitted() as $name ) {
 
             if ( isset( $declared[ $name ] )
+                 || in_array( $name, $bridged, true )
                  || array_key_exists( $name, self::NOT_TRACKING_PROPERTIES ) ) {
 
                 continue;
@@ -151,10 +168,17 @@ final class WireSurfaceEnumeratedTest extends TestCase
          * The floor was 100 while the dead ingest derivations were still
          * declared: the five cube-pass readings, the v1 handler inputs
          * (page_uri, full_host, is_browser, is_robot, latitude, longitude,
-         * prior_page), the v1 date parts and the cv halves. 91 is the current
-         * vocabulary, and the guard still catches the config not being read.
+         * prior_page), the v1 date parts and the cv halves. It came down to 85
+         * when those went.
+         *
+         * Then eight more: the registry holds only what v2 CALLS things, so the
+         * compat spellings left it -- page_url and nps for the two renames, and
+         * page_type, ad_type, tagged_ad_type, feed_subscription_id,
+         * time_since_last_session and browser, none of which any v2 reader or
+         * dimension touches. 80 is the current vocabulary and the guard still
+         * catches the config not being read.
          */
-        $this->assertGreaterThan( 85, count( $this->declared() ),
+        $this->assertGreaterThan( 75, count( $this->declared() ),
             'Far fewer declared properties than expected -- the config is not being read.' );
     }
 

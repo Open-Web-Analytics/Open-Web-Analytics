@@ -68,11 +68,16 @@ class GoalVocabulary {
         // under its own name, and browser_version comes from the parse above.
         'browser' => 'browser_type',
 
+        // The purchase, whose wire names carry 1.x's commerce-transaction prefix.
+        'revenue'        => 'ct_total',
+        'tax'            => 'ct_tax',
+        'shipping'       => 'ct_shipping',
+        'transaction_id' => 'ct_order_id',
+
         // Renames the row applies.
         'element_id'  => 'dom_element_id',
         'element_tag' => 'dom_element_tag',
         'region'      => 'state',
-        'revenue'     => 'ct_total',
 
         'tagged_search_terms' => 'tagged_terms',
 

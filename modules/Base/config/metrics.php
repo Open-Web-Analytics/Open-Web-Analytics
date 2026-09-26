@@ -114,6 +114,26 @@ return array(
             'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
         ),
 
+        'taxRevenue' => array(
+            'label'       => 'Tax',
+            'description' => 'Total tax collected on completed purchases.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'column'      => 'tax',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
+        ),
+
+        'shippingRevenue' => array(
+            'label'       => 'Shipping',
+            'description' => 'Total shipping charged on completed purchases.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'column'      => 'shipping',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
+        ),
+
         'transactionRevenue' => array(
             'label'       => 'Revenue',
             'description' => 'Total revenue from completed purchases.',

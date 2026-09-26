@@ -249,9 +249,26 @@ class EventRaw extends \OWA\Core\Entity {
         $is_goal_event->setDefaultValue( 0 );
         $this->setProperty( $is_goal_event );
 
-        // Minor units, with the currency beside it -- without which a
-        // multi-currency store sums minor units of different things.
+        /*
+         * THE PURCHASE, as columns.
+         *
+         * Minor units, with the currency beside it -- without which a
+         * multi-currency store sums minor units of different things.
+         *
+         * Tax and shipping are columns rather than params because each is a
+         * SUMMED METRIC, and a metric needs a column to sum: taxRevenue and
+         * shippingRevenue cannot be expressed over a JSON document without a
+         * generated column to index. The gateway and the order source stay
+         * params, because nothing adds them up.
+         *
+         * transaction_id is a column for a different reason: it is what makes a
+         * purchase countable once. Without it, two beacons for one order are two
+         * transactions and there is nothing to group a line item back to.
+         */
+        $this->setProperty( $this->column( 'transaction_id', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'revenue', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'tax', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'shipping', OWA_DTD_BIGINT ) );
         $this->setProperty( $this->column( 'currency', OWA_DTD_CHAR3 ) );
 
         $this->setProperty( $this->column( 'raw_ua', OWA_DTD_VARCHAR1024 ) );

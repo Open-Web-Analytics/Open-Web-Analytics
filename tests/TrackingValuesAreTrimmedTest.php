@@ -73,7 +73,7 @@ final class TrackingValuesAreTrimmedTest extends TestCase
              */
             'content group'   => array( 'content_group', '  Docs  ',      'Docs' ),
             'user name'       => array( 'user_name',  '  Peter Adams  ',  'Peter Adams' ),
-            'a url'           => array( 'page_url',   '  https://x.test/a  ', 'https://x.test/a' ),
+            'a url'           => array( 'target_url', '  https://x.test/a  ', 'https://x.test/a' ),
         );
     }
 

@@ -91,6 +91,25 @@ return array(
 
         array( 'role' => 'wire',   'from' => 'nps',  'to' => 'num_prior_sessions' ),
 
+        /*
+         * page_url is v1's name for the page's URL, and v1's server CANONICALISED
+         * it in place -- stripping the campaign parameters and the site's
+         * query_string_filters -- which is why a second, untouched copy had to
+         * ride alongside it as page_location. v2 stores the evidence exactly as it
+         * arrived and derives page_path and page_query from it, so there is
+         * nothing left for the duplicate to protect against.
+         *
+         * WIRE, not legacy: the current tracker still sends both. It becomes
+         * deletable when the tracker sends only page_location.
+         *
+         * apply() leaves page_location alone whenever the beacon carries it, so a
+         * tracker sending both is unaffected and one sending only the old name
+         * gets its URL stored instead of dropped -- which is what the row builder
+         * has claimed happens since the property registry stopped declaring
+         * page_url.
+         */
+        array( 'role' => 'wire',   'from' => 'page_url', 'to' => 'page_location' ),
+
         array( 'role' => 'legacy', 'from' => 'dsfs',          'to' => 'days_since_first_session' ),
         array( 'role' => 'legacy', 'from' => 'dsps',          'to' => 'days_since_prior_session' ),
         array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'user_email' ),
@@ -110,9 +129,11 @@ return array(
          * literal `sid` would have had its session id resolved into a feed
          * column. A bridge that can only misfire is worse than no bridge.
          *
-         * feed_subscription_id itself stays declared, and the feed handler with
-         * it -- removing a retired feature is its own decision, not a side
-         * effect of tidying the compat layer.
+         * feed_subscription_id has since left the property registry too, with the
+         * other seven spellings v2 does not use: the registry holds what v2 CALLS
+         * things, and a retired feature's field is not one of them. The v1 feed
+         * handler still exists and is still unregistered on v2 -- removing it is
+         * its own decision, not a side effect of tidying the compat layer.
          */
     ),
 

@@ -41,11 +41,13 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
      * It was 26 while the ten cv{n} halves were declared in the config; they
      * are the compat layer's now, because the tracker emits no cv key. It was
      * 16 until the dead ingest derivations went -- source, medium, page_uri and
-     * the rest, computed on every beacon and read only by v1 handlers.
+     * the rest, computed on every beacon and read only by v1 handlers. 13 until
+     * page_url and page_type left the registry with the other compat spellings:
+     * the registry holds what v2 CALLS things, and page_url is a rename now.
      */
     public function testTheLabelledSetIsWhatWeThinkItIs(): void
     {
-        $this->assertCount( 13, self::labelled() );
+        $this->assertCount( 11, self::labelled() );
     }
 
     /**
@@ -124,9 +126,16 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
     /**
      * Defaults that are real values still belong to the event.
      *
-     * browser and os default to '(unknown)' -- that says something, rather than
-     * standing in for the lack of a value, so it is still applied before
-     * dispatch where every reader sees it.
+     * os defaults to '(unknown)' -- that says something, rather than standing in
+     * for the lack of a value, so it is still applied before dispatch where every
+     * reader sees it.
+     *
+     * `browser` was the other example and is gone from the registry. It carried
+     * the VERSION, resolved through a browscap the argument-less accessor
+     * memoises per process, and the row builder read it into browser_version
+     * while deviceColumns() computed the same column from the event's own user
+     * agent -- which `$row +=` then discarded. One parse, in the handler, is what
+     * survives.
      *
      * medium was the headline example here and is gone: it is not a tracking
      * property any more. The cube pass resolves it, and MediumStep is where
@@ -139,11 +148,10 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
         $teh   = new Helpers();
         $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
 
-        // os and browser are resolved from the user agent, which the runner
-        // supplies -- so assert the weaker but still meaningful thing: whatever
-        // they end up with is a real value, never the storage label and never
-        // absence.
-        foreach ( array( 'os', 'browser' ) as $name ) {
+        // os is resolved from the user agent, which the runner supplies -- so
+        // assert the weaker but still meaningful thing: whatever it ends up with
+        // is a real value, never the storage label and never absence.
+        foreach ( array( 'os' ) as $name ) {
 
             $teh->setTrackerProperties( $event, array( $name => $definitions[ $name ] ) );
 

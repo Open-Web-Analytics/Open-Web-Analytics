@@ -203,6 +203,22 @@
             ]
         }
     ],
+    "shippingRevenue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN event.shipping ELSE 0 END)",
+            "alias": "shippingRevenue"
+        }
+    ],
+    "taxRevenue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN event.tax ELSE 0 END)",
+            "alias": "taxRevenue"
+        }
+    ],
     "totalEngagementTime": [
         {
             "kind": "aggregate",

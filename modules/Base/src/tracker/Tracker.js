@@ -2675,15 +2675,21 @@ class OWATracker  {
         this.ecommerce_transaction.set( 'ct_shipping', shipping );
         this.ecommerce_transaction.set( 'ct_gateway', gateway );
         this.ecommerce_transaction.set( 'page_url', this.getCurrentUrl() );
-        // Billing address, under the ct_ prefix its sibling transaction fields
-        // already use. These used to be sent as city/state/country, which are
-        // the names of the SERVER-DERIVED geolocation properties -- so a
-        // transaction's billing address silently replaced the location derived
-        // from the visitor's IP, and only on transactions. Two different facts
-        // cannot share three names.
-        this.ecommerce_transaction.set( 'ct_city', city );
-        this.ecommerce_transaction.set( 'ct_state', state );
-        this.ecommerce_transaction.set( 'ct_country', country );
+
+        /*
+         * THE BILLING ADDRESS IS NOT COLLECTED.
+         *
+         * city, state and country are still accepted as arguments, because this
+         * is a public API called positionally and dropping three parameters
+         * would shift `gateway` under `city` in every integration that passes
+         * them. They are discarded here instead.
+         *
+         * Not collected because nothing reports on them: a billing address is
+         * not a reporting dimension, GA carries no equivalent, and v2's country
+         * and city are the geolocation readings from the observed IP. The two
+         * facts used to share three names, so a transaction's billing address
+         * silently replaced the visitor's location -- and only on transactions.
+         */
 
         OWA.debug('setting up ecommerce transaction');
 

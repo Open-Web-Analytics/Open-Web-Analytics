@@ -286,7 +286,18 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
-            'browser_version' => $this->text( $event->get( 'browser' ) ),
+            /*
+             * browser_version is NOT here, and was: it read the property
+             * `browser`, which v1 resolved through Service::getBrowscap() with NO
+             * ARGUMENT -- and that memoises the first parse made in the process
+             * and otherwise falls back to $_SERVER, so a queued beacon drained
+             * later was versioned by whatever user agent the drain saw first.
+             *
+             * deviceColumns() computes it from the event's OWN user agent, and
+             * `$row +=` keeps the left-hand value for a duplicate key -- so the
+             * correct value was computed and then silently discarded on every
+             * event. Leaving the key out is what lets the right one through.
+             */
             'os'              => $this->text( $event->get( 'os' ) ),
             'language'        => $this->text( $event->get( 'language' ) ),
 
@@ -337,7 +348,18 @@ class EventRawHandlers extends \OWA\Core\Observer {
              */
             'revenue'  => \OWA\Module\Base\Classes\V2Event::minorUnits(
                 $event->get( 'ct_total' ) ),
+            'tax'      => \OWA\Module\Base\Classes\V2Event::minorUnits(
+                $event->get( 'ct_tax' ) ),
+            'shipping' => \OWA\Module\Base\Classes\V2Event::minorUnits(
+                $event->get( 'ct_shipping' ) ),
             'currency' => $this->text( $event->get( 'currency' ) ),
+
+            /*
+             * The order's own id, under the name v2 reports it by. Nothing
+             * derived: it is the merchant's identifier and the only thing that
+             * makes one purchase countable once.
+             */
+            'transaction_id' => $this->text( $event->get( 'ct_order_id' ) ),
 
             'raw_ua' => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
             'params' => $this->params( $event ),
@@ -617,9 +639,15 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * page_view came out carrying {"numeric_value": 0}, a param the event
          * does not have wearing a value it was never given.
          */
-        foreach ( $this->declaredParams( $event ) as $key ) {
+        foreach ( $this->declaredParams( $event ) as $wire => $key ) {
 
-            $value = $event->get( $key );
+            // A bare entry is a name that does not change on its way in.
+            if ( is_int( $wire ) ) {
+
+                $wire = $key;
+            }
+
+            $value = $event->get( $wire );
 
             if ( $value !== null && $value !== false && $value !== '' ) {
 
@@ -661,13 +689,30 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function declaredParams( $event ) {
 
+        /*
+         * WIRE NAME => PARAM KEY, and a bare entry means the two are the same.
+         *
+         * The distinction is load-bearing and its absence cost the whole purchase
+         * param set: this list read `transaction_id, tax, shipping, gateway,
+         * items` while the wire sends `ct_order_id, ct_tax, ct_shipping,
+         * ct_gateway, ct_line_items`, so every lookup found nothing, params came
+         * back NULL, and a NULL params column is indistinguishable from an event
+         * that carried none. Measured on a purchase carrying all five.
+         *
+         * Keys are the names a report reaches -- params.gateway, params.items --
+         * so the ct_ prefix, which is 1.x's way of saying "commerce transaction",
+         * does not reach the reporting vocabulary.
+         */
         $by_type = array(
-            'click'               => array( 'link_url', 'link_domain', 'link_text', 'outbound' ),
-            'file_download'       => array( 'link_url', 'file_name', 'file_extension' ),
+            'file_download'       => array( 'file_name', 'file_extension' ),
             'view_search_results' => array( 'search_term' ),
             'form_start'          => array( 'form_id', 'form_name' ),
             'form_submit'         => array( 'form_id', 'form_name' ),
-            'purchase'            => array( 'transaction_id', 'tax', 'shipping', 'gateway', 'items' ),
+            'purchase'            => array(
+                'ct_gateway'      => 'gateway',
+                'ct_order_source' => 'order_source',
+                'ct_line_items'   => 'items',
+            ),
             // The old four-slot action shape. Carried as params rather than
             // columns because it is v1's vocabulary, not v2's: a custom event
             // in v2 is a NAME plus params, and these are what an action's four
