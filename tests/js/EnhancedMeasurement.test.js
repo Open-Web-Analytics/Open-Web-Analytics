@@ -121,42 +121,20 @@ describe('downloads and outbound links', () => {
         expect(sent).toHaveLength(0);
     });
 
-    test('outbound is decided on the host, so apex and www are both internal', () => {
-        const t = newTracker();
-
-        expect(t.isOutboundUrl('https://elsewhere.example/page')).toBe(true);
-        expect(t.isOutboundUrl('/relative/path')).toBe(false);
-        expect(t.isOutboundUrl('')).toBe(false);
-    });
+    /*
+     * OUTBOUND IS NOT DECIDED HERE any more. isOutboundUrl() had no caller but
+     * this test -- the tracker sent nothing for it and no column stored it. The
+     * server derives is_outbound at ingest from target_url's host against
+     * page_location's, both of which the row already carries, so the rule is
+     * asserted in TrackingEventHelpers where it now lives.
+     */
 });
 
-describe('element path', () => {
-
-    test('an id ends the path, because an id is unique by definition', () => {
-        document.body.innerHTML = '<div><section id="hero"><a><span id="x">go</span></a></section></div>';
-
-        expect(newTracker().getElementPath(document.getElementById('x'))).toBe('#x');
-    });
-
-    test('without an id it walks up, distinguishing siblings by position', () => {
-        document.body.innerHTML =
-            '<nav><ul><li><a>one</a></li><li><a>two</a></li></ul></nav>';
-
-        const second = document.querySelectorAll('nav li')[1].querySelector('a');
-
-        expect(newTracker().getElementPath(second))
-            .toBe('nav > ul > li:nth-of-type(2) > a');
-    });
-
-    test('a path is produced for an element nobody gave an id', () => {
-        document.body.innerHTML = '<main><p><button>buy</button></p></main>';
-
-        const path = newTracker().getElementPath(document.querySelector('button'));
-
-        expect(path).toBe('main > p > button');
-        expect(path).not.toBe('');
-    });
-});
+/*
+ * THE ELEMENT-PATH SUITE IS GONE with getElementPath(). It built a CSS selector
+ * that no report, widget or overlay read, and that a template edit renumbers
+ * wholesale -- see Update053.
+ */
 
 describe('forms', () => {
 

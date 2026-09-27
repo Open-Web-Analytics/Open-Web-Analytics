@@ -58,7 +58,7 @@ final class EventRawEntityTest extends TestCase
             'id', 'event_type', 'site_id', 'visitor_id', 'session_id', 'ts',
             'yyyymmdd', 'page_location', 'page_path', 'page_query',
             'tagged_source', 'tagged_medium', 'tagged_campaign',
-            'engagement_msec', 'scroll_depth', 'element_path', 'consent_state',
+            'engagement_msec', 'scroll_depth', 'is_outbound', 'consent_state',
             'user_id', 'content_group', 'currency', 'session_start_ts',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
             'referer_host', 'referer_query', 'prior_session_start_ts',

@@ -100,13 +100,20 @@ final class CubeReportingTest extends TestCase
          * accident and proves none of them.
          */
         $rows = [
-            // event_type,      path,   visitor,           session,           prior, msec, revenue
+            // event_type,      path,   visitor,           session,           prior, msec, revenue, outbound
             ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 100, null],
             ['page_view',     '/one', self::VISITOR,     self::SESSION,     0, 250, null],
             ['page_view',     '/two', self::VISITOR,     self::SESSION,     0, 400, null],
             ['session_start', '/one', self::VISITOR,     self::SESSION,     0,   0, null],
             ['page_view',     '/two', self::VISITOR + 1, self::SESSION + 1, 3, 750, null],
-            ['click',         '/two', self::VISITOR + 1, self::SESSION + 1, 3,   0, null],
+            /*
+             * THE ONE OUTBOUND ROW. Not a second click: the click count and the
+             * event total are asserted elsewhere, and a fixture that changes them
+             * to test a grouping makes two tests disagree about the same fixture.
+             * One row of eight in the Yes bucket is enough to tell a split from a
+             * total, and it is deliberately the minority.
+             */
+            ['click',         '/two', self::VISITOR + 1, self::SESSION + 1, 3,   0, null, 1],
 
             /*
              * Two purchases, BOTH in one of the two sessions. That asymmetry is
@@ -142,6 +149,7 @@ final class CubeReportingTest extends TestCase
                 'yyyymmdd'        => $day,
                 'page_path'       => $row[1],
                 'revenue'         => $row[6],
+                'is_outbound'     => $row[7] ?? 0,
             ]);
 
             if (!$event->create()) {
@@ -510,6 +518,48 @@ final class CubeReportingTest extends TestCase
             $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
                 $dim . ' changed the total, so it is filtering rather than grouping');
         }
+    }
+
+    /**
+     * isOutbound splits the rows into Yes and No, not into three buckets.
+     *
+     * THE WHOLE REASON is_outbound IS NOT NULL. A boolean dimension is rendered
+     * by booleanFormatter(), which answers 'No' for 0 AND for NULL -- so a
+     * nullable flag groups into three buckets of which two carry the same label.
+     * That is the isNewVisitor defect: a pie with two slices called New, which
+     * cost a v1 dimension pair and a valueLabels map to work around.
+     *
+     * Asserted as the WHOLE bucket set, so a third bucket appearing is a failure
+     * rather than something an arrayContaining would step over.
+     */
+    public function testIsOutboundGroupsIntoTwoNamedBuckets(): void
+    {
+        $rs = $this->manager('eventCount', 'isOutbound')->getResults();
+
+        $this->assertSame([], (array) $rs->errors, 'isOutbound did not resolve');
+
+        /*
+         * formatted_value, not value. `value` is what the column holds -- 0 and 1
+         * -- and the formatter is what a grid cell and a pie slice are labelled
+         * with, so that is where two buckets under one name would show.
+         */
+        $buckets = [];
+
+        foreach ((array) $rs->resultsRows as $row) {
+
+            $buckets[(string) $row['isOutbound']['formatted_value']]
+                = (int) $row['eventCount']['value'];
+        }
+
+        ksort($buckets);
+
+        $this->assertSame(['No' => 7, 'Yes' => 1], $buckets,
+            'the one outbound row must be its own bucket, and the other seven must '
+            . 'share one -- a third bucket, or two called No, means the column went '
+            . 'nullable.');
+
+        $this->assertSame(8, (int) $rs->aggregates['eventCount']['value'],
+            'grouping by isOutbound must not filter anything out');
     }
 
     /**

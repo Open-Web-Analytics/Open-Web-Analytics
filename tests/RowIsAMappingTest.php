@@ -115,9 +115,11 @@ final class RowIsAMappingTest extends TestCase
                 continue;
             }
 
-            // $this->text( $event->get( 'x' ) ) / ->number( ... ), a bare
-            // $event->get( 'x' ), or one of the identity locals.
-            $read = '/^(?:\$this->(?:text|number)\(\s*)?\$event->get\(\s*\'\w+\'\s*\)/';
+            // $this->text( $event->get( 'x' ) ) / ->number( ... ) / ->flag( ... ),
+            // a bare $event->get( 'x' ), or one of the identity locals. The three
+            // coercions are the only wrappers allowed: each answers a storable
+            // value for one declared type and reads nothing but its argument.
+            $read = '/^(?:\$this->(?:text|number|flag)\(\s*)?\$event->get\(\s*\'\w+\'\s*\)/';
 
             if ( preg_match( $read, $expression )
                  || in_array( ltrim( $expression, '$' ), self::IDENTITY, true ) ) {
@@ -222,6 +224,65 @@ final class RowIsAMappingTest extends TestCase
         $this->assertSame( array(), $found,
             'row() is deriving a value: ' . implode( ', ', $found )
             . '. It belongs in a callback the registry names.' );
+    }
+
+    /**
+     * A NOT NULL column never receives NULL, even from an event the property
+     * pass never touched.
+     *
+     * EXECUTED, not read. Everything else here is static analysis of the
+     * literal, which cannot see a coercion returning the wrong absence.
+     *
+     * The path this guards is real: row() is reached by events built in process
+     * and by queued ones, not only by a beacon that went through
+     * ProcessEvent's three stages. On a beacon, deriveIsOutbound() runs for every
+     * event and always sets a value, so an is_outbound read through number() --
+     * which answers null for absence -- looks correct and is caught by nothing.
+     * Off that path the property is absent, number() answers null, and a NOT NULL
+     * column under STRICT_ALL_TABLES aborts the whole insert.
+     */
+    public function testANotNullColumnNeverReceivesNullFromRow(): void
+    {
+        $handlers = new ReflectionClass( \OWA\Module\Base\Handler\EventRawHandlers::class );
+        $row      = $handlers->getMethod( 'row' );
+        $row->setAccessible( true );
+
+        // The four the guard refuses a row without, and nothing else: an event
+        // assembled in process, with no derived property on it at all.
+        $event = new \OWA\Module\Base\Classes\Event();
+        $event->setEventType( 'page_view' );
+        $event->set( 'site_id', 'a-site' );
+        $event->set( 'visitor_id', '1234567890' );
+        $event->set( 'session_id', '9876543210' );
+        $event->set( 'ts', time() );
+
+        $built = $row->invoke( $handlers->newInstanceWithoutConstructor(), $event, 'page_view' );
+
+        $this->assertIsArray( $built, 'the identity guard refused an event it should accept' );
+
+        $entity  = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
+        $offends = array();
+
+        foreach ( $entity->getColumns() as $column ) {
+
+            $property = $entity->properties[ $column ] ?? null;
+
+            if ( ! $property || ! array_key_exists( $column, $built ) ) {
+
+                continue;
+            }
+
+            if ( strpos( strtoupper( (string) $property->getDefinition() ), 'NOT NULL' ) !== false
+                 && $built[ $column ] === null ) {
+
+                $offends[] = $column;
+            }
+        }
+
+        $this->assertSame( array(), $offends,
+            'row() handed NULL to a NOT NULL column: ' . implode( ', ', $offends )
+            . '. Strict mode aborts the insert, so absence has to resolve to a '
+            . 'value -- see flag().' );
     }
 
     /**

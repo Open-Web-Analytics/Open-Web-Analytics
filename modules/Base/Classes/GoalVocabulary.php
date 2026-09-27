@@ -174,6 +174,9 @@ class GoalVocabulary {
         'os'                  => 'Operating system',
         'ip_address'          => 'IP address',
         'yyyymmdd'            => 'Date',
+        // Prettifying the column gives "Is outbound", which reads as a question
+        // half-asked. The condition is on the click.
+        'is_outbound'         => 'Outbound click',
     );
 
     /**

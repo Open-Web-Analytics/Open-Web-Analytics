@@ -381,7 +381,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [],
-        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x, click_y and element_path.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
+        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x and click_y.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
     },
     "page_height": {
         "set_by": "client",
@@ -395,7 +395,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [],
-        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x, click_y and element_path.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
+        "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x and click_y.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist.\nThe domstream beacon sets both too, and is unaffected: domstream is not a v2 event -- V2Event refuses it, and none of its own fields are in this registry -- so its handler reads the property off the event directly. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
     },
     "dom_element_class": {
         "set_by": "client",
@@ -714,20 +714,6 @@
         "callbacks": [],
         "note": "Percentage of the document reached, on a scroll event. One event per threshold per page."
     },
-    "element_path": {
-        "set_by": "client",
-        "from": [
-            "element_path"
-        ],
-        "column": "element_path",
-        "events": [
-            "click"
-        ],
-        "data_type": "string",
-        "required": false,
-        "callbacks": [],
-        "note": "A CSS-ish path to the clicked element. dom_element_id is real on 0.09% of clicks and populated on 94%, so a path is what actually identifies what was clicked."
-    },
     "search_term": {
         "set_by": "client",
         "from": [
@@ -1001,6 +987,23 @@
             "owa_trackingEventHelpers::deriveTargetHost"
         ],
         "note": "The click target’s host, so an outbound click is a comparison against host rather than a string test. Read after makeUrlCanonical() has filtered target_url, which the scopes settle: target_url is a client property and this is a derived one."
+    },
+    "is_outbound": {
+        "set_by": "event",
+        "from": [
+            "target_url",
+            "page_location"
+        ],
+        "column": "is_outbound",
+        "events": [
+            "click"
+        ],
+        "data_type": "boolean",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveIsOutbound"
+        ],
+        "note": "Whether the click left the site: target_url's host against page_location's. DERIVED, not sent -- the tracker carried an isOutboundUrl() that nothing ever called, and the comparison is two columns of one row, so no join and no wire bytes.\nIt re-parses both URLs rather than reading target_host and host. Those are registered ahead of it and TrackingPropertyOrderTest guards that, so reading them would work; parsing again instead keeps this an independent reading of the same inputs rather than a third link in a chain.\nTWO VALUES, NOT THREE. is_goal_event's shape: the column is NOT NULL DEFAULT 0 and the question is asked of every row -- 'is this an outbound click?' -- so a page_view answering 0 is true rather than a claim about a target it never had. A NULLABLE boolean would group as three buckets and the formatter renders NULL and 0 both as 'No', which is the isNewVisitor pie with two slices called New (see config/dimensions.php).\nCompared on HOST against THIS page's host, not a configured domain: a site reached at both apex and www would otherwise call half its own links outbound. A genuine www->apex link does read as outbound, which is the accepted cost of not having a canonical-domain setting.\nCLICK ONLY, and deriveIsOutbound() GATES ON THAT rather than relying on this list -- `events` is read by the goal builder and propertiesForEvent(), not by setTrackerProperties(), which walks the whole map for every event. file_download carries target_url as well, so without the gate a PDF on a CDN host claimed the visitor left; they stayed on the page and a file arrived. The click that raised the download answers the question, since the tracker sends both. GA splits it the same way: `outbound` is a parameter of click alone and file_download gets `link_domain`, which is our target_host."
     },
     "browser_version": {
         "set_by": "event",

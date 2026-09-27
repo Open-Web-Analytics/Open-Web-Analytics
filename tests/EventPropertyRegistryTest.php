@@ -104,7 +104,7 @@ final class EventPropertyRegistryTest extends TestCase
     {
         return [
             'click coordinates'  => ['click_x', 'click', ['page_view', 'purchase']],
-            'clicked element'    => ['element_path', 'click', ['page_view', 'scroll']],
+            'outbound flag'      => ['is_outbound', 'click', ['page_view', 'scroll']],
             'download name'      => ['file_name', 'file_download', ['click', 'page_view']],
             'download extension' => ['file_extension', 'file_download', ['click', 'page_view']],
             'scroll depth'       => ['scroll_depth', 'scroll', ['page_view', 'click']],

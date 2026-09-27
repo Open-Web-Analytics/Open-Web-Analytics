@@ -221,13 +221,34 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'page_width', OWA_DTD_INT ) );
         $this->setProperty( $this->column( 'page_height', OWA_DTD_INT ) );
 
-        // Where a click, download or outbound link went. target_host is parsed
-        // at ingest beside host, so "which domains do people leave to" is a
-        // group-by rather than a parse.
+        // Where a click or download went. target_host is parsed at ingest beside
+        // host, so "which domains do people leave to" is a group-by rather than a
+        // parse, and is_outbound below is the comparison of the two.
         $this->setProperty( $this->column( 'target_url', OWA_DTD_VARCHAR1024 ) );
         $this->setProperty( $this->column( 'target_host', OWA_DTD_VARCHAR255 ) );
 
-        $this->setProperty( $this->column( 'element_path', OWA_DTD_VARCHAR512 ) );
+        /*
+         * Whether that target was off-site, decided at ingest from target_url's
+         * host against page_location's.
+         *
+         * NOT NULL WITH A DEFAULT, like is_goal_event and for the same reason: a
+         * boolean holding three values groups as three things, and the boolean
+         * formatter renders NULL and 0 both as 'No' -- two GROUP BY buckets under
+         * one label, which is the isNewVisitor pie defect. It can be two-valued
+         * because the question is asked of the ROW: a page_view is not an
+         * outbound click, and 0 says so truthfully.
+         */
+        $is_outbound = $this->column( 'is_outbound', OWA_DTD_BOOLEAN, false );
+        $is_outbound->setNotNull();
+        $is_outbound->setDefaultValue( 0 );
+        $this->setProperty( $is_outbound );
+
+        /*
+         * element_path is GONE -- see Update053. It was a CSS selector built by
+         * walking up to eight ancestors with :nth-of-type() indexes, which no
+         * report, widget or overlay ever read, and which a template edit
+         * renumbers wholesale. The heatmap places clicks by coordinate.
+         */
         $this->setProperty( $this->column( 'element_tag', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'element_id', OWA_DTD_VARCHAR255 ) );
 

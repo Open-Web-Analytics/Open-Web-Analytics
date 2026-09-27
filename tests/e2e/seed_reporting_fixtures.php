@@ -136,10 +136,21 @@ const E2E_NOTIFICATIONS = [
  * heatmap has a point of weight 3 beside points of weight 1 and 2, which is
  * the only way to tell a weighted plot from a plot of distinct positions.
  */
+/*
+ * `target` MAKES THE CLICK OUTBOUND. Without it the target is the page itself
+ * plus the element's fragment, so target_host equals host and is_outbound is 0.
+ *
+ * The /pricing row carries one because a fixture where every click is internal
+ * leaves isOutbound with a single bucket, and a dimension with one value cannot
+ * show that it groups. Put on an EXISTING row rather than added as a new one, so
+ * every count the specs assert -- 6 clicks, by_element, by_page, the three
+ * coordinates that share (100,200) -- is unchanged: 2 outbound, 4 internal.
+ */
 const E2E_CLICKS = [
     ['page' => '/',        'id' => 'buy-btn',  'tag' => 'a',      'x' => 100, 'y' => 200, 'n' => 3],
     ['page' => '/',        'id' => 'nav-home', 'tag' => 'a',      'x' => 40,  'y' => 50,  'n' => 1],
-    ['page' => '/pricing', 'id' => 'buy-btn',  'tag' => 'button', 'x' => 300, 'y' => 400, 'n' => 2],
+    ['page' => '/pricing', 'id' => 'buy-btn',  'tag' => 'button', 'x' => 300, 'y' => 400, 'n' => 2,
+        'target' => 'https://checkout.example.org/pay'],
 ];
 
 /*
@@ -1735,7 +1746,7 @@ function seedClicks(): array
                 'page_title'         => 'E2E ' . ($click['page'] === '/' ? 'Home' : trim($click['page'], '/')),
                 'HTTP_USER_AGENT'    => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
                 'ip_address'         => '203.0.113.30',
-                'target_url'         => $url . '#' . $click['id'],
+                'target_url'         => $click['target'] ?? $url . '#' . $click['id'],
                 'click_x'            => $click['x'],
                 'click_y'            => $click['y'],
                 'page_width'         => 1280,
@@ -1763,7 +1774,26 @@ function seedClicks(): array
         // written down twice.
         'by_element'   => clickTotals('id'),
         'by_page'      => clickTotals('page'),
+        // What isOutbound should split the clicks into. Derived from the fixture
+        // so the two cannot be written down twice and disagree.
+        'outbound'     => outboundTotals(),
     ];
+}
+
+/**
+ * The fixture's clicks split by whether they left the site.
+ *
+ * @return array{Yes:int,No:int} the labels the boolean formatter renders
+ */
+function outboundTotals(): array
+{
+    $out = ['Yes' => 0, 'No' => 0];
+
+    foreach (E2E_CLICKS as $click) {
+        $out[isset($click['target']) ? 'Yes' : 'No'] += $click['n'];
+    }
+
+    return $out;
 }
 
 /** Sum the fixture's click counts by one of its keys. */

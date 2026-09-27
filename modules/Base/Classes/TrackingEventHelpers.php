@@ -1922,12 +1922,13 @@ class TrackingEventHelpers {
     /*
      * ---- URL READINGS -----------------------------------------------------
      *
-     * Six columns are readings of a URL the beacon sent, and each is now set by
-     * its own callback off the property it reads -- page_location for the page's
-     * three, HTTP_REFERER for the referrer's two, target_url for the click
-     * target's one. They used to be cut inside the row builder, which meant the
-     * registry declared six properties that nothing produced and the row builder
-     * knew how to parse a URL.
+     * Seven columns are readings of a URL the beacon sent, and each is now set
+     * by its own callback off the property it reads -- page_location for the
+     * page's three, HTTP_REFERER for the referrer's two, target_url for the click
+     * target's host, and the two of them together for is_outbound. Six of them
+     * used to be cut inside the row builder, which meant the registry declared
+     * six properties that nothing produced and the row builder knew how to parse
+     * a URL.
      *
      * NO MEMO, unlike the user agent's seven and the campaign tags' five. Those
      * share a parse worth keeping: browscap loads a rule set, and the tag parse
@@ -2035,6 +2036,96 @@ class TrackingEventHelpers {
             $event->get( 'target_url' ) );
 
         return $parts['host'];
+    }
+
+    /**
+     * Whether the click left the site.
+     *
+     * PARSES BOTH URLS ITSELF rather than reading target_host and host, which are
+     * the same two readings one step earlier.
+     *
+     * NOT BECAUSE THE ORDER IS UNGUARDED -- it is. setTrackerProperties() walks
+     * the registry in insertion order and TrackingPropertyOrderTest derives the
+     * dependency graph from the callback bodies, so reading a produced property
+     * registered later fails that test rather than silently deriving from
+     * nothing. host is 7th of the derived properties and target_host 18th, both
+     * ahead of this one, so reading them would work.
+     *
+     * The reason is that this reads the ORIGINAL inputs its two siblings read, so
+     * it adds no edge to that graph at all: the three are independent readings of
+     * one pair of URLs rather than a chain. Two parse_url calls at 0.27us each,
+     * against a constraint on the registry's key order that someone has to keep
+     * true. Both forms are correct; this one cannot stop being.
+     *
+     * COMPARED ON HOST, and against THIS PAGE's host rather than a configured
+     * domain -- a site reached at both apex and www would otherwise report half
+     * its own links as outbound. A real www -> apex link does read as outbound;
+     * that is the accepted cost of having no canonical-domain setting, and it is
+     * the rule the tracker's unused isOutboundUrl() had settled on too.
+     *
+     * NO TARGET IS NOT OUTBOUND. A click on an <input> answers 0, as does every
+     * event that is not a click at all -- the question is asked of the row, not of
+     * a target the row never had. That is what lets the column be NOT NULL and
+     * hold two values; see the registry note.
+     */
+    static function deriveIsOutbound( $value, $event ) {
+
+        /*
+         * A DOWNLOAD IS NOT A DEPARTURE, so this gates on the event and not only
+         * on having a target.
+         *
+         * file_download carries target_url too -- classifyClickTarget() sets it --
+         * so without this a PDF linked from a CDN host stored is_outbound = 1 and
+         * claimed the visitor left. They did not: they stayed on the page and a
+         * file arrived. That is an asset fetch, not a navigation.
+         *
+         * `events` in the registry could not do it. It is read by
+         * paramsForEvent() and propertiesForEvent() -- the goal builder and the
+         * documentation -- and is NOT a gate in setTrackerProperties(), which
+         * walks the whole map for every event. taggedValue() gates itself the same
+         * way, on is_new_session_start.
+         *
+         * The click that raised the download still answers the question, because
+         * the tracker sends both events: the click row carries is_outbound and the
+         * download row carries target_host. That is GA's split too -- `outbound`
+         * is a parameter of click alone, and file_download gets `link_domain`.
+         *
+         * Through V2Event::name() because a cached tracker sends `dom.click`.
+         */
+        if ( \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) !== 'click' ) {
+
+            return 0;
+        }
+
+        $target = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'target_url' ) );
+
+        if ( ! $target['host'] ) {
+
+            return 0;
+        }
+
+        $page = \OWA\Module\Base\Classes\V2Event::parseUrl(
+            $event->get( 'page_location' ) );
+
+        /*
+         * An unknown page host cannot make a judgement. Answering 1 would call
+         * every click outbound on a beacon that lost page_location, which is the
+         * one case where the comparison has nothing to compare against.
+         */
+        if ( ! $page['host'] ) {
+
+            return 0;
+        }
+
+        /*
+         * A PLAIN COMPARISON, because parseUrl() has already lowercased both
+         * hosts -- one authority for host normalisation, not two. strcasecmp()
+         * here looked careful and was dead weight: a case-folding mutant of this
+         * line could not be made to fail, because no unfolded host ever reaches
+         * it.
+         */
+        return $target['host'] !== $page['host'] ? 1 : 0;
     }
 
     /**

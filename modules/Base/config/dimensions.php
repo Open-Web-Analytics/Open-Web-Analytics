@@ -294,8 +294,24 @@ return array(
                 'family' => 'event', 'description' => 'The id attribute of the element that was clicked.' ),
             'domElementTag' => array( 'column' => 'element_tag', 'label' => 'Element Tag',
                 'family' => 'event', 'description' => 'The tag name of the element that was clicked.' ),
-            'elementPath' => array( 'column' => 'element_path', 'label' => 'Element Path',
-                'family' => 'event', 'description' => 'The selector locating the element that was clicked.' ),
+            /*
+             * WHERE OUTBOUND LIVES. The tracker carried an isOutboundUrl() that
+             * nothing called, and the notion was stored nowhere at all; it is
+             * decided at ingest now, from the click target's host against the
+             * page's.
+             *
+             * BOOLEAN is safe here for the same reason it is on isGoalEvent:
+             * is_outbound is NOT NULL DEFAULT 0, so it holds two values and the
+             * formatter's Yes/No maps onto them one to one. A nullable flag would
+             * have put the non-clicks in a third bucket also rendered 'No'.
+             *
+             * `elementPath` is GONE -- see Update053. It read a CSS selector that
+             * no report or widget ever grouped by and that a template edit
+             * renumbers; the heatmap places clicks by coordinate.
+             */
+            'isOutbound' => array( 'column' => 'is_outbound', 'label' => 'Outbound Click',
+                'family' => 'event', 'data_type' => 'boolean',
+                'description' => 'Whether the click went to a host other than the page it was on.' ),
             /*
              * THE CLICK'S COORDINATES, which the heatmap groups by.
              *

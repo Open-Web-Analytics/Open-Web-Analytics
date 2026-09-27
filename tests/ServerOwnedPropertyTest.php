@@ -147,6 +147,21 @@ final class ServerOwnedPropertyTest extends TestCase
         }
 
         /*
+         * is_outbound with them, because a request that could set it could call
+         * every one of its own clicks outbound -- or none. It is a READING of
+         * target_url and page_location, both of which the request does send, and
+         * the reading is the server's.
+         */
+        $this->assertArrayHasKey( 'is_outbound', $serverOwned );
+
+        $this->assertSame( array( 'target_url' => 'https://elsewhere.example/x' ),
+            Helpers::admitRequestParams( array(
+                'target_url'  => 'https://elsewhere.example/x',
+                'is_outbound' => '0',
+            ) ),
+            'the target is the request\'s to send and the verdict is not' );
+
+        /*
          * full_host is gone with the v1 handlers that read it -- the reverse-DNS
          * name reached no raw column and no cube pass. host, which does, stays.
          */

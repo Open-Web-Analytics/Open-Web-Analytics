@@ -98,6 +98,30 @@ final class GoalVocabularyTest extends TestCase
         $this->assertArrayHasKey( 'tagged_medium', $pageView );
         $this->assertArrayNotHasKey( 'tagged_medium', $click,
             'the tags ride the landing beacon, not a click' );
+
+        /*
+         * A DERIVED column is scoped by the property it derives FROM, which is
+         * what makes is_outbound conditionable without a SOURCE entry: it is
+         * named after its own property, and that property declares `click` and
+         * nothing else. A goal on "left the site" is a real goal; a goal on "this
+         * page view left the site" is not askable.
+         *
+         * NOT ON file_download, which carries target_url and target_host but is
+         * not a departure -- the visitor stayed on the page and a file arrived. A
+         * goal declared on it would have been satisfiable, because the column
+         * really was written there before deriveIsOutbound() gated on the event.
+         */
+        $this->assertArrayHasKey( 'is_outbound', $click );
+        $this->assertArrayNotHasKey( 'is_outbound', Vocab::columnsForEvent( 'file_download' ),
+            'a download is not the visitor leaving' );
+        $this->assertArrayNotHasKey( 'is_outbound', $pageView,
+            'a page view has no click target to have left by' );
+
+        // The target itself IS conditionable on a download -- GA's link_domain.
+        $this->assertArrayHasKey( 'target_host', Vocab::columnsForEvent( 'file_download' ) );
+
+        // Prettifying gives "Is outbound", a question half-asked.
+        $this->assertSame( 'Outbound click', $click['is_outbound'] );
     }
 
     /**

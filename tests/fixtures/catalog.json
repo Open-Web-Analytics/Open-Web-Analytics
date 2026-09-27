@@ -955,19 +955,6 @@
                 "denormalized": true
             }
         },
-        "elementPath": {
-            "base.event": {
-                "name": "elementPath",
-                "entity": "base.event",
-                "column": "element_path",
-                "family": "event",
-                "label": "Element Path",
-                "description": "The selector locating the element that was clicked.",
-                "foreign_key_name": "",
-                "data_type": "string",
-                "denormalized": true
-            }
-        },
         "eventName": {
             "base.event": {
                 "name": "eventName",
@@ -1132,6 +1119,19 @@
                 "family": "event",
                 "label": "Goal Event",
                 "description": "Whether this event met a goal condition.",
+                "foreign_key_name": "",
+                "data_type": "boolean",
+                "denormalized": true
+            }
+        },
+        "isOutbound": {
+            "base.event": {
+                "name": "isOutbound",
+                "entity": "base.event",
+                "column": "is_outbound",
+                "family": "event",
+                "label": "Outbound Click",
+                "description": "Whether the click went to a host other than the page it was on.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -1900,17 +1900,6 @@
             "data_type": "string",
             "denormalized": true
         },
-        "elementPath": {
-            "name": "elementPath",
-            "entity": "base.event",
-            "column": "element_path",
-            "family": "event",
-            "label": "Element Path",
-            "description": "The selector locating the element that was clicked.",
-            "foreign_key_name": "",
-            "data_type": "string",
-            "denormalized": true
-        },
         "eventName": {
             "name": "eventName",
             "entity": "base.event",
@@ -2052,6 +2041,17 @@
             "family": "event",
             "label": "Goal Event",
             "description": "Whether this event met a goal condition.",
+            "foreign_key_name": "",
+            "data_type": "boolean",
+            "denormalized": true
+        },
+        "isOutbound": {
+            "name": "isOutbound",
+            "entity": "base.event",
+            "column": "is_outbound",
+            "family": "event",
+            "label": "Outbound Click",
+            "description": "Whether the click went to a host other than the page it was on.",
             "foreign_key_name": "",
             "data_type": "boolean",
             "denormalized": true

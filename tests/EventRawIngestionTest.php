@@ -453,6 +453,181 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * Whether the click left the site, decided at ingest and not on the wire.
+     *
+     * The tracker's isOutboundUrl() had no caller and nothing stored the answer,
+     * so "clicks that left the site" was unaskable. It is two readings of one row
+     * -- target_url's host against page_location's -- which is why it is derived
+     * rather than sent.
+     *
+     * @dataProvider outboundProvider
+     */
+    public function testAClickSaysWhetherItLeftTheSite(
+        string $page, ?string $target, int $expected, string $because): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $properties = [
+            'site_id'       => $this->site,
+            'visitor_id'    => $visitor,
+            'session_id'    => $session,
+            'page_url'      => $page,
+            'page_location' => $page,
+            'fsts'          => time(),
+            'sts'           => time(),
+            'num_prior_sessions' => 0,
+        ];
+
+        if ($target !== null) {
+            $properties['target_url'] = $target;
+        }
+
+        $this->fireEvent('dom.click', $properties);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['click'] ?? null;
+
+        $this->assertNotNull($row, 'dom.click stores a row named click');
+        $this->assertSame($expected, (int) $row['is_outbound'], $because);
+    }
+
+    /** @return array<string,array{0:string,1:?string,2:int,3:string}> */
+    public static function outboundProvider(): array
+    {
+        return [
+            'another host' => [
+                'https://owa-test-site/v2/a',
+                'https://shop.example.org/cart?sku=9',
+                1,
+                'a different host is outbound',
+            ],
+            'the same host' => [
+                'https://owa-test-site/v2/a',
+                'https://owa-test-site/v2/b',
+                0,
+                'a link within the same host is not outbound',
+            ],
+            /*
+             * The apex/www case the comparison is built around: it is decided
+             * against THIS PAGE's host, so a page served at one spelling calls
+             * the other outbound. Pinned deliberately -- it is the accepted cost
+             * of having no canonical-domain setting, and a future setting is what
+             * would change it.
+             */
+            'www against apex' => [
+                'https://owa-test-site/v2/a',
+                'https://www.owa-test-site/v2/b',
+                1,
+                'no canonical-domain setting exists, so the spellings are two hosts',
+            ],
+            /*
+             * Pins V2Event::parseUrl(), not the comparison. It lowercases every
+             * host it returns, so deriveIsOutbound() compares two already-folded
+             * strings -- which is why that line is a plain !== and why folding it
+             * again could never be mutation-tested. If parseUrl ever stops
+             * folding, this is what says so.
+             */
+            'case is folded upstream' => [
+                'https://owa-test-site/v2/a',
+                'https://OWA-TEST-SITE/v2/b',
+                0,
+                'parseUrl lowercases both hosts, so one spelling is one host',
+            ],
+            'a relative target' => [
+                'https://owa-test-site/v2/a',
+                '/v2/b',
+                0,
+                'no host to compare is not a claim that the click left',
+            ],
+            'no target at all' => [
+                'https://owa-test-site/v2/a',
+                null,
+                0,
+                'a click on an <input> has no target, and 0 is NOT NULL saying so',
+            ],
+            /*
+             * NO PAGE HOST EITHER. A beacon can send a relative page_location,
+             * and then the comparison has nothing on its own side. Without the
+             * guard, NULL !== 'shop.example.org' reads as outbound and every
+             * click on such a beacon claims the visitor left -- the one case
+             * where the missing half decides the answer.
+             */
+            'a page with no host' => [
+                '/v2/a',
+                'https://shop.example.org/cart',
+                0,
+                'an unknown page host cannot make a click outbound',
+            ],
+        ];
+    }
+
+    /**
+     * A FILE DOWNLOAD IS NOT OUTBOUND, however far away the file is.
+     *
+     * classifyClickTarget() raises file_download beside the click and sets
+     * target_url on it, so the download row carries a target host like the click
+     * does -- and a PDF linked from a CDN stored is_outbound = 1, claiming a
+     * departure that never happened. The visitor stayed on the page and a file
+     * arrived.
+     *
+     * `events` in the registry cannot enforce this: setTrackerProperties() walks
+     * the whole derived map for every event and does not read it, so the gate has
+     * to be in the callback. This is the test that says which.
+     *
+     * The target is still recorded -- GA's link_domain -- so "which hosts do our
+     * downloads come from" survives; only the verdict about leaving is withheld.
+     */
+    public function testAFileDownloadIsNotAnOutboundClick(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('file_download', [
+            'site_id'        => $this->site,
+            'visitor_id'     => $visitor,
+            'session_id'     => $session,
+            'page_url'       => 'https://owa-test-site/v2/docs',
+            'page_location'  => 'https://owa-test-site/v2/docs',
+            // Another host entirely, which is what a CDN-hosted asset looks like.
+            'target_url'     => 'https://cdn.example.org/files/guide.pdf',
+            'file_extension' => 'pdf',
+            'file_name'      => 'guide.pdf',
+            'fsts'           => time(),
+            'sts'            => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['file_download'] ?? null;
+
+        $this->assertNotNull($row, 'file_download stores a row');
+
+        $this->assertSame(0, (int) $row['is_outbound'],
+            'a download is a file arriving, not the visitor leaving');
+
+        $this->assertSame('cdn.example.org', $row['target_host'],
+            "and the target is still recorded -- that is GA's link_domain, and the "
+            . 'only thing withheld is the verdict about leaving');
+    }
+
+    /**
+     * And every other event answers 0 rather than NULL.
+     *
+     * The column is NOT NULL because a boolean holding three values groups as
+     * three things, and the boolean formatter renders NULL and 0 both as 'No' --
+     * two GROUP BY buckets under one label. A page_view is not an outbound click,
+     * so 0 is the true answer rather than a stand-in for one.
+     */
+    public function testANonClickIsNotAnOutboundClick(): void
+    {
+        $row = $this->firePageView()['page_view'];
+
+        $this->assertNotNull($row['is_outbound'],
+            'is_outbound is NOT NULL, and strict mode aborts an insert that hands it NULL');
+
+        $this->assertSame(0, (int) $row['is_outbound']);
+    }
+
+    /**
      * The path collapses, so one page is one row in a page report.
      *
      * /store, /store/ and /store/index.html are the case v1 handles and v2 did
@@ -499,7 +674,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         $row = $this->firePageView(['language' => ''])['page_view'];
 
         foreach (['language', 'user_id', 'content_group', 'consent_state',
-                  'element_path', 'currency', 'target_url'] as $column) {
+                  'currency', 'target_url'] as $column) {
             $this->assertNull($row[$column],
                 "$column was absent, and absence is NULL -- never '(not set)' and never ''.");
         }

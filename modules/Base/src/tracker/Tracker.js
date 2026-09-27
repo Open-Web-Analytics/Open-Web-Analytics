@@ -1825,98 +1825,21 @@ class OWATracker  {
         return properties;
     }
 
-    /**
-     * A stable CSS-ish path to one element.
+    /*
+     * getElementPath() and isOutboundUrl() ARE GONE.
      *
-     * WHAT IT IS FOR: `dom_element_id` is real on 0.09% of clicks and populated
-     * on 94% of them, because 1.x writes '(not set)' when there is no id -- so
-     * the one column that could identify what was clicked identifies nothing.
-     * A path is derivable for every element, whether or not the page author
-     * gave it an id.
+     * getElementPath built a CSS selector by walking up to eight ancestors with
+     * :nth-of-type() indexes. Nothing on the server ever read the column it fed
+     * -- no report, widget or overlay -- and a template edit renumbers every
+     * path at once, so it was neither aggregable nor stable across a deploy. The
+     * heatmap places clicks by coordinate.
      *
-     * PREFERS AN ID and stops there, because an id is unique by definition and
-     * a path through it is both shorter and more stable than one through the
-     * tree. Otherwise it walks up, recording tag plus nth-of-type, and stops at
-     * the body.
-     *
-     * DEPTH-CAPPED at eight. Deeply nested component frameworks produce paths
-     * longer than the column and longer than anything a human reads, and a
-     * truncated path is worse than a shallow one: it looks complete and
-     * matches the wrong element.
-     *
-     * @param {Element} el
-     * @return {string}
+     * isOutboundUrl() had NO CALLER but a unit test. Outbound is a comparison of
+     * the click target's host against the page's, and both reach the row already,
+     * so the server derives is_outbound at ingest -- see
+     * TrackingEventHelpers::deriveIsOutbound(). Deciding it here would have cost
+     * a wire field for something the row could already answer.
      */
-    getElementPath( el ) {
-
-        var parts = [];
-        var depth = 0;
-
-        while ( el && el.nodeType === 1 && depth < 8 ) {
-
-            if ( el.id ) {
-
-                parts.unshift( '#' + el.id );
-                break;
-            }
-
-            var tag = String( el.tagName || '' ).toLowerCase();
-
-            if ( ! tag || tag === 'body' || tag === 'html' ) {
-
-                break;
-            }
-
-            var index = 1;
-            var sib   = el;
-
-            while ( ( sib = sib.previousElementSibling ) ) {
-
-                if ( sib.tagName === el.tagName ) {
-
-                    index++;
-                }
-            }
-
-            parts.unshift( index > 1 ? tag + ':nth-of-type(' + index + ')' : tag );
-
-            el = el.parentElement;
-            depth++;
-        }
-
-        return parts.join( ' > ' );
-    }
-
-    /**
-     * Whether a URL leaves this site.
-     *
-     * Compared on HOST, not on the full URL, and against the page's own host
-     * rather than a configured domain -- a site reached at both apex and www
-     * would otherwise report half its internal links as outbound.
-     *
-     * @param {string} url
-     * @return {boolean}
-     */
-    isOutboundUrl( url ) {
-
-        if ( ! url || typeof window === 'undefined' ) {
-
-            return false;
-        }
-
-        var host = '';
-
-        try {
-
-            host = new URL( url, window.location.href ).hostname;
-
-        } catch ( e ) {
-
-            return false;
-        }
-
-        return !! host && host !== window.location.hostname;
-    }
 
     /**
      * The file extension a URL downloads, or '' if it is not a download.
@@ -2000,8 +1923,6 @@ class OWATracker  {
         var properties = this.getDomElementProperties(targ);
         click.merge(this.filterDomProperties(properties));
 
-        // The stored selector. See getElementPath().
-        click.set( 'element_path', this.getElementPath( targ ) );
         // set coordinates
         /*
          * The ELEMENT's position is not collected either. The heatmap is an
@@ -4056,8 +3977,12 @@ class OWATracker  {
      * every other tracker names these as events.
      *
      * Outbound is the opposite call: it IS a property of the click, because
-     * "clicks that left the site" is the same count as "clicks", narrowed. So
-     * it rides as a param rather than becoming an event of its own.
+     * "clicks that left the site" is the same count as "clicks", narrowed. So it
+     * is a column on the click row rather than an event of its own -- and the
+     * SERVER decides it, from target_url's host against page_location's, both of
+     * which the beacon already sends. This used to say it "rides as a param",
+     * which nothing implemented: the tracker sent no such param, and the
+     * isOutboundUrl() that would have computed one had no caller.
      *
      * @param {string} url
      */

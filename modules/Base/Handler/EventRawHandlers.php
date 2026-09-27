@@ -312,9 +312,21 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'target_url'  => $this->text( $event->get( 'target_url' ) ),
             'target_host' => $this->text( $event->get( 'target_host' ) ),
 
-            'element_path' => $this->text( $event->get( 'element_path' ) ),
             'element_tag'  => $this->text( $event->get( 'dom_element_tag' ) ),
             'element_id'   => $this->text( $event->get( 'dom_element_id' ) ),
+
+            /*
+             * Whether the click left the site, decided by deriveIsOutbound().
+             *
+             * flag() rather than number(). On a beacon the property is always
+             * set: setTrackerProperties() walks the whole derived map and does not
+             * gate on `events`, so the callback runs for every event type and
+             * answers 0 where there is no target. Off that path -- an event built
+             * in process, or one drained from the queue -- the property is absent,
+             * Event::get() answers false, and number() would hand NULL to a
+             * NOT NULL column, which strict mode aborts the whole insert over.
+             */
+            'is_outbound' => $this->flag( $event->get( 'is_outbound' ) ),
 
             'scroll_depth'    => $this->number( $event->get( 'scroll_depth' ) ),
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
@@ -1091,6 +1103,24 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return (int) $value;
+    }
+
+    /**
+     * A boolean column's value: 1 or 0, never null.
+     *
+     * Kept apart from number(), which answers null for an absent value. These
+     * columns are NOT NULL because a boolean holding three values groups as
+     * three things, so absence has to resolve to a reading -- and for a flag
+     * asked of every row, "no" is that reading. Event::get() answers false for a
+     * property the event does not carry, which is exactly the input this has to
+     * turn into 0 rather than into a strict-mode abort.
+     *
+     * @param mixed $value
+     * @return int
+     */
+    protected function flag( $value ) {
+
+        return $value ? 1 : 0;
     }
 }
 
