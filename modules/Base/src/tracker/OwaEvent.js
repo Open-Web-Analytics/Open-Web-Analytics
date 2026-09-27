@@ -27,37 +27,6 @@ import { Util } from '../common/Util.js';
  */
 const LOCAL_ONLY = { timestamp: true };
 
-/**
- * Properties only certain EVENT TYPES carry: name -> the types that carry it.
- *
- * `HTTP_REFERER` is the page's referrer, and it rode EVERY beacon of the page --
- * so a page with a page view and six clicks sent the same referring URL seven
- * times, up to 1KB each. The page view already records it, and the server does
- * not stamp it onto the other rows: the cube's `source` and `medium` read
- * session.referer_host, which is FIRST_VALUE over the session, i.e. the landing
- * page view. Nothing downstream reads a click's copy.
- *
- * GA DOES NOT DO THIS, and the docs suggested otherwise until it was measured
- * against real gtag.js in a browser: `dr` rides EVERY event. What GA has instead
- * is a two-level wire -- dr, dl, dt, sid, sct and seg sit in the query string
- * once per REQUEST, and one request carries a batch of events whose body lines
- * hold only en, _ee, the ep/epn parameters and _et. Six events, one referrer.
- *
- * So GA amortises where this scopes. Scoping is the answer available to a tracker
- * that sends one beacon per event; batching is the better one and is not a
- * tracker change that belongs beside this. page_location (VARCHAR 1024) and
- * page_title are repeated on every beacon too, and cost more.
- *
- * HERE rather than at each call site, for the reason LOCAL_ONLY is here:
- * getProperties() is the one place the event becomes data, so nothing can put it
- * back on a click by another route. The page store still holds it (scope 'page'),
- * because isNewSession() and the campaign logic read it locally.
- *
- * An event with no type is not filtered -- a caller building a raw event has not
- * said what it is, and dropping a property it deliberately set would be worse
- * than sending one byte too many.
- */
-const EVENT_SCOPED = { HTTP_REFERER: { page_view: true } };
 
 /**
  * OWA Generic Event Object
@@ -104,21 +73,13 @@ class OwaEvent {
     getProperties() {
 
         var out = {};
-        var type = this.properties.event_type;
 
         for ( var name in this.properties ) {
 
-            if ( ! this.properties.hasOwnProperty( name ) || LOCAL_ONLY[ name ] ) {
+            if ( this.properties.hasOwnProperty( name ) && ! LOCAL_ONLY[ name ] ) {
 
-                continue;
+                out[ name ] = this.properties[ name ];
             }
-
-            if ( EVENT_SCOPED[ name ] && type && ! EVENT_SCOPED[ name ][ type ] ) {
-
-                continue;
-            }
-
-            out[ name ] = this.properties[ name ];
         }
 
         return out;

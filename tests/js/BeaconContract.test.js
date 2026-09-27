@@ -196,41 +196,30 @@ describe('tracker beacon contract', () => {
 });
 
 /**
- * THE REFERRER IS A PAGE-VIEW PROPERTY, asserted on the emitted beacon and not
- * only in the fixture.
+ * THE REFERRER RIDES EVERY BEACON, and that is the point rather than an oversight.
  *
- * It used to ride every beacon of the page, so one view and six clicks sent the
- * same URL seven times at up to 1KB each -- and nothing read the copies: a cube
- * row's referer_url is its own raw value, and source/medium read FIRST_VALUE over
- * the session, which is the landing page view.
+ * A click's referer_url is the PRIOR PAGE THAT DROVE THE EVENT. It cannot be
+ * recovered by joining the click to the page view for the same page, because one
+ * session can reach the same page twice from different referrers -- so dropping it
+ * from anything but the page view would discard evidence the raw store exists to
+ * keep.
  *
- * Editing the fixture alone would let the tracker start sending it again the
- * moment someone changed EVENT_SCOPED, because the fixture would then simply be
- * wrong in the other direction. This says which way round it goes, through the
- * same EMITTERS the contracts use so the two cannot describe different pipelines.
- *
- * The cost this saves is a per-beacon one, because OWA sends one beacon per
- * event: a tracker that batched several events into one request could carry the
- * referrer once for all of them instead, and would not need this. See
- * OwaEvent.EVENT_SCOPED.
+ * It WAS briefly scoped to the page view, on the grounds that no report read a
+ * click's copy. That was a statement about today's reports, not about what the
+ * data is for. Asserted here so the saving is not made again by someone counting
+ * bytes: the per-event cost comes from sending one beacon per event, and batching
+ * several events into one request is the answer to it.
  */
-describe('the referrer rides the page view and nothing else', () => {
+describe('the referrer rides every beacon', () => {
 
     beforeEach(() => {
         Object.defineProperty(document, 'referrer', {
             value: 'https://news.example.org/story', configurable: true });
     });
 
-    test('a page view carries it', () => {
-        expect(emittedKeys(EMITTERS['page_view'])).toContain('HTTP_REFERER');
-    });
-
-    test('a click on that same page does not', () => {
-        expect(emittedKeys(EMITTERS['click'])).not.toContain('HTTP_REFERER');
-    });
-
-    test('nor does a purchase or a custom event', () => {
-        expect(emittedKeys(EMITTERS['purchase'])).not.toContain('HTTP_REFERER');
-        expect(emittedKeys(EMITTERS['my_custom_event'])).not.toContain('HTTP_REFERER');
+    test('a page view, a click, a purchase and a custom event all carry it', () => {
+        for (const name of ['page_view', 'click', 'purchase', 'my_custom_event']) {
+            expect(emittedKeys(EMITTERS[name])).toContain('HTTP_REFERER');
+        }
     });
 });
