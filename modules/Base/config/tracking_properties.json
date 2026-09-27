@@ -719,14 +719,14 @@
         "from": [
             "search_term"
         ],
-        "param": "search_term",
+        "column": "search_term",
         "events": [
             "view_search_results"
         ],
         "data_type": "string",
         "required": false,
         "callbacks": [],
-        "note": "Site-search term, on a view_search_results event. Reaches reporting as the params.search_term path."
+        "note": "Site-search term, on a view_search_results event. A COLUMN, and no migration: Update034 creates owa_event_raw from the entity, and v2 has never shipped, so there is no install predating this column. It was a param, and a params key is unreportable in v2 until a site registers it as a CUSTOM dimension, so \"what do people search for\" cost one of a Property's twenty slots for a value OWA set itself. Site search is a question every install with a search box asks.\nThe third promotion, after file_name and file_extension, and the test is the same one: GA ships searchTerm as a standard reporting dimension. The element and form params stay in the bag because it does not, and because most installs will never group by them.\nThe tracker reads it from the URL, from siteSearchParams -- which ships GA's defaults now. Both the empty default and the missing caller made this event unraisable on every install."
     },
     "file_name": {
         "set_by": "client",

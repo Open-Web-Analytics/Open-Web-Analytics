@@ -153,10 +153,27 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         /*
          * The markers. Raised from flags that are already on this beacon, in
-         * the same write, so a marker cannot be lost while its own page view
-         * survives -- the beacon carrying the flag can be lost, and then the
-         * session simply has no marker row, which a later build cannot repair
-         * either way because re-reading raw reproduces the same partial state.
+         * the same write, so a marker cannot be lost while the event carrying it
+         * survives -- the beacon itself can be lost, and then the session simply
+         * has no marker row, which a later build cannot repair either way because
+         * re-reading raw reproduces the same partial state.
+         *
+         * WHATEVER EVENT CARRIES THE FLAG, and this was gated on page_view. The
+         * gate dropped the flag silently. The TRACKER has never been coupled to
+         * page views -- raiseEvent() goes through manageState() like everything
+         * else, so a scroll or a form_start that happens to be the first event of
+         * a session mints the session id and stamps is_new_session_start on that
+         * beacon. Only this gate then refused to materialise the marker, so the
+         * session existed in raw with no session_start row and a genuinely new
+         * visitor had no first_visit.
+         *
+         * It survived because `sessions` is a distinct count over session_id, so
+         * the session was still COUNTED. What disagreed was everything reading the
+         * marker rows: eventCount on eventName == session_start, and first_visit.
+         *
+         * Measured against real gtag.js with send_page_view:false -- no page view
+         * was sent at all and a `scroll` carried _ss=1, _fv=1 and a fresh session
+         * id. Sessions with no page view are a shape GA supports outright.
          *
          * is_new_session_start and is_new_visitor_created are REQUEST scoped:
          * they mark the one request that created the session or minted the
@@ -164,8 +181,14 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * event of a page or a session and answer a different question, so
          * they cannot raise a marker -- using them would raise one marker per
          * event of the first page.
+         *
+         * A MARKER CANNOT RAISE A MARKER. session_start and first_visit are
+         * materialised here and never arrive on a beacon, so the flags cannot be
+         * on them; guarded anyway, because this is now reached for every name and
+         * a marker row raising its own twin would recurse in effect if not in
+         * fact.
          */
-        if ( $name === 'page_view' ) {
+        if ( ! \OWA\Module\Base\Classes\V2Event::isMarker( $name ) ) {
 
             if ( $event->get( 'is_new_session_start' ) ) {
 
@@ -330,6 +353,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             'file_name'      => $this->text( $event->get( 'file_name' ) ),
             'file_extension' => $this->text( $event->get( 'file_extension' ) ),
+            'search_term'    => $this->text( $event->get( 'search_term' ) ),
 
             'scroll_depth'    => $this->number( $event->get( 'scroll_depth' ) ),
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),

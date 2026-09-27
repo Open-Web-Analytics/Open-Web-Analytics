@@ -43,9 +43,10 @@ final class EventRawEntityTest extends TestCase
         $columns = $this->raw()->getColumns();
 
         /*
-         * 64. It was 62: element_path went and is_outbound arrived (Update053, net
+         * 65. It was 62: element_path went and is_outbound arrived (Update053, net
          * zero), then file_name and file_extension were promoted out of `params`
-         * (Update054).
+         * (Update054) and search_term after them, which needed no migration at all --
+         * Update034 builds this table from the entity and v2 has never shipped.
          *
          * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
          * param-bound first-class properties were deliberately left in the bag --
@@ -55,7 +56,7 @@ final class EventRawEntityTest extends TestCase
          * MySQL 8.4. This number moving is how that decision gets noticed being
          * reversed one column at a time.
          */
-        $this->assertCount(64, $columns);
+        $this->assertCount(65, $columns);
 
         // browser_type, and NOT `browser`. Both columns existed and both were
         // written from the one property -- config/dimensions.php declares
@@ -72,8 +73,8 @@ final class EventRawEntityTest extends TestCase
             'yyyymmdd', 'page_location', 'page_path', 'page_query',
             'tagged_source', 'tagged_medium', 'tagged_campaign',
             'engagement_msec', 'scroll_depth', 'is_outbound', 'consent_state',
-            // Promoted out of params in Update054; the element and form params were not.
-            'file_name', 'file_extension',
+            // Promoted out of params; the element and form params were not.
+            'file_name', 'file_extension', 'search_term',
             'user_id', 'content_group', 'currency', 'session_start_ts',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
             'referer_host', 'referer_query', 'prior_session_start_ts',

@@ -427,15 +427,62 @@ describe('site search', () => {
         expect(sent[0].search_term).toBe('partitioning');
     });
 
-    test('nothing is raised when no parameter is configured', () => {
+    /*
+     * THE DEFAULTS ARE THE FEATURE. This used to assert the opposite -- that
+     * nothing is raised without configuration -- on the reasoning that no
+     * convention exists so a default would guess wrong. The cost of that was total:
+     * siteSearchParams was empty AND trackSiteSearch() had no caller, so
+     * view_search_results could not fire on any install at all.
+     */
+    test('the shipped defaults raise it with no configuration', () => {
         const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getUrlParam = (name) => (name === 'q' ? 'shoes' : false);
+        t.trackSiteSearch();
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0].event_type).toBe('view_search_results');
+        expect(sent[0].search_term).toBe('shoes');
+    });
+
+    test('a page with no search parameter raises nothing', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getUrlParam = () => false;
+        t.trackSiteSearch();
+
+        expect(sent).toHaveLength(0);
+    });
+
+    /*
+     * A site that clears the option gets no site-search tracking, which is the
+     * escape hatch for one whose ?q= means something else.
+     */
+    test('an empty option switches it off', () => {
+        const t = newTracker({ siteSearchParams: [] });
         const sent = captureSends(t);
 
         t.getUrlParam = () => 'anything';
         t.trackSiteSearch();
 
-        expect(sent).toHaveLength(0,
-            'There is no convention for the parameter name, so a default would guess wrong.');
+        expect(sent).toHaveLength(0);
+    });
+
+    /*
+     * AND IT IS ACTUALLY CALLED. The method existed and nothing invoked it; the
+     * page view is what invokes it now, so a results page reports itself.
+     */
+    test('a page view on a results page raises it too', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getUrlParam = (name) => (name === 'q' ? 'partitioning' : false);
+        t.trackPageView('https://example.org/search?q=partitioning');
+
+        expect(sent.map((e) => e.event_type))
+            .toEqual(['page_view', 'view_search_results']);
     });
 });
 

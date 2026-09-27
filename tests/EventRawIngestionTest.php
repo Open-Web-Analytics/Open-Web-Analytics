@@ -180,6 +180,104 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A SESSION WITH NO PAGE VIEW still gets its marker rows.
+     *
+     * The tracker has never been coupled to page views: raiseEvent() goes through
+     * manageState() like everything else, so a scroll or a form_start that happens
+     * to be the first event of a session mints the session id and stamps
+     * is_new_session_start on THAT beacon. expand() used to gate the markers on
+     * page_view, which dropped the flag silently -- the session existed in raw with
+     * no session_start row, and a genuinely new visitor had no first_visit.
+     *
+     * It survived because `sessions` is a distinct count over session_id, so the
+     * session was still counted. What disagreed was everything reading the marker
+     * rows.
+     *
+     * Not a hypothetical shape: with send_page_view suppressed, real gtag.js sends
+     * no page view at all and puts its session-start and first-visit flags on
+     * whichever event comes first -- a `scroll`, in the run this was checked
+     * against.
+     *
+     * @dataProvider firstEventProvider
+     */
+    public function testAnyFirstEventRaisesTheMarkers(string $type, string $stored): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent($type, [
+            'site_id'                => $this->site,
+            'visitor_id'             => $visitor,
+            'session_id'             => $session,
+            'page_url'               => 'https://owa-test-site/v2/a',
+            'page_location'          => 'https://owa-test-site/v2/a',
+            'is_new_session_start'   => true,
+            'is_new_visitor_created' => true,
+            'fsts'                   => time(),
+            'sts'                    => time(),
+            'num_prior_sessions'     => 0,
+        ]);
+
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertArrayHasKey($stored, $rows, "$type stores its own row");
+
+        $this->assertArrayHasKey('session_start', $rows,
+            "a session created by $type must still have a session_start row");
+        $this->assertArrayHasKey('first_visit', $rows,
+            "and a visitor minted on $type must still have a first_visit row");
+
+        // One instant for every row of one beacon, markers included.
+        $this->assertSame($rows[$stored]['ts'], $rows['session_start']['ts']);
+    }
+
+    /** @return array<string,array{0:string,1:string}> */
+    public static function firstEventProvider(): array
+    {
+        return [
+            'a scroll'     => ['scroll', 'scroll'],
+            'a form_start' => ['form_start', 'form_start'],
+            'a click'      => ['dom.click', 'click'],
+            'a custom event' => ['my_site_signup', 'my_site_signup'],
+        ];
+    }
+
+    /**
+     * And a marker does not raise a marker.
+     *
+     * The flags cannot be on a session_start or first_visit -- the server
+     * materialises both and no beacon carries either name -- but expand() is
+     * reached for every name now, so the guard is asserted rather than assumed.
+     */
+    public function testAMarkerDoesNotRaiseAMarker(): void
+    {
+        $this->assertTrue(\OWA\Module\Base\Classes\V2Event::isMarker('session_start'));
+        $this->assertTrue(\OWA\Module\Base\Classes\V2Event::isMarker('first_visit'));
+        $this->assertFalse(\OWA\Module\Base\Classes\V2Event::isMarker('page_view'));
+
+        $handlers = new ReflectionClass(\OWA\Module\Base\Handler\EventRawHandlers::class);
+        $expand = $handlers->getMethod('expand');
+        $expand->setAccessible(true);
+
+        $event = new \OWA\Module\Base\Classes\Event();
+        $event->setEventType('session_start');
+        $event->setProperties([
+            'site_id'                => $this->site,
+            'visitor_id'             => $this->uniqueGuid(),
+            'session_id'             => $this->uniqueSessionId(),
+            'ts'                     => time() * 1000000,
+            'is_new_session_start'   => true,
+            'is_new_visitor_created' => true,
+        ]);
+
+        $rows = $expand->invoke($handlers->newInstanceWithoutConstructor(), $event);
+
+        $this->assertCount(1, $rows,
+            'a marker expands to itself alone, or one beacon could fan out endlessly');
+        $this->assertSame('session_start', $rows[0]['event_type']);
+    }
+
+    /**
      * The markers key off the REQUEST-scoped flags. is_new_session and
      * is_new_visitor are page- and session-scoped: they ride every event of a
      * page or a session, so raising a marker from them would raise one per
@@ -615,6 +713,45 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->assertArrayNotHasKey('file_name', $params,
             'a promoted property must leave the bag, or one fact has two authorities');
         $this->assertArrayNotHasKey('file_extension', $params);
+    }
+
+    /**
+     * The search term is a COLUMN, and not also in params.
+     *
+     * It was a param, so "what do people search this site for" needed a custom
+     * dimension registration -- one of a Property's twenty slots spent on a value
+     * OWA set itself. Third promotion after file_name and file_extension.
+     *
+     * The event could not fire at all before this release: siteSearchParams
+     * defaulted to empty AND trackSiteSearch() had no caller. So there is nothing
+     * to backfill, and this is the first test that could ever have stored one.
+     */
+    public function testTheSearchTermIsAColumn(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('view_search_results', [
+            'site_id'        => $this->site,
+            'visitor_id'     => $visitor,
+            'session_id'     => $session,
+            'page_url'       => 'https://owa-test-site/search?q=table+partitioning',
+            'page_location'  => 'https://owa-test-site/search?q=table+partitioning',
+            'search_term'    => 'table partitioning',
+            'fsts'           => time(),
+            'sts'            => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['view_search_results'] ?? null;
+
+        $this->assertNotNull($row, 'view_search_results stores a row');
+        $this->assertSame('table partitioning', $row['search_term']);
+
+        $params = (array) json_decode((string) $row['params'], true);
+
+        $this->assertArrayNotHasKey('search_term', $params,
+            'a promoted property must leave the bag, or one fact has two authorities');
     }
 
     /**

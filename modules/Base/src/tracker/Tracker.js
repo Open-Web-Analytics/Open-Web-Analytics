@@ -377,11 +377,20 @@ class OWATracker  {
 	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi'
 	        ],
 	        /*
-	         * Query parameters that carry a site-search term. No convention
-	         * exists -- q, s, search, query and keywords are all common -- so
-	         * the site says which one it uses.
+	         * Query parameters that carry a site-search term, tried in order.
+	         *
+	         * DEFAULTS NOW, and there were none. The reasoning was that no
+	         * convention exists so a default would guess wrong -- and the cost of
+	         * it was the whole feature: view_search_results could not fire on any
+	         * install, because trackSiteSearch() had no caller either. An event
+	         * nothing could raise, a property nothing could set, and a reserved
+	         * name protecting neither.
+	         *
+	         * The guess is cheap and the miss is not. A page with ?q= that is not
+	         * a search is one spurious event; no defaults is no site-search
+	         * reporting anywhere, on any install. A site using ?kw= adds it.
 	         */
-	        siteSearchParams: [],
+	        siteSearchParams: [ 'q', 's', 'search', 'query', 'keyword' ],
 	        cookie_domain: false,
 	        /*
 	         * How long each state store's cookie lives, by LOGICAL store name,
@@ -4016,7 +4025,23 @@ class OWATracker  {
 
         event.setEventType( 'page_view' );
 
-        return this.trackEvent( event );
+        var result = this.trackEvent( event );
+
+        /*
+         * SITE SEARCH RIDES THE PAGE VIEW, because a results page IS a page view
+         * and the term is in the URL that was just recorded. Nothing else called
+         * this, so the event could not fire at all.
+         *
+         * AFTER the page view rather than before. GA sends its
+         * view_search_results FIRST -- measured, at _s=1 ahead of the page view --
+         * and OWA could not have copied that until expand() stopped gating the
+         * session and visitor markers on page_view. It no longer does, so the
+         * order is a free choice; the page view goes first because it is the
+         * event the results page actually is, and the search is a reading of it.
+         */
+        this.trackSiteSearch();
+
+        return result;
     }
 
     /**

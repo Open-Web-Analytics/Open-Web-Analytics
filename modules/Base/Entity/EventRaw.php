@@ -274,6 +274,26 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'file_name', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'file_extension', OWA_DTD_VARCHAR32 ) );
 
+        /*
+         * THE SITE-SEARCH TERM, promoted out of `params` for the same reason as the
+         * two above: a params key is unreportable until a site registers it as a
+         * custom dimension, and "what do people search for" is not a question an
+         * install should spend one of its twenty slots on.
+         *
+         * NO MIGRATION, unlike the two above. Update034 creates owa_event_raw from
+         * THIS ENTITY, so every upgrade path that reaches 34 builds the table with
+         * whatever columns are declared here -- and v2 has never shipped, so no
+         * install exists that was created before this line. Update053 and Update054
+         * are no-ops on the same reasoning; they served exactly one dev install.
+         * While v2 is unshipped, adding a column here is the whole change.
+         *
+         * 255 because it is what somebody typed into a box. Longer than that is a
+         * paste, and strict mode refuses an over-long value rather than truncating
+         * -- so the entity's own fitToColumn() is what keeps a pasted essay from
+         * aborting the insert.
+         */
+        $this->setProperty( $this->column( 'search_term', OWA_DTD_VARCHAR255 ) );
+
         // Percentage. TINYINT holds 0-100 with room to spare.
         $this->setProperty( $this->column( 'scroll_depth', OWA_DTD_TINYINT4 ) );
 

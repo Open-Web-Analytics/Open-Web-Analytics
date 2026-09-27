@@ -49,7 +49,11 @@ final class Update054Test extends TestCase
     }
 
     /**
-     * The nine that were NOT promoted are still params, and still have no column.
+     * The ones NOT promoted are still params, and still have no column.
+     *
+     * search_term left this list: it is a column now, because a site-search report
+     * is a question every install with a search box asks. The element, form and
+     * commerce params stay.
      *
      * ct_line_items could not be a column whatever the row budget: it is a nested
      * array, so no scalar column could hold it whatever the row budget.
@@ -64,7 +68,10 @@ final class Update054Test extends TestCase
             'dom_element_text'  => 'click',
             'form_id'           => 'form_start',
             'form_name'         => 'form_start',
-            'search_term'       => 'view_search_results',
+            'form_destination'  => 'form_start',
+            'form_length'       => 'form_start',
+            'first_field_id'    => 'form_start',
+            'form_submit_text'  => 'form_submit',
             'ct_order_source'   => 'purchase',
             'ct_gateway'        => 'purchase',
             'ct_line_items'     => 'purchase',

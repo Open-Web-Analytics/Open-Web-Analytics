@@ -4,9 +4,9 @@
         "metricImplementations": 25,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 74,
-        "dimensionEntriesDenormalized": 74,
-        "accessorDimensionNames": 74
+        "dimensionNamesDenormalized": 75,
+        "dimensionEntriesDenormalized": 75,
+        "accessorDimensionNames": 75
     },
     "metrics": {
         "averageEngagementTimePerSession": [
@@ -1455,6 +1455,19 @@
                 "denormalized": true
             }
         },
+        "searchTerm": {
+            "base.event": {
+                "name": "searchTerm",
+                "entity": "base.event",
+                "column": "search_term",
+                "family": "event",
+                "label": "Search Term",
+                "description": "What the user searched this site for.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "sessionAd": {
             "base.event": {
                 "name": "sessionAd",
@@ -2350,6 +2363,17 @@
             "family": "traffic source",
             "label": "Referring Site",
             "description": "The host the user arrived from, as observed.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "searchTerm": {
+            "name": "searchTerm",
+            "entity": "base.event",
+            "column": "search_term",
+            "family": "event",
+            "label": "Search Term",
+            "description": "What the user searched this site for.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

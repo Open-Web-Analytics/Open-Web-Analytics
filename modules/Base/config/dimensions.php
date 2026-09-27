@@ -333,6 +333,18 @@ return array(
             'fileExtension' => array( 'column' => 'file_extension', 'label' => 'File Extension',
                 'family' => 'event',
                 'description' => 'The extension of the downloaded file -- pdf, zip, csv.' ),
+
+            /*
+             * SITE SEARCH. `searchTerm` is GA's name for it and there is nothing to
+             * gain from a third spelling.
+             *
+             * Distinct from `sessionSearchTerms` and `firstSearchTerms`, which are
+             * what a SEARCH ENGINE sent the visitor in on and are resolved by the cube
+             * pass. This is what they typed into this site's own box, on the event.
+             */
+            'searchTerm' => array( 'column' => 'search_term', 'label' => 'Search Term',
+                'family' => 'event',
+                'description' => 'What the user searched this site for.' ),
             /*
              * THE CLICK'S COORDINATES, which the heatmap groups by.
              *

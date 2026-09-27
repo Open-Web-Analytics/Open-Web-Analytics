@@ -121,6 +121,25 @@ class V2Event {
     const NOT_EVENTS = array( 'dom.stream', 'base.feed_request' );
 
     /**
+     * Is this name one the SERVER materialises rather than a tracker sends?
+     *
+     * session_start and first_visit are raised by EventRawHandlers::expand() from
+     * flags on another event, so a beacon never carries either name -- the tracker
+     * reserves both precisely so a site cannot take them.
+     *
+     * Asked because expand() raises the markers for every event now rather than
+     * only for a page view, and a marker must not raise a marker.
+     *
+     * @param string $name a v2 event name
+     * @return bool
+     */
+    public static function isMarker( $name ) {
+
+        return in_array( (string) $name,
+            array( self::MARKER_SESSION_START, self::MARKER_FIRST_VISIT ), true );
+    }
+
+    /**
      * The v2 name for an incoming event type.
      *
      * @param string $event_type
