@@ -250,6 +250,8 @@ class OWATracker  {
 	    this.engagementSince = null;
 	    this.engagementAccrued = 0;
 	    this.engagementReported = 0;
+	    /** Whether bindPageLifecycleEvents() has run; binding twice sends twice. */
+	    this.pageLifecycleBound = false;
 	    /**
 	     * Whether SPA route changes are being watched. Opt-in, and patching
 	     * history.pushState twice would double every route change.
@@ -520,6 +522,17 @@ class OWATracker  {
 
 	    // check to se if an overlay session is active
 	    this.checkForOverlaySession();
+
+	    /*
+	     * THE ENGAGEMENT CLOCK STARTS HERE, with the page lifecycle bound.
+	     *
+	     * Not a snippet command: engagement time is what the engagement metrics
+	     * are made of, not a feature a site switches on. Nothing called this
+	     * before -- only the tests did, by hand -- so on a real page the clock
+	     * never started, no user_engagement was sent and no event carried
+	     * engagement_msec.
+	     */
+	    this.bindPageLifecycleEvents();
 
 		OWA.doAction('tracker.init');
 	}
@@ -2410,10 +2423,13 @@ class OWATracker  {
      */
     bindPageLifecycleEvents() {
 
-        if ( typeof document === 'undefined' || typeof document.addEventListener !== 'function' ) {
+        if ( this.pageLifecycleBound
+             || typeof document === 'undefined' || typeof document.addEventListener !== 'function' ) {
 
             return;
         }
+
+        this.pageLifecycleBound = true;
 
         var that = this;
 

@@ -61,6 +61,9 @@ function emittedKeys(fire) {
     resetOwaState();
     const t = new OWATracker({ cookie_domain_set: true });
     t.setSiteId('contract-site');
+    // The engagement clock is frozen, as in BeaconContract.test.js.
+    t.getTime = () => 0;
+    t.resetEngagement();
     let beacon = null;
     t.logEvent = (properties) => { beacon = properties; };
     fire(t);
@@ -78,6 +81,9 @@ function emittedValues(fire) {
     resetOwaState();
     const t = new OWATracker({ cookie_domain_set: true });
     t.setSiteId('contract-site');
+    // The engagement clock is frozen, as in BeaconContract.test.js.
+    t.getTime = () => 0;
+    t.resetEngagement();
     let beacon = null;
     t.logEvent = (properties) => { beacon = properties; };
     fire(t);

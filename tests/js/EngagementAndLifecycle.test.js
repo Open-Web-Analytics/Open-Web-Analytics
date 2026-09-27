@@ -128,12 +128,59 @@ describe('engagement deltas', () => {
 
 describe('page lifecycle', () => {
 
+    /*
+     * THE PRODUCTION PATH. A tracker built the way a page builds it -- the
+     * constructor and the snippet's commands, nothing else -- must measure
+     * engagement. Nothing called bindPageLifecycleEvents() outside these tests,
+     * which called it by hand, so on a real page the clock never started and no
+     * user_engagement was ever sent.
+     */
+    test('a tracker built the way a page builds it sends the residue on hide', () => {
+        let now = 1000;
+        const clock = jest.spyOn(OWATracker.prototype, 'getTime').mockImplementation(() => now);
+
+        try {
+            const t = newTracker();
+            const sent = captureSends(t);
+
+            for (const cmd of ['trackPageView', 'trackClicks', 'trackForms', 'trackScroll', 'trackSiteSearch']) {
+                t[cmd]();
+            }
+
+            now = 31000;
+            hidden = 'hidden';
+            document.dispatchEvent(new Event('visibilitychange'));
+
+            const engagement = sent.filter(e => e.event_type === 'user_engagement');
+            expect(engagement).toHaveLength(1);
+            expect(engagement[0].engagement_msec).toBe(30000);
+        } finally {
+            clock.mockRestore();
+        }
+    });
+
+    test('binding is once per tracker, so a hide is not sent twice', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+        t.bindPageLifecycleEvents();
+        t.bindPageLifecycleEvents();
+
+        atTime(t, 4000);
+        hidden = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        expect(sent.filter(e => e.event_type === 'user_engagement')).toHaveLength(1);
+    });
+
     test('hiding the page delivers the residue; showing it restarts the clock', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
         atTime(t, 0);
-        t.bindPageLifecycleEvents();
+        t.resetEngagement();
 
         atTime(t, 5000);
         hidden = 'hidden';
@@ -162,7 +209,7 @@ describe('page lifecycle', () => {
         const sent = captureSends(t);
 
         atTime(t, 0);
-        t.bindPageLifecycleEvents();
+        t.resetEngagement();
 
         atTime(t, 1000);
         window.dispatchEvent(new Event('pagehide'));
@@ -187,7 +234,7 @@ describe('page lifecycle', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
-        t.bindPageLifecycleEvents();
+        t.resetEngagement();
         window.dispatchEvent(new Event('pageshow'));
 
         expect(sent).toHaveLength(0);

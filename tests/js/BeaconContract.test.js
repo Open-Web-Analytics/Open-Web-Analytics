@@ -32,10 +32,18 @@ const CONTRACTS = JSON.parse(
 /**
  * Build a tracker wired for a headless run. cookie_domain_set avoids the
  * document.domain path; setSiteId gives site_id a value.
+ *
+ * THE ENGAGEMENT CLOCK IS FROZEN. It starts in the constructor, so on a real
+ * clock the milliseconds between construction and the first event put
+ * engagement_msec on the beacon or not depending on how fast the machine is.
+ * engagement_msec is conditional -- sent only when time accrued -- and its shape
+ * is pinned in EngagementAndLifecycle.test.js with an advancing clock.
  */
 function newTracker() {
     const t = new OWATracker({ cookie_domain_set: true });
     t.setSiteId('contract-site');
+    t.getTime = () => 0;
+    t.resetEngagement();
     return t;
 }
 

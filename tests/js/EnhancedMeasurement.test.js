@@ -951,7 +951,7 @@ describe('engagement time is a per-event delta', () => {
         let now = 1000000;
         t.getTime = () => now;
         t.logEvent = (properties) => { sent.push(properties); return true; };
-        t.startEngagement();
+        t.resetEngagement();
 
         now += 4200;
 
@@ -971,7 +971,7 @@ describe('engagement time is a per-event delta', () => {
         let now = 1000000;
         t.getTime = () => now;
         t.logEvent = (properties) => { sent.push(properties); return true; };
-        t.startEngagement();
+        t.resetEngagement();
 
         now += 4200;
         const first = t.makeEvent();
