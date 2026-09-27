@@ -95,3 +95,38 @@ describe('the legacy transaction API', () => {
         expect(sent.filter(e => e.event_type === 'purchase')).toHaveLength(0);
     });
 });
+
+describe('trackRefund', () => {
+
+    test('a refund of the whole purchase names only the transaction', () => {
+        const { t, sent } = newTracker();
+
+        expect(t.trackRefund({ transaction_id: 'T-1001' })).toBe(true);
+
+        const r = sent.find(e => e.event_type === 'refund');
+        expect(r.ct_order_id).toBe('T-1001');
+        expect(r.ct_value).toBeUndefined();
+        expect(r.ct_line_items).toBeUndefined();
+    });
+
+    test('a partial refund carries its value, or its items', () => {
+        const { t, sent } = newTracker();
+
+        t.trackRefund({ transaction_id: 'T-1', value: '19.99', currency: 'eur' });
+        t.trackRefund({ transaction_id: 'T-2', items: [{ item_id: 'SKU-1', price: 19.99, quantity: 1 }] });
+
+        const [byValue, byItems] = sent.filter(e => e.event_type === 'refund');
+
+        expect(byValue.ct_value).toBe(19.99);
+        expect(byValue.currency).toBe('EUR');
+        expect(byItems.ct_line_items).toEqual([{ item_id: 'SKU-1', price: 19.99, quantity: 1 }]);
+    });
+
+    test('a refund with no transaction_id is refused', () => {
+        const { t, sent } = newTracker();
+
+        expect(t.trackRefund({ value: 5 })).toBe(false);
+        expect(sent.filter(e => e.event_type === 'refund')).toHaveLength(0);
+    });
+});
+

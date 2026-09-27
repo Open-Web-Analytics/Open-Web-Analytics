@@ -457,6 +457,47 @@ final class EventRawIngestionTest extends IngestionTestCase
         }
     }
 
+    /**
+     * A refund's amount: the value it sent, else its items' price times
+     * quantity, else -- the transaction id alone -- the whole purchase.
+     */
+    public function testARefundStoresTheAmountRefunded(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $order   = 'order-refund-' . $visitor;
+
+        $this->fireEvent('ecommerce.transaction', ['ct_value' => 59.98] + $this->purchase($visitor, $this->uniqueSessionId(), $order));
+
+        $cases = [
+            'a value'               => [['ct_value' => 19.99], '1999'],
+            'items'                 => [['ct_line_items' => json_encode([
+                                            ['item_id' => 'A', 'price' => 10, 'quantity' => 2],
+                                            ['item_id' => 'B', 'price' => 5.5]])], '2550'],
+            'the transaction alone' => [[], '5998'],
+        ];
+
+        foreach ($cases as $name => [$extra, $expected]) {
+
+            $session = $this->uniqueSessionId();
+
+            $this->fireEvent('refund', $extra + [
+                'site_id'       => $this->site,
+                'visitor_id'    => $visitor,
+                'session_id'    => $session,
+                'page_url'      => 'https://owa-test-site/v2/refunds',
+                'page_location' => 'https://owa-test-site/v2/refunds',
+                'ct_order_id'   => $order,
+                'currency'      => 'USD',
+            ]);
+
+            $row = $this->rowsFor($this->site, $visitor, $session)['refund'] ?? null;
+
+            $this->assertNotNull($row, "$name: the refund was not stored");
+            $this->assertSame($expected, (string) $row['revenue'], $name);
+            $this->assertSame($order, $row['transaction_id'], $name);
+        }
+    }
+
     private function purchase(string $visitor, string $session, string $order): array
     {
         return [

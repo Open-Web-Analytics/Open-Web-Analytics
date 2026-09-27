@@ -1328,6 +1328,9 @@ abstract class Module {
              */
             'numerator'        => '',
             'denominator'      => '',
+            // A difference's declaration, for the same reason.
+            'minuend'          => '',
+            'subtrahend'       => '',
             'precision'        => ''
         );
 

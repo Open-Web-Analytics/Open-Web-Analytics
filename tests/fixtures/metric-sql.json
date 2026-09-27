@@ -191,6 +191,17 @@
             "alias": "goalConversions"
         }
     ],
+    "netRevenue": [
+        {
+            "kind": "difference",
+            "minuend": "transactionRevenue",
+            "subtrahend": "refundAmount",
+            "children": [
+                "refundAmount",
+                "transactionRevenue"
+            ]
+        }
+    ],
     "newUsers": [
         {
             "kind": "aggregate",
@@ -237,6 +248,22 @@
             "entity": "base.event",
             "expression": "COUNT(DISTINCT CASE WHEN event.event_type = 'purchase' THEN event.session_id END)",
             "alias": "purchasingSessions"
+        }
+    ],
+    "refundAmount": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'refund' THEN event.revenue ELSE 0 END)",
+            "alias": "refundAmount"
+        }
+    ],
+    "refunds": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'refund' THEN 1 ELSE 0 END)",
+            "alias": "refunds"
         }
     ],
     "revenuePerSession": [

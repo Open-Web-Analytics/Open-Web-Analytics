@@ -182,6 +182,13 @@ const EMITTERS = {
         },
     },
     // The one-call API, with every field it takes.
+    'refund': {
+        session: 'established',
+        fire: (t) => t.trackRefund({
+            transaction_id: 'T-1', value: 5, currency: 'usd',
+            items: [{ item_id: 'sku', price: 5, quantity: 1 }],
+        }),
+    },
     'purchase.trackPurchase': {
         session: 'established',
         fire: (t) => t.trackPurchase({

@@ -306,6 +306,25 @@
             "site_id",
             "sts",
             "visitor_id"
+        ],
+        "refund": [
+            "HTTP_REFERER",
+            "beacon_version",
+            "ct_line_items",
+            "ct_order_id",
+            "ct_value",
+            "currency",
+            "event_seq",
+            "event_type",
+            "fsts",
+            "nps",
+            "page_location",
+            "page_title",
+            "page_url",
+            "session_id",
+            "site_id",
+            "sts",
+            "visitor_id"
         ]
     }
 }

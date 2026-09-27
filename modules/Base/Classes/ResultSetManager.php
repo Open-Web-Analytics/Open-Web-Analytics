@@ -1120,7 +1120,17 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                 if ( $this->isMetric( $sort[0] ) ) {
                     $sort_metric = $this->getMetricImplementation($sort[0]);
-                    if ( $sort_metric->isRatio() ) {
+                    if ( $sort_metric->isDifference() ) {
+
+                        // In SQL, for the reason a ratio is; a side with no rows
+                        // is zero, as the value treats it.
+                        $minuend    = $this->getMetricImplementation( $sort_metric->getMinuend() )->getSelect();
+                        $subtrahend = $this->getMetricImplementation( $sort_metric->getSubtrahend() )->getSelect();
+
+                        $sort_col = sprintf( 'COALESCE((%s), 0) - COALESCE((%s), 0)',
+                            $minuend[0], $subtrahend[0] );
+
+                    } elseif ( $sort_metric->isRatio() ) {
 
                         /*
                          * Rendered into SQL, because a sort has to happen on
@@ -2463,6 +2473,28 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function computeCalculatedMetrics($rs) {
 
         foreach ($this->calculatedMetrics as $cm) {
+
+            if ( $cm->isDifference() ) {
+
+                $value = $cm->computeDifference(
+                    $rs->getAggregateMetric( $cm->getMinuend() ),
+                    $rs->getAggregateMetric( $cm->getSubtrahend() ) );
+
+                $rs->setAggregateMetric( $cm->getName(), $value, $cm->getLabel(),
+                    $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
+
+                foreach ( $rs->getRowCount() > 0 ? $rs->resultsRows : array() as $k => $row ) {
+
+                    $v = $cm->computeDifference(
+                        $row[ $cm->getMinuend() ]['value'] ?? null,
+                        $row[ $cm->getSubtrahend() ]['value'] ?? null );
+
+                    $rs->appendRow( $k, 'metric', $cm->getName(), $v, $cm->getLabel(),
+                        $cm->getDataType(), $this->formatValue( $cm->getDataType(), $v ) );
+                }
+
+                continue;
+            }
 
             // add aggregate metric
             if ( $cm->isRatio() ) {

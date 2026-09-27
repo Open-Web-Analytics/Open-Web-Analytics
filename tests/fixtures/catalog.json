@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 34,
-        "metricImplementations": 34,
+        "metricNames": 37,
+        "metricImplementations": 37,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 77,
@@ -27,9 +27,11 @@
                     "group": "Site Usage",
                     "label": "Average Engagement Time Per Page View",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "averageEngagementTimePerPageView",
                     "numerator": "totalEngagementTime",
                     "precision": 0,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -52,9 +54,11 @@
                     "group": "Site Usage",
                     "label": "Average Engagement Time Per Session",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "averageEngagementTimePerSession",
                     "numerator": "totalEngagementTime",
                     "precision": 0,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -77,9 +81,11 @@
                     "group": "Site Usage",
                     "label": "Average Engagement Time Per User",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "averageEngagementTimePerUser",
                     "numerator": "totalEngagementTime",
                     "precision": 0,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -102,9 +108,11 @@
                     "group": "Site Usage",
                     "label": "Bounce Rate",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "bounceRate",
                     "numerator": "bouncedSessions",
                     "precision": 4,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -130,9 +138,11 @@
                     "group": "Site Usage",
                     "label": "Bounced Sessions",
                     "metric_type": "distinct_count",
+                    "minuend": "",
                     "name": "bouncedSessions",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -155,9 +165,11 @@
                     "group": "Ecommerce",
                     "label": "Ecommerce Conversion Rate",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "ecommerceConversionRate",
                     "numerator": "purchasingSessions",
                     "precision": 4,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -183,9 +195,11 @@
                     "group": "Site Usage",
                     "label": "Engaged Sessions",
                     "metric_type": "distinct_count",
+                    "minuend": "",
                     "name": "engagedSessions",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -208,9 +222,11 @@
                     "group": "Site Usage",
                     "label": "Engaged Sessions Per User",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "engagedSessionsPerUser",
                     "numerator": "engagedSessions",
                     "precision": 2,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -233,9 +249,11 @@
                     "group": "Site Usage",
                     "label": "Engagement Rate",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "engagementRate",
                     "numerator": "engagedSessions",
                     "precision": 4,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -261,9 +279,11 @@
                     "group": "Site Usage",
                     "label": "Entrances",
                     "metric_type": "count",
+                    "minuend": "",
                     "name": "entrances",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -286,9 +306,11 @@
                     "group": "Site Usage",
                     "label": "Events",
                     "metric_type": "count",
+                    "minuend": "",
                     "name": "eventCount",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -311,9 +333,11 @@
                     "group": "Site Usage",
                     "label": "Events Per User",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "eventCountPerUser",
                     "numerator": "eventCount",
                     "precision": 2,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -336,9 +360,11 @@
                     "group": "Site Usage",
                     "label": "Events Per Session",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "eventsPerSession",
                     "numerator": "eventCount",
                     "precision": 2,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -361,9 +387,11 @@
                     "group": "Site Usage",
                     "label": "Exit Rate",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "exitRate",
                     "numerator": "exits",
                     "precision": 4,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -389,9 +417,11 @@
                     "group": "Site Usage",
                     "label": "Exits",
                     "metric_type": "count",
+                    "minuend": "",
                     "name": "exits",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -414,9 +444,11 @@
                     "group": "Goals",
                     "label": "Goal Conversion Rate Per Session",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "goalConversionRatePerSession",
                     "numerator": "goalConversions",
                     "precision": 4,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -439,9 +471,11 @@
                     "group": "Goals",
                     "label": "Goal Conversion Rate Per User",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "goalConversionRatePerUser",
                     "numerator": "goalConversions",
                     "precision": 4,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -467,9 +501,38 @@
                     "group": "Goals",
                     "label": "Goal Conversions",
                     "metric_type": "count",
+                    "minuend": "",
                     "name": "goalConversions",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "netRevenue": [
+            {
+                "name": "netRevenue",
+                "class": "base.configurableMetric",
+                "label": "Net Revenue",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "currency",
+                    "denominator": "",
+                    "description": "Revenue less refunds, excluding tax and shipping.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Net Revenue",
+                    "metric_type": "difference",
+                    "minuend": "transactionRevenue",
+                    "name": "netRevenue",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend": "refundAmount",
                     "subtrahend_column": ""
                 }
             }
@@ -495,9 +558,11 @@
                     "group": "Site Usage",
                     "label": "New Users",
                     "metric_type": "distinct_count",
+                    "minuend": "",
                     "name": "newUsers",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -523,9 +588,11 @@
                     "group": "Site Usage",
                     "label": "Page Views",
                     "metric_type": "count",
+                    "minuend": "",
                     "name": "pageViews",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -548,9 +615,11 @@
                     "group": "Site Usage",
                     "label": "Pages Per Session",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "pageViewsPerSession",
                     "numerator": "pageViews",
                     "precision": 2,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -573,9 +642,11 @@
                     "group": "Site Usage",
                     "label": "Page Views Per User",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "pageViewsPerUser",
                     "numerator": "pageViews",
                     "precision": 2,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -601,9 +672,71 @@
                     "group": "Ecommerce",
                     "label": "Purchasing Sessions",
                     "metric_type": "distinct_count",
+                    "minuend": "",
                     "name": "purchasingSessions",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "refundAmount": [
+            {
+                "name": "refundAmount",
+                "class": "base.configurableMetric",
+                "label": "Refund Amount",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "revenue",
+                    "condition": [
+                        "event_type",
+                        "refund"
+                    ],
+                    "data_type": "currency",
+                    "denominator": "",
+                    "description": "The amount refunded, excluding tax and shipping.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Refund Amount",
+                    "metric_type": "sum",
+                    "minuend": "",
+                    "name": "refundAmount",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "refunds": [
+            {
+                "name": "refunds",
+                "class": "base.configurableMetric",
+                "label": "Refunds",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "condition": [
+                        "event_type",
+                        "refund"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of refunds.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Refunds",
+                    "metric_type": "count",
+                    "minuend": "",
+                    "name": "refunds",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -626,9 +759,11 @@
                     "group": "Ecommerce",
                     "label": "Revenue Per Session",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "revenuePerSession",
                     "numerator": "transactionRevenue",
                     "precision": 0,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -651,9 +786,11 @@
                     "group": "Ecommerce",
                     "label": "Average Order Value",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "revenuePerTransaction",
                     "numerator": "transactionRevenue",
                     "precision": 0,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -676,9 +813,11 @@
                     "group": "Ecommerce",
                     "label": "Revenue Per User",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "revenuePerUser",
                     "numerator": "transactionRevenue",
                     "precision": 0,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -701,9 +840,11 @@
                     "group": "Site Usage",
                     "label": "Sessions",
                     "metric_type": "distinct_count",
+                    "minuend": "",
                     "name": "sessions",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -726,9 +867,11 @@
                     "group": "Site Usage",
                     "label": "Sessions Per User",
                     "metric_type": "ratio",
+                    "minuend": "",
                     "name": "sessionsPerUser",
                     "numerator": "sessions",
                     "precision": 2,
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -754,9 +897,11 @@
                     "group": "Ecommerce",
                     "label": "Shipping",
                     "metric_type": "sum",
+                    "minuend": "",
                     "name": "shippingRevenue",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -782,9 +927,11 @@
                     "group": "Ecommerce",
                     "label": "Tax",
                     "metric_type": "sum",
+                    "minuend": "",
                     "name": "taxRevenue",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -807,9 +954,11 @@
                     "group": "Site Usage",
                     "label": "Total Engagement Time",
                     "metric_type": "sum",
+                    "minuend": "",
                     "name": "totalEngagementTime",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -832,9 +981,11 @@
                     "group": "Site Usage",
                     "label": "Total Users",
                     "metric_type": "distinct_count",
+                    "minuend": "",
                     "name": "totalUsers",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -860,9 +1011,11 @@
                     "group": "Ecommerce",
                     "label": "Revenue",
                     "metric_type": "sum",
+                    "minuend": "",
                     "name": "transactionRevenue",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }
@@ -888,9 +1041,11 @@
                     "group": "Ecommerce",
                     "label": "Transactions",
                     "metric_type": "count",
+                    "minuend": "",
                     "name": "transactions",
                     "numerator": "",
                     "precision": "",
+                    "subtrahend": "",
                     "subtrahend_column": ""
                 }
             }

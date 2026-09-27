@@ -3016,6 +3016,79 @@ class OWATracker  {
     }
 
     /**
+     * Record a refund of a purchase, whole or in part.
+     *
+     *   owa_cmds.push( [ 'trackRefund', { transaction_id: 'T-1001' } ] );             // all of it
+     *   owa_cmds.push( [ 'trackRefund', { transaction_id: 'T-1001', value: 19.99 } ] );
+     *   owa_cmds.push( [ 'trackRefund', { transaction_id: 'T-1001',
+     *       items: [ { item_id: 'SKU-1', price: 19.99, quantity: 1 } ] } ] );
+     *
+     * The amount refunded is the value when one is given, else the items' price
+     * times quantity, else -- the transaction id alone -- the whole purchase,
+     * which the server looks up. A transaction_id is required: a refund is of
+     * something.
+     *
+     * @param {Object} refund
+     * @return {boolean} false when refused
+     */
+    trackRefund( refund ) {
+
+        var r = refund || {};
+        var id = r.transaction_id === undefined || r.transaction_id === null
+            ? '' : String( r.transaction_id ).trim();
+
+        if ( id === '' ) {
+
+            OWA.debug( 'trackRefund: a refund needs the transaction_id of the purchase.' );
+
+            return false;
+        }
+
+        var event = new OwaEvent();
+        event.setEventType( 'refund' );
+        event.set( 'ct_order_id', id );
+        event.set( 'page_url', this.getCurrentUrl() );
+
+        var money = { ct_value: r.value, ct_tax: r.tax, ct_shipping: r.shipping };
+
+        for ( var key in money ) {
+
+            var amount = OWATracker.amount( money[ key ] );
+
+            if ( amount !== null ) {
+
+                event.set( key, amount );
+            }
+        }
+
+        if ( r.currency ) {
+
+            event.set( 'currency', String( r.currency ).trim().toUpperCase() );
+        }
+
+        var items = [];
+
+        for ( var i = 0; Array.isArray( r.items ) && i < r.items.length; i++ ) {
+
+            var item = OWATracker.purchaseItem( r.items[ i ] );
+
+            if ( item ) {
+
+                items.push( item );
+            }
+        }
+
+        if ( items.length ) {
+
+            event.set( 'ct_line_items', items );
+        }
+
+        this.trackEvent( event );
+
+        return true;
+    }
+
+    /**
      * One item, in the shape every purchase stores: the known fields only, and
      * numbers as numbers. NULL for an item naming neither an id nor a name,
      * which identifies nothing.
@@ -4220,7 +4293,7 @@ class OWATracker  {
      */
     static get RESERVED_EVENT_NAMES() {
         return [
-            'page_view', 'click', 'purchase',
+            'page_view', 'click', 'purchase', 'refund',
             'user_engagement', 'scroll', 'file_download',
             'form_start', 'form_submit', 'view_search_results',
             'session_start', 'first_visit'

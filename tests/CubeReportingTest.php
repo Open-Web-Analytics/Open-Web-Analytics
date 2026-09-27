@@ -929,6 +929,62 @@ final class CubeReportingTest extends TestCase
             'one purchasing session of two -- not 2 transactions / 2 sessions, which read 100%');
     }
 
+    /** Refunds are their own events; net revenue is what was sold less them. */
+    public function testRefundsAndNetRevenue(): void
+    {
+        /*
+         * One refund, of part of the fixture's purchases: 600 back of the 4000
+         * sold. Added here and removed after, because the shared fixture's row
+         * count is what six other cases assert on.
+         */
+        $refund = Cubes::entityFor(self::PROPERTY);
+        $refund->setProperties([
+            'id'             => 909999,
+            'event_type'     => 'refund',
+            'site_id'        => self::SITE,
+            'visitor_id'     => self::VISITOR + 1,
+            'session_id'     => self::SESSION + 1,
+            'prior_sessions' => 3,
+            'ts'             => time() * 1000000,
+            'yyyymmdd'       => (int) date('Ymd'),
+            'page_path'      => '/buy',
+            'revenue'        => 600,
+        ]);
+        $this->assertTrue((bool) $refund->create(), 'seeding the refund');
+
+        try {
+            $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+            $rsm->metrics = $rsm->metricsStringToArray('transactionRevenue,refunds,refundAmount,netRevenue');
+            $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+            $rsm->setSiteId(self::SITE);
+            $rsm->setLimit(25);
+
+            $rs = $rsm->getResults();
+        } finally {
+            owa_coreAPI::dbSingleton()->query(sprintf('DELETE FROM %s WHERE id = 909999',
+                Cubes::tableFor(self::PROPERTY)));
+        }
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $this->assertSame(4000, (int) $rs->aggregates['transactionRevenue']['value'],
+            'what was sold: the refund is not a purchase');
+        $this->assertSame(1, (int) $rs->aggregates['refunds']['value']);
+        $this->assertSame(600, (int) $rs->aggregates['refundAmount']['value']);
+        $this->assertSame(3400, (int) $rs->aggregates['netRevenue']['value'], '4000 - 600');
+    }
+
+    /** A difference with nothing to subtract is the first side; with neither, nothing. */
+    public function testADifferenceTreatsAMissingSideAsZero(): void
+    {
+        $m = new \OWA\Core\Metric;
+
+        $this->assertSame(4000, $m->computeDifference(4000, null));
+        $this->assertSame(3400, $m->computeDifference('4000', '600'));
+        $this->assertNull($m->computeDifference(null, null));
+    }
+
     /**
      * Revenue is summed only over PURCHASES, not over every row.
      *

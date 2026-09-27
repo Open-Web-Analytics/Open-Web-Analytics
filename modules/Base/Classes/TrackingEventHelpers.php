@@ -2246,6 +2246,60 @@ class TrackingEventHelpers {
     }
 
     /**
+     * What a refund with no value refunds, in minor units: its items' price
+     * times quantity, else -- the transaction id alone -- the whole purchase's
+     * revenue. NULL when there is neither.
+     *
+     * @param  object $event
+     * @return int|null
+     */
+    static function refundAmount( $event ) {
+
+        $items = $event->get( 'ct_line_items' );
+
+        if ( is_string( $items ) ) {
+
+            $items = json_decode( $items, true );
+        }
+
+        if ( is_array( $items ) && $items ) {
+
+            $major = 0;
+
+            foreach ( $items as $item ) {
+
+                if ( is_array( $item ) && is_numeric( $item['price'] ?? null ) ) {
+
+                    $major += (float) $item['price']
+                        * ( is_numeric( $item['quantity'] ?? null ) ? (float) $item['quantity'] : 1 );
+                }
+            }
+
+            return Currency::toMinorUnits( $major, self::purchaseCurrency( $event ) );
+        }
+
+        $transaction = trim( (string) $event->get( 'ct_order_id' ) );
+        $site        = (string) $event->getSiteId();
+
+        if ( $transaction === '' || $site === '' ) {
+
+            return null;
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $row = $db->get_row( sprintf(
+            "SELECT revenue FROM %s WHERE site_id = '%s' AND transaction_id = '%s' AND event_type = 'purchase' LIMIT 1",
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(),
+            $db->prepare( $site ),
+            $db->prepare( $transaction ) ) );
+
+        $revenue = is_array( $row ) ? ( $row['revenue'] ?? null ) : ( is_object( $row ) ? ( $row->revenue ?? null ) : null );
+
+        return is_numeric( $revenue ) ? (int) $revenue : null;
+    }
+
+    /**
      * The `currency` property: on a purchase, always a code -- the one sent, else
      * the Property's -- so revenue never sits beside a NULL currency. On any other
      * event a well-formed code is kept and anything else dropped.
@@ -2254,7 +2308,7 @@ class TrackingEventHelpers {
 
         $name = V2Event::name( $event->getEventType() );
 
-        if ( $name === 'purchase' ) {
+        if ( $name === 'purchase' || $name === 'refund' ) {
 
             return self::purchaseCurrency( $event );
         }
@@ -2274,12 +2328,18 @@ class TrackingEventHelpers {
      */
     static function deriveRevenue( $value, $event ) {
 
-        // trackPurchase() sends the value itself, tax and shipping excluded.
+        // trackPurchase() and trackRefund() send the value itself, tax and
+        // shipping excluded.
         $sent = $event->get( 'ct_value' );
 
         if ( $sent !== null && $sent !== false && $sent !== '' && is_numeric( $sent ) ) {
 
             return (int) $sent;
+        }
+
+        if ( V2Event::name( $event->getEventType() ) === 'refund' ) {
+
+            return self::refundAmount( $event );
         }
 
         $total = $event->get( 'ct_total' );

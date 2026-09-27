@@ -94,6 +94,16 @@ final class MetricSqlHarness
              * 'calculated' with an empty formula would describe it as a broken
              * one.
              */
+            if ( $metric->isDifference() ) {
+
+                return array(
+                    'kind'       => 'difference',
+                    'minuend'    => (string) $metric->getMinuend(),
+                    'subtrahend' => (string) $metric->getSubtrahend(),
+                    'children'   => $children,
+                );
+            }
+
             if ( $metric->isRatio() ) {
 
                 return array(

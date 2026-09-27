@@ -475,7 +475,8 @@
         ],
         "column": "transaction_id",
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "string",
         "required": false,
@@ -503,7 +504,8 @@
         ],
         "param": "coupon",
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "string",
         "required": false,
@@ -546,7 +548,8 @@
         ],
         "column": "tax",
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "integer",
         "required": false,
@@ -562,7 +565,8 @@
         ],
         "column": "shipping",
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "integer",
         "required": false,
@@ -577,7 +581,8 @@
             "ct_value"
         ],
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "integer",
         "required": false,
@@ -592,18 +597,21 @@
             "ct_value",
             "ct_total",
             "ct_tax",
-            "ct_shipping"
+            "ct_shipping",
+            "ct_line_items",
+            "ct_order_id"
         ],
         "column": "revenue",
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "integer",
         "required": false,
         "callbacks": [
             "owa_trackingEventHelpers::deriveRevenue"
         ],
-        "note": "Revenue EXCLUDING tax and shipping, in minor units: ct_value when the purchase sent one (trackPurchase), else ct_total less ct_tax and ct_shipping (addTransaction). Tax and shipping have their own columns, so a revenue that included them counted them twice wherever the three were summed. AFTER the four it reads, because it reads their converted values."
+        "note": "Revenue EXCLUDING tax and shipping, in minor units: ct_value when the purchase sent one (trackPurchase), else ct_total less ct_tax and ct_shipping (addTransaction). Tax and shipping have their own columns, so a revenue that included them counted them twice wherever the three were summed. AFTER the four it reads, because it reads their converted values. On a REFUND it is the amount refunded: the value sent, else the items' price times quantity, else the whole purchase's revenue, looked up by transaction id."
     },
     "ct_line_items": {
         "set_by": "client",
@@ -612,7 +620,8 @@
         ],
         "param": "items",
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "json",
         "required": false,
@@ -741,7 +750,8 @@
         ],
         "column": "currency",
         "events": [
-            "purchase"
+            "purchase",
+            "refund"
         ],
         "data_type": "string",
         "required": false,

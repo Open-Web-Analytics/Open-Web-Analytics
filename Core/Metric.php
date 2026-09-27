@@ -50,6 +50,17 @@ class Metric extends \OWA\Core\Base {
     protected $precision = null;
 
     /**
+     * A difference's two children: minuend less subtrahend. Named for the same
+     * reason a ratio's sides are.
+     *
+     * @var string
+     */
+    protected $minuend = '';
+
+    /** @var string */
+    protected $subtrahend = '';
+
+    /**
      * The rows this metric counts, when it counts some of them.
      *
      * ['column' => ..., 'value' => ..., 'operator' => '=']. Empty means every
@@ -777,6 +788,63 @@ class Metric extends \OWA\Core\Base {
         return $this->precision === null ? $value : round( $value, $this->precision );
     }
 
+    /**
+     * Declare this metric as one number less another -- net revenue is revenue
+     * less refunds. The children are the two sides, recorded where every reader
+     * already looks, exactly as a ratio's are.
+     *
+     * @param string $minuend    a metric name
+     * @param string $subtrahend a metric name
+     * @return void
+     */
+    function setDifference( $minuend, $subtrahend ) {
+
+        $this->minuend    = (string) $minuend;
+        $this->subtrahend = (string) $subtrahend;
+
+        $this->setChildMetric( $this->minuend );
+        $this->setChildMetric( $this->subtrahend );
+    }
+
+    /** @return bool */
+    function isDifference() {
+
+        return $this->minuend !== '' && $this->subtrahend !== '';
+    }
+
+    /** @return string */
+    function getMinuend() {
+
+        return $this->minuend;
+    }
+
+    /** @return string */
+    function getSubtrahend() {
+
+        return $this->subtrahend;
+    }
+
+    /**
+     * One already-computed number less another.
+     *
+     * A side with no value counts as zero -- revenue with no refunds is the
+     * revenue -- but with neither side there is nothing to report.
+     *
+     * @return float|int|null
+     */
+    function computeDifference( $minuend, $subtrahend ) {
+
+        $a = is_numeric( $minuend ) ? $minuend + 0 : null;
+        $b = is_numeric( $subtrahend ) ? $subtrahend + 0 : null;
+
+        if ( $a === null && $b === null ) {
+
+            return null;
+        }
+
+        return ( $a === null ? 0 : $a ) - ( $b === null ? 0 : $b );
+    }
+
     function setMetricType( $type ) {
         $this->type = $type;
 
@@ -787,7 +855,7 @@ class Metric extends \OWA\Core\Base {
          * child resolution and the cleanup that removes children from the
          * output all work unchanged.
          */
-        if ( $type === 'calculated' || $type === 'ratio' ) {
+        if ( $type === 'calculated' || $type === 'ratio' || $type === 'difference' ) {
              $this->is_calculated = true;
         }
     }

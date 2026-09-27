@@ -250,6 +250,43 @@ return array(
             'precision'   => 2,
         ),
 
+        /*
+         * ---- refunds -------------------------------------------------------
+         *
+         * A refund is its own event, the amount refunded in `revenue` as a
+         * positive number. transactionRevenue stays what was sold; netRevenue
+         * is that less what was refunded.
+         */
+        'refunds' => array(
+            'label'       => 'Refunds',
+            'description' => 'The number of refunds.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'refund' ),
+        ),
+
+        'refundAmount' => array(
+            'label'       => 'Refund Amount',
+            'description' => 'The amount refunded, excluding tax and shipping.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'column'      => 'revenue',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'refund' ),
+        ),
+
+        'netRevenue' => array(
+            'label'       => 'Net Revenue',
+            'description' => 'Revenue less refunds, excluding tax and shipping.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'difference',
+            'data_type'   => 'currency',
+            'minuend'     => 'transactionRevenue',
+            'subtrahend'  => 'refundAmount',
+        ),
+
         'revenuePerTransaction' => array(
             'label'       => 'Average Order Value',
             'description' => 'Revenue divided by the number of purchases.',

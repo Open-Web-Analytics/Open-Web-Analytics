@@ -75,6 +75,7 @@ return array(
 
     // Commerce.
     'purchase' => array(),
+    'refund'   => array(),
 );
 
 ?>
