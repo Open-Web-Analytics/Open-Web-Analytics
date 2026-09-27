@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 33,
-        "metricImplementations": 33,
+        "metricNames": 34,
+        "metricImplementations": 34,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 77,
@@ -156,7 +156,7 @@
                     "label": "Ecommerce Conversion Rate",
                     "metric_type": "ratio",
                     "name": "ecommerceConversionRate",
-                    "numerator": "transactions",
+                    "numerator": "purchasingSessions",
                     "precision": 4,
                     "subtrahend_column": ""
                 }
@@ -576,6 +576,34 @@
                     "name": "pageViewsPerUser",
                     "numerator": "pageViews",
                     "precision": 2,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "purchasingSessions": [
+            {
+                "name": "purchasingSessions",
+                "class": "base.configurableMetric",
+                "label": "Purchasing Sessions",
+                "group": "Ecommerce",
+                "params": {
+                    "child_metrics": [],
+                    "column": "session_id",
+                    "condition": [
+                        "event_type",
+                        "purchase"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of sessions that included a purchase.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Ecommerce",
+                    "label": "Purchasing Sessions",
+                    "metric_type": "distinct_count",
+                    "name": "purchasingSessions",
+                    "numerator": "",
+                    "precision": "",
                     "subtrahend_column": ""
                 }
             }

@@ -900,7 +900,7 @@ final class CubeReportingTest extends TestCase
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray(
-            'transactions,transactionRevenue,revenuePerTransaction,revenuePerSession,ecommerceConversionRate');
+            'transactions,transactionRevenue,revenuePerTransaction,revenuePerSession,purchasingSessions,ecommerceConversionRate');
         $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
         $rsm->setSiteId(self::SITE);
         $rsm->setLimit(25);
@@ -922,8 +922,11 @@ final class CubeReportingTest extends TestCase
         $this->assertSame(2000.0, (float) $rs->aggregates['revenuePerSession']['value'],
             '4000 / 2 visits');
 
-        $this->assertSame(1.0, (float) $rs->aggregates['ecommerceConversionRate']['value'],
-            '2 transactions / 2 visits');
+        $this->assertSame(1, (int) $rs->aggregates['purchasingSessions']['value'],
+            'both purchases are in one session');
+
+        $this->assertSame(0.5, (float) $rs->aggregates['ecommerceConversionRate']['value'],
+            'one purchasing session of two -- not 2 transactions / 2 sessions, which read 100%');
     }
 
     /**

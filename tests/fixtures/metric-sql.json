@@ -58,12 +58,12 @@
     "ecommerceConversionRate": [
         {
             "kind": "ratio",
-            "numerator": "transactions",
+            "numerator": "purchasingSessions",
             "denominator": "sessions",
             "precision": 4,
             "children": [
-                "sessions",
-                "transactions"
+                "purchasingSessions",
+                "sessions"
             ]
         }
     ],
@@ -229,6 +229,14 @@
                 "pageViews",
                 "totalUsers"
             ]
+        }
+    ],
+    "purchasingSessions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT CASE WHEN event.event_type = 'purchase' THEN event.session_id END)",
+            "alias": "purchasingSessions"
         }
     ],
     "revenuePerSession": [

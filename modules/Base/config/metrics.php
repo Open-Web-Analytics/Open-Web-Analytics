@@ -272,13 +272,34 @@ return array(
             'precision'   => 0,
         ),
 
+        /*
+         * Sessions with at least one purchase. A session that bought twice is
+         * one purchasing session and two transactions, and the conversion rate
+         * is about sessions.
+         */
+        'purchasingSessions' => array(
+            'label'       => 'Purchasing Sessions',
+            'description' => 'The number of sessions that included a purchase.',
+            'group'       => 'Ecommerce',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'session_id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
+        ),
+
+        /*
+         * PURCHASING SESSIONS over sessions. It was transactions over sessions,
+         * which is transactions per session under a name promising a share: two
+         * purchases in one of two sessions read 100% where the share is 50%, and
+         * a store with repeat buyers could pass 100%.
+         */
         'ecommerceConversionRate' => array(
             'label'       => 'Ecommerce Conversion Rate',
             'description' => 'The share of sessions that completed a purchase.',
             'group'       => 'Ecommerce',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
-            'numerator'   => 'transactions',
+            'numerator'   => 'purchasingSessions',
             'denominator' => 'sessions',
             'precision'   => 4,
         ),
