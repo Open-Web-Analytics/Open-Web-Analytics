@@ -68,7 +68,6 @@ class GoalVocabulary {
         'device_model'    => 'HTTP_USER_AGENT',
 
         // The purchase, whose wire names carry 1.x's commerce-transaction prefix.
-        'revenue'        => 'ct_total',
         'tax'            => 'ct_tax',
         'shipping'       => 'ct_shipping',
         'transaction_id' => 'ct_order_id',

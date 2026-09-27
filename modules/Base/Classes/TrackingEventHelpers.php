@@ -2214,7 +2214,79 @@ class TrackingEventHelpers {
      */
     static function toMinorUnits( $value, $event ) {
 
-        return \OWA\Module\Base\Classes\V2Event::minorUnits( $value );
+        return Currency::toMinorUnits( $value, self::purchaseCurrency( $event ) );
+    }
+
+    /**
+     * The currency a purchase's amounts are in: the one it sent, else its
+     * Property's (the currencyISO3 setting, which inherits from the install).
+     *
+     * Read here rather than off the resolved `currency` property so the money
+     * callbacks do not depend on where currency sits in the registry.
+     *
+     * @param  object $event
+     * @return string an ISO 4217 code
+     */
+    static function purchaseCurrency( $event ) {
+
+        $sent = Currency::normalize( $event->get( 'currency' ) );
+
+        if ( $sent !== '' ) {
+
+            return $sent;
+        }
+
+        $site = (string) $event->getSiteId();
+
+        $configured = Currency::normalize( $site !== ''
+            ? \OWA\Core\CoreAPI::getSiteSetting( $site, 'currencyISO3' )
+            : \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' ) );
+
+        return $configured !== '' ? $configured : 'USD';
+    }
+
+    /**
+     * The `currency` property: on a purchase, always a code -- the one sent, else
+     * the Property's -- so revenue never sits beside a NULL currency. On any other
+     * event a well-formed code is kept and anything else dropped.
+     */
+    static function resolveCurrency( $value, $event ) {
+
+        $name = V2Event::name( $event->getEventType() );
+
+        if ( $name === 'purchase' ) {
+
+            return self::purchaseCurrency( $event );
+        }
+
+        $code = Currency::normalize( $value );
+
+        return $code !== '' ? $code : null;
+    }
+
+    /**
+     * Revenue EXCLUDING tax and shipping: the order total less both, in minor
+     * units (the three have been converted by the time this runs -- see the
+     * registry order). NULL when no total was sent.
+     *
+     * Tax and shipping have columns of their own, so a total that kept them
+     * counted them twice wherever the three were summed.
+     */
+    static function deriveRevenue( $value, $event ) {
+
+        $total = $event->get( 'ct_total' );
+
+        if ( $total === null || $total === false || $total === '' || ! is_numeric( $total ) ) {
+
+            return null;
+        }
+
+        $tax      = $event->get( 'ct_tax' );
+        $shipping = $event->get( 'ct_shipping' );
+
+        return (int) $total
+            - ( is_numeric( $tax ) ? (int) $tax : 0 )
+            - ( is_numeric( $shipping ) ? (int) $shipping : 0 );
     }
 
     /**

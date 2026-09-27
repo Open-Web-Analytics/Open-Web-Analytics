@@ -345,7 +345,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
              * This read a property named `revenue`, which the registry does not
              * declare, so the column was NULL on every purchase ever stored.
              */
-            'revenue'  => $this->number( $event->get( 'ct_total' ) ),
+            'revenue'  => $this->number( $event->get( 'revenue' ) ),
             'tax'      => $this->number( $event->get( 'ct_tax' ) ),
             'shipping' => $this->number( $event->get( 'ct_shipping' ) ),
             'currency' => $this->text( $event->get( 'currency' ) ),

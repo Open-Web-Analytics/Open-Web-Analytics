@@ -1472,7 +1472,9 @@ class Lib {
 
     public static function formatCurrency($value, $local, $currency) {
 
-        $value = $value / 100;
+        // Minor units back to major, by the currency's own decimal places: there
+        // is no minor unit of the yen, and a thousand to the Kuwaiti dinar.
+        $value = \OWA\Module\Base\Classes\Currency::toMajorUnits( $value, $currency );
 
         if ( function_exists('numfmt_create') ) {
 
@@ -1483,7 +1485,7 @@ class Lib {
 
             // Fallback for hosts without intl. money_format() was removed in
             // PHP 8.0, so format the amount directly instead.
-            return $currency . ' ' . number_format( $value, 2 );
+            return $currency . ' ' . number_format( $value, \OWA\Module\Base\Classes\Currency::exponent( $currency ) );
         }
     }
 

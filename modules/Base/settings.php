@@ -99,7 +99,19 @@ return array(
         'cookie_domain' => array( 'default' => false ),
         'cookie_persistence' => array( 'default' => true ),
         'cube_rebuild_window_days' => array( 'default' => 7 ),
-        'currencyISO3' => array( 'default' => 'USD' ),
+        'currencyISO3' => array(
+            'default'  => 'USD',
+            'storable' => true,
+            'autoload' => true,
+            // Not per Profile: a Property's revenue is summed in one cube, and
+            // two currencies in it would add unlike amounts.
+            'scopes'   => array( 'install', 'property' ),
+            'type'     => 'text',
+            'label'    => 'Currency',
+            'description' =>
+                'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. '
+                . 'A purchase that names no currency is recorded in this one.',
+        ),
         'currencyLocal' => array( 'default' => 'en_US' ),
         'db_class_dir' => array(),
         'db_force_new_connections' => array( 'default' => true ),

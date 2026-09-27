@@ -1686,10 +1686,17 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return $value;
         }
 
+        // The Property's currency, which is what its revenue was recorded in.
+        $siteId = $this->query_params['siteId'] ?? $this->getSiteId();
+
+        $currency = $siteId
+            ? \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'currencyISO3' )
+            : \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' );
+
         return \OWA\Core\Lib::formatCurrency(
                 $value,
                 \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ),
-                \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' )
+                $currency ?: \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' )
         );
     }
 

@@ -515,7 +515,6 @@
         "from": [
             "ct_total"
         ],
-        "column": "revenue",
         "events": [
             "purchase"
         ],
@@ -524,7 +523,7 @@
         "callbacks": [
             "owa_trackingEventHelpers::toMinorUnits"
         ],
-        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
+        "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe.\nTHE ORDER TOTAL AS SENT, tax and shipping included. It has no column of its own: `revenue` is derived from it, less ct_tax and ct_shipping, which have their own. Converted to minor units by the purchase's currency (TrackingEventHelpers::toMinorUnits)."
     },
     "ct_tax": {
         "set_by": "client",
@@ -557,6 +556,24 @@
             "owa_trackingEventHelpers::toMinorUnits"
         ],
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
+    },
+    "revenue": {
+        "set_by": "event",
+        "from": [
+            "ct_total",
+            "ct_tax",
+            "ct_shipping"
+        ],
+        "column": "revenue",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::deriveRevenue"
+        ],
+        "note": "Revenue EXCLUDING tax and shipping, in minor units: ct_total less ct_tax and ct_shipping. Tax and shipping have their own columns, so a revenue that included them counted them twice wherever the three were summed. AFTER the three it reads, because it reads their converted values."
     },
     "ct_line_items": {
         "set_by": "client",
@@ -698,8 +715,10 @@
         ],
         "data_type": "string",
         "required": false,
-        "callbacks": [],
-        "note": "ISO 4217, stored beside revenue. Without it a multi-currency store sums minor units of different things."
+        "callbacks": [
+            "owa_trackingEventHelpers::resolveCurrency"
+        ],
+        "note": "The ISO 4217 code the purchase's amounts are in. On a purchase it is always set: the one sent (setCurrency(), or the purchase's own), else the Property's currencyISO3 setting. Amounts are converted to minor units by its exponent -- yen has none, the Kuwaiti dinar three (Classes\\Currency)."
     },
     "scroll_depth": {
         "set_by": "client",

@@ -338,6 +338,56 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A purchase through the whole pipeline: amounts converted by the currency's
+     * own decimal places, revenue excluding tax and shipping, and the currency
+     * stored canonical.
+     *
+     * @dataProvider purchases
+     */
+    public function testAPurchaseStoresRevenueByItsCurrency(array $sent, array $stored): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', $sent + [
+            'site_id'            => $this->site,
+            'visitor_id'         => $visitor,
+            'session_id'         => $session,
+            'page_url'           => 'https://owa-test-site/v2/receipt',
+            'page_location'      => 'https://owa-test-site/v2/receipt',
+            'ct_order_id'        => 'order-' . $visitor,
+            'sts'                => time(),
+            'num_prior_sessions' => 1,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['purchase'] ?? null;
+
+        $this->assertNotNull($row, 'the purchase was not stored');
+
+        foreach ($stored as $column => $value) {
+            $this->assertSame($value, $row[$column] === null ? null : (string) $row[$column], $column);
+        }
+    }
+
+    public static function purchases(): array
+    {
+        return [
+            'dollars, tax and shipping out of revenue' => [
+                ['ct_total' => 25.00, 'ct_tax' => 2.00, 'ct_shipping' => 3.00, 'currency' => 'usd'],
+                ['revenue' => '2000', 'tax' => '200', 'shipping' => '300', 'currency' => 'USD'],
+            ],
+            'yen has no minor unit' => [
+                ['ct_total' => 1500, 'currency' => 'JPY'],
+                ['revenue' => '1500', 'currency' => 'JPY'],
+            ],
+            'three places for the Kuwaiti dinar' => [
+                ['ct_total' => 1.234, 'currency' => 'KWD'],
+                ['revenue' => '1234', 'currency' => 'KWD'],
+            ],
+        ];
+    }
+
+    /**
      * A tracker cannot send a materialized name. The server is their only
      * source; a beacon naming one would be stored beside the real one.
      */

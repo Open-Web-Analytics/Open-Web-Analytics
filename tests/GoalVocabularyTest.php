@@ -211,7 +211,12 @@ final class GoalVocabularyTest extends TestCase
     {
         $this->assertSame( 'element_id', Vocab::columnFor( 'dom_element_id' ) );
         $this->assertSame( 'region',     Vocab::columnFor( 'state' ) );
-        $this->assertSame( 'revenue',    Vocab::columnFor( 'ct_total' ) );
+        $this->assertSame( 'tagged_search_terms', Vocab::columnFor( 'tagged_terms' ) );
+
+        // revenue is a property named after its column now, derived from the
+        // order total less tax and shipping; the total itself has no column.
+        $this->assertSame( 'revenue', Vocab::columnFor( 'revenue' ) );
+        $this->assertNull( Vocab::columnFor( 'ct_total' ) );
     }
 
     /** A name with no column at all answers null rather than a guess. */
