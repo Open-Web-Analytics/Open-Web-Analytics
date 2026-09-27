@@ -99,6 +99,14 @@
             ]
         }
     ],
+    "entrances": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.is_entrance = 1 THEN 1 ELSE 0 END)",
+            "alias": "entrances"
+        }
+    ],
     "eventCount": [
         {
             "kind": "aggregate",

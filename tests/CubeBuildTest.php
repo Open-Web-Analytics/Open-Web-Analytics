@@ -892,8 +892,8 @@ final class CubeBuildTest extends TestCase
         $this->assertNull($this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t)['event_seq'],
             'this session carries no sequence, or it is not the case under test');
 
-        $this->assertSame(1, (int) $this->built('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000)['is_exit'],
-            'the latest arrival is still the exit when nothing says otherwise');
+        $this->assertSame(1, (int) $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t + 60000000)['is_exit'],
+            'the latest page view by arrival is still the exit when nothing says otherwise');
     }
 
     /**
@@ -1190,8 +1190,10 @@ final class CubeBuildTest extends TestCase
         $t = $this->t0;
 
         $this->assertSame(0, (int) $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t)['is_exit']);
-        $this->assertSame(0, (int) $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t + 60000000)['is_exit']);
-        $this->assertSame(1, (int) $this->built('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000)['is_exit']);
+        $this->assertSame(1, (int) $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t + 60000000)['is_exit'],
+            'the last PAGE VIEW is the exit');
+        $this->assertSame(0, (int) $this->built('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000)['is_exit'],
+            'a click after it happened on the same page; the exit is the page, not the last event');
     }
 
     public function testASessionStillInsideTheTimeoutHasNoExit(): void
@@ -1264,6 +1266,89 @@ final class CubeBuildTest extends TestCase
         $this->assertSame(1, (int) $this->built('page_view', 7771000000000053, 8881000000000053, $t)['is_engaged_session']);
         $this->assertSame(0, (int) $this->built('page_view', 7771000000000054, 8881000000000054, $t)['is_engaged_session'],
             'a goal on first_visit is not engagement');
+    }
+
+    /** The session's first event is its entrance, and only that one. */
+    public function testIsEntranceMarksTheFirstEventOfTheSession(): void
+    {
+        $t = $this->t0;
+
+        $this->assertSame(1, (int) $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t)['is_entrance']);
+        $this->assertSame(0, (int) $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t + 60000000)['is_entrance']);
+        $this->assertSame(0, (int) $this->built('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000)['is_entrance']);
+    }
+
+    /**
+     * DEVICE ORDER, as for is_exit: the event the device counted first is the
+     * entrance, even when it arrived after another.
+     */
+    public function testIsEntranceFollowsDeviceOrderRatherThanArrivalOrder(): void
+    {
+        $t = $this->t0;
+
+        // Arrived second, happened first.
+        $this->seed('page_view', 7771000000000061, 8881000000000061, $t + 5000000, ['event_seq' => 1, 'page_path' => '/first']);
+        $this->seed('page_view', 7771000000000061, 8881000000000061, $t, ['event_seq' => 2, 'page_path' => '/second']);
+
+        $this->rebuild();
+
+        $this->assertSame(1, (int) $this->built('page_view', 7771000000000061, 8881000000000061, $t + 5000000)['is_entrance']);
+        $this->assertSame(0, (int) $this->built('page_view', 7771000000000061, 8881000000000061, $t)['is_entrance']);
+    }
+
+    /**
+     * The landing page view is the entrance, not the session_start or first_visit
+     * materialized beside it, which share its sequence and its instant: only a
+     * page view can be an entrance.
+     */
+    public function testTheEntranceIsTheCarrierNotAMaterializedEvent(): void
+    {
+        $t = $this->t0;
+
+        foreach (['page_view', 'session_start', 'first_visit'] as $type) {
+            $this->seed($type, 7771000000000062, 8881000000000062, $t, ['event_seq' => 1, 'page_path' => '/landing']);
+        }
+
+        $this->rebuild();
+
+        $this->assertSame(1, (int) $this->built('page_view', 7771000000000062, 8881000000000062, $t)['is_entrance']);
+        $this->assertSame(0, (int) $this->built('session_start', 7771000000000062, 8881000000000062, $t)['is_entrance']);
+        $this->assertSame(0, (int) $this->built('first_visit', 7771000000000062, 8881000000000062, $t)['is_entrance']);
+    }
+
+    /**
+     * A session spanning a tracker upgrade enters on its UNSEQUENCED page view.
+     * It happened first; a missing sequence counts as 0, not as absent -- a bare
+     * MIN(event_seq) would skip it and name a later page the entrance.
+     */
+    public function testAMixedSessionEntersOnItsUnsequencedPageView(): void
+    {
+        $t = $this->t0;
+
+        $pre  = $this->built('page_view', self::VISITOR_MIXED_SEQ, 8881000000000015, $t);
+        $last = $this->built('page_view', self::VISITOR_MIXED_SEQ, 8881000000000015, $t + 20000000);
+
+        $this->assertNull($pre['event_seq'], 'the pre-upgrade row must carry no sequence');
+
+        $this->assertSame(1, (int) $pre['is_entrance']);
+        $this->assertSame(0, (int) $last['is_entrance']);
+    }
+
+    /** A session with no page view has no entrance and no exit. */
+    public function testASessionWithNoPageViewHasNoEntranceOrExit(): void
+    {
+        $t = $this->t0;
+
+        $this->seed('purchase', 7771000000000063, 8881000000000063, $t, ['event_seq' => 1]);
+        $this->seed('custom_signup', 7771000000000063, 8881000000000063, $t + 1000000, ['event_seq' => 2]);
+
+        $this->rebuild();
+
+        foreach ([['purchase', $t], ['custom_signup', $t + 1000000]] as [$type, $ts]) {
+            $row = $this->built($type, 7771000000000063, 8881000000000063, $ts);
+            $this->assertSame(0, (int) $row['is_entrance'], $type);
+            $this->assertSame(0, (int) $row['is_exit'], $type);
+        }
     }
 
     public function testBuiltAtIsStampedAndConstantWithinThePartition(): void

@@ -155,10 +155,14 @@ final class NewVsReturningTest extends TestCase
         $this->assertSame(array('column' => 'is_exit', 'value' => 1),
             $metrics['exits']['condition']);
 
+        // Entrances, the mirror, likewise a metric over a cube flag.
+        $this->assertSame(array('column' => 'is_entrance', 'value' => 1),
+            $metrics['entrances']['condition']);
+
         /*
-         * And NO exitRate. A session's last event is decided by ARRIVAL order,
-         * so is_exit can land on the wrong row -- a count carries that error
-         * visibly where a percentage presents it as precision.
+         * No exitRate. It was held back because is_exit followed arrival order;
+         * it follows device sequence now, so that reason is gone and adding one
+         * is a decision still to make, not a defect this guards.
          */
         $this->assertArrayNotHasKey('exitRate', $metrics);
     }

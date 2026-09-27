@@ -817,9 +817,22 @@ class Builder {
             $columns[] = sprintf( 'FIRST_VALUE(w.%s) OVER session_w AS %s', $column, $alias );
         }
 
-        // The last event OF THE SESSION, in device order -- which is what
-        // is_exit means and what the window's sort now decides.
-        $columns[] = 'LAST_VALUE(w.id) OVER session_w AS session_last_id';
+        /*
+         * The session's first and last PAGE VIEWS, which is what an entrance and
+         * an exit are: the page it began on and the page it ended on. Keyed on
+         * the page view's position (Context::pageViewKey), so only page views can
+         * hold either -- not a click after the last page, and not the
+         * session_start or first_visit materialized beside the first.
+         *
+         * An aggregate over the same frame, so it adds no sort. A session with no
+         * page view has neither.
+         */
+        $pv_key = Context::pageViewKey( 'w' );
+
+        $columns[] = sprintf( "MIN(CASE WHEN w.event_type = 'page_view' THEN %s END) OVER session_w"
+                   . ' AS session_first_pv_key', $pv_key );
+        $columns[] = sprintf( "MAX(CASE WHEN w.event_type = 'page_view' THEN %s END) OVER session_w"
+                   . ' AS session_last_pv_key', $pv_key );
 
         /*
          * But the most recent ARRIVAL, which is a different question.
@@ -847,12 +860,16 @@ class Builder {
             $materialized[] = "'" . \OWA\Core\CoreAPI::dbSingleton()->prepare( $name ) . "'";
         }
 
+        $not_materialized = $materialized
+            ? 'w.event_type NOT IN (' . implode( ', ', $materialized ) . ')'
+            : '1 = 1';
+
         $columns[] = 'SUM(COALESCE(w.engagement_msec, 0)) OVER session_w AS session_engagement_msec';
         $columns[] = "SUM(CASE WHEN w.event_type = 'page_view' THEN 1 ELSE 0 END) OVER session_w"
                    . ' AS session_page_views';
         $columns[] = sprintf( 'MAX(CASE WHEN w.is_goal_event = 1%s THEN 1 ELSE 0 END) OVER session_w'
                    . ' AS session_has_goal',
-            $materialized ? ' AND w.event_type NOT IN (' . implode( ', ', $materialized ) . ')' : '' );
+            ' AND ' . $not_materialized );
 
         /*
          * DEVICE ORDER FIRST, arrival order second.

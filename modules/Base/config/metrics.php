@@ -64,22 +64,31 @@ return array(
          * once.
          *
          * So Exits is a metric, paired with the ordinary page dimension, and
-         * there is no exit-page dimension at all.
+         * there is no exit-page dimension at all. Entrances likewise.
          *
-         * NO exitRate. A rate is the wrong thing to ship first here: a
-         * session's last event is decided by ARRIVAL order (Cube\IsExitStep
-         * over a window sorted on ts), so a late beacon puts is_exit on the
-         * wrong row. A count carries that error visibly; a percentage presents
-         * it as precision.
+         * THE SESSION'S LAST PAGE VIEW, by device sequence (Cube\IsExitStep):
+         * not the last event of any kind, since a click after it happened on
+         * the same page, and not by arrival, since a late beacon would move it.
          */
         'exits' => array(
             'label'       => 'Exits',
-            'description' => 'The number of times a session ended on this page.',
+            'description' => 'The number of sessions that ended on a page view. Grouped by page, the number that ended on each.',
             'group'       => 'Site Usage',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
             'condition'   => array( 'column' => 'is_exit', 'value' => 1 ),
+        ),
+
+        /* The session's first page view, the mirror of exits (Cube\IsEntranceStep). */
+        'entrances' => array(
+            'label'       => 'Entrances',
+            'description' => 'The number of sessions that began on a page view. Grouped by page, the number that began on each.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'is_entrance', 'value' => 1 ),
         ),
 
         'goalConversions' => array(

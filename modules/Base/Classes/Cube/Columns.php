@@ -164,6 +164,9 @@ class Columns {
             case 'is_exit':
                 return new IsExitStep( $column );
 
+            case 'is_entrance':
+                return new IsEntranceStep( $column );
+
             case 'new_vs_returning':
                 return new NewVsReturningStep( $column );
 

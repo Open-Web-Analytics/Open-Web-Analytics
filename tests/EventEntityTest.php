@@ -35,18 +35,19 @@ final class EventEntityTest extends TestCase
           . 'EXCHANGE PARTITION compares the two tables column by column.');
     }
 
-    public function testTheSeventeenDerivedColumns(): void
+    public function testTheNineteenDerivedColumns(): void
     {
         $derived = array_slice($this->event()->getColumns(), count($this->raw()->getColumns()));
 
-        // new_vs_returning sits AFTER built_at because ADD COLUMN appends, so an
-        // upgraded cube and a fresh one have the same columns in the same order.
+        // new_vs_returning, is_engaged_session and is_entrance sit AFTER built_at
+        // because ADD COLUMN appends, so a cube that gained them and a fresh one
+        // have the same columns in the same order.
         $this->assertSame([
             'source', 'medium', 'campaign', 'ad', 'search_terms',
             'landing_page_location', 'landing_page_path', 'landing_page_query',
             'landing_page_title', 'is_exit',
             'acq_source', 'acq_medium', 'acq_campaign', 'acq_ad', 'acq_search_terms',
-            'built_at', 'new_vs_returning',
+            'built_at', 'new_vs_returning', 'is_engaged_session', 'is_entrance',
         ], $derived);
     }
 

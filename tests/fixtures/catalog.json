@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 31,
-        "metricImplementations": 31,
+        "metricNames": 32,
+        "metricImplementations": 32,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 77,
@@ -240,6 +240,34 @@
                 }
             }
         ],
+        "entrances": [
+            {
+                "name": "entrances",
+                "class": "base.configurableMetric",
+                "label": "Entrances",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "id",
+                    "condition": [
+                        1,
+                        "is_entrance"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of sessions that began on a page view. Grouped by page, the number that began on each.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Entrances",
+                    "metric_type": "count",
+                    "name": "entrances",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "eventCount": [
             {
                 "name": "eventCount",
@@ -330,7 +358,7 @@
                     ],
                     "data_type": "integer",
                     "denominator": "",
-                    "description": "The number of times a session ended on this page.",
+                    "description": "The number of sessions that ended on a page view. Grouped by page, the number that ended on each.",
                     "entity": "base.event",
                     "formula": "",
                     "group": "Site Usage",

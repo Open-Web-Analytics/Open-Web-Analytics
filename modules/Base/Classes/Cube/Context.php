@@ -44,6 +44,29 @@ class Context {
     public $candidates = array();
 
     /**
+     * A page view's position in its session, as one string that sorts in order.
+     *
+     * Sequence first -- counted on the device, so a late beacon cannot reorder
+     * it -- with a missing one as 0, so a session spanning a tracker upgrade puts
+     * its unsequenced page views first, where they happened. Then arrival time,
+     * which orders a session with no sequence at all. Then the id, so exactly one
+     * row holds the minimum and one the maximum, even where two tabs stamped the
+     * same sequence.
+     *
+     * Zero-padded to widths that hold each part: a sequence under ten digits, a
+     * microsecond timestamp, and a 63-bit id (V2Event::id() drops the sign bit).
+     *
+     * @param string $alias the table alias
+     * @return string SQL
+     */
+    public static function pageViewKey( $alias ) {
+
+        return sprintf(
+            "CONCAT(LPAD(COALESCE(%1\$s.event_seq, 0), 10, '0'), LPAD(%1\$s.ts, 20, '0'), LPAD(%1\$s.id, 20, '0'))",
+            $alias );
+    }
+
+    /**
      * @param array $span
      * @param int   $built_at
      * @param int   $closed_before

@@ -34,6 +34,8 @@
  *   medium   the tag, else the referrer classified against the engine and
  *            social lists -- the reading that has to stay rebuildable.
  *   is_exit  the session's last event, once the session has closed.
+ *   is_entrance
+ *            the session's first event, in the same device order.
  *   literal  one value for the whole build.
  *   new_vs_returning
  *            whether the session was the visitor's first, as the label a
@@ -101,6 +103,9 @@ return array(
     // Whether the session was engaged, on every row of it; the thresholds are
     // in Classes\Cube\IsEngagedSessionStep.
     'is_engaged_session' => array( 'kind' => 'is_engaged_session' ),
+
+    // The session's first event, the mirror of is_exit off the same window.
+    'is_entrance' => array( 'kind' => 'is_entrance' ),
 
     // The visitor's acquisition, from the visitor store -- a build's only read
     // outside the partition, and the reason that store exists.

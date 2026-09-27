@@ -229,6 +229,16 @@ class Event extends EventRaw {
         $is_engaged->setNotNull();
         $is_engaged->setDefaultValue( 0 );
         $this->setProperty( $is_engaged );
+
+        /*
+         * The session's first event, in device order -- the mirror of is_exit;
+         * see Classes\Cube\IsEntranceStep. Behind the entrances metric only:
+         * like is_exit it is not a dimension. LAST, because ADD COLUMN appends.
+         */
+        $is_entrance = $this->column( 'is_entrance', OWA_DTD_BOOLEAN, false );
+        $is_entrance->setNotNull();
+        $is_entrance->setDefaultValue( 0 );
+        $this->setProperty( $is_entrance );
     }
 
     /**
