@@ -4174,10 +4174,20 @@ class OWATracker  {
     /**
      * Track form interaction: one form_start per form, and form_submit on send.
      *
-     * form_start fires on the FIRST interaction with a given form and not
+     * form_start fires on the first `change` event in a given form and not
      * again, which is what makes start/submit a funnel rather than two counts
      * of the same thing. Tracked per form element, so two forms on one page
      * each get their own start.
+     *
+     * `change`, NOT FOCUS. A text field raises `change` when the visitor leaves
+     * it with a new value; a select, checkbox or radio when its value changes.
+     * Focus alone, tabbing through, or typing without leaving the field is not a
+     * start -- clicking into a form and walking away is not having begun it.
+     *
+     * A SUBMIT WITH NO START RAISES ONE FIRST, so every form_submit has a
+     * form_start and the funnel cannot show more submits than starts. That
+     * happens when nothing changed (a one-button form) or the value was set by
+     * script. It carries no first-field properties: no field was interacted with.
      *
      * Bound at the document with capture rather than per form, so forms added
      * to the page after load are covered without re-binding -- which is the
@@ -4210,20 +4220,28 @@ class OWATracker  {
             return null;
         };
 
-        document.addEventListener( 'focusin', function ( e ) {
+        var start = function ( form, field ) {
 
-            var form = formOf( e.target );
-
-            if ( ! form || started.indexOf( form ) > -1 ) {
+            if ( started.indexOf( form ) > -1 ) {
 
                 return;
             }
 
             started.push( form );
 
-            // e.target is the element focus landed on, which is what makes the
-            // first-field trio mean anything.
-            that.raiseEvent( 'form_start', that.formProperties( form, e.target ) );
+            that.raiseEvent( 'form_start', that.formProperties( form, field ) );
+        };
+
+        document.addEventListener( 'change', function ( e ) {
+
+            var form = formOf( e.target );
+
+            if ( form ) {
+
+                // e.target is the field whose value changed, which is what makes
+                // the first-field properties mean anything.
+                start( form, e.target );
+            }
 
         }, true );
 
@@ -4232,6 +4250,8 @@ class OWATracker  {
             var form = formOf( e.target );
 
             if ( form ) {
+
+                start( form );
 
                 var properties = that.formProperties( form );
 
@@ -4275,9 +4295,13 @@ class OWATracker  {
      * distinguishable. Buttons are EXCLUDED: a button is not a field to fill in,
      * and counting it makes the number mean nothing in particular.
      *
-     * The first-field trio says where the visitor started. On a long form that is
-     * a real signal -- someone who begins at field nine skipped eight -- and it is
-     * why form_start carries it and form_submit does not.
+     * The first-field properties say where the visitor started. On a long form
+     * that is a real signal -- someone who begins at field nine skipped eight --
+     * and it is why form_start carries them and form_submit does not.
+     *
+     * `first_field_type` is the element's `type` property: the input type
+     * (text, email, checkbox ...; 'text' when the attribute is absent), or
+     * 'select-one', 'select-multiple' or 'textarea'.
      *
      * ALL PARAMS, NOT COLUMNS. Every one of these rides `params`: most installs
      * will never group by a form's name, let alone the position of its first
@@ -4285,7 +4309,7 @@ class OWATracker  {
      * does want one registers it as a custom dimension.
      *
      * @param {Element} form
-     * @param {Element} [field]  the element the interaction began on
+     * @param {Element} [field]  the field whose change started the form
      * @return {Object}
      */
     formProperties( form, field ) {
@@ -4303,6 +4327,7 @@ class OWATracker  {
 
             properties.first_field_id       = field.id || '';
             properties.first_field_name      = field.getAttribute( 'name' ) || '';
+            properties.first_field_type     = String( field.type || '' ).toLowerCase();
             // ONE-BASED: "the first field" is position 1, not position 0.
             properties.first_field_position = fields.indexOf( field ) + 1;
         }

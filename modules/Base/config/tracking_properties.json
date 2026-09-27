@@ -813,7 +813,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [],
-        "note": "The field the interaction began on. form_start ONLY: by the time a form is submitted, where the visitor started is not a property of the submission."
+        "note": "The field whose change started the form. form_start ONLY, and absent on a form_start raised by a submit with no prior change: by the time a form is submitted, where the visitor started is not a property of the submission."
     },
     "first_field_name": {
         "set_by": "client",
@@ -828,6 +828,20 @@
         "required": false,
         "callbacks": [],
         "note": "The name attribute of that field -- see first_field_id. Both, because either may be absent."
+    },
+    "first_field_type": {
+        "set_by": "client",
+        "from": [
+            "first_field_type"
+        ],
+        "param": "first_field_type",
+        "events": [
+            "form_start"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "The element's type property: the input type (text, email, checkbox ...), or select-one, select-multiple, textarea. Absent on a form_start raised by a submit, like the rest of the first-field properties."
     },
     "first_field_position": {
         "set_by": "client",

@@ -71,6 +71,7 @@ final class Update054Test extends TestCase
             'form_destination'  => 'form_start',
             'form_length'       => 'form_start',
             'first_field_id'    => 'form_start',
+            'first_field_type'  => 'form_start',
             'form_submit_text'  => 'form_submit',
             'ct_order_source'   => 'purchase',
             'ct_gateway'        => 'purchase',

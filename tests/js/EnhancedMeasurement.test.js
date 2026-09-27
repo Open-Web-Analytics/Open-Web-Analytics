@@ -244,8 +244,8 @@ describe('forms', () => {
 
         t.trackForms();
 
-        document.getElementById('e').dispatchEvent(new Event('focusin', { bubbles: true }));
-        document.getElementById('f').dispatchEvent(new Event('focusin', { bubbles: true }));
+        document.getElementById('e').dispatchEvent(new Event('change', { bubbles: true }));
+        document.getElementById('f').dispatchEvent(new Event('change', { bubbles: true }));
 
         expect(sent.filter(e => e.event_type === 'form_start')).toHaveLength(1,
             'A second field is the same form, and start/submit is only a funnel if start is once.');
@@ -267,23 +267,87 @@ describe('forms', () => {
         const sent = captureSends(t);
         t.trackForms();
 
-        document.getElementById('ai').dispatchEvent(new Event('focusin', { bubbles: true }));
-        document.getElementById('bi').dispatchEvent(new Event('focusin', { bubbles: true }));
+        document.getElementById('ai').dispatchEvent(new Event('change', { bubbles: true }));
+        document.getElementById('bi').dispatchEvent(new Event('change', { bubbles: true }));
 
         expect(sent.filter(e => e.event_type === 'form_start').map(e => e.form_id))
             .toEqual(['a', 'b']);
     });
 
-    test('focus outside a form is not a form start', () => {
+    test('a change outside a form is not a form start', () => {
         document.body.innerHTML = '<input id="loose">';
 
         const t = newTracker();
         const sent = captureSends(t);
         t.trackForms();
 
-        document.getElementById('loose').dispatchEvent(new Event('focusin', { bubbles: true }));
+        document.getElementById('loose').dispatchEvent(new Event('change', { bubbles: true }));
 
         expect(sent).toHaveLength(0);
+    });
+
+    /*
+     * Clicking into a form, or tabbing through it, is not having begun it. A start
+     * needs a changed value.
+     */
+    test('focus alone is not a form start', () => {
+        document.body.innerHTML = '<form id="f"><input id="a"></form>';
+
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.trackForms();
+
+        const field = document.getElementById('a');
+        field.dispatchEvent(new Event('focusin', { bubbles: true }));
+        field.dispatchEvent(new Event('focus'));
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect(sent).toHaveLength(0);
+    });
+
+    /*
+     * A submit with no start raises one first, so the funnel never shows more
+     * submits than starts. No field changed, so no first-field properties.
+     */
+    test('a submit with no start raises form_start first, without first-field properties', () => {
+        document.body.innerHTML =
+            '<form id="f" name="N"><input id="a" name="email"></form>';
+
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.trackForms();
+
+        document.getElementById('f')
+            .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        expect(sent.map(e => e.event_type)).toEqual(['form_start', 'form_submit']);
+
+        const start = sent[0];
+        expect(start.form_id).toBe('f');
+        expect(start.form_name).toBe('N');
+        expect(start.form_length).toBe(1);
+        expect(start.first_field_id).toBeUndefined();
+        expect(start.first_field_name).toBeUndefined();
+        expect(start.first_field_type).toBeUndefined();
+        expect(start.first_field_position).toBeUndefined();
+    });
+
+    test('a submit after a change raises no second start', () => {
+        document.body.innerHTML = '<form id="f"><input id="a"></form>';
+
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.trackForms();
+
+        document.getElementById('a').dispatchEvent(new Event('change', { bubbles: true }));
+
+        const form = document.getElementById('f');
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        expect(sent.map(e => e.event_type))
+            .toEqual(['form_start', 'form_submit', 'form_submit']);
+        expect(sent[0].first_field_id).toBe('a');
     });
 });
 
@@ -522,7 +586,7 @@ describe('scroll depth', () => {
 
 describe('what a form event says about the form', () => {
 
-    /** Fire a form_start by focusing a field, and return the beacon. */
+    /** Fire a form_start by changing a field, and return the beacon. */
     function startOn(html, selector) {
         document.body.innerHTML = html;
 
@@ -532,7 +596,7 @@ describe('what a form event says about the form', () => {
         t.trackForms();
 
         document.querySelector(selector)
-            .dispatchEvent(new Event('focusin', { bubbles: true }));
+            .dispatchEvent(new Event('change', { bubbles: true }));
 
         return sent.find((p) => p.event_type === 'form_start');
     }
@@ -573,10 +637,10 @@ describe('what a form event says about the form', () => {
     });
 
     /*
-     * ONE-BASED, and the position is of the field focus landed on -- which is the
-     * signal: someone who begins at field three skipped two.
+     * ONE-BASED, and the position is of the field that changed first -- which is
+     * the signal: someone who begins at field three skipped two.
      */
-    test('the first field is the one focus landed on, counted from one', () => {
+    test('the first field is the one that changed, counted from one', () => {
         const html = '<form id="f"><input id="a"><input id="b" name="email">'
             + '<input id="c"></form>';
 
@@ -587,6 +651,20 @@ describe('what a form event says about the form', () => {
         expect(second.first_field_position).toBe(2);
         expect(second.first_field_id).toBe('b');
         expect(second.first_field_name).toBe('email');
+    });
+
+    test('the first field type is the element type', () => {
+        const html = '<form id="f"><input id="plain"><input id="e" type="email">'
+            + '<input id="c" type="CHECKBOX"><select id="s"><option>x</option></select>'
+            + '<select id="m" multiple><option>x</option></select>'
+            + '<textarea id="t"></textarea></form>';
+
+        expect(startOn(html, '#plain').first_field_type).toBe('text');
+        expect(startOn(html, '#e').first_field_type).toBe('email');
+        expect(startOn(html, '#c').first_field_type).toBe('checkbox');
+        expect(startOn(html, '#s').first_field_type).toBe('select-one');
+        expect(startOn(html, '#m').first_field_type).toBe('select-multiple');
+        expect(startOn(html, '#t').first_field_type).toBe('textarea');
     });
 
     /*
@@ -604,7 +682,7 @@ describe('what a form event says about the form', () => {
         t.trackForms();
 
         document.getElementById('a')
-            .dispatchEvent(new Event('focusin', { bubbles: true }));
+            .dispatchEvent(new Event('change', { bubbles: true }));
 
         const submit = new Event('submit', { bubbles: true, cancelable: true });
         document.getElementById('f').dispatchEvent(submit);
