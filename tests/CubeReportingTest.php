@@ -156,6 +156,14 @@ final class CubeReportingTest extends TestCase
                  * and no goal, so it is not. One of two, so each rate is 50%.
                  */
                 'is_engaged_session' => $row[3] === self::SESSION ? 1 : 0,
+                /*
+                 * The first and last page views of each session, as a build
+                 * stamps them: the first session enters on /one (row 0) and
+                 * exits on /two (row 2); the second has one page view, /two
+                 * (row 4), which is both.
+                 */
+                'is_entrance' => in_array($i, [0, 4], true) ? 1 : 0,
+                'is_exit'     => in_array($i, [2, 4], true) ? 1 : 0,
             ]);
 
             if (!$event->create()) {
@@ -709,6 +717,47 @@ final class CubeReportingTest extends TestCase
             'engagedSessionsPerUser' => 0.5,
             'engagementRate'         => 0.5,
         ], $got, 0.0001);
+    }
+
+    /**
+     * Entrances, exits and the exit rate, by page. /one is viewed twice and
+     * never last; /two is viewed twice and last both times.
+     */
+    public function testEntrancesExitsAndExitRateByPage(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray('entrances,exits,pageViews,exitRate');
+        $rsm->setDimensions($rsm->dimensionsStringToArray('pagePath'));
+        $rsm->setConstraints($rsm->parseConstraintsString('eventName==page_view'));
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $byPath = [];
+
+        foreach ((array) $rs->resultsRows as $row) {
+            $byPath[$row['pagePath']['value']] = [
+                'entrances' => (int) $row['entrances']['value'],
+                'exits'     => (int) $row['exits']['value'],
+                'pageViews' => (int) $row['pageViews']['value'],
+                'exitRate'  => round((float) $row['exitRate']['value'], 4),
+            ];
+        }
+
+        ksort($byPath);
+
+        $this->assertSame([
+            '/one' => ['entrances' => 1, 'exits' => 0, 'pageViews' => 2, 'exitRate' => 0.0],
+            '/two' => ['entrances' => 1, 'exits' => 2, 'pageViews' => 2, 'exitRate' => 1.0],
+        ], $byPath);
+
+        $this->assertEqualsWithDelta(0.5, (float) $rs->aggregates['exitRate']['value'], 0.0001,
+            'ungrouped: two exits over four page views');
     }
 
     /**

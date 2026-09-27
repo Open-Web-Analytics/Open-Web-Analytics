@@ -80,6 +80,22 @@ return array(
             'condition'   => array( 'column' => 'is_exit', 'value' => 1 ),
         ),
 
+        /*
+         * Of the times a page was viewed, the share that were a session's last.
+         * Grouped by page it is each page's exit rate; ungrouped, exits over all
+         * page views.
+         */
+        'exitRate' => array(
+            'label'       => 'Exit Rate',
+            'description' => 'The share of page views that were the last in their session.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'exits',
+            'denominator' => 'pageViews',
+            'precision'   => 4,
+        ),
+
         /* The session's first page view, the mirror of exits (Cube\IsEntranceStep). */
         'entrances' => array(
             'label'       => 'Entrances',

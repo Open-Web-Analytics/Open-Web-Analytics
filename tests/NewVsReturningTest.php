@@ -159,12 +159,10 @@ final class NewVsReturningTest extends TestCase
         $this->assertSame(array('column' => 'is_entrance', 'value' => 1),
             $metrics['entrances']['condition']);
 
-        /*
-         * No exitRate. It was held back because is_exit followed arrival order;
-         * it follows device sequence now, so that reason is gone and adding one
-         * is a decision still to make, not a defect this guards.
-         */
-        $this->assertArrayNotHasKey('exitRate', $metrics);
+        // exitRate is exits over page views -- the denominator an exit-page
+        // dimension could not supply.
+        $this->assertSame('exits', $metrics['exitRate']['numerator']);
+        $this->assertSame('pageViews', $metrics['exitRate']['denominator']);
     }
 
     /** And no shipped report groups by one. */
