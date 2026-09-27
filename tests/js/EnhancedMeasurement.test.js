@@ -153,12 +153,78 @@ describe('downloads and outbound links', () => {
     });
 
     /*
-     * OUTBOUND IS NOT DECIDED HERE any more. isOutboundUrl() had no caller but
-     * this test -- the tracker sent nothing for it and no column stored it. The
-     * server derives is_outbound at ingest from target_url's host against
-     * page_location's, both of which the row already carries, so the rule is
-     * asserted in TrackingEventHelpers where it now lives.
+     * OUTBOUND IS DECIDED HERE, and the rules are these. It was briefly a server
+     * derivation off target_url and page_location -- which only serves a sender
+     * shaped like a browser, and cannot see a DOM.
      */
+    test('a different host is outbound and the same host is not', () => {
+        const t = newTracker();
+
+        expect(t.isOutboundUrl('https://elsewhere.example/page')).toBe(true);
+        expect(t.isOutboundUrl(window.location.href)).toBe(false);
+    });
+
+    test('a relative URL resolves against the page, so it is internal', () => {
+        const t = newTracker();
+
+        expect(t.isOutboundUrl('/relative/path')).toBe(false);
+        expect(t.isOutboundUrl('relative/path')).toBe(false);
+    });
+
+    test('nothing to compare is not a claim that the click left', () => {
+        const t = newTracker();
+
+        expect(t.isOutboundUrl('')).toBe(false);
+        expect(t.isOutboundUrl(undefined)).toBe(false);
+        // Unparseable against any base: false rather than an exception.
+        expect(t.isOutboundUrl('http://')).toBe(false);
+    });
+
+    /*
+     * COMPARED ON HOST, against THIS PAGE's host rather than a configured domain.
+     * A site reached at both apex and www would otherwise report half its own
+     * links as outbound -- so a genuine www->apex link DOES read as outbound, and
+     * that is the accepted cost of having no canonical-domain setting.
+     */
+    test('the comparison is the host, so a port or a path does not matter', () => {
+        const t = newTracker();
+        const here = window.location.hostname;
+
+        expect(t.isOutboundUrl('https://' + here + '/somewhere/else?a=1#x')).toBe(false);
+        expect(t.isOutboundUrl('https://www.' + here + '/same/path')).toBe(true);
+    });
+
+    test('a click carries the verdict as is_outbound', () => {
+        const sent = [];
+        const t = newTracker();
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.setOption('logClicksAsTheyHappen', true);
+
+        const a = document.createElement('a');
+        a.id = 'x';
+        a.href = 'https://elsewhere.example/page';
+        document.body.appendChild(a);
+        t.clickEventHandler({ target: a, pageX: 1, pageY: 2 });
+        document.body.removeChild(a);
+
+        const click = sent.find((p) => p.event_type === 'click');
+
+        expect(click).toBeDefined();
+        expect(click.is_outbound).toBe(1);
+    });
+
+    test('a file_download does not carry it -- the click answers that', () => {
+        const sent = [];
+        const t = newTracker();
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+
+        t.classifyClickTarget('https://cdn.example.org/docs/guide.pdf');
+
+        const download = sent.find((p) => p.event_type === 'file_download');
+
+        expect(download).toBeDefined();
+        expect(download.is_outbound).toBeUndefined();
+    });
 });
 
 /*
@@ -220,6 +286,132 @@ describe('forms', () => {
         expect(sent).toHaveLength(0);
     });
 });
+
+describe('what a form event says about the form', () => {
+
+    /** Fire a form_start by focusing a field, and return the beacon. */
+    function startOn(html, selector) {
+        document.body.innerHTML = html;
+
+        const t = newTracker();
+        const sent = [];
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.trackForms();
+
+        document.querySelector(selector)
+            .dispatchEvent(new Event('focusin', { bubbles: true }));
+
+        return sent.find((p) => p.event_type === 'form_start');
+    }
+
+    test('the destination is absolute, so two sites /subscribe are two forms', () => {
+        const start = startOn(
+            '<form id="f" action="/subscribe"><input id="a"></form>', '#a');
+
+        expect(start.form_destination).toMatch(/^https?:\/\/[^/]+\/subscribe$/);
+    });
+
+    /*
+     * A form with no action submits to the page itself, which is what the value
+     * says rather than reporting an empty destination.
+     */
+    test('no action means the page itself', () => {
+        const start = startOn('<form id="f"><input id="a"></form>', '#a');
+
+        expect(start.form_destination).toBe(window.location.href);
+    });
+
+    /*
+     * BUTTONS AND HIDDEN INPUTS ARE NOT FIELDS. Counting them makes the number
+     * mean nothing in particular -- a two-field form with a submit button is not
+     * three fields to fill in.
+     */
+    test('the length counts fillable fields only', () => {
+        const start = startOn(
+            '<form id="f">'
+            + '<input id="a"><select id="b"><option>x</option></select>'
+            + '<textarea id="c"></textarea>'
+            + '<input type="hidden" name="nonce" value="z">'
+            + '<button type="submit">Go</button>'
+            + '<input type="submit" value="Also go">'
+            + '</form>', '#a');
+
+        expect(start.form_length).toBe(3);
+    });
+
+    /*
+     * ONE-BASED, and the position is of the field focus landed on -- which is the
+     * signal: someone who begins at field three skipped two.
+     */
+    test('the first field is the one focus landed on, counted from one', () => {
+        const html = '<form id="f"><input id="a"><input id="b" name="email">'
+            + '<input id="c"></form>';
+
+        expect(startOn(html, '#a').first_field_position).toBe(1);
+
+        const second = startOn(html, '#b');
+
+        expect(second.first_field_position).toBe(2);
+        expect(second.first_field_id).toBe('b');
+        expect(second.first_field_name).toBe('email');
+    });
+
+    /*
+     * form_submit carries the form, not where the visitor started: by the time it
+     * is submitted that is not a property of the submission.
+     */
+    test('a submit carries the form and not the first field', () => {
+        document.body.innerHTML =
+            '<form id="f" name="N" action="/x"><input id="a">'
+            + '<button id="go" type="submit">Subscribe now</button></form>';
+
+        const t = newTracker();
+        const sent = [];
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.trackForms();
+
+        document.getElementById('a')
+            .dispatchEvent(new Event('focusin', { bubbles: true }));
+
+        const submit = new Event('submit', { bubbles: true, cancelable: true });
+        document.getElementById('f').dispatchEvent(submit);
+
+        const beacon = sent.find((p) => p.event_type === 'form_submit');
+
+        expect(beacon).toBeDefined();
+        expect(beacon.form_id).toBe('f');
+        expect(beacon.form_name).toBe('N');
+        expect(beacon.form_length).toBe(1);
+        expect(beacon.first_field_id).toBeUndefined();
+        expect(beacon.first_field_position).toBeUndefined();
+    });
+
+    /*
+     * WHICH BUTTON SENT IT. A dispatched Event has no `submitter`, and then the
+     * property is absent rather than guessed -- which is exactly the case above,
+     * so this asserts the presence path separately.
+     */
+    test('the submit text names the control, when there was one', () => {
+        document.body.innerHTML =
+            '<form id="f" action="/x"><input id="a">'
+            + '<button id="go" type="submit">Save and publish</button></form>';
+
+        const t = newTracker();
+        const sent = [];
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.trackForms();
+
+        const submit = new Event('submit', { bubbles: true, cancelable: true });
+        Object.defineProperty(submit, 'submitter',
+            { value: document.getElementById('go') });
+        document.getElementById('f').dispatchEvent(submit);
+
+        const beacon = sent.find((p) => p.event_type === 'form_submit');
+
+        expect(beacon.form_submit_text).toBe('Save and publish');
+    });
+});
+
 
 describe('site search', () => {
 

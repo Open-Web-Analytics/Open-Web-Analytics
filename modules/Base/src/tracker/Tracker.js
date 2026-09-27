@@ -1826,20 +1826,55 @@ class OWATracker  {
     }
 
     /*
-     * getElementPath() and isOutboundUrl() ARE GONE.
-     *
-     * getElementPath built a CSS selector by walking up to eight ancestors with
-     * :nth-of-type() indexes. Nothing on the server ever read the column it fed
-     * -- no report, widget or overlay -- and a template edit renumbers every
-     * path at once, so it was neither aggregable nor stable across a deploy. The
-     * heatmap places clicks by coordinate.
-     *
-     * isOutboundUrl() had NO CALLER but a unit test. Outbound is a comparison of
-     * the click target's host against the page's, and both reach the row already,
-     * so the server derives is_outbound at ingest -- see
-     * TrackingEventHelpers::deriveIsOutbound(). Deciding it here would have cost
-     * a wire field for something the row could already answer.
+     * getElementPath() IS GONE. It built a CSS selector by walking up to eight
+     * ancestors with :nth-of-type() indexes. Nothing on the server ever read the
+     * column it fed -- no report, widget or overlay -- and a template edit
+     * renumbers every path at once, so it was neither aggregable nor stable across
+     * a deploy. The heatmap places clicks by coordinate.
      */
+
+    /**
+     * Whether a URL leaves this site.
+     *
+     * Compared on HOST, not on the full URL, and against the page's own host
+     * rather than a configured domain -- a site reached at both apex and www would
+     * otherwise report half its internal links as outbound.
+     *
+     * THE CLIENT DECIDES THIS, and briefly the server did. Three reasons it
+     * belongs here:
+     *
+     *   - a non-web client has no page_location and target_url to compare, but it
+     *     knows perfectly well whether the thing it just raised left the property.
+     *     A server derivation can only serve senders shaped like a browser;
+     *   - it removes an ordering dependency. A server-derived is_outbound reads two
+     *     OTHER derived properties' inputs, and the property pass walks the
+     *     registry in key order, so correctness rested on where the entry sat;
+     *   - only the client can see the DOM. An href rewritten by script, a target
+     *     inside a shadow root: the server sees whatever string arrived.
+     *
+     * @param {string} url
+     * @return {boolean}
+     */
+    isOutboundUrl( url ) {
+
+        if ( ! url || typeof window === 'undefined' ) {
+
+            return false;
+        }
+
+        var host = '';
+
+        try {
+
+            host = new URL( url, window.location.href ).hostname;
+
+        } catch ( e ) {
+
+            return false;
+        }
+
+        return !! host && host !== window.location.hostname;
+    }
 
     /**
      * The downloaded file's PATH -- no host, no query, no fragment.
@@ -1975,6 +2010,9 @@ class OWATracker  {
         click.set("page_height", viewport.height);
         var properties = this.getDomElementProperties(targ);
         click.merge(this.filterDomProperties(properties));
+
+        // Whether this click left the site, decided where the DOM is.
+        click.set( 'is_outbound', this.isOutboundUrl( click.get( 'target_url' ) ) ? 1 : 0 );
 
         // set coordinates
         /*
@@ -4031,11 +4069,10 @@ class OWATracker  {
      *
      * Outbound is the opposite call: it IS a property of the click, because
      * "clicks that left the site" is the same count as "clicks", narrowed. So it
-     * is a column on the click row rather than an event of its own -- and the
-     * SERVER decides it, from target_url's host against page_location's, both of
-     * which the beacon already sends. This used to say it "rides as a param",
-     * which nothing implemented: the tracker sent no such param, and the
-     * isOutboundUrl() that would have computed one had no caller.
+     * is a column on the click row rather than an event of its own, set by
+     * isOutboundUrl() where the DOM is -- and NOT on this event. A download is a
+     * file arriving, not the visitor leaving; the click that raised it answers
+     * that question.
      *
      * @param {string} url
      */
@@ -4110,7 +4147,9 @@ class OWATracker  {
 
             started.push( form );
 
-            that.raiseEvent( 'form_start', that.formProperties( form ) );
+            // e.target is the element focus landed on, which is what makes the
+            // first-field trio mean anything.
+            that.raiseEvent( 'form_start', that.formProperties( form, e.target ) );
 
         }, true );
 
@@ -4120,25 +4159,164 @@ class OWATracker  {
 
             if ( form ) {
 
-                that.raiseEvent( 'form_submit', that.formProperties( form ) );
+                var properties = that.formProperties( form );
+
+                /*
+                 * WHICH BUTTON SENT IT. A form with Save and Save-and-publish is
+                 * two different submissions, and nothing else on the event tells
+                 * them apart. e.submitter is the button on a real submit; a
+                 * dispatched Event has none, and then this is simply absent
+                 * rather than guessed at.
+                 *
+                 * GA documents form_submit_text and did not send it in a measured
+                 * run, so this is not a match to its wire -- it is the value the
+                 * name promises.
+                 */
+                var text = that.submitterText( e );
+
+                if ( text ) {
+
+                    properties.form_submit_text = text;
+                }
+
+                that.raiseEvent( 'form_submit', properties );
             }
 
         }, true );
     }
 
     /**
-     * How a form identifies itself. Both, because either may be absent and a
-     * report keyed on a missing one has nothing to group by.
+     * What a form says about itself.
+     *
+     * BOTH IDENTIFIERS, because either may be absent and a report keyed on a
+     * missing one has nothing to group by.
+     *
+     * `form_destination` is where it submits, resolved to an absolute URL, and it
+     * is the one of these that identifies a form across pages: two pages can each
+     * carry a form with no id and no name, and the action distinguishes them.
+     * Falls back to the page's own URL, which is what a form with no action
+     * actually submits to.
+     *
+     * `form_length` counts the fields a visitor can interact with, so a
+     * form_start on a two-field signup and one on a fourteen-field application are
+     * distinguishable. Buttons are EXCLUDED, unlike the count on GA's wire, which
+     * reported 3 for two fields and a submit button: a button is not a field to
+     * fill in and counting it makes the number mean nothing in particular.
+     *
+     * The first-field trio says where the visitor started. On a long form that is
+     * a real signal -- someone who begins at field nine skipped eight -- and it is
+     * why form_start carries it and form_submit does not.
+     *
+     * ALL PARAMS, NOT COLUMNS. Every one of these rides `params`: most installs
+     * will never group by a form's name, let alone the position of its first
+     * field, and a column is width on every row of every Property. A site that
+     * does want one registers it as a custom dimension.
      *
      * @param {Element} form
+     * @param {Element} [field]  the element the interaction began on
      * @return {Object}
      */
-    formProperties( form ) {
+    formProperties( form, field ) {
 
-        return {
-            form_id:   form.id || '',
-            form_name: form.getAttribute( 'name' ) || ''
+        var fields = this.formFields( form );
+
+        var properties = {
+            form_id:          form.id || '',
+            form_name:        form.getAttribute( 'name' ) || '',
+            form_destination: this.formDestination( form ),
+            form_length:      fields.length
         };
+
+        if ( field ) {
+
+            properties.first_field_id       = field.id || '';
+            properties.first_field_name      = field.getAttribute( 'name' ) || '';
+            // ONE-BASED: "the first field" is position 1, not position 0.
+            properties.first_field_position = fields.indexOf( field ) + 1;
+        }
+
+        return properties;
+    }
+
+    /**
+     * The fields of a form, in document order, excluding anything that submits.
+     *
+     * @param {Element} form
+     * @return {Element[]}
+     */
+    formFields( form ) {
+
+        var out = [];
+        var all = form.querySelectorAll( 'input, select, textarea' );
+
+        for ( var i = 0; i < all.length; i++ ) {
+
+            var type = String( all[i].getAttribute( 'type' ) || '' ).toLowerCase();
+
+            if ( type === 'submit' || type === 'button' || type === 'image'
+                 || type === 'reset' || type === 'hidden' ) {
+
+                continue;
+            }
+
+            out.push( all[i] );
+        }
+
+        return out;
+    }
+
+    /**
+     * The label of the control that submitted the form, or '' if none did.
+     *
+     * `submitter` is on the real submit event. A form submitted by script has no
+     * submitter, and a value is not invented for it.
+     *
+     * @param {Event} e
+     * @return {string}
+     */
+    submitterText( e ) {
+
+        var button = e && e.submitter;
+
+        if ( ! button ) {
+
+            return '';
+        }
+
+        var text = button.value || button.textContent || '';
+
+        return String( text ).trim();
+    }
+
+    /**
+     * Where the form submits, absolute.
+     *
+     * A relative action is resolved against the page, so two sites' /subscribe do
+     * not read as one destination. A form with no action submits to the page
+     * itself, which is what the fallback says.
+     *
+     * @param {Element} form
+     * @return {string}
+     */
+    formDestination( form ) {
+
+        var action = form.getAttribute( 'action' );
+        var here = ( typeof window !== 'undefined' && window.location )
+            ? window.location.href : '';
+
+        if ( ! action ) {
+
+            return here;
+        }
+
+        try {
+
+            return new URL( action, here || undefined ).href;
+
+        } catch ( e ) {
+
+            return action;
+        }
     }
 
     /**

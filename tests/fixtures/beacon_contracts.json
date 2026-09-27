@@ -249,6 +249,7 @@
             "event_seq",
             "event_type",
             "fsts",
+            "is_outbound",
             "nps",
             "page_height",
             "page_location",

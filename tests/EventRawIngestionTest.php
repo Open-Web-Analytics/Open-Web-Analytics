@@ -453,17 +453,23 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * Whether the click left the site, decided at ingest and not on the wire.
+     * The row stores whether the click left the site; THE CLIENT decided it.
      *
-     * The tracker's isOutboundUrl() had no caller and nothing stored the answer,
-     * so "clicks that left the site" was unaskable. It is two readings of one row
-     * -- target_url's host against page_location's -- which is why it is derived
-     * rather than sent.
+     * The comparison was a server derivation, off target_url's host against
+     * page_location's. That only serves a sender shaped like a browser -- a non-web
+     * client has neither property and still knows whether what it raised left the
+     * property -- and only the client can see the DOM, where an href may have been
+     * rewritten by script. The host-comparison rules are asserted against
+     * OWATracker.isOutboundUrl(), which is where they now live.
+     *
+     * What is left here is the mapping, and it has a real edge: the column is
+     * NOT NULL, so a beacon that says nothing must land as 0 rather than aborting
+     * the insert under strict mode.
      *
      * @dataProvider outboundProvider
      */
-    public function testAClickSaysWhetherItLeftTheSite(
-        string $page, ?string $target, int $expected, string $because): void
+    public function testTheRowStoresTheOutboundFlagTheBeaconSent(
+        $sent, int $expected, string $because): void
     {
         $visitor = $this->uniqueGuid();
         $session = $this->uniqueSessionId();
@@ -472,15 +478,16 @@ final class EventRawIngestionTest extends IngestionTestCase
             'site_id'       => $this->site,
             'visitor_id'    => $visitor,
             'session_id'    => $session,
-            'page_url'      => $page,
-            'page_location' => $page,
+            'page_url'      => 'https://owa-test-site/v2/a',
+            'page_location' => 'https://owa-test-site/v2/a',
+            'target_url'    => 'https://shop.example.org/cart?sku=9',
             'fsts'          => time(),
             'sts'           => time(),
             'num_prior_sessions' => 0,
         ];
 
-        if ($target !== null) {
-            $properties['target_url'] = $target;
+        if ($sent !== null) {
+            $properties['is_outbound'] = $sent;
         }
 
         $this->fireEvent('dom.click', $properties);
@@ -491,73 +498,24 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->assertSame($expected, (int) $row['is_outbound'], $because);
     }
 
-    /** @return array<string,array{0:string,1:?string,2:int,3:string}> */
+    /** @return array<string,array{0:mixed,1:int,2:string}> */
     public static function outboundProvider(): array
     {
         return [
-            'another host' => [
-                'https://owa-test-site/v2/a',
-                'https://shop.example.org/cart?sku=9',
-                1,
-                'a different host is outbound',
-            ],
-            'the same host' => [
-                'https://owa-test-site/v2/a',
-                'https://owa-test-site/v2/b',
-                0,
-                'a link within the same host is not outbound',
-            ],
+            'the beacon says it left' => [
+                1, 1, 'what the client decided is what the row records'],
+            'the beacon says it did not' => [
+                0, 0, 'and 0 is a reading, not an absence'],
+            "'0' off a query string" => [
+                '0', 0, 'the wire carries strings, and "0" is not truthy'],
             /*
-             * The apex/www case the comparison is built around: it is decided
-             * against THIS PAGE's host, so a page served at one spelling calls
-             * the other outbound. Pinned deliberately -- it is the accepted cost
-             * of having no canonical-domain setting, and a future setting is what
-             * would change it.
+             * THE EDGE. A tracker too old to send it, or any sender that omits it,
+             * must land as 0: the column is NOT NULL and strict mode aborts the
+             * whole insert on a NULL. beacon_version on the same row says which
+             * generation wrote it, so the 0 is not mistaken for a measurement.
              */
-            'www against apex' => [
-                'https://owa-test-site/v2/a',
-                'https://www.owa-test-site/v2/b',
-                1,
-                'no canonical-domain setting exists, so the spellings are two hosts',
-            ],
-            /*
-             * Pins V2Event::parseUrl(), not the comparison. It lowercases every
-             * host it returns, so deriveIsOutbound() compares two already-folded
-             * strings -- which is why that line is a plain !== and why folding it
-             * again could never be mutation-tested. If parseUrl ever stops
-             * folding, this is what says so.
-             */
-            'case is folded upstream' => [
-                'https://owa-test-site/v2/a',
-                'https://OWA-TEST-SITE/v2/b',
-                0,
-                'parseUrl lowercases both hosts, so one spelling is one host',
-            ],
-            'a relative target' => [
-                'https://owa-test-site/v2/a',
-                '/v2/b',
-                0,
-                'no host to compare is not a claim that the click left',
-            ],
-            'no target at all' => [
-                'https://owa-test-site/v2/a',
-                null,
-                0,
-                'a click on an <input> has no target, and 0 is NOT NULL saying so',
-            ],
-            /*
-             * NO PAGE HOST EITHER. A beacon can send a relative page_location,
-             * and then the comparison has nothing on its own side. Without the
-             * guard, NULL !== 'shop.example.org' reads as outbound and every
-             * click on such a beacon claims the visitor left -- the one case
-             * where the missing half decides the answer.
-             */
-            'a page with no host' => [
-                '/v2/a',
-                'https://shop.example.org/cart',
-                0,
-                'an unknown page host cannot make a click outbound',
-            ],
+            'the beacon says nothing' => [
+                null, 0, 'absence is stored as 0 because the column is NOT NULL'],
         ];
     }
 
