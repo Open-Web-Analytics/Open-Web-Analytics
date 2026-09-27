@@ -185,7 +185,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      * The tracker has never been coupled to page views: raiseEvent() goes through
      * manageState() like everything else, so a scroll or a form_start that happens
      * to be the first event of a session mints the session id and stamps
-     * is_new_session_start on THAT beacon. expand() used to gate the markers on
+     * is_new_session_start on THAT beacon. Ingest used to gate the markers on
      * page_view, which dropped the flag silently -- the session existed in raw with
      * no session_start row, and a genuinely new visitor had no first_visit.
      *
@@ -238,24 +238,131 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * And a marker does not raise a marker.
+     * A MATERIALIZED EVENT CARRIES THE CONTEXT, NOT THE CARRIER'S MEASUREMENTS.
      *
-     * The flags cannot be on a session_start or first_visit -- the server
-     * materialises both and no beacon carries either name -- but expand() is
-     * reached for every name now, so the guard is asserted rather than assumed.
+     * session_start and first_visit were copies of the ROW of whatever event
+     * carried the flags, so a landing click's target, coordinates, outbound flag,
+     * element params and engagement time appeared three times. engagement_msec
+     * is summed over every row by totalEngagementTime, so five seconds counted as
+     * fifteen. Now each is built from the registry: what is declared for its
+     * name, less what is declared `"materialize": false`.
      */
-    public function testAMarkerDoesNotRaiseAMarker(): void
+    public function testMaterializedEventsCarryTheContextAndNotTheCarriersMeasurements(): void
     {
-        $this->assertTrue(\OWA\Module\Base\Classes\V2Event::isMarker('session_start'));
-        $this->assertTrue(\OWA\Module\Base\Classes\V2Event::isMarker('first_visit'));
-        $this->assertFalse(\OWA\Module\Base\Classes\V2Event::isMarker('page_view'));
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
 
-        $handlers = new ReflectionClass(\OWA\Module\Base\Handler\EventRawHandlers::class);
-        $expand = $handlers->getMethod('expand');
-        $expand->setAccessible(true);
+        $this->fireEvent('dom.click', [
+            'site_id'                => $this->site,
+            'visitor_id'             => $visitor,
+            'session_id'             => $session,
+            'page_url'               => 'https://owa-test-site/v2/landing',
+            'page_location'          => 'https://owa-test-site/v2/landing',
+            'page_title'             => 'Landing',
+            'HTTP_REFERER'           => 'https://www.example.net/from',
+            'target_url'             => 'https://elsewhere.example/guide.pdf',
+            'click_x'                => 120,
+            'click_y'                => 340,
+            'is_outbound'            => 1,
+            'dom_element_class'      => 'cta',
+            'engagement_msec'        => 5000,
+            'is_new_session_start'   => true,
+            'is_new_visitor_created' => true,
+            'fsts'                   => time(),
+            'sts'                    => time(),
+            'num_prior_sessions'     => 0,
+        ]);
 
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertSame(['click', 'first_visit', 'session_start'],
+            array_values(array_intersect(['click', 'first_visit', 'session_start'],
+                array_keys($rows))), 'one click of a new visitor is three events');
+
+        // The carrier keeps its own measurements, so the absences below are not
+        // the fixture failing to send them.
+        $this->assertSame('https://elsewhere.example/guide.pdf', $rows['click']['target_url']);
+        $this->assertSame(5000, (int) $rows['click']['engagement_msec']);
+        $this->assertSame(1, (int) $rows['click']['is_outbound']);
+
+        foreach (['session_start', 'first_visit'] as $name) {
+
+            $row = $rows[$name];
+
+            // The context is shared.
+            $this->assertSame($rows['click']['page_location'], $row['page_location'], $name);
+            $this->assertSame($rows['click']['referer_url'], $row['referer_url'], $name);
+            $this->assertSame($rows['click']['ts'], $row['ts'], $name);
+
+            // The click's measurements are not.
+            $this->assertNull($row['target_url'], "$name copied the click's target");
+            $this->assertNull($row['target_host'], "$name copied the click's target host");
+            $this->assertNull($row['click_x'], "$name copied the click's coordinates");
+            $this->assertSame(0, (int) $row['is_outbound'], "$name copied is_outbound");
+            $this->assertNull($row['params'], "$name copied the click's params");
+            $this->assertNull($row['engagement_msec'],
+                "$name copied the click's engagement time, which totalEngagementTime then sums");
+        }
+    }
+
+    /** A purchase that starts a session does not put its revenue on the session_start. */
+    public function testAMaterializedEventCarriesNoRevenue(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('ecommerce.transaction', [
+            'site_id'              => $this->site,
+            'visitor_id'           => $visitor,
+            'session_id'           => $session,
+            'page_url'             => 'https://owa-test-site/v2/checkout',
+            'page_location'        => 'https://owa-test-site/v2/checkout',
+            'ct_order_id'          => 'order-' . $visitor,
+            'ct_total'             => 19.99,
+            'currency'             => 'USD',
+            'is_new_session_start' => true,
+            'sts'                  => time(),
+            'num_prior_sessions'   => 1,
+        ]);
+
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertArrayHasKey('purchase', $rows);
+        $this->assertSame(1999, (int) $rows['purchase']['revenue'],
+            'the purchase keeps its revenue, so the absence below is not the fixture');
+
+        $this->assertArrayHasKey('session_start', $rows);
+        $this->assertNull($rows['session_start']['revenue']);
+        $this->assertNull($rows['session_start']['transaction_id']);
+        $this->assertNull($rows['session_start']['currency']);
+    }
+
+    /**
+     * A tracker cannot send a materialized name. The server is their only
+     * source; a beacon naming one would be stored beside the real one.
+     */
+    public function testATrackerCannotSendAMaterializedName(): void
+    {
+        $this->assertFalse(owa_coreAPI::isTrackingEventType('session_start'));
+        $this->assertFalse(owa_coreAPI::isTrackingEventType('first_visit'));
+
+        // And the gate still admits what it should, so the two refusals above
+        // are not the gate refusing everything.
+        $this->assertTrue(owa_coreAPI::isTrackingEventType('page_view'));
+        $this->assertTrue(owa_coreAPI::isTrackingEventType('my_site_signup'));
+    }
+
+    /**
+     * Materialized events are raised from the INCOMING event only, once each.
+     *
+     * A materialized event copies the `*` properties of its carrier, so it holds
+     * the flags too. If a materializer read every event in the set, the
+     * session_start appended first would raise a second first_visit.
+     */
+    public function testMaterializedEventsAreRaisedOnceFromTheIncomingEvent(): void
+    {
         $event = new \OWA\Module\Base\Classes\Event();
-        $event->setEventType('session_start');
+        $event->setEventType('page_view');
         $event->setProperties([
             'site_id'                => $this->site,
             'visitor_id'             => $this->uniqueGuid(),
@@ -265,11 +372,11 @@ final class EventRawIngestionTest extends IngestionTestCase
             'is_new_visitor_created' => true,
         ]);
 
-        $rows = $expand->invoke($handlers->newInstanceWithoutConstructor(), $event);
+        $events = \OWA\Module\Base\Classes\Ingest::at(
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, [$event]);
 
-        $this->assertCount(1, $rows,
-            'a marker expands to itself alone, or one beacon could fan out endlessly');
-        $this->assertSame('session_start', $rows[0]['event_type']);
+        $this->assertSame(['page_view', 'session_start', 'first_visit'],
+            array_map(fn($e) => $e->getEventType(), $events));
     }
 
     /**

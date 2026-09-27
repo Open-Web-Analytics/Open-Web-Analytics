@@ -29,10 +29,11 @@ namespace OWA\Module\Base\Handler;
  *   - Derives the row id from the event's own content (Classes\V2Event::id),
  *     so a redelivered beacon derives the same ids instead of a second random
  *     one.
- *   - EXPANDS the beacon. The client sends one page_view carrying flags; the
- *     server raises session_start and first_visit from them, here, into raw.
- *     The test for which side a derivation falls on is whether it is a pure
- *     function of ONE beacon: these are, so they happen at ingest. Acquisition
+ *   - MATERIALIZES events from the beacon. The client sends one event carrying
+ *     flags; callbacks on Ingest::TRACKING_EVENTS_PRE_SAVE raise session_start
+ *     and first_visit from them, and all of them are saved together. The test
+ *     for which side a derivation falls on is whether it is a pure function of
+ *     ONE beacon: these are, so they happen at ingest. Acquisition
  *     and session finalisation need other events, so they are the build's.
  *   - Records EVIDENCE and stops. The tagged values are transcribed; whether a
  *     referring host counts as organic search, a social network or a plain
@@ -91,13 +92,43 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         /*
-         * One beacon, before it becomes rows. A listener here sees the event
-         * whole; after expand() there are three of them for a landing page_view
-         * and no single place that means "the beacon".
+         * The events this beacon will be saved as, the incoming one first. The
+         * callbacks decide: materializers append session_start and first_visit,
+         * goal marking sets is_goal_event on each. See Ingest.
          */
-        $event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::STORE_PRE, $event );
+        $events = \OWA\Module\Base\Classes\Ingest::at(
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
 
-        $rows = $this->expand( $event );
+        return $this->saveTrackingEvents( array_values( (array) $events ), $event );
+    }
+
+    /**
+     * Save the events one beacon became, in one transaction.
+     *
+     * @param  array  $events    incoming event first
+     * @param  object $incoming  the event as it arrived at this handler
+     * @return int
+     */
+    protected function saveTrackingEvents( array $events, $incoming ) {
+
+        $rows = array();
+
+        foreach ( $events as $event ) {
+
+            $row = $this->row( $event,
+                \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
+
+            /*
+             * An event that cannot say which site, visitor, session or instant it
+             * belongs to is dropped by row(). The incoming one dropped means there
+             * is nothing to save; a materialized one dropped cannot happen without
+             * the incoming one being dropped too, since it holds the same values.
+             */
+            if ( $row ) {
+
+                $rows[] = $row;
+            }
+        }
 
         if ( ! $rows ) {
 
@@ -109,14 +140,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
          *
          * A redelivered beacon derives the same ids, so every insert below
          * would fail on the primary key -- benignly, but indistinguishably from
-         * an insert that failed for a real reason. Since the whole expansion
-         * has to land together or not at all, "some inserts failed" cannot be
-         * the signal to roll back unless duplicates are excluded first.
+         * an insert that failed for a real reason. Since the whole set has to
+         * land together or not at all, "some inserts failed" cannot be the
+         * signal to roll back unless duplicates are excluded first.
          *
          * So ask about the first row. Every row of one beacon is written in one
          * transaction, so the first one being present means all of them are,
-         * and the beacon is already ingested. One lookup per beacon, which is
-         * the same shape v1's RequestHandlers already pays.
+         * and the beacon is already ingested. One lookup per beacon.
          */
         if ( $this->alreadyIngested( $rows[0] ) ) {
 
@@ -125,81 +155,25 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_HANDLED;
         }
 
-        return $this->store( $rows, $event );
+        return $this->store( $rows, $incoming );
     }
 
     /**
-     * One beacon -> the rows it becomes, primary event first.
+     * The row one event will be stored as, before anything is written.
      *
-     * ORDER MATTERS ONLY FOR THE CALLER's idempotence check, not for the ids:
-     * each id is derived from the event name, so nothing here depends on the
-     * order rows are built in.
+     * For a callback on Ingest::TRACKING_EVENTS_PRE_SAVE that decides on what a
+     * row WILL hold. Goal conditions name columns, and row() is where a value
+     * becomes what its column stores -- `(not set)` becomes NULL, a count
+     * becomes an integer -- so a condition tested against the raw property would
+     * disagree with the row it describes.
      *
-     * @param object $event
-     * @return array[] each an array of column => value
+     * @param  object $event
+     * @return array|null  null when the event cannot be identified
      */
-    protected function expand( $event ) {
+    public static function rowFor( $event ) {
 
-        $name = \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() );
-
-        $primary = $this->row( $event, $name );
-
-        if ( ! $primary ) {
-
-            return array();
-        }
-
-        $rows = array( $primary );
-
-        /*
-         * The markers. Raised from flags that are already on this beacon, in
-         * the same write, so a marker cannot be lost while the event carrying it
-         * survives -- the beacon itself can be lost, and then the session simply
-         * has no marker row, which a later build cannot repair either way because
-         * re-reading raw reproduces the same partial state.
-         *
-         * WHATEVER EVENT CARRIES THE FLAG, and this was gated on page_view. The
-         * gate dropped the flag silently. The TRACKER has never been coupled to
-         * page views -- raiseEvent() goes through manageState() like everything
-         * else, so a scroll or a form_start that happens to be the first event of
-         * a session mints the session id and stamps is_new_session_start on that
-         * beacon. Only this gate then refused to materialise the marker, so the
-         * session existed in raw with no session_start row and a genuinely new
-         * visitor had no first_visit.
-         *
-         * It survived because `sessions` is a distinct count over session_id, so
-         * the session was still COUNTED. What disagreed was everything reading the
-         * marker rows: eventCount on eventName == session_start, and first_visit.
-         *
-         * is_new_session_start and is_new_visitor_created are REQUEST scoped:
-         * they mark the one request that created the session or minted the
-         * visitor. The page-scoped is_new_session / is_new_visitor ride every
-         * event of a page or a session and answer a different question, so
-         * they cannot raise a marker -- using them would raise one marker per
-         * event of the first page.
-         *
-         * A MARKER CANNOT RAISE A MARKER. session_start and first_visit are
-         * materialised here and never arrive on a beacon, so the flags cannot be
-         * on them; guarded anyway, because this is now reached for every name and
-         * a marker row raising its own twin would recurse in effect if not in
-         * fact.
-         */
-        if ( ! \OWA\Module\Base\Classes\V2Event::isMarker( $name ) ) {
-
-            if ( $event->get( 'is_new_session_start' ) ) {
-
-                $rows[] = $this->row(
-                    $event, \OWA\Module\Base\Classes\V2Event::MARKER_SESSION_START );
-            }
-
-            if ( $event->get( 'is_new_visitor_created' ) ) {
-
-                $rows[] = $this->row(
-                    $event, \OWA\Module\Base\Classes\V2Event::MARKER_FIRST_VISIT );
-            }
-        }
-
-        return array_values( array_filter( $rows ) );
+        return ( new static )->row( $event,
+            \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
     }
 
     /**
@@ -221,16 +195,16 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * property backs it, and the property's value is what lands there. Two
      * things follow. A column cannot appear that no property declares, which is
      * the `revenue` bug -- this read a property of that name, the registry
-     * declares none, and every purchase stored NULL. And the event handed to
-     * Ingest::STORE_PRE is complete, so anything wanting to decide something
-     * about a row can listen there rather than being a step in here.
+     * declares none, and every purchase stored NULL. And every event in the
+     * set handed to Ingest::TRACKING_EVENTS_PRE_SAVE is complete, so anything
+     * wanting to decide something about one listens there rather than being a
+     * step in here.
      *
-     * Four columns are not a property read, and RowIsAMappingTest lists each
-     * with its reason: `id`, a hash OF the properties; `event_type`, which the
-     * EXPANSION names -- one beacon becomes a page_view plus its session_start
-     * and first_visit markers, so the property cannot answer for all three;
-     * `is_goal_event`, raised by Classes\GoalMarking at Ingest::STORE_POST; and
-     * `params`, which is by definition everything with no column.
+     * Three columns are not a property read, and RowIsAMappingTest lists each
+     * with its reason: `id`, a hash OF the properties; `event_type`, the v2 name
+     * of the event's type, which the `event_type` property -- what the beacon
+     * SENT -- need not be; and `params`, which is by definition everything with
+     * no column.
 
      *
      * @param object $event
@@ -355,18 +329,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
 
             /*
-             * Whether this row met a goal condition. The goal event IS the
-             * event, flagged -- no separate row, so eventCount stays a count of
-             * what happened.
-             *
-             * 0 HERE, DECIDED AT Ingest::STORE_POST. The column is NOT NULL and
-             * strict mode aborts an insert that hands it NULL, so the literal
-             * carries the default and Classes\GoalMarking -- a listener on the
-             * complete row -- is what raises it. It has to be the complete row:
-             * device_type and the tagged_* columns are merged in below this
-             * literal, and matching from the event could not see them.
+             * Whether this event met a goal event's conditions, set by
+             * Classes\GoalMarking on the tracking_events_pre_save filter. flag(),
+             * because the column is NOT NULL: an event the marking never saw
+             * stores 0.
              */
-            'is_goal_event' => 0,
+            'is_goal_event' => $this->flag( $event->get( 'is_goal_event' ) ),
 
             /*
              * ct_total, ct_tax and ct_shipping are the names the wire has
@@ -634,11 +602,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * Write the rows, and the visitor store row if this is a first session.
      *
-     * ONE ATOMIC WRITE OF EVERYTHING THE BEACON BECOMES. A page_view that
-     * landed without its session_start is not something a later build can
-     * repair: the flag was on the beacon that half-wrote, so re-reading raw
-     * reproduces the same partial state. The guarantee has to be made where the
-     * rows are created.
+     * ONE ATOMIC WRITE OF EVERYTHING THE BEACON BECOMES, whether that is one
+     * event or several: a single event writes its row, the visitor acquisition
+     * and the user properties together. A page_view that landed without its
+     * session_start is not something a later build can repair: the flag was on
+     * the beacon that half-wrote, so re-reading raw reproduces the same partial
+     * state. The guarantee has to be made where the rows are created.
      *
      * 1.x does not do this. Db::beginTransaction() exists and the fact tables
      * are InnoDB, but its only callers are the schema-update CLI -- nothing
@@ -655,19 +624,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
         $db->beginTransaction();
 
         foreach ( $rows as $row ) {
-
-            /*
-             * PER ROW, immediately before the INSERT, and the row is COMPLETE
-             * here -- deviceColumns() and taggedColumns() are merged, which they
-             * are not while row()'s literal is being built. A decision about the
-             * row belongs here and nowhere earlier.
-             *
-             * The event rides as context so a listener can read it without being
-             * able to swap it. Three rows from one landing page_view each reach
-             * this on their own facts, which is what lets a goal target
-             * session_start rather than the page view that materialised it.
-             */
-            $row = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::STORE_POST, $row, $event );
 
             $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
             $entity->setProperties( $row );

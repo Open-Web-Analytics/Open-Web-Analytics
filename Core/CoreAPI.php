@@ -2227,6 +2227,18 @@ class CoreAPI {
 
         $event_type = (string) $event_type;
 
+        /*
+         * A MATERIALIZED NAME IS NEVER ACCEPTED FROM A TRACKER. session_start and
+         * first_visit are built at ingest from flags on the event that carried
+         * them; a beacon naming one would be stored beside the real one, a
+         * second session start with no session behind it. They also match the
+         * custom-name pattern below, so the refusal has to come first.
+         */
+        if ( \OWA\Module\Base\Classes\TrackingEventHelpers::isMaterialized( $event_type ) ) {
+
+            return false;
+        }
+
         if ( in_array( $event_type, \OWA\Core\CoreAPI::trackingEventTypes(), true ) ) {
 
             return true;

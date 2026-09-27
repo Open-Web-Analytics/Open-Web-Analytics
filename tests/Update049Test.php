@@ -168,25 +168,28 @@ final class Update049Test extends TestCase
 
         \OWA\Module\Base\Classes\GoalMarking::forget();
 
-        $row = \OWA\Module\Base\Classes\Ingest::at(
-            \OWA\Module\Base\Classes\Ingest::STORE_POST,
-            array(
-                'event_type' => 'page_view',
+        $mark = function ( string $type ) use ( $siteId ) {
+
+            $event = new \OWA\Module\Base\Classes\Event;
+            $event->setEventType( $type );
+            $event->setProperties( array(
                 'site_id'    => $siteId,
+                'visitor_id' => 7775300000000001,
+                'session_id' => 8885300000000001,
+                'ts'         => (int) ( microtime( true ) * 1000000 ),
+                'yyyymmdd'   => (int) date( 'Ymd' ),
                 'page_path'  => '/checkout/done',
             ) );
 
-        $this->assertSame( 1, $row['is_goal_event'] );
+            $events = \OWA\Module\Base\Classes\Ingest::at(
+                \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
 
-        $click = \OWA\Module\Base\Classes\Ingest::at(
-            \OWA\Module\Base\Classes\Ingest::STORE_POST,
-            array(
-                'event_type' => 'click',
-                'site_id'    => $siteId,
-                'page_path'  => '/checkout/done',
-            ) );
+            return $events[0]->get( 'is_goal_event' );
+        };
 
-        $this->assertSame( 0, $click['is_goal_event'],
+        $this->assertSame( 1, $mark( 'page_view' ) );
+
+        $this->assertSame( 0, $mark( 'click' ),
             'the migrated trigger must still gate: a click on that page is not the goal' );
     }
 

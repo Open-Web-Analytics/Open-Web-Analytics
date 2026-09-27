@@ -384,25 +384,33 @@ final class GoalEventStorageTest extends TestCase
     }
 
     /**
-     * An EMPTY trigger still means every event type.
+     * AN EMPTY TRIGGER MATCHES NOTHING.
      *
-     * That is what a row written before the column existed says, and reading it
-     * as "matches nothing" would silently switch off every goal on an install
-     * that predates it.
+     * It used to mean every event type. No writer produces one -- Update025
+     * gives every migrated goal event a trigger and GoalEventSave defaults one --
+     * and "every event" would mark a page view and the session_start and
+     * first_visit materialized beside it: three conversions for one visit.
      */
-    public function testAnEmptyTriggerMatchesAnyEventType(): void
+    public function testAnEmptyTriggerMatchesNothing(): void
     {
-        $goalEvent = $this->makeGoalEventWithConditions( array(
-            array( 'host', 'exact', 'example.com' ),
-        ) );
+        $conditions = array( array( 'host', 'exact', 'example.com' ) );
 
-        $goalEvent->set( 'trigger_event_type', '' );
+        $triggered = $this->makeGoalEventWithConditions( $conditions );
 
-        foreach ( array( 'page_view', 'click', 'scroll' ) as $type ) {
+        $this->assertTrue( $triggered->matchesRow( $this->row( array(
+            'event_type' => 'page_view', 'host' => 'example.com' ) ) ),
+            'with a trigger the same conditions match, so the refusals below are the empty trigger' );
 
-            $this->assertTrue( $goalEvent->matchesRow( $this->row( array(
+        // Never set, since an entity ignores '' on a string column.
+        $untriggered = $this->makeGoalEventWithConditions( $conditions, null );
+
+        $this->assertSame( '', (string) $untriggered->get( 'trigger_event_type' ) );
+
+        foreach ( array( 'page_view', 'click', 'session_start' ) as $type ) {
+
+            $this->assertFalse( $untriggered->matchesRow( $this->row( array(
                 'event_type' => $type, 'host' => 'example.com' ) ) ),
-                "An empty trigger refused $type." );
+                "An empty trigger matched $type." );
         }
     }
 
@@ -488,7 +496,7 @@ final class GoalEventStorageTest extends TestCase
     }
 
     /** A goal event carrying the given conditions, cleaned up afterwards. */
-    private function makeGoalEventWithConditions( array $conditions )
+    private function makeGoalEventWithConditions( array $conditions, ?string $trigger = 'page_view' )
     {
         $id = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )
             ->generateId( 'goal_event:cond-probe:' . uniqid( '', true ) );
@@ -499,6 +507,10 @@ final class GoalEventStorageTest extends TestCase
         $goalEvent->set( 'id', $id );
         $goalEvent->set( 'property_id', $this->propertyId );
         $goalEvent->set( 'name', 'Condition probe' );
+        if ( $trigger !== null ) {
+            $goalEvent->set( 'trigger_event_type', $trigger );
+        }
+
         $goalEvent->set( 'is_active', 1 );
         $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
         $goalEvent->create();

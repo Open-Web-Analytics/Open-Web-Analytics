@@ -34,32 +34,47 @@
  *
  * ORDER IS IRRELEVANT -- eventNames() sorts.
  *
- * TWO OF THESE NEVER ARRIVE ON A BEACON. session_start and first_visit are
- * materialised by EventRawHandlers::expand() from the is_new_session_start and
- * is_new_visitor_created flags on a page view, so no tracker sends them and they
- * have no beacon contract. They are here because they ARE event_type values in
- * stored rows, and because the tracker must refuse them as custom names.
+ * TWO OF THESE ARE MATERIALIZED, and never arrive on a beacon. session_start
+ * and first_visit are built at ingest, by callbacks on the
+ * tracking_events_pre_save filter (Classes\MaterializedEvents), from the
+ * is_new_session_start and is_new_visitor_created flags on the event that
+ * carried them. They are here because they ARE event_type values in stored rows,
+ * and because the tracker must refuse them as custom names.
+ *
+ * `materialized` IS READ BY THREE THINGS:
+ *
+ *   - TrackingEventHelpers::propertiesForEvent() leaves out a property declared
+ *     `"materialize": false` for a materialized name. A materialized event's
+ *     values are copied from the event that carried the flag, and a property
+ *     describing THAT event -- engagement time accrued, whether it met a goal --
+ *     is not a fact about the materialized one.
+ *   - Ingest refuses a beacon that names one: the server is their only source.
+ *   - The tracker's reserved-name list, which a test compares against it.
+ *
+ * WHEN AN ENGAGED-SESSION METRIC IS BUILT, a materialized event must not count
+ * as the session's goal event: a session that only started, or only belonged to
+ * a new visitor, has not engaged on that basis.
  */
 return array(
 
-    // The page, and the two rows a landing page view raises beside itself.
-    'page_view',
-    'session_start',
-    'first_visit',
+    // The page, and the two events a landing page view materializes beside it.
+    'page_view'     => array(),
+    'session_start' => array( 'materialized' => true ),
+    'first_visit'   => array( 'materialized' => true ),
 
     // Interaction.
-    'click',
-    'scroll',
-    'user_engagement',
+    'click'           => array(),
+    'scroll'          => array(),
+    'user_engagement' => array(),
 
     // What a click MEANT, and the rest of the automatically raised set.
-    'file_download',
-    'form_start',
-    'form_submit',
-    'view_search_results',
+    'file_download'       => array(),
+    'form_start'          => array(),
+    'form_submit'         => array(),
+    'view_search_results' => array(),
 
     // Commerce.
-    'purchase',
+    'purchase' => array(),
 );
 
 ?>

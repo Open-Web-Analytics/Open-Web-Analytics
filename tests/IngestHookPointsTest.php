@@ -30,17 +30,17 @@ final class IngestHookPointsTest extends TestCase
         Ingest::EDGE_POST     => 'Core/CoreAPI.php',
         Ingest::PROPERTY_PRE  => 'modules/Base/Controller/ProcessEvent.php',
         Ingest::PROPERTY_POST => 'modules/Base/Controller/ProcessEvent.php',
-        Ingest::STORE_PRE     => 'modules/Base/Handler/EventRawHandlers.php',
-        Ingest::STORE_POST    => 'modules/Base/Handler/EventRawHandlers.php',
+        Ingest::TRACKING_EVENTS_PRE_SAVE => 'modules/Base/Handler/EventRawHandlers.php',
     );
 
-    public function testEveryStageHasBothPoints(): void
+    public function testEveryStageHasItsPoints(): void
     {
         $points = Ingest::points();
 
-        $this->assertCount( 8, $points, 'four stages, a pre and a post at each' );
+        $this->assertCount( 7, $points,
+            'request, edge and property have a pre and a post; store has one' );
 
-        foreach ( array( 'request', 'edge', 'property', 'store' ) as $stage ) {
+        foreach ( array( 'request', 'edge', 'property' ) as $stage ) {
 
             foreach ( array( 'pre', 'post' ) as $half ) {
 
@@ -48,6 +48,9 @@ final class IngestHookPointsTest extends TestCase
                     $stage . ' is missing its ' . $half . ' point' );
             }
         }
+
+        $this->assertSame( 'tracking_events_pre_save', end( $points ),
+            'the store point is last: it is where the events are saved' );
     }
 
     /**
@@ -66,7 +69,7 @@ final class IngestHookPointsTest extends TestCase
             $source = (string) file_get_contents( OWA_DIR . $file );
 
             // The constant's NAME, not its value: the call sites use
-            // Ingest::STORE_POST so they stay greppable.
+            // Ingest::TRACKING_EVENTS_PRE_SAVE so they stay greppable.
             $constant = strtoupper( str_replace( array( 'ingest.', '.' ), array( '', '_' ), $point ) );
 
             if ( strpos( $source, 'Ingest::' . $constant ) === false ) {
@@ -114,7 +117,7 @@ final class IngestHookPointsTest extends TestCase
      * The value is chained; the context is not.
      *
      * ON A PROBE POINT, not a real one. There is no API to detach a filter, so
-     * a listener attached to ingest.store.post stays attached for the rest of
+     * a listener attached to tracking_events_pre_save stays attached for the rest of
      * the process -- and the first version of this case did exactly that, which
      * made UnknownSiteRejectionTest error out when logEvent() reached
      * ingest.edge.pre and handed an Event to a listener expecting a string.

@@ -304,8 +304,7 @@ class EventRaw extends \OWA\Core\Entity {
          * Set on the event that MET the condition -- a goal event is an
          * ordinary event flagged, so eventCount stays a count of what happened
          * and a conversion needs no row of its own. Decided per
-         * row by Classes\GoalMarking at Ingest::STORE_POST, where the row is
-         * complete.
+         * event by Classes\GoalMarking on Ingest::TRACKING_EVENTS_PRE_SAVE.
          *
          * NOT NULL with a default, because a boolean holding three values
          * groups as three things.

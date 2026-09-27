@@ -220,7 +220,7 @@
         "required": true,
         "default_value": false,
         "callbacks": [],
-        "note": "REQUEST scoped: marks the one request that minted the visitor. Nothing consumes it yet -- it exists so v2 can raise first_visit from the request that actually created the visitor. Do not drop it as unused."
+        "note": "REQUEST scoped: marks the one request that minted the visitor. The first_visit materializer (Classes\\MaterializedEvents) raises first_visit from it at ingest, on whatever event carries it."
     },
     "HTTP_REFERER": {
         "set_by": "client",
@@ -637,10 +637,11 @@
         "events": [
             "*"
         ],
+        "materialize": false,
         "data_type": "integer",
         "required": false,
         "callbacks": [],
-        "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection.\nEVERY EVENT, and this read [\"user_engagement\", \"page_view\"], which under-described the wire. addDefaultsToEvent() attaches the unreported delta to ANY event that does not already carry one, and consumeEngagementDelta() banks what it hands out -- so a click, a scroll and a purchase all carry it, and the same milliseconds cannot ride two beacons.\nIT IS CONDITIONAL, which is why the old list looked right: `if ( delta > 0 )` means a beacon sent with no time accrued omits it, so a contract fixture recorded in a headless test where no clock advances shows it on nothing at all. Advancing the clock is the only way to see the real shape -- see tests/js/EnhancedMeasurement.test.js."
+        "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection.\nEVERY EVENT, and this read [\"user_engagement\", \"page_view\"], which under-described the wire. addDefaultsToEvent() attaches the unreported delta to ANY event that does not already carry one, and consumeEngagementDelta() banks what it hands out -- so a click, a scroll and a purchase all carry it, and the same milliseconds cannot ride two beacons.\nIT IS CONDITIONAL, which is why the old list looked right: `if ( delta > 0 )` means a beacon sent with no time accrued omits it, so a contract fixture recorded in a headless test where no clock advances shows it on nothing at all. Advancing the clock is the only way to see the real shape -- see tests/js/EnhancedMeasurement.test.js.\nNOT MATERIALIZED (`\"materialize\": false`). A session_start or first_visit copies its values from the event that carried the flag; this one is time accrued before THAT event, and copied it was summed once per row -- a landing click's five seconds counted as fifteen."
     },
     "content_group": {
         "set_by": "client",
@@ -1178,5 +1179,20 @@
         "callbacks": [
             "owa_trackingEventHelpers::resolveDeviceModel"
         ]
+    },
+    "is_goal_event": {
+        "set_by": "event",
+        "from": [
+            "event_type"
+        ],
+        "column": "is_goal_event",
+        "events": [
+            "*"
+        ],
+        "materialize": false,
+        "data_type": "boolean",
+        "required": false,
+        "callbacks": [],
+        "note": "Whether this event met a goal event's conditions. Set at ingest by Classes\\GoalMarking, a callback on the tracking_events_pre_save filter that runs after the materializers and evaluates EVERY event in the set on its own values -- a goal event whose trigger is first_visit marks the first_visit. Nothing a beacon sends can set it: the marking always writes 0 or 1.\nNOT MATERIALIZED: a materialized event is evaluated for itself rather than inheriting the verdict on the event that carried it.\nTWO VALUES, NOT THREE: the column is NOT NULL DEFAULT 0, and row() writes 0 for an event the marking never saw.\n`from` names event_type, the trigger gate. The conditions read whichever columns each goal event names, which a static list cannot say."
     }
 }

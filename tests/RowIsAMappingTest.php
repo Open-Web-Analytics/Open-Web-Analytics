@@ -44,12 +44,9 @@ final class RowIsAMappingTest extends TestCase
     private const NOT_A_PROPERTY = array(
         // A hash OF the properties. It cannot be one of them.
         'id'            => 'derived from site, visitor, session, ts and the event name',
-        // The expansion decides it: one beacon becomes page_view plus its
-        // session_start and first_visit markers, and each row says which it is.
-        'event_type'    => 'the expansion names each row, not the beacon',
-        // Raised by Classes\GoalMarking at Ingest::STORE_POST, against the
-        // complete row. NOT NULL, so the literal carries the default.
-        'is_goal_event' => 'decided after the row is assembled',
+        // The v2 name of the event's TYPE. The event_type property is what the
+        // beacon sent, which a v1 tracker spelled differently.
+        'event_type'    => 'the v2 name of the event type, not the property the beacon sent',
         // What could NOT be a column -- site-defined keys and per-event-type
         // values too narrow to earn one. The inverse of this mapping.
         'params'        => 'everything with no column of its own',

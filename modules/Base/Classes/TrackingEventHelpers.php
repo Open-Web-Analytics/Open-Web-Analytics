@@ -123,6 +123,9 @@ class TrackingEventHelpers {
      */
     private static $event_names = null;
 
+    /** config/tracking_events.php, memoised by eventConfig(). */
+    private static $event_config = null;
+
     /**
      * The property definitions, read from modules/Base/config/tracking_properties.json.
      *
@@ -438,11 +441,27 @@ class TrackingEventHelpers {
 
                 $events = (array) $definition['events'];
 
-                if ( in_array( self::EVERY_EVENT, $events, true )
-                     || in_array( $event_name, $events, true ) ) {
+                if ( ! in_array( self::EVERY_EVENT, $events, true )
+                     && ! in_array( $event_name, $events, true ) ) {
 
-                    $out[ $name ] = true;
+                    continue;
                 }
+
+                /*
+                 * NOT COPIED TO A MATERIALIZED EVENT. Its values come from the
+                 * event that carried the flag, and a property that describes
+                 * that event itself -- engagement time accrued, whether it met a
+                 * goal -- says nothing about the materialized one. Copied, the
+                 * carrier's engagement time was summed three times.
+                 */
+                if ( array_key_exists( 'materialize', $definition )
+                     && ! $definition['materialize']
+                     && self::isMaterialized( $event_name ) ) {
+
+                    continue;
+                }
+
+                $out[ $name ] = true;
             }
         }
 
@@ -485,6 +504,55 @@ class TrackingEventHelpers {
             return self::$event_names;
         }
 
+        $out = array_keys( self::eventConfig() );
+
+        sort( $out );
+
+        self::$event_names = $out;
+
+        return $out;
+    }
+
+    /**
+     * The first-class events that are MATERIALIZED at ingest rather than sent.
+     *
+     * @return string[]  sorted
+     */
+    public static function materializedEventNames() {
+
+        $out = array();
+
+        foreach ( self::eventConfig() as $name => $attributes ) {
+
+            if ( ! empty( $attributes['materialized'] ) ) {
+
+                $out[] = $name;
+            }
+        }
+
+        sort( $out );
+
+        return $out;
+    }
+
+    /** Is this event name materialized at ingest rather than sent? */
+    public static function isMaterialized( $event_name ) {
+
+        return in_array( (string) $event_name, self::materializedEventNames(), true );
+    }
+
+    /**
+     * config/tracking_events.php, read once: event name => attributes.
+     *
+     * @return array
+     */
+    private static function eventConfig() {
+
+        if ( self::$event_config !== null ) {
+
+            return self::$event_config;
+        }
+
         $path = OWA_DIR . 'modules/Base/config/tracking_events.php';
 
         $declared = file_exists( $path ) ? include $path : null;
@@ -497,13 +565,61 @@ class TrackingEventHelpers {
                 . 'list would refuse every first-class event rather than fail here.' );
         }
 
-        $out = array_values( array_unique( array_map( 'strval', $declared ) ) );
+        $out = array();
 
-        sort( $out );
+        foreach ( $declared as $name => $attributes ) {
 
-        self::$event_names = $out;
+            if ( ! is_string( $name ) || ! is_array( $attributes ) ) {
+
+                throw new \RuntimeException( sprintf(
+                    'config/tracking_events.php must map each event name to an array '
+                    . 'of attributes; entry %s does not.', var_export( $name, true ) ) );
+            }
+
+            $out[ $name ] = $attributes;
+        }
+
+        self::$event_config = $out;
 
         return $out;
+    }
+
+    /**
+     * A materialized event, built from the event that carried its flag.
+     *
+     * A materialized event never arrives on a beacon, so every value it holds is
+     * the carrier's: the ones the registry declares for THIS name, which
+     * propertiesForEvent() answers -- `*` properties and the ones naming it, less
+     * any declared `"materialize": false`. Nothing is re-derived; the callbacks
+     * already ran on the carrier, and re-running them would parse the agent and
+     * look up the address again for the same request.
+     *
+     * The carrier's own measurements (a click's target, a scroll's depth, a
+     * purchase's revenue) are not declared for a materialized name, so they are
+     * not copied.
+     *
+     * @param  object $carrier  the event that carried the flag, properties resolved
+     * @param  string $name     a materialized event name
+     * @return object
+     */
+    public static function materialize( $carrier, $name ) {
+
+        $event = new \OWA\Module\Base\Classes\Event;
+        $event->setEventType( $name );
+
+        $carried = $carrier->getProperties();
+
+        foreach ( self::propertiesForEvent( $name ) as $property ) {
+
+            if ( array_key_exists( $property, $carried ) ) {
+
+                $event->set( $property, $carried[ $property ] );
+            }
+        }
+
+        $event->set( 'event_type', $name );
+
+        return $event;
     }
 
     /**

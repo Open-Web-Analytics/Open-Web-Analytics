@@ -489,18 +489,22 @@ class GoalEvent extends \OWA\Core\Entity {
      * goal on "mobile" or "organic" was therefore unexpressible, and a goal
      * declared on one of those names matched nothing without saying so.
      *
-     * The row is complete at Ingest::STORE_POST -- deviceColumns() and
-     * taggedColumns() are merged -- so a condition can name any column the row
-     * has.
+     * The row is the one EventRawHandlers::rowFor() says the event will be
+     * stored as, so a condition can name any column the row has.
      *
      * THE TRIGGER IS A GATE NOW. trigger_event_type has been stored since
      * Update025 and read by NOTHING, so a goal declared on a page view was
      * evaluated against every event on the site -- clicks, scrolls,
      * session_start, everything. It mostly went unnoticed because a condition
      * on a page column finds that column NULL on a click, but a goal on, say,
-     * host would have fired on every event type there is. An empty trigger
-     * still means every event: that is what a row written before the column
-     * existed says.
+     * host would have fired on every event type there is.
+     *
+     * AN EMPTY TRIGGER MATCHES NOTHING, the same answer as no conditions. It
+     * used to mean every event, for rows written before the column existed --
+     * but Update025 gives every migrated goal event a trigger and GoalEventSave
+     * defaults one, so no such row exists. Meaning "every event" would have
+     * marked the page view AND the session_start and first_visit materialized
+     * beside it, three conversions for one visit to a goal page.
      *
      * AN ABSENT OR NULL COLUMN CANNOT ANSWER, so it does not match -- whatever
      * the operator. Passing NULL through to compare() would make `not` true for
@@ -520,7 +524,7 @@ class GoalEvent extends \OWA\Core\Entity {
 
         $trigger = (string) $this->get( 'trigger_event_type' );
 
-        if ( $trigger !== '' && $trigger !== (string) ( $row['event_type'] ?? '' ) ) {
+        if ( $trigger === '' || $trigger !== (string) ( $row['event_type'] ?? '' ) ) {
 
             return false;
         }

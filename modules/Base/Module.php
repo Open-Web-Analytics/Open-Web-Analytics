@@ -152,23 +152,27 @@ class Module extends \OWA\Core\Module {
          */
 
         /*
-         * GOAL MARKING, at the point where the row is complete.
+         * THE EVENTS A BEACON IS SAVED AS. Callbacks on the one store point, in
+         * priority order: the materializers append session_start and
+         * first_visit, then goal marking sets is_goal_event on every event in
+         * the set. See Classes\Ingest.
          *
-         * It used to be a step inside EventRawHandlers::row(), computed from the
-         * event while the row literal was still being built -- so device_type and
-         * the tagged_* columns, which are merged in afterwards, were not in scope
-         * when conditions were matched. A goal on "mobile" or "organic" could not
-         * work and did not say so.
-         *
-         * A LISTENER, so the raw handler no longer knows what a goal is: it
-         * assembles a row and hands it to the point. Registered here because
-         * registerFilters() runs from Service::initializeFramework(), which
-         * Caller's constructor calls in every role -- including the logger role
-         * the beacon endpoint runs in, and the drain of a queued file.
+         * Registered here because registerFilters() runs from
+         * Service::initializeFramework(), which Caller's constructor calls in
+         * every role -- including the logger role the beacon endpoint runs in,
+         * and the drain of a queued file.
          */
         \OWA\Core\CoreAPI::registerFilter(
-            \OWA\Module\Base\Classes\Ingest::STORE_POST,
-            array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ) );
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
+            array( '\OWA\Module\Base\Classes\MaterializedEvents', 'sessionStart' ), 10 );
+
+        \OWA\Core\CoreAPI::registerFilter(
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
+            array( '\OWA\Module\Base\Classes\MaterializedEvents', 'firstVisit' ), 10 );
+
+        \OWA\Core\CoreAPI::registerFilter(
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
+            array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ), 100 );
     }
 
     /**
@@ -927,10 +931,9 @@ class Module extends \OWA\Core\Module {
          * IngestAnnouncementsTest caught.
          *
          * WHAT GOES WITH IT, and is not replaced:
-         *   - GOAL CONVERSIONS. conversionHandlers evaluated them, and v2 never
-         *     materialises a goal event -- is_goal_event is written 0 on every
-         *     row. So goalConversions and the rates over it already answered zero
-         *     before this, and goal evaluation is a v2 gap either way.
+         *   - v1's GOAL CONVERSIONS. conversionHandlers evaluated them into
+         *     owa_session's goal_N columns. v2 marks is_goal_event at ingest
+         *     instead (Classes\GoalMarking).
          *   - v1's tables stop being WRITTEN. They are not dropped: the
          *     migrator reads them, and their history is the only copy of what
          *     was collected before v2 ingest existed.

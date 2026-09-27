@@ -18,7 +18,7 @@ namespace OWA\Module\Base\Classes;
  * stage it had no access to, and the bridge went unreachable the moment that
  * gate became an allowlist. No test caught it, because no test sent an old name.
  *
- * TWO POINTS PER STAGE, and the pairing is the contract:
+ * TWO POINTS PER STAGE for the first three, and the pairing is the contract:
  *
  *   PRE   runs before the stage does anything, on what the stage was handed.
  *         A compat layer normalises here: the stage then sees only the current
@@ -82,21 +82,34 @@ class Ingest {
     const PROPERTY_POST = 'ingest.property.post';
 
     /**
-     * STAGE 4 -- STORE. EventRawHandlers: the event becomes rows.
+     * STAGE 4 -- STORE. EventRawHandlers: the events are saved.
      *
-     * pre:  the event before it is expanded, so a listener sees one beacon
-     *       rather than the several rows it becomes.
-     * post: each assembled row, immediately before INSERT. The row is complete
-     *       here -- deviceColumns and taggedColumns are merged, which they are
-     *       not while the row literal is being built -- so this is where a
-     *       decision about the row belongs. Goal marking is the case.
+     * ONE POINT, and its value is a LIST: the set of events one beacon will be
+     * saved as, the incoming event first. Each callback may change an event in
+     * the set or append events to it, and whatever comes out is saved in one
+     * transaction -- all of it or none.
      *
-     * post RUNS PER ROW, not once per beacon, and receives the event as context.
-     * A page_view expands to three rows and each is marked on its own facts,
-     * which is what lets a goal target session_start.
+     * Base attaches three callbacks, and the priorities are the order:
+     *
+     *   10   MaterializedEvents::sessionStart, ::firstVisit -- append
+     *        session_start and first_visit when the incoming event carries the
+     *        flag for them, built from the registry.
+     *   100  GoalMarking::mark -- sets is_goal_event on EVERY event in the set,
+     *        each on its own values. Last, so it sees whatever was appended.
+     *        A callback appending at a priority above 100 appends an event
+     *        that is never marked.
+     *
+     * A CALLBACK DECIDES FROM THE SET AND SITE CONFIGURATION ONLY. A failed
+     * write is retried from the queue with the incoming event and this runs
+     * again; the same set has to come out, with the same derived ids, or the
+     * retry's idempotence check reads the wrong row.
+     *
+     * There was a pre and a post here. PRE filtered the one event before a
+     * hard-coded expansion copied it into marker rows, and POST filtered each
+     * finished row; goal marking was POST's only listener. Deciding on rows
+     * meant a marker row carried every column of the event it was copied from.
      */
-    const STORE_PRE  = 'ingest.store.pre';
-    const STORE_POST = 'ingest.store.post';
+    const TRACKING_EVENTS_PRE_SAVE = 'tracking_events_pre_save';
 
     /**
      * Every point, in the order a beacon meets them.
@@ -112,14 +125,14 @@ class Ingest {
             self::REQUEST_PRE,  self::REQUEST_POST,
             self::EDGE_PRE,     self::EDGE_POST,
             self::PROPERTY_PRE, self::PROPERTY_POST,
-            self::STORE_PRE,    self::STORE_POST,
+            self::TRACKING_EVENTS_PRE_SAVE,
         );
     }
 
     /**
      * Run one point.
      *
-     * A thin wrapper so a stage reads as `Ingest::at( Ingest::STORE_POST, $row,
+     * A thin wrapper so a stage reads as `Ingest::at( Ingest::PROPERTY_POST,
      * $event )` rather than naming the filter mechanism, and so the points stay
      * greppable as constants instead of scattered strings.
      *

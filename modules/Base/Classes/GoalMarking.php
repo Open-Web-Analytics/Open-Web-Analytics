@@ -8,22 +8,18 @@ namespace OWA\Module\Base\Classes;
 //
 
 /**
- * Whether a stored row met a goal condition.
+ * Whether each event met a goal event's conditions.
  *
- * A LISTENER AT Ingest::STORE_POST, not a step inside the raw handler, and the
- * move buys two things.
+ * A CALLBACK ON Ingest::TRACKING_EVENTS_PRE_SAVE, at priority 100 -- after the
+ * materializers at 10 -- so it is handed every event one beacon will be saved as
+ * and sets is_goal_event on each, on that event's own values. A goal event whose
+ * trigger is first_visit marks the first_visit; one whose trigger is page_view
+ * marks only the page view, even though the materialized events beside it carry
+ * the same page.
  *
- * THE ROW IS COMPLETE THERE. Marking used to happen inside the row literal, from
- * the EVENT -- so it ran before deviceColumns() and taggedColumns() were merged
- * in, and neither device_type nor any tagged_* value was in scope when
- * conditions were matched. Those are exactly the things an author reaches for:
- * "a signup from mobile", "a purchase from organic". A goal declared on one of
- * them matched nothing and said nothing.
- *
- * AND THE HANDLER NO LONGER KNOWS WHAT A GOAL IS. It assembles a row and hands
- * it to the point; goals are one listener there. Anything else that wants to
- * decide something about a complete row attaches the same way, and ingest does
- * not grow a step for each.
+ * TESTED AGAINST THE ROW EACH EVENT WILL BECOME (EventRawHandlers::rowFor), not
+ * the raw properties: conditions name columns, and the row is where a value
+ * becomes what its column holds.
  *
  * ONE FLAG, NOT ONE PER GOAL. An event meeting two goals is still one event, and
  * goalConversions counts events -- so the first match ends the walk. Which goal
@@ -31,9 +27,9 @@ namespace OWA\Module\Base\Classes;
  * rows, not for a column per slot the way owa_session carried goal_1..goal_N.
  *
  * AT INGEST, NOT IN THE PASS, and the difference is how many times a partition
- * is rebuilt: here it is N predicates against an array already in memory, once
- * per row, ever. What that costs is retroactivity -- a goal defined today does
- * not mark yesterday.
+ * is rebuilt: here it is N predicates against values already in memory, once per
+ * event, ever. What that costs is retroactivity -- a goal defined today does not
+ * mark yesterday.
  */
 class GoalMarking {
 
@@ -50,48 +46,58 @@ class GoalMarking {
     private static $goals = array();
 
     /**
-     * Mark one row.
+     * Set is_goal_event on every event in the set.
      *
-     * @param  array  $row    the assembled raw row, from Ingest::STORE_POST
-     * @param  object $event  the beacon, as unchained context (unused here: the
-     *                        row is the subject, and reading the event again is
-     *                        how the old version came to match against values
-     *                        the row did not have)
-     * @return array
+     * @param  array $events  the set from Ingest::TRACKING_EVENTS_PRE_SAVE
+     * @return array          the same set, each event marked 0 or 1
      */
-    public static function mark( $row, $event = null ) {
+    public static function mark( $events ) {
 
-        if ( ! is_array( $row ) ) {
+        if ( ! is_array( $events ) ) {
 
-            return $row;
+            return $events;
         }
 
-        $site_id = (string) ( $row['site_id'] ?? '' );
+        foreach ( $events as $event ) {
 
-        if ( $site_id === '' ) {
+            if ( ! is_object( $event ) ) {
 
-            return $row;
-        }
+                continue;
+            }
 
-        /*
-         * Set either way rather than only on a match. The handler writes 0 into
-         * the literal so the column is never absent from a NOT NULL insert, and
-         * this is the authority -- so a 1 arriving from anywhere else does not
-         * survive a run that disagrees with it.
-         */
-        $row['is_goal_event'] = 0;
+            /*
+             * Set either way rather than only on a match: this is the authority,
+             * so a value arriving from anywhere else -- a materialized event
+             * built before this ran -- does not survive a run that disagrees.
+             */
+            $event->set( 'is_goal_event', 0 );
 
-        foreach ( self::goalsFor( $site_id ) as $goal ) {
+            $goals = self::goalsFor( (string) $event->getSiteId() );
 
-            if ( $goal['event']->matchesRow( $row, $goal['conditions'] ) ) {
+            if ( ! $goals ) {
 
-                $row['is_goal_event'] = 1;
+                continue;
+            }
 
-                break;
+            $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $event );
+
+            if ( ! $row ) {
+
+                continue;
+            }
+
+            foreach ( $goals as $goal ) {
+
+                if ( $goal['event']->matchesRow( $row, $goal['conditions'] ) ) {
+
+                    $event->set( 'is_goal_event', 1 );
+
+                    break;
+                }
             }
         }
 
-        return $row;
+        return $events;
     }
 
     /**
@@ -116,6 +122,11 @@ class GoalMarking {
         }
 
         self::$goals[ $site_id ] = array();
+
+        if ( $site_id === '' ) {
+
+            return self::$goals[ $site_id ];
+        }
 
         $property_id = GoalManager::propertyFor( $site_id );
 
