@@ -312,6 +312,27 @@ return array(
             'isOutbound' => array( 'column' => 'is_outbound', 'label' => 'Outbound Click',
                 'family' => 'event', 'data_type' => 'boolean',
                 'description' => 'Whether the click went to a host other than the page it was on.' ),
+
+            /*
+             * THE DOWNLOAD. GA's names -- fileName and fileExtension -- because
+             * these are the two it ships as standard dimensions and there is
+             * nothing to gain from a third spelling.
+             *
+             * These exist BECAUSE the columns do. A params key is unreportable
+             * until a site registers it as a custom dimension, so leaving these in
+             * the bag meant every install spending a registration slot on a value
+             * OWA set itself. The element and form params stay in the bag, and are
+             * reportable the same way a site's own values are: by registering the
+             * ones that install actually cares about.
+             *
+             * fileName is the BASENAME the tracker cut. GA's is the path.
+             */
+            'fileName' => array( 'column' => 'file_name', 'label' => 'File Name',
+                'family' => 'event',
+                'description' => 'The name of the downloaded file.' ),
+            'fileExtension' => array( 'column' => 'file_extension', 'label' => 'File Extension',
+                'family' => 'event',
+                'description' => 'The extension of the downloaded file -- pdf, zip, csv.' ),
             /*
              * THE CLICK'S COORDINATES, which the heatmap groups by.
              *

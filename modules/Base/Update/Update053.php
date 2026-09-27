@@ -26,12 +26,15 @@ namespace OWA\Module\Base\Update;
  * formatter renders NULL and 0 both as 'No', which is the isNewVisitor pie with
  * two slices called New.
  *
- * A SAVED CUSTOM REPORT MAY NAME elementPath, and a dimension the registry no
- * longer knows is refused rather than ignored -- so the definitions are walked
- * first. There is no replacement to map it onto, unlike Update052's lossless
- * browser -> browser_type, so the dimension is REMOVED from the widget that asked
- * for it. Measured here: no saved report on this install names it, and other
- * people's might.
+ * NO SAVED CUSTOM REPORT IS REWRITTEN, and an earlier draft of this did. A report
+ * naming `elementPath` would be refused rather than ignored, so walking the saved
+ * definitions looked like the careful thing -- but that dimension only ever existed
+ * on the v2 branch, WHICH HAS NOT SHIPPED. No install in the world can carry such
+ * a report: the only v2 install is the one this was written on, and it has 1159
+ * saved reports and none of them names it. Update052 migrated goal conditions
+ * because `browser` shipped in 1.x and other people's installs really do have
+ * them. This is the same shape with none of the exposure, so the code went rather
+ * than being kept as insurance against a state that cannot exist.
  *
  * NOT CLI-ONLY: one column off and one column on, on raw and on every cube.
  */
@@ -44,11 +47,6 @@ class Update053 extends \OWA\Core\Update {
     var $is_cli_mode_required = false;
 
     function up( $force = false ) {
-
-        if ( $this->stripDimensionFromReports( 'elementPath' ) === false ) {
-
-            return false;
-        }
 
         if ( $this->dropCubeColumn( 'element_path' ) === false ) {
 
@@ -67,132 +65,6 @@ class Update053 extends \OWA\Core\Update {
 
         // Raw and every cube, each the way it needs -- see the CubeColumn trait.
         return $this->addRawColumn( 'is_outbound' );
-    }
-
-    /**
-     * Take one dimension out of every saved custom report that names it.
-     *
-     * A definition is JSON: a list of widgets, each with a `query` whose
-     * `dimensions` is a comma-separated string of registered names. The name is
-     * removed from that string; a widget left with none keeps the key absent
-     * rather than an empty string, which is what an unspecified dimension looks
-     * like everywhere else.
-     *
-     * IDEMPOTENT: a second run finds no definition containing the name.
-     *
-     * Read and written through the entity rather than with raw SQL, for the
-     * reason Update052 records -- a raw read of a table answered zero rows once
-     * during that work and made every row look absent.
-     *
-     * @param string $dimension
-     * @return bool
-     */
-    protected function stripDimensionFromReports( $dimension ) {
-
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( $entity->getTableName() );
-        $db->selectColumn( 'id' );
-        /*
-         * '=@' is "contains" -- LOCATE() through the dialect. NOT 'LIKE', which
-         * is not in Db::ALLOWED_OPERATORS: the operator is interpolated unquoted,
-         * so anything outside that set is refused and logged, and the query would
-         * have silently come back unfiltered.
-         */
-        $db->where( 'definition', $dimension, '=@' );
-
-        foreach ( (array) $db->getAllRows() as $row ) {
-
-            $report = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
-            $report->load( $row['id'] );
-
-            if ( ! $report->wasPersisted() ) {
-
-                continue;
-            }
-
-            $definition = json_decode( (string) $report->get( 'definition' ), true );
-
-            if ( ! is_array( $definition ) ) {
-
-                continue;
-            }
-
-            $stripped = $this->withoutDimension( $definition, $dimension );
-
-            if ( $stripped === $definition ) {
-
-                continue;
-            }
-
-            $report->set( 'definition', json_encode( $stripped ) );
-
-            if ( $report->update() === false ) {
-
-                $this->e->notice( sprintf(
-                    'Removing %s from custom report %s failed', $dimension, $row['id'] ) );
-
-                return false;
-            }
-
-            $this->e->notice( sprintf(
-                'Custom report %s no longer groups by %s', $row['id'], $dimension ) );
-        }
-
-        return true;
-    }
-
-    /**
-     * The same definition with one dimension name gone from every widget query.
-     *
-     * @param array  $definition
-     * @param string $dimension
-     * @return array
-     */
-    protected function withoutDimension( array $definition, $dimension ) {
-
-        if ( ! isset( $definition['widgets'] ) || ! is_array( $definition['widgets'] ) ) {
-
-            return $definition;
-        }
-
-        foreach ( $definition['widgets'] as $i => $widget ) {
-
-            if ( ! isset( $widget['query']['dimensions'] ) ) {
-
-                continue;
-            }
-
-            $names = array_values( array_filter(
-                array_map( 'trim', explode( ',', (string) $widget['query']['dimensions'] ) ),
-                function ( $name ) use ( $dimension ) {
-
-                    return $name !== '' && $name !== $dimension;
-                } ) );
-
-            if ( $names ) {
-
-                $definition['widgets'][ $i ]['query']['dimensions'] = implode( ',', $names );
-
-            } else {
-
-                unset( $definition['widgets'][ $i ]['query']['dimensions'] );
-            }
-
-            /*
-             * A sort naming the dropped dimension would be a sort on a column
-             * the query no longer selects, which the resolver refuses -- so it
-             * goes with it. The trailing '-' is the descending marker.
-             */
-            if ( isset( $widget['query']['sort'] )
-                 && rtrim( (string) $widget['query']['sort'], '-' ) === $dimension ) {
-
-                unset( $definition['widgets'][ $i ]['query']['sort'] );
-            }
-        }
-
-        return $definition;
     }
 
     /**

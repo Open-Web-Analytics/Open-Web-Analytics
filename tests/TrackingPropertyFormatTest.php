@@ -325,7 +325,18 @@ final class TrackingPropertyFormatTest extends TestCase
          * good reason and the floor has to say what it expects instead of
          * demanding the old size.
          */
-        $floors = array( 'column' => 30, 'param' => 10, 'nowhere' => 1 );
+        /*
+         * `param` came down from 10 to 9 when file_name and file_extension were
+         * promoted to columns and is_outbound was added (Update053, Update054). Net
+         * minus two on the bag and plus three on the columns.
+         *
+         * The floor is deliberately NOT the exact count. Nine of the eleven
+         * param-bound first-class properties were left in the bag on purpose --
+         * most installs will never group by an element class or a form name -- and
+         * the test that notices one leaving is EventRawEntityTest's column count,
+         * which is exact. This one only has to fail if the file stops being read.
+         */
+        $floors = array( 'column' => 30, 'param' => 9, 'nowhere' => 1 );
 
         $this->assertSame( array_keys( $floors ), array_keys( $counts ),
             'a destination kind appeared or vanished' );

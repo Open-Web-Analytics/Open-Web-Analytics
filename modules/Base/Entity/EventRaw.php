@@ -252,6 +252,28 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'element_tag', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'element_id', OWA_DTD_VARCHAR255 ) );
 
+        /*
+         * THE DOWNLOAD, as columns -- the only two of the eleven param-bound
+         * first-class properties promoted (Update054).
+         *
+         * A downloads report is a question every install asks, and a params key is
+         * unreportable in v2 until someone registers it as a CUSTOM dimension:
+         * without these, every site would spend one of its 20 registration slots
+         * on a value OWA set itself. GA makes exactly that mistake with form_id
+         * and form_name, which have no standard dimension.
+         *
+         * The element and form params STAY in the bag on purpose. Most installs
+         * will never group by an element class or a form name, and a column is
+         * width on every row of every Property whether or not anyone reads it.
+         * Measured on MySQL 8.4: promoting nine of them took the custom-dimension
+         * ceiling from 62 to 37.
+         *
+         * file_name is the BASENAME the tracker cut, not GA's path. The extension
+         * is bounded by the tracker's downloadExtensions list, so 32 is generous.
+         */
+        $this->setProperty( $this->column( 'file_name', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'file_extension', OWA_DTD_VARCHAR32 ) );
+
         // Percentage. TINYINT holds 0-100 with room to spare.
         $this->setProperty( $this->column( 'scroll_depth', OWA_DTD_TINYINT4 ) );
 

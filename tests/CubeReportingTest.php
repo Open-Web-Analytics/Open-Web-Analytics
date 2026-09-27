@@ -509,7 +509,15 @@ final class CubeReportingTest extends TestCase
      */
     public function testTheColumnDimensionsResolveInAQuery(): void
     {
-        foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'clientId'] as $dim) {
+        /*
+         * fileName and fileExtension are here because they are the two properties
+         * promoted out of `params` into columns (Update054), and a promotion that
+         * did not actually resolve as a dimension would have bought nothing. The
+         * fixture has no download, so both group into one NULL bucket -- which is
+         * exactly what proves they group rather than filter.
+         */
+        foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'clientId',
+                  'fileName', 'fileExtension'] as $dim) {
 
             $rs = $this->manager('eventCount', $dim)->getResults();
 

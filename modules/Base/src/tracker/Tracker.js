@@ -1851,6 +1851,35 @@ class OWATracker  {
      * @param {string} url
      * @return {string}
      */
+    /**
+     * The downloaded file's name -- the last path segment, fragment and query
+     * removed.
+     *
+     * THE BASENAME, not GA's path. GA's fileName dimension carries
+     * /menus/dinner-menu.pdf where this carries dinner-menu.pdf; ours groups
+     * two files of the same name in different folders together, and GA's does
+     * not. Recorded rather than changed: the value has been the basename since
+     * download tracking was added, and target_url on the same row carries the
+     * whole URL for anyone who needs the folder.
+     *
+     * A method, because the expression was inline and cut the same string THREE
+     * times -- split('#')[0].split('?')[0] twice more inside its own
+     * substring(lastIndexOf()). Only ever called where getDownloadExtension()
+     * already found a dot in this segment, so the result cannot be empty.
+     *
+     * Left percent-encoded. decodeURIComponent throws on a malformed sequence,
+     * and this runs on whatever href a page happens to carry.
+     *
+     * @param {string} url
+     * @return {string}
+     */
+    getDownloadFileName( url ) {
+
+        var path = String( url ).split( '#' )[0].split( '?' )[0];
+
+        return path.substring( path.lastIndexOf( '/' ) + 1 );
+    }
+
     getDownloadExtension( url ) {
 
         if ( ! url ) {
@@ -4001,8 +4030,7 @@ class OWATracker  {
             event.setEventType( 'file_download' );
             event.set( 'target_url', url );
             event.set( 'file_extension', extension );
-            event.set( 'file_name', String( url ).split( '#' )[0].split( '?' )[0]
-                .substring( String( url ).split( '#' )[0].split( '?' )[0].lastIndexOf( '/' ) + 1 ) );
+            event.set( 'file_name', this.getDownloadFileName( url ) );
 
             this.trackEvent( event );
         }

@@ -210,11 +210,15 @@ class Dimensions {
      * The column name a key becomes.
      *
      * Derived rather than equal, because Db enforces ^[A-Za-z0-9_]+$ on every
-     * DDL path. With KEY_PATTERN in force the derivation is almost the identity
-     * -- lowercasing is the only change -- and lowercasing is the reason
-     * uniqueness has to be checked on the COLUMN: JSON keys are case-sensitive
-     * where column names are not, so `Plan` and `plan` are two keys and one
-     * column.
+     * DDL path. With KEY_PATTERN in force the derivation is CustomDimension::PREFIX
+     * plus the lowercased key, so `plan` is the column `cd_plan`.
+     *
+     * The prefix is what keeps a registration out of the first-class namespace: a
+     * site registering `file_name` gets cd_file_name and cannot collide with the
+     * column of that name, whether it existed when they registered or arrived in
+     * a later release. Lowercasing is the reason uniqueness has to be checked on
+     * the COLUMN rather than the key: JSON keys are case-sensitive where column
+     * names are not, so `Plan` and `plan` are two keys and one column.
      *
      * @param string $key
      * @return string  '' if the key could never be a column

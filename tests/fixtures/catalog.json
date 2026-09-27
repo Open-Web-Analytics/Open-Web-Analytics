@@ -4,9 +4,9 @@
         "metricImplementations": 25,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 72,
-        "dimensionEntriesDenormalized": 72,
-        "accessorDimensionNames": 72
+        "dimensionNamesDenormalized": 74,
+        "dimensionEntriesDenormalized": 74,
+        "accessorDimensionNames": 74
     },
     "metrics": {
         "averageEngagementTimePerSession": [
@@ -968,6 +968,32 @@
                 "denormalized": true
             }
         },
+        "fileExtension": {
+            "base.event": {
+                "name": "fileExtension",
+                "entity": "base.event",
+                "column": "file_extension",
+                "family": "event",
+                "label": "File Extension",
+                "description": "The extension of the downloaded file -- pdf, zip, csv.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "fileName": {
+            "base.event": {
+                "name": "fileName",
+                "entity": "base.event",
+                "column": "file_name",
+                "family": "event",
+                "label": "File Name",
+                "description": "The name of the downloaded file.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "firstAd": {
             "base.event": {
                 "name": "firstAd",
@@ -1907,6 +1933,28 @@
             "family": "event",
             "label": "Event Name",
             "description": "The name of the event -- page_view, click, session_start.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "fileExtension": {
+            "name": "fileExtension",
+            "entity": "base.event",
+            "column": "file_extension",
+            "family": "event",
+            "label": "File Extension",
+            "description": "The extension of the downloaded file -- pdf, zip, csv.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "fileName": {
+            "name": "fileName",
+            "entity": "base.event",
+            "column": "file_name",
+            "family": "event",
+            "label": "File Name",
+            "description": "The name of the downloaded file.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

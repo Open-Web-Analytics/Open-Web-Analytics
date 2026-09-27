@@ -328,6 +328,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
              */
             'is_outbound' => $this->flag( $event->get( 'is_outbound' ) ),
 
+            'file_name'      => $this->text( $event->get( 'file_name' ) ),
+            'file_extension' => $this->text( $event->get( 'file_extension' ) ),
+
             'scroll_depth'    => $this->number( $event->get( 'scroll_depth' ) ),
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
 

@@ -610,6 +610,106 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * The download's name and extension are COLUMNS, and are not also in params.
+     *
+     * They were params, and a params key is unreportable until a site registers it
+     * as a custom dimension -- so a downloads report cost every install one of its
+     * 20 registration slots for a value OWA set itself. Promoted in Update054.
+     *
+     * NOT ALSO IN THE BAG is the half worth asserting. params() is built from the
+     * registry's param destinations, so moving one to `column` should take it out
+     * of the JSON -- and a value in both places is two authorities for one fact,
+     * which is how the row builder and the registry drifted apart before.
+     *
+     * The element and form params are NOT promoted, and the same row proves it:
+     * element_class is still only in the bag.
+     */
+    public function testTheDownloadNameAndExtensionAreColumns(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('file_download', [
+            'site_id'           => $this->site,
+            'visitor_id'        => $visitor,
+            'session_id'        => $session,
+            'page_url'          => 'https://owa-test-site/v2/docs',
+            'page_location'     => 'https://owa-test-site/v2/docs',
+            'target_url'        => 'https://owa-test-site/files/guide.pdf',
+            'file_name'         => 'guide.pdf',
+            'file_extension'    => 'pdf',
+            'fsts'              => time(),
+            'sts'               => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['file_download'] ?? null;
+
+        $this->assertNotNull($row, 'file_download stores a row');
+
+        $this->assertSame('guide.pdf', $row['file_name']);
+        $this->assertSame('pdf', $row['file_extension']);
+
+        $params = (array) json_decode((string) $row['params'], true);
+
+        $this->assertArrayNotHasKey('file_name', $params,
+            'a promoted property must leave the bag, or one fact has two authorities');
+        $this->assertArrayNotHasKey('file_extension', $params);
+    }
+
+    /**
+     * AND THE ELEMENT PARAMS STAY IN THE BAG -- the other half of the decision.
+     *
+     * Only file_name and file_extension were promoted. Most installs will never
+     * group by an element class or name, and a column is width on every row of
+     * every Property whether anyone reads it or not: promoting nine of these was
+     * measured at taking the custom-dimension ceiling from 62 to 37 on MySQL 8.4.
+     * A site that does want one registers it, which is the route its own values
+     * take -- and is exactly what GA requires for form_id and form_name.
+     *
+     * So this asserts a NON-promotion, which is the kind of decision that
+     * otherwise erodes one column at a time.
+     */
+    public function testTheElementParamsStayInTheBag(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('dom.click', [
+            'site_id'           => $this->site,
+            'visitor_id'        => $visitor,
+            'session_id'        => $session,
+            'page_url'          => 'https://owa-test-site/v2/a',
+            'page_location'     => 'https://owa-test-site/v2/a',
+            'target_url'        => 'https://owa-test-site/v2/b',
+            'dom_element_class' => 'download-link',
+            'dom_element_name'  => 'cta',
+            'dom_element_text'  => 'Get the guide',
+            'fsts'              => time(),
+            'sts'               => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['click'] ?? null;
+
+        $this->assertNotNull($row, 'dom.click stores a row');
+
+        $params = (array) json_decode((string) $row['params'], true);
+
+        $this->assertSame('download-link', $params['element_class'] ?? null);
+        $this->assertSame('cta', $params['element_name'] ?? null);
+        $this->assertSame('Get the guide', $params['element_text'] ?? null);
+
+        // And none of the three gained a column on the way.
+        $columns = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getColumns();
+
+        foreach (['element_class', 'element_name', 'element_text'] as $name) {
+            $this->assertNotContains($name, $columns,
+                "$name is a param by decision, not an oversight -- see Update054.");
+        }
+    }
+
+    /**
      * And every other event answers 0 rather than NULL.
      *
      * The column is NOT NULL because a boolean holding three values groups as

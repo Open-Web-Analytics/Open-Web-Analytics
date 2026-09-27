@@ -733,28 +733,28 @@
         "from": [
             "file_name"
         ],
-        "param": "file_name",
+        "column": "file_name",
         "events": [
             "file_download"
         ],
         "data_type": "string",
         "required": false,
         "callbacks": [],
-        "note": "On a file_download event."
+        "note": "A COLUMN, not a param -- see Update054. A downloads report is a question every install asks, and in v2 a params key is unreportable until someone registers it as a CUSTOM dimension, which would have spent one of a Property's 20 slots on a value OWA set itself. That is the mistake GA makes with form_id and form_name, which have no standard dimension and must be registered as customEvent:form_id.\nThe element and form params deliberately stay in the bag: most installs will never group by them, and a column costs cube width on every row of every Property. MEASURED on MySQL 8.4: promoting nine of these took the custom-dimension ceiling from 62 to 37.\nOWA's value is the BASENAME (guide.pdf), where GA's fileName is the path (/menus/dinner-menu.pdf). Different readings under one name; ours is what classifyClickTarget() cuts."
     },
     "file_extension": {
         "set_by": "client",
         "from": [
             "file_extension"
         ],
-        "param": "file_extension",
+        "column": "file_extension",
         "events": [
             "file_download"
         ],
         "data_type": "string",
         "required": false,
         "callbacks": [],
-        "note": "On a file_download event."
+        "note": "A COLUMN, not a param -- see file_name for why these two and not the element or form params. Bounded by the tracker's downloadExtensions option, which is what makes a download a download rather than any path with a dot in it, so the values are a short closed set rather than free text."
     },
     "form_id": {
         "set_by": "client",

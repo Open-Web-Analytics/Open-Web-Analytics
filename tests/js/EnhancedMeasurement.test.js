@@ -111,6 +111,29 @@ describe('downloads and outbound links', () => {
         expect(sent[0].file_name).toBe('guide.pdf');
     });
 
+    /*
+     * THE NAME IS THE BASENAME, and both of these now reach COLUMNS rather than
+     * the params bag, so what the tracker cuts is what a downloads report groups
+     * by -- see Update054.
+     */
+    test('the file name drops the folder, the query and the fragment', () => {
+        const t = newTracker();
+
+        expect(t.getDownloadFileName('https://example.org/a/b/menu.pdf?v=2#page3'))
+            .toBe('menu.pdf');
+
+        // Two files of the same name in different folders group TOGETHER, which
+        // is where this parts company with GA's fileName (a path). target_url on
+        // the same row keeps the folder for anyone who needs it.
+        expect(t.getDownloadFileName('https://example.org/2024/report.pdf'))
+            .toBe(t.getDownloadFileName('https://example.org/2025/report.pdf'));
+
+        // Left encoded: decodeURIComponent throws on a malformed sequence, and
+        // this runs on whatever href the page carries.
+        expect(t.getDownloadFileName('https://example.org/my%20file.pdf'))
+            .toBe('my%20file.pdf');
+    });
+
     test('an ordinary page is not a download, whatever dots the path contains', () => {
         const t = newTracker();
         const sent = captureSends(t);
