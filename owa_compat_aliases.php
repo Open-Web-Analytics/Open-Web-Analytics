@@ -150,9 +150,6 @@ function owa_compat_class_map(): array
         // modules/base/metrics (Phase 6 stage 2)
         'owa_actionsPerVisit' => 'OWA\\Module\\Base\\Metric\\ActionsPerVisit',
         'owa_configurableMetric' => 'OWA\\Module\\Base\\Metric\\ConfigurableMetric',
-        'owa_goalNCompletions' => 'OWA\\Module\\Base\\Metric\\GoalNCompletions',
-        'owa_goalNStarts' => 'OWA\\Module\\Base\\Metric\\GoalNStarts',
-        'owa_goalNValue' => 'OWA\\Module\\Base\\Metric\\GoalNValue',
         'owa_repeatVisitors' => 'OWA\\Module\\Base\\Metric\\RepeatVisitors',
 
         // modules/base/classes (Phase 6 stage 2). Abstract framework bases ->

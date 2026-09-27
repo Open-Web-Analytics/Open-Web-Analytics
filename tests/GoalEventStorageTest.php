@@ -763,7 +763,8 @@ final class GoalEventStorageTest extends TestCase
     public function testAGoalEventWithNoFunnelOmitsTheKeyEntirely(): void
     {
         $siteId = $this->siteId;
-        $id = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 1 );
+        $id = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )
+            ->generateId( 'goal_event:no-funnel:' . uniqid( '', true ) );
 
         $this->created[] = $id;
 
@@ -829,85 +830,6 @@ final class GoalEventStorageTest extends TestCase
     /* ---------------- the round trip ---------------- */
 
     /**
-     * A goal saved through GoalManager comes back through GoalManager.
-     *
-     * The point of the whole change: same API, different storage.
-     */
-    public function testAGoalSavedThroughTheManagerReadsBackFromTheTable(): void
-    {
-        $siteId = $this->siteId;
-
-        $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 4 );
-
-        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $gm->saveGoal( 4, array(
-            'goal_name'   => 'Probe Goal',
-            'goal_group'  => '2',
-            'goal_status' => 'active',
-            'goal_value'  => '3.50',
-            'goal_type'   => 'url_destination',
-            'details'     => array( 'match_type' => 'begins', 'goal_url' => '/probe' ),
-        ) );
-
-        /*
-         * Flushed, not unset. supportClassFactory() caches the instance, so
-         * unset() does not destruct it and the write would land at shutdown --
-         * after every assertion below.
-         */
-        $gm->flush();
-
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
-
-        $this->assertArrayHasKey( 4, $goals, 'The saved goal did not reach the table.' );
-        $this->assertSame( 'Probe Goal', $goals[4]['goal_name'] );
-        $this->assertSame( 'active', $goals[4]['goal_status'] );
-        $this->assertSame( '3.50', $goals[4]['goal_value'],
-            'The value did not survive the trip through cents.' );
-        $this->assertSame( 'begins', $goals[4]['details']['match_type'] );
-        $this->assertSame( '/probe', $goals[4]['details']['goal_url'] );
-    }
-
-    /**
-     * Saving one goal must not rewrite the others.
-     *
-     * This is what the blob could not do: it was written whole, so two people
-     * editing different goals lost one of the two edits entirely.
-     */
-    public function testSavingOneGoalLeavesTheOthersAlone(): void
-    {
-        $siteId = $this->siteId;
-
-        foreach ( array( 13, 14 ) as $n ) {
-            $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, $n );
-        }
-
-        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $gm->saveGoal( 13, array( 'goal_name' => 'First', 'goal_status' => 'active',
-                                 'details' => array( 'match_type' => 'exact', 'goal_url' => '/one' ) ) );
-        $gm->saveGoal( 14, array( 'goal_name' => 'Second', 'goal_status' => 'active',
-                                 'details' => array( 'match_type' => 'exact', 'goal_url' => '/two' ) ) );
-        $gm->flush();
-
-        /*
-         * A second manager touching only ONE of them.
-         *
-         * Slots within numGoals (15 here): saveGoal() silently ignores a number
-         * above it, so a test using 17 saves nothing and then measures an empty
-         * list.
-         */
-        $other = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $other->saveGoal( 13, array( 'goal_name' => 'First renamed', 'goal_status' => 'active',
-                                    'details' => array( 'match_type' => 'exact', 'goal_url' => '/one' ) ) );
-        $other->flush();
-
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
-
-        $this->assertSame( 'First renamed', $goals[13]['goal_name'] ?? null );
-        $this->assertSame( 'Second', $goals[14]['goal_name'] ?? null,
-            'Saving one goal rewrote another, which is the blob behaviour this replaces.' );
-    }
-
-    /**
      * A goal event with no slot is a real goal event with no NUMBERED metric.
      *
      * The 45 goal{N} metrics resolve by number, so a goal event beyond the
@@ -939,43 +861,6 @@ final class GoalEventStorageTest extends TestCase
         $this->assertSame( array(), $goals );
     }
 
-    /** The id is derived, so saving twice updates one row rather than making two. */
-    public function testSavingTheSameSlotTwiceUpdatesOneRow(): void
-    {
-        $siteId = $this->siteId;
-
-        $this->created[] = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor( $siteId, 7 );
-
-        foreach ( array( 'One', 'Two' ) as $name ) {
-
-            $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-            $gm->saveGoal( 7, array( 'goal_name' => $name, 'goal_status' => 'active',
-                                     'details' => array( 'match_type' => 'exact', 'goal_url' => '/x' ) ) );
-        $gm->flush();
-        }
-
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( $entity->getTableName() );
-        $db->selectColumn( 'id' );
-        /*
-         * This SLOT, not every row on the Property.
-         *
-         * Goal events belong to the Property now, so a Property with other goal
-         * events -- including whatever the install already had -- shares this
-         * table with the probe. Counting all of them would fail for a reason
-         * that has nothing to do with what is being tested.
-         */
-        $db->where( 'property_id', $this->propertyId );
-        $db->where( 'goal_number', 7 );
-
-        $this->assertCount( 1, (array) $db->getAllRows(),
-            'Editing a goal created a second row, so the numbered slot now names two.' );
-
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
-        $this->assertSame( 'Two', $goals[7]['goal_name'] ?? null );
-    }
     /**
      * Counting is once per session, whatever was asked for.
      *

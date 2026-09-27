@@ -128,7 +128,7 @@ class GoalMarking {
             return self::$goals[ $site_id ];
         }
 
-        $property_id = GoalManager::propertyFor( $site_id );
+        $property_id = \OWA\Module\Base\Entity\GoalEvent::propertyFor( $site_id );
 
         /*
          * No Property means NO goal events. Db::where() drops a clause whose

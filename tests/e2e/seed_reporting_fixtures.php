@@ -173,7 +173,6 @@ const E2E_ACTIONS = [
     ['group' => 'Commerce', 'name' => 'submit', 'label' => 'cart',   'value' => 10, 'n' => 1],
 ];
 
-const E2E_GOAL_NUMBER = 1;
 const E2E_GOAL_NAME   = 'E2E Signup Funnel';
 const E2E_GOAL_GROUP  = '1';
 const E2E_GOAL_URL    = '/docs';
@@ -839,15 +838,6 @@ function seedDomstreams(): array
 }
 
 /**
- * One active url_destination goal with a two-step funnel.
- *
- * Shaped the way GoalManager reads it: keyed by goal number, `goal_status`
- * active so it reaches activeGoals, and `goal_group` set so the group becomes a
- * metric set. Steps carry `path` -- the key every consumer reads since the
- * rename -- and `is_required` as a real boolean, because the funnel report
- * tests it with ===.
- */
-/**
  * Global notifications with a fixture source of their own.
  *
  * Written straight through NotificationManager so the seeder exercises the same
@@ -1071,46 +1061,72 @@ function unseedFunnelVisualization(): int
     return $removed;
 }
 
+/** The fixture goal event's id: derived, so a re-seed updates rather than duplicates. */
+function e2eGoalEventId(): string
+{
+    return (string) owa_coreAPI::entityFactory('base.goal_event')
+        ->generateId('goal_event:e2e:' . E2E_SITE_ID);
+}
+
 function seedGoal(): array
 {
     /*
-     * Through GoalManager, not persistSiteSetting.
+     * A goal event row and its one condition, written the way GoalEventSave
+     * writes them: triggered by page_view, conditioned on page_path.
      *
-     * Goals are rows in owa_goal_event now. persistSiteSetting still WRITES a
-     * settings blob perfectly happily -- nothing reads it any more, so seeding
-     * that way succeeded and produced a site with no goals, which is how
-     * thirteen reporting specs came to fail at once.
+     * It was seeded through GoalManager::saveGoal(), the 1.x goal shape, which
+     * stored the v1 trigger name base.page_request. Rows store page_view, so the
+     * seeded goal could never mark an event.
      *
      * No steps: a funnel is not part of a goal any more. See
      * seedFunnelVisualization(), which seeds the path separately and does not
      * name this goal at all.
      */
-    $gm = owa_coreAPI::supportClassFactory('base', 'goalManager', E2E_SITE_ID);
+    $id = e2eGoalEventId();
 
-    $gm->saveGoal(E2E_GOAL_NUMBER, [
-        'goal_name'   => E2E_GOAL_NAME,
-        'goal_status' => 'active',
-        'goal_group'  => E2E_GOAL_GROUP,
-        'goal_type'   => 'url_destination',
-        'details'     => [
-            'match_type' => 'exact',
-            'goal_url'   => E2E_GOAL_URL,
-        ],
-    ]);
+    $goalEvent = owa_coreAPI::entityFactory('base.goal_event');
+    $goalEvent->load($id);
 
-    // The write happens on destruct, as the blob write used to.
-    unset($gm);
+    $goalEvent->set('property_id', \OWA\Module\Base\Entity\GoalEvent::propertyFor(E2E_SITE_ID));
+    $goalEvent->set('name', E2E_GOAL_NAME);
+    $goalEvent->set('goal_group', E2E_GOAL_GROUP);
+    $goalEvent->set('is_active', 1);
+    $goalEvent->set('trigger_event_type', 'page_view');
+
+    if ($goalEvent->wasPersisted()) {
+        $goalEvent->update();
+    } else {
+        $goalEvent->set('id', $id);
+        $goalEvent->set('creation_date', owa_coreAPI::getRequestTimestamp());
+        $goalEvent->create();
+    }
+
+    $db = owa_coreAPI::dbSingleton();
+    $db->deleteFrom(owa_coreAPI::entityFactory('base.goal_event_condition')->getTableName());
+    $db->where('goal_event_id', $id);
+    $db->executeQuery();
+
+    $condition = owa_coreAPI::entityFactory('base.goal_event_condition');
+    $condition->set('id', $condition->generateId('goal_event_condition:' . $id . ':1'));
+    $condition->set('goal_event_id', $id);
+    $condition->set('sort_order', 1);
+    $condition->set('condition_property', 'page_path');
+    $condition->set('condition_operator', 'exact');
+    $condition->set('condition_value', E2E_GOAL_URL);
+    $condition->set('creation_date', owa_coreAPI::getRequestTimestamp());
+    $condition->create();
 
     // Read back, so the seed output reports what the database holds rather than
     // what was handed to it.
-    $stored = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals(E2E_SITE_ID);
-    $goal   = $stored[E2E_GOAL_NUMBER] ?? [];
+    $stored = owa_coreAPI::entityFactory('base.goal_event');
+    $stored->load($id);
+    $conditions = $stored->loadConditions();
 
     return [
-        'goal_number' => E2E_GOAL_NUMBER,
-        'goal_name'   => $goal['goal_name'] ?? '',
-        'goal_status' => $goal['goal_status'] ?? '',
-        'goal_url'    => $goal['details']['goal_url'] ?? '',
+        'goal_event_id' => $id,
+        'goal_name'     => (string) $stored->get('name'),
+        'trigger'       => (string) $stored->get('trigger_event_type'),
+        'goal_url'      => $conditions ? (string) $conditions[0]->get('condition_value') : '',
     ];
 }
 
@@ -1187,8 +1203,7 @@ function teardown(): array
      * event, minted at the same derived id, would inherit them.
      */
     try {
-        $goalEventId = \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
-            E2E_SITE_ID, E2E_GOAL_NUMBER);
+        $goalEventId = e2eGoalEventId();
 
         $goalEvent = owa_coreAPI::entityFactory('base.goal_event');
         $goalEvent->load($goalEventId);

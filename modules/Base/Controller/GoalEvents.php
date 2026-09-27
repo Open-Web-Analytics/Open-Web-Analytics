@@ -71,7 +71,7 @@ class GoalEvents extends \OWA\Core\AdminController {
          * matching nothing -- an unparented Profile would list every goal event
          * on the installation.
          */
-        $propertyId = \OWA\Module\Base\Classes\GoalManager::propertyFor( $siteId );
+        $propertyId = \OWA\Module\Base\Entity\GoalEvent::propertyFor( $siteId );
 
         if ( ! $propertyId ) {
 

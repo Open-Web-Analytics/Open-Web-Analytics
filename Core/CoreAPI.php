@@ -3355,22 +3355,6 @@ class CoreAPI {
         return $s->metrics;
     }
 
-    public static function getGoalManager( $siteId ) {
-
-        static $gm;
-
-        if ( ! $gm ) {
-
-            $gm = array();
-        }
-
-        if ( ! isset( $gm[$siteId] ) )  {
-            $gm[ $siteId ] = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
-        }
-
-        return $gm[$siteId];
-    }
-
     public static function getRequestTimestamp() {
 
         $r = \OWA\Core\CoreAPI::requestContainerSingleton();

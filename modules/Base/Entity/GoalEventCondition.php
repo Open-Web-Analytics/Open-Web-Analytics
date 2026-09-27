@@ -45,9 +45,9 @@ class GoalEventCondition extends \OWA\Core\Entity {
          * What this condition is FOR: 'match' or 'start'.
          *
          * A match condition decides whether the goal event happened. A START
-         * condition decides whether someone BEGAN it -- which is what feeds
-         * goal_N_start on the session, and through it the seven registered
-         * goalNStarts metrics.
+         * condition decides whether someone BEGAN it. On 1.x it fed
+         * goal_N_start on the session and the goalNStarts metrics; both are gone
+         * on v2, and nothing on v2 reads a start condition yet.
          *
          * Its own role rather than its own table, because it is the same shape
          * being asked a different question, and one mechanism is easier to keep

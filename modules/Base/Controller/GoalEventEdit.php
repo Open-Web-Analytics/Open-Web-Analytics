@@ -27,18 +27,6 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
             $goalEvent->load( $this->getParam( 'goalEventId' ) );
 
-        } elseif ( $this->getParam( 'goal_number' ) ) {
-
-            /*
-             * By SLOT, for the funnel report's "edit this funnel" links.
-             *
-             * That report addresses a goal by number -- it has no id to pass --
-             * so this resolves one, rather than those links being repointed at
-             * a screen that would silently open a blank form and create a
-             * second goal event on save.
-             */
-            $goalEvent->load( \OWA\Module\Base\Classes\GoalManager::goalEventIdFor(
-                $siteId, $this->getParam( 'goal_number' ) ) );
         }
 
         $this->set( 'goalEvent', $goalEvent->_getProperties() );

@@ -41,7 +41,6 @@ class GoalManager extends \OWA\Core\Base {
     var $site_id;
     var $numGoals;
     var $numGoalGroups;
-    var $isDirtyGoals;
     var $isDirtyGoalGroups;
 
     /**
@@ -197,70 +196,10 @@ class GoalManager extends \OWA\Core\Base {
         return $goals;
     }
 
-    /**
-     * The Property a Profile observes.
-     *
-     * Goal events belong to the Property -- the website -- and every Profile of
-     * it inherits them. Callers hold a Profile id because that is what the
-     * request carries and what a session belongs to, so the hop happens here
-     * rather than at each of them.
-     *
-     * Memoized: the conversion evaluator asks per event.
-     *
-     * @return string|null
-     */
+    /** @see \OWA\Module\Base\Entity\GoalEvent::propertyFor() */
     public static function propertyFor( $site_id ) {
 
-        static $cache = array();
-
-        if ( ! $site_id ) {
-
-            return null;
-        }
-
-        if ( ! array_key_exists( $site_id, $cache ) ) {
-
-            /*
-             * Read the column, not the entity.
-             *
-             * base.site is cachable and getByColumn() answers from that cache,
-             * which is populated by whatever loaded the site first -- so this
-             * could be handed a Site object that predates its property_id being
-             * set, and return a different Property than the row actually has.
-             * Measured: the write and the read resolved two different
-             * Properties in the same process.
-             *
-             * A column read cannot be stale, and this is on the conversion
-             * path, where it is asked once per event.
-             */
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-
-            $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->selectFrom( $site->getTableName() );
-            $db->selectColumn( 'property_id' );
-            $db->where( 'site_id', $site_id );
-
-            $row = $db->getOneRow();
-
-            $cache[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
-        }
-
-        return $cache[ $site_id ];
-    }
-
-    /**
-     * The stable id for one Profile's slot.
-     *
-     * Derived rather than minted so the migration, this class and the admin
-     * screens all name the same row for the same goal -- and so re-running the
-     * migration updates rather than duplicates.
-     */
-    public static function goalEventIdFor( $site_id, $number ) {
-
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-
-        return $entity->generateId(
-            'goal_event:' . self::propertyFor( $site_id ) . ':' . (int) $number );
+        return \OWA\Module\Base\Entity\GoalEvent::propertyFor( $site_id );
     }
 
     function getActiveGoals() {
@@ -309,115 +248,6 @@ class GoalManager extends \OWA\Core\Base {
         return $this->goal_group_labels;
     }
 
-    function saveGoal($number, $goal) {
-
-        if ( $number <= $this->numGoals ) {
-
-            $goal['goal_number'] = $number;
-            $this->goals[$goal['goal_number']] = $goal;
-            $this->isDirtyGoals = true;
-
-            /*
-             * Which slots changed, not just that something did.
-             *
-             * The blob had to be rewritten whole, so two people editing
-             * different goals lost one of the two edits. Rows do not, but only
-             * if the write is per goal -- so the numbers are tracked.
-             */
-            $this->dirtyGoalNumbers[ $number ] = $number;
-        }
-    }
-
-    /** Slots touched since load. @var array */
-    private $dirtyGoalNumbers = array();
-
-    /**
-     * Write one goal to its key-event row.
-     *
-     * An upsert against a derived id, so saving a goal twice updates one row.
-     */
-    private function persistGoal( $number ) {
-
-        $goal = $this->getGoal( $number );
-
-        if ( ! is_array( $goal ) ) {
-
-            return;
-        }
-
-        $id = self::goalEventIdFor( $this->site_id, $number );
-
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $goalEvent->load( $id );
-
-        $details = isset( $goal['details'] ) && is_array( $goal['details'] )
-            ? $goal['details'] : array();
-
-        $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $goal['goal_value'] ?? '' );
-
-        $goalEvent->set( 'property_id', self::propertyFor( $this->site_id ) );
-        $goalEvent->set( 'name', (string) ( $goal['goal_name'] ?? '' ) );
-        $goalEvent->set( 'goal_number', $number );
-        $goalEvent->set( 'goal_group', (string) ( $goal['goal_group'] ?? '' ) );
-        $goalEvent->set( 'is_active', ( ( $goal['goal_status'] ?? '' ) === 'active' ) ? 1 : 0 );
-        $goalEvent->set( 'value', $cents === null ? 0 : $cents );
-        $goalEvent->set( 'trigger_event_type',
-            \OWA\Module\Base\Entity\GoalEvent::TRIGGER_PAGE_VIEW );
-
-
-
-        if ( $goalEvent->wasPersisted() ) {
-
-            $goalEvent->update();
-            $this->persistCondition( $id, $details );
-
-            return;
-        }
-
-        $goalEvent->set( 'id', $id );
-        $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-        $goalEvent->create();
-
-        $this->persistCondition( $id, $details );
-    }
-
-    /**
-     * The 1.x goal's single condition, as a row.
-     *
-     * saveGoal() speaks the old shape -- one match_type and one goal_url -- so
-     * this writes the one condition it can describe. The goal event screen
-     * writes several directly and does not come through here.
-     */
-    private function persistCondition( $goalEventId, $details ) {
-
-        $value = trim( (string) ( $details['goal_url'] ?? '' ) );
-
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->deleteFrom( $entity->getTableName() );
-        $db->where( 'goal_event_id', $goalEventId );
-        $db->executeQuery();
-
-        if ( $value === '' ) {
-
-            return;
-        }
-
-        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
-
-        $condition->set( 'id', $condition->generateId(
-            'goal_event_condition:' . $goalEventId . ':1' ) );
-        $condition->set( 'goal_event_id', $goalEventId );
-        $condition->set( 'sort_order', 1 );
-        $condition->set( 'condition_property',
-            \OWA\Module\Base\Entity\GoalEvent::PROPERTY_PAGE_URI );
-        $condition->set( 'condition_operator', (string) ( $details['match_type'] ?? '' ) );
-        $condition->set( 'condition_value', $value );
-        $condition->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-        $condition->create();
-    }
-
     function saveGoalGroupLabel($number, $goal_group) {
 
         $this->goal_group_labels[$number] = $goal_group;
@@ -437,17 +267,6 @@ class GoalManager extends \OWA\Core\Base {
      * Idempotent: flushing twice writes once, because the dirty marks clear.
      */
     public function flush() {
-
-        if ( $this->isDirtyGoals ) {
-
-            foreach ( $this->dirtyGoalNumbers as $number ) {
-
-                $this->persistGoal( $number );
-            }
-
-            $this->dirtyGoalNumbers = array();
-            $this->isDirtyGoals     = false;
-        }
 
         if ( $this->isDirtyGoalGroups ) {
 

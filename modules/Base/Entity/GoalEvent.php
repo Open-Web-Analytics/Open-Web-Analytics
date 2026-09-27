@@ -243,16 +243,11 @@ class GoalEvent extends \OWA\Core\Entity {
         $this->setProperty( $value );
 
         /*
-         * The legacy slot, 1 to 20, or NULL for a goal event created after the
-         * slots stopped existing.
-         *
-         * Kept because 45 registered metrics -- goal{N}Completions, Starts and
-         * Value -- resolve by NUMBER, and a saved custom report or an API
-         * client naming goal3Completions has to keep working through a 1.x
-         * release. v2 drops both the column and those metrics for
-         * sessionGoalEventRate:<name>, parameterised by name and unlimited.
-         *
-         * A goal event beyond the twentieth simply has no numbered metric.
+         * The 1.x slot a goal event was migrated from (Update025), or NULL for
+         * one created since. Nothing writes it any more and nothing on v2 reads
+         * it: the goal{N} metrics it numbered were removed with the v1 metric
+         * vocabulary. It is the only link between a goal event and the
+         * owa_session.goal_N columns that hold 1.x's conversion history.
          */
         $goal_number = new \OWA\Module\Base\Classes\DbColumn( 'goal_number', OWA_DTD_INT );
         $goal_number->setIndex();
@@ -279,6 +274,57 @@ class GoalEvent extends \OWA\Core\Entity {
     public function isActive() {
 
         return (bool) $this->get( 'is_active' );
+    }
+
+    /**
+     * The Property a Profile observes.
+     *
+     * Goal events belong to the Property -- the website -- and every Profile of
+     * it inherits them. Callers hold a Profile id because that is what the
+     * request carries and what a session belongs to, so the hop happens here
+     * rather than at each of them.
+     *
+     * Memoized: the conversion evaluator asks per event.
+     *
+     * @return string|null
+     */
+    public static function propertyFor( $site_id ) {
+
+        static $cache = array();
+
+        if ( ! $site_id ) {
+
+            return null;
+        }
+
+        if ( ! array_key_exists( $site_id, $cache ) ) {
+
+            /*
+             * Read the column, not the entity.
+             *
+             * base.site is cachable and getByColumn() answers from that cache,
+             * which is populated by whatever loaded the site first -- so this
+             * could be handed a Site object that predates its property_id being
+             * set, and return a different Property than the row actually has.
+             * Measured: the write and the read resolved two different
+             * Properties in the same process.
+             *
+             * A column read cannot be stale, and this is on the conversion
+             * path, where it is asked once per event.
+             */
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $site->getTableName() );
+            $db->selectColumn( 'property_id' );
+            $db->where( 'site_id', $site_id );
+
+            $row = $db->getOneRow();
+
+            $cache[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
+        }
+
+        return $cache[ $site_id ];
     }
 
     /**
@@ -398,7 +444,7 @@ class GoalEvent extends \OWA\Core\Entity {
      * goal event that no longer existed.
      *
      * ON THE ENTITY rather than in GoalEventDelete, because that controller is
-     * not the only caller: the e2e fixtures and GoalManager delete goal events
+     * not the only caller: the e2e fixtures and the tests delete goal events
      * too, and a cascade living in one of several callers is a cascade that
      * happens sometimes.
      *

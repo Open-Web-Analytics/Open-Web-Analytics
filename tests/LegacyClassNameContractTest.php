@@ -115,6 +115,17 @@ final class LegacyClassNameContractTest extends TestCase
          * unregistered, so nothing has called it on this branch at all.
          */
         'owa_conversionHandlers',
+
+        /*
+         * REMOVED on the v2 branch: the goal{N}Completions, Starts and Value
+         * metric families. They numbered goals by 1.x slot and read the
+         * owa_session.goal_N columns. Unregistered since the v1 metric
+         * vocabulary was removed; v2 counts conversions with goalConversions,
+         * over is_goal_event.
+         */
+        'owa_goalNCompletions',
+        'owa_goalNStarts',
+        'owa_goalNValue',
     ];
     private const RETIRED = [
         /*
