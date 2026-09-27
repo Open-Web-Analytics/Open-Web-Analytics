@@ -60,7 +60,18 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'id', OWA_DTD_BIGINT, false ) );
         $this->properties['id']->setPrimaryKey();
 
-        $this->setProperty( $this->column( 'event_type', OWA_DTD_VARCHAR24, false ) );
+        /*
+         * Wide enough for any name a site may give a custom event -- 40
+         * characters, TrackingEventHelpers::CUSTOM_NAME_PATTERN -- and NOT
+         * TRUNCATABLE. It was VARCHAR(24), and the entity layer trims an
+         * over-long value to fit, so a 25-40 character name was stored cut while
+         * the row id was derived from the whole name: two events sharing their
+         * first 24 characters reported as one. Refused rather than trimmed now,
+         * because a trimmed name is a different event. Update055.
+         */
+        $event_type = $this->column( 'event_type', OWA_DTD_VARCHAR64, false );
+        $event_type->setTruncatable( false );
+        $this->setProperty( $event_type );
         $this->setProperty( $this->column( 'site_id', OWA_DTD_VARCHAR64, false ) );
 
         $this->setProperty( $this->column( 'visitor_id', OWA_DTD_BIGINT, false ) );
