@@ -644,18 +644,63 @@ describe('site search', () => {
     });
 
     /*
-     * AND IT IS ACTUALLY CALLED. The method existed and nothing invoked it; the
-     * page view is what invokes it now, so a results page reports itself.
+     * THE CACHE IS KEYED ON THE URL IT PARSED. Filled once and kept, an SPA read
+     * the FIRST page's parameters for the rest of the session -- so every route
+     * change reported the term from whatever screen the visitor landed on, which is
+     * a wrong answer rather than a missing one.
      */
-    test('a page view on a results page raises it too', () => {
+    test('the parameter cache follows the URL', () => {
+        const t = newTracker();
+
+        history.pushState({}, '', '/search?q=first');
+        expect(t.getUrlParam('q')).toBe('first');
+
+        history.pushState({}, '', '/search?q=second');
+        expect(t.getUrlParam('q')).toBe('second');
+
+        // And a URL with no parameters answers false rather than the last page's.
+        history.pushState({}, '', '/plain');
+        expect(t.getUrlParam('q')).toBe(false);
+    });
+
+    /*
+     * NOT CHAINED TO trackPageView. A public method whose contract is "send a page
+     * view" must not also send a different event -- and the chain broke on the
+     * argument trackPageView takes, because parseUrlParams() ignored its own url
+     * parameter and read location.href. The snippet pushes trackSiteSearch, and
+     * trackRouteChanges() calls it per route.
+     */
+    test('a page view does not raise it by itself', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
         t.getUrlParam = (name) => (name === 'q' ? 'partitioning' : false);
         t.trackPageView('https://example.org/search?q=partitioning');
 
-        expect(sent.map((e) => e.event_type))
-            .toEqual(['page_view', 'view_search_results']);
+        expect(sent.map((e) => e.event_type)).toEqual(['page_view']);
+    });
+
+    /*
+     * BINDS NOTHING, so it is called per page like trackPageView rather than once
+     * like trackClicks. An SPA route change is a new page and therefore a new
+     * search.
+     */
+    test('a route change raises it again, with the new term', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+        const terms = ['first', 'second'];
+
+        t.getUrlParam = (name) => (name === 'q' ? terms.shift() : false);
+
+        t.trackRouteChanges();
+        t.trackSiteSearch();
+
+        history.pushState({}, '', '/search?q=second');
+
+        const searches = sent.filter((e) => e.event_type === 'view_search_results');
+
+        expect(searches).toHaveLength(2);
+        expect(searches.map((e) => e.search_term)).toEqual(['first', 'second']);
     });
 });
 

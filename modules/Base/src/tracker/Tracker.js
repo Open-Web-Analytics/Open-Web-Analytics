@@ -191,6 +191,8 @@ class OWATracker  {
 	     * GET params parsed from URL
 	     */
 	    this.urlParams =  {};
+	    /** The URL this.urlParams was parsed from, so a route change re-parses. */
+	    this.urlParamsFrom = '';
 	    /**
 	     * DOM stream Event Binding Methods
 	     */
@@ -784,15 +786,34 @@ class OWATracker  {
         }
     }
 
+    /**
+     * One query parameter of the current URL, or false.
+     *
+     * The constructor seeds this.urlParams to {} -- a truthy value -- so the old
+     * `this.urlParams || parseUrlParams()` guard ALWAYS short-circuited to the
+     * empty object and never parsed the URL, making this return false for every
+     * query param (e.g. the ?owa_state= cross-domain linking token in
+     * checkForLinkedState).
+     *
+     * THE CACHE IS KEYED ON THE URL IT WAS PARSED FROM. It used to be filled once
+     * and kept, which is correct for a document that loads once and wrong for an
+     * SPA: after a route change the parameters are the FIRST page's, so a reader
+     * gets a stale answer rather than no answer. Site search is where that showed
+     * up -- every virtual page view would have reported the term from whatever
+     * screen the visitor landed on first.
+     *
+     * Still one parse per URL, so the saving that motivated the cache is intact.
+     */
     getUrlParam(name) {
 
-        // The constructor seeds this.urlParams to {} -- a truthy value -- so the
-        // old `this.urlParams || parseUrlParams()` guard ALWAYS short-circuited to
-        // the empty object and never parsed the URL, making getUrlParam return
-        // false for every query param (e.g. the ?owa_state= cross-domain linking
-        // token in checkForLinkedState). Parse when the cache is still empty.
-        if ( Util.is_object( this.urlParams ) && Object.keys( this.urlParams ).length === 0 ) {
-            this.urlParams = Util.parseUrlParams();
+        var href = ( typeof location !== 'undefined' && location ) ? location.href : '';
+
+        if ( ! Util.is_object( this.urlParams )
+             || this.urlParamsFrom !== href
+             || Object.keys( this.urlParams ).length === 0 ) {
+
+            this.urlParams = Util.parseUrlParams( href );
+            this.urlParamsFrom = href;
         }
 
         if ( this.urlParams.hasOwnProperty( name ) ) {
@@ -2470,6 +2491,18 @@ class OWATracker  {
             that.last_scroll = 0;
 
             that.trackPageView( url );
+
+            /*
+             * A ROUTE CHANGE TO A RESULTS URL IS A NEW SEARCH, so this is called
+             * per route the way trackPageView is. trackSiteSearch() reads the URL
+             * and raises an event; it binds no listener, so there is nothing that
+             * would have noticed the change by itself.
+             *
+             * This is why getUrlParam()'s cache is keyed on the URL it parsed:
+             * filled once and kept, every route change here would have reported
+             * the term from whatever screen the visitor landed on first.
+             */
+            that.trackSiteSearch();
         };
 
         if ( typeof window.history === 'object' && window.history ) {
@@ -4046,28 +4079,7 @@ class OWATracker  {
 
         event.setEventType( 'page_view' );
 
-        var result = this.trackEvent( event );
-
-        /*
-         * SITE SEARCH RIDES THE PAGE VIEW, because a results page IS a page view
-         * and the term is in the URL that was just recorded.
-         *
-         * NOT A SNIPPET COMMAND, unlike trackClicks, trackForms and trackScroll.
-         * Those bind listeners and a site should be able to decline the work; this
-         * binds nothing. It is a few property lookups against the URL already in
-         * hand, and asking for it could not make it cheaper. A site whose ?q= means
-         * something else calls setSearchQueryParams([]).
-         *
-         * AFTER the page view rather than before. GA sends its view_search_results
-         * FIRST -- measured, at _s=1 ahead of the page view -- and OWA could not
-         * have copied that until expand() stopped gating the session and visitor
-         * markers on page_view. It no longer does, so the order is a free choice;
-         * the page view goes first because it is the event the results page
-         * actually is, and the search is a reading of it.
-         */
-        this.trackSiteSearch();
-
-        return result;
+        return this.trackEvent( event );
     }
 
     /**

@@ -253,10 +253,25 @@ class Util {
         return decodeURIComponent(str.replace(/\+/g, '%20'));
     }
     
+    /**
+     * The query parameters of a URL, lower-cased keys, decoded values.
+     *
+     * IT NOW HONOURS ITS ARGUMENT. The signature has always taken a url and the
+     * body always read `location.href` regardless -- so a caller passing one got
+     * the browser's parameters instead, silently. Nothing passed one until site
+     * search needed to read the URL a virtual page view names rather than the
+     * document's, which is where the mismatch would have shown up as the wrong
+     * search term rather than none.
+     *
+     * @param {string} [url]  defaults to the current document's URL
+     */
     static parseUrlParams ( url ) {
         
         var _GET = {};
-        for(var i,a,m,n,o,v,p=location.href.split(/[?&]/),l=p.length,k=1;k<l;k++)
+        var href = ( typeof url === 'string' && url )
+            ? url
+            : ( ( typeof location !== 'undefined' && location ) ? location.href : '' );
+        for(var i,a,m,n,o,v,p=href.split(/[?&]/),l=p.length,k=1;k<l;k++)
             if( (m=p[k].match(/(.*?)(\..*?|\[.*?\])?=([^#]*)/)) && m.length==4){
                 n=decodeURI(m[1]).toLowerCase(),o=_GET,v=decodeURI(m[3]);
                 if(m[2])

@@ -195,11 +195,17 @@ class Module extends \OWA\Core\Module {
      * unrelated feature's sample rate. The two are separate features sharing a DOM
      * event and each binds its own listener now.
      *
-     * trackSiteSearch is NOT here, and is called from trackPageView() instead. It
-     * binds no listener: it is a reading of the URL that page view already
-     * recorded, so it costs a few property lookups when the page is not a search
-     * and cannot be made cheaper by asking for it. A site whose ?q= means
-     * something else calls setSearchQueryParams([]).
+     * trackSiteSearch IS here, and was briefly chained to trackPageView() instead.
+     * That was wrong twice over. A public method whose contract is "send a page
+     * view" should not also send a different event; and the chain broke on the
+     * argument trackPageView takes -- Util.parseUrlParams() ignored its own url
+     * parameter and read location.href, so a virtual page view named one URL while
+     * the search read another. Both are fixed, and the command is where every other
+     * feature is declared.
+     *
+     * It binds no listener, so like trackPageView it is called per page --
+     * trackRouteChanges() calls it on each route change for that reason. A site
+     * whose ?q= means something else calls setSearchQueryParams([]).
      */
     function addTrackerCmds( $cmds ) {
 
@@ -207,6 +213,7 @@ class Module extends \OWA\Core\Module {
         $cmds[] = "owa_cmds.push(['trackClicks']);";
         $cmds[] = "owa_cmds.push(['trackForms']);";
         $cmds[] = "owa_cmds.push(['trackScroll']);";
+        $cmds[] = "owa_cmds.push(['trackSiteSearch']);";
 
         return $cmds;
     }
