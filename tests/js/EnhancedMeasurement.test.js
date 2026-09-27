@@ -945,6 +945,9 @@ describe('custom events', () => {
  */
 describe('engagement time is a per-event delta', () => {
 
+    // jsdom answers false; the engagement clock only runs for a focused page.
+    beforeEach(() => { document.hasFocus = () => true; });
+
     test('a click carries the time accrued since the last report', () => {
         const sent = [];
         const t = newTracker();

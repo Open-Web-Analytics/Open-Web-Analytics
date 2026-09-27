@@ -253,6 +253,13 @@ class OWATracker  {
 	    /** Whether bindPageLifecycleEvents() has run; binding twice sends twice. */
 	    this.pageLifecycleBound = false;
 	    /**
+	     * Whether the window has focus. Read from document.hasFocus() when the
+	     * lifecycle is bound, then kept by the focus and blur events.
+	     */
+	    this.pageFocused = true;
+	    /** Whether a page view has been sent; the first carries no engagement. */
+	    this.pageViewSent = false;
+	    /**
 	     * Whether SPA route changes are being watched. Opt-in, and patching
 	     * history.pushState twice would double every route change.
 	     */
@@ -2289,10 +2296,28 @@ class OWATracker  {
      */
     startEngagement() {
 
-        if ( this.engagementSince === null ) {
+        if ( this.engagementSince === null && this.isPageEngaged() ) {
 
             this.engagementSince = this.getTime();
         }
+    }
+
+    /**
+     * Whether the page is being read: visible AND focused.
+     *
+     * Visible alone counted a window left open behind another application, or
+     * on a second monitor, as reading time for as long as it stayed there.
+     *
+     * @return {boolean}
+     */
+    isPageEngaged() {
+
+        if ( typeof document === 'undefined' ) {
+
+            return true;
+        }
+
+        return document.visibilityState !== 'hidden' && this.pageFocused;
     }
 
     /**
@@ -2384,12 +2409,19 @@ class OWATracker  {
 
         this.pauseEngagement();
 
-        var delta = this.consumeEngagementDelta();
-
-        if ( delta <= 0 ) {
+        /*
+         * UNDER A SECOND IS NOT AN EVENT OF ITS OWN. The residue stays
+         * unreported, so the next event carries it if there is one; if the page
+         * is leaving, under a second of it is lost. Without the floor a brief
+         * tab switch sends a user_engagement carrying a few milliseconds.
+         */
+        if ( this.engagementAccrued - this.engagementReported
+             < OWATracker.MIN_ENGAGEMENT_EVENT_MSEC ) {
 
             return;
         }
+
+        var delta = this.consumeEngagementDelta();
 
         var event = this.makeEvent();
         event.setEventType( 'user_engagement' );
@@ -2431,6 +2463,8 @@ class OWATracker  {
 
         this.pageLifecycleBound = true;
 
+        this.pageFocused = typeof document.hasFocus === 'function' ? document.hasFocus() : true;
+
         var that = this;
 
         document.addEventListener( 'visibilitychange', function () {
@@ -2446,7 +2480,31 @@ class OWATracker  {
 
         }, false );
 
+        /*
+         * A FALLBACK. On every unload the current spec fires visibilitychange
+         * (hidden) first, and this finds nothing left to send. Safari has unloaded
+         * pages without it, and then this is the only notice the page is leaving.
+         */
         window.addEventListener( 'pagehide', function () { that.trackEngagement(); }, false );
+
+        /*
+         * Focus pauses and resumes the clock without sending: a visible window
+         * behind another application is not being read. The time banked before
+         * a blur rides the next event, or the hide.
+         */
+        window.addEventListener( 'blur', function () {
+
+            that.pageFocused = false;
+            that.pauseEngagement();
+
+        }, false );
+
+        window.addEventListener( 'focus', function () {
+
+            that.pageFocused = true;
+            that.startEngagement();
+
+        }, false );
 
         /*
          * A bfcache restore is a page that was never torn down coming back.
@@ -3979,6 +4037,15 @@ class OWATracker  {
     }
 
     /**
+     * The least unreported engagement, in milliseconds, that is sent as a
+     * user_engagement event of its own. Less than this rides the next event.
+     */
+    static get MIN_ENGAGEMENT_EVENT_MSEC() {
+
+        return 1000;
+    }
+
+    /**
      * The event names v2 defines for itself, which a custom event may not take.
      *
      * The reserved list IS the first-class list -- page_view, click, scroll,
@@ -4105,6 +4172,17 @@ class OWATracker  {
         }
 
         event.setEventType( 'page_view' );
+
+        /*
+         * THE FIRST PAGE VIEW CARRIES NO ENGAGEMENT. What has accrued before it is
+         * the milliseconds between the tracker being built and the snippet asking
+         * for a page view, which is not reading time. The clock restarts here.
+         */
+        if ( ! this.pageViewSent ) {
+
+            this.pageViewSent = true;
+            this.resetEngagement();
+        }
 
         return this.trackEvent( event );
     }

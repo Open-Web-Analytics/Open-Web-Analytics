@@ -37,6 +37,8 @@ beforeEach(() => {
     OWA.setSetting('loggerPause', false);
 
     hidden = 'visible';
+    // jsdom answers false; a page being read has focus.
+    document.hasFocus = () => true;
     Object.defineProperty(document, 'visibilityState', {
         configurable: true,
         get() { return hidden; },
@@ -108,9 +110,79 @@ describe('engagement deltas', () => {
         t.resetEngagement();
         atTime(t, 2500);
 
-        t.trackPageView('https://eng.example/a');
+        t.trackCustomEvent('signup');
 
         expect(sent[0].engagement_msec).toBe(1500);
+    });
+
+    /*
+     * What accrues before the first page view is the gap between the tracker
+     * being built and the snippet asking for one -- not reading time. The clock
+     * restarts there.
+     */
+    test('the first page view carries no engagement, and the clock restarts at it', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 1000);
+        t.resetEngagement();
+        atTime(t, 2500);
+
+        t.trackPageView('https://eng.example/a');
+        expect(sent[0].engagement_msec).toBeUndefined();
+
+        atTime(t, 4000);
+        t.trackCustomEvent('signup');
+        expect(sent[1].engagement_msec).toBe(1500, 'counted from the page view, not from 1000');
+    });
+
+    test('a later page view carries what accrued since the last report', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+        t.trackPageView('https://eng.example/a');
+
+        atTime(t, 3000);
+        t.trackPageView('https://eng.example/b');
+
+        expect(sent[1].engagement_msec).toBe(3000);
+    });
+
+    /*
+     * UNDER A SECOND IS NOT AN EVENT. The residue is not dropped, though: it
+     * stays unreported and the next event carries it.
+     */
+    test('a residue under one second sends nothing, and rides the next event', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+
+        atTime(t, 500);
+        t.trackEngagement();
+        expect(sent).toHaveLength(0);
+
+        t.startEngagement();
+        atTime(t, 1500);
+        t.trackCustomEvent('signup');
+
+        expect(sent[0].engagement_msec).toBe(1500, 'the 500 ms before the hide, and the second after it');
+    });
+
+    test('one second exactly is sent', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+        atTime(t, 1000);
+        t.trackEngagement();
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0].engagement_msec).toBe(1000);
     });
 
     test('an event carries no engagement when none has accrued', () => {
@@ -127,6 +199,55 @@ describe('engagement deltas', () => {
 });
 
 describe('page lifecycle', () => {
+
+    /*
+     * A visible window behind another application, or on a second monitor, is
+     * not being read. Blur pauses the clock and sends nothing; focus resumes it.
+     */
+    test('blur pauses the clock without sending; focus resumes it', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+
+        atTime(t, 3000);
+        window.dispatchEvent(new Event('blur'));
+        expect(sent).toHaveLength(0, 'a blur is a pause, not a report');
+
+        atTime(t, 13000);
+        window.dispatchEvent(new Event('focus'));
+
+        atTime(t, 15000);
+        hidden = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0].engagement_msec).toBe(5000, 'three seconds before the blur and two after the focus');
+    });
+
+    test('a page loaded without focus does not count until it gets focus', () => {
+        document.hasFocus = () => false;
+
+        let now = 0;
+        const clock = jest.spyOn(OWATracker.prototype, 'getTime').mockImplementation(() => now);
+
+        try {
+            const t = newTracker();
+            const sent = captureSends(t);
+
+            now = 10000;
+            window.dispatchEvent(new Event('focus'));
+
+            now = 12000;
+            hidden = 'hidden';
+            document.dispatchEvent(new Event('visibilitychange'));
+
+            expect(sent[0].engagement_msec).toBe(2000, 'counted from the focus, not from the load');
+        } finally {
+            clock.mockRestore();
+        }
+    });
 
     /*
      * THE PRODUCTION PATH. A tracker built the way a page builds it -- the
