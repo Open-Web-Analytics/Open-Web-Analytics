@@ -388,6 +388,83 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A PURCHASE IS STORED ONCE PER TRANSACTION ID. A reloaded receipt page sends
+     * it again with a new arrival time -- a new row id -- and it was stored twice.
+     */
+    public function testAPurchaseSentAgainIsNotStoredAgain(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $order   = 'order-dup-' . $visitor;
+
+        $first  = $this->uniqueSessionId();
+        $second = $this->uniqueSessionId();
+
+        foreach ([$first, $second] as $session) {
+            $this->fireEvent('ecommerce.transaction', $this->purchase($visitor, $session, $order));
+        }
+
+        $this->assertArrayHasKey('purchase', $this->rowsFor($this->site, $visitor, $first));
+        $this->assertArrayNotHasKey('purchase', $this->rowsFor($this->site, $visitor, $second),
+            'the same transaction id was stored a second time');
+    }
+
+    /**
+     * Only the purchase is dropped: a session_start the duplicate carried is the
+     * session's, and is kept.
+     */
+    public function testADuplicateKeepsTheEventsMaterializedBesideIt(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $order   = 'order-dup-marker-' . $visitor;
+
+        $this->fireEvent('ecommerce.transaction', $this->purchase($visitor, $this->uniqueSessionId(), $order));
+
+        $session = $this->uniqueSessionId();
+        $this->fireEvent('ecommerce.transaction',
+            $this->purchase($visitor, $session, $order) + ['is_new_session_start' => true]);
+
+        $rows = $this->rowsFor($this->site, $visitor, $session);
+
+        $this->assertArrayNotHasKey('purchase', $rows);
+        $this->assertArrayHasKey('session_start', $rows,
+            'the new session marker went with the duplicate purchase');
+    }
+
+    /**
+     * An EMPTY transaction id is not a duplicate of another empty one: treating
+     * it as one would keep only the first id-less purchase a site ever made.
+     */
+    public function testPurchasesWithNoTransactionIdAreAllKept(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $sessions = [$this->uniqueSessionId(), $this->uniqueSessionId()];
+
+        foreach ($sessions as $session) {
+            $this->fireEvent('ecommerce.transaction', ['ct_order_id' => ''] + $this->purchase($visitor, $session, ''));
+        }
+
+        foreach ($sessions as $session) {
+            $this->assertArrayHasKey('purchase', $this->rowsFor($this->site, $visitor, $session));
+        }
+    }
+
+    private function purchase(string $visitor, string $session, string $order): array
+    {
+        return [
+            'site_id'            => $this->site,
+            'visitor_id'         => $visitor,
+            'session_id'         => $session,
+            'page_url'           => 'https://owa-test-site/v2/receipt',
+            'page_location'      => 'https://owa-test-site/v2/receipt',
+            'ct_order_id'        => $order,
+            'ct_total'           => 10,
+            'currency'           => 'USD',
+            'sts'                => time(),
+            'num_prior_sessions' => 1,
+        ];
+    }
+
+    /**
      * A tracker cannot send a materialized name. The server is their only
      * source; a beacon naming one would be stored beside the real one.
      */

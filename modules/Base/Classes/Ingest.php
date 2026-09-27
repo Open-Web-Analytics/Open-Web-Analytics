@@ -94,6 +94,9 @@ class Ingest {
      *   10   MaterializedEvents::sessionStart, ::firstVisit -- append
      *        session_start and first_visit when the incoming event carries the
      *        flag for them, built from the registry.
+     *   50   PurchaseDeduplication::drop -- removes a purchase whose
+     *        transaction id its site already has, keeping any event
+     *        materialized beside it.
      *   100  GoalMarking::mark -- sets is_goal_event on EVERY event in the set,
      *        each on its own values. Last, so it sees whatever was appended.
      *        A callback appending at a priority above 100 appends an event

@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 56;
+        $this->required_schema_version = 57;
         return parent::__construct();
     }
 
@@ -169,6 +169,10 @@ class Module extends \OWA\Core\Module {
         \OWA\Core\CoreAPI::registerFilter(
             \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
             array( '\OWA\Module\Base\Classes\MaterializedEvents', 'firstVisit' ), 10 );
+
+        \OWA\Core\CoreAPI::registerFilter(
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
+            array( '\OWA\Module\Base\Classes\PurchaseDeduplication', 'drop' ), 50 );
 
         \OWA\Core\CoreAPI::registerFilter(
             \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,

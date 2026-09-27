@@ -382,6 +382,10 @@ class EventRaw extends \OWA\Core\Entity {
          */
         $this->addCompositeIndex( 'site_date', array( 'site_id', 'yyyymmdd' ) );
         $this->addCompositeIndex( 'site_type_date', array( 'site_id', 'event_type', 'yyyymmdd' ) );
+
+        // A purchase already stored under this transaction id, looked up per
+        // purchase at ingest (Classes\PurchaseDeduplication). Update057.
+        $this->addCompositeIndex( 'site_transaction', array( 'site_id', 'transaction_id' ) );
     }
 
     /**

@@ -139,7 +139,8 @@ final class EventRawEntityTest extends TestCase
 
         $this->assertSame(
             ['site_date' => ['site_id', 'yyyymmdd'],
-             'site_type_date' => ['site_id', 'event_type', 'yyyymmdd']],
+             'site_type_date' => ['site_id', 'event_type', 'yyyymmdd'],
+             'site_transaction' => ['site_id', 'transaction_id']],
             $entity->getCompositeIndexes());
 
         $this->assertTrue($entity->isColumnIndexed('visitor_id'));
