@@ -287,6 +287,109 @@ describe('forms', () => {
     });
 });
 
+describe('scroll depth', () => {
+
+    /*
+     * UNTIL trackScroll() EXISTED, THIS RODE DOMSTREAM. bindScrollEvents() was
+     * reachable only through the recorder's streamBindings, which trackDomStream()
+     * iterates -- so a first-class event fired on installs with that module active,
+     * for the sampled fraction of visitors, and nowhere else.
+     */
+    test('trackScroll binds its own listener, without domstream', () => {
+        const t = newTracker();
+        const bound = [];
+        const real = window.addEventListener;
+        window.addEventListener = (type, fn, capture) => {
+            bound.push(type);
+            return real.call(window, type, fn, capture);
+        };
+
+        try {
+            expect(t.getOption('trackDomStream')).not.toBe(true);
+            t.trackScroll();
+        } finally {
+            window.addEventListener = real;
+        }
+
+        expect(bound).toContain('scroll');
+    });
+
+    /*
+     * The snippet pushes each command once, but a site can push one twice, and two
+     * listeners would report every threshold twice.
+     */
+    test('pushing the command twice binds once', () => {
+        const t = newTracker();
+        let bound = 0;
+        const real = window.addEventListener;
+        window.addEventListener = (type, fn, capture) => {
+            if (type === 'scroll') { bound++; }
+            return real.call(window, type, fn, capture);
+        };
+
+        try {
+            t.trackScroll();
+            t.trackScroll();
+        } finally {
+            window.addEventListener = real;
+        }
+
+        expect(bound).toBe(1);
+    });
+
+    /*
+     * THE RECORDER'S BINDING IS A DIFFERENT FEATURE. It samples scroll position for
+     * playback; this checks whether a depth threshold was passed. They were one
+     * handler because window.onscroll is a single slot, which is why depth fired
+     * only where domstream was active -- and why neither uses that slot now.
+     */
+    test('the domstream sampler queues nothing when domstream is off', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+        const queued = [];
+        t.addToEventQueue = (event) => queued.push(event.get('event_type'));
+
+        t.scrollEventHandler({});
+
+        expect(queued).toEqual([]);
+        expect(sent).toHaveLength(0);
+    });
+
+    test('passing the threshold raises one scroll event carrying the depth', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getScrollDepth = () => 95;
+        t.checkScrollDepth();
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0].event_type).toBe('scroll');
+        expect(sent[0].scroll_depth).toBe(90);
+    });
+
+    /* ONE EVENT PER PAGE PER THRESHOLD, not one per scroll tick. */
+    test('a second scroll past the same threshold raises nothing', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getScrollDepth = () => 95;
+        t.checkScrollDepth();
+        t.checkScrollDepth();
+
+        expect(sent).toHaveLength(1);
+    });
+
+    test('short of the threshold raises nothing', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getScrollDepth = () => 40;
+        t.checkScrollDepth();
+
+        expect(sent).toHaveLength(0);
+    });
+});
+
 describe('what a form event says about the form', () => {
 
     /** Fire a form_start by focusing a field, and return the beacon. */

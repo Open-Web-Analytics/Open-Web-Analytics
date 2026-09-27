@@ -171,10 +171,42 @@ class Module extends \OWA\Core\Module {
             array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ) );
     }
 
+    /**
+     * The commands the generated snippet pushes, and therefore what a site records
+     * out of the box.
+     *
+     * THIS FILTER IS OWA'S ANALOGUE OF GA'S PER-STREAM CONFIGURATION. GA compiles
+     * the enabled features into the script it serves for a measurement id -- the
+     * bundle for a real id is 528KB against 434KB for an unknown one, and only the
+     * real one carries the outbound-click, download and form tags. OWA decides the
+     * same thing here, per site, and writes commands into the page instead. Same
+     * seam, reached differently; measured 2026-09-26.
+     *
+     * So a feature that is not named here does not happen, however complete its
+     * tracker method, registry entry and reserved name are. trackForms and
+     * trackScroll were in exactly that state: both fully implemented, neither
+     * invoked. CommandQueue dispatches any tracker method by name, so a site could
+     * always have pushed them -- but nothing told it to, and nothing shipped them.
+     *
+     * SCROLL WAS WORSE THAN ABSENT. The depth check hung off the domstream
+     * recorder's scroll binding, reachable only through its streamBindings, so
+     * scroll events fired on installs with that module active, for the sampled
+     * fraction of visitors, and nowhere else -- a first-class event gated on an
+     * unrelated feature's sample rate. The two are separate features sharing a DOM
+     * event and each binds its own listener now.
+     *
+     * trackSiteSearch is NOT here, and is called from trackPageView() instead. It
+     * binds no listener: it is a reading of the URL that page view already
+     * recorded, so it costs a few property lookups when the page is not a search
+     * and cannot be made cheaper by asking for it. A site whose ?q= means
+     * something else calls setSearchQueryParams([]).
+     */
     function addTrackerCmds( $cmds ) {
 
         $cmds[] = "owa_cmds.push(['trackPageView']);";
         $cmds[] = "owa_cmds.push(['trackClicks']);";
+        $cmds[] = "owa_cmds.push(['trackForms']);";
+        $cmds[] = "owa_cmds.push(['trackScroll']);";
 
         return $cmds;
     }

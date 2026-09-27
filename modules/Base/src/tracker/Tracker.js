@@ -196,6 +196,11 @@ class OWATracker  {
 	     */
 	    this.streamBindings  =  ['bindMovementEvents', 'bindScrollEvents','bindKeypressEvents', 'bindClickEvents'];
 	    /**
+	     * Whether trackScroll() has bound its depth listener, so pushing the
+	     * command twice does not report every threshold twice.
+	     */
+	    this.isScrollTrackingEnabled = false;
+	    /**
 	     * Latest click event
 	     */
 	    this.click  =  '';
@@ -2093,33 +2098,49 @@ class OWATracker  {
 
     }
 
+    /**
+     * The DOMSTREAM's scroll sampling. Part of the recording, nothing else.
+     *
+     * TWO FEATURES SHARE THIS DOM EVENT AND ARE OTHERWISE UNRELATED: the recorder
+     * wants a position sample to play back, and scroll-depth tracking wants to know
+     * when a threshold is passed. They were one handler because `window.onscroll`
+     * is a single slot -- assigning it twice clobbers -- so the depth check had to
+     * be bolted onto the recorder's binding, and depth therefore fired only where
+     * domstream was active and only for its sampled fraction of visitors.
+     *
+     * addEventListener, so each feature binds its own. It also stops OWA
+     * overwriting a scroll handler the PAGE installed, which `window.onscroll =`
+     * did unconditionally.
+     */
     bindScrollEvents() {
 
         var that = this;
-        window.onscroll = function (e) { that.scrollEventHandler( e ); }
+
+        window.addEventListener( 'scroll',
+            function ( e ) { that.scrollEventHandler( e ); }, false );
     }
 
+    /**
+     * One position sample for the recording. Queued, never sent on its own -- 1.x
+     * has no server handler for dom.scroll, so this has always been playback data
+     * rather than an event.
+     */
     scrollEventHandler(e) {
 
         // hack for IE
         e = e || window.event;
 
-        /*
-         * The RECORDING sample. Queued for the domstream and never sent on its
-         * own -- 1.x has no server handler for dom.scroll, so this has always
-         * been playback data rather than an event.
-         */
-        if ( this.getOption( 'trackDomStream' ) ) {
+        if ( ! this.getOption( 'trackDomStream' ) ) {
 
-            var sample = new OwaEvent();
-            sample.setEventType( 'dom.scroll' );
-            var coords = this.getScrollingPosition();
-            sample.set( 'x', coords.x );
-            sample.set( 'y', coords.y );
-            this.addToEventQueue( sample );
+            return;
         }
 
-        this.checkScrollDepth();
+        var sample = new OwaEvent();
+        sample.setEventType( 'dom.scroll' );
+        var coords = this.getScrollingPosition();
+        sample.set( 'x', coords.x );
+        sample.set( 'y', coords.y );
+        this.addToEventQueue( sample );
     }
 
     /**
@@ -4029,15 +4050,20 @@ class OWATracker  {
 
         /*
          * SITE SEARCH RIDES THE PAGE VIEW, because a results page IS a page view
-         * and the term is in the URL that was just recorded. Nothing else called
-         * this, so the event could not fire at all.
+         * and the term is in the URL that was just recorded.
          *
-         * AFTER the page view rather than before. GA sends its
-         * view_search_results FIRST -- measured, at _s=1 ahead of the page view --
-         * and OWA could not have copied that until expand() stopped gating the
-         * session and visitor markers on page_view. It no longer does, so the
-         * order is a free choice; the page view goes first because it is the
-         * event the results page actually is, and the search is a reading of it.
+         * NOT A SNIPPET COMMAND, unlike trackClicks, trackForms and trackScroll.
+         * Those bind listeners and a site should be able to decline the work; this
+         * binds nothing. It is a few property lookups against the URL already in
+         * hand, and asking for it could not make it cheaper. A site whose ?q= means
+         * something else calls setSearchQueryParams([]).
+         *
+         * AFTER the page view rather than before. GA sends its view_search_results
+         * FIRST -- measured, at _s=1 ahead of the page view -- and OWA could not
+         * have copied that until expand() stopped gating the session and visitor
+         * markers on page_view. It no longer does, so the order is a free choice;
+         * the page view goes first because it is the event the results page
+         * actually is, and the search is a reading of it.
          */
         this.trackSiteSearch();
 
@@ -4484,6 +4510,33 @@ class OWATracker  {
         this.setOption('logClicksAsTheyHappen', true);
         this.bindClickEvents();
 
+    }
+
+    /**
+     * Raise a `scroll` event when the page passes a depth threshold.
+     *
+     * ITS OWN LISTENER, not the domstream recorder's. The two are separate features
+     * that happen to share a DOM event, and they were fused because
+     * `window.onscroll` is a single slot -- so scroll depth fired only on installs
+     * with domstream active, and only for its sampled fraction of visitors. A
+     * first-class event gated on an unrelated feature's sample rate.
+     *
+     * Idempotent, like trackClicks(): the snippet pushes each command once, but a
+     * site can push one twice and two listeners would report every threshold twice.
+     */
+    trackScroll() {
+
+        if ( this.isScrollTrackingEnabled ) {
+
+            return;
+        }
+
+        var that = this;
+
+        window.addEventListener( 'scroll',
+            function () { that.checkScrollDepth(); }, false );
+
+        this.isScrollTrackingEnabled = true;
     }
 
     logDomStream() {
