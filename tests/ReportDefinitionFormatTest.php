@@ -1428,8 +1428,8 @@ final class ReportDefinitionFormatTest extends TestCase
      * its own.
      *
      * Absent is the default and means the site's -- Site Usage, e-commerce when
-     * the site setting is on, one per active goal group. Those first two are
-     * global constants despite living behind MetricSets::forSite(); only
+     * the site setting is on. Both are global constants despite living behind
+     * MetricSets::forSite(); only
      * e-commerce's PRESENCE varies by site, and nothing varied by report until
      * this key. That is the gap user-authored reports need closed.
      */
@@ -1621,7 +1621,7 @@ final class ReportDefinitionFormatTest extends TestCase
      * The switch is `! $view->metrics` in report_widgets.php: a definition that
      * names its own metrics renders one grid of them, and one that does not
      * takes whatever sets the site has -- Site Usage, e-commerce when the site
-     * setting is on, and one per active goal group.
+     * setting is on.
      *
      * This is what `campaigns` was converted onto. Its controller appended
      * `transactions,transactionRevenue` to a single grid when
@@ -1977,99 +1977,6 @@ final class ReportDefinitionFormatTest extends TestCase
      * to suit -- "'pageUrl'". That let a report definition emit arbitrary
      * script, in the file format that is meant to become user-authorable.
      */
-    /**
-     * A widget may name a derived metric list, and only a known one.
-     *
-     * The metrics only exist per site -- one per goal a site has configured --
-     * so `goals` cannot spell them out. Everything about the value reaching a
-     * query says it should be whitelisted like a formatter is.
-     */
-    public function testAnUnknownMetricSourceIsRefused(): void
-    {
-        $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title'   => 'Derived',
-            'widgets' => array(
-                array( 'type' => 'metric-boxes',
-                       'query' => array( 'metrics' => '@activeGoalCompletion' ) ),
-            ),
-        ) );
-
-        $this->assertStringContainsString( 'widget 0', $error );
-        $this->assertStringContainsString( 'activeGoalCompletion', $error );
-        $this->assertStringContainsString( '@activeGoalCompletions', $error,
-            'the error must name what IS available, not only what is not' );
-    }
-
-    public function testAKnownMetricSourceIsAccepted(): void
-    {
-        $this->assertSame( '', (string) \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title'   => 'Derived',
-            'widgets' => array(
-                array( 'type' => 'metric-boxes',
-                       'query' => array( 'metrics' => '@activeGoalCompletions' ) ),
-            ),
-        ) ) );
-    }
-
-    /**
-     * An ordinary metric list starting with no sigil is untouched -- the check
-     * must not treat every metrics value as a source name.
-     */
-    public function testAPlainMetricListIsNotTreatedAsASource(): void
-    {
-        $this->assertSame( '', (string) \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title'   => 'Plain',
-            'widgets' => array(
-                array( 'type' => 'metric-boxes',
-                       'query' => array( 'metrics' => 'sessions,totalUsers' ) ),
-            ),
-        ) ) );
-    }
-
-    /**
-     * A panel with nothing to measure is dropped, not drawn empty.
-     *
-     * Asking for no metrics returns no columns, and a headed "Goal
-     * Performance" box with nothing in it reads as a broken report rather than
-     * as a site that has not configured any goals. The controller this
-     * replaced made the same choice with `if ($view->goal_metrics)`.
-     */
-    public function testAWidgetWhoseMetricSourceIsEmptyIsDropped(): void
-    {
-        $method = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'resolveMetricSources' );
-        $method->setAccessible( true );
-
-        $widgets = array(
-            array( 'type' => 'trend', 'id' => 'trend', 'query' => array( 'dimensions' => 'date' ) ),
-            array( 'type' => 'metric-boxes', 'id' => 'goalMetrics',
-                   'query' => array( 'metrics' => '@activeGoalCompletions' ) ),
-            array( 'type' => 'report-links', 'links' => array() ),
-        );
-
-        // A site with no goals, so the source resolves to nothing.
-        $out = $method->invoke( null, $widgets, md5( 'definition-format-probe.example' ) );
-
-        $this->assertCount( 2, $out, 'the panel with no metrics is gone' );
-        $this->assertSame( array( 'trend', 'report-links' ), array_column( $out, 'type' ),
-            'and the widgets around it keep their order' );
-        $this->assertSame( array( 0, 1 ), array_keys( $out ),
-            're-indexed: a hole would be rendered as a missing widget' );
-    }
-
-    /** A widget that names no source is passed through untouched. */
-    public function testAWidgetWithoutAMetricSourceIsUnchanged(): void
-    {
-        $method = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'resolveMetricSources' );
-        $method->setAccessible( true );
-
-        $widgets = array(
-            array( 'type' => 'metric-boxes', 'query' => array( 'metrics' => 'sessions,totalUsers' ) ),
-        );
-
-        $this->assertSame( $widgets,
-            $method->invoke( null, $widgets, md5( 'definition-format-probe.example' ) ) );
-    }
-
     public function testExcludedColumnsAreEncodedNotInterpolated(): void
     {
         $this->requireDbAsAdmin();

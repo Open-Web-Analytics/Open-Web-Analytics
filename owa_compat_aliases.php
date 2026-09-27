@@ -174,7 +174,6 @@ function owa_compat_class_map(): array
         'owa_eventDispatch' => 'OWA\\Module\\Base\\Classes\\EventDispatch',
         'owa_fileEventQueue' => 'OWA\\Module\\Base\\Classes\\FileEventQueue',
         'owa_geolocation' => 'OWA\\Module\\Base\\Classes\\Geolocation',
-        'owa_goalManager' => 'OWA\\Module\\Base\\Classes\\GoalManager',
         'owa_httpEventQueue' => 'OWA\\Module\\Base\\Classes\\HttpEventQueue',
         'owa_installManager' => 'OWA\\Module\\Base\\Classes\\InstallManager',
         'owa_logConsole' => 'OWA\\Module\\Base\\Classes\\LogConsole',

@@ -46,22 +46,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
 
         /*
-         * A renamed group must be given an actual name.
-         *
-         * The field is optional -- leaving it empty keeps the group's current
-         * label -- but a name of nothing but spaces is not "no rename", it is a
-         * blank label. Every group with an active goal event becomes a tab on
-         * every tabbed report, so a blank name is an unlabelled tab across the
-         * whole reporting UI.
-         */
-        $newGroupName = (string) $this->getParam( 'newGoalGroupName' );
-
-        if ( $newGroupName !== '' && trim( $newGroupName ) === '' ) {
-
-            $this->addValidation( 'newGoalGroupName', '', 'required' );
-        }
-
-        /*
          * THE TRIGGER HAS TO BE AN EVENT, and the conditions have to name columns
          * that event carries.
          *
@@ -137,20 +121,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
     }
 
-    /** Apply a group rename, if one was typed. */
-    private function saveGroupRename( $siteId ) {
-
-        $newGroupName = trim( (string) $this->getParam( 'newGoalGroupName' ) );
-
-        if ( $newGroupName === '' ) {
-
-            return;
-        }
-
-        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $gm->saveGoalGroupLabel( (int) $this->getParam( 'goalGroup' ), $newGroupName );
-        unset( $gm );
-    }
     function action() {
 
         $siteId = $this->getParam( 'siteId' );
@@ -188,7 +158,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
                 : \OWA\Module\Base\Entity\GoalEvent::MATCH_ALL );
         $goalEvent->set( 'value', $cents === null ? 0 : $cents );
         $goalEvent->set( 'is_active', $this->getParam( 'isActive' ) ? 1 : 0 );
-        $goalEvent->set( 'goal_group', (string) $this->getParam( 'goalGroup' ) );
 
         /*
          * The event type the conditions are evaluated against, as chosen.
@@ -222,7 +191,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
             $goalEvent->create();
         }
 
-        $this->saveGroupRename( $siteId );
         $this->saveConditions( $goalEvent->get( 'id' ) );
 
         $this->set( 'siteId', $siteId );
@@ -302,7 +270,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
             'name'            => $this->getParam( 'name' ),
             'condition_match' => $this->getParam( 'conditionMatch' ),
             'count_mode'      => $this->getParam( 'countMode' ),
-            'goal_group'      => $this->getParam( 'goalGroup' ),
             'value'           => \OWA\Module\Base\Entity\GoalEvent::decimalToCents(
                                      $this->getParam( 'value' ) ) ?: 0,
             'is_active'       => $this->getParam( 'isActive' ) ? 1 : 0,
@@ -329,9 +296,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
 
         $this->set( 'conditions', $conditions );
-
-        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $this->set( 'goalGroups', $gm->getAllGoalGroupLabels() );
 
         $this->set( 'goalEventId', $this->getParam( 'goalEventId' ) );
         $this->set( 'siteId', $siteId );

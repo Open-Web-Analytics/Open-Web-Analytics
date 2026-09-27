@@ -126,6 +126,14 @@ final class LegacyClassNameContractTest extends TestCase
         'owa_goalNCompletions',
         'owa_goalNStarts',
         'owa_goalNValue',
+
+        /*
+         * REMOVED on the v2 branch: the goal manager. It presented goal events in
+         * 1.x's numbered-slot shape and kept the goal group labels; slots and
+         * groups are both gone (Update056). The site-to-Property lookup it also
+         * held is Entity\GoalEvent::propertyFor().
+         */
+        'owa_goalManager',
     ];
     private const RETIRED = [
         /*

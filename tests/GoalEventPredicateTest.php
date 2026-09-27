@@ -83,7 +83,7 @@ final class GoalEventPredicateTest extends TestCase
                 $this->match = $match;
             }
 
-            public function loadConditions( $role = GoalEvent::ROLE_MATCH ) { return $this->rows; }
+            public function loadConditions() { return $this->rows; }
 
             public function conditionMatch() { return $this->match; }
 

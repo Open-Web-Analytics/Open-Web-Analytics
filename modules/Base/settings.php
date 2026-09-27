@@ -19,19 +19,19 @@
  *                 path reads -- boot fetches those; the other eight arrive in
  *                 one batch the first time anything asks.
  *
- *   SCOPED (7)    storable, and overridable per Property or Profile. These are
- *                 the keys the Observation Settings screen writes, plus the
- *                 goal data the GoalManager keeps per site.
+ *   SCOPED (6)    storable, and overridable per Property or Profile. These are
+ *                 the keys the Observation Settings screen writes, plus `goals`,
+ *                 1.x's per-site goal blob, which only Update017 and Update025
+ *                 read to migrate it into goal events.
  *
  * `schema_version` and `is_active` are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, eager and without a default -- a default would let
  * pruneRedundantPersistedSettings() drop them and the module would look
  * uninstalled.
  *
- * Four settings are declared with no default for the same reason:
- * install_complete, domain_aliases, goals and goal_groups are stored and have
- * never had a code default, and inventing one would put them within reach of
- * the prune.
+ * Three settings are declared with no default for the same reason:
+ * install_complete, domain_aliases and goals are stored and have never had a
+ * code default, and inventing one would put them within reach of the prune.
  *
  * The 21 config-file-only settings -- paths, stream targets, database
  * credentials, report_wrapper -- are declared STATIC, which is the same
@@ -141,7 +141,6 @@ return array(
         'feed_subscription_param' => array( 'default' => 'sid' ),
         'geolocation_lookup' => array( 'default' => false ),
         'geolocation_service' => array( 'default' => '' ),
-        'goal_groups' => array( 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'goals' => array( 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'images_url' => array( 'default' => '' ),
         'install_complete' => array( 'storable' => true, 'autoload' => true ),
@@ -229,7 +228,6 @@ return array(
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
         ),
-        'numGoalGroups' => array( 'default' => 5 ),
         'numGoals' => array( 'default' => 15 ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5' ),
         'owa_user_agent' => array( 'default' => 'Open Web Analytics Bot master' ),

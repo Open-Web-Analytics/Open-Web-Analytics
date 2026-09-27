@@ -379,7 +379,7 @@ final class TemplateLatentVarTest extends TestCase
                     'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path' ] ],
                     'triggerEvent' => 'page_view',
                     'triggerEvents' => [ 'page_view', 'click' ],
-                    'funnelSteps' => [], 'goalGroups' => [ 1 => 'Goal Group 1' ],
+                    'funnelSteps' => [],
                     'conditions' => [], 'validation_errors' => [],
                 ],
                 ['name="name"', 'name="conditionValue[]"'],

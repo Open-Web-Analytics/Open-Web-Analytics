@@ -56,10 +56,6 @@ class GoalEvent extends \OWA\Core\Entity {
     const MATCH_ALL = 'all';
     const MATCH_ANY = 'any';
 
-    /** What a condition is for. See GoalEventCondition. */
-    const ROLE_MATCH = 'match';
-    const ROLE_START = 'start';
-
     /**
      * The comparisons an author can choose, in the order they are offered.
      *
@@ -248,14 +244,14 @@ class GoalEvent extends \OWA\Core\Entity {
          * it: the goal{N} metrics it numbered were removed with the v1 metric
          * vocabulary. It is the only link between a goal event and the
          * owa_session.goal_N columns that hold 1.x's conversion history.
+         *
+         * PENDING REMOVAL. Kept only for the v1-to-v2 history migration; drop it
+         * (an update, since Update025 shipped it in 1.13) once that migration
+         * no longer needs to map goal_N to a goal event.
          */
         $goal_number = new \OWA\Module\Base\Classes\DbColumn( 'goal_number', OWA_DTD_INT );
         $goal_number->setIndex();
         $this->setProperty( $goal_number );
-
-        /* The 1.x grouping label, carried so the goals reports keep grouping. */
-        $goal_group = new \OWA\Module\Base\Classes\DbColumn( 'goal_group', OWA_DTD_VARCHAR255 );
-        $this->setProperty( $goal_group );
 
         /*
          * Falsy is INACTIVE, and that is deliberate. 1.x's goal_status was a
@@ -327,47 +323,6 @@ class GoalEvent extends \OWA\Core\Entity {
         return $cache[ $site_id ];
     }
 
-    /**
-     * The 1.x goal shape, for code that still speaks it.
-     *
-     * The conversion evaluator and the goals reports read goals as the nested
-     * array the blob held. Rebuilding that here means the storage change is not
-     * also a rewrite of everything that reads a goal -- which would have made
-     * one change impossible to review.
-     *
-     * @return array
-     */
-    public function toGoalArray() {
-
-        $conditions = $this->loadConditions();
-        $first      = $conditions ? $conditions[0] : null;
-
-        return array(
-            'goal_number' => $this->get( 'goal_number' ),
-            'goal_name'   => $this->get( 'name' ),
-            'goal_group'  => $this->get( 'goal_group' ),
-            'goal_status' => $this->isActive() ? 'active' : 'disabled',
-            'goal_value'  => self::centsToDecimal( $this->get( 'value' ) ),
-            'goal_type'   => 'url_destination',
-            'details'     => array_filter( array(
-                /*
-                 * The FIRST condition only.
-                 *
-                 * The 1.x goal shape holds one match_type and one goal_url, so
-                 * a goal event with several conditions cannot be described in
-                 * it. Everything that evaluates a conversion reads the
-                 * conditions directly now; this shape is what the goals REPORTS
-                 * still speak, and they show a single rule.
-                 */
-                'match_type'   => $first ? $first->get( 'condition_operator' ) : '',
-                'goal_url'     => $first ? $first->get( 'condition_value' ) : '',
-            ), static function ( $value ) {
-
-                return $value !== array() && $value !== null;
-            } ),
-        );
-    }
-
     /** Once per session (1.x's only behaviour) or once per event. */
     const COUNT_PER_SESSION = 'once_per_session';
     const COUNT_PER_EVENT   = 'once_per_event';
@@ -396,7 +351,7 @@ class GoalEvent extends \OWA\Core\Entity {
      *
      * @return array of \OWA\Module\Base\Entity\GoalEventCondition
      */
-    public function loadConditions( $role = self::ROLE_MATCH ) {
+    public function loadConditions() {
 
         if ( ! $this->get( 'id' ) ) {
 
@@ -417,17 +372,6 @@ class GoalEvent extends \OWA\Core\Entity {
 
             $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
             $condition->setProperties( $row );
-
-            /*
-             * Filtered here rather than in the query: role is falsy on every
-             * condition that predates it, and Db::where() drops an empty value
-             * rather than matching it -- so where( 'role', 'match' ) would
-             * return everything, and where( 'role', '' ) would too.
-             */
-            if ( $condition->role() !== $role ) {
-
-                continue;
-            }
 
             $conditions[] = $condition;
         }

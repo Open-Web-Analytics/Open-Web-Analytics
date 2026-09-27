@@ -273,7 +273,7 @@ return array(
             /*
              * A flag dimension on the event row, named for GOALS because that
              * is what OWA calls them everywhere else it speaks: is_goal_event,
-             * base.goal_event, GoalManager. Any other noun here would disagree
+             * base.goal_event, GoalMarking. Any other noun here would disagree
              * with the column it reads.
              *
              * BOOLEAN, not integer -- the formatter renders Yes and No where

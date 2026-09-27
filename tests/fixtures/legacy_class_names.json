@@ -52,7 +52,6 @@
     "owa_fileCacheModule",
     "owa_fileEventQueue",
     "owa_geolocation",
-    "owa_goalManager",
     "owa_helloModule",
     "owa_hostHandlers",
     "owa_http",

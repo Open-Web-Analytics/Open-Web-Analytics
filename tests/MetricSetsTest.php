@@ -154,89 +154,56 @@ final class MetricSetsTest extends TestCase
     }
 
     /**
-     * A goal group's metrics: visits, one per active goal, then the total.
+     * A site with an active goal event offers no goal set.
      *
-     * This is the only part of deriving a set that has any logic in it, and it
-     * was previously unreachable without a site that has goals configured --
-     * deleting the whole goal-group loop changed nothing observable and no test
-     * noticed. Pure now, so the assembly can be checked directly.
+     * Each goal group with an active goal was a set measuring goal{N}Completions
+     * and goalValueAll, neither of which exists on v2 -- so the test install's
+     * one migrated goal put a "Sale" tab on every tabbed report that could not
+     * resolve. Goal groups are gone (Update056); the fixture is a migrated goal
+     * event, slot number and all, which is the shape that produced the tab.
      */
-    public function testAGoalGroupMeasuresEachActiveGoal(): void
+    public function testAnActiveGoalEventAddsNoSet(): void
     {
-        $set = \OWA\Core\MetricSets::goalGroupSet( 'Signups', array( 1, 4, 7 ) );
-
-        $this->assertSame( 'Signups', $set['label'] );
-        $this->assertSame( 'sessions,goal1Completions,goal4Completions,goal7Completions,goalValueAll',
-            $set['metrics'] );
-        $this->assertSame( 'sessions', $set['chartMetric'] );
-    }
-
-    /**
-     * The total is always last and always present.
-     *
-     * Grid columns follow the order of this list, so appending per-goal
-     * metrics after the total would move the total column depending on how
-     * many goals a group happens to have.
-     */
-    public function testTheGoalTotalIsAlwaysLast(): void
-    {
-        foreach ( array( array(), array( 2 ), array( 1, 2, 3, 4, 5 ) ) as $goals ) {
-
-            $metrics = explode( ',', \OWA\Core\MetricSets::goalGroupSet( 'G', $goals )['metrics'] );
-
-            $this->assertSame( 'sessions', reset( $metrics ), 'visits leads' );
-            $this->assertSame( 'goalValueAll', end( $metrics ), 'the total is last' );
-            $this->assertCount( count( $goals ) + 2, $metrics );
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable.' );
         }
-    }
 
-    /**
-     * The flat per-goal list the `goals` report draws its boxes from.
-     *
-     * Deliberately NOT a metric set: sets become tabs, and this is a panel
-     * inside one report. Registering it would grow a tab on every tabbed
-     * report in the install, which is the kind of change that shows up
-     * somewhere nobody was looking.
-     */
-    public function testActiveGoalCompletionsIsNotOfferedAsASet(): void
-    {
-        foreach ( \OWA\Core\MetricSets::forSite( md5( 'metric-sets-probe.example' ) ) as $key => $set ) {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
+        $db->selectColumn( 'site_id, property_id' );
 
-            $this->assertNotSame( 'activeGoalCompletions', $key );
-            $this->assertStringNotContainsString( 'activeGoalCompletions', (string) $set['metrics'] );
+        $site = array();
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+            if ( ! empty( $row['property_id'] ) ) {
+                $site = $row;
+                break;
+            }
         }
-    }
 
-    /**
-     * A site with no active goals yields no metrics -- not a list with a hole
-     * in it, and not the string "goalCompletions".
-     */
-    public function testASiteWithNoActiveGoalsMeasuresNoGoals(): void
-    {
-        $this->assertSame( '',
-            \OWA\Core\MetricSets::activeGoalCompletions( md5( 'metric-sets-probe.example' ) ) );
-    }
+        if ( empty( $site['property_id'] ) ) {
+            $this->markTestSkipped( 'Needs a Profile with a Property.' );
+        }
 
-    /** A group with no active goals still measures visits and the total. */
-    public function testAnEmptyGoalGroupIsStillUsable(): void
-    {
-        $this->assertSame( 'sessions,goalValueAll',
-            \OWA\Core\MetricSets::goalGroupSet( 'Empty', array() )['metrics'] );
-    }
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $id   = $goal->generateId( 'goal_event:metric-sets-probe:' . uniqid( '', true ) );
 
-    /** Goal groups are keyed so a set name cannot collide with another kind. */
-    public function testGoalGroupsAreKeyedDistinctly(): void
-    {
-        $this->assertSame( 'goal_group_3', \OWA\Core\MetricSets::goalGroupKey( 3 ) );
+        $goal->set( 'id', $id );
+        $goal->set( 'property_id', $site['property_id'] );
+        $goal->set( 'name', 'Metric sets probe' );
+        $goal->set( 'goal_number', 1 );
+        $goal->set( 'is_active', 1 );
+        $goal->set( 'trigger_event_type', 'page_view' );
+        $goal->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+        $goal->create();
 
-        $this->assertNotSame( \OWA\Core\MetricSets::DEFAULT_KEY,
-            \OWA\Core\MetricSets::goalGroupKey( 1 ) );
-    }
+        try {
+            $keys = array_keys( \OWA\Core\MetricSets::forSite( $site['site_id'] ) );
+        } finally {
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+        }
 
-    /** A goal group set is the same shape as every other set. */
-    public function testAGoalGroupSetHasTheStandardShape(): void
-    {
-        $this->assertSame( array( 'label', 'metrics', 'chartMetric' ),
-            array_keys( \OWA\Core\MetricSets::goalGroupSet( 'G', array( 1 ) ) ) );
+        $this->assertSame( array(), array_diff( $keys, array( 'site_usage', 'ecommerce' ) ),
+            'a set other than site usage and e-commerce appeared' );
     }
 }

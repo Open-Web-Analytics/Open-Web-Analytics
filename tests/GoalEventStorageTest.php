@@ -577,42 +577,6 @@ final class GoalEventStorageTest extends TestCase
     }
 
     /**
-     * ANY ROLE, not just the matching ones.
-     *
-     * loadConditions() filters by role, so a cascade written in terms of it
-     * would delete the match conditions and leave the start ones -- the same
-     * leak, narrower.
-     */
-    public function testTheCascadeTakesStartConditionsToo(): void
-    {
-        $goalEvent = $this->makeGoalEventWithConditions( array(
-            array( 'page_uri', 'exact', '/checkout' ),
-        ) );
-
-        $id = $goalEvent->get( 'id' );
-
-        $start = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
-        $start->set( 'id', $start->generateId( 'goal_event_condition:' . $id . ':start' ) );
-        $start->set( 'goal_event_id', $id );
-        $start->set( 'sort_order', 9 );
-        $start->set( 'role', \OWA\Module\Base\Entity\GoalEvent::ROLE_START );
-        $start->set( 'condition_property', 'page_uri' );
-        $start->set( 'condition_operator', 'exact' );
-        $start->set( 'condition_value', '/cart' );
-        $start->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-        $start->create();
-
-        $this->createdConditions[] = $start->get( 'id' );
-
-        $this->assertCount( 2, $this->conditionRowsFor( $id ) );
-
-        $goalEvent->delete( $id );
-
-        $this->assertSame( array(), $this->conditionRowsFor( $id ),
-            'A start condition survived the cascade.' );
-    }
-
-    /**
      * DELETE BY A COLUMN OTHER THAN id CASCADES AS WELL.
      *
      * Entity::delete( $value, $col ) accepts any column, so a caller can remove
@@ -753,39 +717,6 @@ final class GoalEventStorageTest extends TestCase
         $this->assertSame( '/done', $planned[0]['condition_value'] );
     }
 
-    /**
-     * A goal event with no funnel must not report an EMPTY one.
-     *
-     * checkGoalStart() tests array_key_exists( 'funnel_steps', ... ) and then
-     * indexes [1] unconditionally -- so an empty array is a fatal on every
-     * event, not "this goal has no funnel".
-     */
-    public function testAGoalEventWithNoFunnelOmitsTheKeyEntirely(): void
-    {
-        $siteId = $this->siteId;
-        $id = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )
-            ->generateId( 'goal_event:no-funnel:' . uniqid( '', true ) );
-
-        $this->created[] = $id;
-
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $goalEvent->set( 'id', $id );
-        $goalEvent->set( 'property_id', $this->propertyId );
-        $goalEvent->set( 'name', 'No funnel' );
-        $goalEvent->set( 'goal_number', 1 );
-        $goalEvent->set( 'is_active', 1 );
-        $goalEvent->set( 'condition_operator', 'exact' );
-        $goalEvent->set( 'condition_value', '/x' );
-        $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-        $goalEvent->create();
-
-        $goal = $goalEvent->toGoalArray();
-
-        $this->assertArrayNotHasKey( 'funnel_steps', $goal['details'],
-            'A goal with no funnel reports an empty funnel_steps, which the conversion '
-            . 'evaluator indexes into and fatals on.' );
-    }
-
     /* ---------------- money ---------------- */
 
     /**
@@ -827,39 +758,7 @@ final class GoalEventStorageTest extends TestCase
         $this->assertSame( '0.29', $ke::centsToDecimal( 29 ) );
     }
 
-    /* ---------------- the round trip ---------------- */
-
-    /**
-     * A goal event with no slot is a real goal event with no NUMBERED metric.
-     *
-     * The 45 goal{N} metrics resolve by number, so a goal event beyond the
-     * twentieth has nothing to report through in 1.x -- but it must not corrupt
-     * the numbered view by appearing under slot 0.
-     */
-    public function testAGoalEventWithNoSlotIsNotGivenOne(): void
-    {
-        $siteId = $this->siteId;
-
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $id = $goalEvent->generateId( 'goal_event:unslotted:' . $siteId );
-
-        $this->created[] = $id;
-
-        $goalEvent->set( 'id', $id );
-        $goalEvent->set( 'property_id', $this->propertyId );
-        $goalEvent->set( 'name', 'Unslotted' );
-        $goalEvent->set( 'is_active', 1 );
-        $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-        $goalEvent->create();
-
-        $goals = \OWA\Module\Base\Classes\GoalManager::loadGoalEventsAsGoals( $siteId );
-
-        $this->assertArrayNotHasKey( 0, $goals,
-            'An unnumbered goal event was given slot 0, which the goal metrics would then '
-            . 'report under a goal that does not exist.' );
-
-        $this->assertSame( array(), $goals );
-    }
+    /* ---------------- counting ---------------- */
 
     /**
      * Counting is once per session, whatever was asked for.

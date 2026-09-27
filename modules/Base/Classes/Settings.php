@@ -2784,7 +2784,6 @@ namespace OWA\Module\Base\Classes;
                         'everyone' => array('install_schema')
                 ),
                 'numGoals'                            => 15,
-                'numGoalGroups'                        => 5,
                 'enableEcommerceReporting'            => false, // move to site settings
                 'currencyLocal'                        => 'en_US', // move to site settings
                 'currencyISO3'                        => 'USD',   // move to site settings

@@ -26,7 +26,6 @@ class GoalEventEdit extends \OWA\Core\View {
         $this->body->set( 'triggerEvent',
             $this->get( 'triggerEvent' ) ?: \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT );
         $this->body->set( 'triggerEvents', (array) $this->get( 'triggerEvents' ) );
-        $this->body->set( 'goalGroups', (array) $this->get( 'goalGroups' ) );
         $this->body->set( 'conditions', (array) $this->get( 'conditions' ) );
         $this->body->set( 'validation_errors', $this->get( 'validation_errors' ) ?? array() );
     }

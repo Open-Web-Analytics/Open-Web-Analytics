@@ -22,7 +22,7 @@ const { FIXTURE, login, openReport, openReportNoTabs } = require('./fixtures');
  *   base.reportSimpleDimensional -> report_dimensionDetailNoTabs.php   none
  *
  * That split is deliberate and is not a bug: the tabbed reports are
- * session-based (Site Usage / e-commerce / goal groups are all per-visit
+ * session-based (Site Usage and e-commerce are per-visit
  * metrics), while the untabbed ones are content-based, where a session tab
  * would be meaningless. These tests pin the split so "fixing" one side of it
  * has to be a deliberate act.
@@ -61,9 +61,8 @@ test.describe('e-commerce reporting', () => {
     });
 
     /**
-     * The tab labels come from three places -- two literals in MetricSets and
-     * whatever a site owner typed into a goal group's name -- and one of the
-     * literals is lower case. A row of tabs reading "Site Usage | e-commerce"
+     * The tab labels are two literals in MetricSets, and one of them is lower
+     * case. A row of tabs reading "Site Usage | e-commerce"
      * shows its seams.
      *
      * Title-casing is a PRESENTATION rule (text-transform on the anchor), which

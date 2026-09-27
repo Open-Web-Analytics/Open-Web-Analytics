@@ -59,13 +59,6 @@ class GoalEventEdit extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
         $this->set( 'conditionProperties', self::conditionProperties( $trigger, $conditions ) );
 
-        /*
-         * Group labels still live in settings -- they are labels, not records,
-         * and there are five of them. Only the goal events themselves moved.
-         */
-        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $this->set( 'goalGroups', $gm->getAllGoalGroupLabels() );
-
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 3 );

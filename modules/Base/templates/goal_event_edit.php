@@ -125,28 +125,6 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
 
     <div class="setting">
-        <div class="title">Group</div>
-        <div class="description">Goal events are grouped, and every group with an active goal
-        event becomes a tab on the tabbed reports. Renaming a group renames that tab
-        everywhere.</div>
-        <div class="field">
-            <select name="<?php echo $view->getNs();?>goalGroup">
-            <?php foreach ( (array) $view->goalGroups as $owa_num => $owa_label ):?>
-                <option value="<?php $view->out( $owa_num );?>"
-                    <?php echo ( (string) ( $owa_ke['goal_group'] ?? '' ) === (string) $owa_num ) ? 'selected' : '';?>>
-                    <?php $view->out( $owa_label );?>
-                </option>
-            <?php endforeach;?>
-            </select>
-            <input class="owa_mediumFormField" type="text" placeholder="Rename this group"
-                   name="<?php echo $view->getNs();?>newGoalGroupName" value="">
-            <span class="form-instructions">Leave the rename empty to keep the group's
-            current name.</span>
-            <span class="validation_error"><?php $view->out( $view->validation_errors['newGoalGroupName'] ?? '' );?></span>
-        </div>
-    </div>
-
-    <div class="setting">
         <div class="title">Value <span class="owa_optional">optional</span></div>
         <div class="description">What one of these is worth. Left blank it counts without
         a value.</div>

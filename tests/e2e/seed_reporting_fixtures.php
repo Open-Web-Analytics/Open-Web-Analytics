@@ -174,7 +174,6 @@ const E2E_ACTIONS = [
 ];
 
 const E2E_GOAL_NAME   = 'E2E Signup Funnel';
-const E2E_GOAL_GROUP  = '1';
 const E2E_GOAL_URL    = '/docs';
 
 // The funnel VISUALIZATION.
@@ -1089,7 +1088,6 @@ function seedGoal(): array
 
     $goalEvent->set('property_id', \OWA\Module\Base\Entity\GoalEvent::propertyFor(E2E_SITE_ID));
     $goalEvent->set('name', E2E_GOAL_NAME);
-    $goalEvent->set('goal_group', E2E_GOAL_GROUP);
     $goalEvent->set('is_active', 1);
     $goalEvent->set('trigger_event_type', 'page_view');
 
