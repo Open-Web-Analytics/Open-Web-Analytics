@@ -454,18 +454,17 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Every event name the registry knows.
+     * Every first-class event name, from config/tracking_events.php.
      *
-     * The union of the `events` lists, which makes the property declarations the
-     * source for this too: a name is in the vocabulary because some property is
-     * declared for it. There is no separate list of event names to keep in step,
-     * and a name that appears nowhere in the registry is one no event carries a
-     * property for.
+     * DECLARED, NOT DERIVED, and it used to be derived: the union of the property
+     * registry's `events` lists, on the reasoning that a first-class event is one
+     * the registry describes. That holds only while every event carries a property
+     * no other event does -- and it stopped holding when engagement_msec was
+     * correctly widened to `*`, taking `user_engagement` out of the vocabulary
+     * with it. See the config file for the rest of that story.
      *
-     * Ordinary events only, by construction: the markers the server raises --
-     * session_start, first_visit -- carry properties of their own and appear
-     * here, while a v1 type that is not an event at all (dom.stream) declares
-     * none and does not.
+     * eventNamesFromProperties() still computes the union, as a CHECK: a test
+     * asserts the registry implies nothing that is not declared.
      *
      * @return string[]  sorted
      */
@@ -485,6 +484,44 @@ class TrackingEventHelpers {
 
             return self::$event_names;
         }
+
+        $path = OWA_DIR . 'modules/Base/config/tracking_events.php';
+
+        $declared = file_exists( $path ) ? include $path : null;
+
+        if ( ! is_array( $declared ) || ! $declared ) {
+
+            throw new \RuntimeException(
+                'Could not read the first-class event list at ' . $path
+                . '. Every gate on what a tracker may send reads it, so an empty '
+                . 'list would refuse every first-class event rather than fail here.' );
+        }
+
+        $out = array_values( array_unique( array_map( 'strval', $declared ) ) );
+
+        sort( $out );
+
+        self::$event_names = $out;
+
+        return $out;
+    }
+
+    /**
+     * What the property registry IMPLIES the event names are.
+     *
+     * The union of every non-`*` entry in the `events` lists -- which is what
+     * eventNames() used to return. Kept as the other half of a check, not as a
+     * source: a name here that is not declared in config/tracking_events.php means
+     * a property is scoped to an event nothing else knows about, which is either a
+     * typo or an event somebody forgot to declare.
+     *
+     * The reverse does NOT hold and must not be asserted. A declared event may
+     * carry no property of its own -- user_engagement carries only the common set
+     * -- and that is precisely the case the declared list exists to cover.
+     *
+     * @return string[]  sorted
+     */
+    public static function eventNamesFromProperties() {
 
         $out = array();
 
@@ -513,8 +550,6 @@ class TrackingEventHelpers {
         $out = array_keys( $out );
 
         sort( $out );
-
-        self::$event_names = $out;
 
         return $out;
     }

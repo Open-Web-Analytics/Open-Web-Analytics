@@ -236,7 +236,7 @@
         "data_type": "url",
         "required": false,
         "callbacks": [],
-        "note": "THE PAGE'S REFERRER, ON THE PAGE VIEW. It rode every beacon of the page, so a page with one view and six clicks sent the same URL seven times at up to 1KB each -- and nothing read the copies. The pass does NOT stamp a session referrer onto the other rows: a cube row's referer_url is its OWN raw value, copied verbatim, and `source`/`medium` read session.referer_host, which is FIRST_VALUE over the session -- the landing page view. So scoping this loses nothing at the session level.\nOWA\u2019s tracker enforces it in OwaEvent.getProperties() (EVENT_SCOPED), because `events` here is read by the goal builder and propertiesForEvent() and is NOT a gate in setTrackerProperties().\nGA draws the same line: page_referrer is a page_view parameter and session_start carries the session's attribution.\nsession_start and first_visit are listed because those ROWS carry it -- they are materialised server-side from the page_view beacon by EventRawHandlers::expand(), so they inherit every property it had. The tracker never sends either name."
+        "note": "THE PAGE'S REFERRER, ON THE PAGE VIEW. It rode every beacon of the page, so a page with one view and six clicks sent the same URL seven times at up to 1KB each -- and nothing read the copies. The pass does NOT stamp a session referrer onto the other rows: a cube row's referer_url is its OWN raw value, copied verbatim, and `source`/`medium` read session.referer_host, which is FIRST_VALUE over the session -- the landing page view. So scoping this loses nothing at the session level.\nOWA\u2019s tracker enforces it in OwaEvent.getProperties() (EVENT_SCOPED), because `events` here is read by the goal builder and propertiesForEvent() and is NOT a gate in setTrackerProperties().\nGA DOES NOT SCOPE IT -- MEASURED against real gtag.js in Chromium, not read off the docs. `dr` is sent with every event. But GA's wire is TWO-LEVEL: dr, dl, dt, sid, sct and seg ride the query string once per REQUEST, and a request carries a batch -- six events in one POST, each body line holding only en, _ee, ep.*/epn.* and _et. So GA pays for the referrer once per batch where OWA, which sends one beacon per event, would pay once per event. GA's answer to this cost is BATCHING, not scoping; scoping is the interim answer available to a tracker that does not batch. The same argument applies with more force to page_location (VARCHAR 1024) and page_title, which OWA also repeats on every beacon.\nsession_start and first_visit are listed because those ROWS carry it -- they are materialised server-side from the page_view beacon by EventRawHandlers::expand(), so they inherit every property it had. The tracker never sends either name."
     },
     "target_url": {
         "set_by": "client",
@@ -637,13 +637,12 @@
         ],
         "column": "engagement_msec",
         "events": [
-            "user_engagement",
-            "page_view"
+            "*"
         ],
         "data_type": "integer",
         "required": false,
         "callbacks": [],
-        "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection."
+        "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection.\nEVERY EVENT, and this read [\"user_engagement\", \"page_view\"], which under-described the wire. addDefaultsToEvent() attaches the unreported delta to ANY event that does not already carry one, and consumeEngagementDelta() banks what it hands out -- so a click, a scroll and a purchase all carry it, and the same milliseconds cannot ride two beacons.\nIT IS CONDITIONAL, which is why the old list looked right: `if ( delta > 0 )` means a beacon sent with no time accrued omits it, so a contract fixture recorded in a headless test where no clock advances shows it on nothing at all. Advancing the clock is the only way to see the real shape -- see tests/js/EnhancedMeasurement.test.js.\nGA IS THE SAME on the wire: engagement_time_msec is documented as \u201cthe amount of user engagement time since the preceding event\u201d and may be included in any event's parameters. The delta model and the any-event scope are both GA's."
     },
     "content_group": {
         "set_by": "client",

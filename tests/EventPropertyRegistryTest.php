@@ -199,4 +199,59 @@ final class EventPropertyRegistryTest extends TestCase
 
         Helpers::propertiesForEvent('');
     }
+
+    /**
+     * THE EVENT LIST IS DECLARED, AND THE REGISTRY MAY NOT IMPLY ANYTHING ELSE.
+     *
+     * config/tracking_events.php enumerates the first-class events.
+     * eventNamesFromProperties() answers what the property registry implies, by
+     * taking the union of the non-star `events` entries. Every implied name must be
+     * declared: one that is not means a property is scoped to an event nothing else
+     * knows about -- a typo, or an event somebody forgot to declare.
+     *
+     * ONE DIRECTION ONLY. A declared event need not be implied: user_engagement
+     * carries nothing but the common set, so no property names it, and that is the
+     * case the declared list exists to cover. Asserting the reverse would forbid
+     * exactly the shape this was built for.
+     *
+     * The list used to BE the derivation, and it broke silently: widening
+     * engagement_msec to every event -- correct, the tracker sends it on all of
+     * them -- removed the only property naming user_engagement and took the event
+     * out of the vocabulary. Nothing here failed. It surfaced two steps away, as
+     * the tracker reserving a name the server no longer treated as first-class.
+     */
+    public function testEveryImpliedEventNameIsDeclared(): void
+    {
+        $declared = Helpers::eventNames();
+        $implied  = Helpers::eventNamesFromProperties();
+
+        $this->assertNotEmpty($declared, 'the declared list is empty; this would pass vacuously');
+        $this->assertNotEmpty($implied, 'no property declares an event; this would pass vacuously');
+
+        $this->assertSame([], array_values(array_diff($implied, $declared)),
+            "A property is scoped to an event that config/tracking_events.php does not "
+            . "declare:\n  " . implode("\n  ", array_diff($implied, $declared))
+            . "\nEither the name is a typo or the event belongs in that file.");
+    }
+
+    /**
+     * And an event carrying no property of its own still counts.
+     *
+     * The regression in one assertion: user_engagement is declared, is reserved by
+     * the tracker, and is named by NO property -- because everything it carries is
+     * common to every event. Under the old derivation it was in the vocabulary only
+     * while engagement_msec happened to be scoped to it.
+     */
+    public function testAnEventWithNoPropertyOfItsOwnIsStillFirstClass(): void
+    {
+        $this->assertContains('user_engagement', Helpers::eventNames());
+
+        $this->assertNotContains('user_engagement', Helpers::eventNamesFromProperties(),
+            'if a property names user_engagement again this test no longer proves '
+            . 'anything -- pick another event that carries only the common set');
+
+        $this->assertTrue(\OWA\Core\CoreAPI::isTrackingEventType('user_engagement'),
+            'a declared event must be admitted as first-class, not merely tolerated '
+            . 'because it happens to match the custom-name pattern');
+    }
 }

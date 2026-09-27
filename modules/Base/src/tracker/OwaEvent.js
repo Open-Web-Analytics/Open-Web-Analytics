@@ -37,8 +37,16 @@ const LOCAL_ONLY = { timestamp: true };
  * session.referer_host, which is FIRST_VALUE over the session, i.e. the landing
  * page view. Nothing downstream reads a click's copy.
  *
- * GA draws the line in the same place -- page_referrer is a page_view parameter,
- * and session_start is what carries the session's attribution.
+ * GA DOES NOT DO THIS, and the docs suggested otherwise until it was measured
+ * against real gtag.js in a browser: `dr` rides EVERY event. What GA has instead
+ * is a two-level wire -- dr, dl, dt, sid, sct and seg sit in the query string
+ * once per REQUEST, and one request carries a batch of events whose body lines
+ * hold only en, _ee, the ep/epn parameters and _et. Six events, one referrer.
+ *
+ * So GA amortises where this scopes. Scoping is the answer available to a tracker
+ * that sends one beacon per event; batching is the better one and is not a
+ * tracker change that belongs beside this. page_location (VARCHAR 1024) and
+ * page_title are repeated on every beacon too, and cost more.
  *
  * HERE rather than at each call site, for the reason LOCAL_ONLY is here:
  * getProperties() is the one place the event becomes data, so nothing can put it

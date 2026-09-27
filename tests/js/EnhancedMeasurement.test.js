@@ -122,9 +122,9 @@ describe('downloads and outbound links', () => {
         expect(t.getDownloadFileName('https://example.org/a/b/menu.pdf?v=2#page3'))
             .toBe('menu.pdf');
 
-        // Two files of the same name in different folders group TOGETHER, which
-        // is where this parts company with GA's fileName (a path). target_url on
-        // the same row keeps the folder for anyone who needs it.
+        // Two files of the same name in different folders group TOGETHER, because
+        // the value is the basename and not the path. target_url on the same row
+        // keeps the folder for anyone who needs it.
         expect(t.getDownloadFileName('https://example.org/2024/report.pdf'))
             .toBe(t.getDownloadFileName('https://example.org/2025/report.pdf'));
 
@@ -250,5 +250,69 @@ describe('custom events', () => {
         expect(sent[0].event_type).toBe('newsletter_signup');
         expect(sent[0].plan).toBe('pro');
         expect(sent[0].seats).toBe(3);
+    });
+});
+
+
+/**
+ * ENGAGEMENT TIME RIDES ANY BEACON, which is what makes it a delta.
+ *
+ * addDefaultsToEvent() attaches the accrued-and-unreported time to EVERY event
+ * that does not already carry it, and consumeEngagementDelta() banks what it
+ * hands out -- so the same milliseconds cannot ride two beacons and a total is a
+ * plain SUM over every event type. Losing one beacon costs one increment instead
+ * of a page.
+ *
+ * WHY IT IS EASY TO GET WRONG IN THE REGISTRY, and was: the property is
+ * CONDITIONAL. `if ( delta > 0 )` means a beacon sent with no time accrued does
+ * not carry it at all, so a contract fixture recorded in a headless test where no
+ * clock advances shows it on nothing -- and reading those fixtures suggests only
+ * page_view and user_engagement ever send it. Advancing the clock is the only way
+ * to see the real shape.
+ */
+describe('engagement time is a per-event delta', () => {
+
+    test('a click carries the time accrued since the last report', () => {
+        const sent = [];
+        const t = newTracker();
+        let now = 1000000;
+        t.getTime = () => now;
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.startEngagement();
+
+        now += 4200;
+
+        const click = t.makeEvent();
+        click.setEventType('click');
+        t.trackEvent(click);
+
+        const beacon = sent.find((p) => p.event_type === 'click');
+
+        expect(beacon).toBeDefined();
+        expect(beacon.engagement_msec).toBe(4200);
+    });
+
+    test('the same milliseconds do not ride a second beacon', () => {
+        const sent = [];
+        const t = newTracker();
+        let now = 1000000;
+        t.getTime = () => now;
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.startEngagement();
+
+        now += 4200;
+        const first = t.makeEvent();
+        first.setEventType('click');
+        t.trackEvent(first);
+
+        // No further time passes, so there is no delta left to report.
+        const second = t.makeEvent();
+        second.setEventType('scroll');
+        t.trackEvent(second);
+
+        const scroll = sent.find((p) => p.event_type === 'scroll');
+
+        expect(scroll).toBeDefined();
+        expect(scroll.engagement_msec).toBeUndefined();
     });
 });

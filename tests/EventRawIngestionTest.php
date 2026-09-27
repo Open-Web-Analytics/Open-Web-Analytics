@@ -574,8 +574,8 @@ final class EventRawIngestionTest extends IngestionTestCase
      * the whole derived map for every event and does not read it, so the gate has
      * to be in the callback. This is the test that says which.
      *
-     * The target is still recorded -- GA's link_domain -- so "which hosts do our
-     * downloads come from" survives; only the verdict about leaving is withheld.
+     * The target host is still recorded, so "which hosts do our downloads come
+     * from" survives; only the verdict about leaving is withheld.
      */
     public function testAFileDownloadIsNotAnOutboundClick(): void
     {
@@ -605,8 +605,8 @@ final class EventRawIngestionTest extends IngestionTestCase
             'a download is a file arriving, not the visitor leaving');
 
         $this->assertSame('cdn.example.org', $row['target_host'],
-            "and the target is still recorded -- that is GA's link_domain, and the "
-            . 'only thing withheld is the verdict about leaving');
+            'and the target host is still recorded -- the only thing withheld is the '
+            . 'verdict about whether the visitor left');
     }
 
     /**
@@ -665,7 +665,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      * every Property whether anyone reads it or not: promoting nine of these was
      * measured at taking the custom-dimension ceiling from 62 to 37 on MySQL 8.4.
      * A site that does want one registers it, which is the route its own values
-     * take -- and is exactly what GA requires for form_id and form_name.
+     * take.
      *
      * So this asserts a NON-promotion, which is the kind of decision that
      * otherwise erodes one column at a time.

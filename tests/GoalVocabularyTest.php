@@ -117,7 +117,7 @@ final class GoalVocabularyTest extends TestCase
         $this->assertArrayNotHasKey( 'is_outbound', $pageView,
             'a page view has no click target to have left by' );
 
-        // The target itself IS conditionable on a download -- GA's link_domain.
+        // The target host itself IS still conditionable on a download.
         $this->assertArrayHasKey( 'target_host', Vocab::columnsForEvent( 'file_download' ) );
 
         // Prettifying gives "Is outbound", a question half-asked.

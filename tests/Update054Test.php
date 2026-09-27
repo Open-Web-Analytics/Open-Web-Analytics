@@ -12,8 +12,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * A params key is unreportable in v2 until a site registers it as a CUSTOM
  * dimension -- Classes\Cube\Dimensions is the whole path from collected to
  * queryable -- so a downloads report cost every install one of its 20
- * registration slots for a value OWA set itself. That is what GA gets wrong with
- * form_id and form_name, which have no standard dimension.
+ * registration slots for a value OWA set itself.
  *
  * THE NON-PROMOTION IS THE OTHER HALF, and is asserted here too. The element,
  * form and commerce params stay in the bag because most installs will never group
@@ -53,8 +52,7 @@ final class Update054Test extends TestCase
      * The nine that were NOT promoted are still params, and still have no column.
      *
      * ct_line_items could not be a column whatever the row budget: it is a nested
-     * array, which is why GA ships `items` as its own repeated record rather than
-     * an event parameter.
+     * array, so no scalar column could hold it whatever the row budget.
      */
     public function testTheOtherParamsWereLeftAlone(): void
     {

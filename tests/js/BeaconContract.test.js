@@ -208,6 +208,11 @@ describe('tracker beacon contract', () => {
  * moment someone changed EVENT_SCOPED, because the fixture would then simply be
  * wrong in the other direction. This says which way round it goes, through the
  * same EMITTERS the contracts use so the two cannot describe different pipelines.
+ *
+ * The cost this saves is a per-beacon one, because OWA sends one beacon per
+ * event: a tracker that batched several events into one request could carry the
+ * referrer once for all of them instead, and would not need this. See
+ * OwaEvent.EVENT_SCOPED.
  */
 describe('the referrer rides the page view and nothing else', () => {
 
