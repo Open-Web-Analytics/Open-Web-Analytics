@@ -15,10 +15,10 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * would collide with one of OWA's own, because once a beacon arrives the server
  * cannot tell a site's `click` from its own.
  *
- * GA does exactly this, and its reserved list IS its first-class list -- page_view,
- * click, scroll, file_download, form_start, form_submit, session_start,
- * first_visit, user_engagement, view_search_results. Reusing one puts a site's
- * counts into a report measuring something else.
+ * The reserved list IS the first-class list -- page_view, click, scroll,
+ * file_download, form_start, form_submit, session_start, first_visit,
+ * user_engagement, view_search_results. Reusing one puts a site's counts into a
+ * report measuring something else.
  *
  * THE TWO LISTS CANNOT BE DERIVED FROM EACH OTHER: one is PHP reading a JSON file
  * at runtime, the other is a constant compiled into a bundle served from a CDN.
@@ -101,9 +101,8 @@ final class TrackerReservedEventNamesTest extends TestCase
     /**
      * The reserved `owa_` prefix is enforced in the TRACKER only.
      *
-     * Forward protection, the way GA reserves ga_, google_ and firebase_: it keeps
-     * room to name a future first-class event without colliding with one a site
-     * has been sending for years.
+     * Forward protection: it keeps room to name a future first-class event
+     * without colliding with one a site has been sending for years.
      *
      * NOT ON THE SERVER, and that is the point worth recording. A tracking event
      * dispatches as tracking.<name>, so a site's owa_x cannot collide with OWA's
@@ -150,11 +149,11 @@ final class TrackerReservedEventNamesTest extends TestCase
 
         foreach ( array(
             '',                 // nothing
-            '_leading',         // GA reserves a leading underscore
+            '_leading',         // must start with a letter
             '9starts_numeric',  // must start with a letter
             'has space',
             'has-hyphen',
-            'gtag.config',      // a dot is not legal, which excludes v1 spellings
+            'my.signup',        // a dot is not legal for a custom name
             str_repeat( 'a', 41 ),
         ) as $illegal ) {
 

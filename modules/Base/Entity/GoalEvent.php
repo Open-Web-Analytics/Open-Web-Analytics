@@ -180,9 +180,7 @@ class GoalEvent extends \OWA\Core\Entity {
          *
          * A behaviour worth counting is a fact about the product: two Profiles
          * of one website both want to count the same signup, and defining it
-         * twice is how the two definitions drift. GA puts key events on the
-         * property for the same reason and applies them across every data
-         * stream under it.
+         * twice is how the two definitions drift.
          *
          * COUNTING stays per Profile regardless, because in 1.x a conversion is
          * a flag on the session row and a session belongs to a Profile. So the
@@ -493,8 +491,7 @@ class GoalEvent extends \OWA\Core\Entity {
      *
      * The row is complete at Ingest::STORE_POST -- deviceColumns() and
      * taggedColumns() are merged -- so a condition can name any column the row
-     * has. This is also what GA marks on: a key event is decided by the event
-     * parameters, which is what the stored row is.
+     * has.
      *
      * THE TRIGGER IS A GATE NOW. trigger_event_type has been stored since
      * Update025 and read by NOTHING, so a goal declared on a page view was

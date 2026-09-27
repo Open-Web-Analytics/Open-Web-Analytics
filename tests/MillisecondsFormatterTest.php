@@ -7,8 +7,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Engagement time is stored in milliseconds and READ as a duration.
  *
- * The beacon carries `engagement_msec`, accrued on the device -- the same field
- * and unit GA collects as engagement_time_msec. The row keeps that, and the
+ * The beacon carries `engagement_msec`, accrued on the device. The row keeps
+ * that, and the
  * renderer decides how to say it, which is the rule "(not set)" and "(unknown)"
  * already follow.
  *

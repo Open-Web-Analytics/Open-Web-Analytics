@@ -10,9 +10,8 @@ namespace OWA\Module\Base\Classes;
 /**
  * What a goal condition is allowed to name.
  *
- * THE RAW ROW'S COLUMNS, and nothing else. A key event in GA is decided by the
- * event's parameters -- what the stored row holds -- and the same rule here
- * answers three questions at once: what the builder offers, what a saved
+ * THE RAW ROW'S COLUMNS, and nothing else. A goal is decided by what the stored
+ * row holds, and that one rule answers three questions at once: what the builder offers, what a saved
  * condition may say, and what Classes\GoalMarking reads. Before this there were
  * three answers. The builder offered every client and server PROPERTY name;
  * marking matched against the tracking event, so it saw property names too; and

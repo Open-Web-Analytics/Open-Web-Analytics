@@ -16,8 +16,8 @@ require_once __DIR__ . '/IngestionTestCase.php';
  * page_location comes from the same call -- and that beacon is the only one this
  * parse ever ran on, because taggedValue() gates on is_new_session_start. So it
  * reads the URL the event already carries, and a session-scoped copy stops riding
- * every beacon for the life of every session. GA carries neither: no GA cookie
- * holds a URL, and session source is fixed by the session's first event.
+ * every beacon for the life of every session. Session source is fixed by the
+ * session's first event, so no cookie needs to hold a URL.
  *
  * page_location rather than page_query, deliberately: the query has the
  * Profile's dropped parameters removed, so a site filtering owa_source out of its
@@ -170,10 +170,10 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
      * using utm_* silently got no attribution at all.
      *
      * It is a setting now, resolved at profile scope so the chain walks Profile
-     * -> Property -> Install: one convention by default, and a Property that
-     * arrived from a GA setup overrides it.
+     * -> Property -> Install: one convention by default, and a Property whose
+     * links already use utm_* overrides it.
      */
-    public function testAPropertyCanUseGoogleSCampaignKeys(): void
+    public function testAPropertyCanUseUtmCampaignKeys(): void
     {
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 

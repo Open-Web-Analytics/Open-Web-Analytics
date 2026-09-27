@@ -110,7 +110,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
      * value under one of the four scope/type prefixes -- ep_, epn_, up_, upn_
      * -- with a legal name. A site's own keys stay unrestricted, because the
      * prefix is a namespace rather than a list, so admitting them needs no
-     * knowledge of a site's keys. GA's `ep.` and `up.` work the same way.
+     * knowledge of a site's keys.
      *
      * A property the server derives is refused by construction: it is not
      * client-settable, so it is not in the admitted set.

@@ -119,8 +119,8 @@ return array(
                 'family' => 'content', 'description' => 'The host the page was served from.' ),
 
             /*
-             * The two joined readings of a page, both of which GA ships by
-             * these names. They are EXPRESSIONS, not columns: the measurement
+             * The two joined readings of a page. They are EXPRESSIONS, not
+             * columns: the measurement
              * that settled it is in DimensionExpression. `parts` is what marks
              * one, and the separator before an absent part disappears with it,
              * so a page with no query string groups as `/pricing` rather than
@@ -218,9 +218,8 @@ return array(
              * dimensions partitioning one population over a nullable tinyint --
              * three values, three GROUP BY buckets, and a valueLabels map in
              * dashboard.json folding them back onto two names. That is what drew
-             * a pie with two slices both labelled New. GA has one
-             * `New / returning` dimension and no boolean twins, for the same
-             * reason.
+             * a pie with two slices both labelled New. So there is one
+             * `New / returning` dimension and no boolean twins.
              *
              * The cube stores the label, so this is a plain column read like
              * every other line in this file -- see Classes\Cube\NewVsReturningStep
@@ -254,7 +253,7 @@ return array(
                 'family' => 'device', 'description' => 'The version of that operating system.' ),
             'operatingSystemWithVersion' => array( 'parts' => array( 'os', 'os_version' ),
                 'separator' => ' ', 'label' => 'Operating System with Version',
-                'family' => 'device', 'description' => 'The operating system and its version, as one value -- GA ships this dimension under this name.' ),
+                'family' => 'device', 'description' => 'The operating system and its version, as one value.' ),
             'deviceType' => array( 'column' => 'device_type', 'label' => 'Device Type',
                 'family' => 'device', 'description' => 'Desktop, mobile or tablet.' ),
             'deviceBrand' => array( 'column' => 'device_brand', 'label' => 'Device Brand',
@@ -272,12 +271,10 @@ return array(
             'eventName' => array( 'column' => 'event_type', 'label' => 'Event Name',
                 'family' => 'event', 'description' => 'The name of the event -- page_view, click, session_start.' ),
             /*
-             * GA's SHAPE, our word. GA carries isKeyEvent (deprecating
-             * isConversionEvent), so a flag dimension on the event row is the
-             * right form -- but OWA calls these goals everywhere else it
-             * speaks: is_goal_event, base.goal_event, GoalManager. Taking GA's
-             * spelling here would have left one noun disagreeing with the
-             * column it reads.
+             * A flag dimension on the event row, named for GOALS because that
+             * is what OWA calls them everywhere else it speaks: is_goal_event,
+             * base.goal_event, GoalManager. Any other noun here would disagree
+             * with the column it reads.
              *
              * BOOLEAN, not integer -- the formatter renders Yes and No where
              * integer rendered 1 and 0. That is safe here in a way it was not
@@ -314,9 +311,7 @@ return array(
                 'description' => 'Whether the click went to a host other than the page it was on.' ),
 
             /*
-             * THE DOWNLOAD. GA's names -- fileName and fileExtension -- because
-             * these are the two it ships as standard dimensions and there is
-             * nothing to gain from a third spelling.
+             * THE DOWNLOAD.
              *
              * These exist BECAUSE the columns do. A params key is unreportable
              * until a site registers it as a custom dimension, so leaving these in
@@ -325,18 +320,18 @@ return array(
              * reportable the same way a site's own values are: by registering the
              * ones that install actually cares about.
              *
-             * fileName is the BASENAME the tracker cut. GA's is the path.
+             * fileName is the PATH, without host, query or fragment -- so two
+             * files of the same name in different folders stay apart.
              */
             'fileName' => array( 'column' => 'file_name', 'label' => 'File Name',
                 'family' => 'event',
-                'description' => 'The name of the downloaded file.' ),
+                'description' => 'The path of the downloaded file.' ),
             'fileExtension' => array( 'column' => 'file_extension', 'label' => 'File Extension',
                 'family' => 'event',
                 'description' => 'The extension of the downloaded file -- pdf, zip, csv.' ),
 
             /*
-             * SITE SEARCH. `searchTerm` is GA's name for it and there is nothing to
-             * gain from a third spelling.
+             * SITE SEARCH.
              *
              * Distinct from `sessionSearchTerms` and `firstSearchTerms`, which are
              * what a SEARCH ENGINE sent the visitor in on and are resolved by the cube

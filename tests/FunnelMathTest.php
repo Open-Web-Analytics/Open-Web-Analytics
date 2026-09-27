@@ -5,8 +5,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * The funnel's arithmetic, with no database in sight.
  *
- * A funnel is a CLOSED, INDIRECTLY-followed sequence counted per subject --
- * GA's defaults. Everybody enters at step 1; other things may happen between
+ * A funnel is a CLOSED, INDIRECTLY-followed sequence counted per subject.
+ * Everybody enters at step 1; other things may happen between
  * steps; a subject enters the funnel once in the period and it is their first
  * run through that counts.
  *
@@ -52,7 +52,7 @@ final class FunnelMathTest extends TestCase
      *
      * A visitor reads the docs, comes back to the home page, goes to pricing,
      * and reads the docs again. They completed the funnel / -> /pricing ->
-     * /docs, and GA counts them.
+     * /docs, and they count.
      *
      * The obvious implementation -- MIN(timestamp) per step, then check the
      * timestamps come out in order -- gives 11:00, 12:00, 10:00 and drops them
@@ -223,8 +223,8 @@ final class FunnelMathTest extends TestCase
     /**
      * A subject who runs the funnel twice is one subject.
      *
-     * GA reports only the first sequence within the date range, and so does
-     * this: the walk never restarts.
+     * Only the first sequence within the date range counts: the walk never
+     * restarts.
      */
     public function testRunningTheFunnelTwiceCountsOnce(): void
     {

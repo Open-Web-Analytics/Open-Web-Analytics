@@ -4,10 +4,9 @@
  * Every bridge between an OLD beacon and the current one, in one place.
  *
  * WHY THIS EXISTS. A browser caches the tracker, so beacons written by an
- * older one keep arriving for as long as that cache lives -- and OWA, unlike
- * GA, does not control delivery. GA serves gtag.js with a deliberately short
- * TTL and accepts a PageSpeed penalty for it; ours is a static file on the
- * customer's own origin with no Cache-Control at all, so browsers apply a
+ * older one keep arriving for as long as that cache lives -- and OWA does not
+ * control delivery. The tracker is a static file on the customer's own origin
+ * with no Cache-Control at all, so browsers apply a
  * heuristic (commonly 10% of the file's age) and the window is days to weeks
  * and GROWS the longer the tracker goes unchanged.
  *
@@ -64,8 +63,8 @@ return array(
          *
          * v1 had one event type for everything a site tracked, told apart by an
          * action_name field. v2 retires that shape: an event name is a name, and
-         * the group, label and value are parameters describing it -- GA's model,
-         * and the reason eventName is a dimension. So there is no custom_event to
+         * the group, label and value are parameters describing it -- which is
+         * the reason eventName is a dimension. So there is no custom_event to
          * rename TO.
          *
          * A tracker cached from before this sends track.action, which is not a

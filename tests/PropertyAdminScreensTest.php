@@ -657,8 +657,8 @@ final class PropertyAdminScreensTest extends TestCase
          *
          * A behaviour worth counting is a fact about the website: two Profiles
          * of one Property both want the same signup counted, and defining it
-         * twice is how the two drift. GA puts key events on the property for
-         * the same reason. Counting still happens per Profile, because a
+         * twice is how the two drift. Counting still happens per Profile,
+         * because a
          * conversion is a flag on a session.
          */
         $this->assertSame( 'Goal Events', $property['base.goalEvents'] ?? null );

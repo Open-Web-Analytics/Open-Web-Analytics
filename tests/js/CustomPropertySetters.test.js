@@ -7,8 +7,7 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * Two scopes, and scope lives in the NAME -- `ep_` for a value describing the
  * event, `up_` for one describing the visitor. Nothing downstream has to infer
  * which bag a value belongs to, and the same name in two scopes is two
- * different things all the way to the column. GA does the same with `ep.` and
- * `up.`, which exercising their tracker confirmed.
+ * different things all the way to the column.
  *
  * Both are PAGE-LIFETIME and in memory. Neither writes a cookie, which is the
  * deliberate break from v1: a visitor-scoped custom variable persisted in the
@@ -53,7 +52,7 @@ describe('custom property setters', () => {
         expect(tracker.getGlobalEventProperty('up_tier')).toBe('user-value');
     });
 
-    test('neither writes a cookie: both are page-lifetime, as GA is', () => {
+    test('neither writes a cookie: both are page-lifetime', () => {
         tracker.setEventProperty('a', '1');
         tracker.setUserProperty('b', '2');
 

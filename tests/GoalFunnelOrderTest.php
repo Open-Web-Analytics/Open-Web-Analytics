@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
  *
  * The sequencing happens in SQL now: one derived table per step, each carrying
  * every subject and the time they reached each step so far, left-joined so a
- * subject who stops is kept with a null rather than dropped. GA's closed funnel
+ * subject who stops is kept with a null rather than dropped. A closed funnel
  * with indirectly-followed steps, where a subject enters once in the period and
  * it is their first run through that counts.
  *

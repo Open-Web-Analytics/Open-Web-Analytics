@@ -9,8 +9,8 @@ class TrackingEventHelpers {
      *
      * Declared as default_value on 26 tracking properties. It is applied when a
      * value is STORED, not when an event is built -- see setTrackerProperties()
-     * and Entity::setProperties(). GA4 uses the same string, and the reporting
-     * layer produces it for a NULL dimension at render time as well.
+     * and Entity::setProperties(). The reporting layer produces it for a NULL
+     * dimension at render time as well.
      */
     /**
      * Declared types whose values are trimmed before they reach the event.
@@ -665,8 +665,7 @@ class TrackingEventHelpers {
      * Scope and type live in the NAME, so these four are the whole custom
      * surface -- and because they are a namespace rather than a list, a gate
      * can admit them without knowing a single one of a site's keys. That is
-     * what makes an allowlist possible here at all; GA relies on exactly the
-     * same property of `ep.` and `up.`.
+     * what makes an allowlist possible here at all.
      */
     const CUSTOM_PREFIXES = array( 'ep_', 'epn_', 'up_', 'upn_' );
 
@@ -1210,8 +1209,8 @@ class TrackingEventHelpers {
      * on every event and discarded. The anchors, meanwhile, are stored:
      * visitor_fsts, prior_session_start_ts and session_start_ts.
      *
-     * So the offsets go and the anchors stay, which is the shape the audit
-     * against GA argued for -- ship the anchor, derive the offset downstream. On
+     * So the offsets go and the anchors stay -- ship the anchor, derive the
+     * offset downstream. On
      * the cube that is arithmetic between two columns of one row at query time:
      * no join, no dimension table, and a corrected calculation re-applies to
      * history instead of being frozen into a row.
@@ -1763,8 +1762,8 @@ class TrackingEventHelpers {
      * landing_url to getCurrentUrl() and page_location comes from the same call --
      * and this only ever runs on that beacon, so reading the URL the event already
      * carries takes a session-scoped field off the wire for the life of every
-     * session. GA does not carry one either: no GA cookie holds a URL, and session
-     * source is fixed by the session's FIRST EVENT.
+     * session. Session source is fixed by the session's FIRST EVENT, so no
+     * cookie needs to hold a URL.
      *
      * THE EVIDENCE, NOT THE READING. page_location is stored exactly as it
      * arrived; page_query has the Profile's dropped parameters removed, so a site
@@ -1862,7 +1861,7 @@ class TrackingEventHelpers {
      * EMPTY SETTING MEANS ns-PREFIXED, which is what OWA has always done and
      * what honours a custom `ns`. A site that sets it names the parameters
      * explicitly instead -- utm_source, utm_medium, utm_campaign, utm_term,
-     * utm_content -- so a Property that came from a GA setup keeps its links.
+     * utm_content -- so a Property whose links already carry utm_* keeps them.
      *
      * Read at PROFILE scope so the chain walks Profile -> Property -> Install:
      * the install default covers one convention everywhere, and a Property
@@ -2107,7 +2106,7 @@ class TrackingEventHelpers {
      *
      * OWA's own control parameters, plus the site's query_string_filters at both
      * install and Profile scope. NOT utm_*: those are the site's own tagging
-     * rather than ours, v1 keeps them, and so does GA.
+     * rather than ours, and v1 keeps them.
      *
      * The list is per site and settings change, so what a report shows depends on
      * the list as it was when the row was written. Making a corrected list

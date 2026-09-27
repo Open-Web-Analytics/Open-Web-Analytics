@@ -2154,8 +2154,8 @@ class CoreAPI {
      * be untangled.
      *
      * THIS IS ALSO THE RESERVED SET. A custom event may not take one of these
-     * names, which is GA's rule and for GA's reason: its reserved event names are
-     * exactly its own first-class ones. See isTrackingEventType().
+     * names: reusing one would put a site's own counts into a report measuring
+     * something else. See isTrackingEventType().
      *
      * @return array
      */
@@ -2176,11 +2176,10 @@ class CoreAPI {
      * refused: trackingEventTypes() was an allowlist, so every custom event a
      * site defined was dropped at the door.
      *
-     * GA's rule, character for character: "Event names must start with a letter.
-     * Use only letters, numbers, and underscores. Don't use spaces", at most 40
-     * characters, case-sensitive. That is the same pattern a custom PROPERTY name
-     * must match, which is also GA's rule for a parameter -- so it is stated once
-     * and reused rather than written twice.
+     * A name starts with a letter, uses only letters, numbers and underscores,
+     * and is at most 40 characters, case-sensitive. That is the same pattern a
+     * custom PROPERTY name must match -- so it is stated once and reused rather
+     * than written twice.
      *
      * A first-class name reaching the second test would pass it, so the order
      * matters only for reading; what makes the reserved set work is the TRACKER
@@ -2213,10 +2212,9 @@ class CoreAPI {
      * events have to reach the pipeline. They were being refused: the gate was an
      * allowlist, so every custom event a site defined was dropped at the door.
      *
-     * GA's rule, character for character: "Event names must start with a letter.
-     * Use only letters, numbers, and underscores. Don't use spaces", at most 40
-     * characters, case-sensitive. That is the same pattern a custom PROPERTY name
-     * must match -- also GA's rule for a parameter -- so it is stated once.
+     * A name starts with a letter, uses only letters, numbers and underscores,
+     * and is at most 40 characters, case-sensitive. That is the same pattern a
+     * custom PROPERTY name must match, so it is stated once.
      *
      * ADMISSION ONLY. This says nothing about routing: an internal event called
      * install_complete would pass the second test, which is exactly why the

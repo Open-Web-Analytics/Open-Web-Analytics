@@ -63,11 +63,10 @@ return array(
          * dimension reports /a once; /a was viewed three times and exited from
          * once.
          *
-         * GA4 reached the same shape: Exits is a metric there, paired with the
-         * ordinary page dimension, and GA ships no exit-page dimension at all.
+         * So Exits is a metric, paired with the ordinary page dimension, and
+         * there is no exit-page dimension at all.
          *
-         * NO exitRate. GA ships none either -- you divide Exits by Views in an
-         * Exploration -- and a rate is the wrong thing to ship first here: a
+         * NO exitRate. A rate is the wrong thing to ship first here: a
          * session's last event is decided by ARRIVAL order (Cube\IsExitStep
          * over a window sorted on ts), so a late beacon puts is_exit on the
          * wrong row. A count carries that error visibly; a percentage presents
@@ -159,8 +158,8 @@ return array(
          * NULL visitor id -- so the pair under-counts by exactly 48 to guard
          * against a one-in-a-billion collision.
          *
-         * GA pairs because GA must: its `ga_session_id` is the session-start
-         * timestamp in seconds with no randomness at all. Ours is not that.
+         * Pairing is only necessary where a session id is a bare start timestamp
+         * with no randomness in it. Ours is not that.
          */
         'sessions' => array(
             'label'       => 'Sessions',
@@ -193,8 +192,8 @@ return array(
         /*
          * newVisitors has no `returningVisitors` twin, deliberately.
          *
-         * GA has newUsers and no returning-users metric: you take totalUsers
-         * and group it by the New/returning dimension. Two metrics splitting
+         * To count returning users you take totalUsers and group it by the
+         * New/returning dimension. Two metrics splitting
          * one population is the same shape as the isNewVisitor /
          * isRepeatVisitor dimensions this replaced -- and newVsReturning is
          * exactly the dimension to group uniqueVisitors by.
@@ -276,17 +275,14 @@ return array(
         ),
 
         /*
-         * ---- the per-USER ratios GA carries and we did not ----------------
+         * ---- the per-USER ratios -----------------------------------------
          *
          * Every one is arithmetic over metrics that already exist, so they cost
-         * a declaration each. GA's names are eventCountPerUser,
-         * screenPageViewsPerUser, averagePurchaseRevenuePerUser and
-         * averageEngagementTimePerUser; ours differ only where the underlying
-         * metric does.
+         * a declaration each.
          *
          * A per-USER denominator answers a different question from a
          * per-session one -- "how much does a person do" against "how much
-         * happens in a visit" -- which is why GA ships both and why naming the
+         * happens in a visit" -- which is why both exist and why naming the
          * denominator in the metric is not pedantry.
          */
         'eventCountPerUser' => array(
@@ -393,15 +389,14 @@ return array(
          * site's average.
          *
          * Engagement time is accrued on the DEVICE and sent, so the last page
-         * counts. GA does the same, and for the same reason.
+         * counts.
          *
          * No ordering caveat, unlike exits: this sums over a session, so which
          * event the pass calls last does not enter into it.
          */
         /*
-         * PER SESSION, and the name says so. GA carries both
-         * averageEngagementTimePerSession and a per-user one, and a bare
-         * "average engagement time" does not say which denominator it used --
+         * PER SESSION, and the name says so. There is a per-user one too, and a
+         * bare "average engagement time" does not say which denominator it used --
          * the same defect as 1.x's visitDuration, which was an AVG under a name
          * that promised a duration.
          */

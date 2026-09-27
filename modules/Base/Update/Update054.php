@@ -11,8 +11,7 @@ namespace OWA\Module\Base\Update;
  * custom dimension -- Classes\Cube\Dimensions is the whole path from collected to
  * queryable -- so leaving these in the bag meant every install that wanted a
  * downloads report spending one of its 20 registration slots on a value OWA set
- * itself. That is the mistake GA makes with form_id and form_name, which have no
- * standard dimension and must be registered as customEvent:form_id.
+ * itself.
  *
  * The element params (element_class, element_name, element_text), the form params
  * and the two commerce ones STAY IN THE BAG, deliberately. Most installs will
@@ -20,8 +19,8 @@ namespace OWA\Module\Base\Update;
  * row of every Property whether anyone reads it or not. MEASURED on MySQL 8.4:
  * promoting nine of them took the custom-dimension ceiling from 62 to 37. A site
  * that does want one registers it, which is the same route its own values take.
- * ct_line_items cannot be a column at all -- it is a nested array, which is why
- * GA ships `items` as its own repeated record rather than an event parameter.
+ * ct_line_items cannot be a column at all -- it is a nested array, and needs a
+ * repeated record of its own rather than a scalar.
  *
  * NO BACKFILL, AND NONE IS POSSIBLE FROM THE ROW. Rows already stored carry the
  * two values inside `params`, so the new columns are NULL for them -- but a cube

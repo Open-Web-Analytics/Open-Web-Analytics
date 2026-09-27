@@ -29,7 +29,7 @@ describe('OWATracker event assembly', () => {
      * It used to send event_type 'custom_event' and put the name in an
      * action_name field: v1's one-event-type-for-everything shape, told apart by
      * a property. v2 retires it -- an event name is a name, and the group, label
-     * and value describe it, which is GA's model and why eventName is a dimension.
+     * and value describe it, which is why eventName is a dimension.
      */
     test('trackAction sends the action name as the event, with ep_ parameters', () => {
         tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
@@ -51,8 +51,8 @@ describe('OWATracker event assembly', () => {
      * AND AN ACTION NAME THAT IS NOT A LEGAL EVENT NAME IS REFUSED.
      *
      * The migration cost, stated as a test. v1 action names were free text, so
-     * 'test action' was ordinary; an event name may not contain a space -- GA's
-     * rule, which v2 adopts -- so a site passing one now sends nothing and gets a
+     * 'test action' was ordinary; an event name may not contain a space in v2,
+     * so a site passing one now sends nothing and gets a
      * debug line saying why.
      *
      * Refused rather than reshaped on purpose: silently turning 'test action' into

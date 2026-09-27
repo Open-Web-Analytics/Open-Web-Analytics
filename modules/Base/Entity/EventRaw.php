@@ -88,8 +88,8 @@ class EventRaw extends \OWA\Core\Entity {
         /*
          * The session's start, and the PREVIOUS session's start.
          *
-         * Anchors, both of them: GA ships raw anchors and derives offsets from
-         * them, and an offset computed at collection cannot be re-derived when
+         * Anchors, both of them: offsets are derived from them downstream,
+         * because an offset computed at collection cannot be re-derived when
          * the rule for it changes. `psts` is what daysSinceLastVisit reads --
          * the tracker's own comment says so, and says why the seconds interval
          * it replaced was wrong ("a continuous seconds value gives one bucket
@@ -123,9 +123,8 @@ class EventRaw extends \OWA\Core\Entity {
          * compat bridges between an old beacon and the current one can only be
          * deleted on evidence that nothing is still sending the old shape, and
          * the only place that evidence can come from is the rows themselves.
-         * GA can reason about this from its own cache TTL because it serves
-         * gtag.js; OWA hands a static file to the customer's origin and loses
-         * sight of it, so counting is the only way to know.
+         * OWA hands a static file to the customer's origin and loses sight of
+         * how long it is cached, so counting is the only way to know.
          *
          *     SELECT beacon_version, COUNT(*) ... GROUP BY 1
          *
@@ -259,8 +258,7 @@ class EventRaw extends \OWA\Core\Entity {
          * A downloads report is a question every install asks, and a params key is
          * unreportable in v2 until someone registers it as a CUSTOM dimension:
          * without these, every site would spend one of its 20 registration slots
-         * on a value OWA set itself. GA makes exactly that mistake with form_id
-         * and form_name, which have no standard dimension.
+         * on a value OWA set itself.
          *
          * The element and form params STAY in the bag on purpose. Most installs
          * will never group by an element class or a form name, and a column is
@@ -268,7 +266,7 @@ class EventRaw extends \OWA\Core\Entity {
          * Measured on MySQL 8.4: promoting nine of them took the custom-dimension
          * ceiling from 62 to 37.
          *
-         * file_name is the BASENAME the tracker cut, not GA's path. The extension
+         * file_name is the PATH, without host, query or fragment. The extension
          * is bounded by the tracker's downloadExtensions list, so 32 is generous.
          */
         $this->setProperty( $this->column( 'file_name', OWA_DTD_VARCHAR255 ) );
@@ -303,9 +301,9 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'engagement_msec', OWA_DTD_INT ) );
 
         /*
-         * Set on the event that MET the condition -- GA's shape, where a key
-         * event is an ordinary event flagged, so eventCount stays a count of
-         * what happened and a conversion needs no row of its own. Decided per
+         * Set on the event that MET the condition -- a goal event is an
+         * ordinary event flagged, so eventCount stays a count of what happened
+         * and a conversion needs no row of its own. Decided per
          * row by Classes\GoalMarking at Ingest::STORE_POST, where the row is
          * complete.
          *

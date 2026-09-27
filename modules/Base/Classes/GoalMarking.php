@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Classes;
  * AT INGEST, NOT IN THE PASS, and the difference is how many times a partition
  * is rebuilt: here it is N predicates against an array already in memory, once
  * per row, ever. What that costs is retroactivity -- a goal defined today does
- * not mark yesterday -- and GA4 behaves the same way for the same reason.
+ * not mark yesterday.
  */
 class GoalMarking {
 

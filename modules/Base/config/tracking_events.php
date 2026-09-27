@@ -52,7 +52,7 @@ return array(
     'scroll',
     'user_engagement',
 
-    // Enhanced measurement: what a click MEANT, and the rest of the set.
+    // What a click MEANT, and the rest of the automatically raised set.
     'file_download',
     'form_start',
     'form_submit',

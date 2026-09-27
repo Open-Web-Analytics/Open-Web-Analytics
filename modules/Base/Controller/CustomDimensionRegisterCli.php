@@ -40,9 +40,8 @@ namespace OWA\Module\Base\Controller;
  * NOTHING IS BACKFILLED. The column is NULL for rows that already exist and the
  * next build fills it going forward. To reach back, run cmd=cube-rebuild over
  * the range wanted -- which is possible at all because `params` is kept on
- * every raw row, and is the one thing this does that GA cannot: a GA custom
- * dimension is not retroactive, so everything collected before it was
- * registered is permanently unreportable.
+ * every raw row. A registration that only applied going forward would leave
+ * everything collected before it permanently unreportable.
  */
 class CustomDimensionRegisterCli extends CustomDimensionsCli {
 

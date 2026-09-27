@@ -85,7 +85,7 @@ describe('session-scoped properties do not vary within a session', () => {
     afterEach(wipe);
 
     // The session store is scoped to a site now, so its cookie carries the site
-    // in the name -- 'owa_s_<siteId>', GA's _ga_<property>. Reading 'owa_s'
+    // in the name -- 'owa_s_<siteId>'. Reading 'owa_s'
     // would find the pre-split cookie, which nothing writes any more.
     function sessionCookie(site) {
         const raw = Util.readCookie('owa_s_' + (site || 'invariant-site'));

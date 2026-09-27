@@ -2616,7 +2616,7 @@ namespace OWA\Module\Base\Classes;
                 /*
                  * EMPTY MEANS ns-PREFIXED -- owa_source, owa_medium and so on.
                  * Naming the parameters explicitly is how a site opts into
-                 * GA's utm_* without changing its links, and is a Property
+                 * utm_* without changing its links, and is a Property
                  * setting because a Property is a website and its links are
                  * its own. See TrackingEventHelpers::campaignKeysFor().
                  */

@@ -30,11 +30,10 @@ namespace OWA\Module\Base\Classes;
  *      question is sitting in the cube. Counting takes the cheap mechanism;
  *      ordering takes the one that can see the past.
  *
- * This is also how GA does it. A key event named in a funnel step is a
- * condition matched against the event stream like any other step condition; the
- * key-event flag lives on the event row, so it is a row filter, not a counter
- * being read back. Nothing in a funnel exploration consults a stored conversion
- * total.
+ * A goal event named in a funnel step is a condition matched against the event
+ * stream like any other step condition; the goal flag lives on the event row, so
+ * it is a row filter, not a counter being read back. Nothing in a funnel consults
+ * a stored conversion total.
  *
  * WHAT IT COMPILES AGAINST
  *

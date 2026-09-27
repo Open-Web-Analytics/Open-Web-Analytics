@@ -25,8 +25,8 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  * the cookie on beacon acceptance, and that write REPLACES the cookie wholesale
  * -- so the erase is redundant in the normal path, and in the path where the
  * beacon never lands it would leave the visitor with no session cookie at all,
- * having had one a moment earlier. Measured, GA behaves the same way: a tag that
- * loads and sends nothing writes no cookies, so it never destroys what was there.
+ * having had one a moment earlier. A tracker that loads and sends nothing
+ * writes no cookies, so it never destroys what was there.
  *
  * And the persisted values have to stay readable for the rest of the page load.
  * setLastRequestTime() runs AFTER the session decision and reads the persisted

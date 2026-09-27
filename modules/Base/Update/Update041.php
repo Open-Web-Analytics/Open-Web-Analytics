@@ -6,8 +6,8 @@ namespace OWA\Module\Base\Update;
  * Retire owa_event. There is one reporting cube per Property now.
  *
  * WHY THE SPLIT. The cube is what reports read and what a registered custom
- * dimension adds a column to, and both of those belong to the Property -- GA
- * registers custom definitions on the property for the same reason. One shared
+ * dimension adds a column to, and both of those belong to the Property. One
+ * shared
  * cube forces one namespace across the whole installation, which is the v1
  * failure custom dimensions exist to end, and shares out InnoDB's ~8KB row
  * budget so that one Property could exhaust the rest. Split, each has its own

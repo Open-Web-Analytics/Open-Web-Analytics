@@ -193,11 +193,6 @@ final class EventRawIngestionTest extends IngestionTestCase
      * session was still counted. What disagreed was everything reading the marker
      * rows.
      *
-     * Not a hypothetical shape: with send_page_view suppressed, real gtag.js sends
-     * no page view at all and puts its session-start and first-visit flags on
-     * whichever event comes first -- a `scroll`, in the run this was checked
-     * against.
-     *
      * @dataProvider firstEventProvider
      */
     public function testAnyFirstEventRaisesTheMarkers(string $type, string $stored): void
@@ -1250,7 +1245,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      * the observed IP. A transaction used to send its billing address under those
      * three names, silently replacing the visitor's location on purchase rows
      * only. They were then moved to ct_* prefixes, and now they are not declared
-     * at all: nothing reports on a billing address and GA carries no equivalent.
+     * at all: nothing reports on a billing address.
      */
     public function testTheBillingAddressIsRefused(): void
     {

@@ -13,8 +13,7 @@ use OWA\Module\Base\Handler\EventRawHandlers;
  * THREE THINGS MEET HERE. Scope is in the name (`ep_` / `up_`), type is in the
  * name (`epn_` / `upn_`), and a cap bounds how many ride each beacon. Together
  * they are what lets the endpoint run an ALLOWLIST: a namespace can be
- * admitted without knowing one of a site's keys, which is the same property
- * GA relies on for `ep.` and `up.`.
+ * admitted without knowing one of a site's keys.
  *
  * Before this, log.php ran a denylist -- it refused the names the server
  * computes and passed everything else, so the gate was open for exactly the

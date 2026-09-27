@@ -158,8 +158,7 @@ final class NewVsReturningTest extends TestCase
         /*
          * And NO exitRate. A session's last event is decided by ARRIVAL order,
          * so is_exit can land on the wrong row -- a count carries that error
-         * visibly where a percentage presents it as precision. GA ships no
-         * exit rate either.
+         * visibly where a percentage presents it as precision.
          */
         $this->assertArrayNotHasKey('exitRate', $metrics);
     }

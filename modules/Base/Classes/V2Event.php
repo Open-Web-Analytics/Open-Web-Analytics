@@ -314,7 +314,7 @@ class V2Event {
      * reading only: the URL as it arrived is stored untouched beside it, so
      * nothing here can destroy what was observed.
      *
-     * Two collapses, both of which v1 does and neither of which GA does:
+     * Two collapses, both of which v1 does too:
      *
      *   - the site's default page. /store/index.html and /store/ are one page
      *     to everyone except a report that groups on the raw path.

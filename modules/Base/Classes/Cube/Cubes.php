@@ -16,8 +16,8 @@ namespace OWA\Module\Base\Classes\Cube;
  * may not exist yet -- comes through here so the answer is the same everywhere.
  *
  * WHY PER PROPERTY. The cube is what reports read and what a registered custom
- * dimension adds a column to, and both of those are the Property's business:
- * GA registers custom definitions on the property for the same reason. Sharing
+ * dimension adds a column to, and both of those are the Property's business.
+ * Sharing
  * one cube would force one namespace on every Property in the installation --
  * cv3 meaning a different thing per site, which is the v1 failure custom
  * dimensions exist to end -- and would share InnoDB's row budget out between

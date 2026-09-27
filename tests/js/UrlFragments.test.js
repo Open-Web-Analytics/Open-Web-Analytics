@@ -4,10 +4,8 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 /**
  * The #fragment is not part of a page's URL.
  *
- * Stripped in the TRACKER rather than at ingest, which is where GA does it:
- * page_location defaults to location.href and "the default value excludes the
- * fragment portion of the URL". So the hash never reaches the wire instead of
- * being removed by a server that has already received it.
+ * Stripped in the TRACKER rather than at ingest, so the hash never reaches the
+ * wire instead of being removed by a server that has already received it.
  *
  * THE TWO HALVES HAVE TO AGREE, and that is what most of this file is about. A
  * fragment left out of the reported URL but kept in the route comparison gives

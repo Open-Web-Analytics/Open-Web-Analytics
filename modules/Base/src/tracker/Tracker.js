@@ -27,11 +27,8 @@ class OWATracker  {
 	     * 'tracker.init'. A store cannot be scoped to a site that is not known
 	     * yet, and a migration cannot move a per-site cookie it cannot name.
 	     *
-	     * This is what GA does: the property id is an argument to the call that
-	     * CREATES the tag -- gtag('config', ID) -- and to every command after it,
-	     * so there is no window in which a tag exists without knowing what it is.
-	     * Measured: an event fired before config() is dropped, and one carrying
-	     * send_to fires regardless of order.
+	     * So the site id is an argument to the call that CREATES the tracker, and
+	     * there is no window in which a tracker exists without knowing what it is.
 	     *
 	     * setSiteId() still works and is still supported; it means "reconfigure"
 	     * now rather than "finally tell me who I am".
@@ -110,9 +107,8 @@ class OWATracker  {
 		     * parsed from page_location on the session-starting beacon, which is
 		     * the same URL landing_url held, and the session's referrer is the
 		     * referer_host of its first row, which the pass already reads through
-		     * the window it opens for the landing page. GA carries neither -- no
-		     * GA cookie holds a URL, and session source is fixed by the session's
-		     * first event.
+		     * the window it opens for the landing page. Session source is fixed by
+		     * the session's first event, so no cookie needs to hold a URL.
 		     *
 		     * So this removes a URL and a referrer from the cookie and from every
 		     * beacon of every session, for a read the pass performs anyway.
@@ -175,7 +171,7 @@ class OWATracker  {
 	     * The visitor half of the same pair, and the same distinction:
 	     *
 	     * This REQUEST minted the visitor, true for one beacon, and first_visit
-	     * is materialised from it -- which is what GA does with its _fv flag.
+	     * is materialised from it on the server.
 	     *
 	     * Its session-scoped twin is gone too. The one thing that still wanted
 	     * it -- writing the visitor's acquisition from any event of the first
@@ -202,6 +198,10 @@ class OWATracker  {
 	     * command twice does not report every threshold twice.
 	     */
 	    this.isScrollTrackingEnabled = false;
+	    /**
+	     * Whether trackForms() has bound its two listeners, for the same reason.
+	     */
+	    this.formTrackingEnabled = false;
 	    /**
 	     * Latest click event
 	     */
@@ -292,10 +292,9 @@ class OWATracker  {
 	     * map key in the state manager and the cookie name both follow from it,
 	     * because the cookie is named ns + store name.
 	     *
-	     * 'v' stays global on purpose: it is the visitor, GA's _ga, and two
-	     * trackers SHOULD agree about who the visitor is. Measured on a real GA
-	     * tag with two properties configured: one _ga shared, and _ga_<id> per
-	     * property. 'c' and 'd' stay global for now -- see the note in
+	     * 'v' stays global on purpose: it is the visitor, and two trackers SHOULD
+	     * agree about who the visitor is. The visitor is shared and the session is
+	     * per site. 'c' and 'd' stay global for now -- see the note in
 	     * registerStore() about what that decision costs.
 	     */
 	    this.siteScopedStores = ['s'];
@@ -363,7 +362,7 @@ class OWATracker  {
 	        domstreamEventThreshold: 10,
 	        /*
 	         * Whether the #fragment is part of a page's URL. It is not, by
-	         * default, which is GA's default too -- see getCurrentUrl().
+	         * default -- see getCurrentUrl().
 	         */
 	        trackUrlFragments: false,
 	        sessionLength: 1800,
@@ -430,8 +429,8 @@ class OWATracker  {
 	         * landing_url and session_referer; the server parses the tags out of
 	         * the landing URL and decides source, medium and campaign. So the
 	         * key list belongs where the parse is, and is now the `campaignKeys`
-	         * setting -- scoped to a Property, so a site whose links use GA's
-	         * utm_* can say so without changing its links.
+	         * setting -- scoped to a Property, so a site whose links use utm_*
+	         * can say so without changing its links.
 	         *
 	         * Keeping the setters here was worse than not having them: the
 	         * server built its own ns-prefixed list and never consulted these,
@@ -872,8 +871,8 @@ class OWATracker  {
      * event-scoped destination, while trackingProperties declared it `session`, a
      * scope v2 does not offer for custom values at all (PLAN.html §2.26.1).
      *
-     * setUserProperty() is page-lifetime and in memory, like GA's user
-     * properties: nothing is written to a cookie, and the `up_` prefix routes it
+     * setUserProperty() is page-lifetime and in memory: nothing is written to
+     * a cookie, and the `up_` prefix routes it
      * to the visitor store at INGEST, where it is recorded with when it was set
      * (§2.26.5). So what persists is a server record that can say "this was true
      * from here on" rather than a cookie that cannot.
@@ -1198,10 +1197,8 @@ class OWATracker  {
     /**
      * The page's URL, WITHOUT the fragment.
      *
-     * GA does the same and in the same place -- its page_location defaults to
-     * location.href and its documentation says "the default value excludes the
-     * fragment portion of the URL" -- so the hash never reaches the wire at
-     * all, rather than being removed by a server that has already received it.
+     * Removed HERE, on the client, so the hash never reaches the wire at all,
+     * rather than being removed by a server that has already received it.
      *
      * Nothing is lost by it. A fragment has never carried a campaign tag, so
      * the one thing page_location is EVIDENCE for is unaffected; and what it
@@ -1916,8 +1913,7 @@ class OWATracker  {
      *
      * THE PATH, NOT THE BASENAME. It was the basename since download tracking was
      * added, so /2024/report.pdf and /2025/report.pdf collapsed into one row of a
-     * downloads report. The path keeps them apart, and is the reading GA's
-     * fileName carries too -- measured off its wire as `/docs/guide.pdf`.
+     * downloads report. The path keeps them apart.
      *
      * The HOST is deliberately dropped: a file served from the site and the same
      * file served from a CDN are one document, and target_host on the same row
@@ -2018,9 +2014,8 @@ class OWATracker  {
          *
          * A click on an input would have shipped whatever the visitor had typed
          * into it, and no report has ever shown it: it reached no column, and the
-         * server's registry declares no destination for it. GA collects nothing
-         * equivalent. "We store it but nothing reads it" is the worst version of
-         * that trade.
+         * server's registry declares no destination for it. "We store it but
+         * nothing reads it" is the worst version of that trade.
          */
 
         var dom_id = '(not set)';
@@ -2177,8 +2172,8 @@ class OWATracker  {
      * anyone actually asks of it: did they reach the bottom.
      *
      * The threshold list is an option so a site can ask for quartiles. The
-     * default is a single 90% mark, which is the shape GA settled on -- one
-     * event, at the depth where "read to the end" becomes true.
+     * default is a single 90% mark -- one event, at the depth where "read to the
+     * end" becomes true.
      */
     checkScrollDepth() {
 
@@ -2791,7 +2786,7 @@ class OWATracker  {
          * them. They are discarded here instead.
          *
          * Not collected because nothing reports on them: a billing address is
-         * not a reporting dimension, GA carries no equivalent, and v2's country
+         * not a reporting dimension, and v2's country
          * and city are the geolocation readings from the observed IP. The two
          * facts used to share three names, so a transaction's billing address
          * silently replaced the visitor's location -- and only on transactions.
@@ -3209,14 +3204,14 @@ class OWATracker  {
      * Scope lives in the NAME, at every layer -- the beacon, the store and
      * eventually the registered dimension -- so nothing downstream has to infer
      * which bag a value belongs to, and the same name in two scopes is two
-     * different things all the way down. GA does the same with `ep.` and `up.`;
-     * underscores here because OWA's own params are read as bare keys.
+     * different things all the way down. Underscores rather than dots because
+     * OWA's own params are read as bare keys.
      */
     static get EVENT_PROPERTY_PREFIX() { return 'ep_'; }
     static get USER_PROPERTY_PREFIX()  { return 'up_'; }
 
     /**
-     * And the numeric halves, which GA spells `epn.` and `upn.`.
+     * And the numeric halves, `epn_` and `upn_`.
      *
      * THE TYPE IS IN THE NAME for the same reason the scope is: a query string
      * has no numbers, so without a prefix every value arrives as text and
@@ -3249,8 +3244,8 @@ class OWATracker  {
      * in `params` on the raw row. The server never has to guess the scope: the
      * `ep_` prefix says it.
      *
-     * Page-lifetime and in memory, like GA's event parameters -- nothing is
-     * written to a cookie, so a value set here cannot outlive its own meaning
+     * Page-lifetime and in memory -- nothing is written to a cookie, so a value
+     * set here cannot outlive its own meaning
      * the way v1's persisted custom variables could.
      *
      * @param  name   string  letters, digits and underscores; must start with a letter
@@ -3266,8 +3261,8 @@ class OWATracker  {
         }
 
         /*
-         * A JS number goes to the numeric prefix, as gtag routes one to
-         * `epn.`. NaN and Infinity are NOT numbers here: neither survives
+         * A JS number goes to the numeric prefix, `epn_`. NaN and Infinity are
+         * NOT numbers here: neither survives
          * JSON, so both would arrive as null and read as absence.
          */
         var numeric = typeof value === 'number' && isFinite( value );
@@ -3281,13 +3276,12 @@ class OWATracker  {
     /**
      * A custom value describing the VISITOR.
      *
-     * Also page-lifetime on the client, and deliberately so: GA holds user
-     * properties in memory for the page, stamps them on each hit, and persists
-     * them server side against the user. Exercising their tracker confirmed it
-     * -- set one, navigate, and the next page's beacons carry nothing until it
-     * is set again; the cookies hold only the client id and session state.
+     * Also page-lifetime on the client, and deliberately so: held in memory for
+     * the page, stamped on each event, and persisted server side against the
+     * user. Set one, navigate, and the next page's beacons carry nothing until it
+     * is set again.
      *
-     * OWA does the same. The `up_` prefix routes it to the visitor store at
+     * The `up_` prefix routes it to the visitor store at
      * ingest, where it is written last-value-wins with the event's timestamp,
      * so what persists is a server record rather than a cookie that can outlive
      * the value it holds.
@@ -3305,8 +3299,8 @@ class OWATracker  {
         }
 
         /*
-         * A JS number goes to the numeric prefix, as gtag routes one to
-         * `upn.`. NaN and Infinity are NOT numbers here: neither survives
+         * A JS number goes to the numeric prefix, `upn_`. NaN and Infinity are
+         * NOT numbers here: neither survives
          * JSON, so both would arrive as null and read as absence.
          */
         var numeric = typeof value === 'number' && isFinite( value );
@@ -3332,8 +3326,8 @@ class OWATracker  {
      * v2 design refuses: it is something the server can derive from the
      * session's own events, and something the client can get wrong -- v1's own
      * session store had a variable outliving the session that set it, because
-     * nothing cleared it at a session boundary. GA offers site authors event
-     * and user scope for the same reason and derives session scope itself.
+     * nothing cleared it at a session boundary. So site authors get event and
+     * user scope, and session scope is derived.
      *
      * The slot is ignored. It was v1 storage -- five numbered columns on a fact
      * table -- and never information; two calls with the same name now mean the
@@ -3455,8 +3449,7 @@ class OWATracker  {
          * A date, not a timestamp and not an elapsed count. Coarsening is the
          * whole point: the anchor is stamped by the visitor's clock, and a clock
          * wrong by minutes or hours yields the same date -- only an error
-         * crossing midnight costs anything, and only ever one day, once. This is
-         * what GA exposes as firstSessionDate, for the same reason.
+         * crossing midnight costs anything, and only ever one day, once.
          *
          * It is also a pure function of a value that never changes, so it is
          * permanent and visitor-scoped: identical on every event this visitor
@@ -3781,9 +3774,7 @@ class OWATracker  {
          * isNewSession() already reads as though this were the case -- its
          * variable is time_since_lastreq and its own comment says "prev session
          * expired, because no requests since some time" -- and sessionLength
-         * means an inactivity window. This makes the value match the name. It
-         * is also how GA behaves: its session cookie carries a most-recent-hit
-         * timestamp updated per event, alongside the session start.
+         * means an inactivity window. This makes the value match the name.
          *
          * Placed after the identity block so the first event of a page still
          * decides sessionization against the PREVIOUS request before this one
@@ -3830,9 +3821,7 @@ class OWATracker  {
      * A client TIMESTAMP would not fix that. A device clock can be wrong,
      * skewed, or set by hand, and two events a second apart can carry times in
      * the wrong order. A counter is monotonic whatever the clock says, which is
-     * the only property the sort actually needs. (GA sends the same thing --
-     * `_s`, the hit number within the session -- and still cannot order events
-     * inside one upload batch, because they share a timestamp.)
+     * the only property the sort actually needs.
      *
      * STAMPED AT CREATION, NOT AT SEND. This runs on the event as it is built,
      * so a beacon that is deferred, queued or retried carries the number it had
@@ -3858,16 +3847,15 @@ class OWATracker  {
      *
      * Bumped when the shape of a beacon changes in a way a server has to bridge
      * -- a renamed token, a changed unit, a re-encoded value -- and not for
-     * ordinary releases. One integer for the whole message, the way GA's
-     * collect carries `v=2` (and `v=1` for Universal), rather than a flag per
-     * field.
+     * ordinary releases. One integer for the whole message, rather than a flag
+     * per field.
      *
      * IT IS NOT CONSULTED TO DECIDE WHETHER A BEACON IS ACCEPTABLE. Whether one
      * beacon can become a row is the server's identity guard, which knows
      * nothing of versions. This exists so that "has generation N died out yet"
      * is a query against stored rows instead of a guess about how long a
-     * customer's cache policy lets an old tracker live -- and OWA, unlike GA,
-     * does not control that policy.
+     * customer's cache policy lets an old tracker live -- and OWA does not
+     * control that policy.
      *
      * ALIGNED TO THE OWA MAJOR, so a beacon format version and the tracker
      * generation that emitted it are the same number. 2 is this wire. 1 is the
@@ -3953,10 +3941,10 @@ class OWATracker  {
     /**
      * The event names v2 defines for itself, which a custom event may not take.
      *
-     * GA does exactly this, and its reserved list IS its first-class list --
-     * page_view, click, scroll, file_download, form_start, form_submit,
-     * session_start, first_visit, user_engagement, view_search_results. Reusing
-     * one of them would put a site's own counts into a report measuring
+     * The reserved list IS the first-class list -- page_view, click, scroll,
+     * file_download, form_start, form_submit, session_start, first_visit,
+     * user_engagement, view_search_results. Reusing one of them would put a
+     * site's own counts into a report measuring
      * something else, and on the server it would claim a property vocabulary the
      * event does not have.
      *
@@ -3980,12 +3968,12 @@ class OWATracker  {
     }
 
     /**
-     * GA's rule, character for character: "Event names must start with a letter.
-     * Use only letters, numbers, and underscores. Don't use spaces", and 40
-     * characters. Case-sensitive, so my_event and My_Event are two events.
+     * A name starts with a letter, uses only letters, numbers and underscores,
+     * and is at most 40 characters. Case-sensitive, so my_event and My_Event are
+     * two events.
      *
-     * The same pattern the server applies to a custom PROPERTY name, which is
-     * also GA's rule for a parameter -- one rule, stated once on each side.
+     * The same pattern the server applies to a custom PROPERTY name -- one rule,
+     * stated once on each side.
      */
     static isLegalCustomEventName( name ) {
 
@@ -4009,14 +3997,13 @@ class OWATracker  {
          * AND THE `owa_` PREFIX IS RESERVED, which is forward protection rather
          * than a rule about today.
          *
-         * GA reserves ga_, google_ and firebase_ for exactly this: it keeps room
-         * to name a future first-class event without colliding with one a site
-         * has already been sending for years. OWA's own events are unprefixed --
-         * page_view, click -- and GA's are too, so the prefix is not how either
-         * names things now; it is how a later addition stays safe.
+         * It keeps room to name a future first-class event without colliding
+         * with one a site has already been sending for years. OWA's own events
+         * are unprefixed -- page_view, click -- so the prefix is not how OWA names
+         * things now; it is how a later addition stays safe.
          *
-         * Two of GA's other refusals come free from the pattern above: a leading
-         * underscore fails "must start with a letter", and gtag. fails on the dot.
+         * A leading underscore and a dotted name are refused by the pattern above
+         * already.
          */
         if ( name.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
 
@@ -4091,7 +4078,7 @@ class OWATracker  {
      * 'custom_event' with the name as a property, which is v1's shape: one event
      * type for everything a site tracks, told apart by a field. v2 retires it --
      * an event name is a name, and the group, label and value are parameters
-     * describing it, which is GA's model and the reason eventName is a dimension.
+     * describing it, which is the reason eventName is a dimension.
      *
      * So this maps onto trackCustomEvent(): the name becomes the event, and the
      * other three become custom event properties in `params`. A site that was
@@ -4231,9 +4218,8 @@ class OWATracker  {
                  * dispatched Event has none, and then this is simply absent
                  * rather than guessed at.
                  *
-                 * GA documents form_submit_text and did not send it in a measured
-                 * run, so this is not a match to its wire -- it is the value the
-                 * name promises.
+                 * Absent on a script-dispatched submit rather than guessed, which
+                 * is why the jest case for it sets `submitter` explicitly.
                  */
                 var text = that.submitterText( e );
 
@@ -4262,9 +4248,8 @@ class OWATracker  {
      *
      * `form_length` counts the fields a visitor can interact with, so a
      * form_start on a two-field signup and one on a fourteen-field application are
-     * distinguishable. Buttons are EXCLUDED, unlike the count on GA's wire, which
-     * reported 3 for two fields and a submit button: a button is not a field to
-     * fill in and counting it makes the number mean nothing in particular.
+     * distinguishable. Buttons are EXCLUDED: a button is not a field to fill in,
+     * and counting it makes the number mean nothing in particular.
      *
      * The first-field trio says where the visitor started. On a long form that is
      * a real signal -- someone who begins at field nine skipped eight -- and it is
@@ -4464,9 +4449,6 @@ class OWATracker  {
 
     /**
      * Report an uncaught script error as an `exception` event.
-     *
-     * The name is GA's, because the question it answers is the same one and
-     * nothing is gained by inventing a different word for it.
      *
      * NO STACK TRACE ON THE WIRE. A stack from a minified bundle is noise to
      * anyone reading a report, and it is the field most likely to carry a URL

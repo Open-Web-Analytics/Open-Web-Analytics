@@ -30,8 +30,8 @@ namespace OWA\Module\Base\Classes;
  * every step a subject reached on some other medium, and the funnel would
  * collapse for reasons that have nothing to do with the funnel. Constraining a
  * domstream list the same way would hide recordings made by exactly the people
- * the segment asked for. GA's segments pick the users and then show all of
- * their activity; this does the same.
+ * the segment asked for. So a segment picks the users and then shows all of
+ * their activity.
  *
  * WHY IT RUNS THROUGH ResultSetManager
  *

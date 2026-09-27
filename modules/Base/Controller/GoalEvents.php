@@ -11,10 +11,8 @@ namespace OWA\Module\Base\Controller;
  * "Goal event" rather than "goal": these are events now, created when a
  * behaviour pattern matches, rather than twenty slots belonging to a site.
  *
- * GA and the v2 plan call the same idea a KEY event -- GA renamed conversions
- * to key events in 2024, and PLAN.html follows it. Keeping "goal" is
- * deliberate: it is the word 1.x users already have, and it survives the
- * change.
+ * PLAN.html calls the same idea a KEY event. Keeping "goal" is deliberate: it
+ * is the word 1.x users already have, and it survives the change.
  */
 class GoalEvents extends \OWA\Core\AdminController {
 

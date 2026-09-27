@@ -207,13 +207,13 @@ return array(
          *
          * EMPTY MEANS ns-PREFIXED, which is what OWA has always done: owa_source,
          * owa_medium and so on, honouring a custom `ns`. Setting it names the
-         * parameters explicitly instead, which is how a site opts into GA's --
-         * utm_source, utm_medium, utm_campaign, utm_term, utm_content -- without
+         * parameters explicitly instead, which is how a site opts into
+         * utm_source, utm_medium, utm_campaign, utm_term, utm_content without
          * having to change its links.
          *
          * PROPERTY-SCOPED, because a Property is a website and its links are its
          * own. The install default covers the common case of one convention
-         * everywhere; a Property that arrived from a GA setup overrides it.
+         * everywhere; a Property whose links already use utm_* overrides it.
          *
          * It has to be a SERVER setting. The tracker used to parse the tags and
          * had setCampaignSourceKey() and friends for exactly this, but the parse

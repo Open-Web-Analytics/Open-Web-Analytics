@@ -10,8 +10,8 @@ namespace OWA\Module\Base\Classes\Cube;
 /**
  * When a user property was set, stamped beside its value.
  *
- * GA's BigQuery export carries `set_timestamp_micros` on every user property,
- * and this is the same fact for the same reason. It is NOT a dimension of its
+ * So a row can say not only what the value is but whether it applied yet, and
+ * an out-of-order drain cannot overwrite a newer value. It is NOT a dimension of its
  * own -- a microsecond value has one bucket per event, which is a pathological
  * thing to group by. What it is for is the test kind:
  *

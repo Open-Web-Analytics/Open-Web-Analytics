@@ -1618,8 +1618,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * Milliseconds as a duration.
      *
      * THE STORED VALUE STAYS MILLISECONDS, which is what the beacon carries --
-     * `engagement_msec`, accrued on the device, the same field and unit GA
-     * collects as engagement_time_msec. Only the display converts, so this is
+     * `engagement_msec`, accrued on the device. Only the display converts, so
+     * this is
      * the same rule "(not set)" follows: the row holds the observation and the
      * renderer decides how to say it.
      *

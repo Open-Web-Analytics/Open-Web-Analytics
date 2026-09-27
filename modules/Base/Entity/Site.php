@@ -124,12 +124,9 @@ class Site extends \OWA\Core\Entity {
          * What KIND of thing this Profile observes: 'web' or 'app'.
          *
          * The identifier a Profile needs depends on this, which is why the type
-         * lives here and not on the Property. GA4 reaches the same place from
-         * the same problem: a Property carries no URL, and each data stream
-         * under it declares web / Android / iOS and supplies the identifier
-         * that kind requires. Universal Analytics DID put a website URL on the
-         * property, and Google moved it down when a property stopped being able
-         * to assume it was a website.
+         * lives here and not on the Property: a Property carries no URL, because
+         * a Property holding a site and its apps has no single domain to put
+         * there.
          *
          * Two values, not four. OWA has no app SDK -- log.php will take events
          * from anything that can make an HTTP request, but there is no client

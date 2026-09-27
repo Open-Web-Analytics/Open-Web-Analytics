@@ -346,9 +346,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * How many subjects reached each step, IN ORDER.
      *
      * ONE query, not one per step. Per subject it takes the first time they hit
-     * each step, then counts those whose times run in order -- which is GA's
-     * "indirectly followed by": intervening pages are allowed, going backwards
-     * is not.
+     * each step, then counts those whose times run in order -- "indirectly
+     * followed by": intervening pages are allowed, going backwards is not.
      *
      * What this replaces counted each step independently
      * (`visitors where pagePath == step`), so it was not a funnel at all: a
@@ -511,7 +510,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * THE MATH
      *
      * A CLOSED funnel with INDIRECTLY-followed steps, counted per subject --
-     * GA's defaults, and the only ones OWA offers. Closed: everybody enters at
+     * the only ones OWA offers. Closed: everybody enters at
      * step 1, so somebody who lands on step 2 first is not in the funnel at
      * all. Indirect: other things may happen in between, the next step only has
      * to come later. Per subject: a subject enters once in the period, and it
@@ -683,8 +682,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * query itself would filter the ROWS -- `medium==organic-search` would
          * drop every step the subject reached on some other medium and the
          * funnel would collapse for reasons that have nothing to do with the
-         * funnel. GA's segments pick the users and then count all of their
-         * events; this does the same.
+         * funnel. So the segment picks the users and then counts all of their
+         * events.
          */
         $segment = $this->segmentSubjects( $scope );
 

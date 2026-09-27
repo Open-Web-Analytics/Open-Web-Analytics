@@ -83,9 +83,8 @@ test.describe('tracker state cookies on a single-label host (localhost)', () => 
         //
         // Note the two names. The VISITOR store is global -- one per browser,
         // shared by every tracker on the page -- while the SESSION store is
-        // scoped to a site and carries its id: 'owa_s_<siteId>'. That is GA's
-        // split (_ga vs _ga_<property>), and it is what lets two trackers on one
-        // page hold two sessions. The harness queues site 'e2e-localhost-harness'.
+        // scoped to a site and carries its id: 'owa_s_<siteId>'. That split is
+        // what lets two trackers on one page hold two sessions. The harness queues site 'e2e-localhost-harness'.
         const SESSION_COOKIE = 'owa_s_e2e-localhost-harness';
 
         await expect.poll(async () => {

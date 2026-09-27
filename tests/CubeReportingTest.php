@@ -805,7 +805,7 @@ final class CubeReportingTest extends TestCase
      *
      * The rate here is transactions/visits, which is 100% -- TWO purchases
      * against TWO visits. That is what the metric is declared to mean, and it
-     * is GA's shape too; a "share of sessions that converted" is a different
+     * is deliberate; a "share of sessions that converted" is a different
      * metric and would need a distinct count of converting sessions.
      */
     public function testTheCommerceMetricsComputeWhatTheFixtureHolds(): void

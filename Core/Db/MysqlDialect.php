@@ -232,7 +232,7 @@ if ( ! defined( 'OWA_SQL_WEEK_OF_YEAR' ) ) { define('OWA_SQL_WEEK_OF_YEAR', 'WEE
 if ( ! defined( 'OWA_SQL_LOCAL_DATETIME' ) ) { define('OWA_SQL_LOCAL_DATETIME', "CONVERT_TZ(FROM_UNIXTIME(%s / 1000000), '+00:00', '%s')"); }
 if ( ! defined( 'OWA_SQL_HOUR' ) ) { define('OWA_SQL_HOUR', 'HOUR(%s)'); }
 if ( ! defined( 'OWA_SQL_MINUTE' ) ) { define('OWA_SQL_MINUTE', 'MINUTE(%s)'); }
-// Day and hour as one sortable number, e.g. 2026092518 -- GA's dateHour.
+// Day and hour as one sortable number, e.g. 2026092518.
 if ( ! defined( 'OWA_SQL_DATE_HOUR' ) ) { define('OWA_SQL_DATE_HOUR', "DATE_FORMAT(%s, '%%Y%%m%%d%%H')"); }
 if ( ! defined( 'OWA_SQL_JOIN_LEFT_OUTER' ) ) { define('OWA_SQL_JOIN_LEFT_OUTER', 'LEFT OUTER JOIN'); }
 if ( ! defined( 'OWA_SQL_JOIN_RIGHT_OUTER' ) ) { define('OWA_SQL_JOIN_RIGHT_OUTER', 'RIGHT OUTER JOIN'); }

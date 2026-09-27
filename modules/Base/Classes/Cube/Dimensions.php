@@ -30,10 +30,10 @@ use OWA\Module\Base\Entity\CustomDimension;
  * whatever range is wanted, and it is the operator's decision rather than a
  * side effect of registering.
  *
- * That is worth stating as a capability, because it is the opposite of GA. GA's
- * registration is mandatory AND early: a custom dimension is not retroactive,
- * so everything collected before it was registered is permanently unreportable.
- * v2 keeps `params` on every raw row, so a registration made today can be
+ * That is worth stating as a capability. A registration that only applied
+ * going forward would leave everything collected before it permanently
+ * unreportable; v2 keeps `params` on every raw row, so a registration made today
+ * can be
  * backfilled across the whole of retained history. The only bounds are raw
  * retention and the cost of rebuilding the coarse end of it.
  */
@@ -83,8 +83,7 @@ class Dimensions {
     /**
      * How wide a string dimension is. Not an option.
      *
-     * Between GA's two caps -- it truncates a user property at 36 characters
-     * and an event parameter at 100 -- and chosen as one number because a
+     * Chosen as one number because a
      * per-registration width is a knob whose only effect is to spend room the
      * cap has already made irrelevant. The build clamps to it, so a longer
      * value is truncated rather than aborting the partition.

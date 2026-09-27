@@ -175,12 +175,8 @@ class Module extends \OWA\Core\Module {
      * The commands the generated snippet pushes, and therefore what a site records
      * out of the box.
      *
-     * THIS FILTER IS OWA'S ANALOGUE OF GA'S PER-STREAM CONFIGURATION. GA compiles
-     * the enabled features into the script it serves for a measurement id -- the
-     * bundle for a real id is 528KB against 434KB for an unknown one, and only the
-     * real one carries the outbound-click, download and form tags. OWA decides the
-     * same thing here, per site, and writes commands into the page instead. Same
-     * seam, reached differently; measured 2026-09-26.
+     * PER SITE, SERVER-SIDE. Which features a site records is decided here and
+     * written into the page as commands, so the page author names none of them.
      *
      * So a feature that is not named here does not happen, however complete its
      * tracker method, registry entry and reserved name are. trackForms and
@@ -829,8 +825,8 @@ class Module extends \OWA\Core\Module {
          * lineItemRevenue, lineItemQuantity, shippingRevenue and taxRevenue
          * have nothing to read. 1.x had owa_commerce_line_item_fact for this.
          *
-         * Restoring them needs an item-level shape in the schema -- GA carries
-         * itemRevenue, itemsPurchased and friends -- not a report definition.
+         * Restoring them needs an item-level shape in the schema -- item
+         * revenue, items purchased and the like -- not a report definition.
          */
 
         //Content

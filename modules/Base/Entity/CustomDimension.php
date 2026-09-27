@@ -20,8 +20,7 @@ namespace OWA\Module\Base\Entity;
  * PER PROPERTY, because the cube is (Classes\Cube\Cubes). Two Properties may
  * use the same key for different things, which is the whole point: v1's numbered
  * slots forced one namespace on an installation and cv3 meant something
- * different on every site. GA registers custom definitions on the property for
- * the same reason.
+ * different on every site.
  *
  * NOT RELEASE SCHEMA. These rows describe one installation's choices, so
  * registering does not move required_schema_version and there is no Update
@@ -45,9 +44,9 @@ class CustomDimension extends \OWA\Core\Entity {
     /**
      * Set per visitor, read from the visitor store.
      *
-     * There is deliberately no session scope. GA derives session scope rather
-     * than letting a tag carry it, and so does v2: a session-scoped value the
-     * client carries is exactly what 2.9 refuses -- something the build can
+     * There is deliberately no session scope. v2 derives session scope rather
+     * than letting a tag carry it: a session-scoped value the client carries is
+     * exactly what 2.9 refuses -- something the build can
      * derive and the client can get wrong.
      */
     const SCOPE_USER = 'user';

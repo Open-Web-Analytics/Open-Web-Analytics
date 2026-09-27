@@ -303,7 +303,7 @@ class DimensionExpression {
         $readers = array(
             'hour'   => OWA_SQL_HOUR,
             'minute' => OWA_SQL_MINUTE,
-            // The day and the hour together, as GA ships it: 2026092518.
+            // The day and the hour together: 2026092518.
             'dateHour' => OWA_SQL_DATE_HOUR,
         );
 

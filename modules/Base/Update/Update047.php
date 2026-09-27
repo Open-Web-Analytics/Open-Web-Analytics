@@ -15,9 +15,9 @@ namespace OWA\Module\Base\Update;
  * can become a row is the identity guard in EventRawHandlers::row(), which
  * knows nothing of versions.
  *
- * WHY OWA NEEDS IT MORE THAN GA DOES. GA serves gtag.js itself with a
- * deliberately short cache TTL, so it can reason about its stale population
- * from a policy it controls. OWA hands a static file to the customer's own
+ * WHY OWA NEEDS IT. A tracker served with a short cache TTL of its own could
+ * reason about its stale population from that policy. OWA hands a static file
+ * to the customer's own
  * origin -- currently with no Cache-Control at all, so browsers apply a
  * heuristic that grows with the file's age -- and then has no idea how long an
  * old tracker lives. Counting rows is the only way to know.

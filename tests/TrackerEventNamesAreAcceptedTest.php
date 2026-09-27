@@ -96,7 +96,7 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
         /*
          * THE ADMISSION RULE, not the first-class list. This asserted membership of
          * trackingEventTypes(), which is only half the gate: a site-named custom
-         * event is admitted by its NAME matching GA's pattern, not by being
+         * event is admitted by its NAME matching the pattern, not by being
          * declared, so a contract shape for one failed a list check correctly.
          */
         $this->assertNotEmpty( (array) owa_coreAPI::trackingEventTypes(),

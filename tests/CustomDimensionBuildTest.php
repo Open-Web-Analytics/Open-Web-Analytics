@@ -333,7 +333,7 @@ final class CustomDimensionBuildTest extends TestCase
         $this->assertArrayNotHasKey('cd_unregistered', $row);
 
         // But it IS in raw, which is what makes registering it later and
-        // rebuilding bring it back -- the thing GA cannot do.
+        // rebuilding bring it back.
         $raw = owa_coreAPI::dbSingleton()->get_row(sprintf(
             'SELECT params FROM %s WHERE visitor_id = %d',
             owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::VISITOR));
@@ -342,9 +342,9 @@ final class CustomDimensionBuildTest extends TestCase
     }
 
     /**
-     * REGISTERING LATE AND BACKFILLING WORKS, which is the capability GA does
-     * not have: a GA custom dimension is not retroactive, so everything
-     * collected before it was registered is permanently unreportable.
+     * REGISTERING LATE AND BACKFILLING WORKS. A registration that only applied
+     * going forward would leave everything collected before it permanently
+     * unreportable.
      */
     public function testAKeyRegisteredAFTERCollectionBackfillsFromRaw(): void
     {

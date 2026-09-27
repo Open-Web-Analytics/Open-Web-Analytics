@@ -53,7 +53,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     const USER_PROPERTY_PREFIX  = 'up_';
 
     /**
-     * The numeric halves, as GA spells them `epn.` and `upn.`.
+     * The numeric halves, `epn_` and `upn_`.
      *
      * A query string carries no types, so a value arrives as text whatever the
      * site set. The prefix is the tracker saying which it meant, and it is the
@@ -170,10 +170,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * It survived because `sessions` is a distinct count over session_id, so
          * the session was still COUNTED. What disagreed was everything reading the
          * marker rows: eventCount on eventName == session_start, and first_visit.
-         *
-         * Measured against real gtag.js with send_page_view:false -- no page view
-         * was sent at all and a `scroll` carried _ss=1, _fv=1 and a fresh session
-         * id. Sessions with no page view are a shape GA supports outright.
          *
          * is_new_session_start and is_new_visitor_created are REQUEST scoped:
          * they mark the one request that created the session or minted the
@@ -359,9 +355,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
 
             /*
-             * Whether this row met a goal condition. GA's shape: the key event
-             * IS the event, flagged -- no separate row, so eventCount stays a
-             * count of what happened.
+             * Whether this row met a goal condition. The goal event IS the
+             * event, flagged -- no separate row, so eventCount stays a count of
+             * what happened.
              *
              * 0 HERE, DECIDED AT Ingest::STORE_POST. The column is NOT NULL and
              * strict mode aborts an insert that hands it NULL, so the literal
@@ -776,16 +772,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * LAST VALUE WINS, which is the opposite discipline from the acquisition
      * columns beside them: acq_* is write-once evidence captured at the first
-     * visit, and a property is mutable state a site sets whenever it likes. GA
-     * resolves the same way -- "the most recent value of a user property for
-     * each user".
+     * visit, and a property is mutable state a site sets whenever it likes.
      *
      * EACH CARRIES WHEN IT WAS SET, and the timestamp is a guard as well as a
      * record. The build stamps the CURRENT value onto every event row, so
      * without it a row says what the value is and not whether it applied yet;
      * and comparing it is what stops an out-of-order queue drain overwriting a
-     * newer value with an older beacon. Same shape as GA's
-     * set_timestamp_micros.
+     * newer value with an older beacon.
      *
      *   {"plan": {"v": "enterprise", "ts": 1790000000000000}}
      *
