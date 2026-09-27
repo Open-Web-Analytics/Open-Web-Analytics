@@ -77,7 +77,7 @@ class MetricSets {
 
         $sets[ self::DEFAULT_KEY ] = array(
             'label'       => 'Site Usage',
-            'metrics'     => 'sessions,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
+            'metrics'     => 'sessions,engagementRate,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
             'chartMetric' => 'sessions',
         );
 

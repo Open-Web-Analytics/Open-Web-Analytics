@@ -1,6 +1,6 @@
 {
     "title": "Transactions Overview",
-    "metrics": "sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate",
+    "metrics": "sessions,transactions,transactionRevenue,taxRevenue,shippingRevenue,refunds,refundAmount,netRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate",
     "widgets": [
         {
             "type": "trend",

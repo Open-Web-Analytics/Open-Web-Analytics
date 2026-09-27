@@ -15,6 +15,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
+                "metrics": "sessions,bounceRate,engagementRate",
                 "dimensions": "landingPage,landingPageTitle",
                 "sort": "sessions-",
                 "resultsPerPage": 30
