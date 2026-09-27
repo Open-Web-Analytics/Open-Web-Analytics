@@ -112,6 +112,10 @@ final class CurrencyTest extends TestCase
 
         $this->assertNull( Helpers::deriveRevenue( null, $this->purchase( [] ) ),
             'no total sent: no revenue, rather than a revenue of zero' );
+
+        $this->assertSame( 5998, Helpers::deriveRevenue( null,
+            $this->purchase( [ 'ct_value' => 5998, 'ct_total' => 9999, 'ct_tax' => 490, 'ct_shipping' => 599 ] ) ),
+            'a value sent by trackPurchase() is the revenue as it stands' );
     }
 
     /* ---------------- helpers ---------------- */

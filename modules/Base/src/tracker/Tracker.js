@@ -2896,22 +2896,175 @@ class OWATracker  {
         OWA.debug('completed setting up ecommerce transaction');
     }
 
+    /**
+     * Add an item to the transaction addTransaction() opened.
+     *
+     * Stored in the same shape trackPurchase() takes -- item_id, item_name,
+     * item_category, price, quantity -- so every purchase's items read alike.
+     *
+     * REFUSED WITHOUT A TRANSACTION. It used to open one called 'none set', so an
+     * item added out of order became a purchase of its own with no order id,
+     * total or currency.
+     */
     addTransactionLineItem( order_id, sku, product_name, category, unit_price, quantity ) {
 
         if ( ! this.ecommerce_transaction ) {
-            this.addTransaction('none set');
+
+            OWA.debug( 'addTransactionLineItem: no transaction is open; call addTransaction() first.' );
+
+            return false;
         }
 
-        var li = {};
-        li.li_order_id = order_id ;
-        li.li_sku = sku ;
-        li.li_product_name = product_name ;
-        li.li_category = category ;
-        li.li_unit_price = unit_price ;
-        li.li_quantity = quantity ;
         var items = this.ecommerce_transaction.get( 'ct_line_items' );
-        items.push( li );
+
+        items.push( OWATracker.purchaseItem( {
+            item_id:       sku,
+            item_name:     product_name,
+            item_category: category,
+            price:         unit_price,
+            quantity:      quantity
+        } ) );
+
         this.ecommerce_transaction.set( 'ct_line_items', items );
+
+        return true;
+    }
+
+    /**
+     * Record a purchase in one call.
+     *
+     *   owa_cmds.push( [ 'trackPurchase', {
+     *       transaction_id: 'T-1001',
+     *       value:    59.98,         // the items: tax and shipping NOT included
+     *       currency: 'USD',
+     *       tax:      4.90,
+     *       shipping: 5.99,
+     *       coupon:   'SPRING',
+     *       affiliation: 'Web store',
+     *       items: [ { item_id: 'SKU-1', item_name: 'Blue mug', price: 19.99, quantity: 2 } ]
+     *   } ] );
+     *
+     * Amounts in MAJOR units, as a price is written; the server converts by the
+     * currency's decimal places. A transaction_id is required: it is what keeps
+     * a reloaded receipt page from recording the purchase twice.
+     *
+     * @param {Object} purchase
+     * @return {boolean} false when refused
+     */
+    trackPurchase( purchase ) {
+
+        var p = purchase || {};
+        var id = p.transaction_id === undefined || p.transaction_id === null
+            ? '' : String( p.transaction_id ).trim();
+
+        if ( id === '' ) {
+
+            OWA.debug( 'trackPurchase: a purchase needs a transaction_id.' );
+
+            return false;
+        }
+
+        var event = new OwaEvent();
+        event.setEventType( 'purchase' );
+        event.set( 'ct_order_id', id );
+        event.set( 'page_url', this.getCurrentUrl() );
+
+        var money = { ct_value: p.value, ct_tax: p.tax, ct_shipping: p.shipping };
+
+        for ( var key in money ) {
+
+            var amount = OWATracker.amount( money[ key ] );
+
+            if ( amount !== null ) {
+
+                event.set( key, amount );
+            }
+        }
+
+        if ( p.currency ) {
+
+            event.set( 'currency', String( p.currency ).trim().toUpperCase() );
+        }
+
+        if ( p.affiliation ) {
+
+            event.set( 'ct_order_source', String( p.affiliation ) );
+        }
+
+        if ( p.coupon ) {
+
+            event.set( 'coupon', String( p.coupon ) );
+        }
+
+        var items = [];
+
+        for ( var i = 0; Array.isArray( p.items ) && i < p.items.length; i++ ) {
+
+            var item = OWATracker.purchaseItem( p.items[ i ] );
+
+            if ( item ) {
+
+                items.push( item );
+            }
+        }
+
+        event.set( 'ct_line_items', items );
+
+        this.trackEvent( event );
+
+        return true;
+    }
+
+    /**
+     * One item, in the shape every purchase stores: the known fields only, and
+     * numbers as numbers. NULL for an item naming neither an id nor a name,
+     * which identifies nothing.
+     *
+     * @param {Object} item
+     * @return {Object|null}
+     */
+    static purchaseItem( item ) {
+
+        if ( ! item || typeof item !== 'object' ) {
+
+            return null;
+        }
+
+        var out = {};
+
+        [ 'item_id', 'item_name', 'item_category', 'item_brand', 'item_variant', 'coupon' ]
+            .forEach( function ( key ) {
+
+                if ( item[ key ] !== undefined && item[ key ] !== null && String( item[ key ] ) !== '' ) {
+
+                    out[ key ] = String( item[ key ] );
+                }
+            } );
+
+        [ 'price', 'quantity', 'discount' ].forEach( function ( key ) {
+
+            var n = OWATracker.amount( item[ key ] );
+
+            if ( n !== null ) {
+
+                out[ key ] = n;
+            }
+        } );
+
+        return ( out.item_id || out.item_name ) ? out : null;
+    }
+
+    /** A finite number, or null. */
+    static amount( value ) {
+
+        if ( value === undefined || value === null || value === '' ) {
+
+            return null;
+        }
+
+        var n = Number( value );
+
+        return isFinite( n ) ? n : null;
     }
 
     trackTransaction() {

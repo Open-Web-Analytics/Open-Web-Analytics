@@ -496,6 +496,20 @@
         "callbacks": [],
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
     },
+    "coupon": {
+        "set_by": "client",
+        "from": [
+            "coupon"
+        ],
+        "param": "coupon",
+        "events": [
+            "purchase"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "The order-level coupon code. A param, like order_source: discount reporting is part of the item design, and a column is width on every row."
+    },
     "ct_gateway": {
         "set_by": "client",
         "from": [
@@ -557,9 +571,25 @@
         ],
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
+    "ct_value": {
+        "set_by": "client",
+        "from": [
+            "ct_value"
+        ],
+        "events": [
+            "purchase"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::toMinorUnits"
+        ],
+        "note": "The purchase's value EXCLUDING tax and shipping, as trackPurchase() sends it. When present it IS the revenue; the legacy addTransaction() path sends only the order total, and revenue is derived from that instead. Sent separately rather than folded into ct_total so the server does not subtract what the browser added in floating point."
+    },
     "revenue": {
         "set_by": "event",
         "from": [
+            "ct_value",
             "ct_total",
             "ct_tax",
             "ct_shipping"
@@ -573,7 +603,7 @@
         "callbacks": [
             "owa_trackingEventHelpers::deriveRevenue"
         ],
-        "note": "Revenue EXCLUDING tax and shipping, in minor units: ct_total less ct_tax and ct_shipping. Tax and shipping have their own columns, so a revenue that included them counted them twice wherever the three were summed. AFTER the three it reads, because it reads their converted values."
+        "note": "Revenue EXCLUDING tax and shipping, in minor units: ct_value when the purchase sent one (trackPurchase), else ct_total less ct_tax and ct_shipping (addTransaction). Tax and shipping have their own columns, so a revenue that included them counted them twice wherever the three were summed. AFTER the four it reads, because it reads their converted values."
     },
     "ct_line_items": {
         "set_by": "client",

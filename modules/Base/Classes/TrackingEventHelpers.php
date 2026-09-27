@@ -2265,14 +2265,22 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Revenue EXCLUDING tax and shipping: the order total less both, in minor
-     * units (the three have been converted by the time this runs -- see the
-     * registry order). NULL when no total was sent.
+     * Revenue EXCLUDING tax and shipping, in minor units: the value when the
+     * purchase sent one, else the order total less both (all converted by the
+     * time this runs -- see the registry order). NULL when neither was sent.
      *
      * Tax and shipping have columns of their own, so a total that kept them
      * counted them twice wherever the three were summed.
      */
     static function deriveRevenue( $value, $event ) {
+
+        // trackPurchase() sends the value itself, tax and shipping excluded.
+        $sent = $event->get( 'ct_value' );
+
+        if ( $sent !== null && $sent !== false && $sent !== '' && is_numeric( $sent ) ) {
+
+            return (int) $sent;
+        }
 
         $total = $event->get( 'ct_total' );
 

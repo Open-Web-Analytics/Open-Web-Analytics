@@ -98,9 +98,10 @@ describe('OWATracker event assembly', () => {
 
         const items = e.get('ct_line_items');
         expect(items).toHaveLength(1);
-        expect(items[0].li_sku).toBe('SKU-1');
-        expect(items[0].li_product_name).toBe('Widget');
-        expect(items[0].li_quantity).toBe(2);
+        // The shape trackPurchase() takes, so every purchase's items read alike.
+        expect(items[0].item_id).toBe('SKU-1');
+        expect(items[0].item_name).toBe('Widget');
+        expect(items[0].quantity).toBe(2);
     });
 
     test('trackTransaction without a set-up transaction sends nothing', () => {

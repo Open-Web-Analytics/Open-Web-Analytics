@@ -181,6 +181,15 @@ const EMITTERS = {
             t.trackTransaction();
         },
     },
+    // The one-call API, with every field it takes.
+    'purchase.trackPurchase': {
+        session: 'established',
+        fire: (t) => t.trackPurchase({
+            transaction_id: 'T-1', value: 10, currency: 'usd', tax: 1, shipping: 2,
+            coupon: 'C', affiliation: 'web',
+            items: [{ item_id: 'sku', item_name: 'nm', price: 10, quantity: 1 }],
+        }),
+    },
 };
 
 describe('tracker beacon contract', () => {

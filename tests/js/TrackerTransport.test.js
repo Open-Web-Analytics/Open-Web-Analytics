@@ -104,8 +104,8 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             expect(url).toMatch(/[?&]event_type=purchase/);
             // prepareRequestData flattens an array-of-objects to
             // <param>[<i>][<key>]=value -- brackets ride the wire verbatim.
-            expect(url).toContain('ct_line_items[0][li_sku]=SKU-1');
-            expect(url).toContain('ct_line_items[0][li_product_name]=Widget');
+            expect(url).toContain('ct_line_items[0][item_id]=SKU-1');
+            expect(url).toContain('ct_line_items[0][item_name]=Widget');
         } finally {
             spy.restore();
         }

@@ -367,6 +367,11 @@ final class EventRawIngestionTest extends IngestionTestCase
         foreach ($stored as $column => $value) {
             $this->assertSame($value, $row[$column] === null ? null : (string) $row[$column], $column);
         }
+
+        if (isset($sent['coupon'])) {
+            $this->assertSame($sent['coupon'],
+                json_decode((string) $row['params'], true)['coupon'] ?? null, 'the coupon rides params');
+        }
     }
 
     public static function purchases(): array
@@ -383,6 +388,10 @@ final class EventRawIngestionTest extends IngestionTestCase
             'three places for the Kuwaiti dinar' => [
                 ['ct_total' => 1.234, 'currency' => 'KWD'],
                 ['revenue' => '1234', 'currency' => 'KWD'],
+            ],
+            'trackPurchase: the value is the revenue, not total less the rest' => [
+                ['ct_value' => 59.98, 'ct_tax' => 4.9, 'ct_shipping' => 5.99, 'currency' => 'USD', 'coupon' => 'SPRING'],
+                ['revenue' => '5998', 'tax' => '490', 'shipping' => '599', 'currency' => 'USD'],
             ],
         ];
     }
