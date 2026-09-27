@@ -4345,6 +4345,56 @@ class OWATracker  {
     }
 
     /**
+     * Which query parameters carry a site-search term.
+     *
+     * AN ARRAY, AND IT REPLACES THE DEFAULTS rather than adding to them. A site
+     * that uses ?kw= gets kw and nothing else, so its ?q= -- which may mean
+     * something entirely different -- stops being read as a search. Merging would
+     * make the shipped list impossible to get rid of.
+     *
+     * An empty array switches site-search tracking off.
+     *
+     * A NAMED SETTER, like setTrackUrlFragments and setDomstreamSampleRate, because
+     * this is site-facing and setOption() takes any key with no checking. It
+     * REFUSES anything that is not an array, which is the reason it is worth
+     * having: trackSiteSearch() walks the value by index, and a string has a length
+     * and indexes to characters, so setOption('siteSearchParams', 'query') searched
+     * for q, u, e, r and y -- found nothing, reported nothing, said nothing. The
+     * refusal is logged and the previous value stands.
+     *
+     * CALL IT BEFORE trackPageView(), which is where the search is read from the
+     * URL. The standard snippet configures then tracks, so that is the normal
+     * order; a site that calls this afterwards has already had the defaults applied
+     * to its first page view.
+     *
+     * @param {string[]} params  parameter names, tried in order
+     */
+    setSearchQueryParams( params ) {
+
+        if ( ! Array.isArray( params ) ) {
+
+            OWA.debug( 'setSearchQueryParams needs an ARRAY of parameter names. '
+                + 'A bare string indexes to its own characters.' );
+
+            return;
+        }
+
+        var names = [];
+
+        for ( var i = 0; i < params.length; i++ ) {
+
+            var name = String( params[ i ] ).trim();
+
+            if ( name ) {
+
+                names.push( name );
+            }
+        }
+
+        this.setOption( 'siteSearchParams', names );
+    }
+
+    /**
      * Raise view_search_results when the page is a site-search results page.
      *
      * 1.x has the search-term DIMENSIONS and never emits an event, so the

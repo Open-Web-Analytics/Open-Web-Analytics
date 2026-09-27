@@ -471,6 +471,76 @@ describe('site search', () => {
     });
 
     /*
+     * IT REPLACES THE DEFAULTS, which is the whole point of the setter: a site
+     * whose ?q= means something else must be able to stop it being read as a
+     * search, and merging would make the shipped list impossible to get rid of.
+     */
+    test('an array replaces the defaults rather than adding to them', () => {
+        const t = newTracker();
+
+        expect(t.getOption('siteSearchParams')).toContain('q');
+
+        t.setSearchQueryParams(['kw']);
+
+        expect(t.getOption('siteSearchParams')).toEqual(['kw']);
+
+        const sent = captureSends(t);
+        // ?q= is still on the URL and must no longer be read as a search.
+        t.getUrlParam = (name) => (name === 'q' ? 'shoes' : false);
+        t.trackSiteSearch();
+
+        expect(sent).toHaveLength(0);
+
+        t.getUrlParam = (name) => (name === 'kw' ? 'boots' : false);
+        t.trackSiteSearch();
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0].search_term).toBe('boots');
+    });
+
+    test('names are kept in order, and blanks are dropped', () => {
+        const t = newTracker();
+
+        t.setSearchQueryParams([' kw ', '', 'q']);
+
+        expect(t.getOption('siteSearchParams')).toEqual(['kw', 'q']);
+    });
+
+    /* An empty array is how a site turns it off. */
+    test('an empty array switches it off', () => {
+        const t = newTracker();
+
+        t.setSearchQueryParams([]);
+
+        expect(t.getOption('siteSearchParams')).toEqual([]);
+
+        const sent = captureSends(t);
+        t.getUrlParam = () => 'anything';
+        t.trackSiteSearch();
+
+        expect(sent).toHaveLength(0);
+    });
+
+    /*
+     * A BARE STRING IS REFUSED, not coerced. trackSiteSearch() walks the value by
+     * index, and a string has a length and indexes to characters, so 'query' would
+     * search for q, u, e, r and y -- finding nothing and saying nothing. The
+     * previous value stands, so the tracker keeps working.
+     */
+    test('a bare string is refused and the previous value stands', () => {
+        const t = newTracker();
+        const before = t.getOption('siteSearchParams');
+
+        t.setSearchQueryParams('query');
+
+        expect(t.getOption('siteSearchParams')).toEqual(before);
+
+        t.setSearchQueryParams(42);
+
+        expect(t.getOption('siteSearchParams')).toEqual(before);
+    });
+
+    /*
      * AND IT IS ACTUALLY CALLED. The method existed and nothing invoked it; the
      * page view is what invokes it now, so a results page reports itself.
      */
