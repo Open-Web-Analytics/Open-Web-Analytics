@@ -1,5 +1,5 @@
 {
-    "_comment": "THE WIRE REGISTRY, BY BEACON FORMAT VERSION. Each version is the definitive, standalone set of property names the tracker emitted for each event_type while that version was in force, after the full send pipeline (manageState -> globals -> defaults). A version does NOT inherit from or reference another: one is a complete record on its own, because the point of keeping an old one is to know what actually arrived, not to diff it. Version 1 is lifted from the v1 line (master), where it was generated and verified against that tracker. Version 2 is the current tracker and is held by tests/js/BeaconContract*.test.js. The version a row arrived under is owa_event_raw.beacon_version; a beacon that carries none is generation 1, which predates the field.",
+    "_comment": "THE WIRE REGISTRY, BY BEACON FORMAT VERSION. Each version is the definitive, standalone set of property names the tracker emitted for each event_type while that version was in force, after the full send pipeline (manageState -> globals -> defaults). A version does NOT inherit from or reference another: one is a complete record on its own, because the point of keeping an old one is to know what actually arrived, not to diff it. Version 1 is lifted from the v1 line (master), where it was generated and verified against that tracker. Version 2 is the current tracker and is held by tests/js/BeaconContract*.test.js. The version a row arrived under is owa_event_raw.beacon_version; a beacon that carries none is generation 1, which predates the field. NOTE: generation 2 carries HTTP_REFERER on the page_view entries ONLY, where generation 1 sent it on every event. The page view records the referrer and nothing read the copies -- a cube row's referer_url is its own raw value and source/medium read FIRST_VALUE over the session, i.e. the landing page view -- so six clicks on a page no longer resend the same URL six times. Enforced in OwaEvent.getProperties() via EVENT_SCOPED; GA scopes page_referrer to page_view the same way.",
     "1": {
         "base.page_request": [
             "HTTP_REFERER",
@@ -169,7 +169,6 @@
     },
     "2": {
         "my_custom_event": [
-            "HTTP_REFERER",
             "beacon_version",
             "ep_label",
             "epn_value",
@@ -237,7 +236,6 @@
             "visitor_id"
         ],
         "click": [
-            "HTTP_REFERER",
             "beacon_version",
             "click_x",
             "click_y",
@@ -262,7 +260,6 @@
             "visitor_id"
         ],
         "purchase": [
-            "HTTP_REFERER",
             "beacon_version",
             "ct_gateway",
             "ct_line_items",

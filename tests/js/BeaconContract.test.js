@@ -194,3 +194,38 @@ describe('tracker beacon contract', () => {
         }
     });
 });
+
+/**
+ * THE REFERRER IS A PAGE-VIEW PROPERTY, asserted on the emitted beacon and not
+ * only in the fixture.
+ *
+ * It used to ride every beacon of the page, so one view and six clicks sent the
+ * same URL seven times at up to 1KB each -- and nothing read the copies: a cube
+ * row's referer_url is its own raw value, and source/medium read FIRST_VALUE over
+ * the session, which is the landing page view.
+ *
+ * Editing the fixture alone would let the tracker start sending it again the
+ * moment someone changed EVENT_SCOPED, because the fixture would then simply be
+ * wrong in the other direction. This says which way round it goes, through the
+ * same EMITTERS the contracts use so the two cannot describe different pipelines.
+ */
+describe('the referrer rides the page view and nothing else', () => {
+
+    beforeEach(() => {
+        Object.defineProperty(document, 'referrer', {
+            value: 'https://news.example.org/story', configurable: true });
+    });
+
+    test('a page view carries it', () => {
+        expect(emittedKeys(EMITTERS['page_view'])).toContain('HTTP_REFERER');
+    });
+
+    test('a click on that same page does not', () => {
+        expect(emittedKeys(EMITTERS['click'])).not.toContain('HTTP_REFERER');
+    });
+
+    test('nor does a purchase or a custom event', () => {
+        expect(emittedKeys(EMITTERS['purchase'])).not.toContain('HTTP_REFERER');
+        expect(emittedKeys(EMITTERS['my_custom_event'])).not.toContain('HTTP_REFERER');
+    });
+});

@@ -28,6 +28,30 @@ import { Util } from '../common/Util.js';
 const LOCAL_ONLY = { timestamp: true };
 
 /**
+ * Properties only certain EVENT TYPES carry: name -> the types that carry it.
+ *
+ * `HTTP_REFERER` is the page's referrer, and it rode EVERY beacon of the page --
+ * so a page with a page view and six clicks sent the same referring URL seven
+ * times, up to 1KB each. The page view already records it, and the server does
+ * not stamp it onto the other rows: the cube's `source` and `medium` read
+ * session.referer_host, which is FIRST_VALUE over the session, i.e. the landing
+ * page view. Nothing downstream reads a click's copy.
+ *
+ * GA draws the line in the same place -- page_referrer is a page_view parameter,
+ * and session_start is what carries the session's attribution.
+ *
+ * HERE rather than at each call site, for the reason LOCAL_ONLY is here:
+ * getProperties() is the one place the event becomes data, so nothing can put it
+ * back on a click by another route. The page store still holds it (scope 'page'),
+ * because isNewSession() and the campaign logic read it locally.
+ *
+ * An event with no type is not filtered -- a caller building a raw event has not
+ * said what it is, and dropping a property it deliberately set would be worse
+ * than sending one byte too many.
+ */
+const EVENT_SCOPED = { HTTP_REFERER: { page_view: true } };
+
+/**
  * OWA Generic Event Object
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
@@ -72,13 +96,21 @@ class OwaEvent {
     getProperties() {
 
         var out = {};
+        var type = this.properties.event_type;
 
         for ( var name in this.properties ) {
 
-            if ( this.properties.hasOwnProperty( name ) && ! LOCAL_ONLY[ name ] ) {
+            if ( ! this.properties.hasOwnProperty( name ) || LOCAL_ONLY[ name ] ) {
 
-                out[ name ] = this.properties[ name ];
+                continue;
             }
+
+            if ( EVENT_SCOPED[ name ] && type && ! EVENT_SCOPED[ name ][ type ] ) {
+
+                continue;
+            }
+
+            out[ name ] = this.properties[ name ];
         }
 
         return out;

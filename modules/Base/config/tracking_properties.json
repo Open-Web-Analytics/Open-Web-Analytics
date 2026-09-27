@@ -229,11 +229,14 @@
         ],
         "column": "referer_url",
         "events": [
-            "*"
+            "page_view",
+            "session_start",
+            "first_visit"
         ],
         "data_type": "url",
         "required": false,
-        "callbacks": []
+        "callbacks": [],
+        "note": "THE PAGE'S REFERRER, ON THE PAGE VIEW. It rode every beacon of the page, so a page with one view and six clicks sent the same URL seven times at up to 1KB each -- and nothing read the copies. The pass does NOT stamp a session referrer onto the other rows: a cube row's referer_url is its OWN raw value, copied verbatim, and `source`/`medium` read session.referer_host, which is FIRST_VALUE over the session -- the landing page view. So scoping this loses nothing at the session level.\nOWA\u2019s tracker enforces it in OwaEvent.getProperties() (EVENT_SCOPED), because `events` here is read by the goal builder and propertiesForEvent() and is NOT a gate in setTrackerProperties().\nGA draws the same line: page_referrer is a page_view parameter and session_start carries the session's attribution.\nsession_start and first_visit are listed because those ROWS carry it -- they are materialised server-side from the page_view beacon by EventRawHandlers::expand(), so they inherit every property it had. The tracker never sends either name."
     },
     "target_url": {
         "set_by": "client",
@@ -946,7 +949,9 @@
         ],
         "column": "referer_host",
         "events": [
-            "*"
+            "page_view",
+            "session_start",
+            "first_visit"
         ],
         "data_type": "string",
         "required": false,
@@ -962,7 +967,9 @@
         ],
         "column": "referer_query",
         "events": [
-            "*"
+            "page_view",
+            "session_start",
+            "first_visit"
         ],
         "data_type": "string",
         "required": false,
