@@ -1842,6 +1842,59 @@ class OWATracker  {
      */
 
     /**
+     * The downloaded file's PATH -- no host, no query, no fragment.
+     *
+     * THE PATH, NOT THE BASENAME. It was the basename since download tracking was
+     * added, so /2024/report.pdf and /2025/report.pdf collapsed into one row of a
+     * downloads report. The path keeps them apart, and is the reading GA's
+     * fileName carries too -- measured off its wire as `/docs/guide.pdf`.
+     *
+     * The HOST is deliberately dropped: a file served from the site and the same
+     * file served from a CDN are one document, and target_host on the same row
+     * answers where it came from for anyone who needs that.
+     *
+     * A method, because the expression was inline and cut the same string THREE
+     * times -- split('#')[0].split('?')[0] twice more inside its own
+     * substring(lastIndexOf()).
+     *
+     * new URL() rather than string surgery, so a relative href resolves against
+     * the page instead of being read as a path that happens to start with a
+     * letter. It throws on input no base can absolutise, and this runs on whatever
+     * href a page carries, so the cut is the fallback.
+     *
+     * Left percent-encoded. decodeURIComponent throws on a malformed sequence.
+     *
+     * @param {string} url
+     * @return {string}
+     */
+    getDownloadFileName( url ) {
+
+        var raw = String( url );
+
+        try {
+
+            return new URL( raw, ( typeof window !== 'undefined' && window.location )
+                ? window.location.href : undefined ).pathname;
+
+        } catch ( e ) {
+
+            var path = raw.split( '#' )[0].split( '?' )[0];
+            var at   = path.indexOf( '//' );
+
+            // Drop scheme://host when there is one, so the fallback answers a path
+            // as well. Without this a failed parse would return the whole URL.
+            if ( at !== -1 ) {
+
+                var slash = path.indexOf( '/', at + 2 );
+
+                return slash === -1 ? '/' : path.substring( slash );
+            }
+
+            return path;
+        }
+    }
+
+    /**
      * The file extension a URL downloads, or '' if it is not a download.
      *
      * A LIST rather than "anything with a dot in the last path segment",
@@ -1851,35 +1904,6 @@ class OWATracker  {
      * @param {string} url
      * @return {string}
      */
-    /**
-     * The downloaded file's name -- the last path segment, fragment and query
-     * removed.
-     *
-     * THE BASENAME, not GA's path. GA's fileName dimension carries
-     * /menus/dinner-menu.pdf where this carries dinner-menu.pdf; ours groups
-     * two files of the same name in different folders together, and GA's does
-     * not. Recorded rather than changed: the value has been the basename since
-     * download tracking was added, and target_url on the same row carries the
-     * whole URL for anyone who needs the folder.
-     *
-     * A method, because the expression was inline and cut the same string THREE
-     * times -- split('#')[0].split('?')[0] twice more inside its own
-     * substring(lastIndexOf()). Only ever called where getDownloadExtension()
-     * already found a dot in this segment, so the result cannot be empty.
-     *
-     * Left percent-encoded. decodeURIComponent throws on a malformed sequence,
-     * and this runs on whatever href a page happens to carry.
-     *
-     * @param {string} url
-     * @return {string}
-     */
-    getDownloadFileName( url ) {
-
-        var path = String( url ).split( '#' )[0].split( '?' )[0];
-
-        return path.substring( path.lastIndexOf( '/' ) + 1 );
-    }
-
     getDownloadExtension( url ) {
 
         if ( ! url ) {

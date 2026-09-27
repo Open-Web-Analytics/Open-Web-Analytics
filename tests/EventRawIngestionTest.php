@@ -591,7 +591,7 @@ final class EventRawIngestionTest extends IngestionTestCase
             // Another host entirely, which is what a CDN-hosted asset looks like.
             'target_url'     => 'https://cdn.example.org/files/guide.pdf',
             'file_extension' => 'pdf',
-            'file_name'      => 'guide.pdf',
+            'file_name'      => '/files/guide.pdf',
             'fsts'           => time(),
             'sts'            => time(),
             'num_prior_sessions' => 0,
@@ -636,7 +636,7 @@ final class EventRawIngestionTest extends IngestionTestCase
             'page_url'          => 'https://owa-test-site/v2/docs',
             'page_location'     => 'https://owa-test-site/v2/docs',
             'target_url'        => 'https://owa-test-site/files/guide.pdf',
-            'file_name'         => 'guide.pdf',
+            'file_name'         => '/files/guide.pdf',
             'file_extension'    => 'pdf',
             'fsts'              => time(),
             'sts'               => time(),
@@ -647,7 +647,9 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertNotNull($row, 'file_download stores a row');
 
-        $this->assertSame('guide.pdf', $row['file_name']);
+        // The PATH, which is what the tracker cuts: as a basename, two files of
+        // the same name in different folders were one row of a downloads report.
+        $this->assertSame('/files/guide.pdf', $row['file_name']);
         $this->assertSame('pdf', $row['file_extension']);
 
         $params = (array) json_decode((string) $row['params'], true);

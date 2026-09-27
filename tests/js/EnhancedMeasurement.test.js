@@ -108,30 +108,38 @@ describe('downloads and outbound links', () => {
         expect(sent).toHaveLength(1);
         expect(sent[0].event_type).toBe('file_download');
         expect(sent[0].file_extension).toBe('pdf');
-        expect(sent[0].file_name).toBe('guide.pdf');
+        expect(sent[0].file_name).toBe('/docs/guide.pdf');
     });
 
     /*
-     * THE NAME IS THE BASENAME, and both of these now reach COLUMNS rather than
-     * the params bag, so what the tracker cuts is what a downloads report groups
-     * by -- see Update054.
+     * THE NAME IS THE PATH, and it reaches a COLUMN rather than the params bag, so
+     * what the tracker cuts is what a downloads report groups by -- see Update054.
      */
-    test('the file name drops the folder, the query and the fragment', () => {
+    test('the file name is the path, without host, query or fragment', () => {
         const t = newTracker();
 
         expect(t.getDownloadFileName('https://example.org/a/b/menu.pdf?v=2#page3'))
-            .toBe('menu.pdf');
+            .toBe('/a/b/menu.pdf');
 
-        // Two files of the same name in different folders group TOGETHER, because
-        // the value is the basename and not the path. target_url on the same row
-        // keeps the folder for anyone who needs it.
+        // Two files of the same NAME in different folders stay APART. As the
+        // basename they collapsed into one row of a downloads report.
         expect(t.getDownloadFileName('https://example.org/2024/report.pdf'))
-            .toBe(t.getDownloadFileName('https://example.org/2025/report.pdf'));
+            .not.toBe(t.getDownloadFileName('https://example.org/2025/report.pdf'));
+
+        // The HOST is dropped: the same document served from the site and from a
+        // CDN is one row, and target_host answers where it came from.
+        expect(t.getDownloadFileName('https://cdn.example.org/docs/guide.pdf'))
+            .toBe(t.getDownloadFileName('https://example.org/docs/guide.pdf'));
+
+        // A relative href resolves against the page rather than being read as a
+        // path that happens to start with a letter.
+        expect(t.getDownloadFileName('/files/x.zip')).toBe('/files/x.zip');
+        expect(t.getDownloadFileName('files/x.zip')).toMatch(/\/files\/x\.zip$/);
 
         // Left encoded: decodeURIComponent throws on a malformed sequence, and
         // this runs on whatever href the page carries.
         expect(t.getDownloadFileName('https://example.org/my%20file.pdf'))
-            .toBe('my%20file.pdf');
+            .toBe('/my%20file.pdf');
     });
 
     test('an ordinary page is not a download, whatever dots the path contains', () => {
