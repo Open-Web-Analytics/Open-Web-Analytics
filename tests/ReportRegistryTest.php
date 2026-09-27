@@ -38,6 +38,40 @@ final class ReportRegistryTest extends TestCase
     }
 
     /**
+     * And the configuration half: every definition file is registered, and every
+     * registration that names a file names one that exists.
+     *
+     * A file nobody registers is loaded by nobody -- left behind by a rename, it
+     * sits there diverging from the report it looks like it belongs to. A
+     * registration naming a missing file is a nav link to an error. This used to
+     * be asked of a hand-kept list of converted and authored reports, which meant
+     * a new report had to be added to it before any of these tests looked at it.
+     */
+    public function testEveryDefinitionFileIsRegisteredAndEveryRegistrationHasOne(): void
+    {
+        $registered = array();
+
+        foreach ( $this->registry() as $id => $def ) {
+
+            if ( empty( $def['json'] ) ) {
+                continue;
+            }
+
+            $this->assertFileExists( $def['json'], "report '$id' is registered against a missing file" );
+
+            $registered[] = realpath( $def['json'] );
+        }
+
+        $this->assertNotEmpty( $registered, 'no report is registered from a file; this would pass vacuously' );
+
+        foreach ( glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+
+            $this->assertContains( realpath( $file ), $registered,
+                basename( $file ) . ' is in the reports directory but nothing registers it' );
+        }
+    }
+
+    /**
      * Delegating to a real report runs ReportController::pre(), which loads the
      * site list -- so those cases need a database and the rest do not.
      *
@@ -113,10 +147,10 @@ final class ReportRegistryTest extends TestCase
      * For a report still implemented by a controller, the new route is the old
      * route.
      *
-     * The converted reports are deliberately not in this provider: they have no
-     * direct route left to compare against, which is the change rather than a
-     * gap. What they render is held to the recorded baseline instead, by
-     * ReportConfigEquivalenceTest and the characterization fixture.
+     * Reports that are configuration are deliberately not in this provider: they
+     * have no direct route left to compare against. Their definitions are checked
+     * by ReportDefinitionFilesTest, and running each of them by
+     * ReportCharacterizationTest.
      *
      * @dataProvider sampleReportProvider
      */
