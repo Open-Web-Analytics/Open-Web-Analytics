@@ -2184,7 +2184,20 @@ class OWATracker  {
             return;
         }
 
-        var thresholds = this.getOption( 'scrollThresholds' ) || [ 90 ];
+        /*
+         * ASCENDING, whatever order the site gave. The walk below relies on it:
+         * last_scroll records the deepest mark reported, so with [90, 25] a jump to
+         * the bottom reported 90 and then skipped 25 for good, because 90 is not
+         * below 25.
+         *
+         * Every mark crossed is reported, not only the deepest -- so each mark's
+         * count reads directly as "how many reached at least this far", and a
+         * visitor who jumps to the bottom still counts as having passed halfway.
+         */
+        var thresholds = ( this.getOption( 'scrollThresholds' ) || [ 90 ] )
+            .map( Number )
+            .filter( function ( mark ) { return mark > 0 && mark <= 100; } )
+            .sort( function ( a, b ) { return a - b; } );
 
         for ( var i = 0; i < thresholds.length; i++ ) {
 
@@ -4520,17 +4533,69 @@ class OWATracker  {
      */
     trackScroll() {
 
-        if ( this.isScrollTrackingEnabled ) {
+        if ( this.isScrollTrackingEnabled || typeof window === 'undefined' ) {
 
             return;
         }
 
-        var that = this;
-
-        window.addEventListener( 'scroll',
-            function () { that.checkScrollDepth(); }, false );
-
         this.isScrollTrackingEnabled = true;
+
+        var that    = this;
+        var pending = false;
+
+        /*
+         * ONE CHECK PER FRAME. `scroll` fires many times a second and every check
+         * reads scrollHeight and offsetHeight, which forces layout. Nothing can
+         * change the answer faster than the page repaints, so a check per frame
+         * loses nothing and a check per event is pure cost for the whole visit.
+         */
+        var onScroll = function () {
+
+            if ( pending ) {
+
+                return;
+            }
+
+            if ( typeof window.requestAnimationFrame !== 'function' ) {
+
+                that.checkScrollDepth();
+
+                return;
+            }
+
+            pending = true;
+
+            window.requestAnimationFrame( function () {
+
+                pending = false;
+                that.checkScrollDepth();
+            } );
+        };
+
+        window.addEventListener( 'scroll', onScroll, false );
+
+        /*
+         * AND ONCE WITHOUT A SCROLL, because a page that fits in the viewport is
+         * read to the end without ever firing one -- and so never reported its
+         * depth at all.
+         *
+         * At `load`, not now. The snippet can run this before the document is laid
+         * out, and a long page measured then has a small height, which reads as
+         * scrolled to the bottom -- a false event on exactly the pages that are
+         * least likely to be read to the end.
+         */
+        if ( typeof document !== 'undefined' && document.readyState === 'complete' ) {
+
+            this.checkScrollDepth();
+
+        } else {
+
+            window.addEventListener( 'load', function () {
+
+                that.checkScrollDepth();
+
+            }, { once: true } );
+        }
     }
 
     logDomStream() {

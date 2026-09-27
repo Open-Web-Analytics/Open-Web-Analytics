@@ -379,6 +379,116 @@ describe('scroll depth', () => {
         expect(sent).toHaveLength(1);
     });
 
+    /*
+     * EVERY MARK CROSSED, in ascending order whatever order the site gave. With
+     * [90, 25] a jump to the bottom used to report 90 and then skip 25 for good,
+     * because last_scroll (90) is not below 25.
+     */
+    test('an unsorted list still reports every mark a jump crosses', () => {
+        const t = newTracker({ scrollThresholds: [90, 25, 50] });
+        const sent = captureSends(t);
+
+        t.getScrollDepth = () => 100;
+        t.checkScrollDepth();
+
+        expect(sent.map((e) => e.scroll_depth)).toEqual([25, 50, 90]);
+    });
+
+    test('marks outside 1..100 are ignored rather than reported', () => {
+        const t = newTracker({ scrollThresholds: [0, -5, 150, 50] });
+        const sent = captureSends(t);
+
+        t.getScrollDepth = () => 100;
+        t.checkScrollDepth();
+
+        expect(sent.map((e) => e.scroll_depth)).toEqual([50]);
+    });
+
+    /*
+     * A PAGE THAT FITS IN THE VIEWPORT is read to the end without a scroll event,
+     * so the depth is also checked once at load.
+     */
+    test('a page already loaded is checked without waiting for a scroll', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getScrollDepth = () => 100;
+        t.trackScroll();
+
+        expect(document.readyState).toBe('complete');
+        expect(sent.map((e) => e.event_type)).toEqual(['scroll']);
+    });
+
+    /*
+     * And NOT before load. A long page measured before layout has a small height,
+     * which reads as scrolled to the bottom.
+     */
+    test('a page still loading is checked at load, not before', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+        const state = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
+
+        Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
+
+        try {
+            t.getScrollDepth = () => 100;
+            t.trackScroll();
+
+            expect(sent).toHaveLength(0);
+
+            window.dispatchEvent(new Event('load'));
+
+            expect(sent.map((e) => e.event_type)).toEqual(['scroll']);
+        } finally {
+            delete document.readyState;
+            if (state) { Object.defineProperty(Document.prototype, 'readyState', state); }
+        }
+    });
+
+    /*
+     * One check per frame, however many scroll events arrive in it.
+     *
+     * Drives the listener THIS tracker registered, captured as it binds. Earlier
+     * trackers in the file leave their own listeners on the shared window, so
+     * dispatching a real scroll event would measure all of them.
+     */
+    test('many scroll events in one frame make one check', () => {
+        const t = newTracker();
+        const frames = [];
+        const raf = window.requestAnimationFrame;
+        const add = window.addEventListener;
+        let listener = null;
+
+        window.requestAnimationFrame = (fn) => { frames.push(fn); return frames.length; };
+        window.addEventListener = (type, fn, opts) => {
+            if (type === 'scroll') { listener = fn; }
+            return add.call(window, type, fn, opts);
+        };
+
+        let checks = 0;
+        t.checkScrollDepth = () => { checks++; };
+
+        try {
+            t.trackScroll();
+            checks = 0;   // the load-time check is not what this measures
+
+            for (let i = 0; i < 20; i++) {
+                listener();
+            }
+
+            expect(frames).toHaveLength(1);
+            frames.shift()();
+            expect(checks).toBe(1);
+
+            // And the next frame's scrolling gets its own check.
+            listener();
+            expect(frames).toHaveLength(1);
+        } finally {
+            window.requestAnimationFrame = raf;
+            window.addEventListener = add;
+        }
+    });
+
     test('short of the threshold raises nothing', () => {
         const t = newTracker();
         const sent = captureSends(t);
