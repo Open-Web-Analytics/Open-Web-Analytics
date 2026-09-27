@@ -167,6 +167,9 @@ class Columns {
             case 'new_vs_returning':
                 return new NewVsReturningStep( $column );
 
+            case 'is_engaged_session':
+                return new IsEngagedSessionStep( $column );
+
             case 'literal':
                 return new LiteralStep( $column, array( $this, 'literalValue' ) );
 

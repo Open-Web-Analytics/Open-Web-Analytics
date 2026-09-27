@@ -834,6 +834,27 @@ class Builder {
         $columns[] = 'MAX(w.ts) OVER session_w AS session_last_ts';
 
         /*
+         * WHAT DECIDES WHETHER THE SESSION WAS ENGAGED -- see IsEngagedSessionStep.
+         *
+         * Aggregates over the same window, so they cost no second sort. The goal
+         * test leaves out materialized events: a goal event triggered by
+         * session_start or first_visit is not the visitor engaging.
+         */
+        $materialized = array();
+
+        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::materializedEventNames() as $name ) {
+
+            $materialized[] = "'" . \OWA\Core\CoreAPI::dbSingleton()->prepare( $name ) . "'";
+        }
+
+        $columns[] = 'SUM(COALESCE(w.engagement_msec, 0)) OVER session_w AS session_engagement_msec';
+        $columns[] = "SUM(CASE WHEN w.event_type = 'page_view' THEN 1 ELSE 0 END) OVER session_w"
+                   . ' AS session_page_views';
+        $columns[] = sprintf( 'MAX(CASE WHEN w.is_goal_event = 1%s THEN 1 ELSE 0 END) OVER session_w'
+                   . ' AS session_has_goal',
+            $materialized ? ' AND w.event_type NOT IN (' . implode( ', ', $materialized ) . ')' : '' );
+
+        /*
          * DEVICE ORDER FIRST, arrival order second.
          *
          * `ts` is stamped at edge receipt, so sorting a session on it orders

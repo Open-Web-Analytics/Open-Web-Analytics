@@ -149,9 +149,12 @@ class Event extends EventRaw {
          * three values and GROUP BY gives each a bucket. 0 therefore covers the
          * not-yet-knowable case, which does not earn a third state.
          *
-         * Engagement time, bounce and duration are NOT columns. They are
-         * read-time aggregates over the session's rows, and materialising them
-         * would be a second authority to keep in step.
+         * Engagement time and duration are NOT columns: they are sums and spans
+         * over the session's rows, and a query answers them. Whether the session
+         * was ENGAGED is a column (is_engaged_session, below), because it is a
+         * verdict over the whole session that no single row's condition can
+         * express -- and engagedSessions, engagementRate and bounceRate are
+         * counts under it.
          */
         $is_exit = $this->column( 'is_exit', OWA_DTD_BOOLEAN, false );
         $is_exit->setNotNull();
@@ -214,6 +217,18 @@ class Event extends EventRaw {
          * rebuild read as `(not set)` until one runs.
          */
         $this->setProperty( $this->resolved( 'new_vs_returning', OWA_DTD_VARCHAR16 ) );
+
+        /*
+         * Whether the session this event belongs to was engaged, on every row of
+         * it -- see Classes\Cube\IsEngagedSessionStep for the rule. LAST, for the
+         * reason new_vs_returning is: ADD COLUMN appends.
+         *
+         * NOT NULL DEFAULT 0, like is_exit: a nullable boolean holds three values.
+         */
+        $is_engaged = $this->column( 'is_engaged_session', OWA_DTD_BOOLEAN, false );
+        $is_engaged->setNotNull();
+        $is_engaged->setDefaultValue( 0 );
+        $this->setProperty( $is_engaged );
     }
 
     /**

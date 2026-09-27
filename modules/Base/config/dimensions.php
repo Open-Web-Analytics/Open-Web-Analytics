@@ -229,6 +229,10 @@ return array(
             'newVsReturning' => array( 'column' => 'new_vs_returning', 'label' => 'New vs Returning',
                 'family' => 'visitor',
                 'description' => 'Whether the session was the user\'s first.' ),
+            'isEngagedSession' => array( 'column' => 'is_engaged_session', 'label' => 'Engaged Session',
+                'family' => 'visit',
+                'description' => 'Whether the session was engaged: ten seconds, two page views, or a goal.',
+                'data_type' => 'boolean' ),
             'sessionId' => array( 'column' => 'session_id', 'label' => 'Session ID',
                 'family' => 'visit', 'description' => 'The identifier of the session the event belongs to.' ),
 

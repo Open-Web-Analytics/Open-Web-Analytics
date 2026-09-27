@@ -38,6 +38,9 @@
  *   new_vs_returning
  *            whether the session was the visitor's first, as the label a
  *            report groups by rather than a flag a renderer has to name.
+ *   is_engaged_session
+ *            whether the session was engaged: ten seconds of engagement, two
+ *            page views, or a goal event. Stamped on every row of it.
  *   compute  PHP works it out; see Classes\Cube\ComputeStep.
  *
  * `absent` names the test that is true when the visitor's ACQUISITION was never
@@ -94,6 +97,10 @@ return array(
      * way to become two named buckets; see Classes\Cube\NewVsReturningStep.
      */
     'new_vs_returning' => array( 'kind' => 'new_vs_returning' ),
+
+    // Whether the session was engaged, on every row of it; the thresholds are
+    // in Classes\Cube\IsEngagedSessionStep.
+    'is_engaged_session' => array( 'kind' => 'is_engaged_session' ),
 
     // The visitor's acquisition, from the visitor store -- a build's only read
     // outside the partition, and the reason that store exists.

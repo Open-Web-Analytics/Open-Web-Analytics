@@ -410,5 +410,88 @@ return array(
             'denominator' => 'sessions',
             'precision'   => 0,
         ),
+
+        /*
+         * Engagement time per page view. Grouped by pagePath it is the time
+         * spent on each page: every event carries its page, so a page's
+         * engagement is the sum over the rows that name it.
+         */
+        'averageEngagementTimePerPageView' => array(
+            'label'       => 'Average Engagement Time Per Page View',
+            'description' => 'Average time accrued per page view, in milliseconds.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'milliseconds',
+            'numerator'   => 'totalEngagementTime',
+            'denominator' => 'pageViews',
+            'precision'   => 0,
+        ),
+
+        /*
+         * ---- engaged sessions ---------------------------------------------
+         *
+         * Off is_engaged_session, the cube's verdict on the whole session: ten
+         * seconds of engagement, two page views, or a goal event other than on
+         * a materialized event. The rule is Classes\Cube\IsEngagedSessionStep.
+         *
+         * A distinct count under a one-column condition, because the flag is on
+         * every row of the session.
+         */
+        'engagedSessions' => array(
+            'label'       => 'Engaged Sessions',
+            'description' => 'Sessions that lasted ten seconds or more, had two or more page views, or met a goal.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'session_id',
+            'condition'   => array( 'column' => 'is_engaged_session', 'value' => 1 ),
+        ),
+
+        /*
+         * The complement, as a count, so bounceRate is a ratio of two counts.
+         * A bounce is a session that was not engaged.
+         */
+        'bouncedSessions' => array(
+            'label'       => 'Bounced Sessions',
+            'description' => 'Sessions that were not engaged.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'session_id',
+            'condition'   => array( 'column' => 'is_engaged_session', 'value' => 0 ),
+        ),
+
+        'engagementRate' => array(
+            'label'       => 'Engagement Rate',
+            'description' => 'The share of sessions that were engaged.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'engagedSessions',
+            'denominator' => 'sessions',
+            'precision'   => 4,
+        ),
+
+        'bounceRate' => array(
+            'label'       => 'Bounce Rate',
+            'description' => 'The share of sessions that were not engaged.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'bouncedSessions',
+            'denominator' => 'sessions',
+            'precision'   => 4,
+        ),
+
+        'engagedSessionsPerUser' => array(
+            'label'       => 'Engaged Sessions Per User',
+            'description' => 'The average number of engaged sessions per user.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'decimal',
+            'numerator'   => 'engagedSessions',
+            'denominator' => 'totalUsers',
+            'precision'   => 2,
+        ),
     ),
 );

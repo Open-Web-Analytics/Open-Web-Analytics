@@ -1,4 +1,16 @@
 {
+    "averageEngagementTimePerPageView": [
+        {
+            "kind": "ratio",
+            "numerator": "totalEngagementTime",
+            "denominator": "pageViews",
+            "precision": 0,
+            "children": [
+                "pageViews",
+                "totalEngagementTime"
+            ]
+        }
+    ],
     "averageEngagementTimePerSession": [
         {
             "kind": "ratio",
@@ -23,6 +35,26 @@
             ]
         }
     ],
+    "bounceRate": [
+        {
+            "kind": "ratio",
+            "numerator": "bouncedSessions",
+            "denominator": "sessions",
+            "precision": 4,
+            "children": [
+                "bouncedSessions",
+                "sessions"
+            ]
+        }
+    ],
+    "bouncedSessions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT CASE WHEN event.is_engaged_session = 0 THEN event.session_id END)",
+            "alias": "bouncedSessions"
+        }
+    ],
     "ecommerceConversionRate": [
         {
             "kind": "ratio",
@@ -32,6 +64,38 @@
             "children": [
                 "sessions",
                 "transactions"
+            ]
+        }
+    ],
+    "engagedSessions": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT CASE WHEN event.is_engaged_session = 1 THEN event.session_id END)",
+            "alias": "engagedSessions"
+        }
+    ],
+    "engagedSessionsPerUser": [
+        {
+            "kind": "ratio",
+            "numerator": "engagedSessions",
+            "denominator": "totalUsers",
+            "precision": 2,
+            "children": [
+                "engagedSessions",
+                "totalUsers"
+            ]
+        }
+    ],
+    "engagementRate": [
+        {
+            "kind": "ratio",
+            "numerator": "engagedSessions",
+            "denominator": "sessions",
+            "precision": 4,
+            "children": [
+                "engagedSessions",
+                "sessions"
             ]
         }
     ],

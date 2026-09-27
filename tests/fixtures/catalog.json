@@ -1,14 +1,39 @@
 {
     "counts": {
-        "metricNames": 25,
-        "metricImplementations": 25,
+        "metricNames": 31,
+        "metricImplementations": 31,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 76,
-        "dimensionEntriesDenormalized": 76,
-        "accessorDimensionNames": 76
+        "dimensionNamesDenormalized": 77,
+        "dimensionEntriesDenormalized": 77,
+        "accessorDimensionNames": 77
     },
     "metrics": {
+        "averageEngagementTimePerPageView": [
+            {
+                "name": "averageEngagementTimePerPageView",
+                "class": "base.configurableMetric",
+                "label": "Average Engagement Time Per Page View",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "milliseconds",
+                    "denominator": "pageViews",
+                    "description": "Average time accrued per page view, in milliseconds.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Average Engagement Time Per Page View",
+                    "metric_type": "ratio",
+                    "name": "averageEngagementTimePerPageView",
+                    "numerator": "totalEngagementTime",
+                    "precision": 0,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "averageEngagementTimePerSession": [
             {
                 "name": "averageEngagementTimePerSession",
@@ -59,6 +84,59 @@
                 }
             }
         ],
+        "bounceRate": [
+            {
+                "name": "bounceRate",
+                "class": "base.configurableMetric",
+                "label": "Bounce Rate",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "sessions",
+                    "description": "The share of sessions that were not engaged.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Bounce Rate",
+                    "metric_type": "ratio",
+                    "name": "bounceRate",
+                    "numerator": "bouncedSessions",
+                    "precision": 4,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "bouncedSessions": [
+            {
+                "name": "bouncedSessions",
+                "class": "base.configurableMetric",
+                "label": "Bounced Sessions",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "session_id",
+                    "condition": [
+                        0,
+                        "is_engaged_session"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "Sessions that were not engaged.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Bounced Sessions",
+                    "metric_type": "distinct_count",
+                    "name": "bouncedSessions",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
         "ecommerceConversionRate": [
             {
                 "name": "ecommerceConversionRate",
@@ -79,6 +157,84 @@
                     "metric_type": "ratio",
                     "name": "ecommerceConversionRate",
                     "numerator": "transactions",
+                    "precision": 4,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "engagedSessions": [
+            {
+                "name": "engagedSessions",
+                "class": "base.configurableMetric",
+                "label": "Engaged Sessions",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "session_id",
+                    "condition": [
+                        1,
+                        "is_engaged_session"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "Sessions that lasted ten seconds or more, had two or more page views, or met a goal.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Engaged Sessions",
+                    "metric_type": "distinct_count",
+                    "name": "engagedSessions",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "engagedSessionsPerUser": [
+            {
+                "name": "engagedSessionsPerUser",
+                "class": "base.configurableMetric",
+                "label": "Engaged Sessions Per User",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "decimal",
+                    "denominator": "totalUsers",
+                    "description": "The average number of engaged sessions per user.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Engaged Sessions Per User",
+                    "metric_type": "ratio",
+                    "name": "engagedSessionsPerUser",
+                    "numerator": "engagedSessions",
+                    "precision": 2,
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "engagementRate": [
+            {
+                "name": "engagementRate",
+                "class": "base.configurableMetric",
+                "label": "Engagement Rate",
+                "group": "Site Usage",
+                "params": {
+                    "child_metrics": [],
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "sessions",
+                    "description": "The share of sessions that were engaged.",
+                    "entity": "base.event",
+                    "formula": "",
+                    "group": "Site Usage",
+                    "label": "Engagement Rate",
+                    "metric_type": "ratio",
+                    "name": "engagementRate",
+                    "numerator": "engagedSessions",
                     "precision": 4,
                     "subtrahend_column": ""
                 }
@@ -1137,6 +1293,19 @@
                 "denormalized": true
             }
         },
+        "isEngagedSession": {
+            "base.event": {
+                "name": "isEngagedSession",
+                "entity": "base.event",
+                "column": "is_engaged_session",
+                "family": "visit",
+                "label": "Engaged Session",
+                "description": "Whether the session was engaged: ten seconds, two page views, or a goal.",
+                "foreign_key_name": "",
+                "data_type": "boolean",
+                "denormalized": true
+            }
+        },
         "isGoalEvent": {
             "base.event": {
                 "name": "isGoalEvent",
@@ -2106,6 +2275,17 @@
             "description": "The user's address, where the install stores one.",
             "foreign_key_name": "",
             "data_type": "string",
+            "denormalized": true
+        },
+        "isEngagedSession": {
+            "name": "isEngagedSession",
+            "entity": "base.event",
+            "column": "is_engaged_session",
+            "family": "visit",
+            "label": "Engaged Session",
+            "description": "Whether the session was engaged: ten seconds, two page views, or a goal.",
+            "foreign_key_name": "",
+            "data_type": "boolean",
             "denormalized": true
         },
         "isGoalEvent": {

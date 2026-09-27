@@ -1203,6 +1203,69 @@ final class CubeBuildTest extends TestCase
         $this->assertSame(0, (int) $row['is_exit']);
     }
 
+    /*
+     * ENGAGED SESSIONS. Stamped on every row of a session when it had ten
+     * seconds of engagement, two page views, or a goal event that is not on a
+     * materialized event -- see Classes\Cube\IsEngagedSessionStep.
+     */
+    public function testTheFixturesSessionsAreJudgedEngagedOrNot(): void
+    {
+        $t = $this->t0;
+
+        // Two page views, so engaged -- on EVERY row, the click included.
+        foreach ([['page_view', $t], ['page_view', $t + 60000000], ['click', $t + 120000000]] as [$type, $ts]) {
+            $this->assertSame(1, (int) $this->built($type, self::VISITOR_TAGGED, 8881000000000001, $ts)['is_engaged_session'],
+                "$type of a two-page-view session");
+        }
+
+        // One page view, no engagement time, no goal.
+        $this->assertSame(0, (int) $this->built('page_view', self::VISITOR_DIRECT, 8881000000000003, $t)['is_engaged_session']);
+    }
+
+    /**
+     * Engagement time is summed across the session's events, and ten seconds is
+     * the threshold: 10000 ms is engaged, 9999 is not.
+     */
+    public function testTenSecondsOfEngagementAcrossEventsIsEngaged(): void
+    {
+        $t = $this->t0;
+
+        $this->seed('page_view', 7771000000000051, 8881000000000051, $t, ['engagement_msec' => null, 'page_path' => '/read']);
+        $this->seed('scroll', 7771000000000051, 8881000000000051, $t + 1000000, ['engagement_msec' => 4000, 'page_path' => '/read']);
+        $this->seed('user_engagement', 7771000000000051, 8881000000000051, $t + 2000000, ['engagement_msec' => 6000, 'page_path' => '/read']);
+
+        $this->seed('page_view', 7771000000000052, 8881000000000052, $t, ['page_path' => '/skim']);
+        $this->seed('user_engagement', 7771000000000052, 8881000000000052, $t + 1000000, ['engagement_msec' => 9999, 'page_path' => '/skim']);
+
+        $this->rebuild();
+
+        $this->assertSame(1, (int) $this->built('page_view', 7771000000000051, 8881000000000051, $t)['is_engaged_session'],
+            '4000 + 6000 ms on two events is ten seconds');
+        $this->assertSame(0, (int) $this->built('page_view', 7771000000000052, 8881000000000052, $t)['is_engaged_session'],
+            '9999 ms is under the threshold');
+    }
+
+    /**
+     * A goal event makes a session engaged -- unless it is on a materialized
+     * event. A goal triggered by first_visit marks a session that merely belonged
+     * to a new visitor.
+     */
+    public function testAGoalEngagesASessionButNotOnAMaterializedEvent(): void
+    {
+        $t = $this->t0;
+
+        $this->seed('page_view', 7771000000000053, 8881000000000053, $t, ['page_path' => '/thanks', 'is_goal_event' => 1]);
+
+        $this->seed('page_view', 7771000000000054, 8881000000000054, $t, ['page_path' => '/landing']);
+        $this->seed('first_visit', 7771000000000054, 8881000000000054, $t, ['page_path' => '/landing', 'is_goal_event' => 1]);
+
+        $this->rebuild();
+
+        $this->assertSame(1, (int) $this->built('page_view', 7771000000000053, 8881000000000053, $t)['is_engaged_session']);
+        $this->assertSame(0, (int) $this->built('page_view', 7771000000000054, 8881000000000054, $t)['is_engaged_session'],
+            'a goal on first_visit is not engagement');
+    }
+
     public function testBuiltAtIsStampedAndConstantWithinThePartition(): void
     {
         $t = $this->t0;

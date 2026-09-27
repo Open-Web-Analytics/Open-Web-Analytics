@@ -150,6 +150,12 @@ final class CubeReportingTest extends TestCase
                 'page_path'       => $row[1],
                 'revenue'         => $row[6],
                 'is_outbound'     => $row[7] ?? 0,
+                /*
+                 * What a build would stamp: the first session has three page
+                 * views, so it is engaged; the second has one page view, 750 ms
+                 * and no goal, so it is not. One of two, so each rate is 50%.
+                 */
+                'is_engaged_session' => $row[3] === self::SESSION ? 1 : 0,
             ]);
 
             if (!$event->create()) {
@@ -671,6 +677,38 @@ final class CubeReportingTest extends TestCase
         ksort($expected);
 
         $this->assertSame($expected, $got);
+    }
+
+    /** The engaged-session counts and rates, over the fixture's two sessions. */
+    public function testTheEngagedSessionMetricsComputeWhatTheFixtureHolds(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray(
+            'engagedSessions,bouncedSessions,engagementRate,bounceRate,engagedSessionsPerUser');
+        $rsm->setTimePeriod('date_range', date('Ymd'), date('Ymd'));
+        $rsm->setSiteId(self::SITE);
+        $rsm->setLimit(25);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $got = [];
+
+        foreach ((array) $rs->aggregates as $name => $a) {
+            $got[$name] = (float) $a['value'];
+        }
+
+        ksort($got);
+
+        $this->assertEqualsWithDelta([
+            'bounceRate'             => 0.5,
+            'bouncedSessions'        => 1.0,
+            'engagedSessions'        => 1.0,
+            'engagedSessionsPerUser' => 0.5,
+            'engagementRate'         => 0.5,
+        ], $got, 0.0001);
     }
 
     /**
