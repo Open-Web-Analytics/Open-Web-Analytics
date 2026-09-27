@@ -25,8 +25,10 @@ use OWA\Tests\ReportCharacterizationHarness as Harness;
  *
  * What survives is the part that was never about the record: every converted id
  * still has a definition file, that file is well formed, nothing claims an id
- * twice, and rendering it raises no diagnostic. What a report EMITS is pinned
- * separately, against current behaviour, by ReportRenderCharacterizationTest.
+ * twice, and rendering it raises no diagnostic. What a report EMITS is not
+ * snapshotted: a report is configuration, like the dimension and metric
+ * registries, and ReportDefinitionFormatTest asserts the rules its queries and
+ * commands have to follow rather than recording one run of them.
  */
 final class ReportConfigEquivalenceTest extends TestCase
 {

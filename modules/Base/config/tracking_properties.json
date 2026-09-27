@@ -712,7 +712,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [],
-        "note": "Percentage of the document reached, on a scroll event. One event per threshold per page."
+        "note": "The threshold passed, as a percentage: 25, 50, 75 or 90 by default. One event per threshold per page view, and EVERY threshold crossed is reported -- so counting scroll events grouped by the scrollDepth dimension reads as \"how many reached at least this far\", and a visitor who jumps straight to the bottom still counts at every level. The Scroll Depth report is that funnel, site-wide and by page.\nThe value is the MARK, not the exact depth: 95% reports as 90."
     },
     "search_term": {
         "set_by": "client",

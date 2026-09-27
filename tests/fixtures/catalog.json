@@ -4,9 +4,9 @@
         "metricImplementations": 25,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 75,
-        "dimensionEntriesDenormalized": 75,
-        "accessorDimensionNames": 75
+        "dimensionNamesDenormalized": 76,
+        "dimensionEntriesDenormalized": 76,
+        "accessorDimensionNames": 76
     },
     "metrics": {
         "averageEngagementTimePerSession": [
@@ -1455,6 +1455,19 @@
                 "denormalized": true
             }
         },
+        "scrollDepth": {
+            "base.event": {
+                "name": "scrollDepth",
+                "entity": "base.event",
+                "column": "scroll_depth",
+                "family": "event",
+                "label": "Scroll Depth",
+                "description": "How far down the page the visitor scrolled, as the percentage threshold passed.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true
+            }
+        },
         "searchTerm": {
             "base.event": {
                 "name": "searchTerm",
@@ -2365,6 +2378,17 @@
             "description": "The host the user arrived from, as observed.",
             "foreign_key_name": "",
             "data_type": "string",
+            "denormalized": true
+        },
+        "scrollDepth": {
+            "name": "scrollDepth",
+            "entity": "base.event",
+            "column": "scroll_depth",
+            "family": "event",
+            "label": "Scroll Depth",
+            "description": "How far down the page the visitor scrolled, as the percentage threshold passed.",
+            "foreign_key_name": "",
+            "data_type": "integer",
             "denormalized": true
         },
         "searchTerm": {

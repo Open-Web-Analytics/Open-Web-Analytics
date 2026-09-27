@@ -341,6 +341,19 @@ return array(
                 'family' => 'event',
                 'description' => 'What the user searched this site for.' ),
             /*
+             * HOW FAR DOWN THE PAGE, as the threshold passed: 25, 50, 75 or 90 by
+             * default. A scroll event is raised for EVERY threshold a page view
+             * crosses, so counting scroll events grouped by this reads directly as
+             * "how many reached at least this far" -- a depth funnel -- and a
+             * visitor who jumps straight to the bottom still counts at every level.
+             *
+             * Integer, so it sorts as a number and 90 comes after 75.
+             */
+            'scrollDepth' => array( 'column' => 'scroll_depth', 'label' => 'Scroll Depth',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'How far down the page the visitor scrolled, as the percentage threshold passed.' ),
+
+            /*
              * THE CLICK'S COORDINATES, which the heatmap groups by.
              *
              * Unregistered until now, while report_widgets.php has been asking the

@@ -746,6 +746,12 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'events', 'reports/events.json' );
         $this->registerReport( 'clicks', 'reports/clicks.json' );
         $this->registerReport( 'dom-clicks', 'reports/dom-clicks.json' );
+        /*
+         * HOW FAR DOWN PEOPLE READ. Scroll events grouped by the threshold passed,
+         * site-wide and by page. Every threshold a page view crosses raises its own
+         * event, so each row's count is "how many reached at least this far".
+         */
+        $this->registerReport( 'scroll-depth', 'reports/scroll-depth.json' );
         $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
@@ -842,6 +848,7 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'scroll-depth' ), 'Scroll Depth', 6);
 
 
         /*

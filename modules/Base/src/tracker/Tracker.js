@@ -367,11 +367,22 @@ class OWATracker  {
 	        trackUrlFragments: false,
 	        sessionLength: 1800,
 	        /*
-	         * Scroll depths, as percentages, that each raise ONE scroll event.
-	         * A single 90% mark by default: one event, at the depth where "read
-	         * to the end" becomes true. Set [25,50,75,100] for quartiles.
+	         * Scroll depths, as percentages, that each raise ONE scroll event per
+	         * page view.
+	         *
+	         * QUARTILES BY DEFAULT, ending at 90 rather than 100. A single 90% mark
+	         * answered only "did they reach the end", which is not a distribution:
+	         * nothing could say how far down people get. Every mark crossed is
+	         * reported, so the count at each mark reads as "how many reached at
+	         * least this far" and the four together are a depth funnel.
+	         *
+	         * 90, not 100, because a sticky footer, a rounding pixel or a trailing
+	         * element keeps many pages from ever reading exactly 100.
+	         *
+	         * Up to four events per page view, and only on pages that scroll. A site
+	         * that wants the old single mark sets [90].
 	         */
-	        scrollThresholds: [ 90 ],
+	        scrollThresholds: [ 25, 50, 75, 90 ],
 	        /*
 	         * Extensions a click is treated as downloading. A list rather than
 	         * "anything with a dot", which reads every /v1.2/ path and every

@@ -41,7 +41,7 @@ beforeEach(() => {
 describe('scroll depth', () => {
 
     test('one event when the page passes the threshold, and not again', () => {
-        const t = newTracker();
+        const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
 
         pageOf(t, { height: 2000, viewport: 800, scrolled: 0 });
@@ -77,7 +77,7 @@ describe('scroll depth', () => {
     });
 
     test('a page that fits on one screen is fully read from the start', () => {
-        const t = newTracker();
+        const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
 
         pageOf(t, { height: 600, viewport: 800, scrolled: 0 });
@@ -355,8 +355,28 @@ describe('scroll depth', () => {
         expect(sent).toHaveLength(0);
     });
 
-    test('passing the threshold raises one scroll event carrying the depth', () => {
+    /*
+     * THE DEFAULT IS QUARTILES ENDING AT 90. A single 90% mark answered only "did
+     * they reach the end"; nothing could say how far down people get. The tests
+     * around this one pin [90] themselves because they are about the mechanism,
+     * not the default.
+     */
+    test('the default thresholds are 25, 50, 75 and 90', () => {
+        expect(newTracker().getOption('scrollThresholds')).toEqual([25, 50, 75, 90]);
+    });
+
+    test('with the defaults, a jump to the bottom reports every level', () => {
         const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getScrollDepth = () => 100;
+        t.checkScrollDepth();
+
+        expect(sent.map((e) => e.scroll_depth)).toEqual([25, 50, 75, 90]);
+    });
+
+    test('passing the threshold raises one scroll event carrying the depth', () => {
+        const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
 
         t.getScrollDepth = () => 95;
@@ -369,7 +389,7 @@ describe('scroll depth', () => {
 
     /* ONE EVENT PER PAGE PER THRESHOLD, not one per scroll tick. */
     test('a second scroll past the same threshold raises nothing', () => {
-        const t = newTracker();
+        const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
 
         t.getScrollDepth = () => 95;
@@ -409,7 +429,7 @@ describe('scroll depth', () => {
      * so the depth is also checked once at load.
      */
     test('a page already loaded is checked without waiting for a scroll', () => {
-        const t = newTracker();
+        const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
 
         t.getScrollDepth = () => 100;
@@ -424,7 +444,7 @@ describe('scroll depth', () => {
      * which reads as scrolled to the bottom.
      */
     test('a page still loading is checked at load, not before', () => {
-        const t = newTracker();
+        const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
         const state = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
 
@@ -490,7 +510,7 @@ describe('scroll depth', () => {
     });
 
     test('short of the threshold raises nothing', () => {
-        const t = newTracker();
+        const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
 
         t.getScrollDepth = () => 40;

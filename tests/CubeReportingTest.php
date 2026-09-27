@@ -517,7 +517,7 @@ final class CubeReportingTest extends TestCase
          * exactly what proves they group rather than filter.
          */
         foreach (['pageTitle', 'sessionMedium', 'deviceType', 'country', 'clientId',
-                  'fileName', 'fileExtension'] as $dim) {
+                  'fileName', 'fileExtension', 'scrollDepth'] as $dim) {
 
             $rs = $this->manager('eventCount', $dim)->getResults();
 
