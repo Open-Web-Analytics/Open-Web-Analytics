@@ -181,4 +181,64 @@ final class DispatchNameSeparationTest extends TestCase
         $this->assertNotContains( 'tracking.page_view', $properties,
             'the dispatch key leaked into the wire surface' );
     }
+
+    /**
+     * NOTHING REGISTERS FOR A TRACKING EVENT UNDER ITS BARE NAME.
+     *
+     * The failure this catches, which cost a red isolation sweep: the domstream
+     * ingestion test attached its fallback handler to `dom.stream` while the module
+     * attaches to `tracking.dom.stream`. listenersFor() walks the dotted segments
+     * of the DISPATCH name -- for tracking.dom.stream it looks at
+     * tracking.dom.stream, tracking.* and tracking.dom.*, and never at dom.stream
+     * -- so the handler was registered and unreachable.
+     *
+     * It was invisible wherever the module is ON, because the fallback is skipped
+     * there. It only failed on a fresh install, which is the isolation sweep: the
+     * one CI job that installs from scratch AND has a database, since the unit jobs
+     * are configless and skip every test that needs one.
+     *
+     * READS THE SOURCE, because the bug is a registration that never fires and a
+     * runtime assertion would need something to fire it. Same shape as
+     * ServerOwnedPropertyTest::testLogPhpUsesTheFilter.
+     */
+    public function testNoRegistrationUsesABareTrackingEventName(): void
+    {
+        $names = owa_coreAPI::trackingEventTypes();
+
+        $this->assertContains( 'dom.stream', $names,
+            'the fixture is stale -- this asserts nothing if the names moved' );
+
+        $offenders = array();
+
+        $files = array_merge(
+            (array) glob( OWA_DIR . 'modules/*/Module.php' ),
+            (array) glob( OWA_DIR . 'modules/*/Classes/*.php' ),
+            (array) glob( __DIR__ . '/*Test.php' ) );
+
+        foreach ( $files as $file ) {
+
+            $source = (string) file_get_contents( $file );
+
+            if ( ! preg_match_all(
+                    "/(?:attach|registerEventHandler)\(\s*'([^']+)'/", $source, $found ) ) {
+
+                continue;
+            }
+
+            foreach ( $found[1] as $key ) {
+
+                if ( in_array( $key, $names, true ) ) {
+
+                    $offenders[] = basename( $file ) . " => '$key'";
+                }
+            }
+        }
+
+        $this->assertSame( array(), $offenders,
+            "A tracking event is dispatched under the `tracking.` namespace, so a "
+          . "handler registered under its bare name is never reached:\n  "
+          . implode( "\n  ", $offenders )
+          . "\nUse CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.<name>', or "
+          . "CoreAPI::anyTrackingEvent() for all of them." );
+    }
 }

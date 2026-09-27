@@ -20,6 +20,23 @@ require_once __DIR__ . '/IngestionTestCase.php';
  * registration the module performs, and it makes the test say what it is
  * actually about: the dom.stream event reaching owa_domstream, not whether this
  * particular installation happens to have the feature switched on.
+ *
+ * THE KEY MUST BE THE DISPATCH NAME, NOT THE EVENT TYPE, and this test is where
+ * that went wrong. Tracking events dispatch under the `tracking.` namespace now:
+ * logEvent() sets the dispatch name and EventDispatch::listenersFor() walks the
+ * dotted segments of THAT, so a listener attached under the bare `dom.stream` is
+ * never reached -- listenersFor('tracking.dom.stream') looks at
+ * 'tracking.dom.stream', 'tracking.*' and 'tracking.dom.*', and never at
+ * 'dom.stream'.
+ *
+ * It was invisible on any install with the module ON, because then this attach is
+ * skipped and the module's own (correct) registration runs. It only failed where
+ * the module is OFF -- a fresh install -- which is the isolation sweep, the one CI
+ * job that installs from scratch AND has a database. The configless unit jobs skip
+ * every test that needs one.
+ *
+ * So the constant is shared with the module rather than the string retyped: this
+ * is a duplicated registration key, and the last one rotted silently.
  */
 final class DomStreamIngestionTest extends IngestionTestCase
 {
@@ -42,7 +59,8 @@ final class DomStreamIngestionTest extends IngestionTestCase
         }
 
         \OWA\Core\CoreAPI::getEventDispatch()->attach(
-            'dom.stream',
+            // Exactly what Domstream\Module::_registerEventHandlers() registers.
+            \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.dom.stream',
             array(new \OWA\Module\Domstream\Handler\DomstreamHandlers, 'notify')
         );
 
