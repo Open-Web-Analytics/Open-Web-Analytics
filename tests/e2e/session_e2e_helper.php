@@ -186,8 +186,11 @@ function sessionState(string $site_id): array
         $sid = (string) $start['session_id'];
         $session_ids[$sid] = true;
 
-        $pageviews = countRawRows($site_id,
-            "event_type = 'page_view' AND session_id = " . (int) $sid);
+        // rawRows() takes a WHERE fragment; countRawRows() takes an event TYPE,
+        // and handed this whole clause it compared event_type to the clause's
+        // text and counted every session's page views as 0.
+        $pageviews = count(rawRows($site_id, 'id',
+            "event_type = 'page_view' AND session_id = " . (int) $sid));
 
         /*
          * The campaign the session arrived on, under the name the spec reads.
