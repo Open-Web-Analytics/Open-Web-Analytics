@@ -104,6 +104,14 @@ class ProcessEventQueue extends \OWA\Core\Controller\Cli {
 
                             // process event if needed
                             // lookup which event processor to use to process this event type
+                            /*
+                             * A TRACKING event queued by an older tracker, or
+                             * before an upgrade, carries its old name and the
+                             * dispatch key built from it. Current names from here,
+                             * as logEvent() gives a live one.
+                             */
+                            \OWA\Module\Base\Classes\Beacon\Compat::applyToQueued( $event );
+
                             $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
 
                             if ( $processor_action ) {

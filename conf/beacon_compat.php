@@ -49,10 +49,12 @@ return array(
      * ---- APPLIED FROM HERE ------------------------------------------------
      *
      * Event type names. 1.x namespaced its event types and v2 does not, so
-     * these four are renames and nothing more. A name already in the v2
-     * vocabulary passes through untouched -- which is now every name the
-     * current tracker sends, not just the newer ones. These fire only for a
-     * beacon from the v1 line.
+     * these three are renames and nothing more. Applied by Beacon\Compat as
+     * the first step of CoreAPI::logEvent() and of a queue drain, so the
+     * admission gate, the dispatch name and the processor router only ever see
+     * a current name. A name not listed passes through untouched -- every name
+     * the current tracker sends. Any other v1 spelling (dom.stream,
+     * base.feed_request, track.action) is not a legal event name and is refused.
      */
     'event_names' => array(
         'base.page_request'     => 'page_view',

@@ -60,7 +60,7 @@ class PurchaseDeduplication {
 
     private static function isStoredAlready( $event ) {
 
-        if ( V2Event::name( $event->getEventType() ) !== 'purchase' ) {
+        if ( (string) $event->getEventType() !== 'purchase' ) {
 
             return false;
         }

@@ -41,8 +41,8 @@ namespace OWA\Module\Base\Update;
  * says that rather than pretending.
  *
  * IDEMPOTENT. GoalVocabulary::columnFor() returns a column unchanged, and
- * V2Event::name() leaves a bare v2 name alone, so a second run finds nothing to
- * do.
+ * Compat::eventName() leaves a current name alone, so a second run finds
+ * nothing to do.
  */
 class Update049 extends \OWA\Core\Update {
 
@@ -63,9 +63,10 @@ class Update049 extends \OWA\Core\Update {
     /**
      * v1 event names on the trigger become v2 event names.
      *
-     * Through Classes\V2Event::name(), which reads conf/beacon_compat.php -- the
-     * one place that knows what a v1 event type is called now. A second copy of
-     * that map here is a second thing to keep true.
+     * Through Classes\Beacon\Compat::eventName(), which reads
+     * conf/beacon_compat.php -- the one place that knows what a v1 event type
+     * is called now. A second copy of that map here is a second thing to keep
+     * true.
      *
      * @return bool
      */
@@ -86,7 +87,7 @@ class Update049 extends \OWA\Core\Update {
                 continue;
             }
 
-            $name = \OWA\Module\Base\Classes\V2Event::name( $trigger );
+            $name = \OWA\Module\Base\Classes\Beacon\Compat::eventName( $trigger );
 
             if ( $name === $trigger ) {
 

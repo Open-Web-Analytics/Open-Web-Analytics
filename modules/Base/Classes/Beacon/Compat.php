@@ -43,6 +43,48 @@ class Compat {
     /** @var array|null the indexed renames, old => new */
     private static $renames = null;
 
+    /** @var array|null old event name => current event name */
+    private static $event_names = null;
+
+    /**
+     * The event names an older tracker sent, and what each is now.
+     *
+     * The ONE place v1 event names live. Everything after Compat::apply() --
+     * the admission gate, the dispatch name, the processor router, the handlers
+     * -- sees only current names.
+     *
+     * @return array old name => current name
+     */
+    public static function eventNames() {
+
+        if ( self::$event_names === null ) {
+
+            $conf = (array) \OWA\Core\CoreAPI::loadConf(
+                'beacon_compat.php', 'beacon.compat' );
+
+            self::$event_names = isset( $conf['event_names'] )
+                ? (array) $conf['event_names']
+                : array();
+        }
+
+        return self::$event_names;
+    }
+
+    /**
+     * The current name for an event type: renamed if an older tracker's
+     * spelling, as given otherwise.
+     *
+     * @param  string $event_type
+     * @return string
+     */
+    public static function eventName( $event_type ) {
+
+        $event_type = (string) $event_type;
+        $names      = self::eventNames();
+
+        return isset( $names[ $event_type ] ) ? $names[ $event_type ] : $event_type;
+    }
+
     /**
      * Every rename the index declares, whichever role it plays.
      *
@@ -199,9 +241,45 @@ class Compat {
         return array_keys( self::renames() );
     }
 
+    /**
+     * apply(), for an event read back off a queue.
+     *
+     * A tracking event queued by an older tracker, or before an upgrade,
+     * carries its old name AND the dispatch key logEvent() built from it.
+     * Both become current, so the drain routes it as logEvent() would route
+     * it live. An internal (non-tracking) event is left alone.
+     *
+     * @param  object $event
+     * @return int how many renames were applied
+     */
+    public static function applyToQueued( $event ) {
+
+        if ( ! $event->isTrackingEvent() ) {
+
+            return 0;
+        }
+
+        $applied = self::apply( $event );
+
+        $event->setDispatchName(
+            \OWA\Core\CoreAPI::trackingDispatchName( $event->getEventType() ) );
+
+        return $applied;
+    }
+
     public static function apply( $event ) {
 
         $applied = 0;
+
+        // The event's own name first: nothing downstream knows an old spelling.
+        $type    = (string) $event->getEventType();
+        $current = self::eventName( $type );
+
+        if ( $current !== $type ) {
+
+            $event->setEventType( $current );
+            $applied++;
+        }
 
         foreach ( self::renames() as $from => $to ) {
 

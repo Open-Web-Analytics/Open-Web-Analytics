@@ -81,16 +81,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     function notify( $event ) {
 
-        $type = $event->getEventType();
-
-        if ( ! \OWA\Module\Base\Classes\V2Event::isStorable( $type ) ) {
-
-            \OWA\Core\CoreAPI::debug( sprintf(
-                'v2 ingest: %s is not stored as an event.', $type ) );
-
-            return OWA_EHS_EVENT_HANDLED;
-        }
-
         /*
          * The events this beacon will be saved as, the incoming one first. The
          * callbacks decide: materializers append session_start and first_visit,
@@ -116,7 +106,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
         foreach ( $events as $event ) {
 
             $row = $this->row( $event,
-                \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
+                (string) $event->getEventType() );
 
             /*
              * An event that cannot say which site, visitor, session or instant it
@@ -173,7 +163,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     public static function rowFor( $event ) {
 
         return ( new self() )->row( $event,
-            \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
+            (string) $event->getEventType() );
     }
 
     /**
@@ -581,7 +571,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     protected function declaredParams( $event ) {
 
         return \OWA\Module\Base\Classes\TrackingEventHelpers::paramsForEvent(
-            \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
+            (string) $event->getEventType() );
     }
 
     /**

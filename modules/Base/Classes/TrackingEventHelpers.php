@@ -2332,7 +2332,7 @@ class TrackingEventHelpers {
      */
     static function resolveCurrency( $value, $event ) {
 
-        $name = V2Event::name( $event->getEventType() );
+        $name = (string) $event->getEventType();
 
         if ( $name === 'purchase' || $name === 'refund' ) {
 
@@ -2363,7 +2363,7 @@ class TrackingEventHelpers {
             return (int) $sent;
         }
 
-        if ( V2Event::name( $event->getEventType() ) === 'refund' ) {
+        if ( (string) $event->getEventType() === 'refund' ) {
 
             return self::refundAmount( $event );
         }

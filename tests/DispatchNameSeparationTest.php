@@ -205,8 +205,8 @@ final class DispatchNameSeparationTest extends TestCase
     {
         $names = owa_coreAPI::trackingEventTypes();
 
-        $this->assertContains( 'dom.stream', $names,
-            'the fixture is stale -- this asserts nothing if the names moved' );
+        $this->assertContains( 'page_view', $names,
+            'the registered names were not read -- this asserts nothing without them' );
 
         $offenders = array();
 

@@ -18,41 +18,6 @@ namespace OWA\Module\Base\Classes;
  */
 class V2Event {
 
-    /**
-     * The event-name renames, read from conf/beacon_compat.php.
-     *
-     * v2 speaks the vocabulary the market already speaks; arguing about the
-     * names is not where this project should spend its budget. A name already
-     * in that vocabulary passes through untouched, which is what lets the
-     * tracker send `scroll` or `file_download` directly with no entry at all.
-     *
-     * A const here was the only enumerable bridge of the seven, and it was
-     * enumerable by accident rather than design -- nothing tied it to the other
-     * six. They are indexed together now, and this one is APPLIED from there.
-     *
-     * Memoised because name() runs once per beacon and loadConf() stats two
-     * paths and includes a file on every call.
-     *
-     * @var array|null
-     */
-    private static $type_map = null;
-
-    /** @return array old event type => v2 name */
-    public static function typeMap() {
-
-        if ( self::$type_map === null ) {
-
-            $conf = (array) \OWA\Core\CoreAPI::loadConf(
-                'beacon_compat.php', 'beacon.compat' );
-
-            self::$type_map = isset( $conf['event_names'] )
-                ? (array) $conf['event_names']
-                : array();
-        }
-
-        return self::$type_map;
-    }
-
     /** Materialized at ingest from flags on the event that carried them. No tracker sends them. */
     const MARKER_SESSION_START = 'session_start';
     const MARKER_FIRST_VISIT   = 'first_visit';
@@ -75,53 +40,6 @@ class V2Event {
      */
     const UNRESOLVED = "\x1A";
 
-    /**
-     * Event types that never reach owa_event_raw.
-     *
-     * A domstream chunk is an ATTACHMENT to a page view, not an event: promoting
-     * chunks -- or worse, their samples -- would swamp the table, one measured
-     * corpus holding 229,663 chunks carrying 5,767,986 pointer and scroll
-     * samples. Feed requests are retired; nothing has written one since 2021.
-     */
-    const NOT_EVENTS = array( 'dom.stream', 'base.feed_request' );
-
-    /**
-     * The v2 name for an incoming event type.
-     *
-     * @param string $event_type
-     * @return string
-     */
-    public static function name( $event_type ) {
-
-        $event_type = (string) $event_type;
-
-        $map = self::typeMap();
-
-        if ( isset( $map[ $event_type ] ) ) {
-
-            return $map[ $event_type ];
-        }
-
-        /*
-         * An unmapped name with a v1 namespace on it is not a v2 name, and
-         * storing `dom.keypress` in a VARCHAR(24) called event_type would put a
-         * v1 spelling into a v2 column where it would then have to be
-         * special-cased forever. Flatten the separator instead, so the value is
-         * at least well-formed, and leave a bare name alone.
-         */
-        return str_replace( '.', '_', $event_type );
-    }
-
-    /**
-     * Should this event type be written to owa_event_raw at all?
-     *
-     * @param string $event_type
-     * @return bool
-     */
-    public static function isStorable( $event_type ) {
-
-        return ! in_array( (string) $event_type, self::NOT_EVENTS, true );
-    }
 
     /**
      * The id of one v2 event.

@@ -853,10 +853,9 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Pages', 1);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
         /*
-         * The Feeds link was here. base.feed_request is in V2Event::NOT_EVENTS
-         * -- the type never reaches owa_event_raw at all -- and nothing has
-         * written a feed request since 2021. A nav entry to a report with no
-         * data source is worse than no entry.
+         * The Feeds link was here. Feed requests are not a v2 event -- the type
+         * is refused at the door -- and nothing has written one since 2021. A
+         * nav entry to a report with no data source is worse than no entry.
          */
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
@@ -966,38 +965,14 @@ class Module extends \OWA\Core\Module {
         }
 
         /*
-         * v2 ingest, beside v1's handlers on the same events.
+         * EVERY TRACKING EVENT BASE PROCESSES, as a namespace rather than a list.
          *
-         * Every site, no setting. The gate was development scaffolding for
-         * exercising ingest against one site and it is gone now that the
-         * tracker sends v2-shaped events.
-         *
-         * BOTH PIPELINES RUN, which is not the architecture (2.25 step 4 is
-         * where v1's registrations below come out). They run together because
-         * the reporting layer reads v1's tables and nothing reads owa_event
-         * yet. v2 is being built front to back; nothing ships until reporting
-         * is driven off v2.
-         *
-         * The list is tracking_event_types minus the two that are not events:
-         * dom.stream is an ATTACHMENT to a page view and base.feed_request is
-         * retired. Handler\EventRawHandlers refuses both as well, so this list
-         * and that one have to agree -- the guard there is what holds if a
-         * module registers a new tracking event type.
-         */
-        /*
-         * EVERY TRACKING EVENT, as a namespace rather than a list.
-         *
-         * This enumerated four v1 dispatch names and then whatever
-         * v2_event_types held -- a hand-kept set beside the property registry. Two
-         * things went wrong with that. A renamed event stayed registered under its
-         * old name only, so when the tracker began sending v2 names every beacon
-         * was dropped. And a CUSTOM event cannot be listed at all, because its
-         * name belongs to the site.
-         *
-         * Tracking events dispatch under `tracking.` now: logEvent() sets the key
-         * on the event as it arrives. A v1 beacon keeps its own spelling --
-         * tracking.base.page_request -- because the wildcard catches it either way,
-         * which is why the v1 list is gone rather than maintained.
+         * base.processRequest dispatches each event it processes under
+         * tracking.<name> (logEvent() sets the key), and this handler writes the
+         * raw row. A type a module routes to its own processor
+         * (addTrackingEventProcessor) never passes through base.processRequest,
+         * so it is never dispatched here -- unless that processor dispatches it
+         * under tracking.* itself, which a module's processor must not do.
          *
          * The handler's own guard is what refuses a beacon with no site, visitor,
          * session or instant; the namespace decides only that it is asked.
@@ -1025,41 +1000,21 @@ class Module extends \OWA\Core\Module {
     }
 
     function _registerEventProcessors() {
-        
-        
-        $this->addEventProcessor( \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_event_types' ) , 'base.processRequest');
-        
+
         /*
-         * v2's event names, processed the same way.
-         *
-         * An event type with no processor is inert -- EventDispatch::notify()
-         * logs "no listeners registered" and returns EVENT_HANDLED -- so the
-         * new tracker's events would have been accepted and silently discarded
-         * rather than refused, which is the worse of the two failures.
-         *
-         * They reach the SAME controller as v1's, because nothing about
-         * processing differs: the expansion into raw rows happens in
-         * Handler\EventRawHandlers, which is gated per site. On a site that has
-         * not opted in these are still dropped -- by logEvent()'s
-         * tracking_event_types check, below.
+         * Base's own tracking events: every name its property registry
+         * declares, each routed by exact name. A module registers its own the
+         * same way (addTrackingEventProcessor), and an exact name outranks the
+         * wildcard, so a module's events never reach this processor.
          */
+        $this->addTrackingEventProcessor(
+            \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), 'base.processRequest' );
+
         /*
-         * The first-class v2 names, derived from the property registry. A CUSTOM
-         * event cannot be listed here -- its name is the site's -- so
-         * CoreAPI::getEventProcessor() defaults to this same processor for any
-         * type the endpoint accepts. Both paths reach one controller because
-         * nothing about processing differs.
+         * A site's CUSTOM event names, which nothing can register ahead of time:
+         * the tracking.* namespace, resolved last by getEventProcessor().
          */
-        /*
-         * One processor for the whole namespace. The first-class names could be
-         * listed -- they are derived -- but a custom event's cannot, and
-         * CoreAPI::getEventProcessor() resolves a dispatch name the same way
-         * notify() resolves listeners, so registering the namespace covers both
-         * and says so in one line.
-         */
-        $this->addEventProcessor( \OWA\Core\CoreAPI::anyTrackingEvent(), 'base.processRequest');
-        
-        // @todo still needed?
+        $this->addEventProcessor( \OWA\Core\CoreAPI::anyTrackingEvent(), 'base.processRequest' );
     }
 
     function _registerEntities() {

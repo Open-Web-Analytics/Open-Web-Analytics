@@ -2196,33 +2196,48 @@ class CoreAPI {
      * @return boolean
      */
     /**
-     * The FIRST-CLASS event types: the ones with a property registry.
+     * The event types something has registered to process.
      *
-     * DERIVED, not listed. An event is first-class exactly when some property in
-     * modules/Base/config/tracking_properties.json declares it, so the vocabulary
-     * and the gate cannot disagree -- which they did, expensively. v2_event_types
-     * was a hand-kept list beside the registry, and when the tracker started
-     * sending v2 names the four RENAMED events were in neither it nor v1's list:
-     * logEvent() refused page_view, click and purchase outright, so every beacon
-     * the current tracker sent was dropped. A derived list cannot fall behind a
-     * rename because the rename IS the list.
-     *
-     * v1's names stay a setting. They are not derived from anything -- no v2
-     * property declares base.page_request -- and they have their own lifetime:
-     * the whole v1 side is retired at cutover, where a merged list would have to
-     * be untangled.
+     * READ OFF THE ROUTER, not a list. A module that processes a tracking event
+     * registers for tracking.<name> (Module::addTrackingEventProcessor()), Base
+     * for each event its property registry declares, so this is every name the
+     * installation handles as its own -- and nothing that is not active.
      *
      * THIS IS ALSO THE RESERVED SET. A custom event may not take one of these
      * names: reusing one would put a site's own counts into a report measuring
      * something else. See isTrackingEventType().
      *
-     * @return array
+     * @return array current names, without the tracking. prefix
      */
     public static function trackingEventTypes() {
 
-        return array_merge(
-            (array) \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_event_types' ),
-            (array) \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
+        $names  = array();
+        $prefix = self::TRACKING_DISPATCH_NAMESPACE . '.';
+        $map    = (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_processors' );
+
+        foreach ( array_keys( $map ) as $dispatch_name ) {
+
+            $dispatch_name = (string) $dispatch_name;
+
+            if ( strncmp( $dispatch_name, $prefix, strlen( $prefix ) ) === 0
+                 && $dispatch_name !== self::anyTrackingEvent() ) {
+
+                $names[] = substr( $dispatch_name, strlen( $prefix ) );
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * The dispatch name a tracking event of this type is sent under.
+     *
+     * @param  string $event_type a current name
+     * @return string tracking.<event_type>
+     */
+    public static function trackingDispatchName( $event_type ) {
+
+        return self::TRACKING_DISPATCH_NAMESPACE . '.' . (string) $event_type;
     }
 
     /**
@@ -2298,6 +2313,7 @@ class CoreAPI {
             return false;
         }
 
+        // A name something registered to process: Base's own, or a module's.
         if ( in_array( $event_type, \OWA\Core\CoreAPI::trackingEventTypes(), true ) ) {
 
             return true;
@@ -2319,14 +2335,7 @@ class CoreAPI {
     public static function logEvent( $event_type, $message = '') {
 
         \OWA\Core\CoreAPI::debug("Logging new event $event_type");
-		
-        // Check to ensure that the event is in fact a tracking event
-        if ( ! \OWA\Core\CoreAPI::isTrackingEventType( $event_type ) ) {
-            
-            \OWA\Core\CoreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
-            return false;
-        }
-        
+
 		// backwards compatibility with old style messages
 		// @todo is this needed anymore?
         $class = \OWA\Module\Base\Classes\Event::class;
@@ -2343,6 +2352,22 @@ class CoreAPI {
         }
 
         /*
+         * AN OLDER TRACKER'S SPELLINGS BECOME CURRENT HERE, first. The gate, the
+         * dispatch name, the processor router and every handler after this see
+         * only current names; the old ones are listed in conf/beacon_compat.php
+         * and nowhere else.
+         */
+        \OWA\Module\Base\Classes\Beacon\Compat::apply( $event );
+        $event_type = $event->getEventType();
+
+        // Check to ensure that the event is in fact a tracking event
+        if ( ! \OWA\Core\CoreAPI::isTrackingEventType( $event_type ) ) {
+            
+            \OWA\Core\CoreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
+            return false;
+        }
+
+        /*
          * NAME THE DISPATCH KEY, here and nowhere else.
          *
          * This is the only entry point that knows a tracker sent this, so it is
@@ -2351,14 +2376,11 @@ class CoreAPI {
          * registers for the `tracking.` namespace, which is the only shape that
          * covers a site's own event names as well as OWA's.
          *
-         * NOT RENAMED. A v1 beacon keeps its own spelling here --
-         * tracking.base.page_request -- because the wildcard catches it either
-         * way; mapping it to the v2 name would be a second place that knows the
-         * compat table for no gain. V2Event::name() still does that where it
-         * matters, on the way into the event_type COLUMN.
+         * The name is already current (Compat::apply() above), so the dispatch
+         * key is tracking.<current name> for every beacon, whatever tracker sent
+         * it.
          */
-        $event->setDispatchName(
-            \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.' . $event_type );
+        $event->setDispatchName( \OWA\Core\CoreAPI::trackingDispatchName( $event_type ) );
         
         /*
          * Named-user logging is a per-Profile decision, so this check runs

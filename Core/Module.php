@@ -1234,6 +1234,29 @@ abstract class Module {
      * Adds an event processor class to the processor array. This is used to determin
      * which class to use to process a particular event
      */
+    /**
+     * Route tracking events of these types to a processor action.
+     *
+     * The type is the name the tracker sends -- page_view, domstream -- and it
+     * is registered under its dispatch name, tracking.<type>. An exact name
+     * outranks the tracking.* wildcard Base holds for custom events, so a
+     * module's type never reaches Base's processor.
+     *
+     * @param string|string[] $event_types current names
+     * @param string          $processor   an action, e.g. domstream.processEvent
+     */
+    function addTrackingEventProcessor( $event_types, $processor ) {
+
+        $names = array();
+
+        foreach ( (array) $event_types as $type ) {
+
+            $names[] = \OWA\Core\CoreAPI::trackingDispatchName( $type );
+        }
+
+        $this->addEventProcessor( $names, $processor );
+    }
+
     function addEventProcessor($event_types, $processor) {
         
         if ( is_string( $event_types ) ) {
