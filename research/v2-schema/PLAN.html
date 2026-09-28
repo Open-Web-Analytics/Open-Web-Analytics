@@ -2155,16 +2155,16 @@ Width <em>does</em> matter to three small tables v2 keeps: on an installation st
 <code>owa_scheduled_job.id</code> hold 32-bit hashes. The upgrade re-keys those three first and
 deletes the setting; nothing else of <code>rederive-dimension-ids</code> survives.</p>
 
-<p><strong>Three mapping rules, proposed 28&nbsp;Sep <span class="chip c-open">Open</span></strong></p>
+<p><strong>Three mapping rules, decided 28&nbsp;Sep <span class="chip c-dec">Decided</span></strong></p>
 <ul>
 <li><strong>Sub-second time.</strong> v1 stores whole seconds (<code>msec</code> is broken), and
 <code>V2Event::id()</code> hashes site, visitor, session, <code>ts</code> and name, so two page
-views in one session and one second would collapse into one row. Proposed: a deterministic
+views in one session and one second would collapse into one row. A deterministic
 microsecond offset derived from the v1 row id, so a replay derives the same id.</li>
-<li><strong>The day a row belongs to.</strong> Proposed: keep v1&rsquo;s stored
-<code>yyyymmdd</code>. It is the day v1 reported the row under, and a timezone change is not
+<li><strong>The day a row belongs to.</strong> v1&rsquo;s stored
+<code>yyyymmdd</code> is kept. It is the day v1 reported the row under, and a timezone change is not
 retroactive (<a href="#s110">&sect;1.10</a>).</li>
-<li><strong>Session markers.</strong> Proposed: the entry request of each session carries the
+<li><strong>Session markers.</strong> The entry request of each session carries the
 new-session flag (and the new-visitor flag where <code>is_new_visitor</code>), so ingest&rsquo;s own
 materialisation raises <code>session_start</code> and <code>first_visit</code> exactly as for a
 live beacon.</li>
