@@ -84,7 +84,13 @@ class Update055 extends \OWA\Core\Update {
 
         foreach ( $this->tables() as $table ) {
 
-            if ( $db->modifyColumn( $table, self::COLUMN, $type . ' NOT NULL' ) === false ) {
+            /*
+             * THE WIDTH ONLY. A fresh install creates event_type from the entity,
+             * which does not mark it NOT NULL; declaring it here would leave an
+             * upgraded install and a fresh one with different columns, which the
+             * upgrade cycle refuses.
+             */
+            if ( $db->modifyColumn( $table, self::COLUMN, $type ) === false ) {
 
                 $this->e->notice( sprintf(
                     'Resizing %s.%s to %s failed', $table, self::COLUMN, $type ) );

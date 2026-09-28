@@ -22,12 +22,38 @@ final class Update055Test extends IngestionTestCase
         $this->ensureSiteRegistered($this->site);
 
         $this->update = new \OWA\Module\Base\Update\Update055();
+
+        /*
+         * A cube of its own when the install has none. Run alone on a fresh
+         * install there is no cube, and the cube half of the update would go
+         * untested.
+         */
+        if ( ! \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) {
+
+            $this->assertTrue( (bool) \OWA\Module\Base\Classes\Cube\Cubes::create( self::FIXTURE_PROPERTY ),
+                'creating a fixture cube' );
+
+            $this->createdCube = true;
+        }
     }
+
+    const FIXTURE_PROPERTY = 7775000000000095;
+
+    /** @var bool */
+    private $createdCube = false;
 
     protected function tearDown(): void
     {
         // Whatever a case did, leave the tables at the width the code expects.
         $this->update->up();
+
+        if ( $this->createdCube ) {
+
+            foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
+                owa_coreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s%s',
+                    \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::FIXTURE_PROPERTY ), $suffix ) );
+            }
+        }
 
         parent::tearDown();
     }
@@ -38,6 +64,8 @@ final class Update055Test extends IngestionTestCase
 
         foreach ($this->tables() as $table) {
             $this->assertSame(64, $this->width($table), "$table.event_type");
+            $this->assertTrue($this->nullable($table),
+                "$table.event_type must stay as nullable as a fresh install makes it");
         }
     }
 
@@ -126,6 +154,16 @@ final class Update055Test extends IngestionTestCase
         $this->assertGreaterThan(1, count($tables), 'no cube table exists, so the cubes go untested');
 
         return $tables;
+    }
+
+    private function nullable(string $table): bool
+    {
+        $row = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
+            "SELECT IS_NULLABLE AS n FROM information_schema.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' AND COLUMN_NAME = 'event_type'",
+            $table));
+
+        return ($row['n'] ?? '') === 'YES';
     }
 
     private function width(string $table): int

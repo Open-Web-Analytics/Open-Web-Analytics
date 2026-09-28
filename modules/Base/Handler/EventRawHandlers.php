@@ -172,7 +172,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     public static function rowFor( $event ) {
 
-        return ( new static )->row( $event,
+        return ( new self() )->row( $event,
             \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
     }
 
