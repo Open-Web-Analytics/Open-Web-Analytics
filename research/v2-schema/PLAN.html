@@ -2135,15 +2135,40 @@ installs that is 401,675 rows on peteradamsphoto and 640,949 on demo. It writes
 <tr><td><code>owa_visitor_acquisition</code> (<code>acq_*</code>)</td><td>one row per migrated visitor: <code>owa_visitor.first_session_*</code> (Update032), or the visitor&rsquo;s first <code>owa_session</code> through its dimension joins where those are empty. Without it every migrated visitor reports <em>(not set)</em> acquisition</td></tr>
 </tbody></table></div>
 
-<p><strong>Key width does not matter to the migrator.</strong> A v1 fact row reaches its dimension
-rows by hashed id, and an installation wrote both with the same width, so the joins resolve as
-stored. The migrator writes values, and v2 derives its own 64-bit ids from them when the cube is
+<p><strong>Key width does not matter to the migrator; key <em>type</em> does.</strong> A v1 fact
+row reaches its dimension rows by hashed id, and an installation wrote both with the same width.
+But installations built at different times hold the <strong>same column names with different
+types</strong> &mdash; measured 28&nbsp;Sep: the demo install keeps <code>request</code> and
+<code>session</code>&rsquo;s <code>referer_id</code>, <code>ua_id</code>, <code>host_id</code> and
+<code>os_id</code> as <code>VARCHAR(255)</code> against a <code>BIGINT</code> dimension id, where
+the test install has <code>BIGINT</code> on both. MySQL compares a string with an integer as a
+double, and a 64-bit hash above 2<sup>53</sup> does not survive that, so a plain
+<code>JOIN &hellip; ON r.ua_id = ua.id</code> matches the wrong row on such an installation. The
+migrator resolves dimensions by exact value (an explicit cast, or a lookup keyed by the id as
+text), and selects every column by name without relying on its type. The frozen fixture
+(<code>tests/fixtures/v1_schema_1_14.sql</code>) is one variant; the tests also run the other.
+The migrator writes values, and v2 derives its own 64-bit ids from them when the cube is
 built. Visitor and session ids are the tracker&rsquo;s numeric GUIDs, not hashes, and carry over
 unchanged (signed, because v1 holds negative visitor ids &mdash; <code>EventRaw</code>).
 Width <em>does</em> matter to three small tables v2 keeps: on an installation still marked
 <code>use_32bit_hash</code>, <code>owa_site.id</code>, <code>owa_site_user.site_id</code> and
 <code>owa_scheduled_job.id</code> hold 32-bit hashes. The upgrade re-keys those three first and
 deletes the setting; nothing else of <code>rederive-dimension-ids</code> survives.</p>
+
+<p><strong>Three mapping rules, proposed 28&nbsp;Sep <span class="chip c-open">Open</span></strong></p>
+<ul>
+<li><strong>Sub-second time.</strong> v1 stores whole seconds (<code>msec</code> is broken), and
+<code>V2Event::id()</code> hashes site, visitor, session, <code>ts</code> and name, so two page
+views in one session and one second would collapse into one row. Proposed: a deterministic
+microsecond offset derived from the v1 row id, so a replay derives the same id.</li>
+<li><strong>The day a row belongs to.</strong> Proposed: keep v1&rsquo;s stored
+<code>yyyymmdd</code>. It is the day v1 reported the row under, and a timezone change is not
+retroactive (<a href="#s110">&sect;1.10</a>).</li>
+<li><strong>Session markers.</strong> Proposed: the entry request of each session carries the
+new-session flag (and the new-visitor flag where <code>is_new_visitor</code>), so ingest&rsquo;s own
+materialisation raises <code>session_start</code> and <code>first_visit</code> exactly as for a
+live beacon.</li>
+</ul>
 
 <p><strong>What no migration can produce.</strong> <code>engagement_msec</code>,
 <code>scroll_depth</code>, <code>element_*</code>, <code>target_host</code>,
