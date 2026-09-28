@@ -1242,9 +1242,9 @@ class CustomReports {
      * The dimension a report is constrained on, for the parameter it takes.
      *
      * Usually the same name as the parameter, and that is preferred when the
-     * report constrains several dimensions from one value: document.json
-     * constrains pagePath AND priorPagePath from `pagePath`, and a link into it
-     * is a link from a pagePath column.
+     * report constrains several dimensions from one value: a report
+     * constraining pagePath AND pageReferrer from `pagePath` is a link target
+     * from a pagePath column.
      *
      * @param array  $definition
      * @param string $param

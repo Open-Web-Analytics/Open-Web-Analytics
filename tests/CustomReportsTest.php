@@ -678,23 +678,39 @@ final class CustomReportsTest extends TestCase
         $this->assertNotContains('dashboard', $flat);
     }
 
-    /**
-     * document.json names three constraints and ONE parameter.
-     *
-     * It constrains pagePath and priorPagePath, both from `pagePath`. Counting
-     * constraints would have excluded it; counting distinct parameters is what
-     * makes it reachable, and the dimension it is offered under is the one
-     * matching the parameter.
-     */
-    public function testAReportConstrainingSeveralDimensionsFromOneValueIsATarget(): void
+    /** document.json takes `pagePath` and is offered from a pagePath column. */
+    public function testThePageDetailReportIsAPagePathTarget(): void
     {
         $targets = CustomReports::linkTargetsByDimension();
 
         $this->assertArrayHasKey('pagePath', $targets);
-
         $this->assertContains('document', array_column($targets['pagePath'], 'id'));
+    }
 
-        $this->assertArrayNotHasKey('priorPagePath', $targets,
+    /**
+     * Several dimensions constrained from ONE parameter: the one named after
+     * the parameter is the one a link comes from.
+     *
+     * No shipped report has this shape since Page Detail's Next Pages widget
+     * (pagePath and priorPagePath, both from `pagePath`) was removed, so the
+     * definition is synthetic.
+     */
+    public function testSeveralDimensionsFromOneValuePreferTheParametersName(): void
+    {
+        $m = new ReflectionMethod(CustomReports::class, 'constrainedDimension');
+        $m->setAccessible(true);
+
+        $definition = [
+            'params'  => ['pagePath' => []],
+            'widgets' => [
+                ['type' => 'grid', 'constraints' => [
+                    ['dimension' => 'pageReferrer', 'fromParam' => 'pagePath']]],
+                ['type' => 'trend', 'constraints' => [
+                    ['dimension' => 'pagePath', 'fromParam' => 'pagePath']]],
+            ],
+        ];
+
+        $this->assertSame('pagePath', $m->invoke(null, $definition, 'pagePath'),
             'the link comes from the column the destination is named after');
     }
 

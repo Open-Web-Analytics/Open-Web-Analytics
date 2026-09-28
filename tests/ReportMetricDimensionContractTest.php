@@ -284,14 +284,6 @@ final class ReportMetricDimensionContractTest extends TestCase
      */
     public function testEveryConstraintNamesSomethingRegistered(): void
     {
-        /*
-         * KNOWN AND OPEN. Page Detail's Next Pages widget constrains on the
-         * prior page, and v2 has no prior-page column yet: that is a cube
-         * column to design, not a rename. Listed here so any OTHER stale name
-         * still fails, and asserted below so the entry goes when it is fixed.
-         */
-        $known = ['modules/Base/reports/document.json: constraint \'priorPagePath\''];
-
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
         $bad = [];
         $seen = 0;
@@ -309,12 +301,6 @@ final class ReportMetricDimensionContractTest extends TestCase
         }
 
         $this->assertGreaterThan(10, $seen, 'no constraints were read, so this would pass vacuously');
-
-        foreach ($known as $entry) {
-            $this->assertContains($entry, $bad, "$entry is fixed; remove it from \$known");
-        }
-
-        $bad = array_values(array_diff($bad, $known));
 
         $this->assertSame([], $bad,
             "Reports constrained on a name that is not a registered dimension or metric:\n"

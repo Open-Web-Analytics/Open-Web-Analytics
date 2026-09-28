@@ -23,34 +23,6 @@
             ]
         },
         {
-            "type": "grid",
-            "id": "nextpages",
-            "container": "nextpages",
-            "title": "Next Pages Viewed",
-            "query": {
-                "metrics": "sessions",
-                "dimensions": "pagePath,pageTitle",
-                "sort": "sessions-",
-                "resultsPerPage": 15
-            },
-            "constraints": [
-                {
-                    "dimension": "priorPagePath",
-                    "fromParam": "pagePath"
-                }
-            ],
-            "link": {
-                "linkColumn": "pagePath",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "pagePath"
-            },
-            "colspan": 3
-        },
-        {
             "type": "heatmap-link",
             "id": "heatmap",
             "container": "heatmap-link",
