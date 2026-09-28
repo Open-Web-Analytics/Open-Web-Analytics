@@ -104,9 +104,23 @@ function provision(): array
 
     $site_id = md5(FIXTURE_DOMAIN);
 
+    /*
+     * A Property of its own. A v2 cube is per Property, and a site row with no
+     * property_id has no cube to build -- which is how this fixture came to
+     * report "cube not built" on every run.
+     */
+    $p = owa_coreAPI::entityFactory('base.property');
+    $p->set('id', fixturePropertyId());
+    $p->set('name', 'OWA reporting facets fixture');
+    $p->set('domain', FIXTURE_DOMAIN);
+    $p->set('property_type', \OWA\Module\Base\Entity\Property::TYPE_WEB);
+    $p->set('creation_date', time());
+    $p->create();
+
     $s = owa_coreAPI::entityFactory('base.site');
     $s->set('id', $s->generateId($site_id));
     $s->set('site_id', $site_id);
+    $s->set('property_id', fixturePropertyId());
     $s->set('domain', FIXTURE_DOMAIN);
     $s->set('name', 'OWA reporting facets fixture');
     $s->set('description', FIXTURE_TAG);
@@ -259,6 +273,12 @@ function provision(): array
  * nothing to pre-create.
  */
 
+/** The fixture Property's id: derived, so provision and cleanup agree across runs. */
+function fixturePropertyId(): string
+{
+    return (string) owa_coreAPI::entityFactory('base.property')->generateId('property:' . FIXTURE_TAG);
+}
+
 /** Numeric GUID in the tracker's format (BIGINT-safe). */
 function fixtureGuid(): string
 {
@@ -333,7 +353,7 @@ function cubeDistribution(string $site_id): array
         $rows = $db->get_results(sprintf(
             "SELECT %1\$s AS v, COUNT(DISTINCT session_id) AS c FROM %2\$s"
             . " WHERE site_id = '%3\$s' AND event_type = 'session_start'"
-            . ' GROUP BY %1\$s ORDER BY c DESC',
+            . ' GROUP BY %1$s ORDER BY c DESC',
             $column, $table, $db->prepare($site_id)));
 
         $counts = [];
@@ -376,6 +396,11 @@ function cleanup(): array
     $db = db();
     $db->deleteFrom('owa_site');
     $db->where('site_id', $site_id);
+    $db->executeQuery();
+
+    $db = db();
+    $db->deleteFrom(owa_coreAPI::entityFactory('base.property')->getTableName());
+    $db->where('id', fixturePropertyId());
     $db->executeQuery();
 
     $u = owa_coreAPI::entityFactory('base.user');
