@@ -125,8 +125,10 @@ test.describe('a broken-out trend and its companion grid', () => {
     test('a trend with a breakdown grows a grid of those rows', async ({ page }) => {
         await openContent(page);
 
-        // One row per seeded page.
-        await expect(breakdownRows(page)).toHaveCount(4);
+        // One row per page the fixture's events are on: the four it views, and
+        // /checkout, where its purchases are recorded -- sessions there, no page
+        // views. The grid counts sessions by page over every event.
+        await expect(breakdownRows(page)).toHaveCount(5);
         expect(await breakdownColumns(page)).toContain('Page Path');
 
         /*
@@ -181,9 +183,9 @@ test.describe('a broken-out trend and its companion grid', () => {
 
         // ...and so did the trend, which is the whole point.
         await expect.poll(async () => (await trendQuery(page)).dimensions, { timeout: 15_000 })
-            .toBe('date,medium');
+            .toBe('date,sessionMedium');
 
-        expect((await trendQuery(page)).series).toBe('medium');
+        expect((await trendQuery(page)).series).toBe('sessionMedium');
 
         /*
          * And the reader can SEE it. The chart's legend is a label per line, so

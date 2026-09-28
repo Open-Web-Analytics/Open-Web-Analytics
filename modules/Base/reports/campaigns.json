@@ -22,6 +22,6 @@
         }
     ],
     "settings": {
-        "constraints": "campaign!=null"
+        "constraints": "sessionCampaign!=(not set)"
     }
 }

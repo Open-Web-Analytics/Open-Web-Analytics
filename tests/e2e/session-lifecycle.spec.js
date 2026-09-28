@@ -211,8 +211,21 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
             });
         });
 
-        // --- page A: the beacon never reaches the server --------------------
-        await page.route('**/log.php*', (route) => route.abort());
+        /*
+         * --- page A: its beacons never reach the server ----------------------
+         *
+         * EVERY beacon from page A, not every beacon until B loads. Leaving A
+         * sends a user_engagement on pagehide, and a route removed before that
+         * navigation let it through whenever it beat the unload -- stored under
+         * A's session, which the server never saw start. That is scenario 4's
+         * case, not this one's.
+         */
+        const fromPageA = (url) => {
+            const location = new URL(url).searchParams.get('page_location') || '';
+            return /[?&]p=a(&|$)/.test(location);
+        };
+        await page.route('**/log.php*', (route) =>
+            (fromPageA(route.request().url()) ? route.abort() : route.continue()));
         await page.goto(a, { waitUntil: 'load' });
         await page.waitForTimeout(1000);
 
@@ -221,8 +234,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         expect(state.request_count).toBe(0);
         expect(state.queue_depth).toBe(0);
 
-        // --- page B: delivery restored --------------------------------------
-        await page.unroute('**/log.php*');
+        // --- page B: its beacons are delivered -----------------------------
         await page.goto(b, { waitUntil: 'load' });
         await awaitBeacon(beacons, 'page_view');
 

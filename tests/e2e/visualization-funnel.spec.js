@@ -332,7 +332,7 @@ test.describe('visualization: funnel', () => {
      */
     test('a segment that matches nobody empties the funnel', async ({ page }) => {
         await openFunnel(page,
-            '&owa_constraints=' + encodeURIComponent('medium==no-such-medium'));
+            '&owa_constraints=' + encodeURIComponent('sessionMedium==no-such-medium'));
 
         const counts = (await page.locator('.funnelStepCount').allTextContents())
             .map((c) => parseInt(c.trim(), 10));

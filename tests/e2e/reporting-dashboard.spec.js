@@ -245,10 +245,10 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         const before = await boxes.count();
 
-        await page.locator('.owa_chartGranularity').selectOption('month');
+        await page.locator('.owa_chartGranularity').selectOption('yearMonth');
 
         await expect.poll(async () => page.evaluate(
-            () => window.siteTrend.areaChart.xDimension), { timeout: 20_000 }).toBe('month');
+            () => window.siteTrend.areaChart.xDimension), { timeout: 20_000 }).toBe('yearMonth');
 
         // The same boxes, rebuilt -- not a second set under the first.
         await expect(boxes).toHaveCount(before);
@@ -373,6 +373,28 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
      */
     test('the metric boxes read in the order the query asked for', async ({ page }) => {
 
+        /*
+         * THE SERVER IS MADE TO ANSWER OUT OF ORDER. It answers in query order
+         * now, so on its own this fixture no longer exercised kpiBox's
+         * reordering at all -- the guard below said so and failed. Reversing the
+         * aggregates on the way in puts the reordering back under test.
+         */
+        await page.route('**/api/index.php?*', async (route) => {
+            const url = route.request().url();
+            if (!/[?&]do=reports/.test(url) || !/[?&]metrics=/.test(url)) {
+                return route.continue();
+            }
+            const response = await route.fetch();
+            const body = await response.json();
+            const aggregates = body && body.data && body.data.aggregates;
+            if (aggregates && typeof aggregates === 'object') {
+                body.data.aggregates = Object.fromEntries(Object.entries(aggregates).reverse());
+            }
+            return route.fulfill({ response, json: body });
+        });
+
+        await openDashboard(page);
+
         await page.waitForSelector('.owa_trendCardMetrics .owa_metricInfobox', { timeout: 20_000 });
 
         const state = await page.evaluate(() => {
@@ -408,8 +430,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
          * while these two differ.
          */
         expect(state.served,
-            'the server now answers in query order, so this test no longer proves anything -- '
-            + 'pick a widget whose metrics it still reorders')
+            'the served aggregates are in query order, so the reversal above did not reach '
+            + 'the widget and this test proves nothing')
             .not.toEqual(state.asked);
 
         // The consequence that matters: the charted metric is the first box.
@@ -444,12 +466,12 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(counts.every((t) => /^[\d,]+$/.test(t))).toBe(true);
 
         // A rate: stored as a fraction, labelled as a percentage.
-        const rates = await ticks('bounceRate');
+        const rates = await ticks('engagementRate');
         expect(rates.every((t) => t.endsWith('%'))).toBe(true);
 
         /*
          * ...and starting at zero. flot scales to the data, which is right
-         * until the data is flat: a bounce rate of zero all month gave an axis
+         * until the data is flat: a rate of zero all month gave an axis
          * running -100% to 100%, because a series with no range has none to
          * scale to.
          */
@@ -457,7 +479,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(rates.some((t) => t.startsWith('-'))).toBe(false);
 
         // A duration: seconds read as a duration, not as a number.
-        const durations = await ticks('visitDuration');
+        const durations = await ticks('averageEngagementTimePerSession');
         expect(durations.every((t) => /^\d+:\d{2}(:\d{2})?$/.test(t))).toBe(true);
 
         /*
@@ -474,7 +496,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         // ...and the chart is still the one it was drawing.
         expect(await page.evaluate(() => window.siteTrend.areaChart.chartedMetric()))
-            .toBe('visitDuration');
+            .toBe('averageEngagementTimePerSession');
     });
 
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
@@ -485,31 +507,6 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // $.browser/$.curCSS compat shim was deleted -- jquery-migrate alone bridges.
         expect(jqv).toBe('3.6.0');
         expect(owaType).toBe('object');
-    });
-
-    test('chosen enhances the report select menus', async ({ page }) => {
-        // The site filter (and period control) are <select>s upgraded by chosen
-        // into .chosen-container widgets (chosen-js 1.8.7 renamed the prefix from
-        // .chzn-* to .chosen-*). If chosen breaks under jQuery 3.x this count
-        // drops and the menus fall back to bare <select>s.
-        const chosen = page.locator('.chosen-container');
-        expect(await chosen.count()).toBeGreaterThanOrEqual(1);
-
-        /*
-         * A VISIBLE one, not the first one.
-         *
-         * Some of these are the constraint builder's dimension picker, which
-         * lives inside a collapsed .builder panel and is hidden until the
-         * Filter control opens it -- so whether .first() happens to be visible
-         * depends on which widget the dashboard draws first. It stopped being
-         * visible when Latest Visits moved to the top: it groups by seven
-         * dimensions, which is past the dimension control's cap, so its only
-         * chosen is the hidden one in its filter.
-         *
-         * What this test is actually about is that chosen ran at all, and one
-         * visible enhanced control says that without depending on the layout.
-         */
-        await expect(chosen.locator('visible=true').first()).toBeVisible();
     });
 
     test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
@@ -530,28 +527,6 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         });
         expect(arrowBg).not.toBeNull();
         expect(arrowBg).toContain('chosen-sprite');
-    });
-
-    test('the secondary-dimension picker is styled (chosen render regressions)', async ({ page }) => {
-        // The data-table's "Secondary Dimension" control (OWA.dimensionPicker ->
-        // <select.dim-list> enhanced by chosen) rendered as an unstyled text list
-        // after the chosen 0.9.6 -> 1.8.7 migration (build-artifact CSS clobber).
-        // Guard the RENDER: sprite-backed trigger arrow + a grouped, styled
-        // .chosen-drop (not a flat unstyled <select> fallback). The FUNCTIONAL
-        // behavior (pick a dimension -> grid requeries correctly) is asserted in
-        // the next test.
-        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
-        await expect(picker).toBeVisible();
-
-        const arrowBg = await picker.locator('.chosen-single div b').evaluate(
-            (b) => getComputedStyle(b).backgroundImage
-        );
-        expect(arrowBg).toContain('chosen-sprite');
-
-        await picker.click();
-        const drop = picker.locator('.chosen-drop');
-        await expect(drop).toBeVisible();
-        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
     });
 
     test('jqGrid renders the seeded page rows', async ({ page }) => {
@@ -1007,6 +982,61 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await openReport(page);
     });
 
+    /*
+     * The two chosen checks run HERE, on a dimension report, and not on the
+     * dashboard. The dashboard lost its last visible enhanced select when its
+     * grids became cards: Latest Visits groups by seven dimensions, past the
+     * dimension control's cap, so the only chosen left on it is the hidden one
+     * in its filter. This report's grid has the secondary-dimension chooser.
+     */
+    test('chosen enhances the report select menus', async ({ page }) => {
+        // The site filter (and period control) are <select>s upgraded by chosen
+        // into .chosen-container widgets (chosen-js 1.8.7 renamed the prefix from
+        // .chzn-* to .chosen-*). If chosen breaks under jQuery 3.x this count
+        // drops and the menus fall back to bare <select>s.
+        const chosen = page.locator('.chosen-container');
+        expect(await chosen.count()).toBeGreaterThanOrEqual(1);
+
+        /*
+         * A VISIBLE one, not the first one.
+         *
+         * Some of these are the constraint builder's dimension picker, which
+         * lives inside a collapsed .builder panel and is hidden until the
+         * Filter control opens it -- so whether .first() happens to be visible
+         * depends on which widget the dashboard draws first. It stopped being
+         * visible when Latest Visits moved to the top: it groups by seven
+         * dimensions, which is past the dimension control's cap, so its only
+         * chosen is the hidden one in its filter.
+         *
+         * What this test is actually about is that chosen ran at all, and one
+         * visible enhanced control says that without depending on the layout.
+         */
+        await expect(chosen.locator('visible=true').first()).toBeVisible();
+    });
+
+    test('the secondary-dimension picker is styled (chosen render regressions)', async ({ page }) => {
+        // The data-table's "Secondary Dimension" control (OWA.dimensionPicker ->
+        // <select.dim-list> enhanced by chosen) rendered as an unstyled text list
+        // after the chosen 0.9.6 -> 1.8.7 migration (build-artifact CSS clobber).
+        // Guard the RENDER: sprite-backed trigger arrow + a grouped, styled
+        // .chosen-drop (not a flat unstyled <select> fallback). The FUNCTIONAL
+        // behavior (pick a dimension -> grid requeries correctly) is asserted in
+        // the next test.
+        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
+        await expect(picker).toBeVisible();
+
+        const arrowBg = await picker.locator('.chosen-single div b').evaluate(
+            (b) => getComputedStyle(b).backgroundImage
+        );
+        expect(arrowBg).toContain('chosen-sprite');
+
+        await picker.click();
+        const drop = picker.locator('.chosen-drop');
+        await expect(drop).toBeVisible();
+        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
+    });
+
+
     test('jQuery-UI tabs build the tabbed report layout', async ({ page }) => {
         // openReport already waited for #report-tabs.ui-tabs, so the widget built.
         // Assert the full tab structure: the widget container, the generated nav
@@ -1033,7 +1063,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // the goal funnel in order), so adding "Date" as the secondary dimension
         // must requery (owa.resultSetExplorer.changeDimension -> getNewResultSet
         // with owa_dimensions=browserType,date) and split the one Chrome row into
-        // exactly FIVE rows (Chrome x each day), each carrying a rendered Date value.
+        // one row per day (seven: see below), each carrying a rendered Date value.
         // This pins the real outcome: the right dimension is added AND the server
         // returns the correctly grouped result set -- catching a break anywhere in
         // pick -> event -> URL rewrite -> requery -> re-render, not just DOM width.
@@ -1066,19 +1096,25 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
             .poll(async () => (await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()),
                 { timeout: 15_000 })
             .toContain('Date');
-        await expect(page.locator('tr.jqgrow')).toHaveCount(5);
+        /*
+         * Seven, not five: the five seeded visits, and the sessions the click
+         * and action fixtures run in (days 5 and 6). They have no page view, and
+         * on v2 a session opens on its first event of any kind -- so they are
+         * sessions, and each is Chrome on its own date.
+         */
+        await expect(page.locator('tr.jqgrow')).toHaveCount(7);
 
         // Added, not swapped: Browser Type is still a column.
         expect((await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()))
-            .toContain('Browser Type');
+            .toContain('Browser');
 
         // Every row is still a Chrome row and now carries a YYYYMMDD date value,
         // and the dates are DISTINCT -- i.e. the grid really grouped by date.
         const rowText = await page.locator('tr.jqgrow').allInnerTexts();
         expect(rowText.every((t) => t.includes('Chrome'))).toBe(true);
         const dates = rowText.map((t) => (t.match(/\b(20\d{6})\b/) || [])[1]).filter(Boolean);
-        expect(dates).toHaveLength(5);
-        expect(new Set(dates).size).toBe(5);
+        expect(dates).toHaveLength(7);
+        expect(new Set(dates).size).toBe(7);
     });
 
     test('applying a filter constraint requeries and filters the grid result set', async ({ page }) => {
@@ -1137,6 +1173,54 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await setConstraint('Chrome');
         await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
         await expect(page.locator('tr.jqgrow').first()).toContainText('Chrome');
+    });
+
+    /**
+     * "Is Set" / "Is Not Set" filter on emptiness, with no value typed.
+     *
+     * Every seeded row has a browser, so Is Not Set empties the grid and Is Set
+     * keeps its one row. The requery carries `browserType==(not set)` -- the
+     * server reads that as "is empty", not as a comparison with the label.
+     */
+    test('the empty-test filters requery on whether the dimension has a value', async ({ page }) => {
+        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
+        const openBuilder = async () => {
+            if (!(await dialog.isVisible().catch(() => false))) {
+                await page.locator('.constraintPickerContainer > .toggle-button').first().click();
+            }
+            await expect(dialog).toBeVisible();
+        };
+
+        await openBuilder();
+        await expect(page.locator('tr.jqgrow')).toHaveCount(1);
+
+        const setEmptyTest = async (operator) => {
+            await page.evaluate((op) => {
+                const frame = [ ...document.querySelectorAll('.owa_filterDialogFrame') ]
+                    .find((f) => f.offsetParent !== null);
+                const row = frame.querySelector('li.constraintRow');
+                jQuery(row).find('.constraintDimensionPicker select.dim-list')
+                    .val('browserType').trigger('chosen:updated');
+                jQuery(row).find('.constraintOperatorPicker select.operator-list')
+                    .val(op).trigger('chosen:updated').trigger('change');
+            }, operator);
+
+            await expect(dialog.locator('li.constraintRow .constraintValueField').first()).toBeHidden();
+
+            const request = page.waitForRequest((r) => r.url().includes('constraints='));
+            await dialog.locator('.apply-button').click();
+
+            return decodeURIComponent((await request).url().replace(/\+/g, ' '));
+        };
+
+        const notSet = await setEmptyTest('==(not set)');
+        expect(notSet).toContain('browserType==(not set)');
+        await expect(page.locator('tr.jqgrow')).toHaveCount(0, { timeout: 15_000 });
+
+        await openBuilder();
+        const isSet = await setEmptyTest('!=(not set)');
+        expect(isSet).toContain('browserType!=(not set)');
+        await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
     });
 
     test('the Live View toggle renders as a switch, not radio buttons', async ({ page }) => {

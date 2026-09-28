@@ -2112,7 +2112,7 @@
                 "label": "Year / Month",
                 "description": "The year and month together, as 202609 -- one value that sorts chronologically.",
                 "foreign_key_name": "",
-                "data_type": "integer",
+                "data_type": "yyyymm",
                 "denormalized": true,
                 "expression": true,
                 "datePart": "yearMonth"
@@ -3024,7 +3024,7 @@
             "label": "Year / Month",
             "description": "The year and month together, as 202609 -- one value that sorts chronologically.",
             "foreign_key_name": "",
-            "data_type": "integer",
+            "data_type": "yyyymm",
             "denormalized": true,
             "expression": true,
             "datePart": "yearMonth"

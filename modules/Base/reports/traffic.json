@@ -64,7 +64,13 @@
             "query": {
                 "dimensions": "sessionCampaign",
                 "sort": "sessions-"
-            }
+            },
+            "constraints": [
+                {
+                    "dimension": "sessionCampaign",
+                    "operator": "notEmpty"
+                }
+            ]
         },
         {
             "type": "grid-card",
@@ -74,13 +80,19 @@
             "colspan": 6,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "referrerHost",
+                "dimensions": "sessionSource",
                 "sort": "sessions-"
             },
             "more": {
                 "reportId": "referring-sites",
                 "label": "View Full Report \u00bb"
-            }
+            },
+            "constraints": [
+                {
+                    "dimension": "sessionMedium",
+                    "value": "referral"
+                }
+            ]
         },
         {
             "type": "grid-card",

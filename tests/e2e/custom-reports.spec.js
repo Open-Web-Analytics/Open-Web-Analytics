@@ -566,7 +566,7 @@ test.describe('custom reports', () => {
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
 
             // A dimension, and deliberately no value.
-            await fillConstraintRow(page, { dimension: '(medium)' });
+            await fillConstraintRow(page, { dimension: '(sessionMedium)' });
 
             await expect(dialogSave(page)).toBeDisabled();
             await expect(page.locator('#dlgError')).toContainText('has no value');
@@ -586,7 +586,39 @@ test.describe('custom reports', () => {
             });
 
             expect(JSON.parse(definition).widgets[0].constraints)
-                .toBe('medium==organic-search');
+                .toBe('sessionMedium==organic-search');
+        });
+
+        /**
+         * "Is Set" takes no value and stores the `(not set)` form.
+         *
+         * The value field hides, the row is complete without one, and the
+         * clause written is `!=(not set)` -- which the server reads as "has a
+         * value", not as a comparison with the label.
+         */
+        test('an Is Set constraint needs no value and stores the empty test', async ({ page }) => {
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('IsSet'));
+
+            await startWidget(page, 'grid');
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+
+            await fillConstraintRow(page, { dimension: '(sessionCampaign)', operator: 'Is Set' });
+
+            await expect(page.locator('#dlgConstraintRows li.constraintRow').first()
+                .locator('.constraintValueField')).toBeHidden();
+            await expect(dialogSave(page)).toBeEnabled();
+            await dialogSave(page).click();
+            await expect(page.locator('#widgetDialog')).toBeHidden();
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm')
+                    .dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            expect(JSON.parse(definition).widgets[0].constraints)
+                .toBe('sessionCampaign!=(not set)');
         });
 
         /**
@@ -1023,7 +1055,7 @@ test.describe('custom reports', () => {
             await chooseInChosen(page, 'dlgDimensions', 'browserType');
 
             await fillConstraintRow(page,
-                { dimension: '(medium)', operator: 'Contains', value: 'organic' });
+                { dimension: '(sessionMedium)', operator: 'Contains', value: 'organic' });
 
             await page.locator('.ui-dialog-buttonpane button', { hasText: 'Save' }).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
@@ -1047,13 +1079,13 @@ test.describe('custom reports', () => {
              * value and where the serialiser reads it -- the visible pill is
              * asserted below, so both halves are covered.
              */
-            await expect(row.locator('select.dim-list')).toHaveValue('medium');
+            await expect(row.locator('select.dim-list')).toHaveValue('sessionMedium');
             await expect(row.locator('select.operator-list')).toHaveValue('=@');
             await expect(row.locator('.constraintValueField')).toHaveValue('organic');
 
             // ...and the pills show it, which is what an author sees.
             await expect(row.locator('.constraintDimensionPicker .chosen-single'))
-                .toContainText('(medium)');
+                .toContainText('(sessionMedium)');
             await expect(row.locator('.constraintOperatorPicker .chosen-single'))
                 .toContainText('Contains');
         });
@@ -1299,7 +1331,7 @@ test.describe('custom reports', () => {
         test('the pickers stop at four', async ({ page }) => {
             await openBuilderOnGrid(page);
 
-            for (const m of ['sessions', 'totalUsers', 'pageViews', 'uniquePageViews']) {
+            for (const m of ['sessions', 'totalUsers', 'pageViews', 'engagedSessions']) {
                 await chooseInChosen(page, 'dlgMetrics', m);
             }
 
@@ -1912,7 +1944,7 @@ test.describe('custom reports', () => {
             }
 
             // ...and it does offer ordinary ones.
-            expect(offered).toContain('medium');
+            expect(offered).toContain('sessionMedium');
         });
 
         test('a broken-out trend draws a line per value over a filled total',
@@ -1926,7 +1958,7 @@ test.describe('custom reports', () => {
             await onlyWidget(page, 'trend', {
                 title: 'Visits by medium',
                 metrics: ['sessions'],
-                dimensions: ['medium'],
+                dimensions: ['sessionMedium'],
             });
 
             // Stored as the axis first, then the breakdown: the chart reads the
@@ -1937,7 +1969,7 @@ test.describe('custom reports', () => {
                 return JSON.parse(document.querySelector('#customReportDefinition').value);
             });
 
-            expect(stored.widgets[0].query.dimensions).toBe('date,medium');
+            expect(stored.widgets[0].query.dimensions).toBe('date,sessionMedium');
             expect(stored.widgets[0].chartMetric).toBe('sessions');
 
             await page.click('#customReportSubmit');
@@ -2037,7 +2069,7 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
             await page.fill('#customReportName', name);
-            await onlyWidget(page, 'trend', { metrics: ['sessions'], dimensions: ['medium'] });
+            await onlyWidget(page, 'trend', { metrics: ['sessions'], dimensions: ['sessionMedium'] });
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
 
@@ -2051,7 +2083,7 @@ test.describe('custom reports', () => {
             await expect(control.locator('option')).toHaveCount(2);
             await expect(control).toHaveValue('date');
 
-            await control.selectOption('month');
+            await control.selectOption('yearMonth');
 
             /*
              * Waited on the RESULT SET, not on the chart's idea of its axis.
@@ -2062,7 +2094,7 @@ test.describe('custom reports', () => {
              */
             await expect.poll(async () => page.evaluate(
                 () => decodeURIComponent(window.w1.resultSet.self)), { timeout: 20_000 })
-                .toContain('dimensions=month');
+                .toContain('dimensions=yearMonth');
 
             const after = await page.evaluate(() => ({
                 url: window.w1.resultSet.self,
@@ -2073,13 +2105,13 @@ test.describe('custom reports', () => {
                 parts: window.w1.areaChart.dataseries.slice(1).map((s) => s.data[0][1]),
             }));
 
-            expect(after.x).toBe('month');
+            expect(after.x).toBe('yearMonth');
 
             // The QUERY changed, and the sort with it -- a sort naming a
             // dimension the query no longer has is one the server cannot
             // resolve.
-            expect(decodeURIComponent(after.url)).toContain('dimensions=month,medium');
-            expect(decodeURIComponent(after.url)).toContain('sort=month');
+            expect(decodeURIComponent(after.url)).toContain('dimensions=yearMonth,sessionMedium');
+            expect(decodeURIComponent(after.url)).toContain('sort=yearMonth');
 
             // A month axis labelled with days would repeat the same day number
             // every tick.

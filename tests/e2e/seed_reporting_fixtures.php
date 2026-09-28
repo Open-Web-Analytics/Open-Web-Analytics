@@ -431,6 +431,10 @@ function seed(): array
      *    a previous run died midway, and the fixture should be torn down, not
      *    patched up.
      */
+    // The goal is declared BEFORE the page views: marking happens as each event
+    // is saved, so a goal added afterwards marks nothing already on disk.
+    $out['goal_seeded'] = seedGoal();
+
     $existing = countSiteRequests(E2E_SITE_ID);
     $seeded = 0;
     if ($existing < E2E_PAGEVIEWS) {
@@ -459,9 +463,6 @@ function seed(): array
     // 5. Notifications for the header bell.
     $out['notifications_seeded'] = seedNotifications();
 
-    // 6. A goal with a funnel, so the funnel report has stages to draw and the
-    //    goal metric set has a group to appear as.
-    $out['goal_seeded'] = seedGoal();
 
     // 7. DOM recordings, so the domstreams report has recordings to list --
     //    including one stored as several chunks, which is the case its
@@ -1349,9 +1350,13 @@ function seedTransactions(): int
             continue;
         }
         // Midday on its day, matching seedPageviews() so both land inside the
-        // same reporting window.
+        // same reporting window -- plus a minute. At the same second as the
+        // landing page view, with no event_seq on either, the session's order
+        // fell to the random row id: when the purchase sorted first it became
+        // the session's first event, and having no referrer it turned the
+        // bing.com session into a direct one.
         $ts = time() - ($txn['day_ago'] * 86400);
-        $ts = $ts - ($ts % 86400) + 43200;
+        $ts = $ts - ($ts % 86400) + 43200 + 60;
         // Attach to the session seeded for the same day. Commerce facts written
         // by the real handler inherit session_id/visitor_id from the parent
         // event, and the e-commerce OVERVIEW report reads its totals off the

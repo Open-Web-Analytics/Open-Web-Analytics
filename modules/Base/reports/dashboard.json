@@ -10,7 +10,7 @@
             "showTitle": true,
             "chartMetric": "totalUsers",
             "query": {
-                "metrics": "totalUsers,pageViews,pageViewsPerSession",
+                "metrics": "totalUsers,pageViews,pageViewsPerSession,engagementRate,averageEngagementTimePerSession",
                 "dimensions": "date",
                 "sort": "date"
             }
@@ -37,7 +37,13 @@
             },
             "more": {
                 "reportId": "pages"
-            }
+            },
+            "constraints": [
+                {
+                    "dimension": "eventName",
+                    "value": "page_view"
+                }
+            ]
         },
         {
             "type": "pie",
@@ -79,7 +85,7 @@
             ],
             "query": {
                 "metrics": "sessions",
-                "dimensions": "referrerHost",
+                "dimensions": "sessionSource",
                 "sort": "sessions-",
                 "resultsPerPage": 10
             },

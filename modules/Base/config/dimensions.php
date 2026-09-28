@@ -70,7 +70,7 @@ return array(
             'family' => 'time', 'data_type' => 'integer',
             'description' => 'The month of the year, 1 to 12.' ),
         'yearMonth' => array( 'datePart' => 'yearMonth', 'label' => 'Year / Month',
-            'family' => 'time', 'data_type' => 'integer',
+            'family' => 'time', 'data_type' => 'yyyymm',
             'description' => 'The year and month together, as 202609 -- one value that sorts chronologically.' ),
         'day' => array( 'datePart' => 'day', 'label' => 'Day of Month',
             'family' => 'time', 'data_type' => 'integer',

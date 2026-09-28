@@ -15,13 +15,13 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "referrerHost",
+                "dimensions": "sessionSource",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }
     ],
     "settings": {
-        "constraints": "medium==organic-search"
+        "constraints": "sessionMedium==organic-search"
     }
 }

@@ -74,7 +74,8 @@ test.describe('every configured report renders in a browser', () => {
 
         const ids = configuredReportIds();
 
-        expect(ids.length, 'no report definitions were found to sweep').toBeGreaterThan(40);
+        // 33 definitions ship on v2; the floor guards against a sweep of nothing.
+        expect(ids.length, 'no report definitions were found to sweep').toBeGreaterThan(25);
 
         await login(page);
 
@@ -114,10 +115,9 @@ test.describe('every configured report renders in a browser', () => {
      * per-widget constraint path end to end.
      */
     /**
-     * The goals report is the first definition whose metrics are DERIVED per
-     * site: the boxes measure one metric per goal the site has configured, so
-     * a static list could not express them. Nothing but a browser against a
-     * seeded goal exercises that resolution end to end.
+     * The goals report measures goal conversions: events the ingest marked
+     * is_goal_event because they matched an active goal. The seeded goal is
+     * declared before the seeded page views, so the /docs views are marked.
      */
     test.describe('the goals report measures the goals this site has', () => {
 
@@ -131,19 +131,18 @@ test.describe('every configured report renders in a browser', () => {
                 .toBeVisible({ timeout: 20_000 });
         });
 
-        test('the Goal Performance panel draws a box for the seeded goal', async ({ page }) => {
-            // The panel exists only because the site has an active goal. On a
-            // site with none the widget is dropped rather than drawn empty,
-            // which is why this asserts a BOX and not merely the container.
+        test('the Goal Performance panel counts the marked conversions', async ({ page }) => {
             const box = page.locator('#goalMetrics .owa_metricInfobox').first();
 
             await expect(box).toBeVisible({ timeout: 20_000 });
 
-            // Labelled by the METRIC, which names the goal -- not by the
-            // panel. A panel measuring one metric per goal that labelled every
-            // box "Goal Performance" would say nothing about which goal.
-            await expect(box).toContainText(FIXTURE.goal.name);
+            // Labelled by the METRIC, not by the panel.
+            await expect(box).toContainText('Goal Conversions');
             await expect(box).not.toContainText('Goal Performance');
+
+            const count = Number((await box.locator('.owa_metricInfoboxLargeNumber')
+                .innerText()).replace(/[^0-9]/g, ''));
+            expect(count).toBeGreaterThan(0);
         });
 
         test('the panel keeps its own section header', async ({ page }) => {
@@ -288,7 +287,7 @@ test.describe('every configured report renders in a browser', () => {
              * and read as correct. The cell is compared whole.
              *
              */
-            const cells = page.locator('#referring-sites tr.jqgrow td[aria-describedby$="referralWebSite"]');
+            const cells = page.locator('#referring-sites tr.jqgrow td[aria-describedby$="sessionSource"]');
 
             await expect(cells.filter({ hasText: FIXTURE.traffic.refererHost }))
                 .toHaveCount(1);
@@ -532,7 +531,7 @@ test.describe('the report grid gives every widget a usable width', () => {
         };
 
         // Wide enough for all five: nothing hidden either way, so no arrows.
-        const wide = await carousel(1600);
+        const wide = await carousel(1800);
 
         expect(wide.boxes).toBeGreaterThanOrEqual(4);
         expect(wide.rows, 'the boxes wrapped instead of staying on one line').toBe(1);
@@ -626,7 +625,7 @@ test.describe('the report grid gives every widget a usable width', () => {
         await page.setViewportSize({ width: 1500, height: 1200 });
 
         await page.goto(
-            `?owa_do=base.report&owa_reportId=feeds&owa_siteId=${FIXTURE.siteId}`
+            `?owa_do=base.report&owa_reportId=scroll-depth&owa_siteId=${FIXTURE.siteId}`
             + '&owa_period=last_thirty_days',
             { waitUntil: 'networkidle' }
         );
