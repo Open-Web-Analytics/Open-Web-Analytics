@@ -1833,18 +1833,20 @@ function clickTotals(string $key): array
 }
 
 /**
- * Actions, fired as real track.action events.
+ * Actions, fired as the custom events a site sends: the event is named by the
+ * action, and its group, label and value are its parameters.
  *
- * Same reasoning as the clicks: ActionHandler is what lowercases the name,
- * group and label and coerces the value to a number, so writing owa_action_fact
- * directly would seed rows in a shape the tracker never produces.
+ * They were fired as track.action, v1's one type for every action. That name
+ * has no current equivalent and the edge refuses it, so none was stored -- and
+ * the date-split spec, which counts the visit these events make, came up one
+ * day short.
  *
  * @return array
  */
 function seedActions(): array
 {
     $expected = array_sum(array_column(E2E_ACTIONS, 'n'));
-    $existing = countRawRows('custom_event');
+    $existing = countActionRows();
 
     /* Idempotent for the same reason as the clicks above. */
     if ($existing > 0) {
@@ -1879,7 +1881,7 @@ function seedActions(): array
             $offset++;
 
             $event = owa_coreAPI::supportClassFactory('base', 'event');
-            $event->setEventType('track.action');
+            $event->setEventType($action['name']);
             $event->setProperties([
                 'site_id'          => E2E_SITE_ID,
                 'session_id'       => $session_id,
@@ -1889,13 +1891,12 @@ function seedActions(): array
                 'page_title'       => 'E2E Home',
                 'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
                 'ip_address'       => '203.0.113.31',
-                'action_group'     => $action['group'],
-                'action_name'      => $action['name'],
-                'action_label'     => $action['label'],
-                'numeric_value'    => $action['value'],
+                'ep_group'         => $action['group'],
+                'ep_label'         => $action['label'],
+                'epn_value'        => $action['value'],
             ]);
 
-            if (owa_coreAPI::logEvent('track.action', $event) !== false) {
+            if (owa_coreAPI::logEvent($action['name'], $event) !== false) {
                 $written++;
             }
         }
@@ -1905,7 +1906,7 @@ function seedActions(): array
 
     return [
         'actions'       => $written,
-        'rows_in_db'    => countRawRows('custom_event'),
+        'rows_in_db'    => countActionRows(),
         /*
          * The three answers the three metrics should give. Computed from the
          * fixture so the numbers cannot drift apart from the data, and kept
@@ -2014,6 +2015,12 @@ function sessionByReferer(string $site_id, string $referer_url): ?array
  * is `click` and a tracked action is `custom_event` -- so this is the same
  * question asked where the answer now lives.
  */
+/** Stored rows of the fixture's action events. */
+function countActionRows(): int
+{
+    return array_sum(array_map('countRawRows', array_unique(array_column(E2E_ACTIONS, 'name'))));
+}
+
 function countRawRows(?string $event_type = null): int
 {
     $db = owa_coreAPI::dbSingleton();
