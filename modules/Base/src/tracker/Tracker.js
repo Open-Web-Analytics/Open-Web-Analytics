@@ -400,7 +400,8 @@ class OWATracker  {
 	        downloadExtensions: [
 	            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt',
 	            'rtf', 'zip', 'gz', 'tar', 'rar', '7z', 'dmg', 'pkg', 'exe',
-	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi'
+	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi',
+	            'key', 'pps', 'mpeg', 'mpg', 'mid', 'midi', 'wma'
 	        ],
 	        /*
 	         * Query parameters that carry a site-search term, tried in order.
@@ -1867,24 +1868,33 @@ class OWATracker  {
         // is stored consistently regardless of how the browser reports tagName.
         properties.dom_element_tag = String( targ.tagName ).toLowerCase();
 
+        /*
+         * Whitespace runs collapse to one space, then trimmed: an indented,
+         * multi-line link is one value, not one per way it was formatted.
+         */
+        var text = function ( value ) {
+
+            return String( value == null ? '' : value ).replace( /\s+/g, ' ' ).trim();
+        };
+
         if (targ.tagName == "A" || targ.tagName == "AREA") {
 
             if (targ.textContent != undefined) {
-                 properties.dom_element_text = targ.textContent;
+                 properties.dom_element_text = text( targ.textContent );
             } else {
-                 properties.dom_element_text = targ.innerText;
+                 properties.dom_element_text = text( targ.innerText );
             }
 
             properties.target_url =  targ.href;
 
         } else if (targ.tagName == "INPUT") {
 
-            properties.dom_element_text = targ.value;
+            properties.dom_element_text = text( targ.value );
 
         } else if (targ.tagName == "IMG") {
 
             properties.target_url = targ.parentNode.href;
-            properties.dom_element_text = targ.alt;
+            properties.dom_element_text = text( targ.alt );
 
         } else {
 
@@ -2179,7 +2189,7 @@ class OWATracker  {
             this.trackEvent(click);
         }
 
-        this.classifyClickTarget( click.get( 'target_url' ) );
+        this.classifyClickTarget( click.get( 'target_url' ), click );
 
 
         //this.click = full_click;
@@ -4686,7 +4696,7 @@ class OWATracker  {
      *
      * @param {string} url
      */
-    classifyClickTarget( url ) {
+    classifyClickTarget( url, click ) {
 
         if ( ! url ) {
 
@@ -4702,6 +4712,19 @@ class OWATracker  {
             event.set( 'target_url', url );
             event.set( 'file_extension', extension );
             event.set( 'file_name', this.getDownloadFileName( url ) );
+
+            // WHICH LINK, copied from the click: two links to one file are told
+            // apart by these.
+            if ( click ) {
+
+                [ 'dom_element_id', 'dom_element_text' ].forEach( function ( name ) {
+
+                    if ( click.get( name ) ) {
+
+                        event.set( name, click.get( name ) );
+                    }
+                } );
+            }
 
             this.trackEvent( event );
         }

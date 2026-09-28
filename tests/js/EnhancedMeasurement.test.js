@@ -142,6 +142,68 @@ describe('downloads and outbound links', () => {
             .toBe('/my%20file.pdf');
     });
 
+    /*
+     * WHICH LINK. Two links to one file -- a header button and an inline link --
+     * were one row: the download carried the URL and nothing about the link.
+     */
+    test('a download carries the link\'s id and text, from the click', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML =
+            '<a id="header-cta" href="/files/report.pdf">Get the report</a>'
+            + '<a id="inline" href="/files/report.pdf"><span id="in">annual   report</span></a>';
+
+        t.clickEventHandler({ target: document.getElementById('header-cta'), pageX: 1, pageY: 1 });
+        t.clickEventHandler({ target: document.getElementById('in'), pageX: 1, pageY: 1 });
+
+        const downloads = sent.filter((e) => e.event_type === 'file_download');
+
+        expect(downloads.map((e) => [e.dom_element_id, e.dom_element_text])).toEqual([
+            ['header-cta', 'Get the report'],
+            ['inline', 'annual report'],
+        ]);
+        expect(downloads[0].file_name).toBe(downloads[1].file_name);
+    });
+
+    test('a download from a link with no id or text carries neither', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<a href="/files/blank.pdf"></a>';
+
+        t.clickEventHandler({ target: document.querySelector('a'), pageX: 1, pageY: 1 });
+
+        const download = sent.find((e) => e.event_type === 'file_download');
+        expect(download).not.toHaveProperty('dom_element_id');
+        expect(download).not.toHaveProperty('dom_element_text');
+    });
+
+    /*
+     * An indented, multi-line link was a different value for every way it was
+     * formatted. Runs of whitespace are one space, and the ends are trimmed.
+     */
+    test('link text collapses whitespace, on the click and the download', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.setOption('logClicksAsTheyHappen', true);
+        document.body.innerHTML = '<a id="w" href="/files/w.pdf">\n   Annual\n\t  Report   2025  </a>';
+
+        t.clickEventHandler({ target: document.getElementById('w'), pageX: 1, pageY: 1 });
+
+        expect(sent.map((e) => [e.event_type, e.dom_element_text])).toEqual([
+            ['click', 'Annual Report 2025'],
+            ['file_download', 'Annual Report 2025'],
+        ]);
+    });
+
+    test.each(['key', 'pps', 'mpeg', 'mpg', 'mid', 'midi', 'wma', 'dmg', 'epub'])(
+        '.%s is a download', (ext) => {
+            const t = newTracker();
+
+            expect(t.getDownloadExtension('https://example.org/files/f.' + ext)).toBe(ext);
+        });
+
     test('an ordinary page is not a download, whatever dots the path contains', () => {
         const t = newTracker();
         const sent = captureSends(t);

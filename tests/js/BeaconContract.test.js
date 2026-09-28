@@ -196,6 +196,21 @@ const EMITTERS = {
             items: [{ item_id: 'sku', price: 5, quantity: 1 }],
         }),
     },
+    // Raised by a click on a download link; the click itself is not sent here,
+    // so the one beacon is the download.
+    'file_download': {
+        session: 'established',
+        fire: (t) => {
+            t.setOption('logClicksAsTheyHappen', false);
+            const a = document.createElement('a');
+            a.id = 'annual';
+            a.href = 'https://x.example/files/report.pdf';
+            a.textContent = 'Annual report';
+            document.body.appendChild(a);
+            t.clickEventHandler({ target: a, pageX: 1, pageY: 2 });
+            document.body.removeChild(a);
+        },
+    },
     'purchase.trackPurchase': {
         session: 'established',
         fire: (t) => t.trackPurchase({

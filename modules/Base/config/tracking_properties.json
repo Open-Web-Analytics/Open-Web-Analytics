@@ -435,12 +435,13 @@
         ],
         "column": "element_id",
         "events": [
-            "click"
+            "click",
+            "file_download"
         ],
         "data_type": "string",
         "required": false,
         "callbacks": [],
-        "note": "Carried by dom.click only. Column type from base.click."
+        "note": "The clicked element's id -- or, for a click inside a link, the link's. On file_download too, copied from the click that raised it, so two links to one file can be told apart. Absent, not '(not set)', when the element has none."
     },
     "dom_element_name": {
         "set_by": "client",
@@ -477,12 +478,13 @@
         ],
         "param": "element_text",
         "events": [
-            "click"
+            "click",
+            "file_download"
         ],
         "data_type": "string",
         "required": false,
         "callbacks": [],
-        "note": "Carried by dom.click only. Column type from base.click."
+        "note": "The link's text (an input's value for a button, an image's alt), with runs of whitespace collapsed to one space and trimmed, so an indented multi-line link is one value. On file_download too, copied from the click. Kept in params, not a column."
     },
     "ct_order_id": {
         "set_by": "client",

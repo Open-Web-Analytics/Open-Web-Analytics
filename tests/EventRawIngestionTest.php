@@ -995,6 +995,42 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A download says which link: the link's id in element_id, its text in
+     * params, as on the click that raised it. Two links to one file are then
+     * two rows of a downloads-by-link breakdown instead of one.
+     */
+    public function testADownloadCarriesTheLinksIdAndText(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('file_download', [
+            'site_id'            => $this->site,
+            'visitor_id'         => $visitor,
+            'session_id'         => $session,
+            'page_url'           => 'https://owa-test-site/v2/docs',
+            'page_location'      => 'https://owa-test-site/v2/docs',
+            'target_url'         => 'https://owa-test-site/files/guide.pdf',
+            'file_name'          => '/files/guide.pdf',
+            'file_extension'     => 'pdf',
+            'dom_element_id'     => 'header-cta',
+            'dom_element_text'   => 'Get the guide',
+            'fsts'               => time(),
+            'sts'                => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['file_download'] ?? null;
+
+        $this->assertNotNull($row, 'file_download stores a row');
+        $this->assertSame('header-cta', $row['element_id']);
+
+        $params = (array) json_decode((string) $row['params'], true);
+
+        $this->assertSame('Get the guide', $params['element_text'] ?? null);
+    }
+
+    /**
      * The search term is a COLUMN, and not also in params.
      *
      * It was a param, so "what do people search this site for" needed a custom

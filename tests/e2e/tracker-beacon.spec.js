@@ -168,6 +168,34 @@ test.describe('the built tracker fires beacons on the wire', () => {
         await expect.poll(() => clicks().length, { timeout: 20_000 }).toBe(2);
     });
 
+    test('a download says which link, with its text collapsed', async ({ page }) => {
+        await page.waitForFunction(() => typeof window.OWATracker !== 'undefined', null, { timeout: 20_000 });
+        await page.evaluate(() => {
+            window.OWATracker.trackClicks();
+
+            const a = document.createElement('a');
+            a.id = 'report-link';
+            a.href = '/files/annual-report.pdf';
+            a.innerHTML = '<span id="report-inner">\n   Annual\n   Report  2025 </span>';
+            document.body.appendChild(a);
+
+            window.addEventListener('click', (e) => e.preventDefault(), false);
+        });
+
+        const downloads = () => beacons
+            .filter((u) => /[?&]event_type=file_download/.test(u))
+            .map((u) => new URL(u).searchParams);
+
+        await page.locator('#report-inner').click();
+        await expect.poll(() => downloads().length, { timeout: 20_000 }).toBe(1);
+
+        const download = downloads()[0];
+        expect(download.get('dom_element_id')).toBe('report-link');
+        expect(download.get('dom_element_text')).toBe('Annual Report 2025');
+        expect(download.get('file_name')).toBe('/files/annual-report.pdf');
+        expect(download.get('file_extension')).toBe('pdf');
+    });
+
     test('the page_view beacon carries the screen as WIDTHxHEIGHT', async () => {
         await expect.poll(() => beacons.find((u) => /[?&]event_type=page_view/.test(u)),
             { timeout: 20_000 }).toBeTruthy();
