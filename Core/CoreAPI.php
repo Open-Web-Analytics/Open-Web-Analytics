@@ -1851,7 +1851,8 @@ class CoreAPI {
             }
         }
 
-        return $panels;
+        // nav_settings: every module's panels, grouped, before anything renders them.
+        return (array) \OWA\Core\CoreAPI::filter( 'nav_settings', $panels );
     }
 
     /**
@@ -1935,17 +1936,20 @@ class CoreAPI {
 
         }
 
-        //print_r($links[$view][$nav_name]);
-        if (!empty($links[$view][$nav_name])):
-               // sort the array
-               usort($links[$view][$nav_name], function($a, $b) use ($sortby) {
-                return strnatcmp($a[$sortby], $b[$sortby]);
-            });
+        // nav_view: one view's named nav, from every module, before it is sorted.
+        $named = (array) \OWA\Core\CoreAPI::filter( 'nav_view',
+            $links[ $view ][ $nav_name ] ?? array(), $view, $nav_name );
 
-            return $links[$view][$nav_name];
-        else:
+        if ( ! $named ) {
+
             return false;
-        endif;
+        }
+
+        usort( $named, function ( $a, $b ) use ( $sortby ) {
+            return strnatcmp( (string) ( $a[ $sortby ] ?? '' ), (string) ( $b[ $sortby ] ?? '' ) );
+        } );
+
+        return $named;
 
     }
 
@@ -2001,10 +2005,13 @@ class CoreAPI {
             }
         }
 
-        if ( isset( $links[$group_name] ) ) {
-
-            return $links[$group_name];
-        }
+        /*
+         * nav_reports: the merged nav for this group, after every module has
+         * contributed, so a filter can also remove or reorder another module's
+         * entries.
+         */
+        return \OWA\Core\CoreAPI::filter( 'nav_reports',
+            isset( $links[ $group_name ] ) ? $links[ $group_name ] : null, $group_name );
     }
 
     /**

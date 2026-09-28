@@ -98,14 +98,10 @@
         },
         {
             "type": "report-links",
+            "id": "related",
             "title": "Content Reports",
             "colspan": 3,
             "links": [
-                {
-                    "reportId": "domstreams",
-                    "label": "Domstream Recordings",
-                    "description": "See user mouse movement and keypress recordings."
-                },
                 {
                     "reportId": "entry-pages",
                     "label": "Entry Pages",

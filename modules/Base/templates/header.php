@@ -4,27 +4,26 @@
     <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
     <span class="owa_logo"><?php if ( $owa_logo ): ?><img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?></span>
      &nbsp
+    <?php
+        /*
+         * nav_header: a module adds, removes or reorders entries (see
+         * Core\Navigation). Documentation and Report a Bug are in the help menu
+         * on the right: both leave the application for GitHub.
+         */
+        $owa_header_links = \OWA\Core\Navigation::links( 'nav_header', array(
+            array( 'id' => 'analytics', 'label' => 'Analytics', 'capability' => 'view_site_list',
+                   'href' => $view->makeLink( array( 'do' => 'base.reportingHome' ) ) ),
+            array( 'id' => 'settings', 'label' => 'Settings', 'capability' => 'edit_settings',
+                   'href' => $view->makeLink( array( 'do' => 'base.optionsGeneral' ) ) ),
+            array( 'id' => 'donate', 'label' => 'Donate',
+                   'href' => 'https://github.com/sponsors/padams' ),
+        ) );
+    ?>
     <span class="owa_navigation">
         <UL>
-            <?php if ($view->getCurrentUser()->isCapable('view_site_list')): ?>
-                <LI><a href="<?php echo $view->makeLink(array('do' => 'base.reportingHome'));?>">Analytics</a></LI>
-            <?php endif; ?>
-            <?php if ($view->getCurrentUser()->isCapable('edit_settings')): ?>
-                <LI><a href="<?php echo $view->makeLink(array('do' => 'base.optionsGeneral'));?>">Settings</a></LI>
-            <?php endif; ?>
-            <?php
-                /*
-                 * Documentation and Report a Bug used to sit here. They are in
-                 * the help menu on the right now: both leave the application
-                 * for GitHub, which is a different kind of thing from Analytics
-                 * and Settings, and listing them here spent half the bar on
-                 * links that navigate away from it.
-                 *
-                 * This item was also never closed, so the markup nested the
-                 * rest of the bar inside it.
-                 */
-            ?>
-            <LI><a href="https://github.com/sponsors/padams">Donate</a></LI>
+            <?php foreach ( $owa_header_links as $owa_link ):?>
+            <LI><a href="<?php $view->safeHref( $owa_link['href'] );?>"><?php $view->out( $owa_link['label'] );?></a></LI>
+            <?php endforeach;?>
         </UL>
     </span>
     <?php $cu = $view->getCurrentUser(); ?>
@@ -45,19 +44,28 @@
             <i class="fas fa-chevron-down owa_userMenuCaret" aria-hidden="true"></i>
         </button>
         <div id="owa_userMenuPanel" class="owa_userMenuPanel" role="menu" hidden>
-            <a role="menuitem" class="owa_userMenuItem owa_myProfileLink"
-               href="<?php echo $view->makeLink( array( 'do' => 'base.myProfile' ), false );?>">Profile</a>
             <?php
                 /*
-                 * An embedded install signs people in through its host, so it
-                 * has no session of its own to end -- the same condition that
-                 * hid the old Logout link.
+                 * nav_user_menu. An embedded install signs people in through its
+                 * host, so it has no session of its own to end -- the same
+                 * condition that hid the old Logout link.
                  */
+                $owa_user_links = array(
+                    array( 'id' => 'profile', 'label' => 'Profile', 'class' => 'owa_myProfileLink',
+                           'href' => $view->makeLink( array( 'do' => 'base.myProfile' ), false ) ),
+                );
+
+                if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ) {
+
+                    $owa_user_links[] = array( 'id' => 'logout', 'label' => 'Logout',
+                        'class' => 'owa_userMenuLogout',
+                        'href'  => $view->makeLink( array( 'do' => 'base.logout' ), false ) );
+                }
             ?>
-            <?php if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ):?>
-            <a role="menuitem" class="owa_userMenuItem owa_userMenuLogout"
-               href="<?php echo $view->makeLink(array('do' => 'base.logout'), false);?>">Logout</a>
-            <?php endif;?>
+            <?php foreach ( \OWA\Core\Navigation::links( 'nav_user_menu', $owa_user_links ) as $owa_link ):?>
+            <a role="menuitem" class="owa_userMenuItem <?php $view->out( $owa_link['class'] ?? '' );?>"
+               href="<?php $view->safeHref( $owa_link['href'] );?>"><?php $view->out( $owa_link['label'] );?></a>
+            <?php endforeach;?>
         </div>
     </span>
 <?php
@@ -340,12 +348,17 @@
             <i class="fas fa-question" aria-hidden="true"></i>
         </button>
         <div id="owa_helpMenuPanel" class="owa_helpMenuPanel owa_headerMenuPanel" role="menu" hidden>
+            <?php foreach ( \OWA\Core\Navigation::links( 'nav_help_menu', array(
+                array( 'id' => 'documentation', 'label' => 'Documentation',
+                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ),
+                array( 'id' => 'bugs', 'label' => 'Report a Bug',
+                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues' ),
+                array( 'id' => 'github', 'label' => 'GitHub',
+                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics' ),
+            ) ) as $owa_link ):?>
             <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
-               href="https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki">Documentation</a>
-            <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
-               href="https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues">Report a Bug</a>
-            <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
-               href="https://github.com/Open-Web-Analytics/Open-Web-Analytics">GitHub</a>
+               href="<?php $view->safeHref( $owa_link['href'] );?>"><?php $view->out( $owa_link['label'] );?></a>
+            <?php endforeach;?>
         </div>
     </span>
     <script>

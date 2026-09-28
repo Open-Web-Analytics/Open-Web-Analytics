@@ -20,6 +20,17 @@ class OWA {
 	    };
 	    
 	    this.overlay = '';
+
+	    /*
+	     * Overlay modes by action name. The overlay params name an action, and
+	     * whatever registered it runs it. Base registers the heatmap; a module
+	     * registers its own (registerOverlayMode) from code compiled into the
+	     * bundle.
+	     */
+	    this.overlayModes = {
+	        loadHeatmap: ( p ) => this.loadHeatmap( p ),
+	        loadPlayer:  ( p ) => this.loadPlayer( p ),
+	    };
 	    this.config = {
 	        // The WIRE namespace: cookie names, the owa_state cross-domain
 	        // handoff and the owa_overlay anchor -- everything OWA writes into a
@@ -281,6 +292,20 @@ class OWA {
         return this.config['rest_api_endpoint'] || this.getSetting('baseUrl') + 'api/';
     }
     
+    /**
+     * Run `fn( params )` when an overlay session names `action`.
+     *
+     * @param {string}   action
+     * @param {function} fn
+     */
+    registerOverlayMode( action, fn ) {
+
+        if ( typeof action === 'string' && action && typeof fn === 'function' ) {
+
+            this.overlayModes[ action ] = fn;
+        }
+    }
+
     loadHeatmap(p) {
 	    
         var that = this;
@@ -336,12 +361,16 @@ class OWA {
             this.setApiEndpoint(p.api_url);
         }
         
-        var params = p;
-        // evaluate the action param
-        if (params.action === 'loadHeatmap') {
-            this.loadHeatmap(p);
-        } else if (params.action === 'loadPlayer') {
-            this.loadPlayer(p);
+        var mode = p && Object.prototype.hasOwnProperty.call( this.overlayModes, p.action )
+            ? this.overlayModes[ p.action ] : null;
+
+        if ( typeof mode === 'function' ) {
+
+            mode( p );
+
+        } else {
+
+            this.debug( 'No overlay mode registered for action: ' + ( p ? p.action : '' ) );
         }
         
     }

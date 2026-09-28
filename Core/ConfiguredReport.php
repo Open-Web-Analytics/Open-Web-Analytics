@@ -493,6 +493,45 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     }
 
     /**
+     * Each report-links widget's links, through the report_links filter.
+     *
+     * The filter gets the links, the report id and the widget id, so a module
+     * can add a link to a report it does not own -- Domstream puts "Recordings
+     * of this page" on Page Detail -- or remove one. Before interpolation, so
+     * an added link may use the report's placeholders ({pagePath}). A widget
+     * the filter leaves empty is dropped rather than drawn as an empty list.
+     *
+     * @param  array  $widgets
+     * @param  string $reportId
+     * @return array
+     */
+    public static function filterReportLinks( array $widgets, $reportId ) {
+
+        $out = array();
+
+        foreach ( $widgets as $widget ) {
+
+            if ( is_array( $widget ) && ( $widget['type'] ?? '' ) === 'report-links' ) {
+
+                $widget['links'] = array_values( array_filter(
+                    (array) \OWA\Core\CoreAPI::filter( 'report_links',
+                        (array) ( $widget['links'] ?? array() ),
+                        (string) $reportId, (string) ( $widget['id'] ?? '' ) ),
+                    'is_array' ) );
+
+                if ( ! $widget['links'] ) {
+
+                    continue;
+                }
+            }
+
+            $out[] = $widget;
+        }
+
+        return $out;
+    }
+
+    /**
      * Declare exactly what the controller this replaces declared.
      *
      * The order is the order those controllers used -- subview, then title,
@@ -575,8 +614,11 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         if ( isset( $d['widgets'] ) ) {
 
+            $widgets = self::filterReportLinks(
+                (array) $d['widgets'], (string) $this->getParam( 'reportId' ) );
+
             $this->set( 'widgets', array_values( self::interpolateDeep(
-                self::resolveWidgetConstraints( (array) $d['widgets'], $constraints, $values ),
+                self::resolveWidgetConstraints( $widgets, $constraints, $values ),
                 $values ) ) );
         }
 
