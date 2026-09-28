@@ -1,100 +1,33 @@
 <?php
-namespace OWA\Module\Base\Controller;
-
+namespace OWA\Module\Domstream\Controller;
 
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
-// Copyright 2006 Peter Adams. All rights reserved.
-//
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 
 /**
- * Domstreams Report Controller
+ * The recordings report: one row per recording, newest first.
  *
- * The recordings made on this site, as a filterable list.
+ * A permanent controller, not a report definition: this is a list of
+ * recordings, not a metric grouped by a dimension.
  *
- * WHAT A ROW IS
+ * A recording is every chunk sharing a recording_id. Its row is those chunks
+ * grouped: started at the first chunk's arrival, as long as its last sample
+ * (MAX(offset_ms + duration_ms)), and counted in samples, clicks and key
+ * presses. The samples themselves are never read here.
  *
- * One recording, keyed by domstream_guid -- NOT one row of owa_domstream. The
- * tracker flushes its event queue on a timer, so a single recording is stored
- * as however many rows it took to hold it, all sharing a guid. The list groups
- * them back together, and the numbers beside each recording are computed over
- * that group.
- *
- * WHAT THE AGGREGATES MEAN, AND WHY THEY ARE AGGREGATES
- *
- * The previous query grouped by domstream_guid and then selected `duration`,
- * `page_url`, `page_height` and `page_width` as BARE columns. OWA's sql_mode is
- * STRICT_ALL_TABLES, which does not include ONLY_FULL_GROUP_BY, so MySQL
- * answers a bare column with an arbitrary row's value
- * instead of refusing. For duration that is not cosmetic: `duration` is
- * cumulative elapsed seconds at the moment of each flush, so a twenty-minute
- * recording stored in twelve rows carries twelve different durations and the
- * list would show whichever one the optimiser reached first. Measured on this
- * install: one recording with durations from 552 to 1773 seconds.
- *
- *   duration  MAX  -- cumulative, so the last flush is the whole recording.
- *                    Verified against the data: max(duration) - min(duration)
- *                    equals max(timestamp) - min(timestamp) exactly, which is
- *                    what "cumulative, in seconds" predicts.
- *   started   MIN(timestamp) -- when the recording BEGAN. The old query used
- *                    max(), which is when the last chunk arrived.
- *   segments  COUNT(*) -- how many flushes the recording took.
- *   size      SUM(OCTET_LENGTH(events)) -- how much was recorded, in bytes.
- *
- * WHY NOT AN EVENT COUNT
- *
- * Because there is no column for it. The events themselves live in a BLOB, so
- * counting them means either decoding every recording in PHP or a string
- * measurement in SQL, and neither belongs in a list query. Worth recording that
- * the tracker already SENDS the number -- Tracker.js sets `stream_length` on
- * each dom.stream event -- and the entity has no such property, so the handler
- * drops it on write. One column would make it a real metric; adding one was out
- * of scope here.
- *
- * `segments` and `size` are what the existing columns can honestly answer. A
- * flush happens once the queue passes domstreamEventThreshold (10) OR the
- * logging interval elapses, so segments is not a proxy for event count and is
- * not presented as one.
- *
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.2.1
+ * Segmented like every report: the constraints select VISITS through the
+ * shared ReportSegment, and the recordings made during them are listed. A
+ * recording happens inside one visit and every dimension offered is a visit
+ * property, so selecting people would return their recordings from other
+ * visits too.
  */
-
 class ReportDomstreams extends \OWA\Core\ReportController {
 
-    /** Recordings per page. */
     const PER_PAGE = 50;
 
-    /**
-     * The segment selects VISITS, not visitors.
-     *
-     * A recording is made during one visit, and every dimension the picker
-     * offers -- medium, source, browser, city, campaign -- is a property of a
-     * visit. Selecting people instead would answer "organic-search" with that
-     * person's recordings from their direct visit too, which is not what the
-     * constraint says.
-     *
-     * The funnel offers visitor/visit as a toggle because a funnel can sensibly
-     * be counted either way. A list of recordings cannot: the recordings are
-     * the same either way, only the selection changes.
-     */
     const SCOPE = 'session';
 
     /** @var \OWA\Module\Base\Classes\ReportSegment|null */
@@ -102,45 +35,18 @@ class ReportDomstreams extends \OWA\Core\ReportController {
 
     function action() {
 
-        $document_id = '';
+        $page_path = (string) $this->getParam( 'pagePath' );
 
-        // Recordings for one page, when the report was reached from a document.
-        // pageUrl is resolved INSIDE this branch and used only here -- it used
-        // to be initialised empty above and passed to the query unconditionally.
-        if ( $this->getParam('document_id') || $this->getParam('pageUrl') || $this->getParam('pagePath') ) {
+        if ( $page_path !== '' ) {
 
-            $doc = \OWA\Core\CoreAPI::entityFactory('base.document');
-
-            if ( $this->get( 'document_id' ) ) {
-
-                $doc->load( $this->getParam('document_id') );
-
-            } elseif ( $this->getParam('pageUrl') ) {
-
-                $doc->getByColumn( 'url', $this->getParam('pageUrl') );
-
-            } elseif ( $this->getParam('pagePath') ) {
-
-                $doc->getByColumn( 'uri', $this->getParam('pagePath') );
-            }
-
-            $document_id = $doc->get('id');
-
-            $this->setTitle('Domstream Recordings: ', $doc->get('url'));
-            $this->set('document', $doc->_getProperties());
-            $this->set('item_properties', $doc);
+            $this->setTitle( 'Recordings: ', $page_path );
 
         } else {
 
-            $this->setTitle('Latest Domstreams');
+            $this->setTitle( 'Recordings' );
         }
 
-        /*
-         * The filter control: what it may offer, and what is applied. Both live
-         * on the URL, like every other way of looking at a report.
-         */
         $filter = $this->segment()->options();
-
         $this->set( 'domstreams_filter_dimensions', $filter['dimensions'] );
         $this->set( 'domstreams_filter_metrics',    $filter['metrics'] );
         $this->set( 'domstreams_constraints',       $this->segment()->getConstraints() );
@@ -152,10 +58,9 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             $this->set( 'domstreams_segment_error', $this->segment()->getError() );
         }
 
-        $page = (int) $this->getParam('page') ?: 1;
-
-        $recordings = $this->listRecordings( $document_id, $subjects, $page );
-        $total      = $this->countRecordings( $document_id, $subjects );
+        $page       = (int) $this->getParam( 'page' ) ?: 1;
+        $recordings = $this->listRecordings( $page_path, $subjects, $page );
+        $total      = $this->countRecordings( $page_path, $subjects );
 
         $this->set( 'domstreams', $this->asResultSet( $recordings ) );
         $this->set( 'domstreams_total', $total );
@@ -164,10 +69,9 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             'total_pages' => (int) ceil( $total / self::PER_PAGE ),
         ) );
 
-        $this->setSubview('base.reportDomstreams');
+        $this->setSubview( 'domstream.reportDomstreams' );
     }
 
-    /** The segment, built once from the request. */
     private function segment() {
 
         if ( ! $this->segment ) {
@@ -184,48 +88,40 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         return $this->segment;
     }
 
+    private static function table() {
+
+        return \OWA\Core\CoreAPI::entityFactory( 'domstream.domstream_chunk' )->getTableName();
+    }
+
     /**
-     * The WHERE that selects which recordings are in scope, with its bindings.
-     *
-     * Shared by the list and the count so the two cannot disagree -- a total
-     * computed under different conditions from the rows gives a page count that
-     * does not match the pages.
-     *
-     * @param string     $document_id restrict to one page, or '' for all
-     * @param array|null $subjects    session ids from the segment, or null
-     * @return array {sql, params}
+     * @param  string     $page_path '' for every page
+     * @param  array|null $subjects  session ids a segment selected, null for no segment
+     * @return array sql, params
      */
-    private function scopeClause( $document_id, $subjects ) {
+    private function scopeClause( $page_path, $subjects ) {
 
         $where  = array( 'site_id = ?' );
-        $params = array( (string) $this->getParam('siteId') );
+        $params = array( (string) $this->getParam( 'siteId' ) );
 
         $bounds = $this->segment()->bounds();
 
         if ( $bounds ) {
 
-            // Closed at both ends: the fact tables are RANGE-partitioned on
-            // yyyymmdd, and an open bound reads every partition from there on.
-            // owa_domstream is the heaviest of them -- it holds the serialised
-            // events -- so an unbounded scan here costs more than elsewhere.
             $where[]  = 'yyyymmdd BETWEEN ? AND ?';
             $params[] = $bounds['start'];
             $params[] = $bounds['end'];
         }
 
-        if ( $document_id ) {
+        if ( $page_path !== '' ) {
 
-            $where[]  = 'document_id = ?';
-            $params[] = $document_id;
+            $where[]  = 'page_path = ?';
+            $params[] = $page_path;
         }
 
         if ( is_array( $subjects ) ) {
 
             if ( ! $subjects ) {
 
-                // A segment that matches nobody has no recordings. Expressed as
-                // a clause that cannot match rather than by skipping the query,
-                // so both callers agree without either knowing about the case.
                 $where[] = '1 = 0';
 
             } else {
@@ -239,130 +135,73 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             }
         }
 
-        return array(
-            'sql'    => implode( ' AND ', $where ),
-            'params' => $params,
-        );
+        return array( 'sql' => implode( ' AND ', $where ), 'params' => $params );
     }
 
-    /**
-     * One page of recordings, newest first.
-     *
-     * @param string     $document_id
-     * @param array|null $subjects
-     * @param int        $page
-     * @return array
-     */
-    private function listRecordings( $document_id, $subjects, $page = 1 ) {
+    private function listRecordings( $page_path, $subjects, $page = 1 ) {
 
-        $scope = $this->scopeClause( $document_id, $subjects );
-
+        $scope  = $this->scopeClause( $page_path, $subjects );
         $offset = ( max( 1, (int) $page ) - 1 ) * self::PER_PAGE;
 
-        /*
-         * Every non-grouped column is aggregated. page_url and the viewport are
-         * constant within a recording in practice -- one guid is one page load
-         * -- but MIN() says so explicitly instead of relying on sql_mode being
-         * permissive, and keeps one row per recording if it ever is not.
-         */
-        $sql = 'SELECT domstream_guid,'
-             . ' MIN(timestamp) AS started,'
-             . ' MAX(duration) AS duration,'
-             . ' COUNT(*) AS segments,'
-             . ' SUM(OCTET_LENGTH(events)) AS bytes,'
-             . ' MIN(page_url) AS page_url,'
-             . ' MIN(page_width) AS page_width,'
-             . ' MIN(page_height) AS page_height'
-             . ' FROM owa_domstream'
+        $sql = 'SELECT recording_id,'
+             . ' MIN(ts) AS started,'
+             . ' MAX(offset_ms + duration_ms) AS length_ms,'
+             . ' SUM(sample_count) AS samples,'
+             . ' SUM(click_count) AS clicks,'
+             . ' SUM(keypress_count) AS keypresses,'
+             . ' MIN(page_location) AS page_location,'
+             . ' MIN(viewport_w) AS viewport_w,'
+             . ' MIN(viewport_h) AS viewport_h'
+             . ' FROM ' . self::table()
              . ' WHERE ' . $scope['sql']
-             . ' GROUP BY domstream_guid'
+             . ' GROUP BY recording_id'
              . ' ORDER BY started DESC'
              . ' LIMIT ' . (int) self::PER_PAGE . ' OFFSET ' . (int) $offset;
 
-        /*
-         * get_results(), NOT query()->fetchAll().
-         *
-         * query() hands back the DRIVER's own result -- a PDOStatement under
-         * pdo, a mysqli_result under mysqli -- and only one of those has
-         * fetchAll(). get_results() is the pair's common contract: assoc rows,
-         * or NULL for both "no rows" and "the query failed".
-         */
         $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $scope['params'] );
 
-        return $rows === null ? array() : $rows;
+        return $rows === null ? array() : (array) $rows;
     }
 
-    /**
-     * How many recordings are in scope, for the pager.
-     *
-     * COUNT(DISTINCT domstream_guid), because a recording is a guid and not a
-     * row -- counting rows would page a twelve-chunk recording as twelve.
-     *
-     * @param string     $document_id
-     * @param array|null $subjects
-     * @return int
-     */
-    private function countRecordings( $document_id, $subjects ) {
+    private function countRecordings( $page_path, $subjects ) {
 
-        $scope = $this->scopeClause( $document_id, $subjects );
+        $scope = $this->scopeClause( $page_path, $subjects );
 
-        $sql = 'SELECT COUNT(DISTINCT domstream_guid) AS total'
-             . ' FROM owa_domstream WHERE ' . $scope['sql'];
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT COUNT(DISTINCT recording_id) AS total FROM ' . self::table()
+            . ' WHERE ' . $scope['sql'], $scope['params'] );
 
-        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( $sql, $scope['params'] );
-
-        return $row ? (int) $row['total'] : 0;
+        return $row ? (int) ( (array) $row )['total'] : 0;
     }
 
-    /**
-     * The recordings shaped as a RESULT SET, so the grid control can draw them.
-     *
-     * The same grid every other report uses, rather than the hand-written
-     * <table> this report had -- which drew its own header from a labels object
-     * and its own rows, and so shared nothing with the rest of the reporting UI.
-     *
-     * The grid's explorer controls are switched off at the call site: a
-     * secondary dimension and its Filter both re-query the result set's own
-     * URL, and these rows came from a query this report ran itself.
-     *
-     * @param array $recordings
-     * @return array
-     */
     private function asResultSet( array $recordings ) {
 
         $rows = array();
 
         foreach ( $recordings as $r ) {
 
-            $duration = (int) $r['duration'];
-            $bytes    = (int) $r['bytes'];
+            $r       = (array) $r;
+            $started = intdiv( (int) $r['started'], 1000000 );
+            $length  = intdiv( (int) $r['length_ms'], 1000 );
 
             $rows[] = array(
-                'recorded' => self::cell( 'dimension', 'recorded', 'Recorded',
-                                  (int) $r['started'],
-                                  date( 'M j, Y g:i a', (int) $r['started'] ), 'number' ),
-
-                'page'     => self::cell( 'dimension', 'page', 'Page',
-                                  $r['page_url'], $r['page_url'] ),
-
-                'duration' => self::cell( 'metric', 'duration', 'Duration',
-                                  $duration, self::asClock( $duration ), 'number' ),
-
-                'segments' => self::cell( 'metric', 'segments', 'Segments',
-                                  (int) $r['segments'], (string) (int) $r['segments'], 'number' ),
-
-                'size'     => self::cell( 'metric', 'size', 'Size',
-                                  $bytes, self::asBytes( $bytes ), 'number' ),
-
+                'recorded'   => self::cell( 'dimension', 'recorded', 'Recorded', $started,
+                                    date( 'M j, Y g:i a', $started ), 'number' ),
+                'page'       => self::cell( 'dimension', 'page', 'Page',
+                                    (string) $r['page_location'], (string) $r['page_location'] ),
+                'length'     => self::cell( 'metric', 'length', 'Length', $length,
+                                    self::asClock( $length ), 'number' ),
+                'clicks'     => self::cell( 'metric', 'clicks', 'Clicks', (int) $r['clicks'],
+                                    (string) (int) $r['clicks'], 'number' ),
+                'keypresses' => self::cell( 'metric', 'keypresses', 'Key Presses', (int) $r['keypresses'],
+                                    (string) (int) $r['keypresses'], 'number' ),
+                'samples'    => self::cell( 'metric', 'samples', 'Events', (int) $r['samples'],
+                                    (string) (int) $r['samples'], 'number' ),
                 /*
-                 * The player. The cell carries the payload as its VALUE and a
-                 * named formatter builds the link -- the same mechanism the
-                 * attribution column uses. The value is data, not markup: the
-                 * formatter is the one place these fields can be escaped, and
-                 * a report must never hand the grid HTML it assembled itself.
+                 * The player's parameters as the cell's DATA; the grid's
+                 * overlayLink formatter turns them into the link.
                  */
-                'play'     => self::cell( 'dimension', 'play', '',
-                                  $this->playerPayload( $r ), 'Play' ),
+                'play'       => self::cell( 'dimension', 'play', '', $this->playerPayload( $r ), 'Play' ),
             );
         }
 
@@ -370,92 +209,48 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             'resultsRows'     => $rows,
             'resultsReturned' => count( $rows ),
             'resultsTotal'    => count( $rows ),
-            // The grid skips a redraw when the guid is unchanged, so it has to
-            // differ whenever the rows do.
             'guid'            => md5( json_encode( $rows ) ),
         );
     }
 
-    /**
-     * What the player needs to replay one recording.
-     *
-     * The overlay token is minted for THIS recording, so a payload lifted from
-     * one row cannot be used to fetch another.
-     *
-     * @param array $r
-     * @return array
-     */
     private function playerPayload( array $r ) {
 
-        $template = ( new \OWA\Core\Template() );
+        $template = new \OWA\Core\Template();
 
-        $api_url = $template->makeOverlayApiLink(
-            array(
-                'domstream_guid' => $r['domstream_guid'],
-                'module'         => 'domstream',
-                'version'        => 'v1',
-                'do'             => 'domstreams',
-            ),
-            'domstream_guid'
-        );
+        $api_url = $template->makeOverlayApiLink( array(
+            'recording_id' => (string) $r['recording_id'],
+            'siteId'       => (string) $this->getParam( 'siteId' ),
+            'module'       => 'domstream',
+            'version'      => 'v1',
+            'do'           => 'domstreams',
+        ), 'recording_id' );
 
-        // The player is opened on the recorded page itself, and a fragment on
-        // that URL is where the overlay parameters ride. A page_url that
-        // already carries one would produce two.
-        $page_url = (string) $r['page_url'];
+        $url = (string) $r['page_location'];
 
-        if ( strpos( $page_url, '#' ) !== false ) {
+        if ( strpos( $url, '#' ) !== false ) {
 
-            $parts    = explode( '#', $page_url );
-            $page_url = $parts[0];
+            $url = explode( '#', $url )[0];
         }
 
         return array(
-            'overlay' => trim( base64_encode( $template->makeParamString(
-                array(
-                    'action'         => 'loadPlayer',
-                    'domstream_guid' => $r['domstream_guid'],
-                    'api_url'        => $api_url,
-                ),
-                true,
-                'json'
-            ) ), "\0" ),
-            'url'    => $page_url,
-            'width'  => (int) $r['page_width'],
-            'height' => (int) $r['page_height'],
+            'overlay' => trim( base64_encode( $template->makeParamString( array(
+                'action'  => 'loadPlayer',
+                'api_url' => $api_url,
+            ), true, 'json' ) ), "\0" ),
+            'url'    => $url,
+            'width'  => (int) $r['viewport_w'],
+            'height' => (int) $r['viewport_h'],
+            'label'  => 'Play',
         );
     }
 
-    /** Seconds as h:mm:ss, without pretending a duration is a time of day. */
     private static function asClock( $seconds ) {
 
         $seconds = max( 0, (int) $seconds );
 
-        return sprintf( '%d:%02d:%02d',
-            intdiv( $seconds, 3600 ),
-            intdiv( $seconds % 3600, 60 ),
-            $seconds % 60 );
+        return sprintf( '%d:%02d:%02d', intdiv( $seconds, 3600 ), intdiv( $seconds % 3600, 60 ), $seconds % 60 );
     }
 
-    /** Bytes, at the scale a reader can hold in their head. */
-    private static function asBytes( $bytes ) {
-
-        $bytes = max( 0, (int) $bytes );
-
-        if ( $bytes < 1024 ) {
-
-            return $bytes . ' B';
-        }
-
-        if ( $bytes < 1024 * 1024 ) {
-
-            return round( $bytes / 1024, 1 ) . ' KB';
-        }
-
-        return round( $bytes / ( 1024 * 1024 ), 1 ) . ' MB';
-    }
-
-    /** One result-set cell, in the shape the grid reads. */
     private static function cell( $type, $name, $label, $value, $formatted = null, $dataType = 'string' ) {
 
         return array(
@@ -468,3 +263,5 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         );
     }
 }
+
+?>

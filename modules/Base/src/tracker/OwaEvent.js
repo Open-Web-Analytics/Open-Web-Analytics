@@ -21,10 +21,7 @@ import { Util } from '../common/Util.js';
  * it by another route; and the beacon contract tests capture what logEvent() is
  * HANDED, so a deletion inside logEvent() would be invisible to the fixture that
  * records what the tracker emits.
- *
- * The queued domstream events go through getProperties() too. The player replays
- * them on a fixed interval and never reads their times, so they lose nothing.
- */
+ * */
 const LOCAL_ONLY = { timestamp: true };
 
 

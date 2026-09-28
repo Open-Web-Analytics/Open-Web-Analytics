@@ -2,7 +2,7 @@
 /**
  * Cross-origin overlay fixture provisioner for the self-host e2e runner.
  *
- * The heatmap overlay and the domstream player are the only genuinely
+ * The heatmap overlay and the recording player are the only genuinely
  * cross-origin consumers of the API: they run on the *tracked* site and fetch
  * from the OWA origin. That is why they used JSONP, and why replacing it with
  * CORS needs proving in a browser rather than with curl.
@@ -10,9 +10,10 @@
  * What a spec needs to do that:
  *
  *   provision   a site whose domain host is 'localhost', a document with click
- *               data, a domstream recording, and a scoped overlay token for
- *               each -- returned along with the ids the spec must assert on
- *   cleanup     remove all of it
+ *               data, a recording, and a scoped overlay token for each --
+ *               returned along with the ids the spec must assert on
+ *   cleanup     remove all of it; with --deactivate-domstream, also switch off
+ *               the Domstream module, which provision reports it switched on
  *
  * The 'localhost' domain is the whole trick. The self-host runner serves one
  * php -S on 127.0.0.1, and http://localhost:PORT is a *different origin* from
@@ -79,6 +80,7 @@ const OVERLAY_CONSTRAINTS = 'pagePath==' . OVERLAY_PAGE_PATH . ',eventName==clic
 
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
+require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
 $connected_db = (string) owa_coreAPI::getSetting('base', 'db_name');
@@ -95,9 +97,9 @@ $cmd = $argv[1] ?? '';
 
 switch ($cmd) {
     case 'provision': out(provision()); break;
-    case 'cleanup':   out(cleanup());   break;
+    case 'cleanup':   out(cleanup(($argv[2] ?? '') === '--deactivate-domstream'));   break;
     default:
-        fwrite(STDERR, "Unknown command '$cmd'. Use: provision | cleanup\n");
+        fwrite(STDERR, "Unknown command '$cmd'. Use: provision | cleanup [--deactivate-domstream]\n");
         exit(2);
 }
 
@@ -112,7 +114,7 @@ function db()
 }
 
 /**
- * A site at localhost, a document with clicks, a domstream, and a scoped token
+ * A site at localhost, a document with clicks, a recording, and a scoped token
  * for each overlay.
  */
 function provision(): array
@@ -145,7 +147,7 @@ function provision(): array
     $u->createNewUser($user_id, 'admin', 'pw-' . FIXTURE_TAG, $user_id, 'OWA overlay e2e admin');
     $u->load($u->generateId($user_id), 'user_id');
 
-    $domstream_guid = (string) sprintf('%d', crc32(FIXTURE_TAG . '-ds') + 4000000000);
+    $recording_id = (string) sprintf('%d', crc32(FIXTURE_TAG . '-ds') + 4000000000);
 
     /*
      * NO DOCUMENT ROW, and no owa_click rows either.
@@ -176,20 +178,23 @@ function provision(): array
         fwrite(STDERR, "[overlay_e2e_helper] cube not built: {$cube['status']}\n");
         exit(4);
     }
-    seedDomstream($site_id, $domstream_guid);
-
-    // The player's route is registered by the Domstream module, and a stock
+    // The player's route and tables are the Domstream module's, and a stock
     // install activates 'base' only (Settings.php: 'modules' => array('base')).
     // Without this the /domstreams route simply does not exist, and the request
     // fails during authentication rather than at routing -- the API answers 401
     // "Not authenticated", which reads as a broken credential and is not one.
     // Worth stating because it cost a real debugging detour: the heatmap half of
     // this spec passed throughout, since 'reports' is a Base route.
+    //
+    // INSTALLED, not merely activated: activation flips is_active and creates
+    // no tables, which is what the admin UI and cmd=activate both avoid.
     $domstream_was_active = (bool) owa_coreAPI::getSetting('domstream', 'is_active');
 
     if (!$domstream_was_active) {
-        owa_coreAPI::activateModule('domstream');
+        owa_coreAPI::installModule('domstream');
     }
+
+    seedRecording($site_id, $recording_id);
 
     return [
         'site_id'        => $site_id,
@@ -202,7 +207,7 @@ function provision(): array
          * columns on the click row. Returning an id for a row that does not exist
          * is worse than omitting it.
          */
-        'domstream_guid' => $domstream_guid,
+        'recording_id'   => $recording_id,
         'clicks'         => countClickEvents($site_id),
         // How many DISTINCT points those clicks land on. Fewer than the clicks
         // themselves, which is what lets the spec assert they were weighted
@@ -224,7 +229,7 @@ function provision(): array
             $user_id, 'reports', 'constraints', OVERLAY_CONSTRAINTS, 600
         ),
         'player_token'   => \OWA\Core\OverlayToken::mint(
-            $user_id, 'domstreams', 'domstream_guid', $domstream_guid, 600
+            $user_id, 'domstreams', 'recording_id', $recording_id, 600
         ),
     ];
 }
@@ -359,22 +364,14 @@ function buildOverlayCube(string $site_id): array
     return ['property' => $property_id, 'rows_built' => $rows];
 }
 
-function seedDomstream(string $site_id, string $domstream_guid): void
+function seedRecording(string $site_id, string $recording_id): void
 {
-    $now = time();
-
-    $d = owa_coreAPI::entityFactory('base.domstream');
-    $d->set('id', $d->generateId(FIXTURE_TAG . '-ds'));
-    $d->set('site_id', $site_id);
-    $d->set('domstream_guid', $domstream_guid);
-    $d->set('timestamp', $now);
-    $d->set('yyyymmdd', (int) date('Ymd', $now));
-    $d->set('duration', 12);
-    $d->set('stream', json_encode([
-        ['type' => 'mousemove', 'x' => 10, 'y' => 20, 'ts' => 0],
-        ['type' => 'mousemove', 'x' => 30, 'y' => 40, 'ts' => 1],
-    ]));
-    $d->create();
+    DomstreamFixtures::chunk($site_id, [
+        'recording_id'  => $recording_id,
+        'page_location' => OVERLAY_DOMAIN . OVERLAY_PAGE_PATH,
+        'page_path'     => OVERLAY_PAGE_PATH,
+        'duration_ms'   => 1000,
+    ], [[0, 'm', 10, 20], [500, 'm', 20, 20]]);
 }
 
 function countRows(string $table, string $site_id): int
@@ -388,7 +385,7 @@ function countRows(string $table, string $site_id): int
     return (int) ($row['n'] ?? 0);
 }
 
-function cleanup(): array
+function cleanup(bool $deactivate_domstream = false): array
 {
     $site_id = md5(OVERLAY_DOMAIN);
     $removed = [];
@@ -401,8 +398,11 @@ function cleanup(): array
         try { db()->query('DROP TABLE IF EXISTS ' . $table); } catch (\Throwable $e) {}
     }
 
+    DomstreamFixtures::deleteSite($site_id);
+    $removed['recordings'] = 'cleared';
+
     foreach ([owa_coreAPI::entityFactory('base.event_raw')->getTableName(),
-              'owa_click', 'owa_domstream'] as $table) {
+              'owa_click'] as $table) {
         $db = db();
         $db->deleteFrom($table);
         $db->where('site_id', $site_id);
@@ -420,12 +420,16 @@ function cleanup(): array
     $u->delete(FIXTURE_TAG . '-admin@owatest.example.com', 'user_id');
     $removed['owa_user'] = 'cleared';
 
-    // Put the install back to the base-only default this fixture found it in.
+    // Put the install back to the base-only default this fixture found it in --
+    // only when provision() was what switched the module on. provision() runs
+    // this first, and another spec's seeder may have installed it.
     // persistSetting(..., false) removes the key from the settings blob rather
     // than storing a false, which is exactly the state an unactivated module is
     // in -- see the settings-blob falsy-write behaviour.
-    owa_coreAPI::deactivateModule('domstream');
-    $removed['domstream_module'] = 'deactivated';
+    if ($deactivate_domstream) {
+        owa_coreAPI::deactivateModule('domstream');
+        $removed['domstream_module'] = 'deactivated';
+    }
 
     return ['status' => 'cleaned', 'removed' => $removed];
 }

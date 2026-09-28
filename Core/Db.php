@@ -2529,8 +2529,8 @@ class Db extends \OWA\Core\Base {
      *
      * Ids minted by generateRandomUid() and by the tracker's matching JS begin
      * with a unix timestamp, so the id carries roughly when its session began.
-     * "Roughly" is the operative word: the tracker mints session, visitor and
-     * domstream ids from the BROWSER's clock, which is not ours. Measured
+     * "Roughly" is the operative word: the tracker mints its ids from the
+     * BROWSER's clock, which is not ours. Measured
      * across two installations of 193,057 and 282,109 tracker-minted sessions,
      * a window of two days either side covers 99.93% and 99.91% of them; the
      * tail runs to 5,707 and 88,421 days out, which is a clock set to the wrong

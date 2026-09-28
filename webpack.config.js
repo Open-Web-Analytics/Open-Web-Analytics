@@ -21,11 +21,13 @@ const CopyPlugin = require('copy-webpack-plugin');
 //
 // A manifest may also CONTRIBUTE source to another module's package:
 //   "contributes": { "owa.tracker.js": ["src/tracker/Recorder.js"] }
-// Each listed file (relative to the contributing module) is appended to that
-// package's entry, so it compiles into the same bundle -- after the package's
-// own entry, in module-name order. The contributed code registers itself (the
-// tracker's OWATracker.registerPlugin), so the package's own source names no
-// contributor. A contribution to a package no manifest declares is an error.
+// Each listed file (relative to the contributing module) joins that package's
+// entry, so it compiles into the same bundle -- BEFORE the package's own entry,
+// in module-name order. The contributed code registers itself (the tracker's
+// OWATracker.registerPlugin), and the tracker's entry drains the page's
+// owa_cmds as it runs, so a plugin registered after it would miss the
+// snippet's commands. The package's own source names no contributor. A
+// contribution to a package no manifest declares is an error.
 //
 // A manifest package is one of:
 //   JS  { name, type:'js', entry, outputDir, splitVendors, licence? }
@@ -85,7 +87,8 @@ function jsConfig(moduleName, moduleDir, pkg, contributed = []) {
 	return {
 		name: `${moduleName}:${pkg.name}`,
 		entry: {
-			[pkg.name]: [path.resolve(moduleDir, pkg.entry), ...contributed],
+			// Contributions first: see the manifest notes at the top of this file.
+			[pkg.name]: [...contributed, path.resolve(moduleDir, pkg.entry)],
 		},
 		output: jsOutput(moduleDir, pkg),
 		// A package may declare its own `licence` (a path relative to the module dir),

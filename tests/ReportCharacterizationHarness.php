@@ -27,7 +27,6 @@ final class ReportCharacterizationHarness
      * note), so none of these is a report the harness needs to protect.
      */
     private const PREFETCHING = array(
-        'ReportDomstreams',
         'VisualizationFunnel',
     );
 

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * The heatmap overlay and the domstream player fetch their data cross-origin.
+ * The heatmap overlay and the recording player fetch their data cross-origin.
  *
  * This is the property that JSONP existed to provide, and nothing tested it.
  * Both overlays run on the *tracked* site and fetch from the OWA origin, so
@@ -78,9 +78,9 @@ test.use({
 test.describe('overlays fetch cross-origin @selfhost-only', () => {
 
     test.skip(!SELFHOST,
-        'Provisions a site, clicks and a domstream; runs only under the self-host e2e runner.');
+        'Provisions a site, clicks and a recording; runs only under the self-host e2e runner.');
 
-    /** @type {{site_id:string, page_path:string, constraints:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
+    /** @type {{site_id:string, page_path:string, constraints:string, recording_id:string, heatmap_token:string, player_token:string, clicks:number, domstream_module_activated:boolean}} */
     let fx;
 
     test.beforeAll(() => {
@@ -91,7 +91,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     });
 
     test.afterAll(() => {
-        helper('cleanup');
+        helper('cleanup', ...(fx && fx.domstream_module_activated ? ['--deactivate-domstream'] : []));
     });
 
     /**
@@ -243,9 +243,8 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
                 // siteId is what makeOverlayApiLink's add_state contributes; the
                 // controller declares it required.
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
-                + '&owa_domstream_guid=' + encodeURIComponent(fx.domstream_guid)
+                + '&owa_recording_id=' + encodeURIComponent(fx.recording_id)
                 + '&owa_overlayToken=' + encodeURIComponent(fx.player_token),
-            extra: '&domstream_guid=' + encodeURIComponent(fx.domstream_guid),
         });
 
         const call = fetches[0];
@@ -253,6 +252,10 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         expect(call.status,
             `cross-origin player fetch failed (status ${call.status})\n  body: ${call.body}`
         ).toBe(201);
+
+        // A 201 is also what an unknown recording answers, with no samples.
+        expect(JSON.parse(call.body).data.samples,
+            'the recording came back without its samples').toEqual([[0, 'm', 10, 20], [500, 'm', 20, 20]]);
 
         const corsBlocked = consoleErrors.filter((e) => /CORS|Access-Control/i.test(e));
         expect(corsBlocked, 'the browser reported a CORS failure').toEqual([]);

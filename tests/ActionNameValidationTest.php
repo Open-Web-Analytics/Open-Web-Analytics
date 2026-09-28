@@ -68,7 +68,7 @@ final class ActionNameValidationTest extends TestCase
         // still how third-party module actions load.
         // Any action still implemented by a controller will do; dashboard used
         // to be one and is a report definition now.
-        $controller = \OWA\Core\CoreAPI::moduleFactory('base.reportDomstreams', 'Controller', array());
+        $controller = \OWA\Core\CoreAPI::moduleFactory('base.visualizationFunnel', 'Controller', array());
 
         $this->assertIsObject($controller);
         $this->assertSame('base', $controller->module);

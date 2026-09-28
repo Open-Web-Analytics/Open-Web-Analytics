@@ -3,9 +3,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Open Web Analytics - Domstream</title>
+    <title>Open Web Analytics - Overlay</title>
 </head>
 <body style="text-align: center">
-<iframe src="<?php $view->safeHref($view->url); ?>" width="<?php $view->out(($view->domstream['page_width'] > 0 ? $view->domstream['page_width'] . 'px' : '100%')); ?>" height="<?php $view->out(($view->domstream['page_height'] > 0 ? $view->domstream['page_height'] . 'px' : '100%')); ?>"></iframe>
+<iframe src="<?php $view->safeHref($view->url); ?>" width="100%" height="100%"></iframe>
 </body>
 </html>

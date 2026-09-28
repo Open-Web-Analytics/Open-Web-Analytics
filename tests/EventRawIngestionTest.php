@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/IngestionTestCase.php';
+require_once __DIR__ . '/DomstreamFixtures.php';
 
 /**
  * v2 ingest, end to end: one beacon in, its rows out of owa_event_raw.
@@ -1449,16 +1450,18 @@ final class EventRawIngestionTest extends IngestionTestCase
         $visitor = $this->uniqueGuid();
         $session = $this->uniqueSessionId();
 
-        $this->fireEvent('dom.stream', [
-            'site_id'    => $this->site,
-            'visitor_id' => $visitor,
-            'session_id' => $session,
-            'page_url'   => 'https://owa-test-site/v2/stream',
-            'domstream_guid' => $this->uniqueGuid(),
-            'stream_events'  => '[]',
-            'duration'       => 1,
-            'stream_length'  => 0,
+        $this->fireEvent('domstream', [
+            'site_id'       => $this->site,
+            'visitor_id'    => $visitor,
+            'session_id'    => $session,
+            'page_location' => 'https://owa-test-site/v2/stream',
+            'recording_id'  => $this->uniqueGuid(),
+            'seq'           => 1,
+            'samples'       => '[[0,"s",1]]',
         ]);
+
+        // Where the Domstream module is active the chunk went to its tables.
+        DomstreamFixtures::deleteSite($this->site);
 
         $this->assertSame([], $this->rowsFor($this->site, $visitor, $session));
     }

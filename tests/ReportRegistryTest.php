@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/ReportCharacterizationHarness.php';
+require_once __DIR__ . '/DomstreamFixtures.php';
 
 use OWA\Tests\ReportCharacterizationHarness as Harness;
 
@@ -108,7 +109,19 @@ final class ReportRegistryTest extends TestCase
 
         // Every report reachable as an action must be reachable as an id, or
         // moving nav onto ids would silently drop reports out of the interface.
-        foreach ( glob( OWA_DIR . 'modules/Base/Controller/Report*.php' ) as $file ) {
+        // Asked of every ACTIVE module: an inactive one registers neither.
+        $files = array();
+
+        foreach ( \OWA\Core\CoreAPI::serviceSingleton()->modules as $module ) {
+            foreach ( (array) glob( $module->path . 'Controller/Report*.php' ) as $file ) {
+                $files[ $file ] = $module->name;
+            }
+        }
+
+        $this->assertArrayHasKey( OWA_MODULES_DIR . 'Base/Controller/ReportsRest.php', $files,
+            'no controllers were found -- this asserts nothing without them' );
+
+        foreach ( $files as $file => $module_name ) {
 
             $name = basename( $file, '.php' );
 
@@ -122,7 +135,7 @@ final class ReportRegistryTest extends TestCase
                 continue;
             }
 
-            $action = 'base.' . lcfirst( $name );
+            $action = $module_name . '.' . lcfirst( $name );
 
             $this->assertContains( $action, $controllers,
                 "$action has no report id, so it would be unreachable once nav moves to ids" );
@@ -158,9 +171,15 @@ final class ReportRegistryTest extends TestCase
     {
         $this->requireDb();
 
-        $direct = (array) ( new $class( array() ) )->doAction();
-        $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => $id ) ) )->doAction();
+        $restore = DomstreamFixtures::registerReport();
+
+        try {
+            $direct = (array) ( new $class( array() ) )->doAction();
+            $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
+                array( 'reportId' => $id ) ) )->doAction();
+        } finally {
+            $restore();
+        }
 
         foreach ( self::DEFINING as $key ) {
 
@@ -177,7 +196,7 @@ final class ReportRegistryTest extends TestCase
     public static function sampleReportProvider(): array
     {
         /*
-         * The bespoke report -- singular now.
+         * The bespoke report -- singular now, and a module's: Base has none.
          *
          * The funnel was the other one. It is not a registered report any more:
          * it became a VISUALIZATION, which is a row on owa_custom_report drawn
@@ -185,12 +204,11 @@ final class ReportRegistryTest extends TestCase
          * registered id. So there is no registry route to compare a direct
          * route against.
          *
-         * domstreams prefetches result sets, so it is also the one the
-         * characterization harness cannot snapshot; this is the coverage it
-         * gets instead.
+         * domstreams prefetches result sets, so the characterization harness
+         * could not snapshot it; this is the coverage it gets instead.
          */
         return array(
-            'bespoke stays'  => array( 'domstreams', '\OWA\Module\Base\Controller\ReportDomstreams' ),
+            'bespoke stays'  => array( 'domstreams', '\OWA\Module\Domstream\Controller\ReportDomstreams' ),
         );
     }
 

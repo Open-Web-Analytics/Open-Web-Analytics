@@ -172,7 +172,7 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
-     * Authenticates a heatmap-overlay or domstream-player request.
+     * Authenticates an overlay request (the heatmap, or a module's).
      *
      * These run on the *tracked* site and call back to the OWA origin, so they
      * are cross-origin: a session cookie would be a third-party cookie, and an

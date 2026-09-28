@@ -68,8 +68,8 @@ class CustomReport extends \OWA\Core\Entity {
          * A report CONFIGURES a query: metrics against dimensions, drawn by one
          * of the widget types. A visualization COMPUTES -- a funnel counts
          * ordered stages over the event stream, which no arrangement of metrics
-         * and dimensions expresses. That distinction is why goal-funnel and
-         * domstreams kept controllers when 62 of 64 reports became JSON.
+         * and dimensions expresses. That distinction is why goal-funnel kept a
+         * controller when 62 of 64 reports became JSON.
          *
          * Two types on one table rather than two tables, because everything
          * around them is identical: access control, ownership, editable titles,

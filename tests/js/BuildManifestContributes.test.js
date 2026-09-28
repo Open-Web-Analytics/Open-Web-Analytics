@@ -8,8 +8,12 @@ const { discoverConfigs } = require('../../webpack.config.js');
 
 /**
  * A module compiles source into ANOTHER module's bundle by listing it under
- * `contributes` in its build manifest. The file is appended to that package's
- * entry, so the package's own source never names the contributor.
+ * `contributes` in its build manifest. The file joins that package's entry,
+ * so the package's own source never names the contributor.
+ *
+ * It runs BEFORE the package's own entry. The tracker's entry drains the
+ * page's owa_cmds as it runs, so a plugin registered after it would never see
+ * the snippet's command to start it.
  */
 
 function modulesDir(manifests) {
@@ -25,7 +29,7 @@ const CORE = {
     packages: [{ name: 'core.js', type: 'js', entry: 'src/core.js', outputDir: 'dist', splitVendors: false }],
 };
 
-test('a contributed file is appended to the target package\'s entry', () => {
+test('a contributed file joins the target package\'s entry, ahead of its own', () => {
     const dir = modulesDir({
         Core: CORE,
         Addon: { contributes: { 'core.js': ['src/plugin.js'] } },
@@ -34,8 +38,8 @@ test('a contributed file is appended to the target package\'s entry', () => {
     const [config] = discoverConfigs(dir);
 
     expect(config.entry['core.js']).toEqual([
-        path.join(dir, 'Core', 'src/core.js'),
         path.join(dir, 'Addon', 'src/plugin.js'),
+        path.join(dir, 'Core', 'src/core.js'),
     ]);
 });
 
@@ -51,9 +55,14 @@ test('a contribution to a package nobody declares fails the build', () => {
     expect(() => discoverConfigs(dir)).toThrow(/contributes to 'missing.js'/);
 });
 
-test('the real tree: the tracker bundle\'s entry starts with Base\'s own entry', () => {
+test('the real tree: the recorder is compiled into the tracker ahead of Base\'s entry', () => {
     const configs = discoverConfigs(path.resolve(__dirname, '../../modules'));
     const tracker = configs.find((c) => c.entry['owa.tracker.js']);
+    const entry = tracker.entry['owa.tracker.js'];
 
-    expect(tracker.entry['owa.tracker.js'][0]).toMatch(/modules[\\/]Base[\\/]src[\\/]tracker[\\/]tracker-dom\.js$/);
+    expect(entry[entry.length - 1]).toMatch(/modules[\\/]Base[\\/]src[\\/]tracker[\\/]tracker-dom\.js$/);
+
+    // The Domstream module's recorder is compiled in from the module's source.
+    expect(entry.some((f) =>
+        /modules[\\/]Domstream[\\/]src[\\/]tracker[\\/]Recorder\.js$/.test(f))).toBe(true);
 });

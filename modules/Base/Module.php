@@ -192,10 +192,9 @@ class Module extends \OWA\Core\Module {
      * invoked. CommandQueue dispatches any tracker method by name, so a site could
      * always have pushed them -- but nothing told it to, and nothing shipped them.
      *
-     * SCROLL WAS WORSE THAN ABSENT. The depth check hung off the domstream
-     * recorder's scroll binding, reachable only through its streamBindings, so
-     * scroll events fired on installs with that module active, for the sampled
-     * fraction of visitors, and nowhere else -- a first-class event gated on an
+     * SCROLL WAS WORSE THAN ABSENT. The depth check hung off another feature's
+     * scroll binding, so scroll events fired only on installs with that module
+     * active, for its sampled fraction of visitors, and nowhere else -- a first-class event gated on an
      * unrelated feature's sample rate. The two are separate features sharing a DOM
      * event and each binds its own listener now.
      *
@@ -305,7 +304,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli',         'Controller/PartitionRotateCli.php' );
         $this->registerAction( 'base.report',                        'OWA\\Module\\Base\\Controller\\Report',                        'Controller/Report.php' );
-        $this->registerAction( 'base.reportDomstreams',              'OWA\\Module\\Base\\Controller\\ReportDomstreams',             'Controller/ReportDomstreams.php' );
         $this->registerAction( 'base.reportsRest',                   'OWA\\Module\\Base\\Controller\\ReportsRest',                  'Controller/ReportsRest.php' );
         $this->registerAction( 'base.resetSecretsCli',               'OWA\\Module\\Base\\Controller\\ResetSecretsCli',              'Controller/ResetSecretsCli.php' );
         $this->registerAction( 'base.siteAddAllowedUserRest',        'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest',       'Controller/SiteAddAllowedUserRest.php' );
@@ -765,7 +763,6 @@ class Module extends \OWA\Core\Module {
          * searches and as the sessions that searched.
          */
         $this->registerReport( 'site-search', 'reports/site-search.json' );
-        $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
         $this->registerReport( 'entry-pages', 'reports/entry-pages.json' );

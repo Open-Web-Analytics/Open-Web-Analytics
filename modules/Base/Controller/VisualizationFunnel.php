@@ -45,8 +45,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
     /**
      * The segment -- which people the funnel is drawn for -- is not the
-     * funnel's own idea. It lives in ReportSegment, which the domstreams report
-     * uses too, so a constraint means the same thing in both: it picks the
+     * funnel's own idea. It lives in ReportSegment, which any report may use,
+     * so a constraint means the same thing wherever it is: it picks the
      * PEOPLE, and their whole activity is then counted.
      *
      * @var \OWA\Module\Base\Classes\ReportSegment|null
@@ -878,9 +878,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     /**
      * What the filter control may constrain on.
      *
-     * Delegated, because the funnel's segment is the same segment the
-     * domstreams report uses and a picker that offered different choices in the
-     * two places would be lying about one of them.
+     * Delegated, because the funnel's segment is the same ReportSegment other
+     * reports use, and a picker that offered different choices in two places
+     * would be lying about one of them.
      *
      * @return array {dimensions, metrics} in the shape the picker reads
      */

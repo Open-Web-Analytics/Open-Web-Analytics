@@ -251,8 +251,8 @@ class EventDispatch {
      * Every listener id for a dispatch name: the exact registrations, then each
      * namespace the name falls under.
      *
-     * Walks the dotted segments from the outside in, so `tracking.dom.stream` is
-     * heard by `tracking.*` and by `tracking.dom.*`. De-duplicated, so a handler
+     * Walks the dotted segments from the outside in, so `tracking.acme.signup`
+     * is heard by `tracking.*` and by `tracking.acme.*`. De-duplicated, so a handler
      * registered both by name and by namespace runs once.
      *
      * @param  string $dispatch_name

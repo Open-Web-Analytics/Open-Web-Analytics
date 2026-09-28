@@ -42,9 +42,18 @@ describe('per-module build manifest discovery', () => {
     test('every declared package is well-formed and its inputs exist', () => {
         for (const { module, manifest } of manifests) {
             const moduleDir = path.join(modulesDir, module);
-            expect(Array.isArray(manifest.packages)).toBe(true);
 
-            for (const pkg of manifest.packages) {
+            // A manifest builds packages, contributes to another's, or both.
+            expect(Array.isArray(manifest.packages) || typeof manifest.contributes === 'object').toBe(true);
+
+            for (const [target, files] of Object.entries(manifest.contributes || {})) {
+                expect(typeof target).toBe('string');
+                for (const file of files) {
+                    expect(fs.existsSync(path.join(moduleDir, file))).toBe(true);
+                }
+            }
+
+            for (const pkg of manifest.packages || []) {
                 expect(typeof pkg.name).toBe('string');
                 expect(['js', 'css']).toContain(pkg.type);
                 expect(typeof pkg.outputDir).toBe('string');
@@ -80,7 +89,7 @@ describe('per-module build manifest discovery', () => {
         expect(Array.isArray(configs)).toBe(true);
 
         const expectedNames = manifests.flatMap(({ module, manifest }) =>
-            manifest.packages.map((p) => `${module}:${p.name}`)
+            (manifest.packages || []).map((p) => `${module}:${p.name}`)
         ).sort();
         const actualNames = configs.map((c) => c.name).sort();
         expect(actualNames).toEqual(expectedNames);
@@ -91,7 +100,7 @@ describe('per-module build manifest discovery', () => {
         const byName = Object.fromEntries(configs.map((c) => [c.name, c]));
 
         for (const { module, manifest } of manifests) {
-            for (const pkg of manifest.packages) {
+            for (const pkg of manifest.packages || []) {
                 const cfg = byName[`${module}:${pkg.name}`];
                 expect(cfg).toBeDefined();
                 // The package name IS the emitted filename (keeps PHP paths stable).

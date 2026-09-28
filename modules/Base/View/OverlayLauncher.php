@@ -33,8 +33,7 @@ class OverlayLauncher extends \OWA\Core\View {
  
     function render() {
         // Assign Data to templates
-         $this->t->set_template('player_overlay.php');
-        $this->t->set('domstream', $this->get('domstream'));
+         $this->t->set_template('overlay_launcher.php');
         $this->t->set('url', $this->get('url'));
     }
 }

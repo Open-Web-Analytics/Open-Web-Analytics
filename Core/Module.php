@@ -810,7 +810,7 @@ abstract class Module {
      * ...or an array naming a controller, for a report that is not
      * configuration and never will be:
      *
-     *     $this->registerReport( 'domstreams', [ 'controller' => 'base.reportDomstreams' ] );
+     *     $this->registerReport( 'recordings', [ 'controller' => 'acme.reportRecordings' ] );
      *
      * That second form is what lets the registry be the single indirection for
      * every report. Conversion order stops mattering, because a config that says
@@ -1237,13 +1237,13 @@ abstract class Module {
     /**
      * Route tracking events of these types to a processor action.
      *
-     * The type is the name the tracker sends -- page_view, domstream -- and it
+     * The type is the name the tracker sends -- page_view, a module's own -- and it
      * is registered under its dispatch name, tracking.<type>. An exact name
      * outranks the tracking.* wildcard Base holds for custom events, so a
      * module's type never reaches Base's processor.
      *
      * @param string|string[] $event_types current names
-     * @param string          $processor   an action, e.g. domstream.processEvent
+     * @param string          $processor   an action, e.g. acme.processEvent
      */
     function addTrackingEventProcessor( $event_types, $processor ) {
 

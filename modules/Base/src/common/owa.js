@@ -29,7 +29,6 @@ class OWA {
 	     */
 	    this.overlayModes = {
 	        loadHeatmap: ( p ) => this.loadHeatmap( p ),
-	        loadPlayer:  ( p ) => this.loadPlayer( p ),
 	    };
 	    this.config = {
 	        // The WIRE namespace: cookie names, the owa_state cross-domain
@@ -324,22 +323,6 @@ class OWA {
         });
     }
     
-    loadPlayer() {
-	    
-        this.debug("about to load Domstream Player");
-        
-        var that = this;
-
-        Util.loadCss(this.getSetting('baseUrl')+'public/base/css/owa.overlay.css', function(){});
-
-	    // dynamic import of the Player class
-	    import(/* webpackChunkName: "owa.player" */ '../tracker/Player.js').then( ( { Player } ) => { 
-			that.debug("Loading Domstream Player");
-            that.overlay = new Player();   
-            that.overlay.init(); 
-        });    
-    }
-    
     startOverlaySession(p) {
         
         // set global is overlay actve flag
@@ -348,7 +331,7 @@ class OWA {
         // Hold the overlay params for this page's lifetime.
         //
         // They used to be written to an owa_overlay cookie on the TRACKED
-        // site's own domain, so Heatmap.fetchData() and Player.fetchData()
+        // site's own domain, so the overlays' fetchData()
         // could read api_url back out -- which meant every other script on
         // that page could read the credential in it, and the browser re-sent
         // it to that site on every request. The params only ever need to
@@ -387,7 +370,7 @@ class OWA {
     /**
      * The params for the overlay session running on this page, or null.
      *
-     * Heatmap.fetchData() and Player.fetchData() read api_url from here. If
+     * The overlays' fetchData() read api_url from here. If
      * this is missing they get undefined, jQuery.ajax is called with an
      * undefined URL, and the overlay silently never draws -- so it is covered
      * by tests/js/OverlayParamsInMemory.test.js rather than trusted.

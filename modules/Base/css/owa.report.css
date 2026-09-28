@@ -556,7 +556,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
  * report means the next report to reuse a control inherits none of it and the
  * bar comes apart -- which is what these rules exist to prevent.
  *
- * Used by the goal funnel and by domstreams.
+ * Used by the goal funnel and by module reports.
  * ------------------------------------------------------------------------- */
 
 .owa .owa_reportControls {
@@ -1039,7 +1039,7 @@ li.constraintRow {
 }
 
 /* Still used by the report-level control bar (the funnel's scope switch, the
-   domstreams filter). The GRID's bar no longer has labels at all. */
+   filters of module reports). The GRID's bar no longer has labels at all. */
 .controlItem .label {
     font-size: 10px;
     padding-top: 7px;

@@ -3,7 +3,7 @@ import { Util as OwaUtil } from '../common/Util.js';
 
 // Pin webpack's runtime publicPath to the public/ asset tree.
 //
-// The tracker's async chunks (owa.vendors / owa.heatmap / owa.player -- all
+// The tracker's async chunks (owa.vendors, and the overlays -- all
 // admin-overlay-only, loaded via import()) now live in public/base/dist/, NOT
 // beside this file. By default webpack derives the chunk base from
 // document.currentScript.src, which is WRONG for an old embed that is 301'd from

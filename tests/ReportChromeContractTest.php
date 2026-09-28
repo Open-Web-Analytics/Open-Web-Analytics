@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/ReportCharacterizationHarness.php';
+require_once __DIR__ . '/DomstreamFixtures.php';
 
 use OWA\Tests\ReportCharacterizationHarness as Harness;
 
@@ -62,7 +63,7 @@ final class ReportChromeContractTest extends TestCase
      * named the single report that tolerated it. Neither of the two now left
      * does. VisualizationFunnel reads `period`, `startDate` and `endDate`, so a
      * sentinel in those overwrites the very date picker under test; and
-     * ReportDomstreams pages its results, so a sentinel in `page` reaches
+     * the recordings report pages its results, so a sentinel in `page` reaches
      * arithmetic and raises a TypeError before doAction() returns.
      *
      * Hence real parameters, one report at a time. Each is the smallest set
@@ -76,11 +77,13 @@ final class ReportChromeContractTest extends TestCase
     {
         return array(
             // Resolves an id: which goal's funnel to draw.
-            'VisualizationFunnel' => array( 'VisualizationFunnel', array( 'goalNumber' => 1 ) ),
+            'VisualizationFunnel' => array( '\OWA\Module\Base\Controller\VisualizationFunnel',
+                array( 'goalNumber' => 1 ) ),
 
-            // Paged, and reached without a document -- its "latest domstreams"
-            // mode, which is the one that needs no fixture.
-            'ReportDomstreams' => array( 'ReportDomstreams', array( 'page' => 1 ) ),
+            // A module's report. Paged, and reached without a page path -- its
+            // "latest recordings" mode, which is the one that needs no fixture.
+            'ReportDomstreams' => array( '\OWA\Module\Domstream\Controller\ReportDomstreams',
+                array( 'page' => 1 ) ),
         );
     }
 
@@ -126,13 +129,11 @@ final class ReportChromeContractTest extends TestCase
     /**
      * @dataProvider reportProvider
      */
-    public function testAReportComesWithItsSiteFilterAndDatePicker( string $name, array $params ): void
+    public function testAReportComesWithItsSiteFilterAndDatePicker( string $class, array $params ): void
     {
-        $class = '\OWA\Module\Base\Controller\\' . $name;
-
         $data = (array) ( new $class( $params ) )->doAction();
 
-        $this->assertHasChrome( $data, $name );
+        $this->assertHasChrome( $data, $class );
     }
 
     /**
@@ -210,9 +211,15 @@ final class ReportChromeContractTest extends TestCase
         // no registry route for a direct route to be compared against.
         $params = array();
 
-        $direct = (array) ( new \OWA\Module\Base\Controller\ReportDomstreams( $params ) )->doAction();
-        $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'domstreams' ) + $params ) )->doAction();
+        $restore = DomstreamFixtures::registerReport();
+
+        try {
+            $direct = (array) ( new \OWA\Module\Domstream\Controller\ReportDomstreams( $params ) )->doAction();
+            $viaId  = (array) ( new \OWA\Module\Base\Controller\Report(
+                array( 'reportId' => 'domstreams' ) + $params ) )->doAction();
+        } finally {
+            $restore();
+        }
 
         $directKeys = array_keys( $direct['params'] );
         $viaIdKeys  = array_keys( $viaId['params'] );
@@ -275,15 +282,15 @@ final class ReportChromeContractTest extends TestCase
      * Was ReportPages, then ReportHostDetail, then ReportCampaigns, then
      * ReportGoals; all four are configuration now and have no action left.
      * Then ReportTransactionDetail, until that report was removed outright.
-     * domstreams still prefetches -- it fetches recordings from its own
-     * module's API -- so it keeps its own action.
+     * The recordings report is a controller in its own module, so it keeps
+     * its own action.
      */
     public function testTheDirectRouteKeepsItsOriginalContainerId(): void
     {
-        $data = (array) ( new \OWA\Module\Base\Controller\ReportDomstreams(
-            array( 'do' => 'base.reportDomstreams', 'page' => 1 ) ) )->doAction();
+        $data = (array) ( new \OWA\Module\Domstream\Controller\ReportDomstreams(
+            array( 'do' => 'domstream.reportDomstreams', 'page' => 1 ) ) )->doAction();
 
-        $this->assertSame( 'base-reportDomstreams', $data['dom_id'] );
+        $this->assertSame( 'domstream-reportDomstreams', $data['dom_id'] );
     }
 
 

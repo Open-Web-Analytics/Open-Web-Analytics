@@ -1,27 +1,22 @@
 /**
- * The Play link on a domstream recording, rendered by a NAMED formatter.
+ * A link that opens a page in an overlay session, rendered by a NAMED
+ * formatter (overlayLink).
  *
  * WHY THE CELL CARRIES DATA AND NOT MARKUP
  *
- * The report used to build this anchor itself, in a template, out of a
- * base64-encoded parameter blob, a URL and two viewport numbers. Moving the
- * list into the standard grid meant the anchor had to come from somewhere the
- * grid understands, and the grid understands two things: a value, and the name
- * of a formatter for it.
- *
- * Naming the formatter is what keeps it that way. The cell holds
- * {overlay, url, width, height} -- data -- and this function is the single
- * place that turns it into HTML, which is also the single place it can be
- * escaped. A report that assembled the anchor itself would be handing the grid
- * markup, and the grid has no way to tell markup it built from markup it was
- * given.
+ * A grid understands two things: a value, and the name of a formatter for it.
+ * The cell holds {overlay, url, width, height, label} -- data -- and this
+ * function is the single place that turns it into HTML, which is also the
+ * single place it can be escaped. A report that assembled the anchor itself
+ * would be handing the grid markup, and the grid has no way to tell markup it
+ * built from markup it was given.
  *
  * WHAT THE HREF IS
  *
- * The recorded page, with the player's parameters on the FRAGMENT. That is how
- * the overlay reaches the tracker running on that page; the fragment never
- * leaves the browser, which is also why the payload can be a blob rather than
- * query parameters.
+ * The page, with the overlay's parameters on the FRAGMENT. That is how the
+ * overlay reaches the tracker running on that page; the fragment never leaves
+ * the browser, which is also why the payload can be a blob rather than query
+ * parameters. A module's report (the Domstream recordings' Play link) names it.
  */
 const path = require('path');
 const fs = require('fs');
@@ -37,7 +32,7 @@ function loadFormatter() {
         'utf8'
     );
 
-    const start = src.indexOf('domstreamPlayer : function');
+    const start = src.indexOf('overlayLink : function');
     expect(start).toBeGreaterThan(-1);
 
     const decl = src.slice(src.indexOf('function', start));
@@ -62,15 +57,20 @@ const PAYLOAD = {
 /* jqGrid hands a formatter the whole cell, not the value. */
 const cell = (value) => ({ value: value, formatted_value: 'Play' });
 
-describe('domstreamPlayer formatter', () => {
+describe('overlayLink formatter', () => {
 
     const fmt = loadFormatter();
 
-    test('renders a play link', () => {
-        const html = fmt(cell(PAYLOAD));
+    test('renders a link labelled by the cell', () => {
+        const html = fmt(cell(Object.assign({ label: 'Play' }, PAYLOAD)));
 
-        expect(html).toContain('class="play"');
+        expect(html).toContain('class="owa_overlayLink"');
         expect(html).toContain('>Play</a>');
+    });
+
+    test('a cell with no label is an Open link, and a label is escaped', () => {
+        expect(fmt(cell(PAYLOAD))).toContain('>Open</a>');
+        expect(fmt(cell(Object.assign({ label: '<b>x</b>' }, PAYLOAD)))).toContain('>&lt;b&gt;x&lt;/b&gt;</a>');
     });
 
     test('the href is the recorded page with the overlay on the fragment', () => {

@@ -253,44 +253,46 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
         });
     });
 
-    // Fill the queue past domstreamEventThreshold (default 10) so logDomStream()
-    // actually emits. Each entry is a click event's flattened props.
-    function seedDomStream(t, n) {
+    // A recording chunk: the largest payload the tracker sends, a JSON blob in
+    // one property. Built directly -- the transport is under test, not the
+    // recorder that makes these (DomstreamRecorder.test.js).
+    function sendChunk(t, n) {
+        const samples = [];
         for (let i = 0; i < n; i++) {
-            const e = t.makeEvent();
-            e.setEventType('click');
-            e.set('dom_element_tag', 'a');
-            t.addToEventQueue(e);
+            samples.push([10, 'c', i, i, 'a', 'x&y=#' + i, '']);
         }
+        const e = t.makeEvent();
+        e.setEventType('domstream');
+        e.set('samples', JSON.stringify(samples));
+        e.set('seq', n);
+        t.trackEvent(e);
     }
 
-    test('a small domstream on the GET path rides complete + encoded, not truncated', () => {
-        // Domstream packs the whole queue into stream_events = JSON.stringify(queue).
-        // When that still fits under getRequestCharacterLimit it takes the GET pixel
-        // path -- the exact path the value-encoding fix touches. The blob is riddled
-        // with '{' '"' ':' ',' and can hold '&'/'='/'#' inside captured DOM values;
-        // before the fix those rode raw and truncated the beacon. Assert the blob is
-        // percent-encoded AND that stream_length (assembled AFTER it) still arrives.
+    test('a small chunk on the GET path rides complete + encoded, not truncated', () => {
+        // When the blob still fits under getRequestCharacterLimit it takes the GET
+        // pixel path -- the exact path the value-encoding fix touches. The blob is
+        // riddled with '[' '"' ':' ',' and holds '&'/'='/'#' inside captured DOM
+        // values; before the fix those rode raw and truncated the beacon. Assert
+        // the blob is percent-encoded AND that seq (assembled AFTER it) arrives.
         const spy = installImageSpy();
         try {
             const t = newTracker();
-            seedDomStream(t, 12);
-            t.logDomStream();
+            sendChunk(t, 12);
 
             expect(spy.sent).toHaveLength(1);            // small blob -> GET pixel
             const url = spy.sent[0];
-            expect(url).toMatch(/[?&]event_type=dom\.stream/);
+            expect(url).toMatch(/[?&]event_type=domstream/);
             // The raw JSON must NOT appear -- it would mean unencoded structural chars.
-            expect(url).not.toContain('stream_events=[{"');
-            expect(url).toMatch(new RegExp('[?&]stream_events=' + escapeRe(encodeURIComponent('[{'))));
+            expect(url).not.toContain('samples=[[');
+            expect(url).toMatch(new RegExp('[?&]samples=' + escapeRe(encodeURIComponent('[['))));
             // A param assembled after the blob still reached the wire (no truncation).
-            expect(url).toMatch(/[?&]stream_length=12/);
+            expect(url).toMatch(/[?&]seq=12/);
         } finally {
             spy.restore();
         }
     });
 
-    test('a large domstream falls to cdPost with the RAW blob (POST path untouched)', () => {
+    test('a large chunk falls to cdPost with the RAW blob (POST path untouched)', () => {
         // A queue big enough to blow past the limit routes to cdPost (POST iframe),
         // which uses prepareRequestData -- NOT prepareRequestDataForGet -- and lets
         // the browser encode on form submit. This path is byte-for-byte unchanged by
@@ -303,16 +305,15 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             const posted = [];
             t.cdPost = (data) => { posted.push(data); };
 
-            seedDomStream(t, 12);
-            t.logDomStream();
+            sendChunk(t, 12);
 
             expect(spy.sent).toHaveLength(0);            // never took the pixel path
             expect(posted).toHaveLength(1);              // went out via cdPost (POST)
             const data = posted[0];
-            expect(data['event_type']).toBe('dom.stream');
-            // cdPost does NOT encode -- the '{' '"' ':' ride verbatim in the form value.
-            expect(data['stream_events']).toContain('"event_type":"click"');
-            expect(data['stream_length']).toBe(12);
+            expect(data['event_type']).toBe('domstream');
+            // cdPost does NOT encode -- the '[' '"' ',' ride verbatim in the form value.
+            expect(data['samples']).toContain('[10,"c",0,0,"a","x&y=#0",""]');
+            expect(data['seq']).toBe(12);
         } finally {
             spy.restore();
         }
@@ -375,9 +376,9 @@ describe('iframe POST fallback builds its form through the standard DOM', () => 
         const { tracker, doc, appended } = trackerWithWritableIframeDocument();
 
         tracker.postFromIframe(document.createElement('iframe'), {
-            event_type: 'dom.stream',
+            event_type: 'domstream',
             site_id: 'transport-site',
-            stream_length: 12,
+            seq: 12,
         });
 
 
@@ -398,16 +399,16 @@ describe('iframe POST fallback builds its form through the standard DOM', () => 
             named[i.getAttribute('name')] = i.getAttribute('value');
         });
 
-        expect(named['event_type']).toBe('dom.stream');
+        expect(named['event_type']).toBe('domstream');
         expect(named['site_id']).toBe('transport-site');
-        expect(named['stream_length']).toBe('12');
+        expect(named['seq']).toBe('12');
         expect(Object.keys(named)).not.toContain('null');
     });
 
     test('the form itself is named, which is how the iframe finds it to submit', () => {
         const { tracker, doc, appended } = trackerWithWritableIframeDocument();
 
-        tracker.postFromIframe(document.createElement('iframe'), { event_type: 'dom.stream' });
+        tracker.postFromIframe(document.createElement('iframe'), { event_type: 'domstream' });
 
         const form = appended[0];
 
@@ -420,7 +421,7 @@ describe('iframe POST fallback builds its form through the standard DOM', () => 
     test('the hidden iframe is 1x1 and named for the form to target', () => {
         const t = newTracker();
 
-        t.generateHiddenIframe(document.body, { event_type: 'dom.stream' });
+        t.generateHiddenIframe(document.body, { event_type: 'domstream' });
 
         const ifr = document.querySelector('iframe.owa-tracker-post-iframe');
 

@@ -185,12 +185,11 @@ final class DispatchNameSeparationTest extends TestCase
     /**
      * NOTHING REGISTERS FOR A TRACKING EVENT UNDER ITS BARE NAME.
      *
-     * The failure this catches, which cost a red isolation sweep: the domstream
-     * ingestion test attached its fallback handler to `dom.stream` while the module
-     * attaches to `tracking.dom.stream`. listenersFor() walks the dotted segments
-     * of the DISPATCH name -- for tracking.dom.stream it looks at
-     * tracking.dom.stream, tracking.* and tracking.dom.*, and never at dom.stream
-     * -- so the handler was registered and unreachable.
+     * The failure this catches, which cost a red isolation sweep: an ingestion
+     * test attached its fallback handler to the bare event name while the module
+     * attached to `tracking.<name>`. listenersFor() walks the dotted segments of
+     * the DISPATCH name and never reaches the bare one, so the handler was
+     * registered and unreachable.
      *
      * It was invisible wherever the module is ON, because the fallback is skipped
      * there. It only failed on a fresh install, which is the isolation sweep: the

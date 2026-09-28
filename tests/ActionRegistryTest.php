@@ -204,11 +204,12 @@ final class ActionRegistryTest extends TestCase
 
         // Any registered action will do -- this is about the RESOLUTION path,
         // not about which report happens to still have a controller. It named
-        // reportDashboard until dashboard became a report definition.
-        $this->assertArrayHasKey('base.reportDomstreams', $map);
+        // reportDashboard until dashboard became a report definition, then
+        // reportDomstreams until recordings moved to their own module.
+        $this->assertArrayHasKey('base.visualizationFunnel', $map);
         $this->assertSame(
-            'OWA\\Module\\Base\\Controller\\ReportDomstreams',
-            $map['base.reportDomstreams']['class_name']
+            'OWA\\Module\\Base\\Controller\\VisualizationFunnel',
+            $map['base.visualizationFunnel']['class_name']
         );
     }
 }

@@ -74,7 +74,7 @@ foreach (['base.restApi', 'base.users', 'base.adminPage', 'base.mail'] as $view)
     $try('view', $view, fn() => \OWA\Core\CoreAPI::moduleFactory($view, 'View', []));
 }
 
-foreach (['base.userHandlers', 'base.notifyHandlers', 'domstream.domstreamHandlers'] as $h) {
+foreach (['base.userHandlers', 'base.notifyHandlers', 'base.eventRawHandlers'] as $h) {
     [$module, $file] = explode('.', $h);
     $try('handler', $h, fn() => \OWA\Core\CoreAPI::moduleGenericFactory($module, 'handlers', $file));
 }

@@ -86,7 +86,7 @@ final class OverlayTokenTest extends TestCase
         // The resource arriving under a different parameter than the token
         // names does not satisfy it.
         $this->assertFalse(\OWA\Core\OverlayToken::permits(
-            $token, 'reports', $this->request(['domstream_guid' => 'doc-12345'])
+            $token, 'reports', $this->request(['recording_id' => 'doc-12345'])
         ));
 
         // Omitting the parameter entirely must not pass unchecked.
@@ -121,7 +121,7 @@ final class OverlayTokenTest extends TestCase
             ['user_id' => 'admin'],
             ['action' => 'sites'],
             ['resource' => 'doc-99999'],
-            ['resource_key' => 'domstream_guid'],
+            ['resource_key' => 'recording_id'],
             ['exp' => time() + 999999],
         ] as $edit) {
             $edited  = array_merge($claims, $edit);
