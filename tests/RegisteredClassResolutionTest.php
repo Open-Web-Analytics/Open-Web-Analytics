@@ -86,16 +86,15 @@ final class RegisteredClassResolutionTest extends TestCase
     }
 
     /**
-     * Every distinct metric CLASS referenced by the metric registry loads
-     * through the require_once seam and its synthesized class name resolves.
+     * Every distinct metric CLASS referenced by the metric registry exists
+     * under the name metricFactory() resolves it by.
      *
      * Metrics are registered as definition arrays whose 'class' key is the
      * dotted id of the class that implements them (most point at the single
      * parametric 'base.configurableMetric'; the rest are bespoke metric
-     * classes). We assert the CLASS loads rather than instantiating, because
-     * the parametric metric cannot be constructed without its per-metric params
-     * — but its class-name synthesis + require is precisely the seam behavior
-     * the migration must preserve.
+     * classes). base.configurableMetric is
+     * OWA\Module\Base\Metric\ConfigurableMetric, by convention -- the legacy
+     * owa_configurableMetric name is retired, and OWA never needs it.
      */
     public function testEveryRegisteredMetricClassLoads(): void
     {
@@ -133,21 +132,19 @@ final class RegisteredClassResolutionTest extends TestCase
         $failures = [];
         foreach ($classes as $dotted) {
             [$module, $file] = explode('.', $dotted);
-            $class = 'owa_' . $file;
+            $class = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName($module)
+                   . '\\Metric\\' . ucfirst($file);
 
-            if (!class_exists($class, false)) {
-                owa_coreAPI::moduleRequireOnce($module, 'metrics', $file);
-            }
-            if (!class_exists($class, false)) {
-                $failures[] = "$dotted => class '$class' did not load via the seam";
+            if (!class_exists($class)) {
+                $failures[] = "$dotted => $class does not exist";
             }
         }
 
         $this->assertSame(
             [],
             $failures,
-            "Registered metric class(es) did not resolve through the require "
-            . "seam:\n" . implode("\n", $failures)
+            "Registered metric class(es) have no class under the conventional "
+            . "name:\n" . implode("\n", $failures)
         );
     }
 }

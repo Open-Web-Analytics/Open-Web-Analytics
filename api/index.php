@@ -45,7 +45,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	
 	//$owa->setSetting('base', 'rest_api_mode', true);
 	
-	$s = owa_coreAPI::serviceSingleton();
+	$s = \OWA\Core\CoreAPI::serviceSingleton();
 
 	
     // run api command and echo page content

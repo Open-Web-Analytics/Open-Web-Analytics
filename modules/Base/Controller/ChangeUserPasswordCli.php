@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 {
     /**
-     * @var \owa_userManager
+     * @var \OWA\Module\Base\Classes\UserManager
      */
     private $_userManager;
 

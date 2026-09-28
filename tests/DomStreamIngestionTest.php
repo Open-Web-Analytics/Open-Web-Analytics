@@ -96,7 +96,7 @@ final class DomStreamIngestionTest extends IngestionTestCase
         // string values on write, so decode before comparing.
         $this->assertSame($stream, html_entity_decode($row->get('events'), ENT_QUOTES));
         // document_id is content-hashed (loose compare: int vs DB string).
-        $this->assertEquals(owa_lib::setStringGuid($page_url), $row->get('document_id'));
+        $this->assertEquals(\OWA\Core\Lib::setStringGuid($page_url), $row->get('document_id'));
 
         /*
          * The viewport, asserted rather than only sent.

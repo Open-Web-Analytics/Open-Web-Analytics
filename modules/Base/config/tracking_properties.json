@@ -12,7 +12,7 @@
         "required": true,
         "filter": true,
         "callbacks": [
-            "owa_trackingEventHelpers::remoteHostDefault"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::remoteHostDefault"
         ],
         "note": "The visitor’s NETWORK host, reverse DNS of their address — not the page’s host and not this server’s. v1 reduced it to a registered domain through the Public Suffix List and reported it as the `host` dimension (\"the visitor came from some host\"); v2 gave that name to the page’s host, so this needs a column of its own. Usually empty in practice: Apache only fills REMOTE_HOST with HostnameLookups On, which is off by default."
     },
@@ -29,7 +29,7 @@
         "required": true,
         "filter": true,
         "callbacks": [
-            "owa_trackingEventHelpers::userAgentDefault"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::userAgentDefault"
         ]
     },
     "language": {
@@ -45,7 +45,7 @@
         "required": true,
         "filter": true,
         "callbacks": [
-            "owa_trackingEventHelpers::languageDefault"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::languageDefault"
         ]
     },
     "screen_resolution": {
@@ -60,7 +60,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::screenResolution"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::screenResolution"
         ],
         "note": "The device's screen as WIDTHxHEIGHT in CSS pixels, read from window.screen and rounded. On every event, as the other page-environment values are: the wire is one beacon per event, so what a batched request would carry once rides each. The SCREEN, not the viewport -- the viewport is a click's frame and rides clicks only. Anything not shaped WIDTHxHEIGHT is dropped (screenResolution()), so a hand-built beacon cannot add a value to group by."
     },
@@ -81,7 +81,7 @@
         "required": true,
         "filter": true,
         "callbacks": [
-            "owa_trackingEventHelpers::ipAddressDefault"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::ipAddressDefault"
         ]
     },
     "ts": {
@@ -97,7 +97,7 @@
         "required": true,
         "filter": false,
         "callbacks": [
-            "owa_trackingEventHelpers::edgeTimestampMicroseconds"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::edgeTimestampMicroseconds"
         ],
         "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
     },
@@ -127,7 +127,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::utfEncodeProperty"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::utfEncodeProperty"
         ]
     },
     "fsts": {
@@ -265,7 +265,7 @@
         "data_type": "url",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::makeUrlCanonical"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::makeUrlCanonical"
         ]
     },
     "tagged_source": {
@@ -282,7 +282,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveTaggedSource"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveTaggedSource"
         ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
@@ -300,7 +300,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveTaggedMedium"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveTaggedMedium"
         ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
@@ -318,7 +318,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveTaggedCampaign"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveTaggedCampaign"
         ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
@@ -336,7 +336,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveTaggedAd"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveTaggedAd"
         ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
@@ -354,7 +354,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveTaggedTerms"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveTaggedTerms"
         ],
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
@@ -555,7 +555,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::toMinorUnits"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::toMinorUnits"
         ],
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe.\nTHE ORDER TOTAL AS SENT, tax and shipping included. It has no column of its own: `revenue` is derived from it, less ct_tax and ct_shipping, which have their own. Converted to minor units by the purchase's currency (TrackingEventHelpers::toMinorUnits)."
     },
@@ -572,7 +572,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::toMinorUnits"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::toMinorUnits"
         ],
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
@@ -589,7 +589,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::toMinorUnits"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::toMinorUnits"
         ],
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
@@ -605,7 +605,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::toMinorUnits"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::toMinorUnits"
         ],
         "note": "The purchase's value EXCLUDING tax and shipping, as trackPurchase() sends it. When present it IS the revenue; the legacy addTransaction() path sends only the order total, and revenue is derived from that instead. Sent separately rather than folded into ct_total so the server does not subtract what the browser added in floating point."
     },
@@ -627,7 +627,7 @@
         "data_type": "integer",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::deriveRevenue"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveRevenue"
         ],
         "note": "Revenue EXCLUDING tax and shipping, in minor units: ct_value when the purchase sent one (trackPurchase), else ct_total less ct_tax and ct_shipping (addTransaction). Tax and shipping have their own columns, so a revenue that included them counted them twice wherever the three were summed. AFTER the four it reads, because it reads their converted values. On a REFUND it is the amount refunded: the value sent, else the items' price times quantity, else the whole purchase's revenue, looked up by transaction id."
     },
@@ -757,7 +757,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::gateUserId"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::gateUserId"
         ],
         "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, which is what makes it the only honest basis for joining a person's devices, and equally what makes it the thing log_visitor_pii gates: an install that turns visitor PII off must be able to stop storing it. gateUserId() DELETES the property rather than returning null, because a null is not written back and would leave the beacon's value in place. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
     },
@@ -774,7 +774,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveCurrency"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveCurrency"
         ],
         "note": "The ISO 4217 code the purchase's amounts are in. On a purchase it is always set: the one sent (setCurrency(), or the purchase's own), else the Property's currencyISO3 setting. Amounts are converted to minor units by its exponent -- yen has none, the Kuwaiti dinar three (Classes\\Currency)."
     },
@@ -976,7 +976,7 @@
         "data_type": "integer",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::deriveYyyymmdd"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveYyyymmdd"
         ]
     },
     "host": {
@@ -991,7 +991,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::deriveHost"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveHost"
         ],
         "note": "The PAGE’s host. Not HTTP_HOST, which is this server’s, and not REMOTE_HOST, which is the visitor’s network. Falls back to whatever the property already held; nothing on the wire can set it, since set_by event means admitRequestParams() refuses a beacon that names it."
     },
@@ -1007,7 +1007,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveBrowserType"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveBrowserType"
         ]
     },
     "os": {
@@ -1022,7 +1022,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveOs"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveOs"
         ]
     },
     "country": {
@@ -1037,7 +1037,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveCountry"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveCountry"
         ]
     },
     "city": {
@@ -1052,7 +1052,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveCity"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveCity"
         ]
     },
     "state": {
@@ -1067,7 +1067,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveState"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveState"
         ]
     },
     "country_code": {
@@ -1082,7 +1082,7 @@
         "data_type": "string",
         "required": true,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveCountryCode"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveCountryCode"
         ]
     },
     "page_path": {
@@ -1097,7 +1097,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::derivePagePath"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::derivePagePath"
         ],
         "note": "The path, canonicalised: the Profile’s default page and the trailing slash collapse. Set by its own callback off page_location, like every other property -- it used to be cut inside the row builder, which is how the registry came to declare a property nothing produced."
     },
@@ -1113,7 +1113,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::derivePageQuery"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::derivePageQuery"
         ],
         "note": "The query string with the Profile’s dropped parameters removed -- owa_state and the campaign keys are OWA’s own plumbing and have no business in somebody’s page report. The tags stay recoverable: they are parsed out of page_location, which keeps them."
     },
@@ -1129,7 +1129,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::deriveRefererHost"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveRefererHost"
         ],
         "note": "The referrer’s host, and what the cube pass classifies source and medium from. Left alone beyond the host: it is somebody else’s URL, and canonicalising it against THIS site’s default page would be a category error."
     },
@@ -1145,7 +1145,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::deriveRefererQuery"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveRefererQuery"
         ],
         "note": "The referrer’s query string, unfiltered -- see referer_host."
     },
@@ -1162,7 +1162,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::deriveTargetHost"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveTargetHost"
         ],
         "note": "The click target’s host, so an outbound click is a comparison against host rather than a string test. Read after makeUrlCanonical() has filtered target_url, which the scopes settle: target_url is a client property and this is a derived one."
     },
@@ -1192,7 +1192,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveBrowserVersion"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveBrowserVersion"
         ],
         "note": "From the one user-agent parse in the row builder. It used to be read from a property resolved through an argument-less browscap accessor, which memoises the first parse in the process."
     },
@@ -1208,7 +1208,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveOsVersion"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveOsVersion"
         ]
     },
     "device_type": {
@@ -1223,7 +1223,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveDeviceType"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveDeviceType"
         ],
         "note": "Derived, not read: ua-parser has no such field, and ‘Other’ is its word for no rule matching. The OS family is what tells a desktop from a phone, and NULL is what an unknown gets rather than a guess at desktop."
     },
@@ -1239,7 +1239,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveDeviceBrand"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveDeviceBrand"
         ]
     },
     "device_model": {
@@ -1254,7 +1254,7 @@
         "data_type": "string",
         "required": false,
         "callbacks": [
-            "owa_trackingEventHelpers::resolveDeviceModel"
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::resolveDeviceModel"
         ]
     },
     "is_goal_event": {

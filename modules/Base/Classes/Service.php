@@ -496,7 +496,7 @@ class Service extends \OWA\Core\Base {
     }
 
     /**
-     * @return \owa_serviceUser
+     * @return \OWA\Module\Base\Classes\ServiceUser
      */
     function getCurrentUser() {
         if (!$this->isInit()) {

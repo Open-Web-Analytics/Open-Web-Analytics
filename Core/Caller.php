@@ -61,7 +61,7 @@ class Caller extends \OWA\Core\Base {
      * Constructor
      *
      * @param array $config
-     * @return \owa_caller
+     * @return \OWA\Core\Caller
      */
     function __construct( $config = [] ) {
       

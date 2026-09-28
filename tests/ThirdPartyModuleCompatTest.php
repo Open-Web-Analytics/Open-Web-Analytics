@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
  * Two additive seams keep such a module loading through the deprecation window
  * (commit cd6cd9c8), and THIS test locks them so a future change can't quietly
  * re-break external modules:
- *   1. owa_lib::moduleDirName() is filesystem-aware — it resolves to a legacy
+ *   1. \OWA\Core\Lib::moduleDirName() is filesystem-aware — it resolves to a legacy
  *      lowercase dir when no PascalCase dir exists, so the presence scan +
  *      every path-building factory still find the module.
  *   2. moduleClassFactory() falls back to require(module.php) + instantiate
@@ -85,14 +85,14 @@ final class ThirdPartyModuleCompatTest extends TestCase
         $this->assertDirectoryExists($this->legacyDir);
         $this->assertDirectoryDoesNotExist(self::$modulesDir . $pascal);
 
-        $this->assertSame($this->legacyName, owa_lib::moduleDirName($this->legacyName),
+        $this->assertSame($this->legacyName, \OWA\Core\Lib::moduleDirName($this->legacyName),
             'A legacy lowercase module dir must resolve to itself when no PascalCase dir exists.');
 
         // OWA's own modules are PascalCased on disk and must still translate.
-        $this->assertSame('Base', owa_lib::moduleDirName('base'));
-        $this->assertSame('MaxmindGeoip', owa_lib::moduleDirName('maxmind_geoip'));
+        $this->assertSame('Base', \OWA\Core\Lib::moduleDirName('base'));
+        $this->assertSame('MaxmindGeoip', \OWA\Core\Lib::moduleDirName('maxmind_geoip'));
         // Idempotent on its own output (the linchpin for the dual-name factory).
-        $this->assertSame('Base', owa_lib::moduleDirName('Base'));
+        $this->assertSame('Base', \OWA\Core\Lib::moduleDirName('Base'));
     }
 
     /**

@@ -55,9 +55,9 @@ class Module extends \OWA\Core\Module {
 	    // create event queues
 
         // register queue type implementations
-        $this->registerImplementation('event_queue_types', 'file', 'owa_fileEventQueue', 'classes/fileEventQueue.php');
-        $this->registerImplementation('event_queue_types', 'database', 'owa_dbEventQueue', 'classes/dbEventQueue.php');
-        $this->registerImplementation('event_queue_types', 'http', 'owa_httpEventQueue', 'classes/httpEventQueue.php');
+        $this->registerImplementation('event_queue_types', 'file', \OWA\Module\Base\Classes\FileEventQueue::class, 'Classes/FileEventQueue.php');
+        $this->registerImplementation('event_queue_types', 'database', \OWA\Module\Base\Classes\DbEventQueue::class, 'Classes/DbEventQueue.php');
+        $this->registerImplementation('event_queue_types', 'http', \OWA\Module\Base\Classes\HttpEventQueue::class, 'Classes/HttpEventQueue.php');
         
         // register named queues
         $this->registerEventQueue( 'incoming_tracking_events', array(

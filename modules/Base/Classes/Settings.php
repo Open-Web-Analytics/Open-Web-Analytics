@@ -532,7 +532,7 @@ namespace OWA\Module\Base\Classes;
      }
       
      /**
-      * Ovverrides settings - used in some controllers (@see owa_caller )
+      * Ovverrides settings - used in some controllers (@see \OWA\Core\Caller )
       * @param string $module
       * @param array $config
       */

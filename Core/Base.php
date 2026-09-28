@@ -52,7 +52,7 @@ class Base {
     /**
      * Configuration Entity
      *
-     * @var \owa_settings  Object global configuration object
+     * @var \OWA\Module\Base\Classes\Settings  Object global configuration object
      */
     var $c;
 

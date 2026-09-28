@@ -383,7 +383,7 @@ function seed(): array
         $pw->load(E2E_PWUSER_ID, 'user_id');
     }
     if ($pw->get('id')) {
-        $pw->set('password', owa_lib::encryptPassword(E2E_PWUSER_PASS));
+        $pw->set('password', \OWA\Core\Lib::encryptPassword(E2E_PWUSER_PASS));
         $pw->set('temp_passkey', E2E_PWUSER_KEY);
         $pw->update();
     }
@@ -404,7 +404,7 @@ function seed(): array
         $ppw->load(E2E_PROFILEPW_ID, 'user_id');
     }
     if ($ppw->get('id')) {
-        $ppw->set('password', owa_lib::encryptPassword(E2E_PROFILEPW_PASS));
+        $ppw->set('password', \OWA\Core\Lib::encryptPassword(E2E_PROFILEPW_PASS));
         $ppw->update();
     }
 
@@ -1434,9 +1434,9 @@ function seedTransactions(): int
         // Currency is stored in CENTS -- the columns are BIGINT and the real
         // handler runs every amount through prepareCurrencyValue() ($v * 100).
         // Writing dollars here would report $0.43 for a $42.60 order.
-        $t->set('total_revenue', owa_lib::prepareCurrencyValue($txn['revenue']));
-        $t->set('tax_revenue', owa_lib::prepareCurrencyValue($txn['tax']));
-        $t->set('shipping_revenue', owa_lib::prepareCurrencyValue($txn['shipping']));
+        $t->set('total_revenue', \OWA\Core\Lib::prepareCurrencyValue($txn['revenue']));
+        $t->set('tax_revenue', \OWA\Core\Lib::prepareCurrencyValue($txn['tax']));
+        $t->set('shipping_revenue', \OWA\Core\Lib::prepareCurrencyValue($txn['shipping']));
         $t->set('timestamp', $ts);
         $t->set('yyyymmdd', (int) date('Ymd', $ts));
         $t->set('year', (int) date('Y', $ts));
@@ -1454,9 +1454,9 @@ function seedTransactions(): int
             $li->set('sku', $item['sku']);
             $li->set('product_name', $item['name']);
             $li->set('category', $item['category']);
-            $li->set('unit_price', owa_lib::prepareCurrencyValue($item['price']));
+            $li->set('unit_price', \OWA\Core\Lib::prepareCurrencyValue($item['price']));
             $li->set('quantity', $item['qty']);
-            $li->set('item_revenue', owa_lib::prepareCurrencyValue($item['price'] * $item['qty']));
+            $li->set('item_revenue', \OWA\Core\Lib::prepareCurrencyValue($item['price'] * $item['qty']));
             $li->set('timestamp', $ts);
             $li->set('yyyymmdd', (int) date('Ymd', $ts));
             $li->set('year', (int) date('Y', $ts));

@@ -387,7 +387,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
      */
     private function playerPayload( array $r ) {
 
-        $template = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' );
+        $template = ( new \OWA\Core\Template() );
 
         $api_url = $template->makeOverlayApiLink(
             array(

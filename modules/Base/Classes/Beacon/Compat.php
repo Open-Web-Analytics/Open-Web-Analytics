@@ -164,7 +164,7 @@ class Compat {
                     'events'    => array( \OWA\Module\Base\Classes\TrackingEventHelpers::EVERY_EVENT ),
                     'required'  => true,
                     'data_type' => 'string',
-                    'callbacks' => array( 'owa_trackingEventHelpers::lowercaseString' ),
+                    'callbacks' => array( 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers::lowercaseString' ),
                 );
             }
         }

@@ -72,7 +72,7 @@ class Location {
     /**
      * Constructor
      *
-     * @return \owa_location
+     * @return \OWA\Core\Location
      */
     function __construct() {
 

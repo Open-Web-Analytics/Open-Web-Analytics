@@ -40,7 +40,7 @@ class Visualizations extends CustomReports {
 
             $this->set( 'title_actions', array(
                 array(
-                    'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
+                    'url'   => ( new \OWA\Core\Template() )
                                    ->makeLink( array( 'do' => 'base.visualizationEdit' ) ),
                     'label' => 'New Visualization',
                     'icon'  => 'fa-plus',

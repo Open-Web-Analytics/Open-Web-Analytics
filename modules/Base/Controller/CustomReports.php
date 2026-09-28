@@ -162,7 +162,7 @@ class CustomReports extends \OWA\Core\ReportController {
 
             $this->set( 'title_actions', array(
                 array(
-                    'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
+                    'url'   => ( new \OWA\Core\Template() )
                                    ->makeLink( array( 'do' => 'base.customReportEdit' ) ),
                     'label' => 'New Custom Report',
                     'icon'  => 'fa-plus',

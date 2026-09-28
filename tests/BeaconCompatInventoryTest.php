@@ -324,7 +324,7 @@ final class BeaconCompatInventoryTest extends TestCase
                 $this->assertSame( 'client', $property['set_by'] );
                 $this->assertSame( array( "cv{$slot}_{$half}" ), $property['from'] );
                 $this->assertContains(
-                    'owa_trackingEventHelpers::lowercaseString', $property['callbacks'],
+                    'OWA\\Module\\Base\\Classes\\TrackingEventHelpers::lowercaseString', $property['callbacks'],
                     "cv{$slot}_{$half} is lowercased so the same variable does not "
                     . 'split into two dimensions by case.' );
             }

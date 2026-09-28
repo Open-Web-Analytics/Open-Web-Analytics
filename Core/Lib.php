@@ -587,7 +587,7 @@ class Lib {
      * available regardless of whether the aliasing autoloader is enabled -- so
      * this works with OWA_DISABLE_COMPAT_BRIDGE set.
      *
-     * @param string $legacy a synthesized/registered class name, e.g. 'owa_error'
+     * @param string $legacy a synthesized/registered class name, e.g. '\OWA\Module\Base\Classes\Error'
      * @return string|null new FQCN (e.g. 'OWA\\Module\\Base\\Classes\\Error') or null
      */
     /**
@@ -638,6 +638,12 @@ class Lib {
     }
 
     public static function resolveNamespacedClass(string $legacy): ?string {
+
+        // The switch that turns the bridge off turns the map off with it: OWA
+        // resolves its own classes without either (CompatMapIsNotLoadBearingTest).
+        if (defined('OWA_DISABLE_COMPAT_BRIDGE') && OWA_DISABLE_COMPAT_BRIDGE) {
+            return null;
+        }
 
         // Already a namespaced name (contains a backslash): nothing to map.
         if (strpos($legacy, '\\') !== false) {

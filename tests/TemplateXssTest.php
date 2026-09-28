@@ -15,7 +15,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * re-escapes, so a page URL like  https://x/?a=1"><script>...  keeps its raw
  * quote and breaks out of the href attribute when the report renders.
  *
- * The fix routes those sinks through owa_template::out() (htmlentities,
+ * The fix routes those sinks through \OWA\Core\Template::out() (htmlentities,
  * ENT_QUOTES). These tests render the ACTUAL template files with a breakout
  * payload and assert the dangerous sequence does not survive into the output.
  * They are DB-free: templates only need their view vars set directly.
@@ -45,7 +45,7 @@ final class TemplateXssTest extends TestCase
     /**
      * Assert an escaped render: the raw attribute-breakout sequence `">` and a
      * raw `<script` / `<img` opener must NOT appear; the escaped entity form
-     * (&quot; / &lt;) must. This is what owa_template::out() produces.
+     * (&quot; / &lt;) must. This is what \OWA\Core\Template::out() produces.
      */
     private function assertEscaped(string $html, string $context): void
     {
@@ -66,7 +66,7 @@ final class TemplateXssTest extends TestCase
 
     private function renderBaseTemplate(string $file, array $vars): string
     {
-        $t = new owa_template('base');
+        $t = new \OWA\Core\Template('base');
         foreach ($vars as $k => $v) {
             $t->set($k, $v);
         }
@@ -129,21 +129,21 @@ final class TemplateXssTest extends TestCase
     public function testSanitizeHrefWhitelistsSchemes(): void
     {
         // Dangerous schemes collapse to '#'.
-        $this->assertSame('#', owa_sanitize::sanitizeHref('javascript:alert(1)'));
-        $this->assertSame('#', owa_sanitize::sanitizeHref('data:text/html,<script>alert(1)</script>'));
-        $this->assertSame('#', owa_sanitize::sanitizeHref('vbscript:msgbox(1)'));
+        $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('javascript:alert(1)'));
+        $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('data:text/html,<script>alert(1)</script>'));
+        $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('vbscript:msgbox(1)'));
         // Obfuscation must not slip past: entity-encoded and whitespace-split schemes.
-        $this->assertSame('#', owa_sanitize::sanitizeHref('java&#115;cript:alert(1)'));
-        $this->assertSame('#', owa_sanitize::sanitizeHref("java\tscript:alert(1)"));
-        $this->assertSame('#', owa_sanitize::sanitizeHref(" javascript:alert(1)"));
+        $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('java&#115;cript:alert(1)'));
+        $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref("java\tscript:alert(1)"));
+        $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref(" javascript:alert(1)"));
 
         // Legitimate URLs pass through unchanged.
-        $this->assertSame('https://example.com/p?a=1', owa_sanitize::sanitizeHref('https://example.com/p?a=1'));
-        $this->assertSame('http://example.com/', owa_sanitize::sanitizeHref('http://example.com/'));
-        $this->assertSame('mailto:a@b.com', owa_sanitize::sanitizeHref('mailto:a@b.com'));
-        $this->assertSame('//cdn.example.com/x.js', owa_sanitize::sanitizeHref('//cdn.example.com/x.js'));
-        $this->assertSame('/relative/path', owa_sanitize::sanitizeHref('/relative/path'));
-        $this->assertSame('#', owa_sanitize::sanitizeHref(''));
+        $this->assertSame('https://example.com/p?a=1', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('https://example.com/p?a=1'));
+        $this->assertSame('http://example.com/', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('http://example.com/'));
+        $this->assertSame('mailto:a@b.com', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('mailto:a@b.com'));
+        $this->assertSame('//cdn.example.com/x.js', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('//cdn.example.com/x.js'));
+        $this->assertSame('/relative/path', \OWA\Module\Base\Classes\Sanitize::sanitizeHref('/relative/path'));
+        $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref(''));
     }
 
     /**

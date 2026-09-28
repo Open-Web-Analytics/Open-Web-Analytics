@@ -228,7 +228,7 @@ class CoreAPI {
 
     }
     /**
-     * @return \owa_db
+     * @return \OWA\Core\Db
      */
     public static function dbSingleton() {
 
@@ -285,7 +285,7 @@ class CoreAPI {
     }
 
     /**
-     * @return \owa_settings
+     * @return \OWA\Module\Base\Classes\Settings
      */
     public static function configSingleton() {
 
@@ -1096,7 +1096,7 @@ class CoreAPI {
     }
 
     /**
-     * @return \owa_serviceUser
+     * @return \OWA\Module\Base\Classes\ServiceUser
      */
     public static function getCurrentUser() {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -1131,7 +1131,7 @@ class CoreAPI {
     }
     
     /**
-     * @return \owa_service
+     * @return \OWA\Module\Base\Classes\Service
      */
     public static function serviceSingleton() {
 
@@ -1153,7 +1153,7 @@ class CoreAPI {
 
         if ( empty ( $cache ) ) {
 	        
-            $cache = \OWA\Core\Lib::simpleFactory( 'owa_cache', OWA_BASE_CLASS_DIR.'cache.php', $params );
+            $cache = \OWA\Core\Lib::simpleFactory( \OWA\Module\Base\Classes\Cache::class, OWA_BASE_CLASS_DIR.'cache.php', $params );
         }
 
         return $cache;
@@ -1206,7 +1206,7 @@ class CoreAPI {
         if(!isset($request)):
 
 
-            $request = \OWA\Core\Lib::factory(OWA_DIR, '', 'owa_requestContainer');
+            $request = new \OWA\Core\RequestContainer();
 
         endif;
 
@@ -1273,13 +1273,6 @@ class CoreAPI {
             }
         }
 
-        $class = $class_ns.$file.$class_suffix;
-        //print $class;
-        // Require class file if class does not already exist
-        if(!class_exists($class)):
-            \OWA\Core\CoreAPI::moduleRequireOnce($module, '', $file);
-        endif;
-
         /*
          * PSR-4 FIRST, then the compat map.
          *
@@ -1313,6 +1306,29 @@ class CoreAPI {
             return $obj;
         }
 
+        /*
+         * Base's views that live in Core -- restApi, adminPage, mail, cli are
+         * OWA\Core\View\RestApi and the rest. Base only: another module naming
+         * one of these means its own.
+         */
+        $core = '\\OWA\\Core\\' . $class_suffix . '\\' . ucfirst( $file );
+
+        if ( $module === 'base' && $class_suffix && class_exists( $core ) ) {
+
+            $obj = new $core( $params );
+            $obj->module = $module;
+
+            return $obj;
+        }
+
+        $class = $class_ns.$file.$class_suffix;
+        //print $class;
+        // Require class file if class does not already exist
+        if(!class_exists($class)):
+            \OWA\Core\CoreAPI::moduleRequireOnce($module, '', $file);
+        endif;
+
+
         $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/modules/'.\OWA\Core\Lib::moduleDirName($module), '', $class, $params);
 
         //if (isset($obj->module)):
@@ -1323,6 +1339,23 @@ class CoreAPI {
     }
 
     public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+
+        /*
+         * By convention first. Handlers and filters are registered with the
+         * pre-PSR-4 directory names -- 'handlers', 'classes' -- so those are
+         * read as the directories they became.
+         */
+        $dirs = array( 'handlers' => 'Handler', 'classes' => 'Classes', 'filters' => 'Filter' );
+        $dir  = $dirs[ strtolower( (string) $sub_directory ) ] ?? $sub_directory;
+
+        $nsClass = \OWA\Core\Lib::conventionalClass(
+            OWA_DIR . 'modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/' . $dir,
+            '', $file, (string) $class_suffix );
+
+        if ( $nsClass !== null ) {
+
+            return new $nsClass( $params );
+        }
 
         $class = $class_ns.$file.$class_suffix;
 
@@ -1445,6 +1478,17 @@ class CoreAPI {
     }
 
     public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
+
+        // Base's support classes that live in Core -- 'template' is
+        // OWA\Core\Template. Base only: another module naming one means its own.
+        $core = 'OWA\\Core\\' . ucfirst( (string) $class );
+
+        if ( $module === 'base' && preg_match( '/^[A-Za-z0-9_]+$/', (string) $class )
+             && ! class_exists( 'OWA\\Module\\Base\\Classes\\' . ucfirst( (string) $class ) )
+             && class_exists( $core ) ) {
+
+            return new $core( $params );
+        }
 
         $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.\OWA\Core\Lib::moduleDirName($module).'/'.'Classes'.'/', $class_ns, $class, $params);
         //$obj->module = $module;
@@ -1736,6 +1780,21 @@ class CoreAPI {
             $metric_name = $s->getMetricClasses($metric_name);
         }
 
+
+        // By convention first, as entities are: base.configurableMetric is
+        // OWA\Module\Base\Metric\ConfigurableMetric.
+        $parts = explode( '.', (string) $metric_name );
+
+        if ( count( $parts ) === 2 && preg_match( '/^[A-Za-z0-9_]+$/', $parts[1] ) ) {
+
+            $nsClass = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $parts[0] )
+                     . '\\Metric\\' . ucfirst( $parts[1] );
+
+            if ( class_exists( $nsClass ) ) {
+
+                return new $nsClass( $params );
+            }
+        }
 
         return \OWA\Core\CoreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
     }
@@ -2327,7 +2386,7 @@ class CoreAPI {
         
         // Tracking Event processing STAGE 1
         // sets any necessary environmental properties from SERVER global
-        $teh = \OWA\Core\CoreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $teh = \OWA\Core\CoreAPI::getInstance( \OWA\Module\Base\Classes\TrackingEventHelpers::class, OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
         $event = \OWA\Module\Base\Classes\Ingest::at(
             \OWA\Module\Base\Classes\Ingest::EDGE_PRE, $event );
 
@@ -2561,6 +2620,15 @@ class CoreAPI {
      */
     public static function validationFactory($class_file, $conf = array()) {
 
+        // OWA's own validators by convention: 'required' is
+        // OWA\Core\Validation\Required. A third-party one still loads from
+        // plugins/validations/ below.
+        $nsClass = 'OWA\\Core\\Validation\\' . ucfirst( (string) $class_file );
+
+        if ( preg_match( '/^[A-Za-z0-9_]+$/', (string) $class_file ) && class_exists( $nsClass ) ) {
+
+            return new $nsClass( $conf );
+        }
 
         return \OWA\Core\Lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, $conf, 'Validation');
 
