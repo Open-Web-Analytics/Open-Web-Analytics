@@ -64,6 +64,7 @@ function emittedKeys(fire) {
     // The engagement clock is frozen, as in BeaconContract.test.js.
     t.getTime = () => 0;
     t.resetEngagement();
+    t.getScreenResolution = () => '1920x1080';
     let beacon = null;
     t.logEvent = (properties) => { beacon = properties; };
     fire(t);
@@ -84,6 +85,7 @@ function emittedValues(fire) {
     // The engagement clock is frozen, as in BeaconContract.test.js.
     t.getTime = () => 0;
     t.resetEngagement();
+    t.getScreenResolution = () => '1920x1080';
     let beacon = null;
     t.logEvent = (properties) => { beacon = properties; };
     fire(t);

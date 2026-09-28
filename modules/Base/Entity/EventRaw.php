@@ -207,6 +207,9 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'device_model', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'language', OWA_DTD_VARCHAR16 ) );
 
+        // The device's screen, WIDTHxHEIGHT in CSS pixels, as the tracker read it.
+        $this->setProperty( $this->column( 'screen_resolution', OWA_DTD_VARCHAR16 ) );
+
         // Geography, from ip_address at ingest.
         $this->setProperty( $this->column( 'country', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'country_code', OWA_DTD_CHAR2 ) );

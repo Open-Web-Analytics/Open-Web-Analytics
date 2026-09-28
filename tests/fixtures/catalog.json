@@ -4,9 +4,9 @@
         "metricImplementations": 37,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 78,
-        "dimensionEntriesDenormalized": 78,
-        "accessorDimensionNames": 78
+        "dimensionNamesDenormalized": 79,
+        "dimensionEntriesDenormalized": 79,
+        "accessorDimensionNames": 79
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -1860,6 +1860,19 @@
                 "denormalized": true
             }
         },
+        "screenResolution": {
+            "base.event": {
+                "name": "screenResolution",
+                "entity": "base.event",
+                "column": "screen_resolution",
+                "family": "device",
+                "label": "Screen Resolution",
+                "description": "The size of the device screen, width by height in CSS pixels.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "scrollDepth": {
             "base.event": {
                 "name": "scrollDepth",
@@ -2805,6 +2818,17 @@
             "family": "traffic source",
             "label": "Referring Site",
             "description": "The host the user arrived from, as observed.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "screenResolution": {
+            "name": "screenResolution",
+            "entity": "base.event",
+            "column": "screen_resolution",
+            "family": "device",
+            "label": "Screen Resolution",
+            "description": "The size of the device screen, width by height in CSS pixels.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

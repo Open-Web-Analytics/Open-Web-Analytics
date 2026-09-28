@@ -79,6 +79,12 @@
 
             window.owa_cmds.push(['trackPageView']);
 
+            // Single-page-app route changes as page views (?routes=1), which a
+            // site opts into the same way.
+            if (params.get('routes') === '1') {
+                window.owa_cmds.push(['trackRouteChanges']);
+            }
+
             var _owa = document.createElement('script');
             _owa.async = true;
             _owa.src = window.owa_baseUrl + 'public/base/dist/owa.tracker.js';

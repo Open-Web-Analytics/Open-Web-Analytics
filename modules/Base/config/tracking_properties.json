@@ -48,6 +48,22 @@
             "owa_trackingEventHelpers::languageDefault"
         ]
     },
+    "screen_resolution": {
+        "set_by": "client",
+        "from": [
+            "screen_resolution"
+        ],
+        "column": "screen_resolution",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "owa_trackingEventHelpers::screenResolution"
+        ],
+        "note": "The device's screen as WIDTHxHEIGHT in CSS pixels, read from window.screen and rounded. On every event, as the other page-environment values are: the wire is one beacon per event, so what a batched request would carry once rides each. The SCREEN, not the viewport -- the viewport is a click's frame and rides clicks only. Anything not shaped WIDTHxHEIGHT is dropped (screenResolution()), so a hand-built beacon cannot add a value to group by."
+    },
     "ip_address": {
         "set_by": "request",
         "from": [

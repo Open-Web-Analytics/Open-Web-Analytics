@@ -84,7 +84,13 @@ describe('the fragment and the current URL', () => {
     });
 });
 
+/** Let a route change settle, which is when its page view is sent. */
+const settle = () => jest.advanceTimersByTime(OWATracker.ROUTE_SETTLE_MSEC);
+
 describe('a hash change is not a route change', () => {
+
+    beforeEach(() => { jest.useFakeTimers(); });
+    afterEach(() => { jest.useRealTimers(); });
 
     test('an anchor click raises no page view', () => {
         // Already ON the page: the only thing that changes is the anchor.
@@ -96,6 +102,7 @@ describe('a hash change is not a route change', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/pricing#faq');
+        settle();
 
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
     });
@@ -107,6 +114,7 @@ describe('a hash change is not a route change', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/features');
+        settle();
 
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1);
     });
@@ -121,12 +129,16 @@ describe('a hash change is not a route change', () => {
 
         window.history.pushState({}, '', '/docs#two');
         window.history.pushState({}, '', '/docs#three');
+        settle();
 
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
     });
 });
 
 describe('a site that routes on the hash turns both halves back on', () => {
+
+    beforeEach(() => { jest.useFakeTimers(); });
+    afterEach(() => { jest.useRealTimers(); });
 
     test('the fragment comes back into the URL', () => {
         window.history.replaceState({}, '', '/app#/settings');
@@ -143,6 +155,7 @@ describe('a site that routes on the hash turns both halves back on', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/app#/settings');
+        settle();
 
         const views = sent.filter(e => e.event_type === 'page_view');
 
@@ -159,7 +172,9 @@ describe('a site that routes on the hash turns both halves back on', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/app#/two');
+        settle();
         window.history.pushState({}, '', '/app#/three');
+        settle();
 
         const urls = sent
             .filter(e => e.event_type === 'page_view')

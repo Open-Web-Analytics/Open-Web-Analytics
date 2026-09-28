@@ -266,6 +266,8 @@ return array(
                 'family' => 'device', 'description' => 'The model of the device.' ),
             'language' => array( 'column' => 'language', 'label' => 'Language',
                 'family' => 'device', 'description' => 'The language the browser declared.' ),
+            'screenResolution' => array( 'column' => 'screen_resolution', 'label' => 'Screen Resolution',
+                'family' => 'device', 'description' => 'The size of the device screen, width by height in CSS pixels.' ),
             'ipAddress' => array( 'column' => 'ip_address', 'label' => 'IP Address',
                 'family' => 'device', 'description' => "The user's address, where the install stores one." ),
             'consentState' => array( 'column' => 'consent_state', 'label' => 'Consent State',

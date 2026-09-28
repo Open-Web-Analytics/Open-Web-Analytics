@@ -1798,6 +1798,32 @@ class TrackingEventHelpers {
      */
 
     /**
+     * screen_resolution as WIDTHxHEIGHT, or nothing.
+     *
+     * The tracker sends what window.screen reports, rounded. Anything else --
+     * a hand-built beacon, a zero side, a size no screen has -- is dropped
+     * rather than stored as a value to group by. Deletes rather than returning
+     * null, for the reason gateUserId() gives.
+     *
+     * @param  string|null $value
+     * @param  object      $event
+     * @return string|null
+     */
+    static function screenResolution( $value, $event ) {
+
+        $value = is_string( $value ) ? strtolower( trim( $value ) ) : '';
+
+        if ( preg_match( '/^[1-9][0-9]{0,4}x[1-9][0-9]{0,4}$/', $value ) ) {
+
+            return $value;
+        }
+
+        $event->delete( 'screen_resolution' );
+
+        return null;
+    }
+
+    /**
      * user_id, unless the install has turned visitor PII off.
      *
      * DELETES RATHER THAN RETURNING NULL, which is the lesson the two callbacks

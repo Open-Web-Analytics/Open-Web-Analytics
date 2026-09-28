@@ -2471,6 +2471,7 @@ class OWATracker  {
 
             if ( document.visibilityState === 'hidden' ) {
 
+                that.flushPendingRouteView();
                 that.trackEngagement();
 
             } else {
@@ -2485,7 +2486,12 @@ class OWATracker  {
          * (hidden) first, and this finds nothing left to send. Safari has unloaded
          * pages without it, and then this is the only notice the page is leaving.
          */
-        window.addEventListener( 'pagehide', function () { that.trackEngagement(); }, false );
+        window.addEventListener( 'pagehide', function () {
+
+            that.flushPendingRouteView();
+            that.trackEngagement();
+
+        }, false );
 
         /*
          * Focus pauses and resumes the clock without sending: a visible window
@@ -2560,28 +2566,42 @@ class OWATracker  {
         this.routeTrackingEnabled = true;
 
         var that = this;
-        var last = this.getCurrentUrl();
 
-        var changed = function () {
+        // The URL of the last page view SENT. Intermediate URLs a route passes
+        // through inside the settle window never become page views.
+        var lastTracked = this.getCurrentUrl();
+        var pending = null;
+
+        /*
+         * The page view goes once the URL has been still for ROUTE_SETTLE_MSEC,
+         * and reads the URL and title then. Frameworks set document.title
+         * AFTER pushState, so a page view sent from inside the patched call
+         * carried the previous screen's title; and a redirect pushing twice in
+         * quick succession was two page views.
+         */
+        var send = function () {
+
+            if ( pending ) {
+
+                clearTimeout( pending );
+                pending = null;
+            }
+
+            that.flushRouteView = null;
 
             var url = that.getCurrentUrl();
 
-            // A route change that does not change the URL is not one. Guarded
-            // because replaceState is used for things other than navigation --
-            // storing filter state, for instance -- and each of those would
-            // otherwise be a page view.
-            if ( url === last ) {
+            // Left and came back inside the window: no route change happened.
+            if ( url === lastTracked ) {
 
                 return;
             }
 
-            last = url;
-
-            // The residue of the route being LEFT, delivered before the new
-            // page view, so the time lands against the page it was spent on.
-            that.trackEngagement();
-            that.resetEngagement();
-            that.last_scroll = 0;
+            // The previous page is this page's referrer, for the page view and
+            // every event after it on this route. document.referrer still
+            // names the page the DOCUMENT loaded from.
+            that.routeReferrer = lastTracked;
+            lastTracked = url;
 
             that.trackPageView( url );
 
@@ -2596,6 +2616,39 @@ class OWATracker  {
              * the term from whatever screen the visitor landed on first.
              */
             that.trackSiteSearch();
+        };
+
+        var changed = function () {
+
+            var url = that.getCurrentUrl();
+
+            // A route change that does not change the URL is not one. Guarded
+            // because replaceState is used for things other than navigation --
+            // storing filter state, for instance -- and each of those would
+            // otherwise be a page view.
+            if ( ! pending && url === lastTracked ) {
+
+                return;
+            }
+
+            // The residue of the route being LEFT, delivered at the moment of
+            // leaving, so the time lands against the page it was spent on.
+            if ( ! pending ) {
+
+                that.trackEngagement();
+                that.resetEngagement();
+                that.last_scroll = 0;
+            }
+
+            if ( pending ) {
+
+                clearTimeout( pending );
+            }
+
+            pending = setTimeout( send, OWATracker.ROUTE_SETTLE_MSEC );
+
+            // Sent early if the page is hidden or unloads inside the window.
+            that.flushRouteView = send;
         };
 
         if ( typeof window.history === 'object' && window.history ) {
@@ -3845,7 +3898,7 @@ class OWATracker  {
         var collected = {
             'page_url':     this.getCurrentUrl(),
             'page_title':   String( document.title ).trim(),
-            'HTTP_REFERER': document.referrer
+            'HTTP_REFERER': this.getPageReferrer()
         };
 
         var store = OWA.getState( 'd' );
@@ -3884,7 +3937,17 @@ class OWATracker  {
 
         if ( ! event.get( 'HTTP_REFERER') && ! this.getGlobalEventProperty('HTTP_REFERER')) {
 
-            event.set('HTTP_REFERER', document.referrer );
+            event.set('HTTP_REFERER', this.getPageReferrer() );
+        }
+
+        if ( ! event.get( 'screen_resolution' ) ) {
+
+            var resolution = this.getScreenResolution();
+
+            if ( resolution ) {
+
+                event.set( 'screen_resolution', resolution );
+            }
         }
 
         if ( ! event.get( 'page_title') && ! this.getGlobalEventProperty('page_title') ) {
@@ -4269,6 +4332,54 @@ class OWATracker  {
     static get MIN_ENGAGEMENT_EVENT_MSEC() {
 
         return 1000;
+    }
+
+    /**
+     * How long a route's URL must be still before its page view is sent. Long
+     * enough for a framework to set the title after pushState; rapid pushes
+     * inside it are one page view, for the URL they settle on.
+     */
+    static get ROUTE_SETTLE_MSEC() {
+
+        return 500;
+    }
+
+    /** Send a route page view still waiting to settle, if there is one. */
+    flushPendingRouteView() {
+
+        if ( typeof this.flushRouteView === 'function' ) {
+
+            this.flushRouteView();
+        }
+    }
+
+    /**
+     * The page this one was reached from: the previous route after a route
+     * change, else the document's referrer.
+     */
+    getPageReferrer() {
+
+        return this.routeReferrer || document.referrer;
+    }
+
+    /**
+     * The screen as WIDTHxHEIGHT in CSS pixels, or '' where there is none.
+     *
+     * The SCREEN, not the viewport: the device's size, which is what
+     * screenResolution reports. The viewport is a click's frame and rides
+     * clicks only.
+     */
+    getScreenResolution() {
+
+        if ( typeof window === 'undefined' || ! window.screen ) {
+
+            return '';
+        }
+
+        var w = Math.round( Number( window.screen.width ) );
+        var h = Math.round( Number( window.screen.height ) );
+
+        return w > 0 && h > 0 ? w + 'x' + h : '';
     }
 
     /**

@@ -131,9 +131,70 @@ test.describe('the built tracker fires beacons on the wire', () => {
         expect(click).toMatch(/[?&]click_x=\d+/);
     });
 
+    test('the page_view beacon carries the screen as WIDTHxHEIGHT', async () => {
+        await expect.poll(() => beacons.find((u) => /[?&]event_type=page_view/.test(u)),
+            { timeout: 20_000 }).toBeTruthy();
+
+        const pageview = new URL(beacons.find((u) => /[?&]event_type=page_view/.test(u)));
+
+        expect(pageview.searchParams.get('screen_resolution')).toMatch(/^[1-9]\d*x[1-9]\d*$/);
+    });
+
     test('the tracker boots without uncaught page errors', async ({ page }) => {
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
         await page.waitForTimeout(300);
         expect(pageErrors, 'tracker bootstrap threw:\n' + pageErrors.join('\n')).toEqual([]);
     });
 });
+
+/**
+ * Route changes in a real browser: the page view waits for the route to
+ * settle, reads the title then, collapses quick pushes into one, and names the
+ * previous route as its referrer.
+ */
+test.describe('route changes become page views once they settle', () => {
+
+    test('one page view, with the settled title and the previous route as referrer', async ({ page }, testInfo) => {
+        const beacons = [];
+        page.on('request', (req) => {
+            if (req.url().includes('log.php')) {
+                beacons.push(req.url());
+            }
+        });
+
+        const root = installRoot(testInfo.project.use.baseURL);
+        const harness = root + 'tests/e2e/tracker_harness.html'
+            + '?base=' + encodeURIComponent(root) + '&routes=1';
+
+        await page.route(harness, (route) =>
+            route.fulfill({ contentType: 'text/html', body: HARNESS_HTML })
+        );
+
+        await page.goto(harness, { waitUntil: 'load' });
+
+        const pageViews = () => beacons
+            .filter((u) => /[?&]event_type=page_view/.test(u))
+            .map((u) => new URL(u).searchParams);
+
+        await expect.poll(() => pageViews().length, { timeout: 20_000 }).toBe(1);
+
+        // A redirect-style double push, and a title the framework sets after it.
+        await page.evaluate(() => {
+            history.pushState({}, '', location.pathname + location.search + '&screen=redirecting');
+            setTimeout(() => history.pushState({}, '', location.pathname
+                + location.search.replace('redirecting', 'settings')), 50);
+            setTimeout(() => { document.title = 'Settings'; }, 200);
+        });
+
+        await expect.poll(() => pageViews().length, { timeout: 10_000 }).toBe(2);
+        await page.waitForTimeout(1000);
+        expect(pageViews(), 'the two pushes were one route change').toHaveLength(2);
+
+        const route = pageViews()[1];
+
+        expect(route.get('page_location')).toContain('screen=settings');
+        expect(route.get('page_title')).toBe('Settings');
+        expect(route.get('HTTP_REFERER')).toBe(harness);
+    });
+});
+

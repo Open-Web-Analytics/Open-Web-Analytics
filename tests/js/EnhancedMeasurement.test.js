@@ -894,6 +894,7 @@ describe('site search', () => {
      * search.
      */
     test('a route change raises it again, with the new term', () => {
+        jest.useFakeTimers();
         const t = newTracker();
         const sent = captureSends(t);
         const terms = ['first', 'second'];
@@ -904,6 +905,8 @@ describe('site search', () => {
         t.trackSiteSearch();
 
         history.pushState({}, '', '/search?q=second');
+        jest.advanceTimersByTime(OWATracker.ROUTE_SETTLE_MSEC);
+        jest.useRealTimers();
 
         const searches = sent.filter((e) => e.event_type === 'view_search_results');
 

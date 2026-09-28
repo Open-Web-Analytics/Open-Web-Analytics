@@ -44,6 +44,8 @@ function newTracker() {
     t.setSiteId('contract-site');
     t.getTime = () => 0;
     t.resetEngagement();
+    // jsdom's screen is 0x0, which sends nothing; every browser has one.
+    t.getScreenResolution = () => '1920x1080';
     return t;
 }
 

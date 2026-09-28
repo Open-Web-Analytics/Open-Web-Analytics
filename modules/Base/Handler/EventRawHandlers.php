@@ -281,6 +281,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'device_model'    => $this->text( $event->get( 'device_model' ) ),
             'os'              => $this->text( $event->get( 'os' ) ),
             'language'        => $this->text( $event->get( 'language' ) ),
+            'screen_resolution' => $this->text( $event->get( 'screen_resolution' ) ),
 
             'country'      => $this->text( $event->get( 'country' ) ),
             'country_code' => $this->text( $event->get( 'country_code' ) ),

@@ -43,10 +43,12 @@ final class EventRawEntityTest extends TestCase
         $columns = $this->raw()->getColumns();
 
         /*
-         * 65. It was 62: element_path went and is_outbound arrived (Update053, net
+         * 66. It was 62: element_path went and is_outbound arrived (Update053, net
          * zero), then file_name and file_extension were promoted out of `params`
          * (Update054) and search_term after them, which needed no migration at all --
          * Update034 builds this table from the entity and v2 has never shipped.
+         * screen_resolution (Update058) is a VARCHAR(16) the tracker sends on
+         * every event.
          *
          * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
          * param-bound first-class properties were deliberately left in the bag --
@@ -56,7 +58,7 @@ final class EventRawEntityTest extends TestCase
          * MySQL 8.4. This number moving is how that decision gets noticed being
          * reversed one column at a time.
          */
-        $this->assertCount(65, $columns);
+        $this->assertCount(66, $columns);
 
         // browser_type, and NOT `browser`. Both columns existed and both were
         // written from the one property -- config/dimensions.php declares

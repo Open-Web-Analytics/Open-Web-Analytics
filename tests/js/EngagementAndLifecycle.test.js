@@ -364,13 +364,23 @@ describe('page lifecycle', () => {
 
 describe('SPA route changes', () => {
 
-    test('pushState is a page view', () => {
+    beforeEach(() => { jest.useFakeTimers(); });
+    afterEach(() => { jest.useRealTimers(); });
+
+    /** Let a route change settle, which is when its page view is sent. */
+    const settle = () => jest.advanceTimersByTime(OWATracker.ROUTE_SETTLE_MSEC);
+
+    test('pushState is a page view, once the URL has settled', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/route-b');
+
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
+
+        settle();
 
         const views = sent.filter(e => e.event_type === 'page_view');
         expect(views).toHaveLength(1);
@@ -386,12 +396,13 @@ describe('SPA route changes', () => {
         t.trackRouteChanges();
 
         window.history.replaceState({ filter: 'x' }, '', '/route-c');
+        settle();
 
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0,
             'replaceState is used to store UI state, and each of those is not a page view.');
     });
 
-    test('the engagement of the route being LEFT lands before the new page view', () => {
+    test('the engagement of the route being LEFT is sent at the moment of leaving', () => {
         const t = newTracker();
 
         window.history.pushState({}, '', '/route-d');
@@ -404,8 +415,11 @@ describe('SPA route changes', () => {
         atTime(t, 7000);
         window.history.pushState({}, '', '/route-e');
 
+        expect(sent).toHaveLength(1);
         expect(sent[0].event_type).toBe('user_engagement');
         expect(sent[0].engagement_msec).toBe(7000);
+
+        settle();
         expect(sent[1].event_type).toBe('page_view');
 
         atTime(t, 7500);
@@ -423,7 +437,128 @@ describe('SPA route changes', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/route-g');
+        settle();
 
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1);
+    });
+
+    /*
+     * Frameworks set document.title AFTER pushState. A page view sent from
+     * inside the patched call carried the previous screen's title.
+     */
+    test('the title is read when the page view is sent, not when the URL changed', () => {
+        const t = newTracker();
+        document.title = 'Screen One';
+        window.history.pushState({}, '', '/screen-one');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/screen-two');
+        jest.advanceTimersByTime(100);
+        document.title = 'Screen Two';
+        settle();
+
+        const views = sent.filter(e => e.event_type === 'page_view');
+        expect(views).toHaveLength(1);
+        expect(views[0].page_title).toBe('Screen Two');
+    });
+
+    test('pushes inside the settle window are one page view, for the URL they settle on', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/start');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/redirecting');
+        jest.advanceTimersByTime(50);
+        window.history.pushState({}, '', '/destination');
+        settle();
+
+        const views = sent.filter(e => e.event_type === 'page_view');
+        expect(views).toHaveLength(1);
+        expect(views[0].page_url).toContain('/destination');
+        expect(sent.filter(e => e.event_type === 'user_engagement').length).toBeLessThanOrEqual(1,
+            'the page left is left once');
+    });
+
+    test('leaving and coming back inside the window is no page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/stay');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/elsewhere');
+        window.history.replaceState({}, '', '/stay');
+        settle();
+
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
+    });
+
+    /*
+     * The referrer of a route is the route before it. document.referrer names
+     * the page the DOCUMENT loaded from, and repeating it on every route said
+     * each screen had been reached from the external site.
+     */
+    test('a route page view names the previous route as its referrer', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/first?x=1');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/second');
+        settle();
+
+        const view = sent.find(e => e.event_type === 'page_view');
+        expect(view.HTTP_REFERER).toBe(window.location.origin + '/first?x=1');
+    });
+
+    test('...and so does every later event on that route', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/third');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/fourth');
+        settle();
+
+        t.trackCustomEvent('newsletter_signup', {});
+
+        const custom = sent.find(e => e.event_type === 'newsletter_signup');
+        expect(custom.HTTP_REFERER).toBe(window.location.origin + '/third');
+    });
+
+    test('before any route change the referrer is the document\'s', () => {
+        const t = newTracker();
+
+        expect(t.getPageReferrer()).toBe(document.referrer);
+    });
+
+    /*
+     * A route page view still waiting when the page goes away is sent then,
+     * not lost with the timer.
+     */
+    test('a pending route page view is sent when the page is hidden', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/before-hide');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/hidden-soon');
+        hidden = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        const views = sent.filter(e => e.event_type === 'page_view');
+        expect(views).toHaveLength(1);
+        expect(views[0].page_url).toContain('/hidden-soon');
+
+        settle();
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1,
+            'and the timer does not send it a second time');
     });
 });
