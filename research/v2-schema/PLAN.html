@@ -2033,7 +2033,7 @@ v1 is still intact here, which is what makes the comparison possible.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>11</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows; forced, blocking, CLI-only, resumable. It fills <code>owa_visitor_acquisition</code> itself (the separate backfill command is deleted). Requires 1.14.0; v1 code is deleted with it.</td><td>Started 28&nbsp;Sep. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two.
+<tr><td>11</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows; forced, blocking, CLI-only, resumable. It fills <code>owa_visitor_acquisition</code> itself (the separate backfill command is deleted). Requires 1.14.0; v1 code is deleted with it.</td><td>Started 28&nbsp;Sep: the v1 table list and frozen schema, and <code>owa_request</code> &rarr; <code>owa_event_raw</code> (<code>RequestMigrator</code>, resumable via <code>owa_migration_progress</code>). Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two.
 <strong>Target corrected 24&nbsp;Sep: it writes the RAW store, not the cube.</strong> The cube is
 derived, so <code>cmd=cube-rebuild</code> produces it and there is no second migrator &mdash; and
 because <a href="#s223">&sect;2.23</a> now has one reporting path, this is part of the reporting arc
@@ -2141,9 +2141,11 @@ But installations built at different times hold the <strong>same column names wi
 types</strong> &mdash; measured 28&nbsp;Sep: the demo install keeps <code>request</code> and
 <code>session</code>&rsquo;s <code>referer_id</code>, <code>ua_id</code>, <code>host_id</code> and
 <code>os_id</code> as <code>VARCHAR(255)</code> against a <code>BIGINT</code> dimension id, where
-the test install has <code>BIGINT</code> on both. MySQL compares a string with an integer as a
-double, and a 64-bit hash above 2<sup>53</sup> does not survive that, so a plain
-<code>JOIN &hellip; ON r.ua_id = ua.id</code> matches the wrong row on such an installation. The
+the test install has <code>BIGINT</code> on both. Measured on MySQL 8.4: that comparison is exact
+when MySQL looks the id up through its index, and done as a double when it does not &mdash; and a
+64-bit hash above 2<sup>53</sup> does not survive a double, so 2<sup>53</sup> and
+2<sup>53</sup>+1 match each other. A plain <code>JOIN &hellip; ON r.ua_id = ua.id</code> is therefore
+right only while the optimiser happens to use the index. The
 migrator resolves dimensions by exact value (an explicit cast, or a lookup keyed by the id as
 text), and selects every column by name without relying on its type. The frozen fixture
 (<code>tests/fixtures/v1_schema_1_14.sql</code>) is one variant; the tests also run the other.
