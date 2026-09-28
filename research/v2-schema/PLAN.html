@@ -2202,16 +2202,34 @@ interrupted run resumes and a finished one is a no-op. Row ids are derived from 
 replayed batch writes nothing twice.</p>
 
 <p><strong>How much history is an explicit choice</strong>
-<span class="chip c-dec">Decided 28&nbsp;Sep</span>. <code>cmd=migrate-v1</code> refuses to start
-without either <code>--since=&lt;cutoff&gt;</code> (a date as <code>yyyymmdd</code>, or a period back
+<span class="chip c-dec">Decided 28&nbsp;Sep</span>. The migration is <strong>Update060</strong>, a
+CLI-only update, not a command of its own: <code>cmd=update</code> runs it, and it fails &mdash;
+leaving the update pending and every action refused &mdash; without either
+<code>since=&lt;cutoff&gt;</code> (a date as <code>yyyymmdd</code>, or a period back
 from today &mdash; <code>2years</code>, <code>18m</code> &mdash; in the partition commands&rsquo;
 format) or <code>--all</code>, and its preflight prints the v1 volume per site and year so the choice
-is made knowing the cost. Rows older than the cutoff are not migrated; they stay in v1&rsquo;s tables
+is made knowing the cost (<code>php cli.php cmd=update since=2years</code>). Rows older than the cutoff are not migrated; they stay in v1&rsquo;s tables
 until the drop removes them. A later run must use the same cutoff, or it would leave a gap. The
 upgrade notes also suggest pruning on 1.14 first: <code>cmd=partition-drop --older-than=&hellip;</code>
 ships in 1.14.0 and drops whole months on a partitioned installation. It is a suggestion, not a
 requirement: an unpartitioned installation can only <code>DELETE</code>, which costs more than not
 reading the rows, and deleting before the upgrade would take away the free rollback.</p>
+
+<p><strong>Only sites that still exist are migrated.</strong> A <code>site_id</code> no
+<code>owa_site</code> row carries &mdash; a site deleted outright, or a test&rsquo;s &mdash; would
+land in v2 where no profile reports on it. The preflight counts what is left behind: 799 rows for
+693 such ids on the test install.</p>
+
+<p><strong><code>down()</code> is the exact inverse without a marker.</strong> Migrated ids are
+derived from v1&rsquo;s rows, which are never written, so reading them again with the recorded
+cutoff derives the same ids, and exactly those rows are deleted; rows from beacons are untouched.
+After the drop there is nothing to roll back to. (<code>beacon_version</code> was considered as a
+provenance marker and rejected: NULL there already means a pre-versioning tracker, which is what
+v1&rsquo;s were.)</p>
+
+<p><strong>Base requires schema&nbsp;60 only when the migration is complete.</strong> Requiring it
+while it covers page views alone would record it applied before clicks, commerce, acquisition and
+goal completions exist.</p>
 
 <p><strong>Non-destructive, so rollback is free.</strong> It writes v2&rsquo;s tables and never
 touches v1&rsquo;s. Until someone runs the drop, restoring 1.14 code gives back a working 1.14
