@@ -11,6 +11,24 @@
                 "sort": "date"
             },
             "chartMetric": "transactions"
+        },
+        {
+            "type": "grid",
+            "id": "orders",
+            "container": "orders-grid",
+            "title": "Orders",
+            "query": {
+                "metrics": "transactionRevenue,taxRevenue,shippingRevenue",
+                "dimensions": "transactionId",
+                "sort": "transactionRevenue-",
+                "resultsPerPage": 25
+            },
+            "constraints": [
+                {
+                    "dimension": "eventName",
+                    "value": "purchase"
+                }
+            ]
         }
     ]
 }

@@ -383,5 +383,7 @@ return array(
             // ---- money -------------------------------------------------------
             'currencyCode' => array( 'column' => 'currency', 'label' => 'Currency',
                 'family' => 'commerce', 'description' => 'The ISO 4217 currency the revenue on this row is denominated in.' ),
+            'transactionId' => array( 'column' => 'transaction_id', 'label' => 'Transaction ID',
+                'family' => 'commerce', 'description' => 'The order id the purchase or refund was recorded under.' ),
     ),
 );

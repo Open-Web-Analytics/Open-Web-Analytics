@@ -646,7 +646,7 @@ function seedBreakdownReport(): array
                     // date first is the axis, pagePath second is the breakdown:
                     // a line per page over the filled total, and the grid of
                     // those pages underneath.
-                    'metrics'    => 'visits,pageViews',
+                    'metrics'    => 'sessions,pageViews',
                     'dimensions' => 'date,pagePath',
                     'sort'       => 'date',
                 ],
@@ -1395,17 +1395,21 @@ function seedTransactions(): int
             'ct_order_id'     => $txn['order_id'],
             'ct_order_source' => 'e2e-fixture',
             'ct_gateway'      => 'e2e',
-            'ct_total'        => $txn['revenue'],
+            // E2E_TXNS's revenue is the order's VALUE -- tax and shipping are
+            // separate, and order 1002's 20.40 is exactly its items -- so it
+            // travels as ct_value, the way trackPurchase() sends one.
+            'ct_value'        => $txn['revenue'],
             'ct_tax'          => $txn['tax'],
             'ct_shipping'     => $txn['shipping'],
             'currency'        => 'USD',
+            // In the shape the tracker stores items in (Tracker.purchaseItem()).
             'ct_line_items'   => json_encode(array_map(function ($item) {
                 return [
-                    'sku'      => $item['sku'],
-                    'name'     => $item['name'],
-                    'category' => $item['category'],
-                    'price'    => $item['price'],
-                    'quantity' => $item['qty'],
+                    'item_id'       => $item['sku'],
+                    'item_name'     => $item['name'],
+                    'item_category' => $item['category'],
+                    'price'         => $item['price'],
+                    'quantity'      => $item['qty'],
                 ];
             }, $txn['items'])),
         ]);

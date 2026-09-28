@@ -137,22 +137,11 @@ test.describe('e-commerce reporting', () => {
         expect(body).toContain('transactions');
     });
 
-    test('the Products report returns the seeded line items with correct revenue', async ({ page }) => {
-        await openReportNoTabs(page, { reportId: 'products' });
-
-        const grid = page.locator('.ui-jqgrid');
-        await expect(grid).toBeAttached();
-
-        const text = await page.locator('body').innerText();
-
-        // Both seeded products, and the revenue split between them. Getting the
-        // cents/dollars conversion wrong in either the seeder or the formatter
-        // shows up here as an order-of-magnitude error rather than a near miss.
-        expect(text).toContain('E2E Widget');
-        expect(text).toContain('E2E Gadget');
-        expect(text).toMatch(new RegExp(EXPECTED.widgetRevenue.toFixed(2).replace('.', '\\.')));
-        expect(text).toMatch(new RegExp(EXPECTED.gadgetRevenue.toFixed(2).replace('.', '\\.')));
-    });
+    /*
+     * The Products report is not here: v2 stores a purchase's items as JSON in
+     * params, and item reporting is to be designed separately. There is no
+     * Products report to check until it is.
+     */
 
     test('the Transactions report returns the seeded orders', async ({ page }) => {
         await openReportNoTabs(page, { reportId: 'transactions' });
@@ -177,7 +166,7 @@ test.describe('e-commerce reporting', () => {
         // are the ones the application would have written itself.
         expect(text).toMatch(new RegExp(EXPECTED.totalRevenue.toFixed(2).replace('.', '\\.')));
         expect(text).toContain('Transactions');
-        expect(text).toContain('Revenue Per Visit');
+        expect(text).toContain('Revenue Per Session');
     });
 
     // Regression test for a real bug this suite found.
@@ -196,7 +185,7 @@ test.describe('e-commerce reporting', () => {
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
 
-        for (const reportId of ['ecommerce', 'products', 'transactions']) {
+        for (const reportId of ['ecommerce', 'transactions']) {
             await openReportNoTabs(page, { reportId });
         }
 

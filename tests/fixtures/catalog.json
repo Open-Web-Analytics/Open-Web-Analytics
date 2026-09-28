@@ -4,9 +4,9 @@
         "metricImplementations": 37,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 77,
-        "dimensionEntriesDenormalized": 77,
-        "accessorDimensionNames": 77
+        "dimensionNamesDenormalized": 78,
+        "dimensionEntriesDenormalized": 78,
+        "accessorDimensionNames": 78
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -2047,6 +2047,19 @@
                 "denormalized": true
             }
         },
+        "transactionId": {
+            "base.event": {
+                "name": "transactionId",
+                "entity": "base.event",
+                "column": "transaction_id",
+                "family": "commerce",
+                "label": "Transaction ID",
+                "description": "The order id the purchase or refund was recorded under.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "userId": {
             "base.event": {
                 "name": "userId",
@@ -2951,6 +2964,17 @@
             "family": "traffic source",
             "label": "Tagged Source",
             "description": "The source named by the landing URL, as collected.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "transactionId": {
+            "name": "transactionId",
+            "entity": "base.event",
+            "column": "transaction_id",
+            "family": "commerce",
+            "label": "Transaction ID",
+            "description": "The order id the purchase or refund was recorded under.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
