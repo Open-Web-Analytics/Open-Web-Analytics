@@ -142,7 +142,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s219">2.19 Build order</a>
   <a href="#s220">2.20 Goals became goal events</a>
   <a href="#s221">2.21 Early cutover, per feature</a>
-  <a href="#s222">2.22 The parity harness</a>
+  <a href="#s222">2.22 Validating the migration</a>
   <a href="#s223">2.23 The v2 reporting UI is a separate path</a>
   <a href="#s225">2.24 Publishing the tracker</a>
   <a href="#s227">2.26 Custom dimensions</a>
@@ -482,17 +482,17 @@ event that saw it, so erasure has to scan rather than look up.</p>
 <h3 id="s19"><span class="num">1.9</span>One pipeline, and v1&rsquo;s data migrated into it <span class="chip c-dec">Decided</span></h3>
 <p><strong>v2 collects; v1 does not run beside it.</strong> There is no fan-out, no dual write and
 no overlap period. v2&rsquo;s tables are built, v1&rsquo;s history is migrated into them, collection
-switches over, and v1&rsquo;s tables are dropped when nobody wants them any more
-(<a href="#s226">&sect;2.25</a>).</p>
+switches over, and v1&rsquo;s tables are dropped when the administrator chooses
+(<a href="#s226">&sect;2.25</a>). The migration is forced and blocking; the drop is optional.</p>
 <p><strong>This is available because v1 is already an event log.</strong>
 <code>owa_request</code> is one row per tracked interaction with foreign keys into ten dimension
 tables, so denormalising it is a join &mdash; the same shape the pass performs, reading a star
 instead of a flat table. The migrator is <a href="#s221">&sect;2.21</a>.</p>
 <p><strong>What running both would have bought was an oracle</strong>, and migration buys a better
 one. Two live pipelines are compared across nondeterministic timing and cost throughput to do it
-(<a href="#nA113">A.1.13</a>). Re-deriving migrated rows and comparing against v1&rsquo;s own
-reports is the same comparison over fixed input, with no production cost
-(<a href="#s222">&sect;2.22</a>).</p>
+(<a href="#nA113">A.1.13</a>). Reconciling the migrated rows against totals taken from
+v1&rsquo;s own tables is the same comparison over fixed input, with no production cost and no v1
+report code kept to make it (<a href="#s222">&sect;2.22</a>).</p>
 <p class="note"><strong>What it does not buy is an oracle for collection.</strong> Every migrated
 row was collected by v1&rsquo;s tracker, so the pass and the reporting layer get tested and the new
 tracker does not &mdash; engagement deltas, the session model, consent and the new event types ship
@@ -2033,12 +2033,12 @@ v1 is still intact here, which is what makes the comparison possible.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>11</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows, non-destructive and re-runnable. Gated on the acquisition backfill having run.</td><td>Not started. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two.
+<tr><td>11</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows; forced, blocking, CLI-only, resumable. It fills <code>owa_visitor_acquisition</code> itself (the separate backfill command is deleted). Requires 1.14.0; v1 code is deleted with it.</td><td>Started 28&nbsp;Sep. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two.
 <strong>Target corrected 24&nbsp;Sep: it writes the RAW store, not the cube.</strong> The cube is
 derived, so <code>cmd=cube-rebuild</code> produces it and there is no second migrator &mdash; and
 because <a href="#s223">&sect;2.23</a> now has one reporting path, this is part of the reporting arc
 rather than a later phase: un-migrated history is unreportable the moment metrics read the cube</td></tr>
-<tr><td>12</td><td>Parity harness as a command (<a href="#s222">&sect;2.22</a>), comparing v1&rsquo;s reports against v2&rsquo;s over the migrated rows. <strong>Reframed 24&nbsp;Sep:</strong> with one reporting path it compares the same report before and after the migration, not two UIs side by side.</td><td>Not started</td></tr>
+<tr><td>12</td><td>Validation at the migration layer (<a href="#s222">&sect;2.22</a>): per-row rules, a per-site, per-day reconciliation against v1&rsquo;s tables, tests over a frozen 1.14 DDL fixture. <strong>Replaced 28&nbsp;Sep</strong> the parity harness, which needed v1&rsquo;s reports.</td><td>Not started</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.6</span>Phase 9 &mdash; cutover</h4>
@@ -2047,8 +2047,8 @@ rather than a later phase: un-migrated history is unreportable the moment metric
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>13</td><td><strong>Switch collection to v2.</strong> v1 stops receiving; its reports stay up, reading history. The one step with no rehearsal.</td><td>Not started</td></tr>
-<tr><td>14</td><td><strong>Drop v1</strong> &mdash; a command removing the 20 parallel tables, refusing while any visitor still holds NULL acquisition (<a href="#s221">&sect;2.21</a>). The shared admin tables are untouched.</td><td>Not started</td></tr>
+<tr><td>13</td><td><strong>Switch collection to v2.</strong> v1 stops receiving.</td><td>Done on the v2 branch</td></tr>
+<tr><td>14</td><td><strong>Drop v1</strong> &mdash; an optional command removing the 20 v1 tables by name (<a href="#s221b">&sect;2.21</a>), refusing until the migration has completed. The tables v2 keeps are untouched.</td><td>Not started</td></tr>
 </tbody></table></div>
 
 <div class="flag"><strong>Status &mdash; 2026-09-24</strong>
@@ -2110,10 +2110,18 @@ The memory problem that suggested SQL was <code>get_results()</code> materialisi
 the scan itself.</p>
 
 <h3 id="s221"><span class="num">2.21</span>Migrating v1 <span class="chip c-dec">Decided</span></h3>
+<p class="note"><strong>Decided 28&nbsp;Sep.</strong> Migration is <strong>forced</strong>; dropping v1 is
+<strong>optional</strong>. The 2.0 upgrade is a blocking, CLI-only update: until it has run, every
+action refuses (the pending-update gate). An installation must be on <strong>1.14.0</strong>
+(schema&nbsp;33) before it upgrades. v2 carries <strong>no v1 code</strong>: the migrator reads
+v1&rsquo;s tables with raw SQL against that one frozen schema, and after it runs v1 is tables
+only, which the optional drop command removes by name.</p>
+
 <p><strong>One job: read v1&rsquo;s star, write v2&rsquo;s denormalised rows.</strong>
 <code>owa_request</code> is 58 columns and one row per tracked interaction, with foreign keys into
 ten dimension tables, so the migration is the join the pass would have done anyway. On the measured
-installs that is 401,675 rows on peteradamsphoto and 640,949 on demo.</p>
+installs that is 401,675 rows on peteradamsphoto and 640,949 on demo. It writes
+<code>owa_event_raw</code>; the cubes are rebuilt from raw afterwards, as for any other history.</p>
 
 <div class="scroll"><table>
 <thead><tr><th>v2 column</th><th>Comes from</th></tr></thead>
@@ -2122,18 +2130,27 @@ installs that is 401,675 rows on peteradamsphoto and 640,949 on demo.</p>
 <tr><td><code>page_location</code>, <code>page_title</code>, <code>referer_url</code>, <code>host</code>, geo</td><td>the <code>document</code>, <code>referer</code>, <code>host</code> and <code>location_dim</code> joins</td></tr>
 <tr><td><code>page_path</code>, <code>page_query</code></td><td>parsed from the migrated URL, once, by the migrator rather than in SQL</td></tr>
 <tr><td><code>landing_page_*</code></td><td><code>is_entry_page</code> plus the same document join</td></tr>
-<tr><td><code>acq_*</code></td><td><code>owa_visitor.first_session_source/medium/campaign/ad/search_terms</code>, which PR&nbsp;#1114 added</td></tr>
 <tr><td><code>params</code></td><td>the five <code>cv{N}_name</code>/<code>cv{N}_value</code> pairs</td></tr>
 <tr><td><code>is_exit</code>, <code>yyyymmdd</code></td><td>derived over the migrated rows, as the pass derives them</td></tr>
+<tr><td><code>owa_visitor_acquisition</code> (<code>acq_*</code>)</td><td>one row per migrated visitor: <code>owa_visitor.first_session_*</code> (Update032), or the visitor&rsquo;s first <code>owa_session</code> through its dimension joins where those are empty. Without it every migrated visitor reports <em>(not set)</em> acquisition</td></tr>
 </tbody></table></div>
+
+<p><strong>Key width does not matter to the migrator.</strong> A v1 fact row reaches its dimension
+rows by hashed id, and an installation wrote both with the same width, so the joins resolve as
+stored. The migrator writes values, and v2 derives its own 64-bit ids from them when the cube is
+built. Visitor and session ids are the tracker&rsquo;s numeric GUIDs, not hashes, and carry over
+unchanged (signed, because v1 holds negative visitor ids &mdash; <code>EventRaw</code>).
+Width <em>does</em> matter to three small tables v2 keeps: on an installation still marked
+<code>use_32bit_hash</code>, <code>owa_site.id</code>, <code>owa_site_user.site_id</code> and
+<code>owa_scheduled_job.id</code> hold 32-bit hashes. The upgrade re-keys those three first and
+deletes the setting; nothing else of <code>rederive-dimension-ids</code> survives.</p>
 
 <p><strong>What no migration can produce.</strong> <code>engagement_msec</code>,
 <code>scroll_depth</code>, <code>element_*</code>, <code>target_host</code>,
 <code>consent_state</code>, <code>content_group</code>, <code>currency</code>,
 <code>device_brand</code>, <code>device_model</code>, <code>os_version</code>,
 <code>browser_version</code>, <code>clock_offset_usec</code> and <code>raw_ua</code> were never
-collected, so history carries NULL and every metric built on them starts at the cutover. That is
-not a migration defect; it is what it means to add a column.</p>
+collected, so history carries NULL and every metric built on them starts at the cutover.</p>
 
 <p><strong>And one thing it produces in the wrong shape.</strong> v1 stores the attribution
 <em>verdict</em> &mdash; <code>setTrafficAttribution()</code> applies a model in the browser and the
@@ -2142,47 +2159,76 @@ and <code>medium</code> with a decision, while <code>tagged_*</code> stays empty
 to re-derive from is gone. Reprocessing a corrected classifier
 (<a href="#s26">&sect;2.6.2</a>) therefore reaches only rows collected after cutover.</p>
 
-<p><strong>Non-destructive and re-runnable.</strong> It writes v2&rsquo;s tables and never touches
-v1&rsquo;s, so it can run as often as it takes to get right, and the comparison in
-<a href="#s222">&sect;2.22</a> happens against a v1 that is still intact. Dropping v1 is a separate
-decision taken later (<a href="#s226">&sect;2.25</a>).</p>
+<p><strong>Blocking, batched, resumable.</strong> It runs from the CLI only &mdash; millions of rows
+on a database other tenants share cannot run inside a web request. It works per site in
+<code>owa_request.id</code> order, commits in batches, and records its high-water mark, so an
+interrupted run resumes and a finished one is a no-op. Row ids are derived from the v1 row, so a
+replayed batch writes nothing twice.</p>
 
-<p class="note"><strong>The acquisition backfill becomes a prerequisite, not a nicety.</strong>
-<code>cmd=backfill-visitor-acquisition</code> stays a command rather than an update &mdash; NULL
-acquisition is a consistent state, and the join it runs is a decision for whoever knows what else
-shares the database. What changes is that <strong>its window closes</strong>: it recovers
-acquisition by reading <code>owa_visitor.first_session_id</code> back through
-<code>owa_session</code> and four dimension tables, all of which step&nbsp;5 drops. Migrate before
-backfilling and the acquisition was recoverable; drop v1 and it is not. So the migrator checks for
-visitors still holding NULL and says so, and the drop refuses quietly until someone has looked.</p>
+<p><strong>Non-destructive, so rollback is free.</strong> It writes v2&rsquo;s tables and never
+touches v1&rsquo;s. Until someone runs the drop, restoring 1.14 code gives back a working 1.14
+installation.</p>
 
-<p class="note"><strong>Domstream recordings are the exception.</strong> Everything v2 changes
-about them is storage-shaped: a recording becomes an attachment rather than a parallel fact row,
-the payload moves outside the row, and the encoding becomes delta tuples plus gzip, measured at
-~30&times;. Migrating them means re-encoding, so they either go last or stay in
-<code>owa_domstream</code> until it is dropped with the rest.</p>
+<p class="note"><strong>Recordings are not migrated.</strong> v1&rsquo;s <code>owa_domstream</code>
+rows go when the table is dropped. Recordings are now the Domstream module&rsquo;s own chunk and
+payload tables, and re-encoding v1&rsquo;s event lists into them was not worth it.</p>
 
-<h3 id="s222"><span class="num">2.22</span>The parity harness <span class="chip c-dec">Decided</span></h3>
-<p><strong>Parity runs over migrated history, not over two live pipelines.</strong> The same rows
-are read twice &mdash; by v1&rsquo;s reports from its own tables, and by v2&rsquo;s from the
-migrated ones &mdash; so the input is fixed, the comparison is deterministic, and nothing is
-double-written in production to make it possible.</p>
-<p><strong>It is still two instruments, and they must not share a verdict.</strong></p>
+<h4 id="s221a">The upgrade path</h4>
+<p><strong>v2 never runs a v1 update.</strong> Requiring 1.14.0 means every upgrading installation
+arrives at schema&nbsp;33, so v2&rsquo;s update chain starts there: Update003&ndash;033 are deleted
+and replaced by one gate that refuses anything older with &ldquo;upgrade to 1.14 first&rdquo;.
+Update034 (<code>owa_event_raw</code>, already on master) onward stay. The gate also covers the one
+case the chain handles today by replaying from Update001: tables present and no version recorded.
+A fresh 2.0 install creates only v2&rsquo;s tables.</p>
+
+<h4 id="s221b">What v1 leaves behind, and what goes</h4>
 <div class="scroll"><table>
-<thead><tr><th>Instrument</th><th>Scope</th><th>Basis</th></tr></thead>
+<thead><tr><th>v1 piece</th><th>In 2.0</th></tr></thead>
 <tbody>
-<tr><td><strong>Pipeline integrity</strong></td><td>below the session boundary &mdash; event-level attributes carried across the migration unchanged, plus row counts 1:1</td><td><strong>v1 is a true oracle.</strong> Same rows in, same values out; a disagreement is a migration bug. Generated and exhaustive</td></tr>
-<tr><td><strong>Model characterization</strong></td><td>at or above it &mdash; sessions, attribution, and everything derived from them</td><td>Expected values come from the new model&rsquo;s definition, not from v1&rsquo;s output. Hand-written and small, because the model decisions are few</td></tr>
+<tr><td>20 tables: <code>request</code>, <code>session</code>, <code>click</code>, <code>action_fact</code>, <code>feed_request</code>, <code>impression</code>, <code>domstream</code>, both commerce facts, <code>visitor</code>, <code>document</code>, <code>ua</code>, <code>os</code>, <code>host</code>, <code>referer</code>, <code>location_dim</code> and the <code>source</code>, <code>campaign</code>, <code>ad</code> and <code>search_term</code> dims</td><td>read by the migrator; removed by the optional drop command, by name. No entity classes</td></tr>
+<tr><td>the 20 entity classes, <code>FactTable</code>, <code>DimensionEntity</code> and <code>ResultSetManager</code>&rsquo;s star-join code</td><td>deleted</td></tr>
+<tr><td>19 unregistered handlers (<code>RequestHandlers</code>, <code>SessionHandlers</code> &hellip;)</td><td>deleted</td></tr>
+<tr><td><code>ReportsRest</code>&rsquo;s seven named reports (visit, latest visits, latest actions, clickstream, transactions, transaction, transaction items)</td><td>deleted; nothing in the UI calls them. A v2 report can replace any that is asked for</td></tr>
+<tr><td><code>rederive-dimension-ids</code>, <code>backfill-visitor-acquisition</code>, <code>repair-geo-encoding</code>, <code>update-document</code></td><td>deleted; the migrator does the acquisition backfill, and the upgrade re-keys the three kept tables</td></tr>
+<tr><td><code>OverlayLauncher</code>&rsquo;s <code>document_id</code> branch; v1 tables in <code>InstanceInfoCli</code>&rsquo;s partition list</td><td>deleted; the list names <code>event_raw</code> and the cubes</td></tr>
+<tr><td>what is kept only for the migrator: <code>goal_event.goal_number</code>, <code>count_mode</code>, <code>GoalVocabulary::LEGACY</code></td><td>read by the migrator (goal completions from <code>owa_session.goal_N</code>); kept for as long as 2.x ships the migrator</td></tr>
 </tbody></table></div>
-<p>v2 keeps the event and changes the session, so everything the session model touches diverges by
-design &mdash; sessions created only by page-view events, the store withheld until
-<code>sendAccepted</code>, the midnight split and the restart on new tags all move
-<code>visits</code>, which is the denominator of most of the formula tree
-(<a href="#s12">&sect;1.2</a>). Those differences are compared and expected, never reconciled.</p>
-<p class="note"><strong>What this cannot test is collection.</strong> Every migrated row was
-collected by v1&rsquo;s tracker, so the pass and the reporting layer are under test and the new
-tracker is not (<a href="#s19">&sect;1.9</a>). The harness proves the migration and the
-derivation; e2e coverage is what stands behind the client.</p>
+
+<h3 id="s222"><span class="num">2.22</span>Validating the migration <span class="chip c-dec">Decided</span></h3>
+<p class="note"><strong>Changed 28&nbsp;Sep.</strong> This was a parity harness reading the same
+history twice, through v1&rsquo;s reports and v2&rsquo;s. v2 keeps no v1 report code, so there is
+no second reader. The migration validates and cleans what it moves, and that layer carries the
+tests.</p>
+
+<p><strong>Every row is checked on the way through, and refused or repaired by rule.</strong> A
+row with no site, no timestamp in range or an unusable id is refused and counted by reason. A
+foreign key whose dimension row is missing becomes NULL rather than a join that drops the row. A
+URL that does not parse keeps its text in <code>page_location</code> and gets no path. Values v1
+stored as sentinels (<em>(not set)</em>, <code>0</code> for absent) become NULL
+(<a href="#s110">&sect;1.10</a>).</p>
+
+<p><strong>Every run ends in a reconciliation, per site and day:</strong> rows read, rows written,
+rows refused by reason, and the totals v1 would have reported from its own tables &mdash; page
+views, visitors, transactions and revenue &mdash; against the same totals over the migrated rows.
+These are SQL aggregates over the v1 tables, not v1 reports. The run is not marked complete until
+they agree or every difference is accounted for.</p>
+
+<p><strong>The tests sit at that layer.</strong> A frozen DDL fixture of the 1.14 schema, which is
+also the schema the migrator assumes, is loaded with hand-built rows: one per rule above, plus the
+shapes history actually holds (negative visitor ids, 32-bit and 64-bit hashes, multi-byte URLs).
+Each test asserts what reached <code>owa_event_raw</code> and <code>owa_visitor_acquisition</code>
+and what was refused.</p>
+
+<p><strong>Sessions diverge by design, and are not reconciled.</strong> v2 keeps the event and
+changes the session &mdash; sessions created only by page-view events, the midnight split and the
+restart on new tags all move visits, the denominator of most of the formula tree
+(<a href="#s12">&sect;1.2</a>). Event-level values and row counts must match; session-level
+figures are expected to differ and are characterized against the model&rsquo;s definition, not
+against v1.</p>
+
+<p><strong>What this cannot test is collection.</strong> Every migrated row was collected by
+v1&rsquo;s tracker, so the migration and the reporting layer are under test and the new tracker is
+not (<a href="#s19">&sect;1.9</a>). e2e coverage stands behind the client.</p>
 
 <h3 id="s223"><span class="num">2.23</span>One reporting path, and v2 replaces v1&rsquo;s metrics and dimensions <span class="chip c-dec">Decided</span></h3>
 <p><strong>There is ONE reporting path and it reads the cube.</strong> v1&rsquo;s metrics and
@@ -2961,10 +3007,10 @@ not retired with the client&rsquo;s.</p>
 
 <ol>
 <li>Build v2&rsquo;s tables and the pass. They sit alongside v1 and nothing reads them yet.</li>
-<li><strong>Migrate</strong> (<a href="#s221">&sect;2.21</a>). Non-destructive and re-runnable, against a v1 that stays intact.</li>
-<li><strong>Compare</strong> (<a href="#s222">&sect;2.22</a>) over the migrated rows, until the differences are all ones the model explains.</li>
-<li><strong>Switch collection to v2.</strong> One tracker, one pipeline; v1 stops receiving. v1&rsquo;s reports stay up, reading history.</li>
-<li><strong>Drop v1</strong> when nobody wants its reports any more &mdash; a command that removes the 20 parallel tables and leaves the shared admin tables alone.</li>
+<li><strong>Migrate</strong> (<a href="#s221">&sect;2.21</a>). Forced: a blocking, CLI-only update from 1.14.0. Non-destructive and resumable, against a v1 that stays intact.</li>
+<li><strong>Validate</strong> (<a href="#s222">&sect;2.22</a>) as the rows move: refused rows counted by reason, and per-site, per-day totals reconciled against v1&rsquo;s tables. Session-level differences are the model&rsquo;s, and expected.</li>
+<li><strong>Switch collection to v2.</strong> One tracker, one pipeline; v1 stops receiving. <strong>Done on the v2 branch:</strong> v1&rsquo;s handlers are unregistered and there are no v1 reports left to keep up.</li>
+<li><strong>Drop v1</strong> when the administrator chooses &mdash; an optional command that removes the 20 v1 tables by name and leaves the tables v2 keeps alone.</li>
 </ol>
 <p><strong>Step&nbsp;4 retires v1&rsquo;s handlers, not v1&rsquo;s wire format</strong>, and
 what is different about it is narrower than it first looks. Cached trackers are the standing
@@ -2976,8 +3022,10 @@ it. The mitigation is always the same: <strong>keep the old path, prefer the new
 <p><strong>Step&nbsp;4 is the one release where that is unavailable</strong>, because deleting the
 old path is the point of the step. There is no fallback branch to add &mdash; the new code is the
 only code, and it has to understand v1&rsquo;s vocabulary outright. Hence
-<code>Classes\V2Event::name()</code>, which maps <code>base.page_request</code>,
-<code>dom.click</code> and <code>ecommerce.transaction</code> onto the v2 names.</p>
+<code>Classes\Beacon\Compat</code>, whose <code>event_names</code> map
+(<code>conf/beacon_compat.php</code>) renames <code>base.page_request</code>,
+<code>dom.click</code> and <code>ecommerce.transaction</code> to the v2 names as the first step of
+<code>logEvent()</code> and of a queue drain. It was <code>V2Event::name()</code> until 28&nbsp;Sep.</p>
 <p class="note"><strong>Measured, against the beacon contract:</strong> a cached tracker sends
 <strong>nothing</strong> v2 ignores, and fails to send exactly two things v2 wants &mdash;
 <code>client_ts_usec</code> and <code>page_location</code>. Both already have server-side answers:
@@ -2990,13 +3038,11 @@ this handover and nothing in 1.x reads them. So a cached beacon becomes a correc
 bundle refreshes. That is <a href="#s12">&sect;1.2.4</a>&rsquo;s rule holding: values may degrade,
 records must not vanish.</p>
 
-<p class="note"><strong>The parallel pipeline is development scaffolding, and it ends at
-step&nbsp;4.</strong> v2 does not ship alongside v1. During development a site can be switched on
-with the <code>v2_raw_collection</code> setting, so that ingest is exercised against real traffic
-before the switch instead of the switch being the first time it ever runs &mdash; which is the
-shape that produced the Update&nbsp;023 and 026 failures. It is denylisted from the options form
-and off for every site. At step&nbsp;4 the setting is deleted along with v1&rsquo;s handler
-registrations, and <code>Handler\EventRawHandlers</code> registers unconditionally.</p>
+<p class="note"><strong>The parallel pipeline was development scaffolding, and it has ended.</strong> v2 does
+not ship alongside v1. During development a site could be switched on with the
+<code>v2_raw_collection</code> setting, so ingest was exercised against real traffic before the
+switch. The setting is deleted, v1&rsquo;s handler registrations are gone and
+<code>Handler\EventRawHandlers</code> registers unconditionally.</p>
 
 <p><strong>Nothing is irreversible until step&nbsp;5</strong>, and step&nbsp;5 is the
 administrator&rsquo;s decision rather than an upgrade&rsquo;s side effect. Steps&nbsp;2 and 3 can
