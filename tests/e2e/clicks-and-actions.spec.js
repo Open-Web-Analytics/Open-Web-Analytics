@@ -81,8 +81,9 @@ test.describe('the click reports draw recorded clicks', () => {
      * The per-page detail: four clicks on '/', two on '/pricing'.
      *
      * This report takes a pagePath, so it is the one that answers "what was
-     * clicked on THIS page" -- and its headline states the number, which is the
-     * metric rendered as prose rather than as a grid cell.
+     * clicked on THIS page". Its element grid counts per element, and its rows
+     * add up to the page's clicks. (It stated the total as a headline; report
+     * headlines were removed.)
      */
     test('the per-page click report counts that page only', async ({ page }) => {
         await openConfiguredReport(page, {
@@ -92,10 +93,8 @@ test.describe('the click reports draw recorded clicks', () => {
 
         await expect(page.locator('.ui-jqgrid').first()).toBeVisible({ timeout: 20_000 });
 
-        const body = (await page.locator('body').textContent()).replace(/\s+/g, ' ');
-
-        expect(body, "the headline does not state this page's click count")
-            .toContain(`There were ${FIXTURE.clicks.byPage['/']} dom clicks`);
+        expect(await clicksInGrid(page), "the element grid does not add up to this page's clicks")
+            .toBe(FIXTURE.clicks.byPage['/']);
 
         // Both elements clicked on '/', and NOT the one clicked only elsewhere
         // -- /pricing's clicks were on buy-btn, which is also on '/', so the
@@ -113,8 +112,18 @@ test.describe('the click reports draw recorded clicks', () => {
             params: { pagePath: '/pricing' },
         });
 
-        const body = (await page.locator('body').textContent()).replace(/\s+/g, ' ');
+        await expect(page.locator('.ui-jqgrid').first()).toBeVisible({ timeout: 20_000 });
 
-        expect(body).toContain(`There were ${FIXTURE.clicks.byPage['/pricing']} dom clicks`);
+        expect(await clicksInGrid(page)).toBe(FIXTURE.clicks.byPage['/pricing']);
     });
+
+    /**
+     * The clicks the "Dom IDs" grid counts: each row ends in its count. The first
+     * grid on the page, so the other breakdowns of the same clicks are not added
+     * in again.
+     */
+    async function clicksInGrid(page) {
+        const rows = await page.locator('#topDomIds tr.jqgrow').allTextContents();
+        return rows.reduce((sum, r) => sum + Number((r.replace(/\s+/g, '').match(/(\d+)$/) || [0, 0])[1]), 0);
+    }
 });
