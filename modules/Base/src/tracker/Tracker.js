@@ -5023,13 +5023,44 @@ class OWATracker  {
 
         for ( var i = 0; i < params.length; i++ ) {
 
-            var term = this.getUrlParam( params[ i ] );
+            var term = this.getSearchParam( params[ i ] );
 
-            if ( term ) {
+            if ( term.trim() ) {
 
                 return this.raiseEvent( 'view_search_results', { search_term: term } );
             }
         }
+    }
+
+    /**
+     * One query-string parameter, decoded the way a form submits it.
+     *
+     * NOT getUrlParam(), whose parser left `+` as `+` and `%26` encoded, read
+     * parameters out of the fragment, lower-cased names, took the LAST of a
+     * repeated parameter and threw on a malformed escape. A search box submits
+     * `Red+Shoes`; the term is `Red Shoes`.
+     *
+     * The query string only, the first value, the name as written. '' when the
+     * parameter is absent.
+     *
+     * @param {string} name
+     * @return {string}
+     */
+    getSearchParam( name ) {
+
+        var search = ( typeof location !== 'undefined' && location ) ? location.search : '';
+        var value = null;
+
+        try {
+
+            value = new URLSearchParams( search ).get( name );
+
+        } catch ( e ) {
+
+            return '';
+        }
+
+        return value === null ? '' : value;
     }
 
     /**

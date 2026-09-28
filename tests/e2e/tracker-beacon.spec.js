@@ -185,6 +185,39 @@ test.describe('the built tracker fires beacons on the wire', () => {
 });
 
 /**
+ * Site search in a real browser: the term is decoded the way a search form
+ * submits it, so `Red+Shoes` is the term `Red Shoes`.
+ */
+test.describe('a results URL raises view_search_results', () => {
+
+    test('with the term as the visitor typed it', async ({ page }, testInfo) => {
+        const beacons = [];
+        page.on('request', (req) => {
+            if (req.url().includes('log.php')) {
+                beacons.push(req.url());
+            }
+        });
+
+        const root = installRoot(testInfo.project.use.baseURL);
+        const harness = root + 'tests/e2e/tracker_harness.html'
+            + '?base=' + encodeURIComponent(root) + '&search=1&q=Red+Shoes';
+
+        await page.route(harness, (route) =>
+            route.fulfill({ contentType: 'text/html', body: HARNESS_HTML })
+        );
+
+        await page.goto(harness, { waitUntil: 'load' });
+
+        const searches = () => beacons
+            .filter((u) => /[?&]event_type=view_search_results/.test(u))
+            .map((u) => new URL(u).searchParams);
+
+        await expect.poll(() => searches().length, { timeout: 20_000 }).toBe(1);
+        expect(searches()[0].get('search_term')).toBe('Red Shoes');
+    });
+});
+
+/**
  * Route changes in a real browser: the page view waits for the route to
  * settle, reads the title then, collapses quick pushes into one, and names the
  * previous route as its referrer.

@@ -83,6 +83,19 @@ describe('getUrlParam', () => {
 
         expect(t.getUrlParam('nope')).toBe(false);
     });
+
+    /*
+     * A malformed escape made decodeURI throw out of every caller. The raw text
+     * is kept instead, and the other parameters still parse.
+     */
+    test('a malformed escape does not throw, and keeps the raw text', () => {
+        setUrl('/p?bad=%E0%A4&owa_state=abc123');
+        const t = newTracker();
+
+        expect(() => t.getUrlParam('bad')).not.toThrow();
+        expect(t.getUrlParam('bad')).toBe('%E0%A4');
+        expect(t.getUrlParam('owa_state')).toBe('abc123');
+    });
 });
 
 describe('getUrlAnchorValue / getAnchorParam', () => {

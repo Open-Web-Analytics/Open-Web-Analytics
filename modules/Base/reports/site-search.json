@@ -1,0 +1,36 @@
+{
+    "title": "Site Search",
+    "metrics": "eventCount,sessions",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "eventCount",
+            "query": {
+                "dimensions": "date",
+                "sort": "date",
+                "metrics": "eventCount"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "terms",
+            "container": "search-terms",
+            "title": "Search Terms",
+            "query": {
+                "metrics": "eventCount,sessions",
+                "dimensions": "searchTerm",
+                "sort": "eventCount-"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "eventName",
+                "value": "view_search_results"
+            }
+        ]
+    }
+}

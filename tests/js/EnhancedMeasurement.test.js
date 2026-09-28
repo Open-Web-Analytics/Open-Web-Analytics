@@ -750,7 +750,7 @@ describe('site search', () => {
         const t = newTracker({ siteSearchParams: ['q', 'query'] });
         const sent = captureSends(t);
 
-        t.getUrlParam = (name) => (name === 'q' ? 'partitioning' : false);
+        history.replaceState({}, '', '/search?q=partitioning');
         t.trackSiteSearch();
 
         expect(sent).toHaveLength(1);
@@ -769,7 +769,7 @@ describe('site search', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
-        t.getUrlParam = (name) => (name === 'q' ? 'shoes' : false);
+        history.replaceState({}, '', '/search?q=shoes');
         t.trackSiteSearch();
 
         expect(sent).toHaveLength(1);
@@ -781,7 +781,7 @@ describe('site search', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
-        t.getUrlParam = () => false;
+        history.replaceState({}, '', '/plain');
         t.trackSiteSearch();
 
         expect(sent).toHaveLength(0);
@@ -795,7 +795,7 @@ describe('site search', () => {
         const t = newTracker({ siteSearchParams: [] });
         const sent = captureSends(t);
 
-        t.getUrlParam = () => 'anything';
+        history.replaceState({}, '', '/search?q=anything&s=anything&kw=anything');
         t.trackSiteSearch();
 
         expect(sent).toHaveLength(0);
@@ -817,12 +817,12 @@ describe('site search', () => {
 
         const sent = captureSends(t);
         // ?q= is still on the URL and must no longer be read as a search.
-        t.getUrlParam = (name) => (name === 'q' ? 'shoes' : false);
+        history.replaceState({}, '', '/search?q=shoes');
         t.trackSiteSearch();
 
         expect(sent).toHaveLength(0);
 
-        t.getUrlParam = (name) => (name === 'kw' ? 'boots' : false);
+        history.replaceState({}, '', '/search?kw=boots');
         t.trackSiteSearch();
 
         expect(sent).toHaveLength(1);
@@ -846,7 +846,7 @@ describe('site search', () => {
         expect(t.getOption('siteSearchParams')).toEqual([]);
 
         const sent = captureSends(t);
-        t.getUrlParam = () => 'anything';
+        history.replaceState({}, '', '/search?q=anything&s=anything&kw=anything');
         t.trackSiteSearch();
 
         expect(sent).toHaveLength(0);
@@ -902,7 +902,7 @@ describe('site search', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
-        t.getUrlParam = (name) => (name === 'q' ? 'partitioning' : false);
+        history.replaceState({}, '', '/search?q=partitioning');
         t.trackPageView('https://example.org/search?q=partitioning');
 
         expect(sent.map((e) => e.event_type)).toEqual(['page_view']);
@@ -917,9 +917,7 @@ describe('site search', () => {
         jest.useFakeTimers();
         const t = newTracker();
         const sent = captureSends(t);
-        const terms = ['first', 'second'];
-
-        t.getUrlParam = (name) => (name === 'q' ? terms.shift() : false);
+        history.replaceState({}, '', '/search?q=first');
 
         t.trackRouteChanges();
         t.trackSiteSearch();
@@ -932,6 +930,52 @@ describe('site search', () => {
 
         expect(searches).toHaveLength(2);
         expect(searches.map((e) => e.search_term)).toEqual(['first', 'second']);
+    });
+
+    /*
+     * THE TERM IS READ THE WAY A FORM SUBMITS IT. getUrlParam()'s parser left
+     * `+` and `%26` encoded, read the fragment, lower-cased names, took the last
+     * of a repeated parameter and threw on a malformed escape.
+     */
+    test.each([
+        ['/search?q=Red+Shoes', 'Red Shoes'],
+        ['/search?q=a%26b%3Dc', 'a&b=c'],
+        ['/search?q=%E6%97%A5%E6%9C%AC%20caf%C3%A9', '日本 café'],
+        ['/search?q=one&q=two', 'one'],
+        ['/search?s=first&q=second', 'second'],
+    ])('%s is searched as %s', (url, term) => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        history.replaceState({}, '', url);
+        t.trackSiteSearch();
+
+        expect(sent.map((e) => e.search_term)).toEqual([term]);
+    });
+
+    test.each([
+        ['/search?q=', 'an empty value'],
+        ['/search?q=%20%20', 'a blank value'],
+        ['/search?Q=shoes', 'a parameter named in another case'],
+        ['/app#/search?q=shoes', 'a parameter in the fragment'],
+    ])('%s raises nothing: %s', (url) => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        history.replaceState({}, '', url);
+        t.trackSiteSearch();
+
+        expect(sent).toHaveLength(0);
+    });
+
+    test('a malformed escape does not throw', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        history.replaceState({}, '', '/search?q=%E0%A4');
+
+        expect(() => t.trackSiteSearch()).not.toThrow();
+        expect(sent).toHaveLength(1);
     });
 });
 

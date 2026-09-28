@@ -760,6 +760,11 @@ class Module extends \OWA\Core\Module {
          * event, so each row's count is "how many reached at least this far".
          */
         $this->registerReport( 'scroll-depth', 'reports/scroll-depth.json' );
+        /*
+         * WHAT PEOPLE SEARCHED FOR on the site: view_search_results by term, as
+         * searches and as the sessions that searched.
+         */
+        $this->registerReport( 'site-search', 'reports/site-search.json' );
         $this->registerReport( 'domstreams', array( 'controller' => 'base.reportDomstreams' ) );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
@@ -857,6 +862,7 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'scroll-depth' ), 'Scroll Depth', 6);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'site-search' ), 'Site Search', 7);
 
 
         /*

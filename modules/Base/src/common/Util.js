@@ -268,14 +268,24 @@ class Util {
     static parseUrlParams ( url ) {
         
         var _GET = {};
+
+        // A malformed escape (%E0%A4) made decodeURI throw out of every caller;
+        // the raw text is kept instead.
+        var safeDecode = function ( part ) {
+            try {
+                return decodeURI( part );
+            } catch ( e ) {
+                return part;
+            }
+        };
         var href = ( typeof url === 'string' && url )
             ? url
             : ( ( typeof location !== 'undefined' && location ) ? location.href : '' );
         for(var i,a,m,n,o,v,p=href.split(/[?&]/),l=p.length,k=1;k<l;k++)
             if( (m=p[k].match(/(.*?)(\..*?|\[.*?\])?=([^#]*)/)) && m.length==4){
-                n=decodeURI(m[1]).toLowerCase(),o=_GET,v=decodeURI(m[3]);
+                n=safeDecode(m[1]).toLowerCase(),o=_GET,v=safeDecode(m[3]);
                 if(m[2])
-                    for(a=decodeURI(m[2]).replace(/\[\s*\]/g,"[-1]").split(/[\.\[\]]/),i=0;i<a.length;i++)
+                    for(a=safeDecode(m[2]).replace(/\[\s*\]/g,"[-1]").split(/[\.\[\]]/),i=0;i<a.length;i++)
                         o=o[n]?o[n]:o[n]=(parseInt(a[i])==a[i])?[]:{}, n=a[i].replace(/^["\'](.*)["\']$/,"$1");
                         n!='-1'?o[n]=v:o[o.length]=v;
             }
