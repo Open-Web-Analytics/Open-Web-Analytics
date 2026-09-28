@@ -136,11 +136,6 @@ class Module extends \OWA\Core\Module {
      */
     function registerFilters() {
 
-        if ( defined( 'OWA_MAIL_EXCEPTIONS' ) ) {
-
-            $this->registerFilter('post_processed_tracking_event', $this, 'checkEventForType');
-        }
-
         $this->registerFilter('tracker_tag_cmds', $this, 'addTrackerCmds', 0);
 
         /*
@@ -1088,18 +1083,6 @@ class Module extends \OWA\Core\Module {
         //owa_coreAPI::debug('test handler: '.print_r($event, true));
     }
     
-    function checkEventForType( $event ) {
-
-        $type = $event->getEventType();
-
-        if ( $type === 'unknown_event_type' ) {
-
-            $e = \OWA\Core\CoreAPI::errorSingleton();
-            $e->mailErrorMsg( print_r( $event->getProperties(), true ), 'Unknown Event Type' );
-        }
-
-        return $event;
-    }
 
 }
 
