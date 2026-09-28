@@ -1982,14 +1982,25 @@ class CoreAPI {
 
                             // check to see if subgroup is already present in the main array
                             if ( array_key_exists( $subgroup, $links[ $group ] ) ) {
-                                // merge various elements?? not now.
 
-                                //check to see if there is an existing set of subgroup links
-                                if ( array_key_exists( 'subgroup', $links[ $group ][ $subgroup ] ) ) {
-                                    // if so, merge the subgroups
-                                    $links[ $group ][ $subgroup ][ 'subgroup' ] = array_merge( $links[ $group ][ $subgroup ][ 'subgroup' ], $link[ 'subgroup' ] );
-                                } else {
+                                $existing = $links[ $group ][ $subgroup ];
 
+                                /*
+                                 * A module that only adds a link to another
+                                 * module's subgroup contributes 'subgroup' and
+                                 * nothing else. Whichever module is loaded
+                                 * first, the entry keeps the defining module's
+                                 * label, link and order, and gains the links.
+                                 */
+                                $merged = array_merge(
+                                    (array) ( $existing['subgroup'] ?? array() ),
+                                    (array) ( $link['subgroup'] ?? array() ) );
+
+                                $links[ $group ][ $subgroup ] = $existing + (array) $link;
+
+                                if ( $merged ) {
+
+                                    $links[ $group ][ $subgroup ]['subgroup'] = $merged;
                                 }
                             } else {
                                 // else populate the link
