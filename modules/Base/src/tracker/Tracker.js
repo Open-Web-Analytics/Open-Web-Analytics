@@ -2284,11 +2284,17 @@ class OWATracker  {
      * across page lengths and viewport sizes, and it answers the question
      * anyone actually asks of it: did they reach the bottom.
      *
-     * The threshold list is an option so a site can ask for quartiles. The
-     * default is a single 90% mark -- one event, at the depth where "read to the
-     * end" becomes true.
+     * The threshold list is an option. The default is quartiles -- 25, 50, 75
+     * and 90 -- so the marks read as a depth funnel; a site that wants the one
+     * event at 90%, where "read to the end" becomes true, sets [90].
      */
     checkScrollDepth() {
+
+        // A route change is settling; send() checks once its page view is out.
+        if ( this.routePending ) {
+
+            return;
+        }
 
         var depth = this.getScrollDepth();
 
@@ -2670,6 +2676,7 @@ class OWATracker  {
             }
 
             that.flushRouteView = null;
+            that.routePending = false;
 
             var url = that.getCurrentUrl();
 
@@ -2698,6 +2705,19 @@ class OWATracker  {
              * the term from whatever screen the visitor landed on first.
              */
             that.trackSiteSearch();
+
+            /*
+             * THE ROUTE'S DEPTH, measured as a loaded page's is: its marks start
+             * again, and a route that fits the viewport reports them now rather
+             * than waiting for a scroll that will never come. After the page
+             * view, in the order a loaded page sends them.
+             */
+            that.last_scroll = 0;
+
+            if ( that.isScrollTrackingEnabled ) {
+
+                that.checkScrollDepth();
+            }
         };
 
         var changed = function () {
@@ -2719,8 +2739,11 @@ class OWATracker  {
 
                 that.trackEngagement();
                 that.resetEngagement();
-                that.last_scroll = 0;
             }
+
+            // No scroll event for a route before its page view: depth checks
+            // wait until the page view is sent (see send()).
+            that.routePending = true;
 
             if ( pending ) {
 

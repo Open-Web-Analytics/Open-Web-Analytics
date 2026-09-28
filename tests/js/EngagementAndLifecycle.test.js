@@ -539,6 +539,83 @@ describe('SPA route changes', () => {
     });
 
     /*
+     * A ROUTE'S DEPTH IS A PAGE'S DEPTH. A loaded page that fits the viewport
+     * reports its marks at load; a route that fits reported nothing, because
+     * only a scroll ever checked.
+     */
+    test('a route that fits the viewport reports its marks, after its page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/long-page');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 0;
+        t.trackScroll();
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/short-route');
+        t.getScrollDepth = () => 100;
+        settle();
+
+        const names = sent.map(e => e.event_type).filter(n => n !== 'user_engagement');
+        expect(names).toEqual(['page_view', 'scroll', 'scroll', 'scroll', 'scroll']);
+        expect(sent.filter(e => e.event_type === 'scroll').map(e => e.scroll_depth))
+            .toEqual([25, 50, 75, 90]);
+    });
+
+    test('scrolling while a route settles sends nothing before its page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/before-settle');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 0;
+        t.trackScroll();
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/settling');
+        t.getScrollDepth = () => 60;
+        t.checkScrollDepth();
+
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(0);
+
+        settle();
+
+        const names = sent.map(e => e.event_type).filter(n => n !== 'user_engagement');
+        expect(names).toEqual(['page_view', 'scroll', 'scroll']);
+    });
+
+    test('each route starts its marks again', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/read-to-end');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 100;
+        t.trackScroll();
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(4);
+
+        t.trackRouteChanges();
+        window.history.pushState({}, '', '/next-route');
+        t.getScrollDepth = () => 30;
+        settle();
+
+        const scrolls = sent.filter(e => e.event_type === 'scroll');
+        expect(scrolls.slice(4).map(e => e.scroll_depth)).toEqual([25]);
+    });
+
+    test('without scroll tracking, a route change sends no scroll event', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/no-scroll-a');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 100;
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/no-scroll-b');
+        settle();
+
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(0);
+    });
+
+    /*
      * A route page view still waiting when the page goes away is sent then,
      * not lost with the timer.
      */
