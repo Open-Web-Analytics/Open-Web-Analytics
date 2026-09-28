@@ -47,21 +47,53 @@ class RequestMigrator {
 
     private $batch;
 
+    /** @var int|null the oldest day migrated, as yyyymmdd; null migrates all */
+    private $since;
+
     /** @var array table => bool, whether its `id` column is an integer type */
     private $integer_keys = array();
 
     /**
      * @param string $prefix the prefix the v1 tables are read under
      * @param int    $batch  v1 rows per transaction
+     * @param int|null $since the oldest day to migrate, as yyyymmdd; null for all
      */
-    function __construct( $prefix = 'owa_', $batch = self::BATCH ) {
+    function __construct( $prefix = 'owa_', $batch = self::BATCH, $since = null ) {
 
         $this->prefix = $prefix;
         $this->batch  = max( 1, (int) $batch );
+        $this->since  = $since === null ? null : (int) $since;
     }
 
     /**
-     * The sites v1 holds page views for.
+     * How much v1 holds, per site and year: what the preflight shows before an
+     * administrator chooses a cutoff.
+     *
+     * @return array[] site_id, year, rows, known (whether the site still exists)
+     */
+    public function volume() {
+
+        $known = $this->knownSites();
+
+        return array_map( function ( $r ) use ( $known ) {
+
+            $r = (array) $r;
+
+            return array( 'site_id' => (string) $r['site_id'], 'year' => (int) $r['year'], 'rows' => (int) $r['n'],
+                'known' => isset( $known[ (string) $r['site_id'] ] ) );
+
+        }, (array) $this->db()->get_results( sprintf(
+            'SELECT site_id, FLOOR(yyyymmdd / 10000) AS year, COUNT(*) AS n FROM %s'
+            . ' GROUP BY site_id, FLOOR(yyyymmdd / 10000) ORDER BY site_id, year',
+            V1Tables::name( self::SOURCE, $this->prefix ) ) ) );
+    }
+
+    /**
+     * The sites v1 holds page views for that still exist.
+     *
+     * A site_id no site row carries -- one deleted outright, or a test's -- is
+     * not migrated: its history would sit in v2 where no profile reports on
+     * it. The preflight counts what is left behind (volume()).
      *
      * @return string[]
      */
@@ -70,10 +102,31 @@ class RequestMigrator {
         $rows = (array) $this->db()->get_results( sprintf(
             'SELECT DISTINCT site_id FROM %s', V1Tables::name( self::SOURCE, $this->prefix ) ) );
 
+        $known = $this->knownSites();
+
         return array_values( array_filter( array_map( function ( $r ) {
 
             return (string) ( (array) $r )['site_id'];
-        }, $rows ), 'strlen' ) );
+
+        }, $rows ), function ( $site_id ) use ( $known ) {
+
+            return $site_id !== '' && isset( $known[ $site_id ] );
+        } ) );
+    }
+
+    /** @return array site_id => true, for every site row there is */
+    private function knownSites() {
+
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
+
+        $known = array();
+
+        foreach ( (array) $this->db()->get_results( sprintf( 'SELECT site_id FROM %s', $table ) ) as $r ) {
+
+            $known[ (string) ( (array) $r )['site_id'] ] = true;
+        }
+
+        return $known;
     }
 
     /**
@@ -123,6 +176,44 @@ class RequestMigrator {
      */
     private function migrateBatch( $site_id, array $rows, array &$progress ) {
 
+        $out = $this->build( $rows, $progress );
+
+        $last = end( $rows );
+        $progress['last_id'] = (string) $last['id'];
+
+        $db = $this->db();
+        $db->beginTransaction();
+
+        $written = $this->write( $out );
+
+        if ( $written === false ) {
+
+            $db->rollbackTransaction();
+
+            throw new \RuntimeException( sprintf(
+                'v1 migration: writing a batch of %s for site %s failed; nothing from it was kept.',
+                self::SOURCE, $site_id ) );
+        }
+
+        $progress['rows_written'] += $written;
+
+        if ( ! $this->save( $progress ) ) {
+
+            $db->rollbackTransaction();
+
+            throw new \RuntimeException( 'v1 migration: recording progress failed; the batch was rolled back.' );
+        }
+
+        $db->endTransaction();
+    }
+
+    /**
+     * The raw rows a batch of v1 rows becomes, counting refusals into $progress.
+     *
+     * @return array[]
+     */
+    private function build( array $rows, array &$progress ) {
+
         $refs = $this->resolve( $rows );
 
         $out = array();
@@ -152,33 +243,60 @@ class RequestMigrator {
             }
         }
 
-        $last = end( $rows );
-        $progress['last_id'] = (string) $last['id'];
+        return $out;
+    }
 
-        $db = $this->db();
-        $db->beginTransaction();
+    /**
+     * Undo one site's migration: delete exactly the raw rows it wrote.
+     *
+     * The ids are derived from the v1 rows, which the migration never
+     * touches, so reading them again with the cutoff the site was migrated
+     * with derives the same ids. Nothing else in owa_event_raw is touched.
+     * Once v1 is dropped there is nothing to roll back to.
+     *
+     * @return int rows deleted
+     */
+    public function revertSite( $site_id ) {
 
-        $written = $this->write( $out );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
+        $entity->load( \OWA\Module\Base\Entity\MigrationProgress::idFor( self::SOURCE, $site_id ) );
 
-        if ( $written === false ) {
+        if ( ! $entity->wasPersisted() ) {
 
-            $db->rollbackTransaction();
-
-            throw new \RuntimeException( sprintf(
-                'v1 migration: writing a batch of %s for site %s failed; nothing from it was kept.',
-                self::SOURCE, $site_id ) );
+            return 0;
         }
 
-        $progress['rows_written'] += $written;
+        $since = (int) $entity->get( 'since' );
+        $this->since = $since > 0 ? $since : null;
 
-        if ( ! $this->save( $progress ) ) {
+        $table   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $deleted = 0;
+        $after   = null;
+        $scratch = array( 'rows_read' => 0, 'rows_refused' => 0, 'refusals' => array() );
 
-            $db->rollbackTransaction();
+        while ( $rows = $this->read( $site_id, $after ) ) {
 
-            throw new \RuntimeException( 'v1 migration: recording progress failed; the batch was rolled back.' );
+            $ids = array_map( 'intval', array_column( $this->build( $rows, $scratch ), 'id' ) );
+
+            if ( $ids ) {
+
+                $before = $this->count( $table, array_map( function ( $id ) { return array( 'id' => $id ); }, $ids ) );
+
+                if ( $this->db()->query( sprintf( 'DELETE FROM %s WHERE id IN (%s)', $table, implode( ',', $ids ) ) ) === false ) {
+
+                    throw new \RuntimeException( sprintf( 'v1 migration: reverting site %s failed.', $site_id ) );
+                }
+
+                $deleted += $before;
+            }
+
+            $last  = end( $rows );
+            $after = (string) $last['id'];
         }
 
-        $db->endTransaction();
+        $entity->delete();
+
+        return $deleted;
     }
 
     /**
@@ -458,6 +576,11 @@ class RequestMigrator {
 
         $where = 'site_id = ?';
 
+        if ( $this->since !== null ) {
+
+            $where .= ' AND yyyymmdd >= ' . (int) $this->since;
+        }
+
         if ( $after !== null && $after !== '' ) {
 
             if ( ! self::isId( $after ) ) {
@@ -548,6 +671,18 @@ class RequestMigrator {
         if ( $entity->wasPersisted() ) {
 
             $p = $entity->_getProperties();
+
+            // NULL is stored as 0 by the numeric column; both mean all history.
+            $recorded = (int) $p['since'] > 0 ? (int) $p['since'] : null;
+
+            if ( $recorded !== $this->since ) {
+
+                throw new \RuntimeException( sprintf(
+                    'v1 migration: site %s was started with %s; running it with %s would leave a gap.',
+                    $site_id,
+                    $recorded === null ? 'all history' : 'since=' . $recorded,
+                    $this->since === null ? 'all history' : 'since=' . $this->since ) );
+            }
             $p['refusals'] = (array) json_decode( (string) $p['refusals'], true );
             $p['persisted'] = true;
 
@@ -564,6 +699,7 @@ class RequestMigrator {
             'source'       => self::SOURCE,
             'site_id'      => (string) $site_id,
             'last_id'      => null,
+            'since'        => $this->since,
             'rows_read'    => 0,
             'rows_written' => 0,
             'rows_refused' => 0,

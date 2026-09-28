@@ -35,6 +35,10 @@ class MigrationProgress extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'site_id', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'last_id', OWA_DTD_VARCHAR64 ) );
 
+        // The history cutoff the run was started with, as yyyymmdd; NULL is all
+        // of it. A later run with another would leave a gap, so it is refused.
+        $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'since', OWA_DTD_INT ) );
+
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'rows_read', OWA_DTD_BIGINT ) );
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'rows_written', OWA_DTD_BIGINT ) );
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'rows_refused', OWA_DTD_BIGINT ) );

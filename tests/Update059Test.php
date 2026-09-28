@@ -35,7 +35,7 @@ final class Update059Test extends TestCase
     public function testTheModuleRequiresIt(): void
     {
         $this->assertSame(59, $this->update->schema_version);
-        $this->assertSame(59, \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
+        $this->assertGreaterThanOrEqual(59, \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
         $this->assertContains('migration_progress', \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->entities);
     }
 

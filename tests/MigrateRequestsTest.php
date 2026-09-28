@@ -31,6 +31,11 @@ final class MigrateRequestsTest extends TestCase
 
         V1Schema::load();
         $this->clean();
+
+        // Only sites that still exist are migrated.
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            'INSERT INTO owa_site (id, site_id, domain, name) VALUES (?, ?, ?, ?)',
+            [\OWA\Core\Lib::setStringGuid(self::SITE), self::SITE, 'alice.example', 'Alice']);
     }
 
     protected function tearDown(): void
@@ -48,6 +53,7 @@ final class MigrateRequestsTest extends TestCase
 
         $db->query("DELETE FROM $raw WHERE site_id = ?", [self::SITE]);
         $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
     }
 
     private function insert(string $table, array $row): void
@@ -360,10 +366,44 @@ final class MigrateRequestsTest extends TestCase
         $this->assertNull($this->tagged()['tagged_medium']);
     }
 
-    public function testTheSitesAreThoseV1HoldsPageViewsFor(): void
+    public function testTheSitesAreThoseV1HoldsPageViewsForThatStillExist(): void
+    {
+        $this->visit();
+        $this->request('1790000000000000199', ['site_id' => 'mig-site-gone']);
+
+        $this->assertSame([self::SITE], $this->migrator()->sites());
+
+        $volume = $this->migrator()->volume();
+        $gone = array_values(array_filter($volume, fn ($v) => $v['site_id'] === 'mig-site-gone'))[0];
+        $kept = array_values(array_filter($volume, fn ($v) => $v['site_id'] === self::SITE))[0];
+
+        $this->assertFalse($gone['known']);
+        $this->assertTrue($kept['known']);
+        $this->assertSame(3, $kept['rows']);
+        $this->assertSame(2026, $kept['year']);
+    }
+
+    public function testRowsOlderThanTheCutoffAreNotMigrated(): void
+    {
+        $this->visit();
+        $this->request('1790000000000000150', ['yyyymmdd' => 20240101, 'timestamp' => 1704110400]);
+
+        $progress = (new RequestMigrator(V1Schema::PREFIX, 500, 20250101))->migrateSite(self::SITE);
+
+        $this->assertSame(3, $progress['rows_read'], 'the 2024 row is not read');
+        $this->assertSame(20250101, (int) $progress['since']);
+        $this->assertSame([], array_filter($this->rows(), fn ($r) => (int) $r['yyyymmdd'] < 20250101));
+    }
+
+    public function testALaterRunWithAnotherCutoffIsRefused(): void
     {
         $this->visit();
 
-        $this->assertSame([self::SITE], $this->migrator()->sites());
+        (new RequestMigrator(V1Schema::PREFIX, 1, 20250101))->migrateSite(self::SITE, 1);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('would leave a gap');
+
+        (new RequestMigrator(V1Schema::PREFIX, 1, null))->migrateSite(self::SITE);
     }
 }
