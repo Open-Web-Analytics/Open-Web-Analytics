@@ -462,6 +462,17 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                 return sprintf( '%sconstraint %s needs a "dimension"', $where, $i );
             }
 
+            if ( isset( self::EMPTY_TESTS[ $part['operator'] ?? '' ] ) ) {
+
+                if ( array_key_exists( 'fromParam', $part ) || array_key_exists( 'value', $part ) ) {
+
+                    return sprintf( '%sconstraint on "%s" is "%s", which takes no value',
+                        $where, $part['dimension'], $part['operator'] );
+                }
+
+                continue;
+            }
+
             if ( ! array_key_exists( 'fromParam', $part ) && ! array_key_exists( 'value', $part ) ) {
 
                 return sprintf( '%sconstraint on "%s" needs either a "value" or a "fromParam"',
@@ -848,6 +859,17 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     }
 
     /**
+     * The unary operators a definition's array form accepts, and the string
+     * form each builds. ResultSetManager::emptyTestFor() reads that form back
+     * as the empty test; "(not set)" is the label for NULL and '', never a
+     * stored value.
+     */
+    const EMPTY_TESTS = array(
+        'empty'    => '==(not set)',
+        'notEmpty' => '!=(not set)',
+    );
+
+    /**
      * Build a constraint string from its parts.
      *
      * Structured rather than a string with placeholders, because the two kinds
@@ -870,6 +892,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         foreach ( $parts as $part ) {
 
             $operator = isset( $part['operator'] ) ? $part['operator'] : '==';
+
+            if ( isset( self::EMPTY_TESTS[ $operator ] ) ) {
+
+                $out[] = $part['dimension'] . self::EMPTY_TESTS[ $operator ];
+                continue;
+            }
 
             if ( array_key_exists( 'fromParam', $part ) ) {
 

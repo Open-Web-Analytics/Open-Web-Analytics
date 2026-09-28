@@ -50,6 +50,7 @@ class Db extends \OWA\Core\Base {
         'between',
         '=~', '!~',
         '=@', '!@',
+        'empty', 'notempty',
     ];
 
     /**
@@ -876,6 +877,19 @@ class Db extends \OWA\Core\Base {
 
                     case '=~':
                         $constraint .= sprintf("%s %s %s", $v['name'], OWA_SQL_REGEXP, $this->bindValue( $v['value'] ) );
+                        break;
+
+                    /*
+                     * THE EMPTY TEST. Unary: the value is ignored. Empty is NULL
+                     * or '', the two states "(not set)" labels. notempty is not
+                     * null-tolerant -- excluding unset rows is all it is for.
+                     */
+                    case 'empty':
+                        $constraint .= sprintf( "( %1\$s IS NULL OR %1\$s = '' )", $v['name'] );
+                        break;
+
+                    case 'notempty':
+                        $constraint .= sprintf( "( %1\$s IS NOT NULL AND %1\$s <> '' )", $v['name'] );
                         break;
 
                     case '!~':

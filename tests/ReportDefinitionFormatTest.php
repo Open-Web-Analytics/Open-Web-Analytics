@@ -158,6 +158,17 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertSame( 'ad!=null', $d['constraints'] );
     }
 
+    /** The empty test takes no value and builds the "(not set)" form. */
+    public function testTheEmptyTestsBuildTheNotSetForm(): void
+    {
+        $d = $this->declared(
+            $this->base( array( 'settings' => array( 'constraints' => array(
+                array( 'dimension' => 'sessionCampaign', 'operator' => 'notEmpty' ),
+                array( 'dimension' => 'sessionAd', 'operator' => 'empty' ) ) ) ) ) );
+
+        $this->assertSame( 'sessionCampaign!=(not set),sessionAd==(not set)', $d['constraints'] );
+    }
+
     /** A plain string is still a constraint, which is what most reports use. */
     public function testAStringConstraintIsUsedAsIs(): void
     {
@@ -189,6 +200,11 @@ final class ReportDefinitionFormatTest extends TestCase
             'constraint with no dimension' => array(
                 $base + array( 'settings' => array( 'constraints' => array( array( 'value' => 'x' ) ) ) ),
                 'needs a "dimension"' ),
+
+            'empty test given a value' => array(
+                $base + array( 'settings' => array( 'constraints' => array(
+                    array( 'dimension' => 'ad', 'operator' => 'notEmpty', 'value' => 'x' ) ) ) ),
+                'takes no value' ),
 
             'constraint with no value' => array(
                 $base + array( 'settings' => array( 'constraints' => array( array( 'dimension' => 'ad' ) ) ) ),

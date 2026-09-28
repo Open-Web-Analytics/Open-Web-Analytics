@@ -398,6 +398,28 @@ class ResultSetManager extends \OWA\Core\Base {
             return;
         }
 
+        /*
+         * `==(not set)` AND `!=(not set)` ARE THE EMPTY TEST, not a comparison.
+         *
+         * "(not set)" is the label formatDimensionValue() gives NULL and '';
+         * it is never stored. So these two select on emptiness -- both states --
+         * and `!=` loses the null tolerance a negation otherwise gets, which
+         * would keep exactly the rows it is asked to drop.
+         */
+        $unary = self::emptyTestFor( $constraint );
+
+        if ( $unary && $this->isMetric( $constraint['name'] ) ) {
+
+            $this->addError( sprintf( '%s is a metric; only a dimension can be %s.',
+                $constraint['name'], self::NOT_SET_LABEL ) );
+            return;
+        }
+
+        if ( $unary ) {
+
+            $constraint['operator'] = $unary;
+        }
+
         if ( $this->isDimension( $constraint['name'] ) ) {
 
             $dim = $this->lookupDimension($constraint['name'], $entity);
@@ -421,6 +443,31 @@ class ResultSetManager extends \OWA\Core\Base {
                 $this->addError( 'Cannot add a calculated metric to a constraint.' );
             }
         }
+    }
+
+    /**
+     * The Db operator a constraint's empty test maps to, or '' if it is not one.
+     *
+     * @param array $constraint name, value, operator
+     * @return string 'empty', 'notempty' or ''
+     */
+    public static function emptyTestFor( array $constraint ) {
+
+        if ( ! isset( $constraint['value'] ) || trim( (string) $constraint['value'] ) !== self::NOT_SET_LABEL ) {
+
+            return '';
+        }
+
+        switch ( isset( $constraint['operator'] ) ? $constraint['operator'] : '' ) {
+
+            case '==':
+                return 'empty';
+
+            case '!=':
+                return 'notempty';
+        }
+
+        return '';
     }
 
     function setSegment($segment) {
