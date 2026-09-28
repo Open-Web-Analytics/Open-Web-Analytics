@@ -2179,12 +2179,21 @@ live beacon.</li>
 <code>browser_version</code>, <code>clock_offset_usec</code> and <code>raw_ua</code> were never
 collected, so history carries NULL and every metric built on them starts at the cutover.</p>
 
-<p><strong>And one thing it produces in the wrong shape.</strong> v1 stores the attribution
-<em>verdict</em> &mdash; <code>setTrafficAttribution()</code> applies a model in the browser and the
-event carries its result (<a href="#nA113">A.1.13</a>). So migrated rows fill <code>source</code>
-and <code>medium</code> with a decision, while <code>tagged_*</code> stays empty and the evidence
-to re-derive from is gone. Reprocessing a corrected classifier
-(<a href="#s26">&sect;2.6.2</a>) therefore reaches only rows collected after cutover.</p>
+<p><strong>Attribution: v1 stored the verdict, v2 stores the evidence</strong>
+<span class="chip c-dec">Decided 28&nbsp;Sep</span>. <code>setTrafficAttribution()</code> applies a
+model in the browser and v1&rsquo;s row carries its result (<a href="#nA113">A.1.13</a>); v2&rsquo;s
+raw row holds only evidence &mdash; <code>tagged_*</code> and the referrer &mdash; and the cube
+classifies from it. So:</p>
+<ul>
+<li><strong>A campaign-tagged v1 row</strong> (a campaign or ad recorded) has its
+<code>source</code>, <code>medium</code>, <code>campaign</code> and <code>ad</code> copied into
+<code>tagged_*</code>. For those rows the verdict <em>was</em> the tags.</li>
+<li><strong>Every other row</strong> leaves <code>tagged_*</code> empty, and the cube classifies it
+from the migrated referrer, as it would a live beacon. Organic and referral history is therefore
+re-derived by v2&rsquo;s classifier rather than carried over from v1&rsquo;s.</li>
+</ul>
+<p>Reprocessing a corrected classifier (<a href="#s26">&sect;2.6.2</a>) reaches every untagged row,
+migrated or not.</p>
 
 <p><strong>Blocking, batched, resumable.</strong> It runs from the CLI only &mdash; millions of rows
 on a database other tenants share cannot run inside a web request. It works per site in
