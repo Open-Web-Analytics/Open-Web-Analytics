@@ -1279,6 +1279,20 @@ class OWATracker  {
             // Registers the handler for the before navigate event so that the dom stream can be logged
             if (window.addEventListener) {
                 window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
+
+                /*
+                 * A MIDDLE-CLICK fires auxclick, not click, and opening a link
+                 * in a new tab that way was never recorded. Links only: a middle
+                 * button anywhere else is autoscroll, not a click on anything.
+                 */
+                window.addEventListener('auxclick', function (e) {
+
+                    if ( e.button === 1 ) {
+
+                        that.clickEventHandler( e, true );
+                    }
+
+                }, false);
             } else if(window.attachEvent) {
                 document.attachEvent('onclick', function (e) {that.clickEventHandler(e);});
             }
@@ -1818,7 +1832,7 @@ class OWATracker  {
 
         if (targ.nodeType == 3) {
             // defeat Safari bug
-            targ = target.parentNode;
+            targ = targ.parentNode;
         }
 
         return targ;
@@ -1853,7 +1867,7 @@ class OWATracker  {
         // is stored consistently regardless of how the browser reports tagName.
         properties.dom_element_tag = String( targ.tagName ).toLowerCase();
 
-        if (targ.tagName == "A") {
+        if (targ.tagName == "A" || targ.tagName == "AREA") {
 
             if (targ.textContent != undefined) {
                  properties.dom_element_text = targ.textContent;
@@ -1899,9 +1913,10 @@ class OWATracker  {
     /**
      * Whether a URL leaves this site.
      *
-     * Compared on HOST, not on the full URL, and against the page's own host
-     * rather than a configured domain -- a site reached at both apex and www would
-     * otherwise report half its internal links as outbound.
+     * Compared on HOST, not on the full URL. Internal is the page's own host, or
+     * the cookie domain or anything under it. Comparing to the page's host alone
+     * reported every link between www and the apex, or to a sibling subdomain,
+     * as outbound.
      *
      * THE CLIENT DECIDES THIS, and briefly the server did. Three reasons it
      * belongs here:
@@ -1925,18 +1940,45 @@ class OWATracker  {
             return false;
         }
 
-        var host = '';
+        var target;
 
         try {
 
-            host = new URL( url, window.location.href ).hostname;
+            target = new URL( url, window.location.href );
 
         } catch ( e ) {
 
             return false;
         }
 
-        return !! host && host !== window.location.hostname;
+        // mailto:, tel:, javascript: -- no host, and not a departure.
+        if ( target.protocol !== 'http:' && target.protocol !== 'https:' ) {
+
+            return false;
+        }
+
+        var host = target.hostname.toLowerCase();
+
+        if ( ! host || host === window.location.hostname.toLowerCase() ) {
+
+            return false;
+        }
+
+        /*
+         * THE COOKIE DOMAIN IS THE SITE. By default it is the page's host without
+         * www., so from www.example.com a link to example.com or to
+         * shop.example.com stays on the site. A site whose property spans other
+         * hosts sets its cookie domain to say so.
+         */
+        var domain = String( this.getCookieDomain() || '' ).replace( /^\./, '' ).toLowerCase();
+
+        if ( domain && ( host === domain
+            || host.slice( - ( domain.length + 1 ) ) === '.' + domain ) ) {
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -2022,23 +2064,64 @@ class OWATracker  {
         return this.getOption( 'downloadExtensions' ).indexOf( ext ) > -1 ? ext : '';
     }
 
-    clickEventHandler(e) {
+    /**
+     * The link a click was on: the element itself, or the a[href] / area[href]
+     * it sits inside, or null. A click on the <span> or <svg> inside a link is
+     * a click on the link -- its URL, its id -- which is how every link with
+     * markup inside it would otherwise lose its destination.
+     *
+     * @param {Element} targ
+     * @return {Element|null}
+     */
+    getClickedLink( targ ) {
+
+        if ( ! targ || typeof targ.closest !== 'function' ) {
+
+            return null;
+        }
+
+        return targ.closest( 'a[href], area[href]' );
+    }
+
+    /**
+     * @param {Event}   e
+     * @param {boolean} linksOnly true for a middle-click, which counts only on a link
+     */
+    clickEventHandler( e, linksOnly ) {
 
         // hack for IE
         e = e || window.event;
 
+        //clicked DOM element properties
+        var clicked = this._getTarget(e);
+
+        if ( ! clicked ) {
+
+            return;
+        }
+
+        var link = this.getClickedLink( clicked );
+
+        if ( linksOnly && ! link ) {
+
+            return;
+        }
+
+        var targ = link || clicked;
+
         var click = new OwaEvent();
+
         // set event type
         click.setEventType( 'click' );
 
-        //clicked DOM element properties
-        var targ = this._getTarget(e);
-
-        var dom_name = '(not set)';
-        if ( targ.hasAttribute('name') && targ.name != null && targ.name.length > 0 ) {
-            dom_name = targ.name;
+        /*
+         * NOTHING IS SENT FOR AN ABSENT id, name OR class. It was the literal
+         * '(not set)', which the row builder turns back into NULL: bytes on the
+         * wire meaning nothing.
+         */
+        if ( targ.hasAttribute && targ.hasAttribute('name') && targ.getAttribute('name') ) {
+            click.set("dom_element_name", targ.getAttribute('name'));
         }
-        click.set("dom_element_name", dom_name);
 
         /*
          * THE ELEMENT'S VALUE IS NOT COLLECTED.
@@ -2049,18 +2132,17 @@ class OWATracker  {
          * nothing reads it" is the worst version of that trade.
          */
 
-        var dom_id = '(not set)';
-        if ( targ.id && targ.id.length > 0 ) {
-            dom_id = targ.id;
+        if ( targ.id ) {
+            click.set("dom_element_id", targ.id);
         }
-        click.set("dom_element_id", dom_id);
 
-        var dom_class = '(not set)';
-       // if ( targ.hasOwnProperty && targ.hasOwnProperty( 'className' ) && targ.className.length > 0) {
-        if ( targ.className && targ.className.length > 0 ) {
-            dom_class = targ.className;
+        // getAttribute, not className: an SVG element's className is an
+        // SVGAnimatedString object, not the class list.
+        var dom_class = targ.getAttribute ? targ.getAttribute('class') : '';
+
+        if ( dom_class ) {
+            click.set("dom_element_class", dom_class);
         }
-        click.set("dom_element_class", dom_class);
 
         // dom_element_tag is set (lower-cased) by getDomElementProperties() below,
         // whose merge() would overwrite anything set here -- so no duplicate set.

@@ -115,15 +115,16 @@ describe('clickEventHandler builds the click event', () => {
         expect(c.click_y).toBe('34');
     });
 
-    test('falls back to "(not set)" for an absent name, and sends no element value', () => {
+    test('sends nothing for an absent id, name or class, and no element value', () => {
         const t = newTracker();
         t.setOption('logClicksAsTheyHappen', false);
-        document.body.innerHTML = '<span id="sp">hi</span>';
-
-        t.clickEventHandler(clickOn(document.getElementById('sp')));
+        document.body.innerHTML = '<span>hi</span>';
+        t.clickEventHandler(clickOn(document.querySelector('span')));
 
         const c = t.click.getProperties();
-        expect(c.dom_element_name).toBe('(not set)');
+        expect(c).not.toHaveProperty('dom_element_name');
+        expect(c).not.toHaveProperty('dom_element_id');
+        expect(c).not.toHaveProperty('dom_element_class');
         expect(c.dom_element_tag).toBe('span');
 
         /*
@@ -135,6 +136,90 @@ describe('clickEventHandler builds the click event', () => {
         expect(c.dom_element_value).toBeUndefined();
         expect(c.dom_element_x).toBeUndefined();
         expect(c.dom_element_y).toBeUndefined();
+    });
+
+    /*
+     * A CLICK INSIDE A LINK IS A CLICK ON THE LINK. Only a click directly on the
+     * <a>, or on an <img> in one, used to carry the URL, so most modern link
+     * markup reached the server with no destination: not outbound, not a
+     * download, and named by the inner element's missing id.
+     */
+    test('a click on markup inside a link reports the link', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML =
+            '<a id="out" class="cta" href="https://elsewhere.example/p"><span><b id="deep">Go</b></span></a>';
+
+        t.clickEventHandler(clickOn(document.getElementById('deep')));
+
+        const c = t.click.getProperties();
+        expect(c.dom_element_id).toBe('out');
+        expect(c.dom_element_class).toBe('cta');
+        expect(c.dom_element_tag).toBe('a');
+        expect(c.target_url).toBe('https://elsewhere.example/p');
+        expect(c.dom_element_text).toBe('Go');
+        expect(c.is_outbound).toBe(1);
+        expect(c.click_x).toBe('12', 'the coordinates are still the click\'s');
+    });
+
+    test('an svg inside a link reports the link, and an svg class is read as a string', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML =
+            '<a id="icon-link" href="/inside"><svg class="icon"><circle id="c"></circle></svg></a>'
+            + '<svg id="bare" class="chart"><rect id="r"></rect></svg>';
+
+        t.clickEventHandler(clickOn(document.getElementById('c')));
+        expect(t.click.getProperties().dom_element_id).toBe('icon-link');
+
+        t.clickEventHandler(clickOn(document.getElementById('bare')));
+        expect(t.click.getProperties().dom_element_class).toBe('chart');
+    });
+
+    test('an anchor with no href is not a link, so the clicked element stands', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<a id="named"><span id="inner">x</span></a>';
+
+        t.clickEventHandler(clickOn(document.getElementById('inner')));
+
+        expect(t.click.getProperties().dom_element_id).toBe('inner');
+    });
+
+    /*
+     * A MIDDLE-CLICK fires auxclick, not click: opening a link in a new tab was
+     * never recorded. It counts on a link only.
+     */
+    test('a middle-click on a link is a click; on anything else it is nothing', () => {
+        const t = newTracker();
+        const sent = [];
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.setOption('logClicksAsTheyHappen', true);
+        t.bindClickEvents();
+        document.body.innerHTML = '<a id="tab" href="https://elsewhere.example/t"><span id="s">t</span></a>'
+            + '<div id="plain">p</div>';
+
+        const middle = (el) => el.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 }));
+        const right = (el) => el.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 2 }));
+
+        middle(document.getElementById('s'));
+        middle(document.getElementById('plain'));
+        right(document.getElementById('s'));
+
+        const clicks = sent.filter((p) => p.event_type === 'click');
+        expect(clicks).toHaveLength(1);
+        expect(clicks[0].dom_element_id).toBe('tab');
+        expect(clicks[0].is_outbound).toBe(1);
+    });
+
+    test('a click on a text node is attributed to its element', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<a id="t" href="/x">text</a>';
+
+        t.clickEventHandler(clickOn(document.getElementById('t').firstChild));
+
+        expect(t.click.getProperties().dom_element_id).toBe('t');
     });
 
     test('fires a dom.click beacon when logClicksAsTheyHappen is on', () => {

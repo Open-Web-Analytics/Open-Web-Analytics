@@ -167,8 +167,13 @@ const EMITTERS = {
         session: 'established',
         fire: (t) => {
             t.setOption('logClicksAsTheyHappen', true);
+            // Every attribute a click can report, so the contract lists them
+            // all: an absent id, name or class is not sent.
             const a = document.createElement('a');
             a.id = 'x';
+            a.className = 'c';
+            a.setAttribute('name', 'n');
+            a.href = 'https://x.example/y';
             a.textContent = 'y';
             document.body.appendChild(a);
             t.clickEventHandler({ target: a, pageX: 1, pageY: 2 });

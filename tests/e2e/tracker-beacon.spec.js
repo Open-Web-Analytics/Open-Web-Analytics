@@ -131,6 +131,43 @@ test.describe('the built tracker fires beacons on the wire', () => {
         expect(click).toMatch(/[?&]click_x=\d+/);
     });
 
+    /*
+     * A click on markup INSIDE a link is a click on the link, and a middle-click
+     * (auxclick, which is how a link is opened in a new tab) is recorded too.
+     */
+    test('a click inside an outbound link, and a middle-click on it, report the link', async ({ page }) => {
+        await page.waitForFunction(() => typeof window.OWATracker !== 'undefined', null, { timeout: 20_000 });
+        await page.evaluate(() => {
+            window.OWATracker.trackClicks();
+
+            const a = document.createElement('a');
+            a.id = 'outbound-link';
+            a.href = 'https://elsewhere.example/out';
+            a.innerHTML = '<span id="outbound-inner"><b>leave</b></span>';
+            document.body.appendChild(a);
+
+            // Stay on the page: after the tracker's own listener, on window.
+            window.addEventListener('click', (e) => e.preventDefault(), false);
+            window.addEventListener('auxclick', (e) => e.preventDefault(), false);
+        });
+
+        const clicks = () => beacons
+            .filter((u) => /[?&]event_type=click/.test(u))
+            .map((u) => new URL(u).searchParams)
+            .filter((q) => q.get('dom_element_id') === 'outbound-link');
+
+        await page.locator('#outbound-inner b').click();
+        await expect.poll(() => clicks().length, { timeout: 20_000 }).toBe(1);
+
+        const click = clicks()[0];
+        expect(click.get('dom_element_tag')).toBe('a');
+        expect(click.get('target_url')).toBe('https://elsewhere.example/out');
+        expect(click.get('is_outbound')).toBe('1');
+
+        await page.locator('#outbound-inner b').click({ button: 'middle' });
+        await expect.poll(() => clicks().length, { timeout: 20_000 }).toBe(2);
+    });
+
     test('the page_view beacon carries the screen as WIDTHxHEIGHT', async () => {
         await expect.poll(() => beacons.find((u) => /[?&]event_type=page_view/.test(u)),
             { timeout: 20_000 }).toBeTruthy();

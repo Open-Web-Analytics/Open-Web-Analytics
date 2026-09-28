@@ -180,18 +180,38 @@ describe('downloads and outbound links', () => {
         expect(t.isOutboundUrl('http://')).toBe(false);
     });
 
-    /*
-     * COMPARED ON HOST, against THIS PAGE's host rather than a configured domain.
-     * A site reached at both apex and www would otherwise report half its own
-     * links as outbound -- so a genuine www->apex link DOES read as outbound, and
-     * that is the accepted cost of having no canonical-domain setting.
-     */
     test('the comparison is the host, so a port or a path does not matter', () => {
         const t = newTracker();
         const here = window.location.hostname;
 
         expect(t.isOutboundUrl('https://' + here + '/somewhere/else?a=1#x')).toBe(false);
-        expect(t.isOutboundUrl('https://www.' + here + '/same/path')).toBe(true);
+    });
+
+    /*
+     * THE COOKIE DOMAIN IS THE SITE. By default it is the page's host without
+     * www., so www, the apex and sibling subdomains are one site. Compared on
+     * the page's host alone, every link between www and the apex was outbound.
+     */
+    test('the cookie domain and every host under it are internal', () => {
+        const t = newTracker({ cookie_domain: '.site.example' });
+
+        expect(t.isOutboundUrl('https://site.example/apex')).toBe(false);
+        expect(t.isOutboundUrl('https://www.site.example/www')).toBe(false);
+        expect(t.isOutboundUrl('https://shop.site.example/sibling')).toBe(false);
+        expect(t.isOutboundUrl('https://SHOP.Site.Example/case')).toBe(false);
+
+        expect(t.isOutboundUrl('https://other.example/')).toBe(true);
+        // A suffix is not a subdomain.
+        expect(t.isOutboundUrl('https://evilsite.example/')).toBe(true);
+        expect(t.isOutboundUrl('https://site.example.evil.test/')).toBe(true);
+    });
+
+    test('mailto:, tel: and javascript: are not departures', () => {
+        const t = newTracker();
+
+        expect(t.isOutboundUrl('mailto:alice@example.org')).toBe(false);
+        expect(t.isOutboundUrl('tel:+15555550100')).toBe(false);
+        expect(t.isOutboundUrl('javascript:void(0)')).toBe(false);
     });
 
     test('a click carries the verdict as is_outbound', () => {
