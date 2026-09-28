@@ -102,7 +102,7 @@ class Http {
 	    
 	    if( preg_match_all("$regex", $this->getResponseBody(), $matches, PREG_SET_ORDER ) ) {
 		   
-		    \OWA\Core\CoreAPI::debug( 'Found anchors: ' . print_r( $matches, true ) );
+		    \OWA\Core\CoreAPI::debug( 'Found anchors:', $matches );
 		    
 		    return $matches;
 		}
@@ -133,7 +133,7 @@ class Http {
 					
 					$anchortext = $match[3];
 	        		
-					\OWA\Core\CoreAPI::debug('Anchor info: '.print_r($this->anchor_info, true));
+					\OWA\Core\CoreAPI::debug( 'Anchor info:', $this->anchor_info );
 					
 					return \OWA\Core\Lib::inputFilter( $anchortext );
 				}
@@ -151,7 +151,7 @@ class Http {
             $title = $matches[1];
         }
 
-        \OWA\Core\CoreAPI::debug("referrer title extract: ". print_r($title, true));
+        \OWA\Core\CoreAPI::debug( 'referrer title extract:', $title );
 
         return \OWA\Core\Lib::inputFilter( trim( (string) $title ), ['remove_html' => true] );
     }
@@ -207,8 +207,8 @@ class Http {
 			  	$res = $e->getResponse();
 		  	}
 		  	
-		  	\OWA\Core\CoreAPI::debug( print_r($r, true ) );
-			\OWA\Core\CoreAPI::debug( print_r($res, true ) );
+		  	\OWA\Core\CoreAPI::debug( 'HTTP request:', $r );
+			\OWA\Core\CoreAPI::debug( 'HTTP response:', $res );
 	    }
 	    
 

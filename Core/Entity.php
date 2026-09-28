@@ -959,6 +959,24 @@ class Entity {
         
     }
     
+    /**
+     * This entity from a row already fetched, as load() would have left it.
+     *
+     * For a caller that reads many rows in one query. Loading each of them
+     * again by id is one query per row -- which is how every admin page came to
+     * run one query per site to draw the site picker.
+     *
+     * @param  array $row column => value
+     * @return $this
+     */
+    function hydrate( array $row ) {
+
+        $this->setProperties( $row );
+        $this->wasPersisted = true;
+
+        return $this;
+    }
+
     function load($value, $col = 'id', $constraints = array()) {
 
         return $this->getByColumn($col, $value, $constraints);
@@ -1032,7 +1050,6 @@ class Entity {
                 $this->wasPersisted = true;
                 // add to cache
                 $this->addToCache($col);
-                \OWA\Core\CoreAPI::debug('entity loaded from db');
             }
         }
     }
@@ -1050,7 +1067,6 @@ class Entity {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom($this->getTableName());
         $db->selectColumn('*');
-        \OWA\Core\CoreAPI::debug("Col: $col, value: $value");
         $db->where($col, $value);
 
         foreach ($constraints as $name => $constraint) {

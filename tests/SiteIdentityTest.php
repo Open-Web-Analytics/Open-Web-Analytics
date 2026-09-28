@@ -20,6 +20,20 @@ use OWA\Tests\SiteIdentityHarness as Harness;
  */
 final class SiteIdentityTest extends TestCase
 {
+    /** Domains a test created a site for, removed afterwards with their Property. */
+    private array $created = [];
+
+    protected function tearDown(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( $this->created as $domain ) {
+
+            $db->query( 'DELETE FROM owa_site WHERE domain = ?', [ $domain ] );
+            $db->query( 'DELETE FROM owa_property WHERE domain = ?', [ $domain ] );
+        }
+    }
+
     /** @return array<string,mixed> */
     private function recorded(): array
     {
@@ -149,6 +163,8 @@ final class SiteIdentityTest extends TestCase
         $manager = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
 
         $domain = 'idempotency-' . bin2hex( random_bytes( 6 ) ) . '.example.com';
+
+        $this->created[] = $domain;
 
         $first = $manager->createNewSite( $domain, 'First' );
 

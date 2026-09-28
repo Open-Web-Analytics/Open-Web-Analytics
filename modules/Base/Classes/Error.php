@@ -224,9 +224,23 @@ class Error {
         http_response_code( 500 );
     }
 
-    function debug($message) {
+    /**
+     * Nothing is formatted unless debug logging is on, which Lib::inDebug()
+     * alone decides (see getLogLevel()). $context is appended as one line.
+     */
+    function debug( $message, $context = null ) {
 
-        return $this->log($message, 'debug');
+        if ( ! \OWA\Core\Lib::inDebug() ) {
+
+            return;
+        }
+
+        if ( $context !== null ) {
+
+            $message = \OWA\Core\Lib::forLog( $message ) . ' ' . \OWA\Core\Lib::forLog( $context );
+        }
+
+        return $this->log( $message, 'debug' );
     }
 
     function info($message) {
@@ -282,7 +296,7 @@ class Error {
 
         if ( is_object( $msg ) || is_array( $msg ) ) {
 
-            $msg = print_r( $msg, true );
+            $msg = \OWA\Core\Lib::forLog( $msg );
         }
 
         /*

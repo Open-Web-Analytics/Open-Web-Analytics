@@ -31,13 +31,13 @@ parameters:
 			path: Core/Controller.php
 
 		-
-			message: '#^Call to method isArchived\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			message: '#^Call to method hydrate\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
 			path: Core/Controller.php
 
 		-
-			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
+			message: '#^Call to method isArchived\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
 			count: 1
 			path: Core/Controller.php

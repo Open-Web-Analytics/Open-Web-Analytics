@@ -2063,8 +2063,7 @@ class CoreAPI {
         
 			// Filter out the current (.) and parent (..) directories
 			$files = array_diff($result, array('.', '..', 'index.php'));
-			\OWA\Core\CoreAPI::debug('Modules present are: ');
-			\OWA\Core\CoreAPI::debug( $files );
+			\OWA\Core\CoreAPI::debug( 'Modules present: ' . implode( ', ', $files ) );
 			
 			return $files;
 		}
@@ -2505,7 +2504,7 @@ class CoreAPI {
              \OWA\Core\CoreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
 
             $q = \OWA\Core\CoreAPI::getEventQueue( 'incoming_tracking_events' );
-            \OWA\Core\CoreAPI::debug('Queuing '.$event->getEventType().' event with properties: '.print_r($event->getProperties(), true ) );
+            \OWA\Core\CoreAPI::debug( 'Queuing', $event );
             $q->sendMessage( $event );
 
         } else {
@@ -2514,7 +2513,7 @@ class CoreAPI {
             $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
            
 			\OWA\Core\CoreAPI::debug('About to perform action: '.$processor_action);
-			\OWA\Core\CoreAPI::debug($event);
+			\OWA\Core\CoreAPI::debug( 'With', $event );
 			
 			return \OWA\Core\CoreAPI::performAction( $processor_action, array( 'event' => $event ) );
         }
@@ -2674,10 +2673,16 @@ class CoreAPI {
 
     }
 
-    public static function debug($msg) {
+    /**
+     * @param string $msg
+     * @param mixed  $context  a value to append as one line; only formatted
+     *                         when debug logging is on -- never print_r() it
+     *                         into $msg, which builds it on every install
+     */
+    public static function debug( $msg, $context = null ) {
 
         $e = \OWA\Core\CoreAPI::errorSingleton();
-        $e->debug($msg);
+        $e->debug( $msg, $context );
         return;
     }
 
@@ -2877,7 +2882,8 @@ class CoreAPI {
         $params = $service->request->getAllOwaParams();
 
         if ($init != true) {
-            \OWA\Core\CoreAPI::debug('Handling request with params: '. print_r($params, true));
+            // Names only: the values are whatever a form posted, a password among them.
+        \OWA\Core\CoreAPI::debug( 'Handling request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         }
 
         /*
@@ -2922,7 +2928,8 @@ class CoreAPI {
         
         $params = $service->request->getAllOwaParams();
         
-        \OWA\Core\CoreAPI::debug('Handling REST request with params: '. print_r($params, true));
+        // Names only: the values carry the API key and signature.
+        \OWA\Core\CoreAPI::debug( 'Handling REST request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         
         $action = \OWA\Core\CoreAPI::getRequestParam('do');
 
@@ -2951,7 +2958,7 @@ class CoreAPI {
 
                 $rest_params = explode('/', $rest_params);
                 self::debug( 'exploding raw REST params:');
-                self::debug( $rest_params );
+                self::debug( 'REST params: ' . implode( ', ', array_keys( (array) $rest_params ) ) );
 
                 if ( count( $rest_params ) >= 3 ) {
 
@@ -3127,7 +3134,7 @@ class CoreAPI {
                      && isset( $implementation[0] )
                      && isset( $implementation[1] )
                 ) {
-                    \OWA\Core\CoreAPI::debug(print_r($implementation, true));
+                    \OWA\Core\CoreAPI::debug( 'Queue implementation:', $implementation );
                     $queues[ $name ] = \OWA\Core\Lib::simpleFactory( $implementation[0], $implementation[1], $map );
 
                 } else {
