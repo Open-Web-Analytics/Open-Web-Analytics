@@ -266,6 +266,8 @@ class RequestMigrator {
             'is_new_visitor_created' => $is_entry && ! empty( $r['is_new_visitor'] ),
         );
 
+        $properties += $this->attribution( $r, $refs );
+
         for ( $i = 1; $i <= 5; $i++ ) {
 
             $properties[ 'cv' . $i . '_name' ]  = $r[ 'cv' . $i . '_name' ] ?? null;
@@ -287,6 +289,43 @@ class RequestMigrator {
         $events = \OWA\Module\Base\Classes\MaterializedEvents::firstVisit( $events );
 
         return $events;
+    }
+
+    /**
+     * v1's attribution, as the tags it came from -- or nothing.
+     *
+     * v1 stored a VERDICT: the browser applied a model and the row carries its
+     * result. v2 stores evidence, and the cube classifies it. For a row that
+     * recorded a campaign or an ad the verdict was the tags, so they go in as
+     * tags. Every other row carries none, and the cube classifies it from the
+     * migrated referrer as it would a live beacon (PLAN.html 2.21).
+     *
+     * @return array tracking properties
+     */
+    private function attribution( array $r, array $refs ) {
+
+        $campaign = $refs['campaign_dim'][ (string) ( $r['campaign_id'] ?? '' ) ]['name'] ?? null;
+        $ad       = $refs['ad_dim'][ (string) ( $r['ad_id'] ?? '' ) ]['name'] ?? null;
+
+        if ( ! self::present( $campaign ) && ! self::present( $ad ) ) {
+
+            return array();
+        }
+
+        return array(
+            'tagged_source'   => $refs['source_dim'][ (string) ( $r['source_id'] ?? '' ) ]['source_domain'] ?? null,
+            'tagged_medium'   => $r['medium'] ?? null,
+            'tagged_campaign' => $campaign,
+            'tagged_ad'       => $ad,
+            'tagged_terms'    => $refs['search_term_dim'][ (string) ( $r['referring_search_term_id'] ?? '' ) ]['terms'] ?? null,
+        );
+    }
+
+    /** A stored value, as opposed to empty or v1's "(not set)". */
+    private static function present( $value ) {
+
+        return $value !== null && trim( (string) $value ) !== ''
+            && $value !== \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL;
     }
 
     /**
@@ -325,6 +364,11 @@ class RequestMigrator {
                                   'id, country, country_code, state, city' ),
             'session'      => $this->lookup( 'session', array_column( $rows, 'session_id' ),
                                   'id, timestamp, prior_session_id' ),
+            'source_dim'   => $this->lookup( 'source_dim', array_column( $rows, 'source_id' ), 'id, source_domain' ),
+            'campaign_dim' => $this->lookup( 'campaign_dim', array_column( $rows, 'campaign_id' ), 'id, name' ),
+            'ad_dim'       => $this->lookup( 'ad_dim', array_column( $rows, 'ad_id' ), 'id, name' ),
+            'search_term_dim' => $this->lookup( 'search_term_dim',
+                                  array_column( $rows, 'referring_search_term_id' ), 'id, terms' ),
             'visitor'      => $this->lookup( 'visitor', array_column( $rows, 'visitor_id' ),
                                   'id, first_session_timestamp' ),
         );

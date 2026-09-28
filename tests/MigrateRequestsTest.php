@@ -294,6 +294,72 @@ final class MigrateRequestsTest extends TestCase
         $this->assertNull($this->rows()[0]['referer_host']);
     }
 
+    private function tagged(): array
+    {
+        return array_values(array_filter($this->rows(), fn ($r) => $r['event_type'] === 'page_view'
+            && $r['user_id'] === 'alice'))[0];
+    }
+
+    private function campaignDims(): void
+    {
+        $this->insert('source_dim', ['id' => '601', 'source_domain' => 'newsletter']);
+        $this->insert('campaign_dim', ['id' => '701', 'name' => 'spring-sale']);
+        $this->insert('ad_dim', ['id' => '801', 'name' => 'banner-a']);
+        $this->insert('search_term_dim', ['id' => '901', 'terms' => 'web analytics']);
+    }
+
+    /** For a row that recorded a campaign, v1's verdict was the tags. */
+    public function testACampaignTaggedRowCarriesItsTags(): void
+    {
+        $this->visit();
+        $this->campaignDims();
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_request SET medium = 'email', source_id = 601, campaign_id = 701, ad_id = 801,"
+            . " referring_search_term_id = 901 WHERE id = 1790000000000000101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $row = $this->tagged();
+
+        $this->assertSame('newsletter', $row['tagged_source']);
+        $this->assertSame('email', $row['tagged_medium']);
+        $this->assertSame('spring-sale', $row['tagged_campaign']);
+        $this->assertSame('banner-a', $row['tagged_ad']);
+        $this->assertSame('web analytics', $row['tagged_search_terms']);
+    }
+
+    /** An organic or referral verdict is not evidence: the cube classifies the referrer. */
+    public function testAnUntaggedRowCarriesNoTags(): void
+    {
+        $this->visit();
+        $this->campaignDims();
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_request SET medium = 'organic-search', source_id = 601,"
+            . " referring_search_term_id = 901 WHERE id = 1790000000000000101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $row = $this->tagged();
+
+        foreach (['tagged_source', 'tagged_medium', 'tagged_campaign', 'tagged_ad', 'tagged_search_terms'] as $column) {
+            $this->assertNull($row[$column], $column);
+        }
+
+        $this->assertSame('search.example', $row['referer_host'], 'the evidence the cube classifies');
+    }
+
+    public function testACampaignOfNotSetIsNoCampaign(): void
+    {
+        $this->visit();
+        $this->insert('campaign_dim', ['id' => '702', 'name' => '(not set)']);
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_request SET medium = 'organic-search', campaign_id = 702 WHERE id = 1790000000000000101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $this->assertNull($this->tagged()['tagged_medium']);
+    }
+
     public function testTheSitesAreThoseV1HoldsPageViewsFor(): void
     {
         $this->visit();
