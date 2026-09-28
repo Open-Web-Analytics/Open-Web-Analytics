@@ -542,8 +542,77 @@ class OWATracker  {
 	     */
 	    this.bindPageLifecycleEvents();
 
+	    // Compiled-in plugins (see registerPlugin) set up on every tracker.
+	    OWATracker.plugins().forEach( ( plugin ) => {
+
+	        if ( typeof plugin.init === 'function' ) {
+
+	            plugin.init( this );
+	        }
+	    } );
+
 		OWA.doAction('tracker.init');
 	}
+
+    /**
+     * Compiled into the tracker bundle from a module's source, registered here.
+     *
+     * A module contributes code to owa.tracker.js through its build manifest
+     * (`contributes`), and that code registers itself with this rather than the
+     * tracker naming it. A plugin is an object with:
+     *
+     *   name                a unique name
+     *   reservedEventNames  event names it sends, which trackCustomEvent() then
+     *                       refuses -- a site's event may not borrow one
+     *   methods             { name: function } added to the tracker, so a
+     *                       snippet command can call them. A method the tracker
+     *                       already has is NOT replaced.
+     *   init( tracker )     run for each tracker, at the end of its constructor
+     *
+     * Registering the same name twice keeps the first.
+     *
+     * @param {object} plugin
+     * @return {boolean} whether it was registered
+     */
+    static registerPlugin( plugin ) {
+
+        if ( ! plugin || typeof plugin.name !== 'string' || ! plugin.name ) {
+
+            return false;
+        }
+
+        var registered = OWATracker.plugins();
+
+        if ( registered.some( ( p ) => p.name === plugin.name ) ) {
+
+            return false;
+        }
+
+        var methods = plugin.methods || {};
+
+        Object.keys( methods ).forEach( ( name ) => {
+
+            if ( typeof methods[ name ] === 'function' && ! ( name in OWATracker.prototype ) ) {
+
+                OWATracker.prototype[ name ] = methods[ name ];
+            }
+        } );
+
+        registered.push( plugin );
+
+        return true;
+    }
+
+    /** @return {object[]} the registered plugins, in registration order */
+    static plugins() {
+
+        if ( ! Object.prototype.hasOwnProperty.call( OWATracker, '_plugins' ) ) {
+
+            OWATracker._plugins = [];
+        }
+
+        return OWATracker._plugins;
+    }
 
     setDebug(bool) {
 
@@ -4518,12 +4587,27 @@ class OWATracker  {
      * one would be indistinguishable from the real thing.
      */
     static get RESERVED_EVENT_NAMES() {
-        return [
+
+        var names = [
             'page_view', 'click', 'purchase', 'refund',
             'user_engagement', 'scroll', 'file_download',
             'form_start', 'form_submit', 'view_search_results',
             'session_start', 'first_visit'
         ];
+
+        // And whatever a compiled-in plugin sends (registerPlugin).
+        OWATracker.plugins().forEach( ( plugin ) => {
+
+            ( plugin.reservedEventNames || [] ).forEach( ( name ) => {
+
+                if ( names.indexOf( name ) === -1 ) {
+
+                    names.push( name );
+                }
+            } );
+        } );
+
+        return names;
     }
 
     /**

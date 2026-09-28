@@ -19,6 +19,14 @@ const CopyPlugin = require('copy-webpack-plugin');
 // byte-identical to when they were inline. The factories translate each manifest
 // package into the right webpack config for its `type`.
 //
+// A manifest may also CONTRIBUTE source to another module's package:
+//   "contributes": { "owa.tracker.js": ["src/tracker/Recorder.js"] }
+// Each listed file (relative to the contributing module) is appended to that
+// package's entry, so it compiles into the same bundle -- after the package's
+// own entry, in module-name order. The contributed code registers itself (the
+// tracker's OWATracker.registerPlugin), so the package's own source names no
+// contributor. A contribution to a package no manifest declares is an error.
+//
 // A manifest package is one of:
 //   JS  { name, type:'js', entry, outputDir, splitVendors, licence? }
 //   CSS { name, type:'css', outputDir, files:[...], copy:[{from,to,ignore?}] }
@@ -73,11 +81,11 @@ function jsOutput(moduleDir, pkg) {
 // window itself (its first import, vendor-jquery-global.js) before the plugins run,
 // and OWA's own files import jQuery explicitly -- so no config-level jQuery injection
 // is needed and both products share this one factory.
-function jsConfig(moduleName, moduleDir, pkg) {
+function jsConfig(moduleName, moduleDir, pkg, contributed = []) {
 	return {
 		name: `${moduleName}:${pkg.name}`,
 		entry: {
-			[pkg.name]: [path.resolve(moduleDir, pkg.entry)],
+			[pkg.name]: [path.resolve(moduleDir, pkg.entry), ...contributed],
 		},
 		output: jsOutput(moduleDir, pkg),
 		// A package may declare its own `licence` (a path relative to the module dir),
@@ -185,10 +193,10 @@ function cssConfig(moduleName, moduleDir, pkg) {
 	};
 }
 
-function configForPackage(moduleName, moduleDir, pkg) {
+function configForPackage(moduleName, moduleDir, pkg, contributed = []) {
 	switch (pkg.type) {
 		case 'js':
-			return jsConfig(moduleName, moduleDir, pkg);
+			return jsConfig(moduleName, moduleDir, pkg, contributed);
 		case 'css':
 			return cssConfig(moduleName, moduleDir, pkg);
 		default:
@@ -200,19 +208,50 @@ function configForPackage(moduleName, moduleDir, pkg) {
 
 // Discover every modules/*/build.manifest.json and flatten its packages into a
 // webpack multi-config array.
-function discoverConfigs() {
-	const configs = [];
+function discoverConfigs(dir = modulesDir) {
+	const manifests = [];
 
-	for (const moduleName of fs.readdirSync(modulesDir).sort()) {
-		const moduleDir = path.join(modulesDir, moduleName);
+	for (const moduleName of fs.readdirSync(dir).sort()) {
+		const moduleDir = path.join(dir, moduleName);
 		const manifestPath = path.join(moduleDir, MANIFEST);
 		if (!fs.existsSync(manifestPath)) {
 			continue;
 		}
 
-		const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+		manifests.push({
+			moduleName,
+			moduleDir,
+			manifest: JSON.parse(fs.readFileSync(manifestPath, 'utf8')),
+		});
+	}
+
+	// Every package any manifest declares, then what other modules contribute to it.
+	const contributions = {};
+
+	for (const { manifest } of manifests) {
 		for (const pkg of manifest.packages || []) {
-			configs.push(configForPackage(moduleName, moduleDir, pkg));
+			contributions[pkg.name] = [];
+		}
+	}
+
+	for (const { moduleName, moduleDir, manifest } of manifests) {
+		for (const [target, files] of Object.entries(manifest.contributes || {})) {
+			if (!(target in contributions)) {
+				throw new Error(
+					`${moduleName}/${MANIFEST}: contributes to '${target}', which no manifest declares`
+				);
+			}
+			for (const file of files) {
+				contributions[target].push(path.resolve(moduleDir, file));
+			}
+		}
+	}
+
+	const configs = [];
+
+	for (const { moduleName, moduleDir, manifest } of manifests) {
+		for (const pkg of manifest.packages || []) {
+			configs.push(configForPackage(moduleName, moduleDir, pkg, contributions[pkg.name]));
 		}
 	}
 
@@ -220,3 +259,4 @@ function discoverConfigs() {
 }
 
 module.exports = discoverConfigs();
+module.exports.discoverConfigs = discoverConfigs;
