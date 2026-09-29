@@ -2202,7 +2202,7 @@ interrupted run resumes and a finished one is a no-op. Row ids are derived from 
 replayed batch writes nothing twice.</p>
 
 <p><strong>How much history is an explicit choice</strong>
-<span class="chip c-dec">Decided 28&nbsp;Sep</span>. The migration is <strong>Update061</strong>, a
+<span class="chip c-dec">Decided 28&nbsp;Sep</span>. The migration is <strong>Update062</strong>, a
 CLI-only update, not a command of its own: <code>cmd=update</code> runs it, and it fails &mdash;
 leaving the update pending and every action refused &mdash; without either
 <code>since=&lt;cutoff&gt;</code> (a date as <code>yyyymmdd</code>, or a period back
@@ -2227,7 +2227,7 @@ After the drop there is nothing to roll back to. (<code>beacon_version</code> wa
 provenance marker and rejected: NULL there already means a pre-versioning tracker, which is what
 v1&rsquo;s were.)</p>
 
-<p><strong>Base requires schema&nbsp;61 only when the migration is complete.</strong> (Update060 re-keys <code>owa_visitor_acquisition</code> on an ascending id with <code>visitor_id</code> unique, since visitor ids are now 62 random bits.) Requiring it
+<p><strong>Base requires schema&nbsp;62 only when the migration is complete.</strong> (Update060 re-keys <code>owa_visitor_acquisition</code> on an ascending id with <code>visitor_id</code> unique, since visitor ids are now 62 random bits.) Requiring it
 while it covers page views alone would record it applied before clicks, commerce, acquisition and
 goal completions exist.</p>
 
@@ -2238,6 +2238,22 @@ installation.</p>
 <p class="note"><strong>Recordings are not migrated.</strong> v1&rsquo;s <code>owa_domstream</code>
 rows go when the table is dropped. Recordings are now the Domstream module&rsquo;s own chunk and
 payload tables, and re-encoding v1&rsquo;s event lists into them was not worth it.</p>
+
+<h4 id="s221d">The passes, and what each decides <span class="chip c-done">Built 29&nbsp;Sep</span></h4>
+<div class="scroll"><table>
+<thead><tr><th>Pass</th><th>v1 source</th><th>What it writes, and the rule</th></tr></thead>
+<tbody>
+<tr><td>page views</td><td><code>owa_request</code></td><td><code>page_view</code>; the entry request raises <code>session_start</code>/<code>first_visit</code></td></tr>
+<tr><td>clicks</td><td><code>owa_click</code></td><td><code>click</code>; outbound worked out as the tracker does, target host against page host</td></tr>
+<tr><td>actions</td><td><code>owa_action_fact</code></td><td>a custom event named by the action, in the tracker's shape (&ldquo;Signup Form Submit&rdquo; &rarr; <code>signup_form_submit</code>, original kept as a parameter); group, label and value as parameters</td></tr>
+<tr><td>purchases</td><td><code>owa_commerce_transaction_fact</code></td><td><code>purchase</code>; v1 stored amount &times; 100 whatever the currency, so a value is divided by 100 and converted to the Property currency's minor units. <strong>Line items are not migrated</strong>: v2 has no item-level shape</td></tr>
+<tr><td>visitor store</td><td><code>owa_session</code> + <code>owa_visitor</code></td><td><code>owa_visitor_acquisition</code> from each visitor's first session, over all history: its referrer, and tags only for a campaign-tagged visit. No evidence, no row; an existing row wins</td></tr>
+<tr><td>goal completions</td><td><code>owa_session.goal_N</code></td><td><code>is_goal_event = 1</code> on the first migrated row of a converting session that meets the goal event Update025 made of slot N. v1 decides which sessions converted; the definition only finds the row. Unlocatable completions are counted, not guessed</td></tr>
+</tbody></table></div>
+<p>Custom reports and pre-1.13 funnels are <strong>Update061</strong>, a required update run on
+every upgrade whether or not history is migrated. The history migration is <strong>Update062</strong>,
+CLI-only; Base requires it once it is complete, and on the development install that means clearing
+its parallel v2 rows first.</p>
 
 <h4 id="s221c">Custom reports and funnels <span class="chip c-dec">Decided 29&nbsp;Sep</span></h4>
 <p><strong>Saved custom reports are rewritten, once, by the migration.</strong> Names resolve exactly
