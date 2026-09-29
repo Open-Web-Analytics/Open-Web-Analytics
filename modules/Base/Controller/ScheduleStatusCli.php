@@ -24,13 +24,8 @@ namespace OWA\Module\Base\Controller;
  */
 class ScheduleStatusCli extends SchedulerCli {
 
-    /**
-     * How late an occurrence must be before it counts as behind rather than
-     * merely waiting for the next tick. One occurrence, or a quarter of an hour,
-     * whichever is longer -- so a daily job has to miss a whole day, and an
-     * every-minute job is flagged inside fifteen minutes.
-     */
-    const MIN_GRACE = 900;
+    /** See JobStatus::MIN_GRACE. */
+    const MIN_GRACE = \OWA\Module\Base\Classes\JobStatus::MIN_GRACE;
 
     function action() {
 
@@ -163,139 +158,15 @@ class ScheduleStatusCli extends SchedulerCli {
     }
 
     /**
-     * Why is this job not running? The first cause that holds, in order.
+     * Why is this job not running? See JobStatus::diagnose(), which the Reporting
+     * Cube screen asks too, so the two cannot tell different stories.
      *
-     * @return string|null  null when there is nothing to say
+     * @return string|null
      */
     protected function diagnose( $name, $job, $row, $lock, $parsed, $now, $enabled, $pending, $ever, $last_activity ) {
 
-        // Global causes outrank everything: nothing else can be true while they
-        // are, and they are already stated at the top of the report.
-        if ( $pending || ! $enabled ) {
-
-            return null;
-        }
-
-        if ( ! \OWA\Core\CoreAPI::serviceSingleton()->getCliCommandClass( $job['command'] ) ) {
-
-            // Reachable for a job registered in code naming a command that has
-            // since been removed; config entries are refused before they get
-            // this far.
-            return sprintf(
-                'Names command "%s", which is not registered, so it can never run.', $job['command']
-            );
-        }
-
-        if ( $this->isDisabled( $job ) ) {
-
-            return null;   // not behind; deliberately not running
-        }
-
-        if ( $parsed === null ) {
-
-            return sprintf(
-                'The schedule "%s" cannot be read, so this job will never run. It is deliberately '
-              . 'not given a default.', $job['schedule']
-            );
-        }
-
-        if ( $lock && (int) $lock['expires_at'] > $now ) {
-
-            return sprintf( 'Running now, since %s.', $this->readable( $lock['acquired_at'] ) );
-        }
-
-        if ( $lock ) {
-
-            return sprintf(
-                'A lock from %s is still present and its lease expired at %s -- the run holding it '
-              . 'died. It will be taken over on the next tick, or drop it now with '
-              . 'cmd=schedule-run --force-release job=%s',
-                $this->readable( $lock['acquired_at'] ), $this->readable( $lock['expires_at'] ), $name
-            );
-        }
-
-        // Is it actually behind, or just waiting for the next tick?
-        $slot = \OWA\Core\Cron::dueSlot(
-            $parsed, $row ? (int) $row['last_run_slot'] : 0, $now, $this->timezone()
-        );
-
-        if ( $slot === null ) {
-
-            return null;   // up to date
-        }
-
-        $next     = \OWA\Core\Cron::nextAfter( $parsed, $slot, $this->timezone() );
-        $interval = $next ? $next - $slot : self::MIN_GRACE;
-        $last     = $row ? (int) $row['last_run_slot'] : 0;
-
-        // Has a WHOLE occurrence been missed, or has this one merely just come
-        // due? Measuring "how long since the newest missed occurrence" would be
-        // wrong: a daily job forty days behind still has a slot from this
-        // morning, and would read as minutes late rather than weeks.
-        $missed_earlier = $last > 0
-            && \OWA\Core\Cron::dueSlot( $parsed, $last, $slot - 60, $this->timezone() ) !== null;
-
-        if ( ! $missed_earlier && $now - $slot <= self::MIN_GRACE ) {
-
-            return null;   // due, but within the tolerance of a normal tick
-        }
-
-        // Lateness runs from when it SHOULD have next run after its last
-        // satisfied occurrence, which is what a person means by "overdue by".
-        $late = $this->howLate( $last > 0 ? max( 60, $now - ( $last + $interval ) ) : $now - $slot );
-
-        if ( $row && (int) $row['last_finished_at'] && (int) $row['last_finished_at'] < (int) $row['last_run_at'] ) {
-
-            return sprintf(
-                'Overdue by %s. The last run started %s and never finished -- a fatal error or the '
-              . 'process being killed, which nothing inside PHP could have caught.',
-                $late, $this->readable( $row['last_run_at'] )
-            );
-        }
-
-        if ( $row && (int) $row['last_failure_at'] > (int) $row['last_success_at'] ) {
-
-            return sprintf(
-                'Overdue by %s. Failing since %s: %s. It is retried at every tick.',
-                $late, $this->readable( $row['last_failure_at'] ), $row['last_message'] ?: 'no message recorded'
-            );
-        }
-
-        if ( $row && $row['last_status'] === 'refused' ) {
-
-            return sprintf(
-                'Overdue by %s. The last run declined to act: %s',
-                $late, $row['last_message'] ?: 'no reason recorded'
-            );
-        }
-
-        // Everything a running dispatcher could be doing about this job has been
-        // excluded, which is what makes the remaining conclusion sound rather
-        // than a guess.
-        if ( ! $ever ) {
-
-            return sprintf(
-                'Overdue by %s, and no job has EVER recorded a run -- the dispatcher has not run at '
-              . 'all. That almost always means the cron entry is missing or wrong. Add:  %s',
-                $late, \OWA\Module\Base\Classes\SchedulerHealth::cronLine()
-            );
-        }
-
-        if ( $last_activity && $now - $last_activity < self::MIN_GRACE ) {
-
-            return sprintf(
-                'Overdue by %s, but another job ran at %s, so the dispatcher is alive. The problem '
-              . 'is specific to this job.',
-                $late, $this->readable( $last_activity )
-            );
-        }
-
-        return sprintf(
-            'Overdue by %s and nothing above explains it. The dispatcher does not appear to be '
-          . 'running -- the last activity of any kind was %s. Check the cron entry:  %s',
-            $late, $this->readable( $last_activity ),
-            \OWA\Module\Base\Classes\SchedulerHealth::cronLine()
-        );
+        return \OWA\Module\Base\Classes\JobStatus::diagnose(
+            $name, $job, $row, $lock, $parsed, $now, $enabled, $pending, $ever, $last_activity );
     }
 
     /**
@@ -304,17 +175,7 @@ class ScheduleStatusCli extends SchedulerCli {
      */
     protected function howLate( $seconds ) {
 
-        if ( $seconds >= 86400 ) {
-
-            return sprintf( '%d day(s)', intdiv( $seconds, 86400 ) );
-        }
-
-        if ( $seconds >= 3600 ) {
-
-            return sprintf( '%d hour(s)', intdiv( $seconds, 3600 ) );
-        }
-
-        return sprintf( '%d minute(s)', max( 1, intdiv( $seconds, 60 ) ) );
+        return \OWA\Module\Base\Classes\JobStatus::howLate( $seconds );
     }
 
     /**

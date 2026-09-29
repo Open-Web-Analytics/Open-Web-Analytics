@@ -29,12 +29,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      */
     protected function jobs() {
 
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $s->loadCliCommands();
-        $s->loadJobs();
-
-        return $s->getJobs();
+        return \OWA\Module\Base\Classes\JobStatus::jobs();
     }
 
     /**
@@ -47,9 +42,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      */
     protected function timezone() {
 
-        $tz = \OWA\Core\CoreAPI::getSetting( 'base', 'timezone' );
-
-        return $tz ? $tz : date_default_timezone_get();
+        return \OWA\Module\Base\Classes\JobStatus::timezone();
     }
 
     /**
@@ -60,14 +53,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      */
     protected function parsedSchedule( $job ) {
 
-        $expr = isset( $job['schedule'] ) ? strtolower( trim( (string) $job['schedule'] ) ) : '';
-
-        if ( $expr === '' || $expr === 'off' ) {
-
-            return null;
-        }
-
-        return \OWA\Core\Cron::parse( $expr );
+        return \OWA\Module\Base\Classes\JobStatus::parsedSchedule( $job );
     }
 
     /**
@@ -78,9 +64,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      */
     protected function isDisabled( $job ) {
 
-        $expr = isset( $job['schedule'] ) ? strtolower( trim( (string) $job['schedule'] ) ) : '';
-
-        return $expr === '' || $expr === 'off';
+        return \OWA\Module\Base\Classes\JobStatus::isDisabled( $job );
     }
 
     /**
@@ -111,23 +95,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      */
     protected function allState() {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.scheduled_job' );
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-
-        $rows = $db->get_results( sprintf( 'SELECT * FROM %s', $entity->getTableName() ) );
-        $out  = array();
-
-        foreach ( (array) $rows as $row ) {
-
-            $row = (array) $row;
-
-            if ( isset( $row['job_name'] ) ) {
-
-                $out[ $row['job_name'] ] = $row;
-            }
-        }
-
-        return $out;
+        return \OWA\Module\Base\Classes\JobStatus::allState();
     }
 
     /**
@@ -139,21 +107,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      */
     protected function readable( $ts, $absent = 'never' ) {
 
-        if ( ! $ts ) {
-
-            return $absent;
-        }
-
-        try {
-
-            return ( new \DateTimeImmutable( '@' . (int) $ts ) )
-                ->setTimezone( new \DateTimeZone( $this->timezone() ) )
-                ->format( 'Y-m-d H:i' );
-
-        } catch ( \Exception $e ) {
-
-            return (string) $ts;
-        }
+        return \OWA\Module\Base\Classes\JobStatus::readable( $ts, $absent );
     }
 
     /**

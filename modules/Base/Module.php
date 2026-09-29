@@ -315,6 +315,8 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
+        $this->registerAction( 'base.cubeStatus',                    'OWA\\Module\\Base\\Controller\\CubeStatus',                 'Controller/CubeStatus.php' );
+        $this->registerAction( 'base.cubeStatusDetail',              'OWA\\Module\\Base\\Controller\\CubeStatusDetail',           'Controller/CubeStatusDetail.php' );
         $this->registerAction( 'base.customDimensions',              'OWA\\Module\\Base\\Controller\\CustomDimensions',           'Controller/CustomDimensions.php' );
         $this->registerAction( 'base.customDimensionEdit',           'OWA\\Module\\Base\\Controller\\CustomDimensionEdit',        'Controller/CustomDimensionEdit.php' );
         $this->registerAction( 'base.customDimensionSave',           'OWA\\Module\\Base\\Controller\\CustomDimensionSave',        'Controller/CustomDimensionSave.php' );
@@ -672,6 +674,19 @@ class Module extends \OWA\Core\Module {
                 'title'          => 'Modules',
                 'group'          => 'General',
                 'order'          => 3)
+        );
+
+        /*
+         * The health of every reporting cube. Install-wide because whether the
+         * scheduler is building them is a fact about the installation, and
+         * beside Modules because it answers the same kind of question: is this
+         * installation doing what it should.
+         */
+        $this->registerSettingsPage(array(
+                'do'             => 'base.cubeStatus',
+                'title'          => 'Reporting Cubes',
+                'group'          => 'General',
+                'order'          => 4)
         );
 
         /*

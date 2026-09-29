@@ -19,6 +19,9 @@ final class TemplateClassesAreStyledTest extends TestCase
         return [
             'custom dimensions' => ['custom_dimensions.php'],
             'custom dimension register' => ['custom_dimension_edit.php'],
+            'reporting cubes'           => ['cube_status.php'],
+            'reporting cube'            => ['cube_status_detail.php'],
+            'cube status badge'         => ['cube_status_badge.php'],
             'invocation'        => ['invocation.php'],
         ];
     }
