@@ -89,6 +89,25 @@ class ReportsRest extends \OWA\Core\ReportController {
 	
 	function action() {
 
+		/*
+		 * Reporting not ready for this Profile: its Property has no cube yet.
+		 * Answered before any result set is built, so nothing queries a table
+		 * that does not exist, and with the reason rather than empty rows -- a
+		 * client reading rows alone could not tell "not built yet" from zero.
+		 */
+		$readiness = $this->get( 'siteId' )
+			? \OWA\Module\Base\Classes\Cube\Status::readiness( $this->get( 'siteId' ) ) : null;
+
+		if ( $readiness ) {
+
+			$response = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'paginatedResultSet' );
+			$response->notReady = $readiness;
+
+			$this->set( 'response', $response );
+
+			return;
+		}
+
 		$this->set( 'response', $this->getResultSet() );
 	}
 	
@@ -120,6 +139,15 @@ class ReportsRest extends \OWA\Core\ReportController {
 		if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
 
 			http_response_code(422);
+
+		} elseif ( is_object( $response ) && ! empty( $response->notReady ) ) {
+
+			/*
+			 * 409, not 503: the server is fine, and the request is valid; what
+			 * it asks about is not in a state to answer yet. Not 201 with no
+			 * rows, which is how a real zero looks.
+			 */
+			http_response_code(409);
 
 		} else {
 

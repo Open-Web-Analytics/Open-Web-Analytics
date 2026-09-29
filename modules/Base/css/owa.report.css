@@ -4136,3 +4136,35 @@ li.constraintRow {
     overflow-x: auto;
 }
 
+/* ------------------------------------------------------------------
+ * A report whose Property has no cube yet
+ * ------------------------------------------------------------------ */
+.owa_reportNotReady {
+    max-width: 720px;
+    margin: 24px 0;
+    padding: 18px 20px;
+    border: 1px solid #e3d3a8;
+    border-left: 4px solid #9a6700;
+    border-radius: 3px;
+    background: #fffaf0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #404040;
+}
+
+.owa_reportNotReadyHeadline {
+    font-size: 15px;
+    font-weight: bold;
+    color: #303030;
+    margin-bottom: 4px;
+}
+
+.owa_reportNotReadyCron {
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    padding: 8px 10px;
+    font-size: 12px;
+    overflow-x: auto;
+}
+

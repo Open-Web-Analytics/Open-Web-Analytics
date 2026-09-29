@@ -18,6 +18,21 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ReportDefinitionFormatTest extends TestCase
 {
+    /**
+     * These pin how a DEFINITION renders, drawn for siteId '1' -- a Profile
+     * with no Property and so no cube. A report that reads cube data is not
+     * drawn at all for such a Profile (ReportController::post() swaps in the
+     * "not ready" notice), which is ReportingReadinessTest's business, not
+     * this file's. So the readiness check is switched off for the controller
+     * under test, and only here.
+     */
+    private static function drawnAsReady( \OWA\Core\ConfiguredReport $controller ): void
+    {
+        $flag = new \ReflectionProperty( \OWA\Core\ReportController::class, 'reads_reporting_data' );
+        $flag->setAccessible( true );
+        $flag->setValue( $controller, false );
+    }
+
     /** Render a definition and return the declared bag. */
     private function declared( array $definition, array $params = array() ): array
     {
@@ -509,6 +524,8 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ) );
 
+        self::drawnAsReady( $controller );
+
         $data = (array) $controller->doAction();
         $html = (string) \OWA\Core\CoreAPI::displayView( $data );
 
@@ -560,6 +577,8 @@ final class ReportDefinitionFormatTest extends TestCase
                 ),
             ) ),
         ) );
+
+        self::drawnAsReady( $controller );
 
         $html = (string) \OWA\Core\CoreAPI::displayView( (array) $controller->doAction() );
 
@@ -989,6 +1008,8 @@ final class ReportDefinitionFormatTest extends TestCase
             $params + array( 'siteId' => '1', 'period' => 'last_thirty_days' ) );
 
         $controller->setDefinition( $definition );
+
+        self::drawnAsReady( $controller );
 
         $data = (array) $controller->doAction();
 
@@ -1565,6 +1586,8 @@ final class ReportDefinitionFormatTest extends TestCase
             'widgets'    => array( $this->grid() ),
         ) );
 
+        self::drawnAsReady( $controller );
+
         $data = (array) $controller->doAction();
 
         $this->assertSame( array( 'roi' ), array_keys( (array) $data['metricSets'] ) );
@@ -1586,6 +1609,8 @@ final class ReportDefinitionFormatTest extends TestCase
                 'label' => 'Campaign {campaign}', 'metrics' => 'sessions' ) ),
             'widgets'    => array( $this->grid() ),
         ) );
+
+        self::drawnAsReady( $controller );
 
         $data = (array) $controller->doAction();
 
@@ -1831,6 +1856,8 @@ final class ReportDefinitionFormatTest extends TestCase
                        'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ),
             ),
         ) );
+
+        self::drawnAsReady( $controller );
 
         $data = (array) $controller->doAction();
 

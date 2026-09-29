@@ -43,6 +43,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      */
     const SCOPE_PARAM = 'funnelScope';
 
+    /** Draws cube data, so it is not drawn for a Property with no cube yet. */
+    protected $reads_reporting_data = true;
+
     /**
      * The segment -- which people the funnel is drawn for -- is not the
      * funnel's own idea. It lives in ReportSegment, which any report may use,

@@ -203,6 +203,86 @@ class Status {
     }
 
     /**
+     * Whether a Profile's reports can be drawn, and if not, what to tell the
+     * reader. Null when its Property's cube exists.
+     *
+     * This answers "is reporting ready?", not "is the tag working?" -- that is
+     * the Tracking Tag screen's question (SitesInvocation::lastEventReceived()).
+     * So it never reads raw: a cube is created only by a scheduled build, and
+     * what stands between a Property and its first cube is either the scheduler
+     * or the next build.
+     *
+     * @param string $site_id
+     * @return array|null ['state','headline','message','cron','property_id']
+     */
+    public static function readiness( $site_id ) {
+
+        $property_id = Cubes::propertyIdForSite( (string) $site_id );
+
+        if ( $property_id !== '' && Cubes::exists( $property_id ) ) {
+
+            return null;
+        }
+
+        $health = \OWA\Module\Base\Classes\SchedulerHealth::problem();
+        $next   = null;
+
+        if ( $property_id !== '' && ! $health ) {
+
+            $next = \OWA\Module\Base\Classes\JobStatus::forJob( self::JOB )['next'];
+        }
+
+        return self::readinessFor( $property_id, (bool) $health, $next );
+    }
+
+    /**
+     * The message for each way reporting can be not ready. Pure, so each can be
+     * asserted without an installation in that state.
+     *
+     * @param string   $property_id  '' when the Profile has no Property
+     * @param bool     $scheduler_down
+     * @param int|null $next         when the next scheduled build is due
+     * @return array
+     */
+    public static function readinessFor( $property_id, $scheduler_down, $next ) {
+
+        if ( $property_id === '' ) {
+
+            return array(
+                'state'       => 'no_property',
+                'headline'    => 'This Profile belongs to no Property.',
+                'message'     => 'Reports are built per Property, so there is nothing to report on '
+                               . 'until this Profile is given one.',
+                'cron'        => '',
+                'property_id' => '',
+            );
+        }
+
+        if ( $scheduler_down ) {
+
+            return array(
+                'state'       => 'scheduler',
+                'headline'    => 'Reports need the job scheduler.',
+                'message'     => "Reporting data is built by OWA's scheduled jobs, and they are not "
+                               . 'running. Add this line to the crontab of the user that owns your '
+                               . 'OWA files; reports appear after its first build.',
+                'cron'        => \OWA\Module\Base\Classes\SchedulerHealth::cronLine(),
+                'property_id' => (string) $property_id,
+            );
+        }
+
+        return array(
+            'state'       => 'waiting',
+            'headline'    => 'No reporting data yet.',
+            'message'     => 'Reports appear after the first scheduled build once data has arrived'
+                           . ( $next ? ' -- the next is due ' . \OWA\Module\Base\Classes\JobStatus::readable( $next ) : '' )
+                           . '. The Tracking Tag page shows whether this Profile has received any.',
+            'cron'        => '',
+            'property_id' => (string) $property_id,
+        );
+    }
+
+    /**
      * How far the cube's partitions reach, and what is in the catch-all.
      *
      * @param string $table

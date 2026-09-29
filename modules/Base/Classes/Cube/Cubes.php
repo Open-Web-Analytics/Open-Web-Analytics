@@ -312,6 +312,43 @@ class Cubes {
         return array( 'properties' => $properties, 'orphan_rows' => $orphans );
     }
 
+    /** @var array property id => bool, for this request */
+    protected static $exists = array();
+
+    /**
+     * Whether a Property's cube exists, asked once per request.
+     *
+     * NOTHING QUERIES A CUBE THAT DOES NOT EXIST. The report controllers ask
+     * this before rendering, the REST route before answering, and
+     * ResultSetManager before querying, so a Property with no cube yet gets
+     * "reporting is not ready" rather than a failed statement per widget. Held
+     * for the request because all three ask about the same Property, and a
+     * cube created mid-request is picked up by the next one.
+     *
+     * @param int|string $property_id
+     * @return bool
+     */
+    public static function exists( $property_id ) {
+
+        $id = (string) $property_id;
+
+        if ( ! array_key_exists( $id, self::$exists ) ) {
+
+            $table = self::tableFor( $id );
+
+            self::$exists[ $id ] = $table !== ''
+                && \OWA\Core\CoreAPI::dbSingleton()->tableExists( $table );
+        }
+
+        return self::$exists[ $id ];
+    }
+
+    /** Test seam: forget what exists() has answered. */
+    public static function forgetExistence() {
+
+        self::$exists = array();
+    }
+
     /**
      * The Properties with raw rows on ANY day and no cube yet.
      *

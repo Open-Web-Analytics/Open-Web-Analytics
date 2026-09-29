@@ -41,6 +41,48 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'A validation failure routes to the restApi error view.');
     }
 
+    /**
+     * A Profile of its own, and optionally a cube for its Property.
+     *
+     * A query always reaches SOME Profile -- ReportController::pre() fills in
+     * the first allowed one when none is named -- and whether it can be
+     * answered depends on that Profile's Property having a cube. So each test
+     * names the Profile it means and says whether its cube exists, rather than
+     * relying on whatever an earlier test left behind.
+     */
+    private function profile(bool $with_cube): string
+    {
+        $site     = $this->makeSite($with_cube ? 'cubed' : 'uncubed');
+        $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite($site['site_id']);
+
+        if ($with_cube) {
+            $this->assertTrue(\OWA\Module\Base\Classes\Cube\Cubes::create($property));
+            $this->cubes[] = $property;
+        }
+
+        \OWA\Module\Base\Classes\Cube\Cubes::forgetExistence();
+
+        return $site['site_id'];
+    }
+
+    /** @var string[] Properties whose cubes this test created */
+    private array $cubes = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->cubes as $property) {
+            foreach (['', '_rebuild', '_computed'] as $suffix) {
+                owa_coreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s%s',
+                    \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property), $suffix));
+            }
+        }
+
+        $this->cubes = [];
+        \OWA\Module\Base\Classes\Cube\Cubes::forgetExistence();
+
+        parent::tearDown();
+    }
+
     public function testResultSetQueryReturnsResults(): void
     {
         $this->authenticateAs('admin');
@@ -48,7 +90,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(
             \OWA\Module\Base\Controller\ReportsRest::class,
             'reportsRestController.php',
-            ['metrics' => 'pageViews', 'period' => 'today']
+            ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $this->profile(true)]
         );
 
         $this->assertSame(201, $resp['status'],
@@ -56,6 +98,26 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->assertSame('base.reportsRest', $resp['view']);
         $this->assertIsArray($resp['data'],
             'A resultSet response payload should be an array (the serialized result set).');
+    }
+
+    /**
+     * A Profile whose Property has no cube yet is answered 409 with the
+     * reason, not 201 with no rows -- which is how a real zero looks.
+     */
+    public function testAQueryBeforeTheFirstBuildIsNotReady(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $this->profile(false)]
+        );
+
+        $this->assertSame(409, $resp['status']);
+        $this->assertSame('base.reportsRest', $resp['view']);
+        $this->assertNotEmpty($resp['data']['notReady'] ?? null,
+            'the response says why there is nothing to answer');
     }
 
     public function testInvalidPeriodIsRejected(): void

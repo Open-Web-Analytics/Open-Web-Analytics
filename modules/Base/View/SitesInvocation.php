@@ -54,5 +54,8 @@ class SitesInvocation extends \OWA\Core\View {
         $this->body->set('site_id', $this->get('site_id'));
 
         $this->body->set('tracking_code', \OWA\Core\CoreAPI::getJsTrackerTag( $this->get('site_id') ) );
+
+        // False when the Profile has received nothing; the template says so.
+        $this->body->set( 'last_event', $this->get( 'last_event' ) ?: 0 );
     }
 }
