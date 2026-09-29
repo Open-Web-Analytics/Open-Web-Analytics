@@ -5,12 +5,10 @@ require_once(__DIR__ . '/RestControllerTestCase.php');
 /**
  * Contract + auth tests for the reports REST endpoint:
  *
- *   GET /owa/api/base/v1/reports/{report_name}  -> owa_reportsRestController (view_reports)
+ *   GET /owa/api/base/v1/reports  -> owa_reportsRestController (view_reports)
  *
- * The controller has two modes:
- *   - no report_name: a generic resultSet query, which REQUIRES `metrics`.
- *   - a report_name:  a canned report, each with its own required params
- *     (e.g. visit/clickstream require sessionId).
+ * A resultSet query, which REQUIRES `metrics`. The named reports
+ * (/reports/{report_name}) went with v1 in 2.0 and are refused.
  *
  * success() -> 201 (base.reportsRest); errorAction()/validation -> 422 (base.restApi).
  */
@@ -122,129 +120,22 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'an ordered range must still be accepted' );
     }
 
-    public function testReportNameBranchRequiresSessionId(): void
-    {
-        $this->authenticateAs('admin');
-
-        // The 'visit' report requires a sessionId; omitting it must fail validation.
-        $resp = $this->callEndpoint(
-            \OWA\Module\Base\Controller\ReportsRest::class,
-            'reportsRestController.php',
-            ['report_name' => 'visit'] // no sessionId
-        );
-
-        $this->assertSame(422, $resp['status'],
-            "The 'visit' report requires sessionId; omitting it should return 422.");
-    }
-
-    // ------------------------------------------------------------------
-    // Canned report_name branches (each is a documented endpoint on the wiki:
-    // reports/{visit,clickstream,latest_visits,latest_actions,clicks}).
-    //
-    // These pin the CONTRACT of each canned report -- required-param validation
-    // and that a valid request returns a 201 result set -- without seeding fact
-    // rows: an empty result set is a valid success response, and the point here
-    // is the request/validation/response envelope each report guarantees, not
-    // the row math (that is the ingestion tests' job).
-    // ------------------------------------------------------------------
-
     /**
-     * Every canned report rejects an unauthenticated caller before doing any
-     * work -- the view_reports capability gate is the same on all of them.
-     *
-     * @dataProvider cannedReportProvider
+     * The named reports went with v1's tables in 2.0. A name is refused, not
+     * ignored, so a caller still using one is told.
      */
-    public function testCannedReportRejectsUnauthenticated(string $reportName, array $validParams): void
-    {
-        $resp = $this->callEndpoint(
-            \OWA\Module\Base\Controller\ReportsRest::class,
-            'reportsRestController.php',
-            ['report_name' => $reportName] + $validParams
-        );
-
-        $this->assertNotAuthenticated($resp, "GET /reports/{$reportName}");
-    }
-
-    /**
-     * A valid request to each canned report returns the 201 success envelope
-     * routed through the reportsRest view.
-     *
-     * @dataProvider cannedReportProvider
-     */
-    public function testCannedReportReturnsSuccessEnvelope(string $reportName, array $validParams): void
+    public function testANamedReportIsRefused(): void
     {
         $this->authenticateAs('admin');
 
-        $resp = $this->callEndpoint(
-            \OWA\Module\Base\Controller\ReportsRest::class,
-            'reportsRestController.php',
-            ['report_name' => $reportName] + $validParams
-        );
+        foreach (['visit', 'clickstream', 'latest_visits', 'transactions'] as $name) {
+            $resp = $this->callEndpoint(
+                \OWA\Module\Base\Controller\ReportsRest::class,
+                'reportsRestController.php',
+                ['report_name' => $name, 'metrics' => 'pageViews', 'sessionId' => '1700000000000000001']
+            );
 
-        $this->assertSame(201, $resp['status'],
-            "A valid '{$reportName}' report should return 201.");
-        $this->assertSame('base.reportsRest', $resp['view'],
-            "A successful '{$reportName}' report routes to the reportsRest view.");
+            $this->assertSame(422, $resp['status'], "GET /reports/$name");
+        }
     }
-
-    /**
-     * report_name/validParams for each documented canned report. The params are
-     * the minimum the controller's validate() switch requires (a bogus siteId /
-     * sessionId still satisfies "required" and yields an empty-but-valid set).
-     *
-     * @return array<string, array{0:string, 1:array<string,string>}>
-     */
-    public static function cannedReportProvider(): array
-    {
-        $bogusSite    = 'reports-canned-site';
-        $bogusSession = '1700000000000000001';
-        $today        = date('Ymd');
-
-        return [
-            // report_name        [ report_name, valid minimal params ]
-            'visit'          => ['visit',          ['sessionId' => $bogusSession]],
-            'clickstream'    => ['clickstream',    ['sessionId' => $bogusSession]],
-            'latest_visits'  => ['latest_visits',  ['siteId' => $bogusSite]],
-            'latest_actions' => ['latest_actions', ['siteId' => $bogusSite, 'startDate' => $today, 'endDate' => $today]],
-        ];
-    }
-
-    public function testLatestActionsRequiresDateRangeAndSite(): void
-    {
-        $this->authenticateAs('admin');
-
-        // latest_actions requires startDate, endDate AND siteId; omit all three.
-        $resp = $this->callEndpoint(
-            \OWA\Module\Base\Controller\ReportsRest::class,
-            'reportsRestController.php',
-            ['report_name' => 'latest_actions']
-        );
-
-        $this->assertSame(422, $resp['status'],
-            "The 'latest_actions' report requires startDate/endDate/siteId; omitting them should return 422.");
-    }
-
-    public function testClickstreamRequiresSessionId(): void
-    {
-        $this->authenticateAs('admin');
-
-        $resp = $this->callEndpoint(
-            \OWA\Module\Base\Controller\ReportsRest::class,
-            'reportsRestController.php',
-            ['report_name' => 'clickstream'] // no sessionId
-        );
-
-        $this->assertSame(422, $resp['status'],
-            "The 'clickstream' report requires sessionId; omitting it should return 422.");
-    }
-
-    /*
-     * The clicks report is GONE -- a heatmap is an ordinary dimensional query
-     * now (domClicks by clickX,clickY constrained on pagePath), so there is no
-     * report_clicks to test and no pageUrl-to-document_id resolution inside it.
-     *
-     * What that test really pinned -- that a url is canonicalised BEFORE it is
-     * hashed into a document id -- is an ingestion contract, and it stays
-     * covered by ContentDerivedIdCoverageTest and RederiveDimensionIdsTest.
-     */
 }

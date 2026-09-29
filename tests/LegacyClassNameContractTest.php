@@ -551,8 +551,8 @@ final class LegacyClassNameContractTest extends TestCase
         // RETIRED 2026-08-26: transaction-detail, removed rather than converted.
         // It was the per-transaction drill-down off the Transaction Roster --
         // one record as label/value rows plus its line items. Nothing else
-        // linked to it. The REST report it read (report_transaction) is a
-        // public endpoint and stays.
+        // linked to it. The REST report it read (report_transaction) went
+        // with v1's tables in 2.0.
         'owa_reportTransactionDetailController',
         'owa_reportTransactionDetailView',
         // RETIRED 2026-08-25: the visitor-detail family. visitors became a

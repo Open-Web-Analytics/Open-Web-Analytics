@@ -741,37 +741,6 @@ final class PartitionOperationsTest extends TestCase
         $this->assertLessThan($all, $scanned, 'the bound should reduce the partitions scanned');
     }
 
-    /**
-     * The id-derived range is a hint drawn from a clock we do not control, so
-     * it must be usable only where a miss can fall back. These pin the shape
-     * and the refusals; the fallback itself is at the call sites.
-     */
-    public function testFactDateRangeFromId()
-    {
-        // generateRandomUid(): 10 digits of unix time, 6 random, 3 server.
-        $ts = strtotime('2026-08-15 12:00:00');
-        $id = $ts . '611353' . '957';
-
-        $this->assertSame(19, strlen($id), 'the fixture must be a well-formed uid');
-
-        $range = \OWA\Core\Db::factDateRangeFromId($id, 2);
-
-        $this->assertSame(date('Ymd', strtotime('2026-08-13')), $range['start']);
-        $this->assertSame(date('Ymd', strtotime('2026-08-17')), $range['end']);
-        $this->assertLessThan($range['end'], $range['start']);
-
-        // The window is configurable, and always brackets the id's own day.
-        $wide = \OWA\Core\Db::factDateRangeFromId($id, 10);
-        $this->assertLessThan($range['start'], $wide['start']);
-        $this->assertGreaterThan($range['end'], $wide['end']);
-
-        // A crc32-era id is a hash: its leading digits are not a date, and
-        // reading one as a timestamp would send the query to a wrong partition.
-        foreach (['71927192', '-1', '', null, 'abc', '123', str_repeat('1', 18), str_repeat('1', 20)] as $bad) {
-            $this->assertNull(\OWA\Core\Db::factDateRangeFromId($bad), var_export($bad, true) . ' must not yield a range');
-        }
-    }
-
     /** A constrained entity load still finds a row the constraint excludes. */
     public function testConstrainedLoadFallsBackWhenTheHintIsWrong()
     {
