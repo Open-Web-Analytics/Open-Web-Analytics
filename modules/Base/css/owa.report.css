@@ -4091,3 +4091,48 @@ li.constraintRow {
     font-size: 11px;
     margin-top: 6px;
 }
+
+/* ------------------------------------------------------------------
+ * Reporting Cubes: the status badge
+ * ------------------------------------------------------------------
+ *
+ * A dot and a word, so the level never rests on colour alone. The three
+ * colours are the ones the notices already use for success, warning and
+ * error, darkened where needed to hold contrast on white.
+ */
+.owa_cubeStatus {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.owa_cubeStatusDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 auto;
+}
+
+.owa_cubeStatusGreen  { color: #2e7d32; }
+.owa_cubeStatusYellow { color: #9a6700; }
+.owa_cubeStatusRed    { color: #c62828; }
+
+.owa_cubeStatusMismatch {
+    color: #c62828;
+    font-size: 11px;
+    margin-left: 6px;
+}
+
+.owa_cubeStatusCommands {
+    background: #f7f7f7;
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    padding: 10px 12px;
+    font-size: 12px;
+    overflow-x: auto;
+}
+
