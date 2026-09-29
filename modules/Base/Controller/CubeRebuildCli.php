@@ -224,8 +224,17 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
               . 'so they are in no cube.', number_format( $collecting['orphan_rows'] ) ) );
         }
 
+        /*
+         * AND EVERY PROPERTY THAT HAS COLLECTED BUT HAS NO CUBE YET, whatever
+         * the range. A fresh install that collected before cron was set up and
+         * then went quiet has raw rows only outside this window; left to
+         * collecting() it would get no cube until new traffic landed inside a
+         * build's range. Its first build then reads back to its first day --
+         * see buildUnderLock().
+         */
         $properties = array_unique( array_merge(
-            array_keys( $cubes ), $collecting['properties'] ) );
+            array_keys( $cubes ), $collecting['properties'],
+            \OWA\Module\Base\Classes\Cube\Cubes::awaitingFirstBuild() ) );
 
         sort( $properties, SORT_STRING );
 
@@ -308,10 +317,14 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $db->tableExists( $table ) ) {
 
+            $earliest = \OWA\Module\Base\Classes\Cube\Cubes::earliestDay( $property_id );
+
             if ( $dry_run ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s does not exist yet and would be created.', $table ) );
+                    '%s does not exist yet and would be created%s.', $table,
+                    $earliest && $earliest < $range['from']
+                        ? sprintf( ', then built from %d, its first day in raw', $earliest ) : '' ) );
 
                 return $none;
             }
@@ -337,6 +350,23 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s created: Property %s has collected its first data.', $table, $property_id ) );
+
+            /*
+             * A NEW CUBE STARTS FROM THE PROPERTY'S FIRST DAY IN RAW, not from
+             * the window a routine rebuild covers. Everything collected before
+             * the cube existed -- typically before cron was installed, since
+             * the scheduler is what creates cubes -- belongs in it, and nothing
+             * else would ever put it there: later rebuilds cover yesterday and
+             * today.
+             *
+             * The cube is created with its lead only, so its first partition
+             * starts this month; older days need dated partitions first, or
+             * partitions() would find nothing covering them.
+             */
+            if ( $earliest && $earliest < $range['from'] ) {
+
+                $range = $this->reachBackForFirstBuild( $table, $earliest, $range );
+            }
         }
 
         if ( ! $db->isPartitioned( $table ) ) {
@@ -440,6 +470,47 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         }
 
         return $outcome;
+    }
+
+    /**
+     * Give a just-created cube dated partitions back to $earliest, and widen
+     * the range to start there.
+     *
+     * If the partitions cannot be added, the range is left as it was: the
+     * routine window still builds, and the error says what was not.
+     *
+     * @param string $table
+     * @param int    $earliest yyyymmdd
+     * @param array  $range    ['from','to']
+     * @return array the range to build
+     */
+    protected function reachBackForFirstBuild( $table, $earliest, array $range ) {
+
+        // As partition-rotate reads them, so the next rotation finds the table in shape.
+        $detail_months = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' )
+            ?: \OWA\Core\Db::PARTITION_DETAIL_MONTHS;
+        $limit         = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_max_partitions' )
+            ?: \OWA\Core\Db::PARTITION_COUNT_LIMIT;
+
+        $result = \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(
+            $table, (string) $earliest, $detail_months, $limit );
+
+        if ( ! $result['covered'] && ! $result['added'] ) {
+
+            \OWA\Core\CoreAPI::error( sprintf(
+                '%s: could not add partitions back to %d, so only %d to %d is built. '
+              . 'Run cmd=cube-rebuild from=%d once the partitions exist.',
+                $table, $earliest, $range['from'], $range['to'], $earliest ) );
+
+            return $range;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            '%s: first build, so it reads back to %d, the first day in raw.', $table, $earliest ) );
+
+        $range['from'] = (int) $earliest;
+
+        return $range;
     }
 
     /**

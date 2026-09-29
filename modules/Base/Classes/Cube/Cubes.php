@@ -313,6 +313,85 @@ class Cubes {
     }
 
     /**
+     * The Properties with raw rows on ANY day and no cube yet.
+     *
+     * collecting() answers for the window a build is about to rebuild, which is
+     * what an existing cube needs. It misses a Property whose only rows are
+     * older than that window -- a fresh install that collected before cron was
+     * set up, then went quiet -- and such a Property would never get a cube
+     * until new traffic happened to land inside a build's range.
+     *
+     * NOT A SCAN OF RAW. It asks only about Properties without a cube, and for
+     * each of their Profiles whether any row exists, which the site_date index
+     * answers with one probe per partition.
+     *
+     * @return string[] property ids
+     */
+    public static function awaitingFirstBuild() {
+
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+        $raw  = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
+
+        $cubes = self::existing();
+        $out   = array();
+
+        foreach ( (array) $db->get_results( sprintf(
+                "SELECT DISTINCT s.property_id AS property_id FROM %s s "
+              . "WHERE s.property_id IS NOT NULL AND s.property_id <> '' AND s.property_id <> '0' "
+              . 'AND EXISTS ( SELECT 1 FROM %s e WHERE e.site_id = s.site_id )',
+                $site, $raw ) ) as $row ) {
+
+            $id = (string) $row['property_id'];
+
+            if ( ! isset( $cubes[ $id ] ) ) {
+
+                $out[] = $id;
+            }
+        }
+
+        sort( $out, SORT_STRING );
+
+        return $out;
+    }
+
+    /**
+     * The oldest day raw holds for any of a Property's Profiles, or null.
+     *
+     * What a build creating a Property's cube reads from: everything collected
+     * before the cube existed belongs in it, not only the window a routine
+     * rebuild covers.
+     *
+     * @param int|string $property_id
+     * @return int|null yyyymmdd
+     */
+    public static function earliestDay( $property_id ) {
+
+        $sites = self::siteIds( $property_id );
+
+        if ( ! $sites ) {
+
+            return null;
+        }
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $raw    = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $quoted = array();
+
+        foreach ( $sites as $site_id ) {
+
+            $quoted[] = "'" . $db->prepare( $site_id ) . "'";
+        }
+
+        $row = $db->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS day FROM %s WHERE site_id IN (%s)',
+            $raw, implode( ', ', $quoted ) ) );
+
+        $day = is_array( $row ) ? (int) ( $row['day'] ?? 0 ) : 0;
+
+        return $day > 0 ? $day : null;
+    }
+
+    /**
      * Create a Property's cube.
      *
      * Partitioned in the shape cmd=partition-rotate maintains, because
