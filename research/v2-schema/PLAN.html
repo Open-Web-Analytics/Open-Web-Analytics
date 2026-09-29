@@ -2033,7 +2033,7 @@ v1 is still intact here, which is what makes the comparison possible.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>11</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows; forced, blocking, CLI-only, resumable. It fills <code>owa_visitor_acquisition</code> itself (the separate backfill command is deleted). Requires 1.14.0; v1 code is deleted with it.</td><td>Started 28&nbsp;Sep: the v1 table list and frozen schema, and <code>owa_request</code> &rarr; <code>owa_event_raw</code> (<code>RequestMigrator</code>, resumable via <code>owa_migration_progress</code>). Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two.
+<tr><td>11</td><td><strong>The migrator</strong> (<a href="#s221">&sect;2.21</a>) &mdash; v1&rsquo;s star joined into v2&rsquo;s denormalised rows; forced, blocking, CLI-only, resumable. It fills <code>owa_visitor_acquisition</code> itself (the separate backfill command is deleted). Requires 1.14.0; v1 code is deleted with it.</td><td><strong>Built 29&nbsp;Sep</strong> (<code>feature/v1-migrator</code>, <code>feature/v2-upgrade-gate</code>): every pass (<a href="#s221d">&sect;2.21</a>), the 1.14 gate with Update003&ndash;033 deleted, the 32-bit re-key in Update034, partitions reaching back to the oldest migrated day, v1&rsquo;s code deleted, and <code>cmd=v1-drop</code>. Run on the dev install. Replaced the fan-out dispatcher on 21&nbsp;Sep, when the pipeline stopped being two.
 <strong>Target corrected 24&nbsp;Sep: it writes the RAW store, not the cube.</strong> The cube is
 derived, so <code>cmd=cube-rebuild</code> produces it and there is no second migrator &mdash; and
 because <a href="#s223">&sect;2.23</a> now has one reporting path, this is part of the reporting arc
@@ -2115,7 +2115,7 @@ the scan itself.</p>
 action refuses (the pending-update gate). An installation must be on <strong>1.14.0</strong>
 (schema&nbsp;33) before it upgrades. v2 carries <strong>no v1 code</strong>: the migrator reads
 v1&rsquo;s tables with raw SQL against that one frozen schema, and after it runs v1 is tables
-only, which the optional drop command removes by name.</p>
+only, which the optional drop command (<code>cmd=v1-drop</code>) removes by name.</p>
 
 <p><strong>One job: read v1&rsquo;s star, write v2&rsquo;s denormalised rows.</strong>
 <code>owa_request</code> is 58 columns and one row per tracked interaction, with foreign keys into
@@ -2309,7 +2309,7 @@ A fresh 2.0 install creates only v2&rsquo;s tables.</p>
 <tr><td>the 20 entity classes, <code>FactTable</code>, <code>DimensionEntity</code> and <code>ResultSetManager</code>&rsquo;s star-join code</td><td>deleted</td></tr>
 <tr><td>19 unregistered handlers (<code>RequestHandlers</code>, <code>SessionHandlers</code> &hellip;)</td><td>deleted</td></tr>
 <tr><td><code>ReportsRest</code>&rsquo;s seven named reports (visit, latest visits, latest actions, clickstream, transactions, transaction, transaction items)</td><td>deleted; nothing in the UI calls them. A v2 report can replace any that is asked for</td></tr>
-<tr><td><code>rederive-dimension-ids</code>, <code>backfill-visitor-acquisition</code>, <code>repair-geo-encoding</code>, <code>update-document</code></td><td>deleted; the migrator does the acquisition backfill, and the upgrade re-keys the three kept tables</td></tr>
+<tr><td><code>rederive-dimension-ids</code>, <code>backfill-visitor-acquisition</code>, <code>repair-geo-encoding</code>, <code>update-document</code></td><td>deleted; the migrator does the acquisition backfill and repairs double-encoded geo names, and Update034 re-keys the kept tables</td></tr>
 <tr><td><code>OverlayLauncher</code>&rsquo;s <code>document_id</code> branch; v1 tables in <code>InstanceInfoCli</code>&rsquo;s partition list</td><td>deleted; the list names <code>event_raw</code> and the cubes</td></tr>
 <tr><td>what is kept only for the migrator: <code>goal_event.goal_number</code>, <code>count_mode</code>, <code>GoalVocabulary::LEGACY</code></td><td>read by the migrator (goal completions from <code>owa_session.goal_N</code>); kept for as long as 2.x ships the migrator</td></tr>
 </tbody></table></div>
