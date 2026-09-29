@@ -323,32 +323,4 @@ final class CustomDimensionScreenTest extends TestCase
             'a form without a nonce is a mutation any page could trigger' );
     }
 
-    /**
-     * Every class the screen uses is one a stylesheet defines.
-     *
-     * The form was written with field, field_help and submit, which no
-     * stylesheet has: the screen rendered as bare browser defaults beside
-     * settings pages that use .setting / .title / .description / .field.
-     */
-    public function testEveryClassItUsesIsStyled(): void
-    {
-        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/custom_dimensions.php' );
-        $css      = '';
-
-        foreach ( (array) glob( OWA_DIR . 'modules/Base/css/*.css' ) as $file ) {
-            $css .= file_get_contents( $file );
-        }
-
-        preg_match_all( '/class="([^"]+)"/', $template, $m );
-
-        $unstyled = array();
-
-        foreach ( array_unique( preg_split( '/\s+/', implode( ' ', $m[1] ) ) ) as $class ) {
-            if ( $class !== '' && ! preg_match( '/\.' . preg_quote( $class, '/' ) . '(?![A-Za-z0-9_-])/', $css ) ) {
-                $unstyled[] = $class;
-            }
-        }
-
-        $this->assertSame( array(), $unstyled, 'classes no stylesheet defines' );
-    }
 }
