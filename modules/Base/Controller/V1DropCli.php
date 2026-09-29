@@ -92,6 +92,10 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
             }
         }
 
+        // Recorded so Update062's down() refuses rather than reporting a revert
+        // it cannot perform.
+        \OWA\Core\CoreAPI::persistSetting( 'base', 'v1_tables_dropped', true );
+
         $this->write( sprintf( 'Dropped %d v1 table(s).', count( $tables ) ) );
     }
 

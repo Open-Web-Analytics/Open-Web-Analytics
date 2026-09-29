@@ -25,6 +25,7 @@ final class V1DropCliTest extends CliControllerTestCase
     protected function tearDown(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'schema_version', $this->schema);
+        \OWA\Core\CoreAPI::persistSetting('base', 'v1_tables_dropped', false);
         V1Schema::drop();
 
         parent::tearDown();
@@ -55,6 +56,7 @@ final class V1DropCliTest extends CliControllerTestCase
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
         $this->assertSame($before, $this->present());
+        $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting('base', 'v1_tables_dropped'));
     }
 
     public function testDropRemovesEveryV1Table(): void
@@ -63,6 +65,8 @@ final class V1DropCliTest extends CliControllerTestCase
 
         $this->assertSame('ok', $cli->getCliOutcome()['outcome']);
         $this->assertSame([], $this->present());
+        $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting('base', 'v1_tables_dropped'),
+            'recorded, so the migration is not claimed revertible');
     }
 
     public function testItIsRefusedBeforeTheMigrationHasRun(): void

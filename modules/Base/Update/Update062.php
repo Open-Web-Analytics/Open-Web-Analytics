@@ -138,10 +138,20 @@ class Update062 extends \OWA\Core\Update {
 
     /**
      * Undo every pass, last first. Rows are deleted by the ids their v1 rows
-     * derive, so nothing a beacon wrote is touched. After v1 is dropped there
-     * is nothing to roll back to.
+     * derive, so nothing a beacon wrote is touched.
+     *
+     * Refused once cmd=v1-drop has run: the ids come from v1's rows, and with
+     * them gone the migrated history can be neither found nor restored.
      */
     function down() {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'v1_tables_dropped' ) ) {
+
+            $this->e->notice( "v1's tables were dropped (cmd=v1-drop), so the migration cannot be"
+                . ' reverted: there is no 1.x history to return to.' );
+
+            return false;
+        }
 
         if ( ! $this->hasV1() ) {
 
