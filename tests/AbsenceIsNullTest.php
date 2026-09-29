@@ -174,7 +174,6 @@ final class AbsenceIsNullTest extends TestCase
     {
         return array(
             array( 'modules/Base/Classes/Geolocation.php' ),
-            array( 'modules/Base/Handler/RefererHandlers.php' ),
         );
     }
 
