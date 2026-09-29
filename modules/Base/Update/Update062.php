@@ -217,7 +217,7 @@ class Update062 extends \OWA\Core\Update {
 
     /**
      * Dated partitions on owa_event_raw and every cube, reaching back to the
-     * oldest day migrated.
+     * oldest day migrated: months within the detail window, years before it.
      *
      * v2's tables were partitioned from the day they were created. Older rows
      * would land in the first partition, which retention and the cube build
@@ -250,6 +250,12 @@ class Update062 extends \OWA\Core\Update {
             array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ),
             array_values( \OWA\Module\Base\Classes\Cube\Cubes::existing() ) );
 
+        // As partition-rotate reads them, so it finds the result already in shape.
+        $detail_months = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' )
+            ?: \OWA\Core\Db::PARTITION_DETAIL_MONTHS;
+        $limit         = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_max_partitions' )
+            ?: \OWA\Core\Db::PARTITION_COUNT_LIMIT;
+
         foreach ( $tables as $table ) {
 
             if ( ! $db->isPartitioned( $table ) ) {
@@ -257,7 +263,7 @@ class Update062 extends \OWA\Core\Update {
                 continue;
             }
 
-            $result = $db->extendPartitionsBack( $table, (string) $earliest );
+            $result = $db->extendPartitionsBack( $table, (string) $earliest, $detail_months, $limit );
 
             if ( ! $result['covered'] && ! $result['added'] ) {
 
