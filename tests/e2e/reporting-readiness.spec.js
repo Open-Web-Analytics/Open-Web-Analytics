@@ -22,6 +22,25 @@ async function gotoAction(page, doName, extra = '') {
     await page.goto(`?owa_do=${doName}${extra}`, { waitUntil: 'networkidle' });
 }
 
+/**
+ * Every widget data request the page makes. Widgets fetch through the API
+ * front controller -- api/index.php?...&do=reports&module=base -- so that is
+ * what is matched; a pattern that never matches would make "no data was
+ * requested" pass on any page, which is why the ready report below is the
+ * control that proves this sees them.
+ */
+function watchReportData(page) {
+    const seen = [];
+
+    page.on('request', (request) => {
+        if (/[?&]do=reports(&|$)/.test(request.url())) {
+            seen.push(request.url());
+        }
+    });
+
+    return seen;
+}
+
 async function addProfile(page) {
     await gotoAction(page, 'base.sitesProfile');
     await page.fill('input[name="domain"]', FIXTURE.newSiteDomain);
@@ -65,12 +84,7 @@ test.describe('reporting readiness', () => {
         expect(siteId, 'the new Profile\'s id').toBeTruthy();
 
         try {
-            const dataRequests = [];
-            page.on('request', (request) => {
-                if (/v1\/reports/.test(request.url())) {
-                    dataRequests.push(request.url());
-                }
-            });
+            const dataRequests = watchReportData(page);
 
             await gotoAction(page, 'base.report', `&owa_reportId=dashboard&owa_siteId=${siteId}`);
 
@@ -95,6 +109,15 @@ test.describe('reporting readiness', () => {
         } finally {
             await deleteProfile(page, siteId);
         }
+    });
+
+    test('a ready report does ask for data, so the check above can fail', async ({ page }) => {
+        const dataRequests = watchReportData(page);
+
+        await gotoAction(page, 'base.report', `&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`);
+
+        await expect(page.locator('.owa_reportNotReady')).toHaveCount(0);
+        expect(dataRequests.length, 'the seeded Profile\'s dashboard fetches its widgets').toBeGreaterThan(0);
     });
 
     test('the Tracking Tag screen says when the last event arrived', async ({ page }) => {
