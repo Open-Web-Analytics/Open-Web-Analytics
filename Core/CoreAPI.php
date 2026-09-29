@@ -1930,6 +1930,13 @@ class CoreAPI {
                 // assemble the navigation for a specific view's named navigation element'
                 foreach ($module_nav as $key => $value) {
 
+                    // A link registered for a group rather than a named view
+                    // nav has neither key, and is not one of these.
+                    if ( ! isset( $value['view'], $value['nav_name'] ) ) {
+
+                        continue;
+                    }
+
                     $links[$value['view']][$value['nav_name']][] = $value;
                 }
             }
