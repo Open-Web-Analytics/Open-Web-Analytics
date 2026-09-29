@@ -233,6 +233,14 @@ final class Update062Test extends TestCase
         $this->assertSame([], (array) $db->get_results('SELECT id FROM owa_migration_progress WHERE site_id = ?', [self::SITE]));
     }
 
+    /** Empty v1 tables have no history to choose a cutoff for. */
+    public function testEmptyV1TablesNeedNoChoiceOfHistory(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_v1fx_request');
+
+        $this->assertTrue($this->update->up(), 'no since= or --all was given, and none is needed');
+    }
+
     public function testWithoutV1TablesThereIsNothingToDo(): void
     {
         $this->update->prefix = 'owa_nov1_';
