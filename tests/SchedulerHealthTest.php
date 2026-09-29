@@ -82,23 +82,50 @@ final class SchedulerHealthTest extends CliControllerTestCase
     }
 
     /**
-     * Silence shorter than the longest shipped schedule is NOT evidence of
-     * failure. partition-rotate is monthly, so a healthy installation writes
-     * nothing for weeks — crying wolf here would teach people to ignore the
-     * banner, which costs more than noticing a dead scheduler late.
+     * The window comes from the most frequent job: three of its intervals,
+     * between two hours and forty days. A monthly-only installation keeps the
+     * forty days, so its weeks of silence are not a false alarm.
      */
-    public function testSilenceShorterThanAMonthIsNotAFailure()
+    public function testTheWindowIsSetByTheMostFrequentJob()
     {
-        foreach ([2, 10, 25, 35] as $days) {
-            $this->seed(time() - ($days * 86400));
+        $health = \OWA\Module\Base\Classes\SchedulerHealth::class;
+        $now    = strtotime('2026-09-15 12:00:00');
 
-            $this->assertNull(
-                \OWA\Module\Base\Classes\SchedulerHealth::problem(),
-                "$days days of silence is normal for a monthly job and must not warn"
-            );
+        $job = fn(string $schedule) => ['schedule' => $schedule, 'command' => 'x', 'params' => []];
 
-            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_scheduled_job');
-        }
+        $this->assertSame($health::SILENT_FOR,
+            $health::silentFor(['m' => $job('0 3 1 * *')], $now), 'monthly only: forty days');
+        $this->assertSame(3 * 86400,
+            $health::silentFor(['d' => $job('17 4 * * *')], $now), 'daily: three days');
+        $this->assertSame(3 * 3600,
+            $health::silentFor(['h' => $job('7 * * * *'), 'm' => $job('0 3 1 * *')], $now),
+            'hourly beside monthly: the hourly one sets it');
+        $this->assertSame($health::MIN_SILENT_FOR,
+            $health::silentFor(['r' => $job('2,7,12,17,22,27,32,37,42,47,52,57 * * * *')], $now),
+            'every five minutes: never under two hours');
+        $this->assertSame($health::SILENT_FOR,
+            $health::silentFor(['off' => $job('off'), 'bad' => $job('not a schedule')], $now),
+            'a switched-off or unreadable job sets nothing');
+        $this->assertSame($health::SILENT_FOR, $health::silentFor([], $now));
+    }
+
+    /**
+     * With the jobs this installation ships -- rebuild-cube every five
+     * minutes -- a quiet hour and a half is not a stop and three hours is.
+     */
+    public function testWithTheShippedJobsHoursOfSilenceAreAStop()
+    {
+        $this->seed(time() - 5400);
+        $this->assertNull(\OWA\Module\Base\Classes\SchedulerHealth::problem(),
+            'under two hours is never a stop');
+
+        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_scheduled_job');
+
+        $this->seed(time() - 3 * 3600);
+        $nag = \OWA\Module\Base\Classes\SchedulerHealth::problem();
+
+        $this->assertIsArray($nag, 'three hours without a run, with a five-minute job registered');
+        $this->assertSame("OWA's Job Scheduler may have stopped.", $nag['headline']);
     }
 
     /** Past the window, it reports a stop — and distinguishes it from never. */
