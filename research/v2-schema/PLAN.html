@@ -2021,10 +2021,7 @@ report off.</p>
 <tr><td>10b</td><td><strong>Reporting off the cube</strong> &mdash; v2 metrics and dimensions
 <em>replacing</em> v1&rsquo;s (<a href="#s223">&sect;2.23</a>), <code>ResultSetManager</code> binding
 the cube to the Property the request names, and report configs edited only where a name did not
-survive.</td><td>Not started. The writing half is done and nothing reads it: outside
-<code>Classes/Cube</code>, the CLI, the updates and the handlers, the only files naming
-<code>Cubes::</code> are the module registration and the custom-dimensions screen. 78 metric names
-and 60 dimension names to move, the latter currently registered across eight source entities</td></tr>
+survive.</td><td><strong>Done</strong> 24&ndash;28&nbsp;Sep. #1129 binds the cube to the request&rsquo;s Property (<code>ResultSetManager::propertyIdForRequest()</code> &rarr; <code>bindToProperty()</code>); #1134 removes v1&rsquo;s metric and dimension vocabularies, registers v2&rsquo;s from <code>config/metrics.php</code> and <code>config/dimensions.php</code>, moves the reports, funnels, overlay and dashboard onto v2 names, and retires the reports v2 cannot answer. Saved custom reports are rewritten by Update061 (<a href="#s221c">&sect;2.21</a>)</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.5</span>Phase 8 &mdash; migrate, and prove it</h4>
