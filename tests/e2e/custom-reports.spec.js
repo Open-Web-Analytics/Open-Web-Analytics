@@ -1128,14 +1128,14 @@ test.describe('custom reports', () => {
 
         /**
          * The roster is a list of reports, not a report of a time range, so it
-         * offers neither a period nor Live View -- controls that would change
-         * nothing on it.
+         * offers neither a period nor a "Data as of" line -- it reads no cube
+         * data for either to describe.
          */
-        test('the roster has no date picker and no live view', async ({ page }) => {
+        test('the roster has no date picker and no as-of line', async ({ page }) => {
             await openRoster(page);
 
             await expect(page.locator('#owa_timePeriodControl')).toHaveCount(0);
-            await expect(page.locator('#liveViewSwitch')).toHaveCount(0);
+            await expect(page.locator('#owa_reportAsOf')).toHaveCount(0);
 
             // ...but it IS inside the reporting UI, so the nav is there.
             await expect(page.locator('#owa_reportNavPanel')).toHaveCount(1);

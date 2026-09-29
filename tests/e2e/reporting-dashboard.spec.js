@@ -754,22 +754,6 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(await startCal.locator('a.ui-state-default').count()).toBeGreaterThanOrEqual(1);
     });
 
-    test('jQuery-UI controlgroup enhances the auto-refresh control', async ({ page }) => {
-        // owa.report.createAutoRefreshControl() wraps the On/Off radios in
-        // `.autoRefreshControl > .buttons` and enhances them. The 1.8.12 -> 1.13.3
-        // upgrade replaced the deprecated buttonset() with controlgroup(): the
-        // container becomes .ui-controlgroup and each radio is enhanced (via
-        // checkboxradio) into a .ui-button. Pin the post-upgrade DOM.
-        const group = page.locator('.autoRefreshControl .buttons.ui-controlgroup');
-        await expect(group.first()).toBeVisible();
-        expect(await group.locator('.ui-button').count()).toBeGreaterThanOrEqual(2);
-        // It must render as a clean On/Off SWITCH, not radios: 1.13's checkboxradio
-        // defaults to icon:true (a radio-dot span); the source pre-enhances with
-        // icon:false so no .ui-checkboxradio-icon is present. See the report-page
-        // 'Live View toggle renders as a switch' test for the full rationale.
-        expect(await group.first().locator('.ui-checkboxradio-icon').count()).toBe(0);
-    });
-
     test('the filter builder opens as a modal with pill controls', async ({ page }) => {
         /*
          * The builder is a DIALOG now, not a panel inside the bar.
@@ -1223,109 +1207,65 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
     });
 
-    test('the Live View toggle renders as a switch, not radio buttons', async ({ page }) => {
-        // Regression guard (jQuery-UI 1.8.12 -> 1.13.3): the "Live View" On/Off
-        // control (owa.report.showAutoRefreshControl) is a controlgroup of two
-        // radios enhanced into a two-segment button switch. 1.8.12's buttonset()
-        // produced clean segments; 1.13's controlgroup enhances the radios via
-        // checkboxradio, which DEFAULTS to icon:true and prepends a blank radio-dot
-        // span (.ui-checkboxradio-icon) to each label -- so the switch rendered WITH
-        // radio dots (looked like plain radio buttons). Fix pre-enhances the radios
-        // with checkboxradio({icon:false}) before controlgroup(). Assert the switch
-        // shape (2 enhanced .ui-button segments, native radios visually hidden) AND
-        // that the radio-dot icon is gone.
-        const control = page.locator('.autoRefreshControl').first();
-        await expect(control).toBeVisible();
+    test('the dimension report loads without uncaught page errors', async ({ page }) => {
+        expect(page.__owaErrors).toEqual([]);
+    });
+});
 
-        // Two segments, both real jQuery-UI buttons inside a controlgroup.
-        await expect(control.locator('.buttons.ui-controlgroup')).toBeVisible();
-        expect(await control.locator('label.ui-button').count()).toBe(2);
+/**
+ * "Data as of" in the header, where Live View was.
+ *
+ * Live View re-polled every widget on a timer, but widgets read the reporting
+ * cube, which moves only when a build runs, so it refreshed nothing. The
+ * header now says when the numbers were built, for a period that reaches into
+ * days a build has not settled.
+ */
+test.describe('report freshness', () => {
 
-        // The native radios are enhanced + visually hidden (accessibility-hidden,
-        // 1px clipped) -- not shown as bare radios.
-        const radio = control.locator('input[type=radio]').first();
-        await expect(radio).toHaveClass(/ui-helper-hidden-accessible/);
-        const radioW = await radio.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-        expect(radioW).toBeLessThanOrEqual(2);
-
-        // The regression signature: NO checkboxradio radio-dot icon on the labels.
-        expect(await control.locator('.ui-checkboxradio-icon').count()).toBe(0);
+    test.beforeEach(async ({ page }) => {
+        await login(page);
     });
 
-    /**
-     * The Live View switch is the same kind of control as the metric-set tabs
-     * -- two segments, one of which is the one you are in -- and it sits on the
-     * same reports. Its selected segment carries the same blue for the same
-     * reason: jQuery-UI's base theme paints an active widget #007fff, which is
-     * a different blue from the one the chart above it draws its total in.
-     *
-     * Asserted on the OFF segment, which is checked at render. Clicking On
-     * would be the same assertion plus a polling timer.
-     */
-    test('the selected Live View segment carries the trend blue', async ({ page }) => {
-        const control = page.locator('.autoRefreshControl').first();
-        await expect(control).toBeVisible();
+    test('the header says when the numbers were built, and there is no Live View', async ({ page }) => {
+        await openDashboard(page);
 
-        const selected = control.locator('label.ui-button.ui-state-active');
-        await expect(selected).toHaveCount(1);
-        await expect(selected).toHaveText('Off');
+        const asOf = page.locator('#owa_reportAsOf');
+        await expect(asOf).toBeVisible();
 
-        const bg = await selected.evaluate(el => getComputedStyle(el).backgroundColor);
-        expect(bg).toBe('rgb(24, 116, 205)');
+        // A widget's result arrived and filled the time in -- the placeholder
+        // is an ellipsis, so "any text" would pass before anything came back.
+        await expect(asOf).toHaveClass(/owa_reportAsOfKnown/);
+        await expect(asOf.locator('.owa_reportAsOfTime')).toHaveText(/\d{4}/);
+        await expect(asOf).toContainText('Data as of');
+
+        await expect(page.locator('#liveViewSwitch, .autoRefreshControl')).toHaveCount(0);
     });
 
-    test('turning Live View on polls for fresh data and off stops it', async ({ page }) => {
-        // FUNCTIONAL test of what the switch is FOR: flipping it On must start the
-        // report auto-refresh (owa.report.startAutoRefresh -> each active-tab
-        // resultSetExplorer.enableAutoRefresh -> setInterval(getNewResultSet)), which
-        // re-queries the REST reports API on a timer; flipping it Off must clear the
-        // timers so polling stops. We shorten the per-explorer interval, then COUNT
-        // real network hits to the reports API (do=reports json) in each state:
-        //   Off (baseline) -> no polling; On -> repeated polls; Off again -> stops.
-        //
-        // Both spellings are matched. The reporting bundle builds this URL from
-        // the app namespace, which is empty, so it reads 'do=reports' -- but an
-        // older cached bundle still sends 'owa_do='. Matching only the prefixed
-        // form made this count ZERO polls and read as 'Live View is broken'.
-        const isPoll = (u) => u.includes('/api/index.php') && /[?&](owa_)?do=reports/.test(u);
-        const polls = [];
-        page.on('request', (r) => { if (isPoll(r.url())) polls.push(r.url()); });
+    test('a closed period has no as-of line', async ({ page }) => {
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}&owa_period=last_month`,
+            { waitUntil: 'networkidle' });
 
-        // Shorten the auto-refresh interval on the active tab's explorers so the test
-        // observes several polls quickly instead of waiting the 10s default.
-        await page.evaluate(() => {
-            let rep = null;
-            for (const k in OWA.items) {
-                const it = OWA.items[k];
-                if (it && it.tabs && it.activeTab) { rep = it; break; }
-            }
-            const tab = rep.tabs[rep.activeTab];
-            for (const n in tab.resultSetExplorers) {
-                tab.resultSetExplorers[n].autoRefreshInterval = 600;
+        await expect(page.locator('.owa_reportTitle')).toBeVisible();
+        await expect(page.locator('#owa_reportAsOf')).toHaveCount(0);
+    });
+
+    test('nothing polls: a loaded report makes no further data requests', async ({ page }) => {
+        const requests = [];
+        page.on('request', (r) => {
+            if (/[?&]do=reports(&|$)/.test(r.url())) {
+                requests.push(r.url());
             }
         });
 
-        // Baseline: switch defaults to Off -> no polling happens on its own.
-        const b0 = polls.length;
-        await page.waitForTimeout(1500);
-        expect(polls.length - b0).toBe(0);
+        await openDashboard(page);
 
-        // On -> polling starts (both active-tab explorers re-query on the timer).
-        await page.locator('label[for=autorefresh-on-button]').first().click();
-        const bOn = polls.length;
-        await page.waitForTimeout(2000);
-        expect(polls.length - bOn).toBeGreaterThanOrEqual(2);
+        const loaded = requests.length;
+        expect(loaded, 'the dashboard fetches its widgets').toBeGreaterThan(0);
 
-        // Off -> timers cleared, polling stops. Let any in-flight interval settle
-        // first, then assert no further polls arrive.
-        await page.locator('label[for=autorefresh-off-button]').first().click();
-        await page.waitForTimeout(400);
-        const bOff = polls.length;
-        await page.waitForTimeout(1800);
-        expect(polls.length - bOff).toBe(0);
-    });
+        // Longer than the old Live View interval (15s) and explorer default (10s).
+        await page.waitForTimeout(16_000);
 
-    test('the dimension report loads without uncaught page errors', async ({ page }) => {
-        expect(page.__owaErrors).toEqual([]);
+        expect(requests.length, 'no widget refreshed itself').toBe(loaded);
     });
 });

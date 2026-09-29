@@ -2060,8 +2060,34 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $this->db->selectFrom($bm->getTableName(), $bm->getTableAlias());
         }
 
+        /*
+         * AS OF WHEN. Every cube row carries built_at, the moment the build
+         * wrote its partition, so the newest one among the rows this report
+         * reads is what its numbers are "as of" -- a report reads the cube,
+         * and the cube moves only when a build runs. MAX, not MIN: settled
+         * partitions are not rebuilt because they are complete, so their older
+         * build times say nothing about staleness (PLAN 1.6).
+         *
+         * Carried on the query already being run, so it costs no statement of
+         * its own. Not under a segment, whose subselect names its own columns.
+         */
+        $as_of = ! $this->segment && method_exists( $bm, 'getPropertyId' ) && $bm->getPropertyId() !== '';
+
+        if ( $as_of ) {
+
+            $this->db->selectColumn( sprintf( 'MAX(%s.built_at)', $bm->getTableAlias() ), 'owa_as_of' );
+        }
+
         // generate aggregate results
         $results = $this->db->getOneRow();
+
+        if ( $as_of && is_array( $results ) && array_key_exists( 'owa_as_of', $results ) ) {
+
+            $this->resultSet->asOf = $results['owa_as_of']
+                ? intdiv( (int) $results['owa_as_of'], 1000000 ) : null;
+
+            unset( $results['owa_as_of'] );
+        }
         
         return $results;
     }
