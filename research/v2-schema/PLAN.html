@@ -2152,10 +2152,18 @@ text), and selects every column by name without relying on its type. The frozen 
 The migrator writes values, and v2 derives its own 64-bit ids from them when the cube is
 built. Visitor and session ids are the tracker&rsquo;s numeric GUIDs, not hashes, and carry over
 unchanged (signed, because v1 holds negative visitor ids &mdash; <code>EventRaw</code>).
-Width <em>does</em> matter to three small tables v2 keeps: on an installation still marked
-<code>use_32bit_hash</code>, <code>owa_site.id</code>, <code>owa_site_user.site_id</code> and
-<code>owa_scheduled_job.id</code> hold 32-bit hashes. The upgrade re-keys those three first and
-deletes the setting; nothing else of <code>rederive-dimension-ids</code> survives.</p>
+Width <em>does</em> matter to the tables v2 keeps wherever the code derives an id again to find
+its row: a 32-bit row is missed and a duplicate written beside it. 1.14&rsquo;s
+<code>rederive-dimension-ids</code> was optional and never covered every one of them, so the
+upgrade does not depend on it. Update034, the first update a 1.14 installation runs, clears
+<code>use_32bit_hash</code> before anything after it derives an id, and re-keys every row whose
+id is the crc32 of its own content (<code>Classes\Migration\WideIds</code>):
+<code>owa_site</code> (with <code>owa_site_user.site_id</code>), <code>owa_setting</code> and
+<code>owa_notification_state</code>. A row already at its 64-bit id wins over a 32-bit copy.
+Ids only ever read back as stored &mdash; properties, goal events, favourites, notifications,
+<code>owa_scheduled_job</code> &mdash; stay as they are; the migration reads goal events by
+property and slot rather than by re-deriving Update025&rsquo;s id. Nothing else of
+<code>rederive-dimension-ids</code> survives.</p>
 
 <p><strong>Three mapping rules, decided 28&nbsp;Sep <span class="chip c-dec">Decided</span></strong></p>
 <ul>
