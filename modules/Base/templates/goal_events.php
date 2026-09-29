@@ -10,11 +10,10 @@
 ?>
 <div class="panel_headline"><?php echo $view->headline;?></div>
 <div id="panel">
-<div class="owa_panelIntro">A goal event is something worth counting &mdash; a page
-reached, an action taken. Each one names a condition, and every event matching it is
-counted. Goal events belong to the <strong>Property</strong>, so every Observation Profile
-beneath it counts the same things &mdash; which is what makes a conversion comparable across
-the site and the app that report into one Property.</div>
+<div class="owa_panelIntro">A goal event counts one thing visitors do, such as reaching a
+page or taking an action. Each goal event has a condition, and every event that matches it
+is counted. Goal events are defined on the <strong>Property</strong>, so every Observation
+Profile in it &mdash; a website and an app, for example &mdash; counts them the same way.</div>
 
 <?php
 /*
