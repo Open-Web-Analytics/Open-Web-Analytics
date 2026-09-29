@@ -21,23 +21,34 @@ namespace OWA\Module\Base\Classes;
  * EXISTENCE of a row proves it has run at least once, and an empty table proves
  * it has not. That check is exact.
  *
- * Detecting that a working cron entry later STOPPED is a weaker business. A
- * healthy installation whose only job is monthly writes nothing for weeks, so
- * silence is not evidence of failure until enough time has passed that even the
- * slowest schedule should have fired. Hence the deliberately generous window
- * below: a false alarm here would train people to ignore the banner, which costs
- * more than noticing a dead scheduler a few days late.
+ * Detecting that a working cron entry later STOPPED is a weaker business:
+ * silence is evidence only once the most frequent job should have run
+ * several times. So the window is derived from the registered schedules --
+ * three of the most frequent job's intervals, never under two hours and never
+ * over forty days (silentFor()). With rebuild-cube every five minutes that is
+ * two hours, which matters because every report goes stale with the
+ * scheduler; an installation whose only job is monthly keeps the forty days,
+ * because anything shorter would cry wolf and teach people to ignore the
+ * banner.
  */
 class SchedulerHealth {
 
     /**
-     * How long the dispatcher may be silent before we call it stopped.
-     *
-     * The longest schedule OWA registers is monthly, so anything short of a
-     * month is a guaranteed false positive. Forty days is that plus a wide
-     * margin.
+     * The longest the dispatcher may be silent before it is called stopped,
+     * whatever is scheduled: the window for an installation whose most frequent
+     * job is monthly, which is a month plus a wide margin. See silentFor().
      */
     const SILENT_FOR = 3456000;   // 40 days
+
+    /**
+     * Silence shorter than this is never called a stop, whatever is scheduled:
+     * two hours rides out a deploy or a brief outage without crying wolf, and
+     * it is the only case answered without loading the job registry.
+     */
+    const MIN_SILENT_FOR = 7200;
+
+    /** A stop is this many of the most frequent job's intervals without a run. */
+    const MISSED_INTERVALS = 3;
 
     /** @var array|null|false  false = not yet computed */
     protected static $memo = false;
@@ -100,21 +111,85 @@ class SchedulerHealth {
 
         $last = (int) $row['last_run'];
 
-        if ( $last && ( time() - $last ) > self::SILENT_FOR ) {
+        /*
+         * SILENCE IS JUDGED AGAINST THE MOST FREQUENT JOB, not a fixed month.
+         * With rebuild-cube every five minutes, a dispatcher quiet for a day
+         * has left reports a day stale; waiting forty days to say so -- the
+         * old rule, written when the most frequent job was monthly -- let that
+         * go unnoticed. Anything under two hours is answered with no registry
+         * load, which is every page render on a healthy installation.
+         */
+        if ( $last && ( time() - $last ) > self::MIN_SILENT_FOR
+                && ( time() - $last ) > self::silentFor( self::registeredJobs() ) ) {
 
             return array(
                 'headline' => "OWA's Job Scheduler may have stopped.",
                 'message'  => sprintf(
-                    'The scheduler last ran on %s. It has run before, so the cron entry was '
+                    'The scheduler last ran %s. It has run before, so the cron entry was '
                   . 'working at some point -- check that it is still there and that the user it '
                   . 'runs as can still execute cli.php. Run "cli.php cmd=schedule-status" for a '
                   . 'full diagnosis.',
-                    date( 'j M Y', $last )
+                    \OWA\Module\Base\Classes\JobStatus::readable( $last )
                 ),
             );
         }
 
         return null;
+    }
+
+    /**
+     * How long the dispatcher may be silent before that is a stop: the most
+     * frequent job's interval times MISSED_INTERVALS, between MIN_SILENT_FOR
+     * and SILENT_FOR. Pure, so each schedule mix can be asserted.
+     *
+     * A job's interval is the gap between its next two occurrences, which is
+     * exact for the evenly spread schedules OWA registers.
+     *
+     * @param array $jobs name => job, as JobStatus::jobs() returns them
+     * @param int|null $now
+     * @return int seconds
+     */
+    public static function silentFor( array $jobs, $now = null ) {
+
+        $now      = $now ?: time();
+        $timezone = \OWA\Module\Base\Classes\JobStatus::timezone();
+        $shortest = null;
+
+        foreach ( $jobs as $job ) {
+
+            if ( \OWA\Module\Base\Classes\JobStatus::isDisabled( $job ) ) {
+
+                continue;
+            }
+
+            $parsed = \OWA\Module\Base\Classes\JobStatus::parsedSchedule( $job );
+            $first  = $parsed ? \OWA\Core\Cron::nextAfter( $parsed, $now, $timezone ) : null;
+            $second = $first ? \OWA\Core\Cron::nextAfter( $parsed, $first, $timezone ) : null;
+
+            if ( $first && $second && $second > $first ) {
+
+                $shortest = $shortest === null ? $second - $first : min( $shortest, $second - $first );
+            }
+        }
+
+        if ( $shortest === null ) {
+
+            return self::SILENT_FOR;
+        }
+
+        return (int) min( self::SILENT_FOR, max( self::MIN_SILENT_FOR, self::MISSED_INTERVALS * $shortest ) );
+    }
+
+    /**
+     * The registered jobs. Loaded only once the dispatcher has been quiet for
+     * MIN_SILENT_FOR -- Service::loadJobs() is otherwise left to the scheduler
+     * commands.
+     *
+     * @return array
+     */
+    protected static function registeredJobs() {
+
+        return \OWA\Module\Base\Classes\JobStatus::jobs();
     }
 
     /**
