@@ -2808,6 +2808,7 @@ namespace OWA\Module\Base\Classes;
                 // and removed by the migration command once every id has been
                 // re-derived. A new installation never has it.
                 'use_32bit_hash'                    => false,
+                'use_32bit_hash_before_v2'          => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.
                 'request_mode'						=> 'web_app',

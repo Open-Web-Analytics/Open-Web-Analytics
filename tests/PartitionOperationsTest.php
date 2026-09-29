@@ -381,6 +381,110 @@ final class PartitionOperationsTest extends TestCase
         $this->assertSame($before, $this->partitionNames($t));
     }
 
+    /**
+     * A table partitioned daily from this month, holding a row from ten years
+     * ago in its first partition.
+     */
+    private function youngTableWithOldRow($years_back)
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $month = date('Ym') . '01';
+        $old = date('Ymd', strtotime($month . ' -' . $years_back . ' years +14 days'));
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            $month, date('Ymd', strtotime($month . ' +2 days')), 'daily'));
+        $db->query(sprintf('INSERT INTO %s VALUES (1,%s),(2,%s)', $t, $old, $month));
+
+        return [$t, $old, $month];
+    }
+
+    /**
+     * Reaching back splits the first partition into the shape rotation keeps:
+     * years before the detail window, months within it. No row is lost,
+     * rotation finds nothing to merge, and a second run changes nothing.
+     */
+    public function testReachingBackTenYearsCutsYearsThenMonths()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        [$t, $old, $month] = $this->youngTableWithOldRow(10);
+
+        $window = date('Ymd', strtotime($month . ' -36 months'));
+        $result = $db->extendPartitionsBack($t, $old, 36, 400);
+
+        $this->assertFalse($result['covered']);
+        $this->assertSame($month, $result['start'], 'where the table began');
+
+        $spans = $db->getPartitionSpans($t);
+        $this->assertSame(substr($old, 0, 4) . '0101', $spans[0]['start'], 'from the January of the oldest year');
+
+        $years = $months = 0;
+        foreach ($spans as $span) {
+            if ($span['less_than'] <= $window) {
+                $years++;
+                $this->assertStringEndsWith('0101', $span['start'], 'before the window, whole years');
+            } elseif ($span['less_than'] <= $month) {
+                $months++;
+            }
+        }
+        $this->assertSame((int) substr($window, 0, 4) - (int) substr($old, 0, 4) + 1, $years,
+            'a block per year, the last closing where the window opens');
+        $this->assertSame(36, $months);
+
+        $this->assertSame([], $db->planPartitionCompaction($t, 400, 36)['operations'],
+            'rotation should find the layout already in shape');
+        $this->assertSame(2, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'no rows may be lost');
+        $this->assertSame(1, (int) $db->get_row(sprintf('SELECT COUNT(*) AS n FROM %s PARTITION (p%s0101)',
+            $t, substr($old, 0, 4)))['n']);
+
+        $names  = $this->partitionNames($t);
+        $second = $db->extendPartitionsBack($t, $old, 36, 400);
+
+        $this->assertTrue($second['covered']);
+        $this->assertSame($names, $this->partitionNames($t));
+    }
+
+    /** Under a tight ceiling the year blocks widen, as rotation would widen them. */
+    public function testReachingBackWidensYearBlocksUnderTheLimit()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        [$t, $old] = $this->youngTableWithOldRow(10);
+
+        // Room for the table's own partitions, the window's months and two blocks.
+        $limit = count($db->getPartitionSpans($t)) + 36 + 2;
+
+        $db->extendPartitionsBack($t, $old, 36, $limit);
+
+        $plan = $db->planPartitionCompaction($t, $limit, 36);
+
+        $this->assertSame([], $plan['operations']);
+        $this->assertGreaterThan(1, $plan['block_years']);
+        $this->assertLessThanOrEqual($limit, count($db->getPartitionSpans($t)));
+    }
+
+    /** Within the detail window it is months only; a dry run changes nothing. */
+    public function testReachingBackWithinTheWindowIsMonthly()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $month = date('Ym') . '01';
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges($month, $month, 'monthly'));
+
+        $before = $this->partitionNames($t);
+        $from = date('Ymd', strtotime($month . ' -3 months +19 days'));
+        $result = $db->extendPartitionsBack($t, $from, 36, 400, true);
+
+        $expected = [];
+        foreach ([3, 2, 1] as $back) {
+            $expected[] = 'p' . date('Ymd', strtotime($month . ' -' . $back . ' months'));
+        }
+
+        $this->assertSame($expected, $result['added']);
+        $this->assertSame($before, $this->partitionNames($t), 'a dry run changes nothing');
+    }
+
     /** Every scheme is recognisable from the boundaries it cuts on. */
     public function testGranularityIsInferredFromTheTable()
     {

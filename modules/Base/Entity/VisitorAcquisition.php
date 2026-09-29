@@ -45,15 +45,35 @@ namespace OWA\Module\Base\Entity;
  */
 class VisitorAcquisition extends \OWA\Core\Entity {
 
+    /** The unique index on visitor_id, by the name an update can drop. */
+    const VISITOR_INDEX = 'visitor_id_unique';
+
     function __construct() {
 
         $this->setTableName( 'visitor_acquisition' );
 
-        // The whole key. Uniqueness on this column alone is what makes
-        // insert-if-absent a database guarantee rather than a race.
+        /*
+         * AN ASCENDING SURROGATE KEY, and visitor_id unique beside it.
+         *
+         * InnoDB orders rows on disk by the primary key. Visitor ids are
+         * random (Util.generateRandomGuid), so keyed on them every new
+         * visitor lands at a random page of a table that can outgrow the
+         * buffer pool -- a random read and often a page split per insert. On
+         * `id` new rows append, and the random inserts go to the unique
+         * index, whose entries are a sixteenth of a row's size.
+         */
+        $id = new \OWA\Module\Base\Classes\DbColumn( 'id', OWA_DTD_BIGINT );
+        $id->setPrimaryKey();
+        $id->setAutoIncrement();
+        $this->setProperty( $id );
+
+        // Uniqueness on this column alone is what makes insert-if-absent a
+        // database guarantee rather than a race. Every read and write keys on
+        // it by name.
         $visitor_id = new \OWA\Module\Base\Classes\DbColumn( 'visitor_id', OWA_DTD_BIGINT );
-        $visitor_id->setPrimaryKey();
+        $visitor_id->setNotNull();
         $this->setProperty( $visitor_id );
+        $this->addUniqueIndex( self::VISITOR_INDEX, array( 'visitor_id' ) );
 
         // Recorded, not keyed. Whether one visitor id can be seen by two sites
         // on one installation is open (3.1); keying on it would answer that

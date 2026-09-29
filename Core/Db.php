@@ -2995,24 +2995,72 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        for ( $y = $first_year; ; $y += $block ) {
+        $ranges = self::yearBlocks( $first_year, $boundary, $block );
+
+        return array_merge( $ranges, $fine );
+    }
+
+    /**
+     * The old tier: blocks of whole calendar years from a year's January, the
+     * last closing on $tail_limit rather than on a year end.
+     *
+     * @param int    $first_year
+     * @param string $tail_limit  yyyymmdd the last block ends on (exclusive)
+     * @param int    $block       years per block
+     * @return array name => less_than
+     */
+    static function yearBlocks( $first_year, $tail_limit, $block ) {
+
+        $ranges = array();
+        $block  = max( 1, (int) $block );
+
+        for ( $y = (int) $first_year; ; $y += $block ) {
 
             $end = ( $y + $block ) . '0101';
 
-            if ( $end >= $boundary ) {
+            if ( $end >= $tail_limit ) {
 
-                $end = $boundary;
+                $end = (string) $tail_limit;
             }
 
             $ranges[ 'p' . $y . '0101' ] = $end;
 
-            if ( $end >= $boundary ) {
+            if ( $end >= $tail_limit ) {
 
                 break;
             }
         }
 
-        return array_merge( $ranges, $fine );
+        return $ranges;
+    }
+
+    /**
+     * Years per old-tier block: the smallest that keeps the table within the
+     * limit, capped at PARTITION_MAX_YEARS_PER_BLOCK.
+     *
+     * @param int    $first_year  of the first old partition
+     * @param string $tail_limit  where the old tier ends
+     * @param int    $kept        partitions outside the old tier
+     * @param int    $limit
+     * @return int
+     */
+    static function oldTierBlockYears( $first_year, $tail_limit, $kept, $limit ) {
+
+        $years = max( 1, (int) ceil(
+            ( strtotime( $tail_limit ) - strtotime( $first_year . '0101' ) ) / ( 86400 * 365.25 )
+        ) );
+
+        $block = 1;
+
+        for ( ; $block < self::PARTITION_MAX_YEARS_PER_BLOCK; $block++ ) {
+
+            if ( $kept + (int) ceil( $years / $block ) <= $limit ) {
+
+                break;
+            }
+        }
+
+        return $block;
     }
 
     /**
@@ -3152,43 +3200,14 @@ class Db extends \OWA\Core\Base {
         $tail_start = (int) substr( $old[0]['start'], 0, 4 );
         $tail_limit = (string) $old[ count( $old ) - 1 ]['less_than'];
 
-        $years = max( 1, (int) ceil(
-            ( strtotime( $tail_limit ) - strtotime( $tail_start . '0101' ) ) / ( 86400 * 365.25 )
-        ) );
-
         // Smallest block size that fits, capped. One year is the finest the tail
         // is ever cut to: below that it is the detail window's job.
-        $block = 1;
-
-        for ( ; $block < self::PARTITION_MAX_YEARS_PER_BLOCK; $block++ ) {
-
-            if ( $kept + (int) ceil( $years / $block ) <= $limit ) {
-
-                break;
-            }
-        }
+        $block = self::oldTierBlockYears( $tail_start, $tail_limit, $kept, $limit );
 
         $result['block_years'] = $block;
 
         // The layout those settings imply.
-        $target = array();
-
-        for ( $y = $tail_start; ; $y += $block ) {
-
-            $end = ( $y + $block ) . '0101';
-
-            if ( $end >= $tail_limit ) {
-
-                $end = $tail_limit;
-            }
-
-            $target[ 'p' . $y . '0101' ] = $end;
-
-            if ( $end >= $tail_limit ) {
-
-                break;
-            }
-        }
+        $target = self::yearBlocks( $tail_start, $tail_limit, $block );
 
         $result['projected'] = $kept + count( $target );
         $result['fits']      = $result['projected'] <= $limit;
@@ -3400,6 +3419,105 @@ class Db extends \OWA\Core\Base {
         }
 
         return $result;
+    }
+
+    /**
+     * Give a table dated partitions reaching back to a day.
+     *
+     * The first partition has no lower bound, so rows older than its start are
+     * already accepted -- into a partition whose name says it begins later.
+     * Retention would read them as the first partition's period, and a cube
+     * build refuses to rebuild a range no dated partition covers. That first
+     * partition is split to start at $from.
+     *
+     * In the shape planPartitionCompaction() keeps, so the next rotation has
+     * nothing to rewrite: months within the detail window, and before it
+     * blocks of whole years, as wide as the limit needs. Ten years back is
+     * seven blocks and the window's months, not a hundred and twenty months.
+     *
+     * Done before older rows are written it moves nothing but the first
+     * partition's own rows. A table already reaching $from is left alone.
+     *
+     * @param string $table_name
+     * @param string $from           yyyymmdd the partitions must reach back to
+     * @param int    $detail_months  how much recent history stays monthly
+     * @param int    $limit          the partition ceiling
+     * @param bool   $dry_run
+     * @return array ['added','start','covered']
+     */
+    function extendPartitionsBack( $table_name, $from, $detail_months = self::PARTITION_DETAIL_MONTHS,
+            $limit = self::PARTITION_COUNT_LIMIT, $dry_run = false ) {
+
+        $result = array( 'added' => array(), 'start' => null, 'covered' => false );
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        if ( ! $spans || ! preg_match( '/^\d{8}$/', (string) $from ) ) {
+
+            return $result;
+        }
+
+        $first = $spans[0];
+
+        $result['start'] = $first['start'];
+
+        if ( (string) $first['start'] <= (string) $from ) {
+
+            $result['covered'] = true;
+
+            return $result;
+        }
+
+        $ranges = self::backRanges( $from, (string) $first['less_than'], count( $spans ) - 1,
+            $detail_months, $limit );
+
+        if ( ! $ranges ) {
+
+            return $result;
+        }
+
+        if ( $dry_run || $this->reorganizePartitions( $table_name, array( $first['name'] ), $ranges ) ) {
+
+            $result['added'] = array_values( array_diff( array_keys( $ranges ), array( $first['name'] ) ) );
+        }
+
+        return $result;
+    }
+
+    /**
+     * The ranges replacing a first partition that ends on $less_than, reaching
+     * back to $from.
+     *
+     * Years before the detail window, as planPartitionCompaction() would cut
+     * them: blocks sized against every partition that is not in the old tier.
+     * Where the first partition itself ends inside the old tier, its blocks end
+     * on its bound and the next rotation merges them with the rest.
+     *
+     * @param string $from
+     * @param string $less_than  the first partition's upper bound
+     * @param int    $others     partitions after the first
+     * @param int    $detail_months
+     * @param int    $limit
+     * @return array name => less_than
+     */
+    static function backRanges( $from, $less_than, $others, $detail_months, $limit ) {
+
+        $boundary = date( 'Ymd', strtotime( date( 'Ym' ) . '01 -' . (int) $detail_months . ' months' ) );
+
+        if ( (string) $from >= $boundary ) {
+
+            return self::makePartitionRangesForSpan( substr( $from, 0, 6 ) . '01', $less_than, 'monthly' );
+        }
+
+        $tail_limit = min( $boundary, (string) $less_than );
+        $fine       = $less_than > $boundary
+            ? self::makePartitionRangesForSpan( $boundary, $less_than, 'monthly' )
+            : array();
+
+        $first_year = (int) substr( $from, 0, 4 );
+        $block      = self::oldTierBlockYears( $first_year, $tail_limit, $others + count( $fine ), $limit );
+
+        return array_merge( self::yearBlocks( $first_year, $tail_limit, $block ), $fine );
     }
 
     /**
@@ -3849,6 +3967,15 @@ class Db extends \OWA\Core\Base {
 
                 $indexes[] = sprintf(
                     'INDEX %s (%s)', $index_name, implode( ', ', $index_columns ) );
+            }
+        }
+
+        if ( method_exists( $entity, 'getUniqueIndexes' ) ) {
+
+            foreach ( $entity->getUniqueIndexes() as $index_name => $index_columns ) {
+
+                $indexes[] = sprintf(
+                    'UNIQUE INDEX %s (%s)', $index_name, implode( ', ', $index_columns ) );
             }
         }
 

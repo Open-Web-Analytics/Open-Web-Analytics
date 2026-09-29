@@ -159,6 +159,10 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                     'do'       => 'base.report',
                     'reportId' => 'custom-' . $owa_report['id'],
                 ), true ); ?>"><?php $view->out( $owa_report['name'] ); ?></a>
+                <?php if ( ! empty( $owa_report['invalid'] ) ): ?>
+                    <span class="owa_rosterBroken"
+                          title="<?php $view->out( $owa_report['invalid'] ); ?>">can't be drawn</span>
+                <?php endif; ?>
             </td>
 
             <td class="data_cell">

@@ -28,6 +28,7 @@ final class BaseKnowsNothingOfDomstreamTest extends TestCase
         'modules/Base/Update/Update026.php'            => null,
         'modules/Base/Module.php'                      => 1,
         'modules/Base/Controller/InstanceInfoCli.php'  => 1,
+        'modules/Base/Classes/Migration/V1Tables.php'  => 1,
         'conf/beacon_compat.php'                       => 1,
     ];
 

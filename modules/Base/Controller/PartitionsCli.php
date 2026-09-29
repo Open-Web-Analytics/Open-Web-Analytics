@@ -110,7 +110,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * @param string $value
      * @return string|null  yyyymmdd, or null if it cannot be read
      */
-    protected function resolveCutoff( $value ) {
+    public static function resolveCutoff( $value ) {
 
         $value = trim( (string) $value );
 
