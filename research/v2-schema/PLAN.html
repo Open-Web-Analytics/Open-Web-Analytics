@@ -2202,7 +2202,7 @@ interrupted run resumes and a finished one is a no-op. Row ids are derived from 
 replayed batch writes nothing twice.</p>
 
 <p><strong>How much history is an explicit choice</strong>
-<span class="chip c-dec">Decided 28&nbsp;Sep</span>. The migration is <strong>Update060</strong>, a
+<span class="chip c-dec">Decided 28&nbsp;Sep</span>. The migration is <strong>Update061</strong>, a
 CLI-only update, not a command of its own: <code>cmd=update</code> runs it, and it fails &mdash;
 leaving the update pending and every action refused &mdash; without either
 <code>since=&lt;cutoff&gt;</code> (a date as <code>yyyymmdd</code>, or a period back
@@ -2227,7 +2227,7 @@ After the drop there is nothing to roll back to. (<code>beacon_version</code> wa
 provenance marker and rejected: NULL there already means a pre-versioning tracker, which is what
 v1&rsquo;s were.)</p>
 
-<p><strong>Base requires schema&nbsp;60 only when the migration is complete.</strong> Requiring it
+<p><strong>Base requires schema&nbsp;61 only when the migration is complete.</strong> (Update060 re-keys <code>owa_visitor_acquisition</code> on an ascending id with <code>visitor_id</code> unique, since visitor ids are now 62 random bits.) Requiring it
 while it covers page views alone would record it applied before clicks, commerce, acquisition and
 goal completions exist.</p>
 
