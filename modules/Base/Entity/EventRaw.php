@@ -77,9 +77,11 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'visitor_id', OWA_DTD_BIGINT, false ) );
         $this->properties['visitor_id']->setIndex();
 
-        // Not unique on its own: the id embeds its creation second, so two
-        // visitors starting together can share one. A session is counted as a
-        // distinct (visitor_id, session_id).
+        // 62 random bits from the current tracker (Util.generateRandomGuid),
+        // so unique on its own in practice. Ids minted before 2.0 -- and so
+        // migrated v1 history -- carry a creation second and ~30 random bits
+        // per second, and two visitors starting together can share one; the
+        // funnel keys a session on (visitor_id, session_id) for that reason.
         $this->setProperty( $this->column( 'session_id', OWA_DTD_BIGINT, false ) );
         $this->properties['session_id']->setIndex();
 

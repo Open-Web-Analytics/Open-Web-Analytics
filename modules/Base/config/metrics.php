@@ -172,11 +172,13 @@ return array(
         /*
          * `session_id` ALONE, not paired with the visitor.
          *
-         * Util.generateRandomGuid() builds it as a unix timestamp plus nine
-         * random digits -- the same construction as the visitor id, so it is
-         * already as unique as the visitor id is. Measured across 15,643
-         * sessions of real history: zero session ids shared by more than one
-         * visitor.
+         * Util.generateRandomGuid() gives it 62 random bits: the expected
+         * collisions among n session ids are n^2 / 2^63, a few hundredths over
+         * a decade of a large site. Ids from before 2.0 were a unix timestamp
+         * plus nine random digits -- about 30 random bits per second, roughly
+         * 0.8 collisions a year at 10 new sessions a second -- and history
+         * keeps them. Measured across 15,643 sessions of real history: zero
+         * session ids shared by more than one visitor.
          *
          * Pairing is also actively worse here. COUNT(DISTINCT a, b) drops any
          * row where either column is NULL, and 48 of those sessions carry a
@@ -184,7 +186,7 @@ return array(
          * against a one-in-a-billion collision.
          *
          * Pairing is only necessary where a session id is a bare start timestamp
-         * with no randomness in it. Ours is not that.
+         * with no randomness in it -- GA's is exactly that. Ours is not.
          */
         'sessions' => array(
             'label'       => 'Sessions',
