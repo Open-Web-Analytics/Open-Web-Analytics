@@ -134,14 +134,27 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         $failed  = 0;
         $built   = 0;
         $locked  = 0;
+        $stopped = array();
+
+        /*
+         * A ROUTINE RUN is one given no dates: what the scheduler runs. Only it
+         * catches up; a range an operator names is built exactly as named.
+         */
+        $routine = $this->getParam( 'from' ) === null && $this->getParam( 'to' ) === null
+            && $this->getParam( 'days' ) === null;
 
         foreach ( $properties as $property_id ) {
 
-            $outcome = $this->rebuildProperty( $property_id, $range, $dry_run );
+            $outcome = $this->rebuildProperty( $property_id, $range, $dry_run, $routine );
 
             $failed += $outcome['failed'];
             $built  += $outcome['built'];
             $locked += $outcome['locked'];
+
+            if ( ! empty( $outcome['stopped'] ) ) {
+
+                $stopped[] = $outcome['stopped'];
+            }
         }
 
         /*
@@ -163,9 +176,14 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         if ( $failed ) {
 
-            return $this->fail( sprintf(
-                '%d partition(s) failed to rebuild. Those cubes are unchanged for them.',
-                $failed ) );
+            /*
+             * WHERE IT STOPPED FIRST, because the scheduler keeps this message
+             * (last_message, 250 characters) and it is what the cube status
+             * screen shows as the reason. The next scheduled run starts again
+             * from that partition.
+             */
+            return $this->fail( sprintf( '%s. %d cube(s) stopped; the next run resumes there.',
+                implode( '; ', $stopped ), count( $stopped ) ) );
         }
     }
 
@@ -249,7 +267,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * @param bool   $dry_run
      * @return array ['built' => int, 'failed' => int]
      */
-    protected function rebuildProperty( $property_id, array $range, $dry_run ) {
+    protected function rebuildProperty( $property_id, array $range, $dry_run, $routine = false ) {
 
         $none  = array( 'built' => 0, 'failed' => 0, 'locked' => 0 );
         $db    = \OWA\Core\CoreAPI::dbSingleton();
@@ -286,12 +304,12 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 'Another build of %s is already running; skipped. A build is convergent, '
               . 'so the run in progress produces what this one would.', $table ) );
 
-            return array( 'built' => 0, 'failed' => 0, 'locked' => 1 );
+            return array( 'built' => 0, 'failed' => 0, 'locked' => 1, 'skipped' => 0, 'stopped' => '' );
         }
 
         try {
 
-            return $this->buildUnderLock( $property_id, $table, $range, $dry_run, $lock );
+            return $this->buildUnderLock( $property_id, $table, $range, $dry_run, $lock, $routine );
 
         } finally {
 
@@ -307,13 +325,16 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * @param array    $range
      * @param bool     $dry_run
      * @param \OWA\Module\Base\Classes\JobLease $lock
-     * @return array ['built' => int, 'failed' => int, 'locked' => int]
+     * @param bool     $routine  no dates were named: catch up if the cube is behind
+     * @return array ['built','failed','locked','skipped','stopped']
      */
-    protected function buildUnderLock( $property_id, $table, array $range, $dry_run, $lock ) {
+    protected function buildUnderLock( $property_id, $table, array $range, $dry_run, $lock, $routine = false ) {
 
-        $none = array( 'built' => 0, 'failed' => 0, 'locked' => 0 );
-        $bad  = array( 'built' => 0, 'failed' => 1, 'locked' => 0 );
-        $db   = \OWA\Core\CoreAPI::dbSingleton();
+        $none    = array( 'built' => 0, 'failed' => 0, 'locked' => 0, 'skipped' => 0, 'stopped' => '' );
+        $bad     = array( 'built' => 0, 'failed' => 1, 'locked' => 0, 'skipped' => 0,
+                          'stopped' => sprintf( '%s could not be prepared', $table ) );
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $created = false;
 
         if ( ! $db->tableExists( $table ) ) {
 
@@ -350,6 +371,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s created: Property %s has collected its first data.', $table, $property_id ) );
+
+            $created = true;
 
             /*
              * A NEW CUBE STARTS FROM THE PROPERTY'S FIRST DAY IN RAW, not from
@@ -399,7 +422,29 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             $this->reconcileDimensions( $property_id, $table );
         }
 
-        $builder    = new \OWA\Module\Base\Classes\Cube\Builder( $property_id );
+        $builder = new \OWA\Module\Base\Classes\Cube\Builder( $property_id );
+
+        /*
+         * CATCH UP AFTER A GAP. A routine run covers yesterday and today, so
+         * an outage, or a run that stopped at a failure, would otherwise leave
+         * the days in between built by no one. Nothing records how far a build
+         * got; Builder::catchUpFrom() reads it off the partitions. A cube this
+         * run created has already reached back to its first day.
+         */
+        if ( $routine && ! $created ) {
+
+            $catch_up = $builder->catchUpFrom( $range['from'] );
+
+            if ( $catch_up !== null ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s is behind: partitions from %d were not settled, so this run starts there.',
+                    $table, $catch_up ) );
+
+                $range['from'] = $catch_up;
+            }
+        }
+
         $partitions = $builder->partitions( $range['from'], $range['to'] );
 
         if ( ! $partitions ) {
@@ -429,7 +474,27 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         $outcome = $none;
 
+        /*
+         * OLDEST FIRST, AND STOP AT THE FIRST FAILURE. partitions() returns
+         * them in order; stopping keeps what a run leaves built contiguous,
+         * which is what lets catchUpFrom() read the next start off the
+         * partitions -- a run that carried on past a failure would stamp newer
+         * partitions settled and leave the failed one behind them for good.
+         */
         foreach ( $partitions as $span ) {
+
+            /*
+             * NOTHING TO BUILD, NOTHING TO SWAP: empty in raw for this
+             * Property and empty in the cube. A dormant cube's catch-up walks
+             * through dozens of these, and each would otherwise be a staging
+             * table and an EXCHANGE PARTITION on a shared server.
+             */
+            if ( ! $dry_run && $builder->builtAt( $span ) === null && ! $builder->hasRaw( $span ) ) {
+
+                $outcome['skipped']++;
+
+                continue;
+            }
 
             $result = $builder->rebuild( $span, $dry_run );
 
@@ -446,8 +511,12 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             if ( ! $result['ok'] ) {
 
                 $outcome['failed']++;
+                $outcome['stopped'] = sprintf( '%s stopped at %s: %s', $table, $span['name'],
+                    $result['error'] !== '' ? $result['error'] : 'see the error log' );
 
-                continue;
+                \OWA\Core\CoreAPI::error( $outcome['stopped'] . '. Later partitions were not built.' );
+
+                break;
             }
 
             $outcome['built']++;

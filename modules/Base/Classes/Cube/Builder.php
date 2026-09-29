@@ -267,6 +267,130 @@ class Builder {
     }
 
     /**
+     * When a partition of the cube was last built, or null if it holds no row.
+     *
+     * built_at is stamped on every row a build writes, so one row answers for
+     * the partition. A partition merged by partition-rotate holds rows from
+     * several builds; whichever one comes back, an older value only makes the
+     * partition look unsettled, which costs one rebuild and leaves it
+     * single-valued again. So LIMIT 1, not a scan for the MAX.
+     *
+     * @param array $span from partitions()
+     * @return int|null microseconds
+     */
+    public function builtAt( array $span ) {
+
+        $row = $this->db->get_row( sprintf( 'SELECT built_at FROM %s PARTITION (%s) LIMIT 1',
+            $this->tables['target'], $span['name'] ) );
+
+        return is_array( $row ) && isset( $row['built_at'] ) ? (int) $row['built_at'] : null;
+    }
+
+    /**
+     * Whether raw holds any row of this Property in the partition's period.
+     *
+     * @param array $span
+     * @return bool
+     */
+    public function hasRaw( array $span ) {
+
+        $row = $this->db->get_row( sprintf(
+            'SELECT 1 AS present FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s LIMIT 1',
+            $this->tables['raw'], (int) $span['start'], (int) $span['less_than'],
+            $this->siteFilter( 'r' ) ) );
+
+        return is_array( $row ) && ! empty( $row );
+    }
+
+    /**
+     * A partition is SETTLED if it was last built after its period ended --
+     * and after the sessions open at that moment had timed out, since a build
+     * just past midnight still sees yesterday's last sessions as open.
+     *
+     * An unsettled partition may be missing rows and terminal values, so a
+     * scheduled build rebuilds it.
+     *
+     * @param array    $span
+     * @param int|null $built_at from builtAt()
+     * @return bool
+     */
+    public function isSettled( array $span, $built_at ) {
+
+        if ( $built_at === null ) {
+
+            return false;
+        }
+
+        $ended = strtotime( (string) $span['less_than'] );
+
+        if ( $ended === false ) {
+
+            return false;
+        }
+
+        $ended_usec = $ended * 1000000;
+
+        // closedBefore() is "now minus a session length", so this is the end plus one.
+        return $built_at >= $ended_usec + ( $ended_usec - $this->closedBefore( $ended_usec ) );
+    }
+
+    /**
+     * Where a scheduled build of this cube has to start, when that is earlier
+     * than $from.
+     *
+     * NOTHING RECORDS HOW FAR A BUILD GOT, so the partitions are asked. From
+     * the one holding $from, walk back: a partition that is unsettled, or empty
+     * in the cube while raw has rows for it, has to be rebuilt; the first
+     * SETTLED partition ends the walk. That is sound because a build goes
+     * oldest first and stops at its first failure (CubeRebuildCli), so a run
+     * only ever leaves a contiguous stretch built -- nothing older than a
+     * settled partition was left behind by it.
+     *
+     * A partition empty in both raw and the cube says nothing either way and
+     * the walk passes over it, so a dormant cube walks back to its last busy
+     * day, which is settled.
+     *
+     * @param int $from yyyymmdd, the routine window's start
+     * @return int|null yyyymmdd of the oldest partition to rebuild, if before $from
+     */
+    public function catchUpFrom( $from ) {
+
+        $spans  = $this->db->getPartitionSpans( $this->tables['target'] );
+        $oldest = null;
+
+        for ( $i = count( $spans ) - 1; $i >= 0; $i-- ) {
+
+            $span = $spans[ $i ];
+
+            if ( (int) $span['start'] >= (int) $from ) {
+
+                continue;   // inside the routine window, rebuilt anyway
+            }
+
+            $built_at = $this->builtAt( $span );
+
+            if ( $built_at !== null ) {
+
+                if ( $this->isSettled( $span, $built_at ) ) {
+
+                    break;
+                }
+
+                $oldest = (int) $span['start'];
+
+                continue;
+            }
+
+            if ( $this->hasRaw( $span ) ) {
+
+                $oldest = (int) $span['start'];
+            }
+        }
+
+        return $oldest !== null && $oldest < (int) $from ? $oldest : null;
+    }
+
+    /**
      * What each step did on the last build.
      *
      * @return array of ['step','column','kind','computed','ok','error']
@@ -295,6 +419,8 @@ class Builder {
             'steps'     => count( $this->steps ),
             'computed'  => 0,
             'failed'    => 0,
+            // Why it failed, short enough to survive the scheduler's 250 characters.
+            'error'     => '',
         );
 
         $context = new Context( $span, $built_at, $this->closedBefore( $built_at ) );
@@ -308,6 +434,7 @@ class Builder {
         } catch ( \RuntimeException $e ) {
 
             $result['failed'] = $this->countFailed();
+            $result['error']  = $e->getMessage();
 
             \OWA\Core\CoreAPI::error( sprintf(
                 'Cube build: %s. %s is unchanged.', $e->getMessage(), $this->tables['target'] ) );
@@ -327,10 +454,14 @@ class Builder {
 
         if ( ! $this->makeStaging() ) {
 
+            $result['error'] = 'creating the staging table failed';
+
             return $result;
         }
 
         if ( ! $this->writeComputed( $context ) ) {
+
+            $result['error'] = 'writing the computed values failed';
 
             $this->dropWorkingTables();
 
@@ -342,6 +473,8 @@ class Builder {
             \OWA\Core\CoreAPI::error( sprintf(
                 'Cube build: building %s failed; %s is unchanged.',
                 $span['name'], $this->tables['target'] ) );
+
+            $result['error'] = 'the build statement failed';
 
             $this->dropWorkingTables();
 
@@ -362,6 +495,8 @@ class Builder {
                 'Cube build: %s built %d rows from %d raw rows. Not swapped.',
                 $span['name'], $built, $expected ) );
 
+            $result['error'] = sprintf( 'built %d rows from %d raw rows', $built, $expected );
+
             $this->dropWorkingTables();
 
             return $result;
@@ -381,6 +516,8 @@ class Builder {
               . 'reported 1731, run ALTER TABLE %s FORCE -- a column was added to it '
               . 'instantly and staging cannot match that.',
                 $span['name'], $this->tables['target'], $this->tables['target'] ) );
+
+            $result['error'] = 'EXCHANGE PARTITION failed';
 
             $this->dropWorkingTables();
 
