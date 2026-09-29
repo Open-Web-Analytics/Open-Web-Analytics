@@ -21,6 +21,12 @@ class CustomDimensions extends \OWA\Core\View {
          */
         $submitted = $this->get( 'submitted' );
 
+        /*
+         * The registrar's reason for a refusal, forwarded so the modal can show
+         * it and open itself: the page-level message sits behind the overlay.
+         */
+        $this->body->set( 'validation_errors', $this->get( 'validation_errors' ) ?: array() );
+
         $this->body->set( 'submitted', is_array( $submitted ) ? $submitted : array(
             'dimensionKey' => '', 'scope' => '', 'dataType' => '', 'label' => '',
         ) );

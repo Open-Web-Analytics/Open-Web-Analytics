@@ -30,8 +30,16 @@
 
 <?php else: ?>
 
+    <?php $owa_hasRoom = count( $view->dimensions ) < $view->cube['capacity']; ?>
+
     <fieldset>
     <legend>Registered</legend>
+
+    <?php if ( $owa_hasRoom ): ?>
+    <div class="owa_cdActions">
+        <button type="button" class="owa-button" data-owa-cd-open>Register a dimension</button>
+    </div>
+    <?php endif; ?>
 
     <?php if ( ! $view->dimensions ): ?>
 
@@ -99,11 +107,31 @@
     </div>
     </fieldset>
 
-    <?php if ( count( $view->dimensions ) < $view->cube['capacity'] ): ?>
-
+    <?php if ( $owa_hasRoom ): ?>
+    <?php
+        /*
+         * THE REGISTRATION FORM IS THE MODAL'S BODY. Hidden here; jQuery UI
+         * lifts it into a dialog when the button above is pressed.
+         *
+         * A REFUSED FORM COMES BACK OPEN. CustomDimensionSave::errorAction()
+         * renders this screen again with what was typed and the registrar's
+         * reason, and both are in here -- so the dialog opens itself on load
+         * rather than leaving the reason on a page behind a closed modal and
+         * the typed values where nobody can see them.
+         */
+        $owa_errors = array_filter( (array) $view->validation_errors );
+    ?>
+    <div id="owa_cdDialog" class="owa_cdDialog" style="display:none;"
+        <?php if ( $owa_errors ): ?>data-owa-open="1"<?php endif; ?>>
     <form method="post" name="owa-custom-dimension-form">
-        <fieldset>
-        <legend>Register another</legend>
+
+        <?php if ( $owa_errors ): ?>
+        <div class="owa_cdDialogError">
+            <?php foreach ( $owa_errors as $owa_error ): ?>
+                <div><?php $view->out( is_array( $owa_error ) ? ( $owa_error['message'] ?? '' ) : $owa_error ); ?></div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
 
         <div class="setting">
             <div class="title"><label for="owa-cd-key">Name</label></div>
@@ -163,6 +191,12 @@
             </div>
         </div>
 
+        <div class="owa_cdDialogNote">
+            Nothing already collected is filled in automatically &mdash; a new dimension is empty
+            for past events and filled from now on. To reach back over data you already have,
+            rebuild the cube for the range you want.
+        </div>
+
         <input type="hidden" name="<?php echo $view->getNs(); ?>propertyId"
             value="<?php $view->out( $view->propertyId ); ?>">
         <input type="hidden" name="<?php echo $view->getNs(); ?>siteId"
@@ -171,16 +205,56 @@
             value="base.customDimensionSave">
         <?php echo $view->createNonceFormField( 'base.customDimensionSave' ); ?>
 
-        <input class="owa-button" type="submit" value="Register">
-        </fieldset>
+        <?php
+            /*
+             * The form's own submit button rather than a jQuery UI dialog
+             * button, so Enter in the name field registers, and the POST is an
+             * ordinary form post with nothing for script to reassemble.
+             */
+        ?>
+        <div class="owa_cdDialogButtons">
+            <button type="button" class="owa-button owa-button-quiet" data-owa-cd-cancel>Cancel</button>
+            <input class="owa-button" type="submit" value="Register">
+        </div>
     </form>
-
-    <div class="owa_panelIntro">
-        Nothing already collected is filled in automatically &mdash; a new dimension is empty
-        for past events and filled from now on. To reach back over data you already have,
-        rebuild the cube for the range you want.
     </div>
 
+<script type="text/javascript">
+jQuery( function () {
+
+    var dialog = jQuery( '#owa_cdDialog' );
+
+    if ( ! dialog.length ) {
+        return;
+    }
+
+    dialog.dialog( {
+        autoOpen: dialog.data( 'owa-open' ) === 1,
+        modal: true,
+        resizable: false,
+        width: Math.min( 560, jQuery( window ).width() - 40 ),
+        title: 'Register a custom dimension',
+        dialogClass: 'owa_cdDialogFrame',
+        open: function () {
+            jQuery( '#owa-cd-key' ).trigger( 'focus' );
+        }
+    } );
+
+    jQuery( document ).on( 'click', '[data-owa-cd-open]', function ( e ) {
+
+        e.preventDefault();
+
+        dialog.dialog( 'open' );
+    } );
+
+    jQuery( document ).on( 'click', '[data-owa-cd-cancel]', function ( e ) {
+
+        e.preventDefault();
+
+        dialog.dialog( 'close' );
+    } );
+} );
+</script>
     <?php endif; ?>
 
 <?php endif; ?>

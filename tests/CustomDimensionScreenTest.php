@@ -323,4 +323,131 @@ final class CustomDimensionScreenTest extends TestCase
             'a form without a nonce is a mutation any page could trigger' );
     }
 
+    /**
+     * The screen as it renders, with only the variables the View sets.
+     */
+    private function renderScreen( array $overrides = [] ): string
+    {
+        $vars = array_merge( [
+            'siteId'            => 'site-a',
+            'propertyId'        => (string) self::PROPERTY,
+            'dimensions'        => [],
+            'cube'              => ['table' => 'owa_event_x', 'exists' => true,
+                                    'capacity' => 20, 'cap' => 20],
+            'scopes'            => ['event', 'user'],
+            'types'             => ['string', 'integer'],
+            'submitted'         => ['dimensionKey' => '', 'scope' => '', 'dataType' => '', 'label' => ''],
+            'validation_errors' => [],
+        ], $overrides );
+
+        $t = new \OWA\Core\Template( 'base' );
+
+        foreach ( $vars as $k => $v ) {
+            $t->set( $k, $v );
+        }
+
+        $this->assertTrue( $t->set_template( 'custom_dimensions.php' ) );
+
+        return $t->fetch();
+    }
+
+    /** The markup inside the modal's container, or '' if there is none. */
+    private function dialogBody( string $html ): string
+    {
+        $start = strpos( $html, 'id="owa_cdDialog"' );
+
+        if ( $start === false ) {
+            return '';
+        }
+
+        $end = strpos( $html, '<script', $start );
+
+        return substr( $html, $start, $end === false ? null : $end - $start );
+    }
+
+    /**
+     * REGISTERING HAPPENS IN A MODAL, opened from a button above the list.
+     *
+     * The whole form -- every field, the nonce and the action -- sits inside
+     * the dialog's container, so nothing of it is left on the page when the
+     * dialog lifts it out.
+     */
+    public function testTheRegistrationFormLivesInTheModal(): void
+    {
+        $html = $this->renderScreen();
+
+        $this->assertStringContainsString( 'data-owa-cd-open', $html, 'no button opens the modal' );
+
+        $dialog = $this->dialogBody( $html );
+
+        $this->assertNotSame( '', $dialog, 'no modal container rendered' );
+
+        foreach ( ['dimensionKey', 'label', 'scope', 'dataType', 'base.customDimensionSave',
+                   'owa-custom-dimension-form', 'data-owa-cd-cancel'] as $needle ) {
+
+            $this->assertStringContainsString( $needle, $dialog, "$needle is outside the modal" );
+        }
+
+        $this->assertSame( 1, substr_count( $html, 'owa-custom-dimension-form' ),
+            'the registration form is rendered once, in the modal' );
+
+        $this->assertStringNotContainsString( 'data-owa-open', $dialog,
+            'a fresh screen must not open the modal on load' );
+    }
+
+    /**
+     * A REFUSED FORM COMES BACK WITH THE MODAL OPEN, the reason inside it and
+     * what was typed still in the fields. Left closed, the reason would sit on
+     * the page behind it and the typed values would be out of sight.
+     */
+    public function testARefusalReopensTheModalWithTheReasonAndWhatWasTyped(): void
+    {
+        $html = $this->renderScreen( [
+            'validation_errors' => ['dimensionKey' => 'Alice is not a usable name.'],
+            'submitted'         => ['dimensionKey' => 'bob.plan', 'scope' => 'user',
+                                    'dataType' => 'integer', 'label' => 'Bob plan'],
+        ] );
+
+        $dialog = $this->dialogBody( $html );
+
+        $this->assertStringContainsString( 'data-owa-open="1"', $dialog );
+        $this->assertStringContainsString( 'Alice is not a usable name.', $dialog );
+        $this->assertStringContainsString( 'value="bob.plan"', $dialog );
+        $this->assertStringContainsString( 'value="Bob plan"', $dialog );
+        $this->assertMatchesRegularExpression( '/value="user"\s+selected/', $dialog );
+        $this->assertMatchesRegularExpression( '/value="integer"\s+selected/', $dialog );
+    }
+
+    /** With no room left there is nothing to open. */
+    public function testAFullPropertyOffersNoModal(): void
+    {
+        $dimensions = [];
+
+        foreach ( ['plan', 'tier'] as $key ) {
+            $dimensions[] = ['dimension_key' => $key, 'label' => $key, 'scope' => 'event',
+                             'data_type' => 'string', 'state' => 'applied', 'state_message' => ''];
+        }
+
+        $html = $this->renderScreen( [
+            'dimensions' => $dimensions,
+            'cube'       => ['table' => 'owa_event_x', 'exists' => true, 'capacity' => 2, 'cap' => 20],
+        ] );
+
+        $this->assertStringNotContainsString( 'data-owa-cd-open', $html );
+        $this->assertSame( '', $this->dialogBody( $html ) );
+        $this->assertStringContainsString( '2 of 2 used.', $html );
+    }
+
+    /** A Property with no cube gets the explanation, not a modal it cannot use. */
+    public function testAPropertyWithNoCubeRendersNoModal(): void
+    {
+        $html = $this->renderScreen( [
+            'cube' => ['table' => 'owa_event_x', 'exists' => false, 'capacity' => 20, 'cap' => 20],
+        ] );
+
+        $this->assertStringContainsString( 'has not collected anything yet', $html );
+        $this->assertStringNotContainsString( 'data-owa-cd-open', $html );
+        $this->assertSame( '', $this->dialogBody( $html ) );
+    }
+
 }

@@ -3871,6 +3871,117 @@ li.constraintRow {
     box-shadow: none;
 }
 
+/* ------------------------------------------------------------------
+ * Custom dimensions: the registration modal
+ * ------------------------------------------------------------------
+ *
+ * The same frame as the confirmation above, so the two modals on this screen
+ * read as one family. The form inside keeps the settings-row markup the panel
+ * uses, but those rules are scoped to #panel and jQuery UI lifts the dialog to
+ * <body>, so the rows are restated here rather than inherited.
+ */
+.owa_cdActions {
+    margin: 0 0 12px 0;
+}
+
+.owa_cdActions .owa-button {
+    margin: 0;
+    font-size: 13px;
+    padding: 8px 16px;
+}
+
+.owa_cdDialogFrame.ui-dialog {
+    /* Above its own overlay, for the reason .owa_confirmDialogFrame gives. */
+    z-index: 101;
+    border: 1px solid #d5d5d5;
+    border-radius: 5px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.18);
+    background: #ffffff;
+    padding: 0;
+}
+
+.owa_cdDialogFrame .ui-dialog-titlebar {
+    background: none;
+    border: 0;
+    border-bottom: 1px solid #ececec;
+    border-radius: 5px 5px 0 0;
+    padding: 16px 20px;
+}
+
+.owa_cdDialogFrame .ui-dialog-title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #333333;
+    float: none;
+}
+
+.owa_cdDialogFrame .ui-dialog-content {
+    padding: 4px 20px 18px 20px;
+}
+
+.owa_cdDialog .setting {
+    border: 0;
+    border-bottom: 1px solid #ececec;
+    margin: 0;
+    padding: 12px 0;
+}
+
+.owa_cdDialog .setting .title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa_cdDialog .setting .description {
+    color: #999999;
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.owa_cdDialog .setting .field {
+    padding-top: 8px;
+}
+
+.owa_cdDialog input[type=text],
+.owa_cdDialog select {
+    padding: 6px 7px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    font-size: 13px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.owa_cdDialogError {
+    margin: 12px 0 0 0;
+    padding: 10px 12px;
+    border: 1px solid #e3b7b2;
+    border-radius: 3px;
+    background: #fbeeec;
+    color: #8a2c22;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.owa_cdDialogNote {
+    padding: 12px 0 0 0;
+    color: #999999;
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.owa_cdDialogButtons {
+    padding-top: 16px;
+    text-align: right;
+}
+
+.owa_cdDialogButtons .owa-button {
+    margin: 0 0 0 8px;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 8px 16px;
+}
+
 
 /* ------------------------------------------------------------------
  * Goal events
