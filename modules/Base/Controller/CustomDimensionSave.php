@@ -77,42 +77,18 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
     }
 
     /**
-     * Back to the list, with the reason and what was typed.
-     *
-     * The form lives on the list screen rather than on one of its own, so
-     * there is nowhere else for a refusal to land.
+     * Back to the register screen, with the reason and what was typed.
      */
     function errorAction() {
 
-        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->getByColumn( 'site_id', $siteId );
-
-        $property_id = (string) $site->get( 'property_id' );
-
-        $this->set( 'siteId', $siteId );
-        $this->set( 'propertyId', $property_id );
-        $this->set( 'dimensions',
-            \OWA\Module\Base\Classes\Cube\Dimensions::forProperty( $property_id ) );
-        $this->set( 'cube', CustomDimensions::cubeState( $property_id ) );
-        $this->set( 'scopes', \OWA\Module\Base\Entity\CustomDimension::scopes() );
-        $this->set( 'types', \OWA\Module\Base\Entity\CustomDimension::types() );
-
-        /* What was typed, so a refused form comes back carrying it. */
-        $this->set( 'submitted', array(
-            'dimensionKey' => trim( (string) $this->getParam( 'dimensionKey' ) ),
-            'scope'        => (string) $this->getParam( 'scope' ),
-            'dataType'     => (string) $this->getParam( 'dataType' ),
-            'label'        => trim( (string) $this->getParam( 'label' ) ),
-        ) );
-
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_tier', 3 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId ) );
-        $this->setView( 'base.optionsHierarchy' );
-        $this->setSubview( 'base.customDimensions' );
+        CustomDimensionEdit::prepare( $this,
+            $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) ),
+            array(
+                'dimensionKey' => trim( (string) $this->getParam( 'dimensionKey' ) ),
+                'scope'        => (string) $this->getParam( 'scope' ),
+                'dataType'     => (string) $this->getParam( 'dataType' ),
+                'label'        => trim( (string) $this->getParam( 'label' ) ),
+            ) );
     }
 
     function action() {
