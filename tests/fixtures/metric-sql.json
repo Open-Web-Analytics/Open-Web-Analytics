@@ -254,7 +254,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'refund' THEN event.revenue ELSE 0 END)",
+            "expression": "sum(CASE WHEN event.event_type = 'refund' THEN COALESCE(event.revenue, 0) ELSE 0 END)",
             "alias": "refundAmount"
         }
     ],
@@ -326,7 +326,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN event.shipping ELSE 0 END)",
+            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.shipping, 0) ELSE 0 END)",
             "alias": "shippingRevenue"
         }
     ],
@@ -334,7 +334,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN event.tax ELSE 0 END)",
+            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.tax, 0) ELSE 0 END)",
             "alias": "taxRevenue"
         }
     ],
@@ -342,7 +342,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "SUM(event.engagement_msec)",
+            "expression": "COALESCE(SUM(event.engagement_msec), 0)",
             "alias": "totalEngagementTime"
         }
     ],
@@ -358,7 +358,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN event.revenue ELSE 0 END)",
+            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.revenue, 0) ELSE 0 END)",
             "alias": "transactionRevenue"
         }
     ],
