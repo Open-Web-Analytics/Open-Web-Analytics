@@ -1,33 +1,23 @@
 import { Util } from '../../modules/Base/src/common/Util.js';
 
 /**
- * The contract every OWA id must satisfy, and the limit it operates under.
+ * The contract every tracker-minted id must satisfy: visitor, session and
+ * recording ids.
  *
- * Ids are numeric and land in a signed BIGINT column -- that is a hard contract
- * this project migrated *to* (the 32-bit to 63-bit dimension id conversion), so
- * these tests exist to stop a future change from quietly breaking it.
+ * Numeric and within a signed BIGINT -- a hard contract this project migrated
+ * TO (the 32-bit to 63-bit dimension id conversion) -- and as random as that
+ * allows: 62 bits, with bit 62 set so every id is exactly 19 digits.
  *
- * The generator is `<10-digit unix seconds><9 random digits>`, which uses 60.6
- * of the 63 available bits. That leaves no room to widen the random component,
- * and re-dividing the budget between the time and random halves is provably
- * pointless: coarsening the time bucket by k multiplies the arrivals sharing a
- * bucket by k (so candidate pairs by k^2), divides the bucket count by k, and
- * grows the random space by k -- k cancels exactly, leaving the collision rate
- * a function of the total bit budget and the arrival rate alone.
- *
- * What that costs, quantified rather than hand-waved: ~10^9 values per one-second
- * bucket gives roughly 0.8 expected collisions per year at 10 new visitors per
- * second (864k/day, a large self-hosted install), where a collision silently and
- * permanently merges two visitors. The only way to improve it is a wider id
- * space, which the BIGINT contract forbids.
- *
- * These tests pin the contract, not the internals -- they must keep passing if
- * the digit split is ever revisited, and fail if the id stops being a
- * BIGINT-safe, uniformly distributed, time-ordered number.
+ * It used to lead with 10 digits of unix seconds, leaving about 30 random bits
+ * per second: roughly 0.8 collisions a year at 10 new visitors a second, each
+ * silently merging two visitors or two sessions. The seconds spent ~33 bits
+ * encoding three centuries an installation never sees. Among n ids of 62
+ * random bits the expected collisions are n^2 / 2^63.
  */
 describe('generateRandomGuid contract', () => {
 
-    const BIGINT_MAX = 9223372036854775807n;
+    const LOW  = 4611686018427387904n; // 2^62
+    const HIGH = 9223372036854775807n; // 2^63 - 1, BIGINT's max
 
     test('is all digits, with no sign, separator or exponent', () => {
         for (let i = 0; i < 200; i++) {
@@ -35,103 +25,80 @@ describe('generateRandomGuid contract', () => {
         }
     });
 
-    test('fits a signed BIGINT, with headroom', () => {
-        for (let i = 0; i < 200; i++) {
-            expect(BigInt(Util.generateRandomGuid())).toBeLessThan(BIGINT_MAX);
+    test('is always 19 digits, within a signed BIGINT', () => {
+        for (let i = 0; i < 2000; i++) {
+            const id = Util.generateRandomGuid();
+            const n = BigInt(id);
+
+            expect(id).toHaveLength(19);
+            expect(n >= LOW).toBe(true);
+            expect(n <= HIGH).toBe(true);
         }
     });
 
-    test('survives the round trip through Number without losing precision', () => {
-        // Ids exceed Number.MAX_SAFE_INTEGER, so anything that parses one as a
-        // float corrupts it. They must be carried as strings client-side.
-        const guid = Util.generateRandomGuid();
-        expect(guid.length).toBeGreaterThan(15);
-        expect(String(BigInt(guid))).toBe(guid);
+    test('survives the round trip through a string, and not through Number', () => {
+        // Every id exceeds Number.MAX_SAFE_INTEGER, so anything that parses one
+        // as a float corrupts it. They must be carried as strings client-side.
+        const id = Util.generateRandomGuid();
+
+        expect(String(BigInt(id))).toBe(id);
+        expect(BigInt(id) > BigInt(Number.MAX_SAFE_INTEGER)).toBe(true);
     });
 
-    test('leads with the unix timestamp, so ids are broadly time-ordered', () => {
-        // Insert locality depends on this: a monotonic prefix keeps new rows at
-        // the right edge of the primary key rather than scattering them. It is
-        // also what a v2 idempotent event would derive its partition date from.
-        const now = Math.floor(Date.now() / 1000);
-        const prefix = parseInt(Util.generateRandomGuid().substring(0, 10), 10);
-
-        expect(Math.abs(prefix - now)).toBeLessThan(5);
-    });
-
-    test('two ids minted in the same second still differ', () => {
-        // Not a uniqueness guarantee -- this generator does not offer one, and
-        // the header above quantifies exactly that. Within a one-second bucket
-        // the space is 10^9, so 2000 draws collide with probability
-        // n^2/2N = 2000^2 / 2e9 ~= 0.2%: about one CI run in 500. Asserting
-        // 2000-of-2000 asserted a property the design explicitly lacks, and it
-        // duly failed on an unrelated pull request.
-        //
-        // The tolerance still discriminates. Expected collisions here are
-        // 0.002; six or more is not something chance produces. A generator that
-        // lost its random half -- returning the timestamp alone, or zero-filling
-        // a broken rand() -- yields ~1999 of them, not six.
-        const DRAWS = 2000;
-        const TOLERATED = 5;
-
+    test('does not repeat', () => {
+        // 10,000 draws from 2^62 collide with probability ~1e-11.
         const ids = new Set();
 
-        for (let i = 0; i < DRAWS; i++) {
+        for (let i = 0; i < 10000; i++) {
             ids.add(Util.generateRandomGuid());
         }
 
-        expect(DRAWS - ids.size).toBeLessThanOrEqual(TOLERATED);
+        expect(ids.size).toBe(10000);
     });
 
-    test('the id is not the timestamp alone', () => {
-        // What the test above is really for, stated so it cannot flake: with the
-        // clock held still, ids must still differ. Two draws from 10^9 collide
-        // with probability 1e-9.
-        const realClock = Util.getCurrentUnixTimestamp;
-
-        Util.getCurrentUnixTimestamp = () => 1756000000;
-
-        try {
-            const ids = new Set();
-
-            for (let i = 0; i < 50; i++) {
-                ids.add(Util.generateRandomGuid());
-            }
-
-            expect(ids.size).toBeGreaterThan(45);
-
-            // ...and the frozen clock really was used, or this proves nothing.
-            expect(Util.generateRandomGuid().substring(0, 10)).toBe('1756000000');
-        } finally {
-            Util.getCurrentUnixTimestamp = realClock;
-        }
-    });
-
-    test('the random component is uniform across its full range', () => {
-        // A biased or short random half would shrink the space well below the
-        // 10^9 the collision estimate above assumes.
+    test('is uniform across its whole range, not only its low digits', () => {
+        // A generator that lost a word, or filled one from a stuck source, would
+        // pile ids into part of the range.
         const buckets = new Array(10).fill(0);
         const runs = 20000;
 
         for (let i = 0; i < runs; i++) {
-            const suffix = Util.generateRandomGuid().substring(10);
-            expect(suffix).toHaveLength(9);
-            buckets[parseInt(suffix.charAt(0), 10)]++;
+            const offset = BigInt(Util.generateRandomGuid()) - LOW;
+            buckets[Number((offset * 10n) / LOW)]++;
         }
 
-        // Each leading digit should land near a tenth of the runs. Generous
-        // bounds -- this catches a stuck or truncated generator, not drift.
         buckets.forEach((count) => {
             expect(count).toBeGreaterThan(runs / 20);
             expect(count).toBeLessThan(runs / 5);
         });
     });
 
+    test('draws from crypto.getRandomValues, not Math.random', () => {
+        const spy = jest.spyOn(globalThis.crypto, 'getRandomValues');
+        const math = jest.spyOn(Math, 'random');
+
+        try {
+            Util.generateRandomGuid();
+
+            expect(spy).toHaveBeenCalled();
+            expect(math).not.toHaveBeenCalled();
+        } finally {
+            spy.mockRestore();
+            math.mockRestore();
+        }
+    });
+
+    test('converts to decimal exactly', () => {
+        expect(Util.wordsToDecimal([0x4000, 0, 0, 0])).toBe('4611686018427387904');
+        expect(Util.wordsToDecimal([0x7fff, 0xffff, 0xffff, 0xffff])).toBe('9223372036854775807');
+        expect(Util.wordsToDecimal([0x4000, 0x0000, 0x0000, 0x0001])).toBe('4611686018427387905');
+        expect(Util.wordsToDecimal([0, 0, 0, 0])).toBe('0');
+    });
+
     test('accepts no arguments -- there is no salt', () => {
         // Every call site once passed a salt that the function never declared
-        // and silently discarded. It cannot be honoured: the budget is
-        // saturated, so mixing a salt in would either take bits from the random
-        // half or make ids predictable from their inputs.
+        // and silently discarded. Mixing one in would make ids predictable from
+        // their inputs.
         expect(Util.generateRandomGuid).toHaveLength(0);
     });
 });
