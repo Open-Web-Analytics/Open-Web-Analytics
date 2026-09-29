@@ -2239,6 +2239,36 @@ installation.</p>
 rows go when the table is dropped. Recordings are now the Domstream module&rsquo;s own chunk and
 payload tables, and re-encoding v1&rsquo;s event lists into them was not worth it.</p>
 
+<h4 id="s221c">Custom reports and funnels <span class="chip c-dec">Decided 29&nbsp;Sep</span></h4>
+<p><strong>Saved custom reports are rewritten, once, by the migration.</strong> Names resolve exactly
+and there is no alias layer, so a 1.14 report naming a renamed or removed metric or dimension fails
+whole today. One v1&rarr;v2 name map drives the rewrite, applied to each name in a widget&rsquo;s
+metrics, dimensions, sort, chart metric and constraints:</p>
+<ul>
+<li><strong>Renamed</strong> &mdash; <code>visits</code>&rarr;<code>sessions</code>,
+<code>uniqueVisitors</code>&rarr;<code>totalUsers</code>, <code>entryPagePath</code>&rarr;<code>landingPage</code>,
+<code>source</code>&rarr;<code>sessionSource</code> and the rest: rewritten.</li>
+<li><strong>Same name, new meaning</strong> &mdash; <code>pagePath</code> becomes
+<code>pagePathPlusQuery</code>, which is v1&rsquo;s meaning; <code>hostName</code> (v1: the
+visitor&rsquo;s network host) has no v2 equivalent; <code>bounceRate</code> keeps its name and is
+logged as redefined.</li>
+<li><strong>No equivalent</strong> &mdash; the name is dropped. The widget is dropped only when what
+is left cannot render: no metric, or a grid with no dimension. A dropped constraint widens the
+numbers and is logged as such.</li>
+</ul>
+<p>Every change is logged per report, and the original definition is kept, so nothing is lost
+silently. A report that still cannot render says why, instead of &ldquo;could not be found&rdquo;.</p>
+<p><strong>Funnels.</strong> 1.13/1.14 funnels are already <code>owa_custom_report</code>
+visualizations in an unchanged format and need no conversion. Pre-1.13 funnels, still in the
+<code>goals</code> setting blob, are converted: their steps become path steps and their destination
+a step on the goal event Update025 created. Before either is worth migrating, four counting bugs in
+v2&rsquo;s funnel are fixed, each with a test against the cube: session scope keyed on
+<code>session_id</code> alone (a session is <code>(visitor_id, session_id)</code>); ordering by
+<code>ts</code> ignoring <code>event_seq</code>; path steps matching every event type, so one page
+view and its <code>session_start</code>/<code>first_visit</code> markers can satisfy two steps; and
+goal steps ignoring the goal&rsquo;s <code>trigger_event_type</code> and treating NULL unlike ingest
+marking.</p>
+
 <h4 id="s221a">The upgrade path</h4>
 <p><strong>v2 never runs a v1 update.</strong> Requiring 1.14.0 means every upgrading installation
 arrives at schema&nbsp;33, so v2&rsquo;s update chain starts there: Update003&ndash;033 are deleted
