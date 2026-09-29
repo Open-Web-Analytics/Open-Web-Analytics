@@ -30,12 +30,17 @@ final class DomstreamModuleTest extends TestCase
         return new \OWA\Module\Domstream\Module();
     }
 
+    /**
+     * Asked of the module, not the service: the service builds its processor
+     * map at boot from ACTIVE modules only, so on an installation where the
+     * module is inactive -- CI's configless job -- the map never holds it.
+     */
     public function testTheDomstreamEventIsRoutedToTheModulesProcessor(): void
     {
-        $this->module();
+        $processors = $this->module()->event_processors;
 
-        $this->assertSame('domstream.processEvent', \OWA\Core\CoreAPI::serviceSingleton()
-            ->getMapValue('event_processors', \OWA\Core\CoreAPI::trackingDispatchName('domstream')));
+        $this->assertSame('domstream.processEvent',
+            $processors[\OWA\Core\CoreAPI::trackingDispatchName('domstream')] ?? null);
     }
 
     public function testItsActionsResolveToItsOwnControllers(): void
