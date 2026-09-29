@@ -2231,7 +2231,9 @@ land in v2 where no profile reports on it. The preflight counts what is left beh
 <p><strong><code>down()</code> is the exact inverse without a marker.</strong> Migrated ids are
 derived from v1&rsquo;s rows, which are never written, so reading them again with the recorded
 cutoff derives the same ids, and exactly those rows are deleted; rows from beacons are untouched.
-After the drop there is nothing to roll back to. (<code>beacon_version</code> was considered as a
+After the drop there is nothing to roll back to, and <code>down()</code> refuses:
+<code>cmd=v1-drop</code> records <code>v1_tables_dropped</code>, rather than letting a revert that
+finds nothing report success. (<code>beacon_version</code> was considered as a
 provenance marker and rejected: NULL there already means a pre-versioning tracker, which is what
 v1&rsquo;s were.)</p>
 
