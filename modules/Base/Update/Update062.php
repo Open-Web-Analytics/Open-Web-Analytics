@@ -21,6 +21,12 @@ namespace OWA\Module\Base\Update;
  * Resumable: an interrupted run continues where it stopped, and a finished site
  * is not read again. A later run must use the same cutoff.
  *
+ * IN ORDER: page views, clicks, actions and purchases (FactMigrator's
+ * subclasses), then the visitor store from each visitor's first session
+ * (VisitorMigrator, over all of a site's history), then v1's recorded goal
+ * completions onto the migrated rows (GoalMigrator). Line items are not
+ * migrated: v2 has no item-level shape.
+ *
  * On an installation with no v1 tables -- one that was never 1.x -- there is
  * nothing to do.
  */
@@ -35,16 +41,14 @@ class Update062 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        $migrator = $this->migrator();
-
-        if ( ! $migrator ) {
+        if ( ! $this->hasV1() ) {
 
             $this->e->notice( 'No v1 tables: nothing to migrate.' );
 
             return true;
         }
 
-        foreach ( $this->preflight( $migrator ) as $line ) {
+        foreach ( $this->preflight( $this->migrator( 'RequestMigrator' ) ) as $line ) {
 
             $this->e->notice( $line );
         }
@@ -76,46 +80,62 @@ class Update062 extends \OWA\Core\Update {
             }
         }
 
-        $migrator = $this->migrator( $since );
+        foreach ( self::PASSES as $class => $label ) {
 
-        foreach ( $migrator->sites() as $site_id ) {
+            // The visitor store reads all of a site's history: a visitor's
+            // acquisition is stamped on every later session they have.
+            $migrator = $this->migrator( $class, $class === 'VisitorMigrator' ? null : $since );
 
-            try {
+            if ( ! $migrator ) {
 
-                $progress = $migrator->migrateSite( $site_id );
-
-            } catch ( \RuntimeException $e ) {
-
-                $this->e->notice( $e->getMessage() );
-
-                return false;
+                continue;
             }
 
-            $this->e->notice( sprintf( 'v1 migration, site %s: read %d, wrote %d, refused %d%s',
-                $site_id, $progress['rows_read'], $progress['rows_written'], $progress['rows_refused'],
-                $progress['refusals'] ? ' ' . json_encode( $progress['refusals'] ) : '' ) );
+            foreach ( $migrator->sites() as $site_id ) {
 
-            if ( empty( $progress['completed_at'] ) ) {
+                try {
 
-                return false;
+                    $progress = $migrator->migrateSite( $site_id );
+
+                } catch ( \RuntimeException $e ) {
+
+                    $this->e->notice( $e->getMessage() );
+
+                    return false;
+                }
+
+                $this->e->notice( sprintf( 'v1 migration, %s, site %s: read %d, wrote %d, refused %d%s',
+                    $label, $site_id, $progress['rows_read'], $progress['rows_written'], $progress['rows_refused'],
+                    $progress['refusals'] ? ' ' . json_encode( $progress['refusals'] ) : '' ) );
+
+                if ( empty( $progress['completed_at'] ) ) {
+
+                    return false;
+                }
             }
         }
 
         return true;
     }
 
+    /** Each pass, in the order it runs. */
+    const PASSES = array(
+        'RequestMigrator'  => 'page views',
+        'ClickMigrator'    => 'clicks',
+        'ActionMigrator'   => 'actions',
+        'PurchaseMigrator' => 'purchases',
+        'VisitorMigrator'  => 'visitor store',
+        'GoalMigrator'     => 'goal completions',
+    );
+
     /**
-     * Delete exactly the rows the migration wrote, site by site.
-     *
-     * The ids are derived from v1's rows, which the migration never writes, so
-     * reading them again derives the same ids. After v1 is dropped there is
-     * nothing to roll back to.
+     * Undo every pass, last first. Rows are deleted by the ids their v1 rows
+     * derive, so nothing a beacon wrote is touched. After v1 is dropped there
+     * is nothing to roll back to.
      */
     function down() {
 
-        $migrator = $this->migrator();
-
-        if ( ! $migrator ) {
+        if ( ! $this->hasV1() ) {
 
             $this->e->notice( 'No v1 tables: nothing to revert.' );
 
@@ -124,10 +144,20 @@ class Update062 extends \OWA\Core\Update {
 
         try {
 
-            foreach ( $migrator->sites() as $site_id ) {
+            foreach ( array_reverse( self::PASSES, true ) as $class => $label ) {
 
-                $this->e->notice( sprintf( 'v1 migration, site %s: deleted %d rows.',
-                    $site_id, $migrator->revertSite( $site_id ) ) );
+                $migrator = $this->migrator( $class );
+
+                if ( ! $migrator ) {
+
+                    continue;
+                }
+
+                foreach ( $migrator->sites() as $site_id ) {
+
+                    $this->e->notice( sprintf( 'v1 migration, %s, site %s: reverted %d rows.',
+                        $label, $site_id, $migrator->revertSite( $site_id ) ) );
+                }
             }
 
         } catch ( \RuntimeException $e ) {
@@ -177,19 +207,24 @@ class Update062 extends \OWA\Core\Update {
         return $lines;
     }
 
-    /** @return \OWA\Module\Base\Classes\Migration\RequestMigrator|null null without v1 tables */
-    private function migrator( $since = null ) {
+    private function hasV1() {
 
-        $source = \OWA\Module\Base\Classes\Migration\V1Tables::name(
-            \OWA\Module\Base\Classes\Migration\RequestMigrator::SOURCE, $this->prefix );
+        return (bool) \OWA\Core\CoreAPI::dbSingleton()->tableExists(
+            \OWA\Module\Base\Classes\Migration\V1Tables::name( 'request', $this->prefix ) );
+    }
 
-        if ( ! \OWA\Core\CoreAPI::dbSingleton()->tableExists( $source ) ) {
+    /** A pass, or null where its v1 table is not there. */
+    private function migrator( $class, $since = null ) {
+
+        $class = '\\OWA\\Module\\Base\\Classes\\Migration\\' . $class;
+
+        if ( ! \OWA\Core\CoreAPI::dbSingleton()->tableExists(
+                \OWA\Module\Base\Classes\Migration\V1Tables::name( $class::SOURCE, $this->prefix ) ) ) {
 
             return null;
         }
 
-        return new \OWA\Module\Base\Classes\Migration\RequestMigrator(
-            $this->prefix, \OWA\Module\Base\Classes\Migration\RequestMigrator::BATCH, $since );
+        return new $class( $this->prefix, \OWA\Module\Base\Classes\Migration\FactMigrator::BATCH, $since );
     }
 }
 

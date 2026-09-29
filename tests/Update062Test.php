@@ -56,6 +56,7 @@ final class Update062Test extends TestCase
 
         $db->query('DELETE FROM owa_event_raw WHERE site_id = ?', [self::SITE]);
         $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        $db->query("DELETE FROM owa_visitor_acquisition WHERE visitor_id = '1790000000000000311'");
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
     }
 
@@ -148,6 +149,50 @@ final class Update062Test extends TestCase
 
         $this->assertTrue($this->update->up(), 'and up runs again from the start');
         $this->assertSame([20250916, 20260921], $this->days());
+    }
+
+    /** Every pass, through the update, and back. */
+    public function testEveryPassRunsAndDownUndoesThemAll(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $base = ['site_id' => self::SITE, 'visitor_id' => '1790000000000000311', 'session_id' => '1790000000000000321',
+            'timestamp' => 1790000000, 'yyyymmdd' => 20260921];
+
+        foreach ([
+            ['click', ['id' => '1790000000000000351', 'click_x' => 1]],
+            ['action_fact', ['id' => '1790000000000000352', 'action_name' => 'Download']],
+            ['commerce_transaction_fact', ['id' => '1790000000000000353', 'order_id' => 'X-1', 'total_revenue' => 500]],
+        ] as [$table, $row]) {
+            $row += $base;
+            $db->query(sprintf('INSERT INTO owa_v1fx_%s (%s) VALUES (%s)', $table, implode(',', array_keys($row)),
+                implode(',', array_fill(0, count($row), '?'))), array_values($row));
+        }
+
+        $db->query('INSERT INTO owa_v1fx_referer (id, url) VALUES (?, ?)', ['701', 'https://ref.example/']);
+        $db->query('INSERT INTO owa_v1fx_visitor (id, first_session_id) VALUES (?, ?)',
+            ['1790000000000000311', '1790000000000000321']);
+        $db->query('INSERT INTO owa_v1fx_session (id, site_id, visitor_id, timestamp, yyyymmdd, referer_id) VALUES (?, ?, ?, ?, ?, ?)',
+            ['1790000000000000321', self::SITE, '1790000000000000311', 1790000000, 20260921, '701']);
+
+        \OWA\Core\CoreAPI::setRequestParam('all', true);
+        $this->assertTrue($this->update->up());
+
+        $types = array_count_values(array_column(array_map(fn ($r) => (array) $r, (array) $db->get_results(
+            'SELECT event_type FROM owa_event_raw WHERE site_id = ?', [self::SITE])), 'event_type'));
+
+        $this->assertSame(1, $types['click'] ?? 0);
+        $this->assertSame(1, $types['download'] ?? 0);
+        $this->assertSame(1, $types['purchase'] ?? 0);
+        $this->assertSame(2, $types['page_view'] ?? 0);
+        $this->assertTrue((bool) $db->get_row('SELECT visitor_id FROM owa_visitor_acquisition WHERE visitor_id = ?',
+            ['1790000000000000311']));
+
+        $this->assertTrue($this->update->down());
+
+        $this->assertSame([], (array) $db->get_results('SELECT id FROM owa_event_raw WHERE site_id = ?', [self::SITE]));
+        $this->assertFalse((bool) $db->get_row('SELECT visitor_id FROM owa_visitor_acquisition WHERE visitor_id = ?',
+            ['1790000000000000311']));
+        $this->assertSame([], (array) $db->get_results('SELECT id FROM owa_migration_progress WHERE site_id = ?', [self::SITE]));
     }
 
     public function testWithoutV1TablesThereIsNothingToDo(): void
