@@ -173,6 +173,24 @@ class CommandQueue {
     loadCmds( cmds ) {
 
         this.asyncCmds = cmds;
+
+        /*
+         * setDebug applied NOW, ahead of everything else. The first command
+         * builds the tracker and is applied only after that, so a setDebug
+         * waiting its turn -- even first in the queue, where a development
+         * snippet puts it -- came too late for everything the constructor and
+         * the queue log while starting up. It still runs in its place as well;
+         * setting the same value twice changes nothing.
+         */
+        for ( var i = 0; i < cmds.length; i++ ) {
+
+            var parsed = CommandQueue.parseCmd( cmds[i] );
+
+            if ( parsed && parsed.method === 'setDebug' ) {
+
+                OWA.setSetting( 'debug', cmds[i][1] );
+            }
+        }
     }
 
     /**
