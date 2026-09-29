@@ -90,129 +90,6 @@ final class GoalEventStorageTest extends TestCase
         $this->created = [];
     }
 
-    /* ---------------- the migration ---------------- */
-
-    /**
-     * Nineteen of twenty slots on a typical install are blank stubs -- they
-     * exist because the blob was a fixed-length array, not because anyone made
-     * them. Carrying them over would reproduce the thing this table replaces.
-     */
-    public function testEmptySlotsAreDroppedNotMigratedAsBlankRows(): void
-    {
-        $blob = array();
-
-        for ( $i = 1; $i <= 20; $i++ ) {
-            $blob[ $i ] = array( 'goal_number' => '', 'goal_name' => '',
-                                 'goal_group' => '', 'goal_status' => '', 'goal_type' => '' );
-        }
-
-        $blob[3] = array(
-            'goal_name'   => 'Signup',
-            'goal_number' => '3',
-            'goal_group'  => '1',
-            'goal_status' => 'active',
-            'goal_value'  => '2',
-            'goal_type'   => 'url_destination',
-            'details'     => array( 'match_type' => 'begins', 'goal_url' => '/thanks' ),
-        );
-
-        $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
-            'scope_id' => 'OWA-probe', 'value' => serialize( $blob ) ) );
-
-        $this->assertCount( 1, $planned,
-            'Blank slots were migrated as rows, which rebuilds the twenty-slot model in '
-            . 'a table.' );
-
-        $this->assertSame( 'Signup', $planned[0]['name'] );
-        $this->assertSame( 3, $planned[0]['goal_number'] );
-        $this->assertSame( 1, $planned[0]['is_active'] );
-    }
-
-    /**
-     * A GOAL WITH NO goal_number AT ALL FALLS BACK TO ITS SLOT KEY.
-     *
-     * The fallback is deliberate -- the slot number is what made a goal unique
-     * within a Profile, so it stands in when the goal carries no number of its
-     * own. But the lookup was written `$goal['goal_number'] ?: $number`, which
-     * reaches the fallback only by way of an "Undefined array key" warning: the
-     * one path the code goes out of its way to support could not be taken
-     * cleanly.
-     *
-     * Every case above sets the key, most of them to ''. An EMPTY value takes
-     * the fallback silently; an ABSENT one warns. That is the whole difference,
-     * and it is why this went unnoticed -- found by seeding a blob without the
-     * key into the upgrade cycle, where PHP printed the warning mid-migration.
-     */
-    public function testAGoalWithNoNumberFallsBackToItsSlotKeyWithoutWarning(): void
-    {
-        $raised = null;
-
-        set_error_handler( static function ( $no, $str ) use ( &$raised ) {
-
-            $raised = $str;
-
-            return true;
-        } );
-
-        try {
-
-            $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
-                'scope_id' => 'OWA-probe',
-                'value'    => serialize( array( 7 => array(
-                    // No 'goal_number' key at all.
-                    'goal_name'   => 'Newsletter',
-                    'goal_status' => 'active',
-                    'goal_type'   => 'url_destination',
-                    'details'     => array( 'match_type' => 'exact', 'goal_url' => '/news' ),
-                ) ) ),
-            ) );
-
-        } finally {
-
-            restore_error_handler();
-        }
-
-        $this->assertNull( $raised,
-            'Migrating a goal that carries no number raised: ' . (string) $raised );
-
-        $this->assertCount( 1, $planned, 'the goal was dropped rather than numbered' );
-
-        $this->assertSame( 7, $planned[0]['goal_number'],
-            'The slot key is what stands in for a missing goal_number -- it is what made '
-            . 'a goal unique within a Profile.' );
-    }
-
-    /** The condition becomes the property/operator/value triple v2 needs. */
-    public function testTheConditionIsStoredAsATriple(): void
-    {
-        $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
-            'scope_id' => 'OWA-probe',
-            'value'    => serialize( array( 1 => array(
-                'goal_name'   => 'Thanks',
-                'goal_number' => '1',
-                'goal_status' => 'active',
-                'goal_type'   => 'url_destination',
-                'details'     => array( 'match_type' => 'exact', 'goal_url' => '/thanks' ),
-            ) ) ),
-        ) );
-
-        $this->assertSame( 'page_uri', $planned[0]['condition_property'] );
-        $this->assertSame( 'exact', $planned[0]['condition_operator'] );
-        $this->assertSame( '/thanks', $planned[0]['condition_value'] );
-
-        $this->assertNotEmpty( $planned[0]['trigger_event_type'],
-            'Without a trigger event type, v2 cannot know what to evaluate the condition '
-            . 'against and the migration stops being a read.' );
-    }
-
-    /** One unreadable blob must not stop every other Profile migrating. */
-    public function testAnUnreadableBlobPlansNothingRatherThanThrowing(): void
-    {
-        $this->assertSame( array(),
-            \OWA\Module\Base\Update\Update025::planForProfile(
-                array( 'scope_id' => 'OWA-probe', 'value' => 'not-serialized-at-all' ) ) );
-    }
-
     /* ---------------- conditions ---------------- */
 
     /**
@@ -476,25 +353,6 @@ final class GoalEventStorageTest extends TestCase
         ), $columns );
     }
 
-    /** The migration writes the 1.x triple as a condition row. */
-    public function testTheMigratedConditionBecomesARow(): void
-    {
-        $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
-            'scope_id' => $this->siteId,
-            'value'    => serialize( array( 1 => array(
-                'goal_name'   => 'Migrated',
-                'goal_number' => '1',
-                'goal_status' => 'active',
-                'goal_type'   => 'url_destination',
-                'details'     => array( 'match_type' => 'begins', 'goal_url' => '/thanks' ),
-            ) ) ),
-        ) );
-
-        $this->assertSame( 'begins', $planned[0]['condition_operator'] );
-        $this->assertSame( '/thanks', $planned[0]['condition_value'] );
-        $this->assertSame( 'page_uri', $planned[0]['condition_property'] );
-    }
-
     /** A goal event carrying the given conditions, cleaned up afterwards. */
     private function makeGoalEventWithConditions( array $conditions, ?string $trigger = 'page_view' )
     {
@@ -670,53 +528,6 @@ final class GoalEventStorageTest extends TestCase
     }
 
     /* ---------------- funnels ---------------- */
-    /**
-     * 1.x funnel steps are deliberately NOT migrated.
-     *
-     * A funnel stopped being configuration attached to a goal: it is a
-     * visualization now, defined where it is looked at. So there is nothing for
-     * a goal-owned funnel to migrate INTO, and inventing a visualization per
-     * funnel goal would put rows named and owned by nobody in particular into a
-     * list meant to hold what someone deliberately made.
-     *
-     * Nothing is lost. Update022 COPIED the site blobs rather than moving them,
-     * so the steps are still in owa_setting for anyone rebuilding the path.
-     *
-     * Asserted rather than left as an absence, because "the migration silently
-     * dropped the funnels" and "the migration deliberately leaves them" look
-     * identical from the outside -- and the first of those was a real bug on
-     * this branch, found only because someone went looking.
-     */
-    public function testFunnelStepsAreNotMigrated(): void
-    {
-        $planned = \OWA\Module\Base\Update\Update025::planForProfile( array(
-            'scope_id' => $this->siteId,
-            'value'    => serialize( array( 1 => array(
-                'goal_name'   => 'Checkout',
-                'goal_number' => '1',
-                'goal_status' => 'active',
-                'goal_type'   => 'url_destination',
-                'details'     => array(
-                    'match_type'   => 'exact',
-                    'goal_url'     => '/done',
-                    'funnel_steps' => array(
-                        1 => array( 'name' => 'Cart', 'path' => '/cart' ),
-                    ),
-                ),
-            ) ) ),
-        ) );
-
-        $this->assertCount( 1, $planned, 'the goal itself must still migrate' );
-
-        $this->assertArrayNotHasKey( 'steps', $planned[0],
-            'The migration plans funnel steps, which nothing consumes -- a funnel is a '
-            . 'visualization now and has no goal-owned table to be written into.' );
-
-        /* And the goal event itself is unaffected by having had one. */
-        $this->assertSame( 'Checkout', $planned[0]['name'] );
-        $this->assertSame( '/done', $planned[0]['condition_value'] );
-    }
-
     /* ---------------- money ---------------- */
 
     /**

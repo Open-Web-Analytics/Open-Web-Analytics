@@ -2,12 +2,10 @@
 /**
  * "Is it safe to wreck this database?"
  *
- * Two tools here rewind an installed schema so that a migration can be run for
- * real -- seed_pre_hierarchy.php and upgrade_cycle.php. Both drop tables and
- * columns, and both are one mistyped command away from doing it to a dev
- * install or, worse, a production one. The check lives in one place so the two
- * cannot drift apart, and so a third tool gets it by asking rather than by
- * remembering.
+ * upgrade_cycle.php rewinds an installed schema so that the migrations can be
+ * run for real. It drops tables and columns, and is one mistyped command away
+ * from doing it to a dev install or, worse, a production one. The check lives
+ * here so another tool gets it by asking rather than by remembering.
  *
  * The test is a NAME, not a row count: an empty-looking database can still be
  * the one a site is pointed at, and a scratch database that happens to hold

@@ -547,12 +547,6 @@ parameters:
 			path: modules/Base/Module.php
 
 		-
-			message: '#^Result of method OWA\\Core\\Update\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Update/Update007.php
-
-		-
 			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1

@@ -113,7 +113,7 @@ final class AddIndexedColumnTest extends TestCase
 
             // Idempotent: the guard's job is to make the second run a no-op
             // rather than an error, so a half-finished upgrade can be re-run.
-            $update = new \OWA\Module\Base\Update\Update026;
+            $update = new \OWA\Module\Base\Update\Update034;
 
             $again = new ReflectionMethod( '\OWA\Core\Update', 'addColumnIfMissing' );
             $again->setAccessible( true );

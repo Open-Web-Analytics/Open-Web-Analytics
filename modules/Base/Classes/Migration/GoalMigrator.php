@@ -125,15 +125,44 @@ class GoalMigrator extends FactMigrator {
         $progress['refusals'][ self::NOT_LOCATED ] = ( $progress['refusals'][ self::NOT_LOCATED ] ?? 0 ) + 1;
     }
 
+    /** The Property a site belongs to. */
+    public static function propertyFor( $site_id ) {
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+        $site->getByColumn( 'site_id', $site_id );
+
+        return $site->get( 'property_id' );
+    }
+
+    /**
+     * The goal event 1.13's Update025 made of a Property's goal slot, or null.
+     *
+     * Read by property and slot, NOT by re-deriving the id Update025 gave it.
+     * An installation that ran it while still on 32-bit ids holds a 32-bit id
+     * there, and a derivation now is 64-bit: it would find nothing.
+     *
+     * @return string|null
+     */
+    public static function goalEventFor( $property_id, $goal_number ) {
+
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
+            'SELECT id FROM %s WHERE property_id = ? AND goal_number = ? ORDER BY id LIMIT 1',
+            $goal->getTableName() ), array( (string) $property_id, (int) $goal_number ) );
+
+        return isset( $row['id'] ) ? (string) $row['id'] : null;
+    }
+
     /** Slot N of a site's goals, as Update025 migrated it, compiled; or null. */
     private function predicate( $site_id, $n ) {
 
         if ( ! array_key_exists( $site_id, $this->properties ) ) {
 
-            $this->properties[ $site_id ] = \OWA\Module\Base\Update\Update025::propertyFor( $site_id );
+            $this->properties[ $site_id ] = self::propertyFor( $site_id );
         }
 
-        $id = \OWA\Module\Base\Update\Update025::goalEventFor( $this->properties[ $site_id ], $n );
+        $id = self::goalEventFor( $this->properties[ $site_id ], $n );
 
         if ( $id === null ) {
 

@@ -94,6 +94,9 @@ final class SqlPortabilityLintTest extends TestCase {
      */
     private const EXEMPT_DIRS = [
         'modules/Base/Update/',
+        // The v1 migration, for the same reason: it runs once, on an
+        // installation upgrading from 1.14, and every one of those is MySQL.
+        'modules/Base/Classes/Migration/',
     ];
 
     /**

@@ -1454,7 +1454,7 @@ class CoreAPI {
         $obj->module_name = $module;
         if (!$obj->schema_version) {
             // Derive the sequence from the filename for updates that do not
-            // declare one (Update003 and Update004 still rely on this).
+            // declare one. OWA's own all do; a module's may not.
             //
             // Legacy files were named '<seq>.php', so assigning $filename gave
             // the right number. PSR-4 files are 'UpdateNNN.php', so the same

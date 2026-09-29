@@ -231,7 +231,7 @@ class Update061 extends \OWA\Core\Update {
         }
 
         $site_id  = (string) $row['scope_id'];
-        $property = Update025::propertyFor( $site_id );
+        $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor( $site_id );
         $plans    = array();
 
         foreach ( $goals as $number => $goal ) {
@@ -280,7 +280,7 @@ class Update061 extends \OWA\Core\Update {
             }
 
             // The destination: the goal event Update025 made of this goal.
-            $goal_event_id = Update025::goalEventFor( $property, $goal_number );
+            $goal_event_id = \OWA\Module\Base\Classes\Migration\GoalMigrator::goalEventFor( $property, $goal_number );
 
             if ( $goal_event_id === null ) {
 

@@ -7,30 +7,32 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * A freshly installed OWA and a migrated one must be indistinguishable.
  *
- * Update021 gives an existing install an Organization, a Property per website
+ * 1.13's Update021 gave an existing install an Organization, a Property per website
  * and "Observation Profile N" beneath it. Installing created the hierarchy
  * TABLES and nothing in them, so a brand new install had its one site sitting
  * under "Unassigned" in both the site selector and the Property roster, while
  * an install of the same age that had been migrated looked correct.
  *
- * The values are duplicated between SiteManager and Update021 deliberately -- a
- * migration has to stay self-contained -- so this pins that they agree. If they
- * drift, "Observation Profile 1" means one thing on one install and something
- * else on another.
+ * 2.0 upgrades from 1.14, so Update021 is gone; its values are pinned below. If
+ * they drift, "Observation Profile 1" means one thing on one install and
+ * something else on another.
  */
 final class FreshInstallHierarchyTest extends TestCase
 {
-    public function testTheDefaultsMatchWhatTheMigrationUses(): void
+    /**
+     * The values 1.13's Update021 gave every upgraded installation. That update
+     * is gone -- 2.0 upgrades from 1.14 -- so they are pinned here instead.
+     */
+    public function testTheDefaultsMatchWhatTheMigrationUsed(): void
     {
-        $this->assertSame(
-            \OWA\Module\Base\Update\Update021::DEFAULT_ORGANIZATION_NAME,
-            \OWA\Module\Base\Classes\SiteManager::DEFAULT_ORGANIZATION_NAME,
+        $this->assertSame('My Organization', \OWA\Module\Base\Classes\SiteManager::DEFAULT_ORGANIZATION_NAME,
             'A fresh install would name its Organization differently from a migrated one.' );
 
-        $this->assertSame(
-            \OWA\Module\Base\Update\Update021::PROFILE_NAME_PREFIX,
-            \OWA\Module\Base\Classes\SiteManager::PROFILE_NAME_PREFIX,
+        $this->assertSame('Observation Profile ', \OWA\Module\Base\Classes\SiteManager::PROFILE_NAME_PREFIX,
             'A fresh install would name its Profiles differently from a migrated one.' );
+
+        $this->assertSame('organization:default', \OWA\Module\Base\Classes\SiteManager::DEFAULT_ORGANIZATION_KEY,
+            'A fresh install would mint a different default Organization id from a migrated one.' );
     }
 
     public function testCreatingASiteGivesItAPropertyAndANumberedProfile(): void
@@ -297,7 +299,7 @@ final class FreshInstallHierarchyTest extends TestCase
     /**
      * The default id must not be derived from the name.
      *
-     * Two reasons. It has to match what Update021 mints, so a migrated install
+     * Two reasons. It has to match what 1.13's Update021 minted, so a migrated install
      * and a fresh one are indistinguishable -- and an id derived from a
      * renameable column is one ContentDerivedIdCoverageTest has to treat as
      * needing migration, because it cannot tell that intent apart from a
@@ -321,13 +323,5 @@ final class FreshInstallHierarchyTest extends TestCase
             'generateId( self::DEFAULT_ORGANIZATION_NAME )', $src,
             'The id is still derived from the name.' );
 
-        /* The value is the contract with Update021, which cannot reach in here. */
-        $migration = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Update/Update021.php' );
-
-        $this->assertStringContainsString(
-            "'" . \OWA\Module\Base\Classes\SiteManager::DEFAULT_ORGANIZATION_KEY . "'", $migration,
-            'The migration and the installer derive the default Organization id from '
-            . 'different keys, so a migrated install and a fresh one disagree.' );
     }
 }

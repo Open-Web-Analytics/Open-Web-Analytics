@@ -50,6 +50,40 @@ class Module extends \OWA\Core\Module {
         return parent::__construct();
     }
 
+    /**
+     * The schema 1.14.0 left behind, and the oldest this release upgrades.
+     *
+     * v2's updates start at 34. The ones before are gone with the v1 code they
+     * migrated, so an older installation upgrades to 1.14 first (PLAN.html
+     * 2.21).
+     */
+    const OLDEST_UPGRADABLE_SCHEMA = 33;
+
+    /**
+     * Refuse an installation older than 1.14.0 before applying anything.
+     *
+     * No recorded version is refused too. Module::install() records one when it
+     * creates every table, so its absence means tables made by something older,
+     * which the chain used to handle by replaying from Update001.
+     */
+    function update() {
+
+        $recorded = (int) \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' );
+
+        if ( $recorded < self::OLDEST_UPGRADABLE_SCHEMA ) {
+
+            \OWA\Core\CoreAPI::notice( $recorded
+                ? sprintf( 'This installation is at schema %d. Upgrade to OWA 1.14.0 (schema %d) first,'
+                    . ' then to this release.', $recorded, self::OLDEST_UPGRADABLE_SCHEMA )
+                : sprintf( 'This installation has no recorded schema version. Upgrade to OWA 1.14.0'
+                    . ' (schema %d) first, then to this release.', self::OLDEST_UPGRADABLE_SCHEMA ) );
+
+            return false;
+        }
+
+        return parent::update();
+    }
+
     function init() {
 
 	    // create event queues

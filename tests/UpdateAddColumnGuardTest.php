@@ -100,13 +100,14 @@ final class UpdateAddColumnGuardTest extends TestCase
     /**
      * And the migrations that add columns actually use it.
      *
-     * Named rather than discovered: these are the four that were adding columns
-     * when the trap was found, and a fifth appearing without the guard is
-     * exactly what the scan above is for.
+     * Named rather than discovered: the updates v2's chain carries that add a
+     * column, and one appearing without the guard is exactly what the scan
+     * above is for.
      */
     public function testTheColumnAddingUpdatesUseTheHelper(): void
     {
-        foreach ( array( 'Update023', 'Update024', 'Update026', 'Update027' ) as $name ) {
+        foreach ( array( 'Update036', 'Update037', 'Update040', 'Update043', 'Update046', 'Update052',
+                'Update053', 'Update056', 'Update061' ) as $name ) {
 
             $source = (string) file_get_contents(
                 self::root() . 'modules/Base/Update/' . $name . '.php' );
@@ -242,15 +243,14 @@ final class UpdateAddColumnGuardTest extends TestCase
      * The scans above prove the SHAPE of the code. This proves the behaviour:
      * running an update whose column is already present must SUCCEED.
      *
-     * That is exactly what killed the live upgrade -- Update023 asked for a
+     * That is exactly what killed a live 1.x upgrade -- Update023 asked for a
      * column Update021 had already created, got false, and reported failure on
      * a correct database. The source scan alone would pass against a helper
      * that was subtly wrong; this runs the real thing against a real table.
      *
-     * Update023's own targets are used because that is the update that failed.
-     * The column is already there on any install at schema 23 or above, which
-     * is every install this suite runs against -- so the test needs no fixture,
-     * only a database.
+     * Update040 is used because it does nothing but add one column, which is
+     * already there on any install at schema 40 or above -- every install this
+     * suite runs against -- so the test needs no fixture, only a database.
      */
     public function testAnUpdateSucceedsWhenItsColumnIsAlreadyThere(): void
     {
@@ -261,21 +261,21 @@ final class UpdateAddColumnGuardTest extends TestCase
             $this->markTestSkipped( 'the behaviour needs a database to be idempotent against' );
         }
 
-        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $acquisition = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $present = (array) $db->get_results(
-            "SHOW COLUMNS FROM " . $property->getTableName() . " LIKE 'archived_date'" );
+            "SHOW COLUMNS FROM " . $acquisition->getTableName() . " LIKE 'properties'" );
 
         $this->assertNotEmpty( $present,
-            'this install is below schema 23, so the already-present case cannot be exercised' );
+            'this install is below schema 40, so the already-present case cannot be exercised' );
 
-        $update = new \OWA\Module\Base\Update\Update023;
+        $update = new \OWA\Module\Base\Update\Update040;
 
         $this->assertTrue( $update->up(),
-            'Update023 reported failure for a column that is already there. That is what '
-            . 'stopped a live upgrade at schema 22: addColumn() answers false for "already '
+            'Update040 reported failure for a column that is already there. That is what '
+            . 'stopped a live 1.x upgrade at schema 22: addColumn() answers false for "already '
             . 'exists", and reading that as a failure halts an install whose database is '
             . 'already correct.' );
 
@@ -322,7 +322,7 @@ final class UpdateAddColumnGuardTest extends TestCase
                 }
             };
 
-            $update = new \OWA\Module\Base\Update\Update023;
+            $update = new \OWA\Module\Base\Update\Update040;
 
             $drop = new ReflectionMethod( '\OWA\Core\Update', 'dropColumnIfPresent' );
             $drop->setAccessible( true );
