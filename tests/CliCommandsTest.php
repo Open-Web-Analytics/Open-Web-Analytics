@@ -62,6 +62,7 @@ final class CliCommandsTest extends CliControllerTestCase
             'prune-event-queue-archives' => ['prune-event-queue-archives', 'base.pruneEventQueueArchivesCli'],
             'change-password'            => ['change-password',            'base.changeUserPasswordCli'],
             'reset-secrets'              => ['reset-secrets',              'base.resetSecretsCli'],
+            'v1-drop'                    => ['v1-drop',                    'base.v1DropCli'],
         ];
     }
 
