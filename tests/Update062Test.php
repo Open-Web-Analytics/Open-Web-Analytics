@@ -245,6 +245,14 @@ final class Update062Test extends TestCase
         }
     }
 
+    /** Empty v1 tables have no history to choose a cutoff for. */
+    public function testEmptyV1TablesNeedNoChoiceOfHistory(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_v1fx_request');
+
+        $this->assertTrue($this->update->up(), 'no since= or --all was given, and none is needed');
+    }
+
     public function testWithoutV1TablesThereIsNothingToDo(): void
     {
         $this->update->prefix = 'owa_nov1_';

@@ -51,6 +51,16 @@ class Update062 extends \OWA\Core\Update {
             return true;
         }
 
+        // Tables with no rows -- an installation that never tracked anything,
+        // or a fresh one whose install created them -- have no history to
+        // choose a cutoff for.
+        if ( ! $this->hasV1Rows() ) {
+
+            $this->e->notice( 'The v1 tables are empty: nothing to migrate.' );
+
+            return true;
+        }
+
         foreach ( $this->preflight( $this->migrator( 'RequestMigrator' ) ) as $line ) {
 
             $this->e->notice( $line );
@@ -290,6 +300,25 @@ class Update062 extends \OWA\Core\Update {
         }
 
         return true;
+    }
+
+    /** Whether any table a pass reads holds a row. */
+    private function hasV1Rows() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( array_keys( self::PASSES ) as $class ) {
+
+            $class = '\\OWA\\Module\\Base\\Classes\\Migration\\' . $class;
+            $table = \OWA\Module\Base\Classes\Migration\V1Tables::name( $class::SOURCE, $this->prefix );
+
+            if ( $db->tableExists( $table ) && $db->get_row( sprintf( 'SELECT 1 AS x FROM %s LIMIT 1', $table ) ) ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function hasV1() {
