@@ -672,7 +672,16 @@ final class CubeBuildTest extends TestCase
         $missing = array_diff($columns($this->table('base.event_raw')),
                               $columns($this->cube()));
 
-        $this->assertSame([], array_values($missing), sprintf(
+        // Except what the cube entity deliberately leaves out: created_at, when
+        // a row reached raw, which is ingest provenance and no report reads.
+        // Anything else missing is an update that forgot the cubes.
+        $dropped = array_diff(owa_coreAPI::entityFactory('base.event_raw')->getColumns(),
+                              \OWA\Module\Base\Classes\Cube\Cubes::entityFor(self::PROPERTY)->getColumns());
+
+        $this->assertSame(['created_at'], array_values($dropped),
+            'the cube leaves out exactly the columns it means to');
+
+        $this->assertSame(array_values($dropped), array_values($missing), sprintf(
             '%s is missing columns %s has. An update added them to raw only.',
             $this->cube(), $this->table('base.event_raw')));
     }

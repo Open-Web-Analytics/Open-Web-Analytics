@@ -884,7 +884,21 @@ abstract class FactMigrator {
             return 0;
         }
 
-        $table   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+
+        /*
+         * When these rows reached raw -- now, for the whole batch -- so a
+         * routine build sees that something arrived and rebuilds (created_at,
+         * EventRaw). Without it a migration into days a cube has already
+         * built would be skipped.
+         */
+        $now = (int) round( microtime( true ) * 1000000 );
+
+        foreach ( $rows as $i => $row ) {
+
+            $rows[ $i ]['created_at'] = $now;
+        }
+
         $columns = array_keys( $rows[0] );
 
         $placeholders = '(' . implode( ',', array_fill( 0, count( $columns ), '?' ) ) . ')';

@@ -39,7 +39,9 @@ final class EventRawEntityTest extends TestCase
          * (Update054) and search_term after them, which needed no migration at all --
          * Update034 builds this table from the entity and v2 has never shipped.
          * screen_resolution (Update058) is a VARCHAR(16) the tracker sends on
-         * every event.
+         * every event. 67 with created_at (Update063), when a row reached raw --
+         * raw only: the cube entity drops it, so it costs the custom-dimension
+         * ceiling nothing.
          *
          * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
          * param-bound first-class properties were deliberately left in the bag --
@@ -49,7 +51,7 @@ final class EventRawEntityTest extends TestCase
          * MySQL 8.4. This number moving is how that decision gets noticed being
          * reversed one column at a time.
          */
-        $this->assertCount(66, $columns);
+        $this->assertCount(67, $columns);
 
         // browser_type, and NOT `browser`. Both columns existed and both were
         // written from the one property -- config/dimensions.php declares
