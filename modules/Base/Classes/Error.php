@@ -61,6 +61,9 @@ class Error {
      * @var bool
      */
     private $handlers_attached = false;
+
+    /** The priorities logMsg() writes; each is the Monolog method of the same name. */
+    const PRIORITIES = array( 'debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency' );
     
     /**
      * Buffered Msgs
@@ -310,48 +313,24 @@ class Error {
             return;
         }
         
-        switch ( $priority ) {
-	        
-	        case 'debug':
-	        	
-	        	$logger->debug( $msg );
-	        	
-	        	break;
-	        	
-	        case 'info':
-	        	
-	        	$logger->info( $msg );
-	        	break;
-	        	
-	        case 'notice':
-	        
-	        	$logger->notice( $msg );
-	        	break;
-	        	
-	        case 'warning':
-	        	
-	        	$logger->warning( $msg );
-	        	break;
-	        	
-	        case 'error':
-	        	
-	        	$logger->error( $msg );
-	        	break;
-	        	
-	        case 'critical':
-	        
-	        	$logger->critical( $msg );
-	        	break;
-	        	
-	        case 'alert':
-	        	
-	        	$logger->alert( $msg );
-	        	break;
-	        	
-	        case 'emergency':
-	        	
-	        	$logger->emergency( $msg );
-	        	break;
+        /*
+         * A write that fails is dropped, never thrown. Monolog throws from a
+         * handler whose stream is closed -- the console handler writes to STDOUT,
+         * and at shutdown it can be destroyed before an object whose destructor
+         * still logs (the cache persisting itself), which turned a successful
+         * `cmd=update` into a fatal and exit code 255.
+         */
+        try {
+
+            // Each priority is the name of Monolog's method for it.
+            if ( in_array( $priority, self::PRIORITIES, true ) ) {
+
+                $logger->{$priority}( $msg );
+            }
+
+        } catch ( \Throwable $e ) {
+
+            return;
         }
     }
 
