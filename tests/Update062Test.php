@@ -253,6 +253,82 @@ final class Update062Test extends TestCase
         $this->assertTrue($this->update->up(), 'no since= or --all was given, and none is needed');
     }
 
+    private function reconciled(string $class = 'RequestMigrator'): array
+    {
+        $class = '\\OWA\\Module\\Base\\Classes\\Migration\\' . $class;
+
+        return (new $class(V1Schema::PREFIX))->reconcileSite(self::SITE);
+    }
+
+    /** A clean run reconciles: every v1 row is in v2, per day. */
+    public function testACompleteMigrationReconciles(): void
+    {
+        \OWA\Core\CoreAPI::setRequestParam('all', true);
+        $this->assertTrue($this->update->up());
+
+        $days = $this->reconciled();
+
+        $this->assertSame([20250916, 20260921], array_keys($days));
+        $this->assertSame([], \OWA\Module\Base\Classes\Migration\FactMigrator::discrepancies($days));
+        $this->assertSame(1, $days[20260921]['types']['page_view']['present']);
+        $this->assertSame(1, $days[20260921]['visitors_present']);
+    }
+
+    /** A refused row is accounted for by its reason, not reported as missing. */
+    public function testARefusedRowIsAccountedForNotMissing(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            'INSERT INTO owa_v1fx_request (id, site_id, visitor_id, session_id, timestamp, yyyymmdd) VALUES (?, ?, ?, ?, ?, ?)',
+            ['1790000000000000303', self::SITE, '0', '1790000000000000321', 1790000100, 20260921]);
+
+        \OWA\Core\CoreAPI::setRequestParam('all', true);
+        $this->assertTrue($this->update->up());
+
+        $days = $this->reconciled();
+
+        $this->assertSame(2, $days[20260921]['read']);
+        $this->assertSame(['no_visitor' => 1], $days[20260921]['refused']);
+        $this->assertSame([], \OWA\Module\Base\Classes\Migration\FactMigrator::discrepancies($days));
+        $this->assertStringContainsString('1 refused (no_visitor 1)',
+            \OWA\Module\Base\Classes\Migration\FactMigrator::summary($days));
+    }
+
+    /** A row missing from v2 leaves the update pending, and names the day. */
+    public function testAMissingRowLeavesTheUpdatePending(): void
+    {
+        \OWA\Core\CoreAPI::setRequestParam('all', true);
+        $this->assertTrue($this->update->up());
+
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "DELETE FROM owa_event_raw WHERE site_id = ? AND yyyymmdd = 20250916 AND event_type = 'page_view'",
+            [self::SITE]);
+
+        $wrong = \OWA\Module\Base\Classes\Migration\FactMigrator::discrepancies($this->reconciled());
+
+        $this->assertContains('20250916 page_view: 1 expected, 0 in v2', $wrong);
+        $this->assertFalse($this->update->up(), 'the pass is complete, so only the reconciliation can refuse');
+    }
+
+    /** Revenue is compared in minor units, not only the row count. */
+    public function testADifferentRevenueIsADiscrepancy(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
+            "INSERT INTO owa_v1fx_commerce_transaction_fact (id, site_id, visitor_id, session_id, timestamp, yyyymmdd, order_id, total_revenue)"
+            . " VALUES ('1790000000000000360', '%s', '1790000000000000311', '1790000000000000321', 1790000000, 20260921, 'R-1', 1250)",
+            self::SITE));
+
+        \OWA\Core\CoreAPI::setRequestParam('all', true);
+        $this->assertTrue($this->update->up());
+        $this->assertSame([], \OWA\Module\Base\Classes\Migration\FactMigrator::discrepancies($this->reconciled('PurchaseMigrator')));
+
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_event_raw SET revenue = 1 WHERE site_id = ? AND event_type = 'purchase'", [self::SITE]);
+
+        $wrong = \OWA\Module\Base\Classes\Migration\FactMigrator::discrepancies($this->reconciled('PurchaseMigrator'));
+
+        $this->assertSame(['20260921 purchase revenue: 1250 expected, 1 in v2 (minor units)'], $wrong);
+    }
+
     public function testWithoutV1TablesThereIsNothingToDo(): void
     {
         $this->update->prefix = 'owa_nov1_';

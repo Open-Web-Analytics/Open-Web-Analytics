@@ -336,6 +336,198 @@ abstract class FactMigrator {
         return $deleted;
     }
 
+    /**
+     * What v1 holds for one site against what reached owa_event_raw, per day
+     * (PLAN.html 2.22).
+     *
+     * v1 is read again with the cutoff the site was migrated with and every
+     * row rebuilt, exactly as revertSite() does, so the ids are the ones the
+     * migration wrote. Per day and event type: rows v1 holds, rows refused,
+     * rows the migration should have written, and how many of those are in
+     * raw -- with their revenue and distinct visitors on both sides. Nothing
+     * is written.
+     *
+     * A site reconciles when every expected row is present with the same
+     * revenue and visitors. Refused rows are the accounted-for difference.
+     *
+     * @return array|null yyyymmdd => day; null where the pass writes no raw rows
+     */
+    public function reconcileSite( $site_id ) {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
+        $entity->load( \OWA\Module\Base\Entity\MigrationProgress::idFor( static::progressKey(), $site_id ) );
+
+        if ( $entity->wasPersisted() ) {
+
+            $since = (int) $entity->get( 'since' );
+            $this->since = $since > 0 ? $since : null;
+        }
+
+        $table   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $days    = array();
+        $after   = null;
+        $scratch = array( 'rows_read' => 0, 'rows_refused' => 0, 'refusals' => array() );
+
+        $day = function ( $d ) use ( &$days ) {
+
+            if ( ! isset( $days[ $d ] ) ) {
+
+                $days[ $d ] = array( 'read' => 0, 'refused' => array(), 'types' => array(),
+                    'visitors_expected' => array(), 'visitors_present' => array() );
+            }
+        };
+
+        while ( $rows = $this->read( $site_id, $after ) ) {
+
+            foreach ( $rows as $r ) {
+
+                $d = (int) $r['yyyymmdd'];
+                $day( $d );
+                $days[ $d ]['read']++;
+
+                $reason = $this->refusal( $r );
+
+                if ( $reason ) {
+
+                    $days[ $d ]['refused'][ $reason ] = ( $days[ $d ]['refused'][ $reason ] ?? 0 ) + 1;
+                }
+            }
+
+            $built = $this->build( $rows, $scratch );
+            $ids   = array();
+
+            foreach ( $built as $row ) {
+
+                $d    = (int) $row['yyyymmdd'];
+                $type = (string) $row['event_type'];
+                $day( $d );
+
+                $days[ $d ]['types'][ $type ]['expected']         = ( $days[ $d ]['types'][ $type ]['expected'] ?? 0 ) + 1;
+                $days[ $d ]['types'][ $type ]['revenue_expected'] = ( $days[ $d ]['types'][ $type ]['revenue_expected'] ?? 0 )
+                    + (int) ( $row['revenue'] ?? 0 );
+                $days[ $d ]['visitors_expected'][ (string) $row['visitor_id'] ] = true;
+
+                $ids[] = (int) $row['id'];
+            }
+
+            if ( $ids ) {
+
+                $span = array_map( 'intval', array_column( $built, 'yyyymmdd' ) );
+
+                // The day range prunes partitions: a lookup by id alone reads every one.
+                $present = (array) $this->db()->get_results( sprintf(
+                    'SELECT id, yyyymmdd, event_type, visitor_id, revenue FROM %s'
+                    . ' WHERE yyyymmdd BETWEEN %d AND %d AND id IN (%s)',
+                    $table, min( $span ), max( $span ), implode( ',', $ids ) ) );
+
+                foreach ( $present as $p ) {
+
+                    $p    = (array) $p;
+                    $d    = (int) $p['yyyymmdd'];
+                    $type = (string) $p['event_type'];
+                    $day( $d );
+
+                    $days[ $d ]['types'][ $type ]['present']         = ( $days[ $d ]['types'][ $type ]['present'] ?? 0 ) + 1;
+                    $days[ $d ]['types'][ $type ]['revenue_present'] = ( $days[ $d ]['types'][ $type ]['revenue_present'] ?? 0 )
+                        + (int) ( $p['revenue'] ?? 0 );
+                    $days[ $d ]['visitors_present'][ (string) $p['visitor_id'] ] = true;
+                }
+            }
+
+            $last  = end( $rows );
+            $after = (string) $last['id'];
+        }
+
+        foreach ( $days as $d => $values ) {
+
+            $days[ $d ]['visitors_expected'] = count( $values['visitors_expected'] );
+            $days[ $d ]['visitors_present']  = count( $values['visitors_present'] );
+        }
+
+        ksort( $days );
+
+        return $days;
+    }
+
+    /**
+     * The days that do not reconcile, as lines to print.
+     *
+     * @param  array $days from reconcileSite()
+     * @return string[]
+     */
+    public static function discrepancies( array $days ) {
+
+        $lines = array();
+
+        foreach ( $days as $d => $day ) {
+
+            foreach ( $day['types'] as $type => $t ) {
+
+                $expected = (int) ( $t['expected'] ?? 0 );
+                $present  = (int) ( $t['present'] ?? 0 );
+
+                if ( $expected !== $present ) {
+
+                    $lines[] = sprintf( '%d %s: %d expected, %d in v2', $d, $type, $expected, $present );
+                }
+
+                if ( (int) ( $t['revenue_expected'] ?? 0 ) !== (int) ( $t['revenue_present'] ?? 0 ) ) {
+
+                    $lines[] = sprintf( '%d %s revenue: %d expected, %d in v2 (minor units)', $d, $type,
+                        (int) ( $t['revenue_expected'] ?? 0 ), (int) ( $t['revenue_present'] ?? 0 ) );
+                }
+            }
+
+            if ( $day['visitors_expected'] !== $day['visitors_present'] ) {
+
+                $lines[] = sprintf( '%d visitors: %d expected, %d in v2', $d,
+                    $day['visitors_expected'], $day['visitors_present'] );
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * One line for a site that reconciles: days, rows read, refused, written.
+     *
+     * @param  array $days from reconcileSite()
+     * @return string
+     */
+    public static function summary( array $days ) {
+
+        $read = $present = 0;
+        $refused = array();
+
+        foreach ( $days as $day ) {
+
+            $read += $day['read'];
+
+            foreach ( $day['refused'] as $reason => $n ) {
+
+                $refused[ $reason ] = ( $refused[ $reason ] ?? 0 ) + $n;
+            }
+
+            foreach ( $day['types'] as $t ) {
+
+                $present += (int) ( $t['present'] ?? 0 );
+            }
+        }
+
+        $reasons = array();
+
+        foreach ( $refused as $reason => $n ) {
+
+            $reasons[] = $reason . ' ' . $n;
+        }
+
+        // More rows in v2 than v1 is expected: a session's first page view also
+        // writes its session_start and first_visit markers.
+        return sprintf( '%d day(s), %d v1 row(s), %d refused%s, %d row(s) in v2 with their markers',
+            count( $days ), $read, array_sum( $refused ), $reasons ? ' (' . implode( ', ', $reasons ) . ')' : '',
+            $present );
+    }
+
     /** Drop a site's progress row, so the pass starts over. */
     protected function forget( $site_id ) {
 

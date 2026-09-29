@@ -27,6 +27,12 @@ namespace OWA\Module\Base\Update;
  * completions onto the migrated rows (GoalMigrator). Line items are not
  * migrated: v2 has no item-level shape.
  *
+ * THEN A RECONCILIATION (PLAN.html 2.22), per site and day, of each pass that
+ * writes raw rows: every row v1 holds is either refused, with its reason, or
+ * present in owa_event_raw with the revenue and visitors it should carry.
+ * Until that holds the update is not recorded, and the next run writes what
+ * is missing.
+ *
  * On an installation with no v1 tables -- one that was never 1.x -- there is
  * nothing to do.
  */
@@ -133,7 +139,68 @@ class Update062 extends \OWA\Core\Update {
             }
         }
 
-        return true;
+        return $this->reconcile( $since );
+    }
+
+    /** Days shown per site that does not reconcile, before the rest are counted. */
+    const DISCREPANCIES_SHOWN = 10;
+
+    /**
+     * Every raw-writing pass, per site: what v1 holds against what reached
+     * v2 (FactMigrator::reconcileSite()). The update is not complete until
+     * every expected row is present with its revenue and visitors; a site that
+     * differs is named, with its first days, and the update stays pending.
+     *
+     * @return bool
+     */
+    private function reconcile( $since ) {
+
+        $ok = true;
+
+        foreach ( self::PASSES as $class => $label ) {
+
+            $migrator = $this->migrator( $class, $class === 'VisitorMigrator' ? null : $since );
+
+            if ( ! $migrator ) {
+
+                continue;
+            }
+
+            foreach ( $migrator->sites() as $site_id ) {
+
+                $days = $migrator->reconcileSite( $site_id );
+
+                if ( $days === null ) {
+
+                    continue;
+                }
+
+                $wrong = \OWA\Module\Base\Classes\Migration\FactMigrator::discrepancies( $days );
+
+                if ( ! $wrong ) {
+
+                    $this->e->notice( sprintf( 'v1 migration reconciled, %s, site %s: %s.', $label, $site_id,
+                        \OWA\Module\Base\Classes\Migration\FactMigrator::summary( $days ) ) );
+
+                    continue;
+                }
+
+                $ok = false;
+
+                $this->e->notice( sprintf( 'v1 migration does NOT reconcile, %s, site %s: %s', $label, $site_id,
+                    implode( '; ', array_slice( $wrong, 0, self::DISCREPANCIES_SHOWN ) ) )
+                    . ( count( $wrong ) > self::DISCREPANCIES_SHOWN
+                        ? sprintf( '; and %d more', count( $wrong ) - self::DISCREPANCIES_SHOWN ) : '' ) );
+            }
+        }
+
+        if ( ! $ok ) {
+
+            $this->e->notice( 'The migration is left pending. Run cmd=update again with the same cutoff to'
+                . ' write what is missing; a difference that remains after that is a fault to report.' );
+        }
+
+        return $ok;
     }
 
     /** Each pass, in the order it runs. */
