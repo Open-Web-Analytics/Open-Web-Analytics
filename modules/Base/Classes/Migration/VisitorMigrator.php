@@ -43,6 +43,12 @@ class VisitorMigrator extends FactMigrator {
         return array();
     }
 
+    /** This pass writes no raw rows of its own, so there is nothing to count. */
+    public function reconcileSite( $site_id ) {
+
+        return null;
+    }
+
     protected function apply( array $rows, array &$progress ) {
 
         $out = $this->acquisitions( $rows, $progress );

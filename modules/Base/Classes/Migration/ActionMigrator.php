@@ -12,7 +12,8 @@ namespace OWA\Module\Base\Classes\Migration;
  *
  * v1 had one event type for every action and told them apart by action_name;
  * v2 names the event. The name is put in the tracker's shape -- a letter, then
- * letters, digits and underscores, at most 40 -- and the original kept as the
+ * letters, digits and underscores, at most 40 -- prefixed with action_ where it
+ * would otherwise be a built-in event's name, and the original kept as the
  * action_name parameter where that changed it. Group, label and value are
  * parameters, as a site sets them now.
  */
@@ -61,12 +62,30 @@ class ActionMigrator extends FactMigrator {
             return '';
         }
 
-        if ( ! preg_match( '/^[a-z]/', $name ) ) {
+        if ( ! preg_match( '/^[a-z]/', $name ) || self::isTaken( $name ) ) {
 
             $name = 'action_' . $name;
         }
 
         return substr( $name, 0, 40 );
+    }
+
+    /**
+     * Whether an event name already means something other than a site's own
+     * action: a first-class event, or one a module routes to its own
+     * processor. A v1 action called "Purchase" became a purchase row, with
+     * none of a purchase's columns, and one sharing a module's event name was
+     * handed to that module's store; both are prefixed with action_ instead.
+     */
+    public static function isTaken( $name ) {
+
+        if ( in_array( $name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+
+            return true;
+        }
+
+        return (bool) \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'event_processors',
+            \OWA\Core\CoreAPI::trackingDispatchName( $name ) );
     }
 }
 
