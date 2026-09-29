@@ -830,7 +830,6 @@ class Db extends \OWA\Core\Base {
             $constraint = $type.' ';
 
             foreach ($params as $k => $v) {
-                \OWA\Core\CoreAPI::debug($v);
 
                 $op = strtolower( $v['operator'] );
 

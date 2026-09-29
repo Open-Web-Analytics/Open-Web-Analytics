@@ -248,7 +248,7 @@ class InstallManager extends \OWA\Core\Base {
     
         if ( $tables_missing ) {
            
-            \OWA\Core\CoreAPI::debug(sprintf("Base Schema is missing tables: %s", print_r($tables_missing, true)));
+            \OWA\Core\CoreAPI::debug( 'Base Schema is missing tables:', $tables_missing );
     
             return false;
             

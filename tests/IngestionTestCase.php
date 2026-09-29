@@ -165,20 +165,18 @@ abstract class IngestionTestCase extends TestCase
     /**
      * A per-run unique GUID in the SAME format the tracker emits.
      *
-     * This must be numeric: the tracker's Util.generateRandomGuid() builds
-     * "<unix time><6-digit rand><3-digit rand>" (a ~19-digit number) and the
-     * entity id / session_id columns are BIGINT. A non-numeric GUID is silently
-     * cast to 0 by MySQL — every row lands at id=0, PKs collide, and load/delete
-     * match the wrong row. Mirroring the real format keeps the test honest and
-     * gives each row a distinct PK. Uniqueness (time + 9 random digits) makes the
-     * handler idempotency guard a no-op and lets cleanup target exactly this row.
+     * This must be numeric: the tracker's Util.generateRandomGuid() gives 62
+     * random bits as a 19-digit number, and the entity id / session_id columns
+     * are BIGINT. A non-numeric GUID is silently cast to 0 by MySQL — every row
+     * lands at id=0, PKs collide, and load/delete match the wrong row.
+     * Mirroring the real format keeps the test honest and gives each row a
+     * distinct PK, so the handler idempotency guard is a no-op and cleanup
+     * targets exactly this row.
      */
     protected function uniqueGuid(): string
     {
-        $time   = (string) time();
-        $rand   = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $client = str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
-        return $time . $rand . $client;
+        // [2^62, 2^63): bit 62 set, as the tracker's.
+        return (string) random_int(4611686018427387904, PHP_INT_MAX);
     }
 
     /**

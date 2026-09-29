@@ -558,7 +558,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $metric_imps = array_merge($this->getMetricEntities($metric_name), $metric_imps);
         }
 
-        \OWA\Core\CoreAPI::debug('pre-reduce set of entities to choose from: '.print_r($metric_imps, true));
+        \OWA\Core\CoreAPI::debug( 'pre-reduce set of entities to choose from:', $metric_imps );
 
         $entities = array();
 
@@ -598,7 +598,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $reconciled[] = $metric_name;
         }
 
-        \OWA\Core\CoreAPI::debug('post-reduce set of entities to choose from: '.print_r($entities, true));
+        \OWA\Core\CoreAPI::debug( 'post-reduce set of entities to choose from:', $entities );
 
         // check summary level of entities
         $niceness = array();
@@ -611,7 +611,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         // sort the fact table list by summary level
         arsort($niceness);
 
-        \OWA\Core\CoreAPI::debug('Entities summary levels: '.print_r($niceness, true));
+        \OWA\Core\CoreAPI::debug( 'Entities summary levels:', $niceness );
 
         $entity_count = count($niceness);
         $i = 1;
@@ -645,9 +645,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             //cycle through each dimension from dim list and those found in constraints.
             $dims = array_unique( array_merge( $this->dimensions, $this->getDimensionsFromConstraints() ) );
 
-            \OWA\Core\CoreAPI::debug(sprintf('Dimensions: %s',print_r($this->dimensions, true)));
+            \OWA\Core\CoreAPI::debug( 'Dimensions:', $this->dimensions );
 
-            \OWA\Core\CoreAPI::debug(sprintf('Checking the following dimensions for relation to %s: %s',$entity_name, print_r($dims, true)));
+            \OWA\Core\CoreAPI::debug( sprintf( 'Checking the following dimensions for relation to %s:', $entity_name ), $dims );
 
             foreach ($dims as $dimension) {
 

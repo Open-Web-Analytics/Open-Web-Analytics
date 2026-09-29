@@ -100,8 +100,6 @@ class Cache {
     function set( $collection, $key, $value, $expires = '' ) {
     
         $hkey = $this->hash($key);
-        \OWA\Core\CoreAPI::debug('set key: '.$key);
-        \OWA\Core\CoreAPI::debug('set hkey: '.$hkey);
         //$this->cache[$collection][$hkey] = $value;
         $this->warm->set( $collection, $hkey, $value );
         
@@ -109,7 +107,6 @@ class Cache {
         $this->statistics['added']++;
         $this->dirty_objs[$collection][$hkey] = $hkey;
         $this->dirty_collections[$collection] = true;
-        $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
         $this->statistics['dirty']++;
             
     }
@@ -127,14 +124,12 @@ class Cache {
             if(!in_array($hkey, $this->dirty_objs[$collection])) {
                 $this->dirty_objs[$collection][] = $hkey;
                 $this->dirty_collections[$collection] = true;
-                $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
-                $this->statistics['dirty']++;
+                        $this->statistics['dirty']++;
             }
         } else {
             $this->dirty_objs[$collection][] = $hkey;
             $this->dirty_collections[$collection] = true;
-            $this->debug(sprintf('Added Object to Dirty List - Collection: %s, id: %s', $collection, $hkey));
-            $this->statistics['dirty']++;
+                $this->statistics['dirty']++;
         }
             
         
@@ -203,7 +198,7 @@ class Cache {
 	        // check for dirty objects
 	        if (!empty($this->dirty_objs)) {
 	            
-	            $this->debug('Dirty Objects: '.print_r($this->dirty_objs, true));
+	            \OWA\Core\CoreAPI::debug( 'Dirty objects per collection:', array_map( 'count', (array) $this->dirty_objs ) );
 	            
 	            // persist dirty objects
 	            foreach ($this->dirty_objs as $collection => $ids) {

@@ -1372,8 +1372,10 @@ class Controller extends \OWA\Core\Base {
 
             foreach ($relations as $siteRow) {
 
+                // From the row getSitesList() already read: loading each site
+                // again by id was one query per site on every admin page.
                 $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-                $site->load($siteRow['id']);
+                $site->hydrate( (array) $siteRow );
 
                 // Archived Profiles are removed Profiles. getSitesList() is the
                 // raw table -- migrations need that -- so the filtering happens

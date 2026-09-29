@@ -225,10 +225,8 @@ class Site extends \OWA\Core\Entity {
     }
 
     function settingsSetFilter($value) {
-        \OWA\Core\CoreAPI::debug('hello rom setFilter');
-        $value = serialize($value);
-        \OWA\Core\CoreAPI::debug($value);
-        return $value;
+
+        return serialize($value);
     }
 
     /**

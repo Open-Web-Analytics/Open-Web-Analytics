@@ -46,7 +46,7 @@ final class GoalEventPredicateTest extends TestCase
      * asks a condition for three values. That is the whole surface, and these
      * are exactly it.
      */
-    private function goalEvent( array $conditions, $match = GoalEvent::MATCH_ALL )
+    private function goalEvent( array $conditions, $match = GoalEvent::MATCH_ALL, $trigger = 'page_view' )
     {
         $rows = array();
 
@@ -72,26 +72,31 @@ final class GoalEventPredicateTest extends TestCase
             };
         }
 
-        return new class( $rows, $match ) {
+        return new class( $rows, $match, $trigger ) {
 
             private $rows;
             private $match;
+            private $trigger;
 
-            public function __construct( $rows, $match )
+            public function __construct( $rows, $match, $trigger )
             {
-                $this->rows  = $rows;
-                $this->match = $match;
+                $this->rows    = $rows;
+                $this->match   = $match;
+                $this->trigger = $trigger;
             }
 
             public function loadConditions() { return $this->rows; }
 
             public function conditionMatch() { return $this->match; }
 
-            public function get( $name, $filter = true ) { return 'Test Goal'; }
+            public function get( $name, $filter = true )
+            {
+                return $name === 'trigger_event_type' ? $this->trigger : 'Test Goal';
+            }
         };
     }
 
-    private function compile( array $conditions, $match = GoalEvent::MATCH_ALL )
+    private function compile( array $conditions, $match = GoalEvent::MATCH_ALL, $trigger = 'page_view' )
     {
         $p = new GoalEventPredicate;
 
@@ -100,7 +105,7 @@ final class GoalEventPredicateTest extends TestCase
          * is compiled into someone else's query and the two agreeing about what
          * the alias means is the contract.
          */
-        return array( $p->compile( $this->goalEvent( $conditions, $match ),
+        return array( $p->compile( $this->goalEvent( $conditions, $match, $trigger ),
             \OWA\Module\Base\Controller\VisualizationFunnel::ALIAS ), $p );
     }
 
@@ -120,7 +125,7 @@ final class GoalEventPredicateTest extends TestCase
         $this->assertNotNull( $out );
         $this->assertStringContainsString( 'e.page_path', $out['sql'] );
         $this->assertStringContainsString( '?', $out['sql'] );
-        $this->assertSame( array( '/thanks' ), $out['params'] );
+        $this->assertSame( array( 'page_view', '/thanks' ), $out['params'] );
 
         // The value never appears in the SQL text. A funnel step is author
         // input reaching a query, which is the seam this codebase keeps.
@@ -186,15 +191,17 @@ final class GoalEventPredicateTest extends TestCase
             array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
             array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ALL );
 
-        $this->assertStringContainsString( ' AND ', $all['sql'] );
+        // Joined by the conditions' own combinator; the trigger and the
+        // not-NULL guards add ANDs of their own around them.
+        $this->assertStringContainsString( ') AND ( e.page_title', $all['sql'] );
         $this->assertStringNotContainsString( ' OR ', $all['sql'] );
 
         list( $any ) = $this->compile( array(
             array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
             array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ANY );
 
-        $this->assertStringContainsString( ' OR ', $any['sql'] );
-        $this->assertStringNotContainsString( ' AND ', $any['sql'] );
+        $this->assertStringContainsString( ') OR ( e.page_title', $any['sql'] );
+        $this->assertStringNotContainsString( ') AND ( e.page_title', $any['sql'] );
     }
 
     /**
@@ -266,23 +273,57 @@ final class GoalEventPredicateTest extends TestCase
 
         $this->assertStringContainsString( 'LOCATE', $out['sql'] );
         $this->assertStringNotContainsString( 'LIKE', $out['sql'] );
-        $this->assertSame( array( '50%_off' ), $out['params'] );
+        $this->assertSame( array( 'page_view', '50%_off' ), $out['params'] );
     }
 
     /**
-     * A NULL column reads as the empty string, because compare() casts to
-     * string before comparing. Without COALESCE, `NOT` on a NULL column answers
-     * NULL -- which is not a match -- while compare() answers true.
+     * An absent value matches no condition, whatever the operator.
+     *
+     * matchesRow() asks isset() before it compares, so at ingest a `not`
+     * condition is not met by a row that has no such value at all. This used
+     * to COALESCE the column to '' and match it, which counted a funnel step
+     * the conversion beside it did not.
      */
-    public function testANullColumnIsComparedAsTheEmptyStringLikeCompareDoes(): void
+    public function testAnAbsentValueMatchesNoConditionLikeIngest(): void
     {
         list( $out ) = $this->compile( array(
             array( 'page_title', GoalEvent::MATCH_NOT, 'Checkout' ) ) );
 
-        $this->assertStringContainsString( 'COALESCE', $out['sql'] );
+        $this->assertStringContainsString( 'e.page_title IS NOT NULL AND', $out['sql'] );
+        $this->assertStringNotContainsString( 'COALESCE', $out['sql'] );
 
-        // The behaviour COALESCE is there to mirror.
-        $this->assertTrue( GoalEvent::compare( null, GoalEvent::MATCH_NOT, 'Checkout' ) );
+        $goal = new GoalEvent();
+        $goal->set( 'trigger_event_type', 'page_view' );
+        $goal->set( 'condition_match', GoalEvent::MATCH_ALL );
+
+        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $condition->set( 'condition_property', 'page_title' );
+        $condition->set( 'condition_operator', GoalEvent::MATCH_NOT );
+        $condition->set( 'condition_value', 'Checkout' );
+
+        $this->assertFalse( $goal->matchesRow( array( 'event_type' => 'page_view', 'page_title' => null ),
+            array( $condition ) ), 'the ingest behaviour this mirrors' );
+        $this->assertTrue( $goal->matchesRow( array( 'event_type' => 'page_view', 'page_title' => 'Home' ),
+            array( $condition ) ) );
+    }
+
+    /**
+     * The goal event's trigger gates, as it does at ingest: a goal event on
+     * page_view is not met by a click on the same page. No trigger matches
+     * nothing.
+     */
+    public function testTheTriggerEventTypeGates(): void
+    {
+        list( $out ) = $this->compile( array(
+            array( 'page_path', GoalEvent::MATCH_EXACT, '/thanks' ) ), GoalEvent::MATCH_ALL, 'click' );
+
+        $this->assertStringStartsWith( '( e.event_type = ? AND', $out['sql'] );
+        $this->assertSame( 'click', $out['params'][0] );
+
+        list( $none ) = $this->compile( array(
+            array( 'page_path', GoalEvent::MATCH_EXACT, '/thanks' ) ), GoalEvent::MATCH_ALL, '' );
+
+        $this->assertSame( '( 0 = 1 )', $none['sql'] );
     }
 
     /**
@@ -330,6 +371,6 @@ final class GoalEventPredicateTest extends TestCase
 
         $this->assertNotNull( $out );
         $this->assertNotSame( '', $out['sql'] );
-        $this->assertSame( array( '/checkout' ), $out['params'] );
+        $this->assertSame( array( 'page_view', '/checkout' ), $out['params'] );
     }
 }

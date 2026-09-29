@@ -278,8 +278,6 @@ class Caller extends \OWA\Core\Base {
         
         if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
             $disabled_endpoints = $this->getSetting('base', 'disabledEndpoints');
-            \OWA\Core\CoreAPI::debug('Disabled endpoints:');
-            \OWA\Core\CoreAPI::debug($disabled_endpoints);
             if ( ! in_array( $file_name, $disabled_endpoints ) ) {
                 return true;
             } else {

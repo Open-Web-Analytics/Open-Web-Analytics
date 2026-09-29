@@ -96,6 +96,18 @@ class GoalEventPredicate {
             return array( 'sql' => '( 0 = 1 )', 'params' => array() );
         }
 
+        /*
+         * THE TRIGGER GATES, as it does in matchesRow(): a goal event on
+         * page_view is not met by a click on the same page. No trigger matches
+         * nothing, there as here.
+         */
+        $trigger = (string) $goalEvent->get( 'trigger_event_type' );
+
+        if ( $trigger === '' ) {
+
+            return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+        }
+
         $any = $goalEvent->conditionMatch()
                === \OWA\Module\Base\Entity\GoalEvent::MATCH_ANY;
 
@@ -127,13 +139,19 @@ class GoalEventPredicate {
                 (string) $condition->get( 'condition_operator' ),
                 (string) $condition->get( 'condition_value' ) );
 
-            $parts[]  = $compiled['sql'];
+            /*
+             * An absent value matches no condition, whatever the operator --
+             * matchesRow() asks isset() first -- so a `not` condition is not
+             * met by a row that has no such value at all.
+             */
+            $parts[]  = '( ' . $column . ' IS NOT NULL AND ' . $compiled['sql'] . ' )';
             $params   = array_merge( $params, $compiled['params'] );
         }
 
         return array(
-            'sql'    => '( ' . implode( $any ? ' OR ' : ' AND ', $parts ) . ' )',
-            'params' => $params,
+            'sql'    => '( ' . $alias . '.event_type = ? AND ( '
+                        . implode( $any ? ' OR ' : ' AND ', $parts ) . ' ) )',
+            'params' => array_merge( array( $trigger ), $params ),
         );
     }
 
@@ -200,13 +218,9 @@ class GoalEventPredicate {
 
         $E = \OWA\Module\Base\Entity\GoalEvent::class;
 
-        /*
-         * COALESCE, because compare() casts its input to string first -- so a
-         * NULL column is the empty string there, and every operator below has
-         * to see it the same way. Without it `NOT` on a NULL column answers
-         * NULL, which is not a match, while compare() answers true.
-         */
-        $col = sprintf( OWA_SQL_COALESCE, $column, "''" );
+        // NULL never reaches here: compile() requires the column to be set,
+        // as matchesRow() does before it compares.
+        $col = $column;
 
         switch ( $operator ) {
 

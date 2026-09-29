@@ -82,7 +82,7 @@ class ProcessEventQueue extends \OWA\Core\Controller\Cli {
                         \OWA\Core\CoreAPI::debug( 'calling receive message' );
                         // get an item from the queue
                         $event = $q->receiveMessage();
-                        \OWA\Core\CoreAPI::debug( 'Event returned: '.print_r( $event, true ) );
+                        \OWA\Core\CoreAPI::debug( 'Event returned:', $event );
 
                         if ( $event ) {
 

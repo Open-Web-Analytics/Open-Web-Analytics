@@ -441,16 +441,22 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'profile',
                 $this->getParam( 'siteId' ) ) );
 
+        /*
+         * PAGE VIEWS ONLY, as v1 counted. page_path is on every event -- a
+         * click, a scroll, and the session_start and first_visit markers a
+         * landing page view is saved with, at the same instant -- so without
+         * this one page view and its markers could satisfy two steps.
+         */
         if ( $query === null || $query === '' ) {
 
             return array(
-                'sql'    => $alias . '.page_path = ?',
+                'sql'    => '( ' . $alias . ".event_type = 'page_view' AND " . $alias . '.page_path = ? )',
                 'params' => array( (string) $path ),
             );
         }
 
         return array(
-            'sql'    => '( ' . $alias . '.page_path = ? AND '
+            'sql'    => '( ' . $alias . ".event_type = 'page_view' AND " . $alias . '.page_path = ? AND '
                         . $alias . '.page_query = ? )',
             'params' => array( (string) $path, $query ),
         );
@@ -715,13 +721,46 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * are the tracker's random GUID -- which is what groupsAtSameTime()
          * below exists to handle.
          */
-        $sql = 'SELECT ' . $alias . '.' . $subject . ' AS subj, '
-             . $alias . '.ts AS ts, ' . $alias . '.id AS rid, '
+        $e = $alias;
+
+        /*
+         * A SESSION IS (visitor_id, session_id). session_id alone is not
+         * unique -- it embeds its creation second, so two visitors starting
+         * together can share one (Entity\EventRaw) -- and keyed on it alone
+         * their events merge into one subject.
+         *
+         * DEVICE ORDER FIRST, as the cube build orders a session: event_seq,
+         * then ts, then id (Cube\Builder). ts is stamped on arrival, so a late
+         * beacon would otherwise sort after what happened after it. A
+         * visitor's sessions are taken in the order they began.
+         *
+         * THE TIE KEY handed to walk() as `ts`: events are only simultaneous
+         * when nothing orders them. One with a device position is its own
+         * moment; without one, the second it arrived in is.
+         */
+        if ( $scope === 'session' ) {
+
+            // COALESCE: CONCAT() of a NULL is NULL, and every session without
+            // a visitor id would otherwise be one subject.
+            $subj  = 'CONCAT(COALESCE(' . $e . '.visitor_id, \'\'), \':\', ' . $e . '.session_id)';
+            $order = $e . '.visitor_id, ' . $e . '.session_id';
+
+        } else {
+
+            $subj  = $e . '.visitor_id';
+            $order = $e . '.visitor_id, MIN(' . $e . '.ts) OVER (PARTITION BY ' . $e . '.visitor_id, '
+                   . $e . '.session_id), ' . $e . '.session_id';
+        }
+
+        $tie = 'CASE WHEN ' . $e . '.event_seq IS NULL THEN CAST(' . $e . '.ts AS CHAR)'
+             . ' ELSE CONCAT(' . $e . '.session_id, \':\', ' . $e . '.event_seq) END';
+
+        $sql = 'SELECT ' . $subj . ' AS subj, ' . $tie . ' AS ts, ' . $e . '.id AS rid, '
              . implode( ', ', $select )
-             . ' FROM ' . $table . ' ' . $alias
+             . ' FROM ' . $table . ' ' . $e
              . ' WHERE ' . implode( ' AND ', $where )
-             . ' ORDER BY ' . $alias . '.' . $subject . ', '
-             . $alias . '.ts, ' . $alias . '.id';
+             . ' ORDER BY ' . $order . ', COALESCE(' . $e . '.event_seq, 0), '
+             . $e . '.ts, ' . $e . '.id';
 
         /*
          * get_result_iterator(), NOT get_results().

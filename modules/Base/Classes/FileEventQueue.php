@@ -233,7 +233,7 @@ class FileEventQueue extends \OWA\Core\EventQueue {
             if ( ! feof( $this->currentProcessingFileHandle ) ) {
 
                 // Parse the row
-                \OWA\Core\CoreAPI::debug('returning buffer: '. print_r( $buffer, true));
+                \OWA\Core\CoreAPI::debug( 'returning buffer:', $buffer );
                
                 $event = $this->parse_log_row( $buffer );
                 //owa_coreAPI::debug('returning event: '. print_r( $event, true));

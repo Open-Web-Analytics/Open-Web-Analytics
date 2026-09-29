@@ -330,7 +330,7 @@ class EventDispatch {
             \OWA\Core\CoreAPI::debug("no listeners registered for this event type.");
         }
 
-        \OWA\Core\CoreAPI::debug('EHS: Responses - '.print_r($responses, true));
+        \OWA\Core\CoreAPI::debug( 'EHS: Responses - ' . json_encode( $responses ) );
 
         if ( in_array( OWA_EHS_EVENT_FAILED, $responses, true ) ) {
             \OWA\Core\CoreAPI::debug("EHS: Event was not handled successfully by some handlers.");
@@ -370,7 +370,6 @@ class EventDispatch {
      * @return $new_value    mixed
      */
     function filter($filter_name, $value = '') {
-        \OWA\Core\CoreAPI::debug("Filtering $filter_name");
 
         if (array_key_exists($filter_name, $this->listenersByFilterType)) {
             // sort the filter list by priority
@@ -395,13 +394,16 @@ class EventDispatch {
 
 
 
-                    \OWA\Core\CoreAPI::debug(sprintf("Filter: %s. Value passed: %s", $filter_method, print_r($value, true)));
+                    /*
+                     * One line naming the filter and the callback, and never the
+                     * value. The value is often a whole registry map, and
+                     * print_r() of it ran on every install at every log level:
+                     * the string is built before debug() can discard it.
+                     */
+                    \OWA\Core\CoreAPI::debug(sprintf("Filter %s: %s", $filter_name, $filter_method));
                     $value = call_user_func_array($this->listeners[$observer_id], array_slice($args,1));
-                    \OWA\Core\CoreAPI::debug(sprintf("Filter: %s. Value returned: %s", $filter_method, print_r($value, true)));
                     // set filterred value as value in args for next filter
                     $args[1] = $value;
-                    // debug whats going on
-                    \OWA\Core\CoreAPI::debug(sprintf("%s filtered by %s.", $filter_name, $filter_method));
                 }
             }
         }

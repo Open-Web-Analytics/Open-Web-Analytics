@@ -1757,6 +1757,51 @@ class Lib {
 	    }
     }
     
+    /**
+     * A value as ONE log line: JSON, capped at $max characters.
+     *
+     * print_r() of a registry map was thousands of lines per request. An
+     * object is named by its class; an event also by its type and property
+     * NAMES, never its values, since those are a visitor's data.
+     *
+     * @param  mixed $value
+     * @param  int   $max
+     * @return string
+     */
+    public static function forLog( $value, $max = 1000 ) {
+
+        if ( is_string( $value ) ) {
+
+            $text = $value;
+
+        } elseif ( $value instanceof \OWA\Module\Base\Classes\Event ) {
+
+            $text = sprintf( '%s event, properties: %s', $value->getEventType(),
+                implode( ', ', array_keys( (array) $value->getProperties() ) ) );
+
+        } elseif ( is_object( $value ) && ! $value instanceof \JsonSerializable ) {
+
+            $text = get_class( $value );
+
+        } else {
+
+            $text = json_encode( $value,
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR );
+
+            if ( $text === false ) {
+
+                $text = gettype( $value );
+            }
+        }
+
+        if ( strlen( $text ) > $max ) {
+
+            $text = substr( $text, 0, $max ) . sprintf( '... (%d bytes)', strlen( $text ) );
+        }
+
+        return $text;
+    }
+
     public static function inDebug() {
 	    
 	    if ( ( defined( 'OWA_DEBUG') &&  OWA_DEBUG === true ) ||

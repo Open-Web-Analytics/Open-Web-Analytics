@@ -474,32 +474,93 @@ class Util {
     
     
     /**
-     * A numeric id: 10 digits of unix seconds followed by 9 random digits.
+     * A numeric id: 62 random bits, always 19 digits.
      *
-     * Takes no salt, and cannot. The result must fit a signed BIGINT -- a hard
-     * contract across this codebase -- and this construction already consumes
-     * 60.6 of the 63 available bits, so there is nothing to mix a salt into
-     * without either taking bits from the random half or making ids
-     * predictable from their inputs. Callers once passed one and it was
-     * silently discarded.
+     * The visitor, session and recording ids. They land in signed BIGINT
+     * columns -- a hard contract across this codebase -- so the value is below
+     * 2^63; bit 62 is set, so it is at least 2^62 and always 19 digits, which
+     * also keeps every id above Number.MAX_SAFE_INTEGER: nothing can carry one
+     * as a float without it showing at once.
      *
-     * The split between the time and random halves is not worth re-tuning
-     * either: coarsening the time bucket by k multiplies the ids sharing a
-     * bucket by k (candidate pairs by k^2), divides the bucket count by k and
-     * grows the random space by k, so k cancels and the collision rate is
-     * unchanged. It is a function of the total bit budget and the arrival rate
-     * alone -- roughly 0.8 expected collisions a year at 10 new visitors per
-     * second. Improving on that needs a wider id, which BIGINT forbids.
+     * NO TIMESTAMP PREFIX. It used to be 10 digits of unix seconds and 9
+     * random digits: about 30 random bits per second, since the seconds spent
+     * ~33 bits encoding three centuries an installation never sees. That was
+     * roughly 0.8 collisions a year at 10 new visitors a second. With 62
+     * random bits the expected collisions among n ids are n^2 / 2^63 -- about
+     * 0.01 in ten years at that rate. Nothing reads a creation time out of an
+     * id: first-seen and session start ride every event as anchors.
      *
-     * The leading timestamp is load-bearing beyond ordering: it keeps inserts
-     * at the right edge of the primary key. See tests/js/GuidContract.test.js.
+     * The cost is insert locality: owa_visitor_acquisition is keyed on the
+     * visitor id, so its inserts no longer append. One insert per new visitor,
+     * on a table far smaller than owa_event_raw, whose key is a hash already.
+     *
+     * crypto.getRandomValues(), not Math.random(). BigInt is not used: the
+     * tracker ships untranspiled and must run where it does not exist.
      */
     static generateRandomGuid () {
-	    
-        var time = this.getCurrentUnixTimestamp() + '';
-        var random = Util.zeroFill( this.rand(0,999999) + '' , 6);
-        var client = Util.zeroFill( this.rand(0,999) + '', 3);
-        return time + random + client;
+
+        var words = Util.randomWords( 4 );
+
+        // Big-endian 16-bit words. Bit 63 clear, bit 62 set: [2^62, 2^63).
+        words[0] = ( words[0] & 0x3fff ) | 0x4000;
+
+        return Util.wordsToDecimal( words );
+    }
+
+    /** n random 16-bit words, from the platform's cryptographic source. */
+    static randomWords ( n ) {
+
+        var out = [];
+        var source = ( typeof crypto !== 'undefined' && crypto.getRandomValues ) ? crypto : null;
+
+        if ( source ) {
+
+            var buffer = new Uint16Array( n );
+            source.getRandomValues( buffer );
+
+            for ( var i = 0; i < n; i++ ) {
+
+                out.push( buffer[ i ] );
+            }
+
+            return out;
+        }
+
+        // Only where there is no crypto at all, which no supported browser is.
+        for ( var j = 0; j < n; j++ ) {
+
+            out.push( Math.floor( Math.random() * 65536 ) );
+        }
+
+        return out;
+    }
+
+    /**
+     * Big-endian 16-bit words as a decimal string, exactly.
+     *
+     * Long division by 10 over the words: every intermediate is below
+     * 10 * 65536, so a double never rounds.
+     */
+    static wordsToDecimal ( words ) {
+
+        var w = words.slice();
+        var digits = '';
+
+        while ( w.some( function ( x ) { return x !== 0; } ) ) {
+
+            var rem = 0;
+
+            for ( var i = 0; i < w.length; i++ ) {
+
+                var cur = rem * 65536 + w[ i ];
+                w[ i ] = Math.floor( cur / 10 );
+                rem = cur % 10;
+            }
+
+            digits = rem + digits;
+        }
+
+        return digits || '0';
     }
     
     
