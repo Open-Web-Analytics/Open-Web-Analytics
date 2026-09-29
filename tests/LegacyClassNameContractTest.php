@@ -274,9 +274,10 @@ final class LegacyClassNameContractTest extends TestCase
          *   - Everything in OWA\Core: the classes a module author calls
          *     statically or extends -- owa_coreAPI, owa_lib, owa_module.
          *   - Any class EXTENDED anywhere in this tree, checked rather than
-         *     assumed: owa_factTable, owa_cliController, owa_adminPageView and
-         *     13 others. Matched on short name, which over-keeps, which is the
-         *     safe direction.
+         *     assumed: owa_cliController, owa_adminPageView and the others
+         *     (owa_factTable was one, until v1's entities went in 2.0).
+         *     Matched on short name, which over-keeps, which is the safe
+         *     direction.
          *   - owa_event and the other classes that appear in SERIALIZED state.
          *     A queued payload names its class as written, so a name in a blob
          *     must go on resolving. Scanned live queues on two installs: the
@@ -291,6 +292,10 @@ final class LegacyClassNameContractTest extends TestCase
          * The two OWA integrations installed on this box reference none of them
          * at runtime.
          */
+        // RETIRED 2026-09-29: v1's fact-table base class, deleted with v1's
+        // entities in 2.0. Nothing in this tree or the integrations on this
+        // box extends it any more.
+        'owa_factTable',
         'owa_action_fact',
         'owa_ad_dim',
         'owa_addSiteRestController',
@@ -551,8 +556,8 @@ final class LegacyClassNameContractTest extends TestCase
         // RETIRED 2026-08-26: transaction-detail, removed rather than converted.
         // It was the per-transaction drill-down off the Transaction Roster --
         // one record as label/value rows plus its line items. Nothing else
-        // linked to it. The REST report it read (report_transaction) is a
-        // public endpoint and stays.
+        // linked to it. The REST report it read (report_transaction) went
+        // with v1's tables in 2.0.
         'owa_reportTransactionDetailController',
         'owa_reportTransactionDetailView',
         // RETIRED 2026-08-25: the visitor-detail family. visitors became a

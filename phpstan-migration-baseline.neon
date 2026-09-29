@@ -349,18 +349,6 @@ parameters:
 			path: modules/Base/Controller/ProcessEventQueue.php
 
 		-
-			message: '#^Method OWA\\Module\\Base\\Controller\\ProcessFirstRequest\:\:action\(\) should return OWA\\Module\\Base\\Controller\\unknown but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: modules/Base/Controller/ProcessFirstRequest.php
-
-		-
-			message: '#^Result of method OWA\\Module\\Base\\Controller\\ProcessEvent\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Controller/ProcessFirstRequest.php
-
-		-
 			message: '#^Method OWA\\Module\\Base\\Controller\\ProcessRequest\:\:action\(\) should return OWA\\Module\\Base\\Controller\\unknown but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
@@ -451,54 +439,6 @@ parameters:
 			path: modules/Base/Controller/UsersSetPassword.php
 
 		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/ActionFact.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/Click.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/FeedRequest.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/CommerceLineItemFact.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/CommerceTransactionFact.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/Domstream.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/Request.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Entity\\FactTable\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Entity/Session.php
-
-		-
 			message: '#^Method OWA\\Module\\Base\\Entity\\User\:\:isDefaultUser\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
@@ -508,49 +448,13 @@ parameters:
 			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/Base/Metric/ActionsPerVisit.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
 			path: modules/Base/Metric/ConfigurableMetric.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Metric/GoalNCompletions.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Metric/GoalNStarts.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Metric/GoalNValue.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Metric/RepeatVisitors.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Module.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Update\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Update/Update007.php
 
 		-
 			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'

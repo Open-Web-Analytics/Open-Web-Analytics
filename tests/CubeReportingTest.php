@@ -260,10 +260,10 @@ final class CubeReportingTest extends TestCase
     /** An entity that is not a cube is returned exactly as it was built. */
     public function testANonCubeEntityIsUntouched(): void
     {
-        $entity = $this->entityFor($this->manager('pageViews', 'pagePath'), 'base.request');
+        $entity = $this->entityFor($this->manager('pageViews', 'pagePath'), 'base.event_raw');
 
         $this->assertSame(
-            owa_coreAPI::entityFactory('base.request')->getTableName(),
+            owa_coreAPI::entityFactory('base.event_raw')->getTableName(),
             $entity->getTableName());
     }
 

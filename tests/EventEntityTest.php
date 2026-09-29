@@ -198,13 +198,6 @@ final class EventEntityTest extends TestCase
         $this->assertSame(0, owa_coreAPI::entityFactory('base.site')->partitionsNeeded('monthly'));
     }
 
-    public function testItIsNotAFactTable(): void
-    {
-        $this->assertNotInstanceOf(\OWA\Core\Entity\FactTable::class, $this->event());
-        $this->assertEmpty($this->event()->getAllForeignKeys(),
-            'No joins in the reporting path is the point of the single table.');
-    }
-
     public function testResolutionsAreNotNullAndCopiesAreNullable(): void
     {
         $entity = $this->event();

@@ -83,21 +83,17 @@ class SiteManager extends \OWA\Core\Base {
      * depends on the distinction.
      */
     /*
-     * The hierarchy defaults, duplicated from Update021 ON PURPOSE.
-     *
-     * A migration must stay self-contained -- it runs against a schema and a
-     * codebase that may be older than itself -- so it cannot reach in here, and
-     * this must not reach into it. The values are the contract between them:
-     * a freshly installed OWA and a migrated one have to be indistinguishable,
-     * or "Observation Profile 1" means one thing on one install and another
-     * elsewhere.
+     * The hierarchy defaults. 1.13's Update021 built the hierarchy of every
+     * upgraded installation with these same values, so a fresh install and an
+     * upgraded one are indistinguishable: "Observation Profile 1" means the
+     * same thing on both.
      */
     const DEFAULT_ORGANIZATION_NAME = 'My Organization';
 
     /*
      * The key the default Organization's id is derived from -- a fixed string,
-     * not the name. Same value Update021 uses, so an install that migrated and
-     * one installed fresh mint the same id.
+     * not the name. The value 1.13's Update021 used, so an install that
+     * migrated and one installed fresh mint the same id.
      */
     const DEFAULT_ORGANIZATION_KEY  = 'organization:default';
     const PROFILE_NAME_PREFIX       = 'Observation Profile ';
@@ -156,7 +152,7 @@ class SiteManager extends \OWA\Core\Base {
     /**
      * The Property a new Profile belongs to, found by domain or created.
      *
-     * Keyed on the domain, matching Update021's planner: two Profiles of one
+     * Keyed on the domain, as 1.13's Update021 grouped them: two Profiles of one
      * website share a Property, and that is what makes adding a second way of
      * tracking a site produce a second Profile rather than a second website.
      *
@@ -168,7 +164,7 @@ class SiteManager extends \OWA\Core\Base {
      */
     public function ensurePropertyFor( $domain, $name = '', $description = '' ) {
 
-        $domain = \OWA\Module\Base\Update\Update021::normaliseDomain( $domain );
+        $domain = self::normaliseDomain( $domain );
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 
@@ -299,7 +295,7 @@ class SiteManager extends \OWA\Core\Base {
             /*
              * The name the caller gave describes the WEBSITE, so it goes on the
              * Property; the Profile takes the generated "Observation Profile N".
-             * That is the same split Update021 applies to existing sites, and
+             * That is the split 1.13's Update021 applied to existing sites, and
              * the two have to agree -- a fresh install and a migrated one must
              * not be distinguishable.
              */
@@ -372,6 +368,33 @@ class SiteManager extends \OWA\Core\Base {
         }
 
         return array( '', '' );
+    }
+
+    /**
+     * A domain reduced to the host, so that values differing only by scheme,
+     * case or a trailing slash group together.
+     */
+    public static function normaliseDomain( $domain ) {
+
+        $domain = trim( (string) $domain );
+
+        if ( $domain === '' ) {
+
+            return '';
+        }
+
+        $separator = strpos( $domain, '://' );
+
+        if ( $separator !== false ) {
+
+            $domain = substr( $domain, $separator + 3 );
+        }
+
+        $domain = rtrim( trim( $domain ), '/' );
+
+        // Lower-cased because hosts are case-insensitive, and two rows differing
+        // only in case are one website however they were typed.
+        return strtolower( $domain );
     }
 }
 

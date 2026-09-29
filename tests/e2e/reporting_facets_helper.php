@@ -385,8 +385,7 @@ function cleanup(): array
         try { db()->query('DROP TABLE IF EXISTS ' . $table); } catch (\Throwable $e) {}
     }
 
-    foreach ([owa_coreAPI::entityFactory('base.event_raw')->getTableName(),
-              'owa_session', 'owa_request'] as $table) {
+    foreach ([owa_coreAPI::entityFactory('base.event_raw')->getTableName()] as $table) {
         $db = db();
         $db->deleteFrom($table);
         $db->where('site_id', $site_id);

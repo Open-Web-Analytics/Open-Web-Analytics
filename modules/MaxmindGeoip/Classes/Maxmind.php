@@ -238,7 +238,8 @@ class Maxmind extends \OWA\Core\Location {
      * Nothing downstream needs it. The database connection is utf8mb4, the
      * tables are utf8, and Sanitize::escapeForDisplay() escapes as UTF-8.
      *
-     * Rows already stored are repaired by `php cli.php cmd=repair-geo-encoding`.
+     * Rows 1.x stored that way are repaired by the v1 migration
+     * (FactMigrator::repairedLocation()).
      *
      * strtolower() is safe over UTF-8 here: since PHP 8.0 it is ASCII-only and
      * locale-insensitive, so multibyte sequences pass through untouched.

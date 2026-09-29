@@ -1040,11 +1040,9 @@ class Lib {
      * @param bool $allow_falsy Hash '0' rather than treating it as no value.
      *        The guard below is a truthiness test, so the legitimate string '0'
      *        reads as absent and this returns null -- which reaches a BIGINT
-     *        foreign key as 0, an id no row carries. Callers deriving a
-     *        DIMENSION id pass true, because there absence is a decision made
-     *        from the content itself (DimensionEntity::deriveId), not something
-     *        to be inferred from PHP's idea of falsy. Default is unchanged, so
-     *        no existing caller shifts.
+     *        foreign key as 0, an id no row carries. v1's dimension ids passed
+     *        true; nothing in OWA does since they went, and the parameter stays
+     *        for modules that derive ids of their own.
      */
     public static function setStringGuid($string, $allow_falsy = false) {
 

@@ -740,16 +740,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $dimension = $this->lookupDimension($dimension_name, $entity);
 
         // lookupDimension() returns null when the name does not resolve AGAINST
-        // THIS ENTITY. That is a routine outcome, not an error case: it looks
-        // for a denormalized dimension on this entity, then the
-        // related_dimensions cache, then the global (non-denormalized)
-        // registry. A denormalized dimension such as productName lives only
-        // under its own entity (base.commerce_line_item_fact), so checking it
-        // against base.request finds nothing in any of the three.
-        //
-        // And the callers do exactly that on purpose -- they loop every
-        // requested dimension against every candidate entity looking for one
-        // that fits them all, so most pairings are expected to miss. Without
+        // THIS ENTITY. That is a routine outcome, not an error case: the
+        // callers loop every requested dimension against every candidate
+        // entity looking for one that fits them all, so most pairings are
+        // expected to miss. Without
         // this guard each of those misses fell through to the array access
         // below and logged "Trying to access array offset on value of type
         // null", which is why the warning appeared on ordinary report
@@ -759,14 +753,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         // already assumed -- they test `if (!$check)`, which treated the
         // implicit null the same way. Returning false makes the contract match
         // the method name.
-        //
-        // Strictly this branch is redundant: the isset() below already stops
-        // the warning and the trailing return already yields false, and a
-        // mutation test confirms removing it changes nothing observable. It
-        // stays for the DEBUG LOG. Without it an unregistered name falls
-        // through to "Could not find a foreign key for productName in
-        // base.request", which sends the reader looking for a missing foreign
-        // key when the real problem is that the dimension does not exist.
         if ( ! $dimension ) {
             \OWA\Core\CoreAPI::debug("Dimension: $dimension_name did not resolve, so it is not related to $entity_name");
             return false;
@@ -779,18 +765,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             //$this->related_dimensions[$dimension['name']] = $dimension;
             \OWA\Core\CoreAPI::debug("Dimension: $dimension_name is denormalized into $entity_name");
             return true;
-        } else {
-
-            $fk = $this->getDimensionForeignKey($dimension, $entity);
-
-            if ($fk) {
-                \OWA\Core\CoreAPI::debug("Dimension: $dimension_name is related to $entity_name");
-                //$this->related_dimensions[$dimension['name']] = $dimension;
-                return true;
-            } else {
-                \OWA\Core\CoreAPI::debug("Could not find a foreign key for $dimension_name in $entity_name");
-            }
         }
+
+        // v1's normalized dimensions reached their table through a foreign key
+        // and a join. v2 has none: every dimension is a column of the table
+        // it is reported from.
+        \OWA\Core\CoreAPI::debug("Dimension: $dimension_name is not a column of $entity_name");
 
         // Was an implicit null before. Every caller tests the result for
         // truthiness, so this changes no behaviour -- it just stops a method
@@ -1000,37 +980,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $entities;
     }
 
-    function getDimensionForeignKey($dimension, $entity) {
-
-        if ($dimension) {
-            //$entity = ;
-            $dim = $dimension;
-            $fk = array();
-            // check for foreign key column by name if dimension specifies one
-            //print_r($dim);
-            if ( isset($dim['foreign_key_name']) && ! empty($dim['foreign_key_name'])) {
-                // get foreign key col by
-                if ($entity->isForeignKeyColumn($dim['foreign_key_name'])){
-                    $fk = array('col' => $dim['foreign_key_name'], 'entity' => $entity);
-                }
-
-            } else {
-                // if not check for foreign key by entity name
-                //check to see if the metric's entity has a foreign key to the dimenesion table.
-                $fk = array();
-
-                $fkcol = $entity->getForeignKeyColumn($dim['entity']);
-                \OWA\Core\CoreAPI::debug( 'Foreign Key check:', $fkcol );
-                if ($fkcol) {
-                    $fk['col'] = $fkcol;
-                    $fk['entity'] = $entity;
-                }
-            }
-
-            return $fk;
-        }
-    }
-
     function isDimension( $name ) {
 
         $dims = \OWA\Core\CoreAPI::getAllDimensions();
@@ -1091,12 +1040,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $dim = $service->getDimension($name);
 
                 if ($dim) {
-                    $dimEntity = $this->entityFor($dim['entity']);
-                    // alias needs to use fk name in case there are two joins on the
-                    // same table. This is also used in addRelation method
-                    $alias = $dimEntity->getTableAlias().'_via_'.$dim['foreign_key_name'];
-                    //$dim['column'] = $dimEntity->getTableAlias().'.'.$dim['column'];
-                    $dim['column'] = $alias.'.'.$dim['column'];
+                    // Registered, but not on this entity: v1 would have joined
+                    // it in through a foreign key, and v2 has no joins.
+                    \OWA\Core\CoreAPI::debug("$name is not a dimension of " . $entity->getName() . '.');
+                    $dim = null;
                 } else {
                     $msg = "$name is not a registered dimension.";
                     \OWA\Core\CoreAPI::debug($msg);
@@ -1880,65 +1827,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function applyJoins() {
-
-        foreach($this->related_dimensions as $dim) {
-            $this->addRelation($dim);
-        }
-    }
-
     function getBaseEntity() {
         return $this->baseEntity;
-    }
-
-    function addRelation($dim, $db = '', $entity = '') {
-
-            if ( ! $db ) {
-
-                $db = $this->db;
-            }
-
-            if ( ! $entity ) {
-                $entity = $this->getBaseEntity();
-            }
-
-            // if denomalized, skip
-            if ($dim['denormalized'] === true) {
-                return;
-            }
-
-            // have already determined base enttiy at this point so use that.
-            $fk = $this->getDimensionForeignKey($dim, $entity);
-            //print_r($fk);
-            //print $fk;
-            if ($fk) {
-
-                // create dimension entity
-                $dimEntity = $this->entityFor($dim['entity']);
-                // get foreign key column
-                //$bm = $this->getBaseMetric();
-                //$fpk_col = $bm->entity->getProperty($fk);
-                $fpk_col = $fk['entity']->getProperty($fk['col']);
-                //$fpk_col = $this->baseEntity->getProperty($fk['col']);
-
-                //print_r($fk['col']);
-                $fpk = $fpk_col->getForeignKey();
-                // add join
-                //print_r($fpk);
-                // needed to make joins unique in cases where there are
-                // two joins onthe same table using different foreign keys.
-                $alias = $dimEntity->getTableAlias().'_via_'.$dim['foreign_key_name'];
-                //$this->db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $dimEntity->getTableAlias(), $fk['entity']->getTableAlias().'.'.$fk['col'], $dimEntity->getTableAlias().'.'.$fpk[1]);
-                $db->join(OWA_SQL_JOIN, $dimEntity->getTableName(), $alias, $fk['entity']->getTableAlias().'.'.$fk['col'], $alias.'.'.$fpk[1]);
-
-                //$this->addColumn($dim['name'], $dimEntity->getTableAlias().'.'.$dim['column']);
-                $this->addColumn($dim['name'], $alias.'.'.$dim['column']);
-
-            } else {
-                // add error result set
-                \OWA\Core\CoreAPI::debug(sprintf('%s metric does not have relation to dimension %s', $fk['entity']->getName(), $dim['name']));
-            }
-
     }
 
     // remove
@@ -2145,9 +2035,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     
     function computeAggregates( $bm ) {
 	    
-	    // creates join statements to dim tables from dimension.
-        $this->applyJoins();
-        
         // generates where clause based on metrics and dimensions
         $this->applyConstraints();
         
@@ -2172,9 +2059,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     
     function computeDimensionalRows( $bm ) {
 	    
-	    // creates join statements to dim tables from dimension.
-        $this->applyJoins();
-        
         // apply dimensional SQL
         $this->applyDimensions();
 
@@ -2400,68 +2284,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $this->resultSet;
     }
     
-  	/**
-     * Generates a data result set using DB object directly
-     *
-     * @return paginatedResultSet obj
-     */
-    function queryResults() {
-
-        // get paginated result set object
-	
-        if (array_key_exists('orderby', $this->params)) {
-            $sorts = $this->params['orderby'];
-            // apply sort by
-            if ($sorts) {
-                $this->applySorts();
-                foreach ($sorts as $sort) {
-                    //$this->db->orderBy($sort[0], $sort[1]);
-                    $this->resultSet->sortColumn = $sort[0];
-                    if (isset($sort[1])){
-                        $this->resultSet->sortOrder = strtolower($sort[1]);
-                    } else {
-                        $this->resultSet->sortOrder = 'asc';
-                    }
-                }
-            }
-        }
-
-        // add period info
-        if (array_key_exists('period', $this->params) && ! empty( $this->params['period'])) {
-	       
-	        $this->resultSet->setPeriodInfo($this->params['period']->getAllInfo());
-		}
-        
-		// add any errors that should be returned in the result set
-        $this->resultSet->errors = $this->errors;
-        $this->resultSet->request_errors = $this->request_errors;
-        
-        if ( ! empty( $this->limit ) ) {
-	        
-            // query for more than we need
-            \OWA\Core\CoreAPI::debug('applying limit of: ' . $this->limit );
-            
-            $this->db->limit( $this->limit * 10 );
-        }
-
-        if ( ! empty( $this->page ) ) {
-
-            $this->db->offset( $this->calculateOffset() );
-            
-        }
-
-        $results = $this->db->getAllRows();
-        
-        // generate dimensional results
-        $this->resultSet->generate( $results, $this->query_params, [
-	                
-	                'resultsPerPage' => $this->getlimit(),
-	                'page'	=> $this->getPage()
-                ] );
-		
-        return $this->resultSet;
-    }
-
     function generateSegmentQuery( $base_entity ) {
 
         $segment = $this->getSegment();
@@ -2483,14 +2305,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 //print_r($segment);
                 foreach ($segment['dimensions'] as $k => $dim) {
 
-                    $check = $this->isDimensionRelated($dim['name'], $segment_entity->getName() );
-                    if ( $check ) {
-                        $dimension = $this->lookupDimension($dim['name'], $segment_entity);
-
-                        if ( ! isset($dimension['denormalized'] ) || $dimension['denormalized'] != true ) {
-                            $this->addRelation($dimension, $db, $segment_entity);
-                        }
-                    }
+                    // Only to log a dimension the segment's table does not have.
+                    $this->isDimensionRelated( $dim['name'], $segment_entity->getName() );
                 }
                 //print_r( $segment['dimensions'] );
                 $this->applyConstraints( $segment['dimensions'], $db, $segment_entity);
@@ -2697,11 +2513,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     }
 
-    function setQueryStringParam($name, $string) {
-
-            $this->query_params[$name] = $string;
-    }
-
     function getAllRelatedDimensions($entity) {
 
         // No entity, nothing related to it. See the caller: this is reached
@@ -2721,54 +2532,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                 if ($k === $entity->getName()) {
                     $dims[ $ddim['family'] ][] = array( 'name' => $ddim['name'], 'label' => $ddim['label'] );
-                }
-            }
-        }
-
-        $normalized_dims = $s->dimensions;
-
-        /*
-         * Keyed name => entity => registration, like denormalizedDimensions
-         * above, so both loops have the same shape.
-         *
-         * One entry per NAME rather than per entity: the question here is only
-         * whether the entity being reported on can reach the dimension, so the
-         * first definition that relates answers it and the rest would be
-         * duplicates in the picker.
-         */
-        foreach ( $normalized_dims as $k => $ndim_implementations ) {
-
-            /*
-             * The LAST registration, which is exactly what the flat registry
-             * held after overwriting itself. Deliberate: retaining every entity
-             * is a storage change, and nothing an existing caller sees may move
-             * because of it. Considering all of them here would put userName --
-             * registered normalized against seven entities with no foreign key,
-             * and broken for that reason -- into four more pickers than it
-             * reaches today, which is widening a defect rather than preserving
-             * behaviour.
-             *
-             * A caller that wants a specific entity's definition asks for it by
-             * entity; this one is answering "what can this report reach", and
-             * its answer must not change here.
-             */
-            foreach ( array( end( $ndim_implementations ) ) as $ndim ) {
-
-                // check to see if realation exists with dim's speficied foreign key
-                $fk = $ndim['foreign_key_name'];
-                if ( $fk ) {
-
-                    $col_exists = $entity->getProperty($fk);
-
-                } else {
-                    // check to see if there is any foreign key to the dim's entity
-                    $col_exists = $entity->getForeignKeyColumn( $ndim['entity'] );
-                }
-
-                if ( $col_exists ) {
-                    $dims[ $ndim['family'] ][] = array( 'name' => $ndim['name'], 'label' => $ndim['label'] );
-
-                    break;
                 }
             }
         }

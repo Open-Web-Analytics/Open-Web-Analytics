@@ -179,30 +179,6 @@ final class ScopedSettingsTest extends TestCase
             'A Profile with no Property produced a chain naming one anyway.' );
     }
 
-    /** The site blobs are unpacked, not moved -- a rollback still reads them. */
-    public function testTheMigrationCopiesRatherThanMoves(): void
-    {
-        $src = (string) file_get_contents( OWA_DIR . 'modules/Base/Update/Update022.php' );
-
-        $this->assertStringNotContainsString(
-            "set( 'settings'", $src,
-            'The migration writes to owa_site.settings, so rolling back loses the values.' );
-
-        /* Flat blob, so every key in it is a Base key by construction. */
-        $planned = \OWA\Module\Base\Update\Update022::planForSite( array(
-            'site_id'  => 'OWA-x',
-            'settings' => serialize( array( 'anonymize_ips' => true ) ),
-        ) );
-
-        $this->assertSame( 'base', $planned[0]['module'] );
-        $this->assertSame( 'anonymize_ips', $planned[0]['name'] );
-
-        /* One unreadable blob must not stop every other site migrating. */
-        $this->assertSame(
-            array(),
-            \OWA\Module\Base\Update\Update022::planForSite(
-                array( 'site_id' => 'OWA-x', 'settings' => 'not-serialized-at-all' ) ) );
-    }
     /**
      * Values are not all scalars.
      *
@@ -229,20 +205,4 @@ final class ScopedSettingsTest extends TestCase
             'A structured value came back changed, so goals would not survive the store.' );
     }
 
-    /** And the migration carries them across whole. */
-    public function testTheMigrationCarriesStructuredValues(): void
-    {
-        $planned = \OWA\Module\Base\Update\Update022::planForSite( array(
-            'site_id'  => 'OWA-x',
-            'settings' => serialize( array(
-                'goals' => array( 1 => array( 'goal_name' => 'Signup' ) ),
-                'p3p_policy' => 'CAO PSA OUR',
-            ) ),
-        ) );
-
-        $byName = array_column( $planned, 'value', 'name' );
-
-        $this->assertSame( array( 1 => array( 'goal_name' => 'Signup' ) ), $byName['goals'] );
-        $this->assertSame( 'CAO PSA OUR', $byName['p3p_policy'] );
-    }
 }

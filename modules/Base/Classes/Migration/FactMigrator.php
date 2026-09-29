@@ -399,7 +399,8 @@ abstract class FactMigrator {
         $referer  = $refs['referer'][ (string) ( $r['referer_id'] ?? '' ) ] ?? array();
         $ua       = $refs['ua'][ (string) ( $r['ua_id'] ?? '' ) ] ?? array();
         $os       = $refs['os'][ (string) ( $r['os_id'] ?? '' ) ] ?? array();
-        $location = $refs['location_dim'][ (string) ( $r['location_id'] ?? '' ) ] ?? array();
+        $location = self::repairedLocation(
+            $refs['location_dim'][ (string) ( $r['location_id'] ?? '' ) ] ?? array() );
         $session  = $refs['session'][ (string) $r['session_id'] ] ?? array();
         $visitor  = $refs['visitor'][ (string) $r['visitor_id'] ] ?? array();
         $prior    = isset( $session['prior_session_id'] )
@@ -487,6 +488,29 @@ abstract class FactMigrator {
             'tagged_ad'       => $ad,
             'tagged_terms'    => $refs['search_term_dim'][ (string) ( $r['referring_search_term_id'] ?? '' ) ]['terms'] ?? null,
         );
+    }
+
+    /**
+     * A v1 location's names, with any double-encoded one undone.
+     *
+     * The geolocation reader once encoded MaxMind's names a second time --
+     * "MÃ¼nchen" for "München" (#742). 1.14 ships repair-geo-encoding for the
+     * rows already stored, but nothing makes an administrator run it, and v2
+     * does not have it, so the migration repairs them on the way through.
+     */
+    public static function repairedLocation( array $location ) {
+
+        foreach ( array( 'country', 'state', 'city' ) as $column ) {
+
+            $fixed = \OWA\Module\Base\Classes\GeoEncodingRepair::repair( $location[ $column ] ?? null );
+
+            if ( $fixed !== null ) {
+
+                $location[ $column ] = $fixed;
+            }
+        }
+
+        return $location;
     }
 
     /** A stored value, as opposed to empty or v1's "(not set)". */

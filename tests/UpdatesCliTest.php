@@ -121,7 +121,7 @@ final class UpdatesCliTest extends CliControllerTestCase
     }
 
     /**
-     * `rollback=base.17` has to reach the same class as `rollback=base.Update017`.
+     * `rollback=base.34` has to reach the same class as `rollback=base.Update034`.
      *
      * The CLI's apply= and rollback= arguments are written by a human, who
      * writes the sequence number the update is known by. Module::getUpdates()
@@ -136,28 +136,29 @@ final class UpdatesCliTest extends CliControllerTestCase
      */
     public function testAnUpdateResolvesByBareSequenceAsWellAsByClassName(): void
     {
-        $bySequence = \OWA\Core\CoreAPI::updateFactory('base', '17');
-        $byClass    = \OWA\Core\CoreAPI::updateFactory('base', 'Update017');
+        $bySequence = \OWA\Core\CoreAPI::updateFactory('base', '34');
+        $byClass    = \OWA\Core\CoreAPI::updateFactory('base', 'Update034');
 
         $this->assertSame(
             get_class($byClass),
             get_class($bySequence),
-            'cmd=update rollback=base.17 must load the update, not a legacy filename'
+            'cmd=update rollback=base.34 must load the update, not a legacy filename'
         );
 
-        $this->assertSame(17, (int) $bySequence->schema_version);
+        $this->assertSame(34, (int) $bySequence->schema_version);
     }
 
     /**
      * The zero-padding is the part that is easy to get wrong: the classes are
-     * UpdateNNN, so a single-digit sequence has to grow leading zeroes.
+     * UpdateNNN, so a single-digit sequence has to grow leading zeroes. Base
+     * starts at 34, so Domstream's second update stands in.
      */
     public function testASingleDigitSequenceResolvesToItsPaddedClass(): void
     {
-        $u = \OWA\Core\CoreAPI::updateFactory('base', '3');
+        $u = \OWA\Core\CoreAPI::updateFactory('domstream', '2');
 
-        $this->assertSame('OWA\\Module\\Base\\Update\\Update003', get_class($u));
-        $this->assertSame(3, (int) $u->schema_version);
+        $this->assertSame('OWA\\Module\\Domstream\\Update\\Update002', get_class($u));
+        $this->assertSame(2, (int) $u->schema_version);
     }
 
     // -----------------------------------------------------------------

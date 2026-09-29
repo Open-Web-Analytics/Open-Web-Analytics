@@ -100,7 +100,6 @@ function owa_compat_class_map(): array
         'owa_cliView' => 'OWA\\Core\\View\\Cli',
 
         'owa_entity' => 'OWA\\Core\\Entity',
-        'owa_factTable' => 'OWA\\Core\\Entity\\FactTable',
         'owa_metric' => 'OWA\\Core\\Metric',
         'owa_calculatedMetric' => 'OWA\\Core\\Metric\\CalculatedMetric',
 

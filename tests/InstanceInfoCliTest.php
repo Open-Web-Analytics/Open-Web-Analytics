@@ -172,6 +172,24 @@ final class InstanceInfoCliTest extends TestCase
         }
     }
 
+    /** Partitioning is reported for v2's tables: the raw store and every cube. */
+    public function testItReportsV2sPartitionedTables(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs a database to boot the CLI');
+        }
+
+        $out = $this->report();
+
+        $this->assertMatchesRegularExpression('/owa_event_raw\s+(\d+ partition\(s\)|not partitioned)/', $out);
+
+        foreach (\OWA\Module\Base\Classes\Cube\Cubes::existing() as $table) {
+            $this->assertStringContainsString($table, $out);
+        }
+
+        $this->assertStringNotContainsString('owa_request ', $out, 'v1\'s tables are not v2\'s to partition');
+    }
+
     /**
      * The settings registry has two failure modes that produce no error at all,
      * and this is the only place either is reported.

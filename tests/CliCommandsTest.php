@@ -61,8 +61,8 @@ final class CliCommandsTest extends CliControllerTestCase
             'flush-processed-events'     => ['flush-processed-events',     'base.flushProcessedEventsCli'],
             'prune-event-queue-archives' => ['prune-event-queue-archives', 'base.pruneEventQueueArchivesCli'],
             'change-password'            => ['change-password',            'base.changeUserPasswordCli'],
-            'update-document'            => ['update-document',            'base.crawlDocumentCli'],
             'reset-secrets'              => ['reset-secrets',              'base.resetSecretsCli'],
+            'v1-drop'                    => ['v1-drop',                    'base.v1DropCli'],
         ];
     }
 
@@ -317,11 +317,23 @@ final class CliCommandsTest extends CliControllerTestCase
             $this->markTestSkipped("Expected {$module} to be inactive for this regression.");
         }
 
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
-            'moduleDeactivateCli.php',
-            ['module' => $module]
-        );
+        // Building the module runs its init(), and fileCache's turns object
+        // caching on for the rest of the process. A CLI run exits straight
+        // after; this process goes on to run every later test, so it is put
+        // back.
+        $caching = owa_coreAPI::getSetting('base', 'cache_objects');
+        $type    = owa_coreAPI::getSetting('base', 'cacheType');
+
+        try {
+            $result = $this->runCommand(
+                \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
+                'moduleDeactivateCli.php',
+                ['module' => $module]
+            );
+        } finally {
+            owa_coreAPI::setSetting('base', 'cache_objects', $caching);
+            owa_coreAPI::setSetting('base', 'cacheType', $type);
+        }
 
         $this->assertNull($result['view'],
             'Deactivating a not-boot-loaded module should run cleanly, not fatal.');
@@ -389,32 +401,6 @@ final class CliCommandsTest extends CliControllerTestCase
 
         $this->assertNotCapable($result, 'install-module requires edit_modules.');
     }
-
-    // =================================================================
-    // Crawl maintenance: update-document (cap: edit_settings).
-    // Contract-only: with no id this crawls EVERY stored document over the
-    // network (crawlDocument() does a live HTTP fetch), and with a
-    // non-existent id it loads a blank row and fatals. Neither is safe to run
-    // in a test, so we assert only the capability gate, which runs before any
-    // crawling.
-    //
-    // update-referral was the same shape and is gone: OWA no longer fetches
-    // referring pages at all. See RefererCrawlRemovedTest.
-    // =================================================================
-
-    public function testUpdateDocumentRejectsUnprivilegedUser(): void
-    {
-        $this->authenticateAs('viewer');
-
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\CrawlDocumentCli::class,
-            'crawlDocumentCli.php',
-            ['doc' => '0']
-        );
-
-        $this->assertNotCapable($result, 'update-document requires edit_settings.');
-    }
-
 
     // =================================================================
     // Event-queue maintenance: processEventQueue / flush-processed-events /

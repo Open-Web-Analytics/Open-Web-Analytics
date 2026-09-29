@@ -18,13 +18,11 @@ use PHPUnit\Framework\TestCase;
  * and the method fell out of the bottom returning an implicit NULL from a
  * predicate named is...().
  *
- * This fires on ORDINARY requests, not just bad input. lookupDimension() returns
- * null when a name does not resolve against THE ENTITY BEING TESTED, and a
- * denormalized dimension such as productName lives only under its own entity
- * (base.commerce_line_item_fact). The callers loop every requested dimension
- * against every candidate entity looking for one that fits them all, so most
- * pairings are expected to miss -- and every miss logged a warning. That is how
- * it turned up in a live Apache log, on a perfectly normal e-commerce report.
+ * This fired on ORDINARY requests, not just bad input: the callers loop every
+ * requested dimension against every candidate entity looking for one that fits
+ * them all, so most pairings are expected to miss -- and every miss logged a
+ * warning. That is how it turned up in a live Apache log, on a perfectly normal
+ * e-commerce report.
  *
  * Callers all test `if (!$check)`, so null and false were already equivalent to
  * them. The fix changes no behaviour; it removes the warning and makes the
@@ -75,7 +73,7 @@ final class DimensionResolutionTest extends TestCase
         $result = null;
 
         $diags = $this->diagnosticsFrom(
-            fn() => $rsm->isDimensionRelated($name, 'base.request'),
+            fn() => $rsm->isDimensionRelated($name, 'base.event'),
             $result
         );
 
@@ -88,114 +86,52 @@ final class DimensionResolutionTest extends TestCase
     public static function unresolvableDimensions(): array
     {
         return [
-            // Denormalized onto base.commerce_line_item_fact, so it does not
-            // resolve against base.request. The exact name from the live log.
-            'productName'       => ['productName'],
             'zz_not_a_thing'    => ['zz_not_a_thing'],
             'empty string'      => [''],
             'sql-ish'           => ["1' OR '1'='1"],
         ];
     }
 
-    /**
-     * The guard must not swallow the real answer. Without this, replacing the
-     * body with `return false;` would pass every other test in this file.
-     *
-     * THE POSITIVE CASE IS BUILT, not found. It used to read pageTitle against
-     * base.request -- a normalized dimension joining a v1 dimension table --
-     * and there are none left: every v2 dimension is a column on the cube, so
-     * `related` is now false for everything that exists. Looking for the
-     * condition instead of creating it would make this pass for the wrong
-     * reason, which is exactly the failure it guards against.
-     *
-     * So it registers one. isDimensionRelated() is still live machinery -- the
-     * entity-selection loops call it -- and a renderer for normalized
-     * dimensions is how a second store would arrive, so the path has to keep
-     * answering truthfully.
-     */
+    /** A dimension the cube carries is related to it. */
     public function testAResolvableDimensionIsStillRelated(): void
-    {
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $restore = $service->dimensions;
-
-        $service->dimensions['relatedProbe'] = array(
-            'base.request' => array(
-                'name'             => 'relatedProbe',
-                'entity'           => 'base.document',
-                'column'           => 'page_title',
-                'label'            => 'Related Probe',
-                'family'           => 'test',
-                'description'      => '',
-                'foreign_key_name' => 'document_id',
-                'data_type'        => 'string',
-                'denormalized'     => false,
-            ),
-        );
-
-        try {
-            $rsm = $this->manager();
-            $result = null;
-
-            $diags = $this->diagnosticsFrom(
-                fn() => $rsm->isDimensionRelated('relatedProbe', 'base.request'),
-                $result
-            );
-
-            $this->assertSame([], $diags);
-            $this->assertTrue($result,
-                'a normalized dimension with a foreign key to the entity IS related');
-        } finally {
-            // The registry is a singleton; a probe left in it leaks into every
-            // later test in the run.
-            $service->dimensions = $restore;
-        }
-    }
-
-    /**
-     * A dimension that RESOLVES but has no foreign key to the entity. This is
-     * the ordinary case in the callers, which loop dimensions against candidate
-     * entities looking for one that fits them all -- most pairings do not.
-     *
-     * Covered explicitly because it is the only path that reaches the trailing
-     * return. Without it, deleting that return re-introduced the implicit null
-     * and every other test here still passed.
-     */
-    public function testAResolvableDimensionWithNoForeignKeyIsNotRelated(): void
     {
         $rsm = $this->manager();
         $result = null;
 
-        // pageTitle resolves fine, but base.session has no foreign key to it.
-        $diags = $this->diagnosticsFrom(
-            fn() => $rsm->isDimensionRelated('pageTitle', 'base.session'),
-            $result
-        );
+        $diags = $this->diagnosticsFrom(fn() => $rsm->isDimensionRelated('pagePath', 'base.event'), $result);
 
         $this->assertSame([], $diags);
-        $this->assertFalse($result,
-            'no foreign key means not related -- and must be false, not an implicit null');
+        $this->assertTrue($result, '"return false everywhere" would also silence the warning');
     }
 
     /**
-     * The method is a predicate. Returning null from the failure path made
-     * `$check === false` quietly untrue, so any caller tightening its test from
-     * `!$check` to `=== false` would have silently changed meaning.
+     * Registered, but not a column of the entity asked about. v1 would have
+     * joined it in through a foreign key; v2 has no joins, so the answer is no.
      */
+    public function testARegisteredDimensionOnAnotherEntityIsNotRelated(): void
+    {
+        $rsm = $this->manager();
+        $result = null;
+
+        $diags = $this->diagnosticsFrom(fn() => $rsm->isDimensionRelated('pagePath', 'base.event_raw'), $result);
+
+        $this->assertSame([], $diags);
+        $this->assertFalse($result);
+    }
+
     public function testTheReturnIsAlwaysBoolean(): void
     {
         $rsm = $this->manager();
 
-        $cases = [
-            ['pageTitle',      'base.request'],   // true
-            ['pageTitle',      'base.session'],   // false via the no-fk path
-            ['productName',    'base.request'],   // false via the unresolvable path
-            ['zz_not_a_thing', 'base.request'],
-        ];
+        foreach ([
+            ['pagePath',       'base.event'],      // true
+            ['pagePath',       'base.event_raw'],  // false: registered, not on this entity
+            ['zz_not_a_thing', 'base.event'],      // false: not registered
+        ] as [$name, $entity]) {
 
-        foreach ($cases as [$name, $entity]) {
             $this->assertIsBool(
                 @$rsm->isDimensionRelated($name, $entity),
-                $name . ' / ' . $entity . ': is...() must answer with a boolean'
+                "isDimensionRelated('$name', '$entity') did not return a boolean"
             );
         }
     }

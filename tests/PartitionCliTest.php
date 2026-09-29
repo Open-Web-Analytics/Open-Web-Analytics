@@ -95,12 +95,12 @@ final class PartitionCliTest extends CliControllerTestCase
         $this->assertNotEmpty($budget['reason'], 'a refusal has to be able to explain itself');
 
         $this->assertTrue(
-            $this->callProtected($c, 'withinPartitionBudget', ['owa_request', $budget['limit'], $budget]),
+            $this->callProtected($c, 'withinPartitionBudget', ['owa_event_raw', $budget['limit'], $budget]),
             'a plan exactly at the limit is allowed'
         );
 
         $this->assertFalse(
-            $this->callProtected($c, 'withinPartitionBudget', ['owa_request', $budget['limit'] + 1, $budget]),
+            $this->callProtected($c, 'withinPartitionBudget', ['owa_event_raw', $budget['limit'] + 1, $budget]),
             'one partition over must be refused'
         );
 
@@ -108,7 +108,7 @@ final class PartitionCliTest extends CliControllerTestCase
         $forced = $this->rotate(['force' => 1]);
 
         $this->assertTrue(
-            $this->callProtected($forced, 'withinPartitionBudget', ['owa_request', $budget['limit'] * 100, $budget]),
+            $this->callProtected($forced, 'withinPartitionBudget', ['owa_event_raw', $budget['limit'] * 100, $budget]),
             'force must override the refusal'
         );
     }
@@ -136,15 +136,17 @@ final class PartitionCliTest extends CliControllerTestCase
         $all = $this->callProtected($c, 'factTables', [null]);
 
         $this->assertNotEmpty($all);
-        $this->assertContains('owa_request', $all);
-        $this->assertContains('owa_session', $all);
+        $this->assertContains('owa_event_raw', $all);
+        foreach (\OWA\Module\Base\Classes\Cube\Cubes::existing() as $cube) {
+            $this->assertContains($cube, $all, 'every cube is maintained');
+        }
 
         foreach ($all as $t) {
             $this->assertStringStartsWith('owa_', $t);
         }
 
-        $one = $this->callProtected($c, 'factTables', ['owa_request']);
-        $this->assertSame(['owa_request'], $one);
+        $one = $this->callProtected($c, 'factTables', ['owa_event_raw']);
+        $this->assertSame(['owa_event_raw'], $one);
 
         $this->assertSame(
             [],
@@ -162,15 +164,15 @@ final class PartitionCliTest extends CliControllerTestCase
      */
     public function testAnUnreadableKeepIsRefusedButAnAbsentOneIsNot()
     {
-        $before = $this->partitionCount('owa_request');
+        $before = $this->partitionCount('owa_event_raw');
 
         foreach ([['keep' => 'lots'], ['keep' => '-4'], ['keep' => '0'], ['keep' => '2.5']] as $params) {
-            $this->rotate($params + ['table' => 'owa_request'])->action();
+            $this->rotate($params + ['table' => 'owa_event_raw'])->action();
         }
 
         $this->assertSame(
             $before,
-            $this->partitionCount('owa_request'),
+            $this->partitionCount('owa_event_raw'),
             'an unreadable keep must stop the command, not be ignored'
         );
 
@@ -191,14 +193,14 @@ final class PartitionCliTest extends CliControllerTestCase
             $this->markTestSkipped('Driver cannot partition.');
         }
 
-        $before = $this->partitionCount('owa_request');
-        $rows   = (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_request')['n'];
+        $before = $this->partitionCount('owa_event_raw');
+        $rows   = (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_event_raw')['n'];
 
-        $this->rotate(['keep' => 24, 'table' => 'owa_request', 'dry-run' => 1])->action();
-        $this->drop(['older-than' => '1month', 'table' => 'owa_request', 'dry-run' => 1])->action();
+        $this->rotate(['keep' => 24, 'table' => 'owa_event_raw', 'dry-run' => 1])->action();
+        $this->drop(['older-than' => '1month', 'table' => 'owa_event_raw', 'dry-run' => 1])->action();
 
-        $this->assertSame($before, $this->partitionCount('owa_request'), 'no partition may be added or removed');
-        $this->assertSame($rows, (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_request')['n'], 'no row may be lost');
+        $this->assertSame($before, $this->partitionCount('owa_event_raw'), 'no partition may be added or removed');
+        $this->assertSame($rows, (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_event_raw')['n'], 'no row may be lost');
     }
 
     /**
@@ -210,7 +212,7 @@ final class PartitionCliTest extends CliControllerTestCase
      */
     public function testUnknownGranularityIsRefused()
     {
-        $before = $this->partitionCount('owa_request');
+        $before = $this->partitionCount('owa_event_raw');
 
         foreach (['weekly', '7day', 'tenday', 'hourly', 'yearly'] as $bad) {
             $this->assertFalse(
@@ -218,12 +220,12 @@ final class PartitionCliTest extends CliControllerTestCase
                 "$bad must not be a granularity"
             );
 
-            $this->rotate(['keep' => 24, 'granularity' => $bad, 'table' => 'owa_request'])->action();
+            $this->rotate(['keep' => 24, 'granularity' => $bad, 'table' => 'owa_event_raw'])->action();
         }
 
         $this->assertSame(
             $before,
-            $this->partitionCount('owa_request'),
+            $this->partitionCount('owa_event_raw'),
             'a refused granularity must leave the table alone'
         );
     }
@@ -776,7 +778,7 @@ final class PartitionCliTest extends CliControllerTestCase
 
         $this->assertSame(
             $all['limit'],
-            $this->callProtected($this->statusCli(['table' => 'owa_session']), 'factTableBudget')['limit'],
+            $this->callProtected($this->statusCli(['table' => 'owa_event_raw']), 'factTableBudget')['limit'],
             'filtering the report must not change the budget'
         );
 

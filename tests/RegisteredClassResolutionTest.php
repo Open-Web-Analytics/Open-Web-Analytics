@@ -59,7 +59,7 @@ final class RegisteredClassResolutionTest extends TestCase
 
         $entities = self::$service->entities;
         $this->assertGreaterThan(
-            20,
+            15,
             count($entities),
             'Expected the full base entity set to be registered.'
         );

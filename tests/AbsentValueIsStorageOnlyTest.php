@@ -67,28 +67,6 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
     }
 
     /**
-     * A v1 text column no longer receives a label, and that is the deliberate
-     * consequence rather than a broken substitution.
-     *
-     * Asserted because the two look identical from outside: "we removed the
-     * convention" and "applyStorageDefault stopped working" both show up as a
-     * NULL where a label used to be. The mechanism in Core\Entity is untouched --
-     * it simply has nothing left to apply.
-     */
-    public function testAV1TextColumnNoLongerReceivesALabel(): void
-    {
-        $session = \OWA\Core\CoreAPI::entityFactory( 'base.session' );
-
-        $session->setProperties( array( 'host' => null, 'user_name' => false ) );
-
-        foreach ( array( 'host', 'user_name' ) as $column ) {
-
-            $this->assertNotSame( Helpers::ABSENT_VALUE_LABEL, $session->get( $column ),
-                "base.session.$column still receives the label, so something still declares it" );
-        }
-    }
-
-    /**
      * A default that is a REAL value still applies on the event, and that is the
      * distinction the sentinels blurred.
      *

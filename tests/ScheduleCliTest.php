@@ -925,20 +925,16 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        // A fact table that is real but empty, so removing partitioning is
-        // cheap and reversible within the test.
-        $table = 'owa_commerce_line_item_fact';
+        // A scratch cube: rotate finds cubes by name, and a copy of a real one
+        // is empty, so nothing another test reads is touched.
+        $cubes = \OWA\Module\Base\Classes\Cube\Cubes::existing();
 
-        if (! $db->isPartitioned($table)) {
-            $this->markTestSkipped("$table is not partitioned to begin with.");
+        if (! $cubes) {
+            $this->markTestSkipped('no cube to copy the shape of.');
         }
 
-        if ((int) $db->get_row("SELECT COUNT(*) AS n FROM $table")['n'] > 0) {
-            $this->markTestSkipped("$table has rows; not rewriting it in a test.");
-        }
-
-        $granularity = $db->inferPartitionGranularity($table) ?: 'monthly';
-        $spans       = $db->getPartitionSpans($table);
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor('9' . random_int(100000000, 999999999));
+        $db->query(sprintf('CREATE TABLE %s LIKE %s', $table, reset($cubes)));
 
         try {
             $db->query("ALTER TABLE $table REMOVE PARTITIONING");
@@ -966,26 +962,8 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         } finally {
 
-            // Put it back exactly as it was.
-            if ($spans) {
-                $db->partitionTable($table, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
-                    $spans[0]['start'],
-                    date('Ymd', strtotime(end($spans)['less_than'] . ' -1 day')),
-                    $granularity
-                ));
-            }
+            $db->query('DROP TABLE IF EXISTS ' . $table);
         }
-
-        // This case mutates a REAL fact table, which other tests also read, so
-        // it asserts its own restore rather than leaving a lossy one to surface
-        // later as an unrelated failure somewhere else in the suite. A
-        // misattributed failure costs far more to diagnose than the assertion
-        // costs to write.
-        $this->assertTrue($db->isPartitioned($table), 'the fixture must be repartitioned');
-        $this->assertSame(
-            count($spans), count($db->getPartitionSpans($table)),
-            'the fixture must be restored to the SAME layout, not merely to some layout'
-        );
     }
 
     /** ...and reports ok when it did rotate something. */

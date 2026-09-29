@@ -3055,10 +3055,106 @@
         }
     },
     "relatedDimensions": {
-        "base.session": [],
-        "base.request": [],
-        "base.action_fact": [],
-        "base.click": [],
-        "base.domstream": []
+        "base.event": {
+            "commerce": [
+                "currencyCode",
+                "transactionId"
+            ],
+            "content": [
+                "contentGroup",
+                "fullPageUrl",
+                "hostName",
+                "landingPage",
+                "landingPageLocation",
+                "landingPagePlusQuery",
+                "landingPageQuery",
+                "landingPageTitle",
+                "pageLocation",
+                "pagePath",
+                "pagePathPlusQuery",
+                "pageQuery",
+                "pageReferrer",
+                "pageTitle"
+            ],
+            "device": [
+                "browserType",
+                "browserVersion",
+                "consentState",
+                "deviceBrand",
+                "deviceModel",
+                "deviceType",
+                "ipAddress",
+                "language",
+                "operatingSystemWithVersion",
+                "osType",
+                "osVersion",
+                "screenResolution"
+            ],
+            "event": [
+                "clickTarget",
+                "clickX",
+                "clickY",
+                "domElementId",
+                "domElementTag",
+                "eventName",
+                "fileExtension",
+                "fileName",
+                "isGoalEvent",
+                "isOutbound",
+                "linkDomain",
+                "scrollDepth",
+                "searchTerm"
+            ],
+            "geography": [
+                "city",
+                "country",
+                "countryCode",
+                "stateRegion"
+            ],
+            "site": [
+                "siteId"
+            ],
+            "time": [
+                "date",
+                "dateHour",
+                "day",
+                "dayOfWeek",
+                "dayOfYear",
+                "hour",
+                "minute",
+                "month",
+                "weekOfYear",
+                "year",
+                "yearMonth"
+            ],
+            "traffic source": [
+                "firstAd",
+                "firstCampaign",
+                "firstMedium",
+                "firstSearchTerms",
+                "firstSource",
+                "firstSourceMedium",
+                "referrerHost",
+                "sessionAd",
+                "sessionCampaign",
+                "sessionMedium",
+                "sessionSearchTerms",
+                "sessionSource",
+                "sessionSourceMedium",
+                "taggedCampaign",
+                "taggedMedium",
+                "taggedSource"
+            ],
+            "visit": [
+                "isEngagedSession",
+                "sessionId"
+            ],
+            "visitor": [
+                "clientId",
+                "newVsReturning",
+                "priorSessionCount",
+                "userId"
+            ]
+        }
     }
 }

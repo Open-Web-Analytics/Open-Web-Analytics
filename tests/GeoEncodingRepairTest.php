@@ -154,70 +154,20 @@ final class GeoEncodingRepairTest extends TestCase
         $this->assertFalse( GeoEncodingRepair::isDoubleEncoded( 'london' ) );
     }
 
-
-    /*
-     * ---------------------------------------------------------------------
-     * The command's planning step.
-     * ---------------------------------------------------------------------
-     */
-
-    /** planRepairs() is protected; it takes rows and returns intentions. */
-    private function plan( array $rows ): array
+    /** The v1 migration repairs a location's names as it copies them. */
+    public function testTheMigrationRepairsALocationOnTheWayThrough(): void
     {
-        $method = new ReflectionMethod(
-            \OWA\Module\Base\Controller\RepairGeoEncodingCli::class, 'planRepairs' );
-        $method->setAccessible( true );
-
-        return $method->invoke(
-            ( new ReflectionClass( \OWA\Module\Base\Controller\RepairGeoEncodingCli::class ) )
-                ->newInstanceWithoutConstructor(),
-            $rows );
-    }
-
-    public function testThePlanNamesEveryDoubleEncodedValueAndNothingElse(): void
-    {
-        $plan = $this->plan( array(
-            array( 'id' => '1', 'country' => 'germany', 'state' => 'bayern',    'city' => 'mÃ¼nchen' ),
-            array( 'id' => '2', 'country' => 'brazil',  'state' => 'são paulo', 'city' => 'são paulo' ),
-            array( 'id' => '3', 'country' => 'russia',  'state' => 'москва',    'city' => 'москва' ),
-            array( 'id' => '4', 'country' => 'uk',      'state' => 'england',   'city' => 'london' ),
+        $location = \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( array(
+            'country'      => 'Germany',
+            'country_code' => 'DE',
+            'state'        => 'Baden-WÃ¼rttemberg',
+            'city'         => 'MÃ¼nchen',
         ) );
 
-        $this->assertCount( 1, $plan, 'only the double-encoded value should be planned' );
-        $this->assertSame( '1', $plan[0]['id'] );
-        $this->assertSame( 'city', $plan[0]['column'] );
-        $this->assertSame( 'mÃ¼nchen', $plan[0]['from'] );
-        $this->assertSame( 'münchen', $plan[0]['to'] );
-    }
-
-    public function testThePlanCoversEveryNameColumnOnARow(): void
-    {
-        $plan = $this->plan( array(
-            array( 'id' => '9', 'country' => 'Ã¶sterreich', 'state' => 'kÃ¤rnten', 'city' => 'kÃ¶ln' ),
-        ) );
-
-        $this->assertCount( 3, $plan );
-        $this->assertSame( array( 'country', 'state', 'city' ),
-            array_column( $plan, 'column' ) );
-        $this->assertSame( array( 'österreich', 'kärnten', 'köln' ),
-            array_column( $plan, 'to' ) );
-    }
-
-    public function testAnEmptyOrAbsentColumnIsSkippedRatherThanFatal(): void
-    {
-        // A row read back with a null column, or a column the select did not
-        // return, must not take the scan down with it.
-        $plan = $this->plan( array(
-            array( 'id' => '5', 'city' => 'mÃ¼nchen' ),
-            array( 'id' => '6', 'country' => null, 'state' => '', 'city' => 'kÃ¶ln' ),
-        ) );
-
-        $this->assertCount( 2, $plan );
-        $this->assertSame( array( 'münchen', 'köln' ), array_column( $plan, 'to' ) );
-    }
-
-    public function testNoRowsPlansNothing(): void
-    {
-        $this->assertSame( array(), $this->plan( array() ) );
+        $this->assertSame( 'Baden-Württemberg', $location['state'] );
+        $this->assertSame( 'München', $location['city'] );
+        $this->assertSame( 'Germany', $location['country'], 'a correct name is left alone' );
+        $this->assertSame( array(), \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( array() ),
+            'a row with no location stays empty' );
     }
 }

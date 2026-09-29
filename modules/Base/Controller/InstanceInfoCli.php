@@ -587,25 +587,14 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             return null;
         }
 
-        $tables = array(
-            'request', 'session', 'click', 'domstream',
-            'action_fact', 'commerce_transaction_fact', 'commerce_line_item_fact',
-        );
+        // v2's partitioned tables: the raw store and one cube per Property.
+        $tables = array_merge(
+            array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ),
+            array_values( \OWA\Module\Base\Classes\Cube\Cubes::existing() ) );
 
         $counts = array();
 
-        foreach ( $tables as $short ) {
-
-            try {
-
-                $e = \OWA\Core\CoreAPI::entityFactory( 'base.' . $short );
-
-            } catch ( \Throwable $ex ) {
-
-                continue;
-            }
-
-            $table = $e->getTableName();
+        foreach ( $tables as $table ) {
 
             try {
 

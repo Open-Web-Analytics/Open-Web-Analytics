@@ -80,7 +80,7 @@ final class MigrateMoreSourcesTest extends TestCase
      */
     private function goalIds(): array
     {
-        $property = \OWA\Module\Base\Update\Update025::propertyFor(self::SITE);
+        $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor(self::SITE);
 
         return array_map(fn ($n) => (string) crc32('goal_event:' . $property . ':' . $n), [1, 2]);
     }
@@ -247,7 +247,7 @@ final class MigrateMoreSourcesTest extends TestCase
     /** v1's record decides which sessions converted; the definition finds the row. */
     public function testARecordedCompletionMarksTheRowThatMetTheGoal(): void
     {
-        $property = \OWA\Module\Base\Update\Update025::propertyFor(self::SITE);
+        $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor(self::SITE);
         [$thanks, $gone] = $this->goalIds();
 
         $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');

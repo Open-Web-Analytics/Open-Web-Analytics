@@ -26,11 +26,11 @@ use PHPUnit\Framework\TestCase;
  * reporting as three and a counter that meant "none" stops being comparable to
  * the eleven years of 0s above it.
  *
- * WHY RESTORE 0 RATHER THAN EMBRACE NULL
- * The point is that old rows and new rows AGREE. Anything reading across
- * 20260821 -- every report, and the v2 migration's parity harness -- depends on
- * one representation, not two. v2 then declares these columns NOT NULL
- * DEFAULT 0 in the schema, which is where the guarantee belongs.
+ * WHAT v2 KEEPS OF IT
+ * A column that declares itself nullable stores NULL for absence -- the form
+ * v2 uses, and the one the reporting layer renders as "(not set)". A column
+ * declared NOT NULL still takes its type's zero, since NULL there is refused
+ * under STRICT_ALL_TABLES. Asserted on owa_event_raw, which has both.
  */
 final class EntityUnsetColumnWriteTest extends TestCase
 {
@@ -39,9 +39,9 @@ final class EntityUnsetColumnWriteTest extends TestCase
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    private function session()
+    private function row()
     {
-        return owa_coreAPI::entityFactory('base.session');
+        return owa_coreAPI::entityFactory('base.event_raw');
     }
 
     /** writeValue() is protected; it is the seam, so reach it directly. */
@@ -55,29 +55,32 @@ final class EntityUnsetColumnWriteTest extends TestCase
 
     public function testAnUnsetNumericColumnIsWrittenAsZero(): void
     {
-        $s = $this->session();
+        $s = $this->row();
 
-        // num_goals is TINYINT and nobody assigned it.
-        $this->assertNull($s->get('num_goals'), 'precondition: the column is unset');
-        $this->assertSame(0, $this->writeValue($s, 'num_goals'),
-            'an unset numeric column would be written as NULL');
+        // yyyymmdd is a NOT NULL INT and nobody assigned it.
+        $this->assertNull($s->get('yyyymmdd'), 'precondition: the column is unset');
+        $this->assertSame(0, $this->writeValue($s, 'yyyymmdd'),
+            'an unset NOT NULL numeric column would be written as NULL and refused');
     }
 
     public function testAnUnsetBooleanColumnIsWrittenAsZero(): void
     {
-        $s = $this->session();
-
-        $this->assertSame(0, $this->writeValue($s, 'is_repeat_visitor'),
-            'the column that started this: a two-state fact stored as three');
+        $this->assertSame(0, $this->writeValue($this->row(), 'is_goal_event'),
+            'a two-state fact must not be stored as a third');
     }
 
     public function testAnUnsetTextColumnIsWrittenAsEmptyString(): void
     {
-        $s = $this->session();
+        $this->assertSame('', $this->writeValue($this->row(), 'event_type'));
+    }
 
-        // 'site' is VARCHAR255 and went NULL on the same date as the rest.
-        $this->assertSame('', $this->writeValue($s, 'site'),
-            "a string column's absent value was '' for eleven years, not NULL");
+    /** A nullable column stores its absence as NULL. */
+    public function testAnUnsetNullableColumnIsWrittenAsNull(): void
+    {
+        $s = $this->row();
+
+        $this->assertNull($this->writeValue($s, 'tagged_medium'), 'text');
+        $this->assertNull($this->writeValue($s, 'engagement_msec'), 'numeric: 0 would be a real value');
     }
 
     /**
@@ -87,16 +90,16 @@ final class EntityUnsetColumnWriteTest extends TestCase
      */
     public function testAnAssignedValueIsWrittenUnchanged(): void
     {
-        $s = $this->session();
+        $s = $this->row();
 
-        $s->set('num_goals', 4);
-        $this->assertSame(4, $this->writeValue($s, 'num_goals'));
+        $s->set('event_seq', 4);
+        $this->assertSame(4, $this->writeValue($s, 'event_seq'));
 
-        $s->set('is_bounce', 0);
-        $this->assertSame(0, $this->writeValue($s, 'is_bounce'));
+        $s->set('is_goal_event', 0);
+        $this->assertSame(0, $this->writeValue($s, 'is_goal_event'));
 
-        $s->set('site', 'example.test');
-        $this->assertSame('example.test', $this->writeValue($s, 'site'));
+        $s->set('tagged_medium', 'email');
+        $this->assertSame('email', $this->writeValue($s, 'tagged_medium'));
     }
 
     /**
@@ -107,7 +110,7 @@ final class EntityUnsetColumnWriteTest extends TestCase
      */
     public function testAnUnrecognisedTypeIsLeftAlone(): void
     {
-        $s = $this->session();
+        $s = $this->row();
 
         $unknown = new \OWA\Module\Base\Classes\DbColumn('probe_col', 'SOME_FUTURE_TYPE');
         $s->setProperty($unknown);
@@ -128,7 +131,7 @@ final class EntityUnsetColumnWriteTest extends TestCase
      */
     public function testTheTextTypeListIsDerivedFromDeclaredTypesNotLiterals(): void
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory('base.click');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $m = new ReflectionMethod($entity, 'textColumnTypes');
         $m->setAccessible(true);
@@ -156,56 +159,46 @@ final class EntityUnsetColumnWriteTest extends TestCase
     }
 
     /**
-     * No column on a tracked fact entity is written as NULL.
+     * No NOT NULL column is written as NULL, and no nullable one as a zero.
      *
-     * This is the invariant, and it is why the fix lives at the WRITE layer
-     * rather than in the tracking-property map. Most fact columns are not
-     * declared as tracking properties at all: base.session has 121 columns and
-     * only 35 of them appear in any of the three maps, base.request 58 and 37.
-     * Fixing the map would have covered 29% of the surface and left the rest
-     * writing NULL exactly as before.
-     *
-     * A column that genuinely wants NULL is a deliberate decision -- it needs a
-     * three-state type and a reason, per the v2 plan's §1.12 -- so it should
-     * fail here and be argued for, not appear by accident because someone
-     * declared a type this layer does not recognise.
+     * The first is refused under STRICT_ALL_TABLES, so an insert that sent it
+     * would fail outright. The second would store a real 0 or '' where nothing
+     * was known.
      */
-    public function testNoFactColumnIsWrittenAsNull(): void
+    public function testEveryColumnIsWrittenAsItsOwnAbsence(): void
     {
-        $entities = [
-            'base.session',
-            'base.request',
-            'base.action_fact',
-            'base.commerce_transaction_fact',
-            'base.commerce_line_item_fact',
-        ];
+        $wrong   = [];
+        $checked = 0;
 
-        $unresolved = [];
-        $checked    = 0;
-
-        foreach ($entities as $name) {
+        foreach (['base.event_raw', 'base.visitor_acquisition'] as $name) {
 
             $entity = owa_coreAPI::entityFactory($name);
 
             foreach ($entity->getColumns() as $column) {
 
+                if (in_array($column, ['id'], true)) {
+                    continue;
+                }
+
                 $checked++;
 
-                if ($this->writeValue($entity, $column) === null) {
-                    $unresolved[] = $name . '.' . $column;
+                $nullable = ! empty($entity->getProperty($column)->nullable);
+                $value    = $this->writeValue($entity, $column);
+
+                if ($nullable ? $value !== null : $value === null) {
+                    $wrong[] = $name . '.' . $column . ($nullable ? ' (nullable, got a zero)' : ' (NOT NULL, got NULL)');
                 }
             }
         }
 
-        $this->assertGreaterThan(100, $checked, 'the entity columns were not enumerated');
-        $this->assertSame([], $unresolved,
-            'these columns would still be written as NULL: ' . implode(', ', $unresolved));
+        $this->assertGreaterThan(50, $checked, 'the entity columns were not enumerated');
+        $this->assertSame([], $wrong, implode(', ', $wrong));
     }
 
     /**
      * End to end: the only place the create() change is actually observable.
      */
-    public function testUnsetColumnsSurviveACreateAsZeroNotNull(): void
+    public function testUnsetColumnsSurviveACreateAsTheirAbsence(): void
     {
         if (!owa_test_db_available()) {
             $this->markTestSkipped('No database available.');
@@ -213,36 +206,29 @@ final class EntityUnsetColumnWriteTest extends TestCase
 
         $db = owa_coreAPI::dbSingleton();
         $id = '9111222333444555778';
-        $db->query("DELETE FROM owa_session WHERE id = $id");
+        $db->query('DELETE FROM owa_event_raw WHERE id = ?', [$id]);
 
         try {
-            $s = $this->session();
+            $s = $this->row();
             $s->set('id', $id);
             $s->set('site_id', 'entity-unset-test');
+            $s->set('event_type', 'page_view');
             $s->set('yyyymmdd', (int) date('Ymd'));
-            $s->set('timestamp', time());
-            // is_repeat_visitor, num_goals and commerce_trans_count are all
-            // deliberately left alone -- that is the case under test.
+            $s->set('ts', time() * 1000000);
+            // is_goal_event, is_outbound and tagged_medium are deliberately
+            // left alone -- that is the case under test.
             $s->create();
 
             $row = $db->get_row(
-                "SELECT is_repeat_visitor, num_goals, commerce_trans_count, site
-                   FROM owa_session WHERE id = ?", [$id]);
+                'SELECT is_goal_event, is_outbound, tagged_medium FROM owa_event_raw WHERE id = ?', [$id]);
 
             $this->assertNotNull($row, 'the row was not created');
-
-            foreach (['is_repeat_visitor', 'num_goals', 'commerce_trans_count'] as $col) {
-                $this->assertNotNull($row[$col],
-                    sprintf('%s was stored as NULL', $col));
-                $this->assertSame('0', (string) $row[$col],
-                    sprintf('%s should be 0, the value eleven years of rows carry', $col));
-            }
-
-            $this->assertSame('', (string) $row['site'],
-                'an absent string column should be empty, not NULL');
+            $this->assertSame('0', (string) $row['is_goal_event']);
+            $this->assertSame('0', (string) $row['is_outbound']);
+            $this->assertNull($row['tagged_medium'], 'a nullable column stores absence as NULL');
 
         } finally {
-            $db->query("DELETE FROM owa_session WHERE id = $id");
+            $db->query('DELETE FROM owa_event_raw WHERE id = ?', [$id]);
         }
     }
 }

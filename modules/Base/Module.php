@@ -50,6 +50,40 @@ class Module extends \OWA\Core\Module {
         return parent::__construct();
     }
 
+    /**
+     * The schema 1.14.0 left behind, and the oldest this release upgrades.
+     *
+     * v2's updates start at 34. The ones before are gone with the v1 code they
+     * migrated, so an older installation upgrades to 1.14 first (PLAN.html
+     * 2.21).
+     */
+    const OLDEST_UPGRADABLE_SCHEMA = 33;
+
+    /**
+     * Refuse an installation older than 1.14.0 before applying anything.
+     *
+     * No recorded version is refused too. Module::install() records one when it
+     * creates every table, so its absence means tables made by something older,
+     * which the chain used to handle by replaying from Update001.
+     */
+    function update() {
+
+        $recorded = (int) \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' );
+
+        if ( $recorded < self::OLDEST_UPGRADABLE_SCHEMA ) {
+
+            \OWA\Core\CoreAPI::notice( $recorded
+                ? sprintf( 'This installation is at schema %d. Upgrade to OWA 1.14.0 (schema %d) first,'
+                    . ' then to this release.', $recorded, self::OLDEST_UPGRADABLE_SCHEMA )
+                : sprintf( 'This installation has no recorded schema version. Upgrade to OWA 1.14.0'
+                    . ' (schema %d) first, then to this release.', self::OLDEST_UPGRADABLE_SCHEMA ) );
+
+            return false;
+        }
+
+        return parent::update();
+    }
+
     function init() {
 
 	    // create event queues
@@ -237,10 +271,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.apiRequest',                    'OWA\\Module\\Base\\Controller\\ApiRequest',                   'Controller/ApiRequest.php' );
         $this->registerAction( 'base.changeUserPasswordCli',         'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli',        'Controller/ChangeUserPasswordCli.php' );
         $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight',                'Controller/CorsPreflight.php' );
-        $this->registerAction( 'base.crawlDocumentCli',              'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',             'Controller/CrawlDocumentCli.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
         $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli',             'Controller/CubeRebuildCli.php' );
+        $this->registerAction( 'base.v1DropCli',                     'OWA\\Module\\Base\\Controller\\V1DropCli',                   'Controller/V1DropCli.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
         $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
         $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
@@ -271,7 +305,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.goalEventSave',                  'OWA\\Module\\Base\\Controller\\GoalEventSave',                 'Controller/GoalEventSave.php' );
         $this->registerAction( 'base.goalEventDelete',                'OWA\\Module\\Base\\Controller\\GoalEventDelete',               'Controller/GoalEventDelete.php' );
         $this->registerAction( 'base.optionsModules',                'OWA\\Module\\Base\\Controller\\OptionsModules',               'Controller/OptionsModules.php' );
-        $this->registerAction( 'base.repairGeoEncodingCli',          'OWA\\Module\\Base\\Controller\\RepairGeoEncodingCli',         'Controller/RepairGeoEncodingCli.php' );
         $this->registerAction( 'base.optionsReset',                  'OWA\\Module\\Base\\Controller\\OptionsReset',                 'Controller/OptionsReset.php' );
         $this->registerAction( 'base.optionsUpdate',                 'OWA\\Module\\Base\\Controller\\OptionsUpdate',                'Controller/OptionsUpdate.php' );
         $this->registerAction( 'base.overlayLauncher',               'OWA\\Module\\Base\\Controller\\OverlayLauncher',              'Controller/OverlayLauncher.php' );
@@ -289,8 +322,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.customDimensionApplyCli',       'OWA\\Module\\Base\\Controller\\CustomDimensionApplyCli',     'Controller/CustomDimensionApplyCli.php' );
         $this->registerAction( 'base.customDimensionRegisterCli',    'OWA\\Module\\Base\\Controller\\CustomDimensionRegisterCli',  'Controller/CustomDimensionRegisterCli.php' );
         $this->registerAction( 'base.customDimensionDeregisterCli',  'OWA\\Module\\Base\\Controller\\CustomDimensionDeregisterCli','Controller/CustomDimensionDeregisterCli.php' );
-        $this->registerAction( 'base.rederiveDimensionIdsCli',       'OWA\\Module\\Base\\Controller\\RederiveDimensionIdsCli',    'Controller/RederiveDimensionIdsCli.php' );
-        $this->registerAction( 'base.backfillVisitorAcquisitionCli', 'OWA\\Module\\Base\\Controller\\BackfillVisitorAcquisitionCli', 'Controller/BackfillVisitorAcquisitionCli.php' );
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
         $this->registerAction( 'base.instanceInfoCli',              'OWA\\Module\\Base\\Controller\\InstanceInfoCli',           'Controller/InstanceInfoCli.php' );
@@ -355,9 +386,9 @@ class Module extends \OWA\Core\Module {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
+        $this->registerCliCommand('v1-drop', 'base.v1DropCli');
         $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');
         $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
-        $this->registerCliCommand('repair-geo-encoding', 'base.repairGeoEncodingCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
         $this->registerCliCommand('activate', 'base.moduleActivateCli');
@@ -367,14 +398,11 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
         $this->registerCliCommand('partition-status', 'base.partitionStatusCli');
-        $this->registerCliCommand('rederive-dimension-ids', 'base.rederiveDimensionIdsCli');
-        $this->registerCliCommand('backfill-visitor-acquisition', 'base.backfillVisitorAcquisitionCli');
         $this->registerCliCommand('partition-init', 'base.partitionInitCli');
         $this->registerCliCommand('partition-drop', 'base.partitionDropCli');
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');
         $this->registerCliCommand('partition-rotate', 'base.partitionRotateCli');
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
-        $this->registerCliCommand('update-document', 'base.crawlDocumentCli');
         $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
@@ -1012,20 +1040,9 @@ class Module extends \OWA\Core\Module {
     function _registerEntities() {
 
         $this->registerEntity(array(
-                'request',
-                'session',
-                'document',
-                'feed_request',
-                'click',
-                'ua',
-                'referer',
                 'site',
                 'organization',
                 'property',
-                'visitor',
-                'host',
-                'os',
-                'impression',
             /*
              * 'configuration' is NOT here. Update043 unpacked that table into
              * install-scope rows of owa_setting and dropped it, so a fresh
@@ -1039,15 +1056,6 @@ class Module extends \OWA\Core\Module {
             'goal_event',
             'goal_event_condition',
                 'user',
-                'domstream',
-                'action_fact',
-                'search_term_dim',
-                'ad_dim',
-                'source_dim',
-                'campaign_dim',
-                'location_dim',
-                'commerce_transaction_fact',
-                'commerce_line_item_fact',
                 'queue_item',
                 'scheduled_job',
                 'notification',
