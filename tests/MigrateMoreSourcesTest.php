@@ -158,6 +158,47 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame(40, strlen(ActionMigrator::eventName(str_repeat('a', 60))));
     }
 
+    /** An action named like a built-in event is prefixed, not turned into one. */
+    public function testAnActionNamedLikeABuiltInEventIsPrefixed(): void
+    {
+        $this->assertSame('action_purchase', ActionMigrator::eventName('Purchase'));
+        $this->assertSame('action_page_view', ActionMigrator::eventName('Page View'));
+        $this->assertSame('action_click', ActionMigrator::eventName('click'));
+        $this->assertSame('download', ActionMigrator::eventName('Download'), 'not a built-in name');
+    }
+
+    /** So is one a module routes to its own processor. */
+    public function testAnActionNamedLikeAModulesEventIsPrefixed(): void
+    {
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $maps    = $service->maps;
+
+        try {
+            $this->assertSame('recording_probe', ActionMigrator::eventName('Recording Probe'));
+
+            $processors = (array) $service->getMap('event_processors');
+            $processors[\OWA\Core\CoreAPI::trackingDispatchName('recording_probe')] = 'probe.processEvent';
+            $service->setMap('event_processors', $processors);
+
+            $this->assertSame('action_recording_probe', ActionMigrator::eventName('Recording Probe'));
+        } finally {
+            $service->maps = $maps;
+        }
+    }
+
+    /** The row carries the original name when the prefix changed it. */
+    public function testAPrefixedActionKeepsItsOriginalName(): void
+    {
+        $this->fact('action_fact', '1790000000000000605', ['action_name' => 'Purchase']);
+
+        (new ActionMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $this->assertSame([], $this->rows('purchase'), 'not stored as a purchase');
+
+        $row = $this->rows('action_purchase')[0];
+        $this->assertSame('Purchase', json_decode($row['params'], true)['action_name']);
+    }
+
     /** v1 stored the amount times 100 whatever the currency; v2 stores minor units. */
     public function testAPurchaseIsInMinorUnitsOfTheProfilesCurrency(): void
     {
