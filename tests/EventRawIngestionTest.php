@@ -1447,6 +1447,15 @@ final class EventRawIngestionTest extends IngestionTestCase
      */
     public function testDomstreamIsNotStoredAsAnEvent(): void
     {
+        // Base knows nothing of recordings (BaseKnowsNothingOfDomstreamTest):
+        // without the module a `domstream` event is an ordinary custom event,
+        // and storing it is right.
+        if ( ! \OWA\Core\CoreAPI::getSetting('domstream', 'is_active')
+          || ! \OWA\Core\CoreAPI::serviceSingleton()->getMapValue('event_processors',
+                \OWA\Core\CoreAPI::trackingDispatchName('domstream'))) {
+            $this->markTestSkipped('the Domstream module is not active here');
+        }
+
         $visitor = $this->uniqueGuid();
         $session = $this->uniqueSessionId();
 
