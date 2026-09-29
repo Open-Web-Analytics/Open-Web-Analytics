@@ -36,7 +36,7 @@ final class FunnelPathStepTest extends TestCase
     {
         $out = $this->predicate( '/thanks' );
 
-        $this->assertSame( 'e.page_path = ?', $out['sql'] );
+        $this->assertSame( "( e.event_type = 'page_view' AND e.page_path = ? )", $out['sql'] );
         $this->assertSame( array( '/thanks' ), $out['params'] );
 
         // Author input reaching a query is bound, never inlined.
@@ -74,7 +74,7 @@ final class FunnelPathStepTest extends TestCase
     {
         $out = $this->predicate( '/checkout?step=2' );
 
-        $this->assertSame( '( e.page_path = ? AND e.page_query = ? )', $out['sql'] );
+        $this->assertSame( "( e.event_type = 'page_view' AND e.page_path = ? AND e.page_query = ? )", $out['sql'] );
         $this->assertSame( array( '/checkout', 'step=2' ), $out['params'] );
     }
 
@@ -83,7 +83,7 @@ final class FunnelPathStepTest extends TestCase
     {
         $out = $this->predicate( '/checkout?' );
 
-        $this->assertSame( 'e.page_path = ?', $out['sql'] );
+        $this->assertSame( "( e.event_type = 'page_view' AND e.page_path = ? )", $out['sql'] );
         $this->assertSame( array( '/checkout' ), $out['params'] );
     }
 
