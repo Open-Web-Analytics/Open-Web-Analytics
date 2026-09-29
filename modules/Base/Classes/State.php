@@ -97,7 +97,8 @@ class State {
 
     function setState($store, $name, $value, $store_type = '', $is_perminent = false) {
 
-        \OWA\Core\CoreAPI::debug(sprintf('populating state for store: %s, name: %s, value: %s, store type: %s, is_perm: %s', $store, $name, print_r($value, true), $store_type, $is_perminent));
+        // Not the value: state holds visitor and session identifiers.
+        \OWA\Core\CoreAPI::debug(sprintf('populating state for store: %s, name: %s, store type: %s, is_perm: %s', $store, $name, $store_type, $is_perminent));
 
         // set values
         if (empty($name)) {
@@ -162,7 +163,7 @@ class State {
 
         //check to see that store exists.
         if ( isset( $this->stores[ $store ] ) ) {
-            \OWA\Core\CoreAPI::debug('Persisting state store: '. $store . ' with: '. print_r($this->stores[ $store ], true));
+            \OWA\Core\CoreAPI::debug( 'Persisting state store: ' . $store );
             // transform state array into a string using proper format
             if ( is_array( $this->stores[$store] ) ) {
                 switch ( $this->stores_meta[$store]['type'] ) {

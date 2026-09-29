@@ -1175,14 +1175,14 @@ abstract class Module {
         $current_schema = $this->getSchemaVersion();
         $required_schema = $this->getRequiredSchemaVersion();
 
-        \OWA\Core\CoreAPI::debug("$this->name Schema version is $current_schema");
-        \OWA\Core\CoreAPI::debug("$this->name Required Schema version is $required_schema");
-
         if ($current_schema >= $required_schema) {
             return true;
-        } else {
-            return false;
         }
+
+        \OWA\Core\CoreAPI::debug( sprintf( '%s schema is at %s and requires %s.',
+            $this->name, $current_schema, $required_schema ) );
+
+        return false;
     }
 
     function getSchemaVersion() {

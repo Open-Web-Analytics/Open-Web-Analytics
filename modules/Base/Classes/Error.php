@@ -61,6 +61,9 @@ class Error {
      * @var bool
      */
     private $handlers_attached = false;
+
+    /** The priorities logMsg() writes; each is the Monolog method of the same name. */
+    const PRIORITIES = array( 'debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency' );
     
     /**
      * Buffered Msgs
@@ -192,10 +195,8 @@ class Error {
      * Only the development handler used to register one, which had the effect
      * backwards: the installation exposed to the internet was the one running
      * without an exception handler. An uncaught exception there became a PHP
-     * fatal -- recorded in the web server's log rather than OWA's own, where an
-     * administrator would look for it -- and OWA_MAIL_EXCEPTIONS, whose whole
-     * purpose is to tell somebody about an error on a live installation, never
-     * fired anywhere but on a developer's machine.
+     * fatal, recorded in the web server's log rather than OWA's own, where an
+     * administrator would look for it.
      *
      * The status is set deliberately rather than inherited from PHP's fatal, and
      * the response body is left empty: the message and stack trace go to the log,
@@ -224,9 +225,23 @@ class Error {
         http_response_code( 500 );
     }
 
-    function debug($message) {
+    /**
+     * Nothing is formatted unless debug logging is on, which Lib::inDebug()
+     * alone decides (see getLogLevel()). $context is appended as one line.
+     */
+    function debug( $message, $context = null ) {
 
-        return $this->log($message, 'debug');
+        if ( ! \OWA\Core\Lib::inDebug() ) {
+
+            return;
+        }
+
+        if ( $context !== null ) {
+
+            $message = \OWA\Core\Lib::forLog( $message ) . ' ' . \OWA\Core\Lib::forLog( $context );
+        }
+
+        return $this->log( $message, 'debug' );
     }
 
     function info($message) {
@@ -282,7 +297,7 @@ class Error {
 
         if ( is_object( $msg ) || is_array( $msg ) ) {
 
-            $msg = print_r( $msg, true );
+            $msg = \OWA\Core\Lib::forLog( $msg );
         }
 
         /*
@@ -298,48 +313,24 @@ class Error {
             return;
         }
         
-        switch ( $priority ) {
-	        
-	        case 'debug':
-	        	
-	        	$logger->debug( $msg );
-	        	
-	        	break;
-	        	
-	        case 'info':
-	        	
-	        	$logger->info( $msg );
-	        	break;
-	        	
-	        case 'notice':
-	        
-	        	$logger->notice( $msg );
-	        	break;
-	        	
-	        case 'warning':
-	        	
-	        	$logger->warning( $msg );
-	        	break;
-	        	
-	        case 'error':
-	        	
-	        	$logger->error( $msg );
-	        	break;
-	        	
-	        case 'critical':
-	        
-	        	$logger->critical( $msg );
-	        	break;
-	        	
-	        case 'alert':
-	        	
-	        	$logger->alert( $msg );
-	        	break;
-	        	
-	        case 'emergency':
-	        	
-	        	$logger->emergency( $msg );
-	        	break;
+        /*
+         * A write that fails is dropped, never thrown. Monolog throws from a
+         * handler whose stream is closed -- the console handler writes to STDOUT,
+         * and at shutdown it can be destroyed before an object whose destructor
+         * still logs (the cache persisting itself), which turned a successful
+         * `cmd=update` into a fatal and exit code 255.
+         */
+        try {
+
+            // Each priority is the name of Monolog's method for it.
+            if ( in_array( $priority, self::PRIORITIES, true ) ) {
+
+                $logger->{$priority}( $msg );
+            }
+
+        } catch ( \Throwable $e ) {
+
+            return;
         }
     }
 
@@ -553,32 +544,8 @@ class Error {
     function logException($exception) {
 
         $msg = $exception->getMessage() . ' // '.$exception->getTraceAsString();
-        if (defined('OWA_MAIL_EXCEPTIONS')) {
-            $this->mailErrorMsg( $msg, 'Uncaught Exception' );
-        }
 
         $this->log( $msg );
-    }
-
-    function mailErrorMsg( $msg, $subject ) {
-
-         $body = 'Error Message: '. $msg . "\n";
-           $body .= "POST: ". print_r($_POST, true) . "\n";
-           $body .= "GET: ". print_r($_GET, true) . "\n";
-           $body .= "Request: ". print_r($_REQUEST, true) . "\n";
-           $body .= "Server: ". print_r($_SERVER, true) . "\n";
-           $body .= "PID: ". getmypid() . "\n";
-
-           if ( isset( $_SERVER['SERVER_NAME'] ) ) {
-
-               $server = $_SERVER['SERVER_NAME'];
-           } else {
-
-               $server = __FILE__;
-           }
-           $conf = array('subject' => $subject . ' on '. $server, 'from' => 'OWA Error-logger', 'name' => 'exceptions_log');
-           $logger = \OWA\Core\CoreAPI::supportClassFactory('base', 'logEmail', $conf);
-         $logger->log($body);
     }
 }
 
