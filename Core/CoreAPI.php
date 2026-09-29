@@ -3176,9 +3176,16 @@ class CoreAPI {
         return  ceil( time() / \OWA\Core\CoreAPI::getSetting( 'base', 'nonce_expiration_period') );
     }
 
-    public static function createNonce($action) {
+    /**
+     * A nonce for $action, the current user and a time window.
+     *
+     * $tick defaults to the current window. verifyNonce() also passes the one
+     * before it: windows are fixed buckets of the epoch, so a form rendered a
+     * second before a boundary would otherwise be refused a second after it.
+     */
+    public static function createNonce($action, $tick = null) {
 
-        $time = \OWA\Core\CoreAPI::getNonceTimeInterval();
+        $time = $tick ?? \OWA\Core\CoreAPI::getNonceTimeInterval();
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $user_id = $cu->getUserData( 'user_id' );
 
