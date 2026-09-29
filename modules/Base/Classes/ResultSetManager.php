@@ -338,13 +338,22 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     protected function propertyIdForRequest() {
 
+        return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $this->siteIdForRequest() );
+    }
+
+    /**
+     * The Profile this query is scoped to, read from the constraint for the
+     * reason propertyIdForRequest() gives.
+     *
+     * @return string
+     */
+    protected function siteIdForRequest() {
+
         $constraint = $this->getConstraint( 'siteId' );
 
-        $site_id = is_array( $constraint )
+        return is_array( $constraint )
             ? (string) ( $constraint['value'] ?? '' )
             : (string) $this->getSiteId();
-
-        return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id );
     }
 
     function applyConstraints( $constraints = '', $db = '', $entity = '') {
@@ -2177,6 +2186,22 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 		// determin the best fact table ot use forthe query based on
 		// the metrics and dimensions requested
         $bm = $this->chooseBaseEntity();
+
+        /*
+         * NEVER QUERY A CUBE THAT DOES NOT EXIST. The report controllers and the
+         * REST route ask first, so a request reaching here for a Property with
+         * no cube came from somewhere that did not -- a custom report preview,
+         * or a caller yet to be written. Answered the same way: no rows, and
+         * the reason.
+         */
+        if ( $bm && method_exists( $bm, 'getPropertyId' ) && $bm->getPropertyId() !== ''
+                && ! \OWA\Module\Base\Classes\Cube\Cubes::exists( $bm->getPropertyId() ) ) {
+
+            $this->resultSet->notReady = \OWA\Module\Base\Classes\Cube\Status::readiness(
+                $this->siteIdForRequest() );
+
+            return $this->resultSet;
+        }
 
         if ( $bm ) {
 

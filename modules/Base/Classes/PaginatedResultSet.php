@@ -128,6 +128,15 @@ class PaginatedResultSet {
      */
     var $queryParams;
     
+    /**
+     * Why there is no data to query, when there is none: the Property's cube
+     * does not exist yet. Classes\Cube\Status::readiness(). Null otherwise.
+     *
+     * Set instead of querying, so a client can tell "not ready" from a real
+     * zero -- an empty result set alone cannot say which.
+     */
+    var $notReady = null;
+
     var $errors;
 
     /**

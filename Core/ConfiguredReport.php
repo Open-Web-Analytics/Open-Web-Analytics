@@ -95,6 +95,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     const SUBVIEW = 'base.reportWidgets';
 
+    /** Draws cube data, so it is not drawn for a Property with no cube yet. */
+    protected $reads_reporting_data = true;
+
     /** @var array the decoded definition */
     private $definition = array();
 

@@ -39,6 +39,19 @@ class ReportController extends \OWA\Core\AdminController {
 	 * should be passed downstream as state
 	 */
 	var $state_keys = [];
+
+    /**
+     * Whether this screen draws data from the reporting cube.
+     *
+     * Opt-in, because most report controllers do not: the builders, the custom
+     * report list and the REST controllers for sites and recordings all work
+     * with no cube. A screen that sets this is not drawn at all for a Profile
+     * whose Property has no cube yet -- it shows why instead, and nothing
+     * queries a table that does not exist. See readiness in pre() and post().
+     *
+     * @var bool
+     */
+    protected $reads_reporting_data = false;
 	
     /**
      * Constructor
@@ -236,6 +249,16 @@ class ReportController extends \OWA\Core\AdminController {
 
         $this->set( 'currentSiteId', $siteId );
 
+        /*
+         * IS REPORTING READY for this Profile? Asked once, here, by screens that
+         * draw cube data -- a cube exists only after a scheduled build, and a
+         * report on a Property without one would otherwise send every widget's
+         * query at a table that is not there. post() swaps the screen for the
+         * reason. Null when ready.
+         */
+        $this->set( 'reporting_readiness', $this->reads_reporting_data && $siteId
+            ? \OWA\Module\Base\Classes\Cube\Status::readiness( $siteId ) : null );
+
         // pass full set of params to view
         $this->data['params'] = $this->params;
 
@@ -309,6 +332,19 @@ class ReportController extends \OWA\Core\AdminController {
 		
 		// pass the state_keys var to views
         $this->set( 'state_keys', $this->state_keys );
+
+        /*
+         * Reporting not ready: the report's own subview is replaced, so none of
+         * its widgets is drawn and none asks for data. The chrome around it --
+         * the site control, the nav -- stays, so another Profile is one click
+         * away.
+         */
+        if ( ! empty( $this->data['reporting_readiness'] ) ) {
+
+            $this->set( 'can_view_cube_status',
+                \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_modules' ) );
+            $this->setSubview( 'base.reportNotReady' );
+        }
     }
     
     /**
