@@ -6,7 +6,8 @@ use PHPUnit\Framework\TestCase;
  * Four ways the funnel counted what nobody did, each against the real cube.
  *
  *   - a session is (visitor_id, session_id): two visitors can share a
- *     session_id, and their events are not one visit;
+ *     session_id, and their events are not one visit -- and sessions with no
+ *     visitor id are not one visit either;
  *   - device order (event_seq) decides, not arrival: a late beacon does not
  *     reorder what happened;
  *   - a page step is a PAGE VIEW: not a click on that page, and not the
@@ -159,6 +160,18 @@ final class FunnelCubeCorrectnessTest extends TestCase
         $counts = $this->funnel([['path' => '/a'], ['path' => '/b']], 'session');
 
         $this->assertSame([1, 0], $counts, 'one visitor saw /a, another /b: nobody walked the funnel');
+    }
+
+    /** Sessions without a visitor id stay apart: CONCAT() of a NULL is NULL. */
+    public function testSessionsWithoutAVisitorIdAreNotOneSession(): void
+    {
+        $this->event(self::V1, '9200000000000001202', 'page_view', '/a', 0);
+        $this->event(self::V1, '9200000000000001203', 'page_view', '/b', 10);
+
+        owa_coreAPI::dbSingleton()->query(sprintf('UPDATE %s SET visitor_id = NULL WHERE site_id = ?',
+            \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY)), [self::SITE]);
+
+        $this->assertSame([1, 0], $this->funnel([['path' => '/a'], ['path' => '/b']], 'session'));
     }
 
     public function testDeviceOrderDecidesNotArrival(): void

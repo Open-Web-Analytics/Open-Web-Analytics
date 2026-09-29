@@ -740,7 +740,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          */
         if ( $scope === 'session' ) {
 
-            $subj  = 'CONCAT(' . $e . '.visitor_id, \':\', ' . $e . '.session_id)';
+            // COALESCE: CONCAT() of a NULL is NULL, and every session without
+            // a visitor id would otherwise be one subject.
+            $subj  = 'CONCAT(COALESCE(' . $e . '.visitor_id, \'\'), \':\', ' . $e . '.session_id)';
             $order = $e . '.visitor_id, ' . $e . '.session_id';
 
         } else {
