@@ -92,6 +92,16 @@ class EventRaw extends \OWA\Core\Entity {
         // session colliding on the derived id.
         $this->setProperty( $this->column( 'ts', OWA_DTD_BIGINT, false ) );
 
+        /*
+         * Microseconds: when the row REACHED RAW, stamped by create(). Not ts,
+         * which is when the edge received the beacon -- a queued event lands
+         * later carrying an earlier ts. A build compares this with a
+         * partition's built_at to know whether anything has arrived since
+         * (Cube\Builder::isCurrent()). Raw only: the cube entity drops it.
+         * NULL on rows written before the column existed.
+         */
+        $this->setProperty( $this->column( 'created_at', OWA_DTD_BIGINT ) );
+
         $this->setProperty( $this->column( 'yyyymmdd', OWA_DTD_INT, false ) );
         $this->setPartitionColumn( 'yyyymmdd' );
 
@@ -405,6 +415,25 @@ class EventRaw extends \OWA\Core\Entity {
      * @param bool   $nullable
      * @return \OWA\Module\Base\Classes\DbColumn
      */
+    /**
+     * Written with the moment it reached raw.
+     *
+     * Here rather than in each writer, so no path that writes raw through the
+     * entity can leave it out. A value already set is kept: a writer that
+     * stamped a whole batch at once has said when it arrived.
+     *
+     * @return bool
+     */
+    function create() {
+
+        if ( isset( $this->properties['created_at'] ) && ! $this->get( 'created_at' ) ) {
+
+            $this->set( 'created_at', (int) round( microtime( true ) * 1000000 ) );
+        }
+
+        return parent::create();
+    }
+
     private function column( $name, $type, $nullable = true ) {
 
         $column = new \OWA\Module\Base\Classes\DbColumn( $name, $type );

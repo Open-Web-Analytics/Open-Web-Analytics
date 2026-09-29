@@ -303,6 +303,51 @@ class Builder {
     }
 
     /**
+     * Whether rebuilding this partition would change nothing.
+     *
+     * CURRENT means: no row has reached raw since the partition was built, and
+     * every session in it had closed by then -- the build came at least one
+     * session length after the newest arrival, which is when closedBefore()
+     * would have finalised all of them. Both from one comparison, of built_at
+     * with raw's created_at (EventRaw), so it holds whatever a build does with
+     * the rows: it compares arrival times, not row counts.
+     *
+     * NOT CURRENT when it cannot tell -- a partition never built, or whose rows
+     * all predate created_at -- so an unknown is always rebuilt.
+     *
+     * created_at is stamped just before ingest commits, so a build can miss a
+     * row whose stamp is older than its built_at; the session-length margin
+     * covers that, since no build within it counts as current.
+     *
+     * @param array $span from partitions()
+     * @return bool
+     */
+    public function isCurrent( array $span ) {
+
+        $built_at = $this->builtAt( $span );
+
+        if ( $built_at === null ) {
+
+            return false;
+        }
+
+        $row = $this->db->get_row( sprintf(
+            'SELECT MAX(r.created_at) AS newest FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s',
+            $this->tables['raw'], (int) $span['start'], (int) $span['less_than'],
+            $this->siteFilter( 'r' ) ) );
+
+        $newest = is_array( $row ) && ! empty( $row['newest'] ) ? (int) $row['newest'] : null;
+
+        if ( $newest === null ) {
+
+            return false;
+        }
+
+        // closedBefore() is "now minus a session length", so this is newest plus one.
+        return $built_at >= $newest + ( $newest - $this->closedBefore( $newest ) );
+    }
+
+    /**
      * A partition is SETTLED if it was last built after its period ended --
      * and after the sessions open at that moment had timed out, since a build
      * just past midnight still sees yesterday's last sessions as open.
@@ -862,7 +907,7 @@ class Builder {
      */
     protected function statement( array $span, array $expressions ) {
 
-        $raw_columns = $this->rawColumns();
+        $raw_columns = $this->copiedColumns();
 
         $start    = (int) $span['start'];
         $end      = (int) $span['less_than'];
@@ -1161,6 +1206,22 @@ class Builder {
     protected function rawColumns() {
 
         return \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getColumns();
+    }
+
+    /**
+     * The raw columns a build copies onto the cube: raw's, less any the cube
+     * does not carry -- created_at, which is ingest provenance (EventRaw).
+     *
+     * Not rawColumns(), which stays raw's whole list: a step may still READ a
+     * raw column the cube does not keep.
+     *
+     * @return string[]
+     */
+    protected function copiedColumns() {
+
+        return array_values( array_intersect(
+            $this->rawColumns(),
+            \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getColumns() ) );
     }
 
     /**

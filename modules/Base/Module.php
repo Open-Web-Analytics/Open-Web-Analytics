@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 62;
+        $this->required_schema_version = 63;
         return parent::__construct();
     }
 
@@ -492,28 +492,27 @@ class Module extends \OWA\Core\Module {
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array() );
 
         /*
-         * The reporting cube's build. Registered, and safe to be, because the
-         * command refuses cheaply when no site collects into v2 -- which is
-         * every installation until one turns it on. Without that guard this
-         * would do DDL on every run on every install to rebuild an empty
-         * partition, which is why it shipped unregistered at first.
+         * The reporting cube's build, EVERY FIVE MINUTES. Reports read the
+         * cube, and their header says when it was built, so this cadence is
+         * how fresh every report is.
          *
-         * ONE JOB, AT DAILY SPREAD, not the quarter-hourly cadence 2.5.1
-         * eventually wants. The default range is yesterday and today, so a
-         * daily run keeps the cube a day fresh, and nothing reports over
-         * owa_event yet -- so a frequent run would buy freshness no reader can
-         * see while paying a swap every fifteen minutes. An installation that
-         * wants it states it in OWA_SCHEDULED_JOBS; CubeRebuildCli's docblock
-         * carries both cadences. Same rule as the empty params above: turning
-         * the scheduler on must not turn anything else on.
+         * Affordable because a run skips what has not changed: a partition
+         * nothing has reached since it was built, whose sessions had all
+         * closed by then, is left alone (Cube\Builder::isCurrent()), and one
+         * empty in both raw and the cube costs an index probe. So a quiet
+         * Property costs a scan per partition and no swap, and an active one
+         * rebuilds today's partition -- measured at 0.6s for 1k rows, 1.4s for
+         * 10k and 12.6s for 100k on a db.t4g.small. An installation that wants
+         * it more or less often says so in OWA_SCHEDULED_JOBS.
          *
-         * NOT '@daily', for the reason rotate-partitions is not: several OWA
-         * installs commonly share one database server, and this one ends in an
-         * EXCHANGE PARTITION.
+         * Spread, not on the minute, for the reason rotate-partitions is:
+         * several OWA installs commonly share one database server, and a
+         * rebuild ends in an EXCHANGE PARTITION. Two runs cannot collide on a
+         * cube either way -- each takes the cube's lock and a second skips it.
          */
         $this->registerJob(
             'rebuild-cube', 'cube-rebuild',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rebuild-cube' ) ), array() );
+            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array() );
 
         /*
          * Putting registered custom-dimension columns on the cubes.

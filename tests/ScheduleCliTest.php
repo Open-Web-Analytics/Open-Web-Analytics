@@ -186,21 +186,36 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * The cube build ships with no arguments, like rotate.
+     * The cube build ships with no arguments, every five minutes, spread.
      *
-     * Its default range is yesterday and today. A registered days= would make
-     * the window a property of the upgrade rather than of the installation.
+     * Its default range is yesterday and today, and a run skips what has not
+     * changed since it was built, which is what makes the cadence affordable.
+     * A registered days= would make the window a property of the upgrade
+     * rather than of the installation. Spread within the five minutes because
+     * a rebuild ends in an EXCHANGE PARTITION on a server installs may share.
      */
-    public function testTheCubeBuildShipsWithNoArgumentsAndSpread()
+    public function testTheCubeBuildShipsWithNoArgumentsEveryFiveMinutesAndSpread()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
         $this->assertArrayHasKey('rebuild-cube', $jobs);
         $this->assertSame([], $jobs['rebuild-cube']['params']);
         $this->assertSame('code', $jobs['rebuild-cube']['source']);
+
+        $schedule = $jobs['rebuild-cube']['schedule'];
+
         $this->assertMatchesRegularExpression(
-            '/^\d+ \d+ \* \* \*$/', $jobs['rebuild-cube']['schedule'],
-            'a spread daily schedule -- it ends in an EXCHANGE PARTITION' );
+            '/^(\d+,){11}\d+ \* \* \* \*$/', $schedule, 'twelve times an hour');
+
+        $minutes = array_map('intval', explode(',', explode(' ', $schedule)[0]));
+        $gaps    = [];
+
+        for ($i = 1; $i < count($minutes); $i++) {
+            $gaps[] = $minutes[$i] - $minutes[$i - 1];
+        }
+
+        $this->assertSame(array_fill(0, 11, 5), $gaps, 'evenly spaced');
+        $this->assertLessThan(5, $minutes[0], 'and offset within the first five minutes');
     }
 
     /**

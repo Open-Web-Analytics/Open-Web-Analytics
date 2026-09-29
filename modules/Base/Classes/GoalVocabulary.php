@@ -107,6 +107,9 @@ class GoalVocabulary {
         'event_type' => 'the trigger already says which event this is about, and '
                         . 'a condition on it could contradict the trigger',
 
+        'created_at' => 'when the row reached raw, stamped by ingest -- provenance a '
+                        . 'build reads, not anything a visitor did',
+
         'site_id'    => 'the goal belongs to the Property, which owns the Profile',
         'visitor_id' => 'an identity hash, not a behaviour',
         'session_id' => 'an identity hash, not a behaviour',

@@ -85,6 +85,13 @@ class Event extends EventRaw {
         unset( $this->_tableProperties['name'] );
 
         /*
+         * NOT CREATED_AT. When a row reached raw is ingest provenance, read by
+         * a build deciding whether to rebuild; nothing reports on it, and a
+         * cube column costs every cube a full rebuild to add (2.7.3).
+         */
+        unset( $this->properties['created_at'] );
+
+        /*
          * THE ALIAS STAYS, and is the same for every Property.
          *
          * A table name and a table alias are not the same kind of thing. The

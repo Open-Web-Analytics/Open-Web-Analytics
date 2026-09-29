@@ -191,7 +191,8 @@ final class NewVsReturningTest extends TestCase
         $event = \OWA\Core\CoreAPI::entityFactory('base.event')->getColumns();
         $raw   = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getColumns();
 
-        $steps = (new Columns())->steps(array_slice($event, count($raw)));
+        // The cube's own columns by difference: it does not carry every raw one.
+        $steps = (new Columns())->steps(array_values(array_diff($event, $raw)));
 
         $this->assertArrayHasKey('new_vs_returning', $steps);
         $this->assertInstanceOf(NewVsReturningStep::class, $steps['new_vs_returning']);

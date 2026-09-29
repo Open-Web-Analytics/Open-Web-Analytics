@@ -134,6 +134,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         $failed  = 0;
         $built   = 0;
         $locked  = 0;
+        $skipped = 0;
         $stopped = array();
 
         /*
@@ -150,6 +151,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             $failed += $outcome['failed'];
             $built  += $outcome['built'];
             $locked += $outcome['locked'];
+            $skipped += $outcome['skipped'] ?? 0;
 
             if ( ! empty( $outcome['stopped'] ) ) {
 
@@ -171,8 +173,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 $locked === 1 ? 'that cube' : 'every cube in this run' ) );
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf( '%d partition(s) across %d cube(s)%s.',
-            $built, count( $properties ) - $locked, $dry_run ? ' (dry run)' : ' rebuilt' ) );
+        \OWA\Core\CoreAPI::notice( sprintf( '%d partition(s) across %d cube(s)%s; %d unchanged since their last build, skipped.',
+            $built, count( $properties ) - $locked, $dry_run ? ' (dry run)' : ' rebuilt', $skipped ) );
 
         if ( $failed ) {
 
@@ -490,6 +492,20 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * table and an EXCHANGE PARTITION on a shared server.
              */
             if ( ! $dry_run && $builder->builtAt( $span ) === null && ! $builder->hasRaw( $span ) ) {
+
+                $outcome['skipped']++;
+
+                continue;
+            }
+
+            /*
+             * NOTHING HAS ARRIVED SINCE IT WAS BUILT, and its sessions had all
+             * closed by then (Builder::isCurrent()). What lets rebuild-cube run
+             * every few minutes: a quiet Property costs one scan per partition
+             * and no swap. A routine run only -- a range an operator names is
+             * built as named, which is how a build is forced.
+             */
+            if ( ! $dry_run && $routine && $builder->isCurrent( $span ) ) {
 
                 $outcome['skipped']++;
 
