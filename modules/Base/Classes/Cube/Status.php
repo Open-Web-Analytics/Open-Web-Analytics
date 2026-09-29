@@ -283,6 +283,60 @@ class Status {
     }
 
     /**
+     * Why a report's "Data as of" time will not move on its own, or ''.
+     *
+     * The stamp is the newest build time among the rows a report read, so it
+     * can look recent while a day is missing -- a catch-up that stopped leaves
+     * the partitions before the failure freshly built. So the warning is not
+     * read off the stamp: it is whether the scheduler is running, and whether
+     * its last build stopped on this cube. Both are cheap -- the first is the
+     * header banner's memoised answer, the second one row of a four-row table
+     * -- because this is asked on report pages.
+     *
+     * @param string $property_id
+     * @return string
+     */
+    public static function asOfWarning( $property_id ) {
+
+        if ( \OWA\Module\Base\Classes\SchedulerHealth::problem() ) {
+
+            return self::asOfWarningFor( true, '', '', '' );
+        }
+
+        $job = \OWA\Core\CoreAPI::entityFactory( 'base.scheduled_job' );
+        $job->getByColumn( 'job_name', self::JOB );
+
+        return self::asOfWarningFor( false, (string) $job->get( 'last_status' ),
+            (string) $job->get( 'last_message' ), Cubes::tableFor( $property_id ) );
+    }
+
+    /**
+     * asOfWarning()'s answer from its inputs. Pure, so each case can be
+     * asserted without an installation in that state.
+     *
+     * @param bool   $scheduler_down
+     * @param string $last_status   the rebuild-cube job's
+     * @param string $last_message  the rebuild-cube job's
+     * @param string $table         this Property's cube
+     * @return string
+     */
+    public static function asOfWarningFor( $scheduler_down, $last_status, $last_message, $table ) {
+
+        if ( $scheduler_down ) {
+
+            return 'the scheduled build is not running';
+        }
+
+        if ( $table !== '' && $last_status === 'failed'
+                && strpos( $last_message, $table . ' stopped at' ) !== false ) {
+
+            return 'the last build stopped on this Property\'s cube';
+        }
+
+        return '';
+    }
+
+    /**
      * How far the cube's partitions reach, and what is in the catch-all.
      *
      * @param string $table

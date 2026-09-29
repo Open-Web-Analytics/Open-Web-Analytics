@@ -124,9 +124,6 @@ OWA.resultSetExplorer = function(dom_id, options) {
     this.view = '';
     this.asyncQueue = [];
     this.subscriber_dom_ids = [];
-    this.autoRefreshInterval = 10000;
-    this.autoRefresh = false;
-    this.autoRefreshTimerId = '';
 
     this.domSelectors = {
         areaChart: '',
@@ -540,57 +537,7 @@ OWA.resultSetExplorer.prototype = {
                     this.dynamicFunc(this.asyncQueue[i]);
                 }
             }
-
-            if ( this.autoRefresh ) {
-
-                this.startAutoRefresh();
-            }
         }
-    },
-
-    /**
-     * Enables auto-refresh mode
-     */
-    enableAutoRefresh : function( interval ) {
-
-        if ( ! this.isLoaded ) {
-
-            this.autoRefreshInterval = interval || this.autoRefreshInterval;
-            this.autoRefresh = true;
-        } else {
-
-            this.startAutoRefresh( interval );
-        }
-    },
-
-    /**
-     * Starts auto refresh timer
-     *
-     * @param    interval    int    interval duration in milliseconds
-     */
-    startAutoRefresh : function(interval) {
-
-        this.autoRefreshInterval = interval || this.autoRefreshInterval;
-
-        if ( this.isLoaded && ! this.autoRefreshTimerId ) {
-
-            var that = this;
-            this.autoRefreshTimerId = setInterval(function() {
-                    that.getNewResultSet();
-                },
-                this.autoRefreshInterval
-            );
-        }
-    },
-
-    /**
-     * Halts auto refresh of result set
-     *
-     */
-    stopAutoRefresh : function() {
-
-        clearInterval(this.autoRefreshTimerId);
-        this.autoRefreshTimerId = '';
     },
 
     dynamicFunc : function (func){
@@ -624,6 +571,20 @@ OWA.resultSetExplorer.prototype = {
     },
 
     setResultSet : function(rs) {
+
+        /*
+         * When the numbers were built, for the header's "Data as of" line
+         * (OWA.report.showAsOf). Announced rather than handed to a report
+         * object, because a widget does not know which page it is on.
+         */
+        // The REST response wraps the result set in 'data', as unwrapped below.
+        var asOf = OWA.util.is_object( rs )
+            ? ( rs.hasOwnProperty( 'data' ) && rs.data ? rs.data.asOf : rs.asOf ) : null;
+
+        if ( asOf ) {
+
+            jQuery( document ).trigger( 'owa:resultSetAsOf', [ asOf ] );
+        }
 
         // check to see if resultSet is new
         if ( OWA.util.is_object(rs) && OWA.util.is_object( this.resultSet ) ) {

@@ -110,20 +110,14 @@ final class ReportChromeContractTest extends TestCase
         }
 
         /*
-         * The third control is real-time mode -- the on/off group that refreshes
-         * every widget on a timer. It is entirely client-side: OWA.report holds
-         * autoRefreshResultSets (off) and autoRefreshResultSetsInterval (15s),
-         * nothing on the server sets either, and templates/report.php builds the
-         * object with `new OWA.report()` bound to this dom_id.
-         *
-         * So there is exactly one server-side thing it depends on, and this is
-         * it. A converted report that omits dom_id gives the report object
-         * nothing to bind to, and the control -- along with the tab machinery
-         * and every widget's refresh -- silently never appears.
+         * templates/report.php builds the report object with `new OWA.report()`
+         * bound to this dom_id, and the tab machinery and the "Data as of" line
+         * both hang off it. A converted report that omits dom_id gives the
+         * object nothing to bind to, and both silently never appear.
          */
         $this->assertArrayHasKey( 'dom_id', $data,
             "$context: no dom_id, so OWA.report has nothing to bind to and the "
-            . 'real-time control never renders' );
+            . 'tabs and the as-of line never render' );
     }
 
     /**

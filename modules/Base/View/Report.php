@@ -77,6 +77,8 @@ class Report extends \OWA\Core\View {
         $this->body->set('title_count', $this->get('title_count') );
 
         $this->body->set('currentSiteId', $this->get('currentSiteId'));
+        // "Data as of" in the header, or null; see ReportController::pre().
+        $this->body->set('report_as_of', $this->get('report_as_of') ?: null);
 
 
         // load body template

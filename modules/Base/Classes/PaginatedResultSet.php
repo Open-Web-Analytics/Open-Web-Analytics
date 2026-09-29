@@ -129,6 +129,13 @@ class PaginatedResultSet {
     var $queryParams;
     
     /**
+     * When the newest data this result reads was built, as unix seconds: the
+     * cube moves only when a build runs, so this is what the numbers are "as
+     * of". Null with no rows, or where it does not apply.
+     */
+    var $asOf = null;
+
+    /**
      * Why there is no data to query, when there is none: the Property's cube
      * does not exist yet. Classes\Cube\Status::readiness(). Null otherwise.
      *

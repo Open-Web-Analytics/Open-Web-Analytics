@@ -4168,3 +4168,35 @@ li.constraintRow {
     overflow-x: auto;
 }
 
+/* ------------------------------------------------------------------
+ * "Data as of" in a report's header, where Live View was
+ * ------------------------------------------------------------------
+ *
+ * Hidden until a widget reports a time, so the line never shows an ellipsis
+ * on a page whose widgets read nothing. Amber when the numbers will not catch
+ * up on their own.
+ */
+.owa_reportAsOf {
+    float: right;
+    clear: right;
+    margin: 4px 0 0 0;
+    font-size: 11px;
+    color: #999999;
+    visibility: hidden;
+}
+
+.owa_reportAsOf.owa_reportAsOfKnown {
+    visibility: visible;
+}
+
+.owa_reportAsOf.owa_reportAsOfStale {
+    /* Shown even before a time arrives: the warning is the point. */
+    visibility: visible;
+    color: #9a6700;
+    font-weight: bold;
+}
+
+.owa_reportAsOfTime {
+    white-space: nowrap;
+}
+

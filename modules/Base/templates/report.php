@@ -78,7 +78,26 @@ jQuery(document).ready(function(){
                 <div class="reportSectionContainer">
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
                     <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
-                    <div id="liveViewSwitch" style="width:auto;float:right; padding-right:30px;"></div>
+                    <?php
+                        /*
+                         * Where Live View was. It re-polled widgets that read the
+                         * cube, which moves only at a build, so it refreshed
+                         * nothing; the reader needs when the numbers were built.
+                         * The time arrives with the widgets' results.
+                         */
+                        $owa_asOf = $view->get( 'report_as_of' );
+                    ?>
+                    <?php if ( $owa_asOf ): ?>
+                    <div id="owa_reportAsOf" class="owa_reportAsOf<?php echo $owa_asOf['warning'] ? ' owa_reportAsOfStale' : ''; ?>"
+                         data-timezone="<?php $view->out( $owa_asOf['timezone'] ); ?>">
+                        Data as of <span class="owa_reportAsOfTime">&hellip;</span>
+                        <?php if ( $owa_asOf['warning'] ): ?>
+                            &mdash; <?php $view->out( $owa_asOf['warning'] ); ?><?php if ( $owa_asOf['can_view'] ): ?>
+                            (<a href="<?php echo $view->makeLink( array( 'do' => 'base.cubeStatusDetail',
+                                'propertyId' => $owa_asOf['property_id'] ) ); ?>">details</a>)<?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <?php endif;?>
                     <?php
                         /*
@@ -197,7 +216,7 @@ jQuery(document).ready(function(){
 <script>
 <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
 OWA.items['<?php echo $view->dom_id;?>'].displayTimePeriodPicker('#owa_timePeriodControl');
-OWA.items['<?php echo $view->dom_id;?>'].showAutoRefreshControl({label: 'Live View:', target: '#liveViewSwitch'});
+OWA.items['<?php echo $view->dom_id;?>'].showAsOf('#owa_reportAsOf');
 <?php endif;?>
 <?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
 OWA.items['<?php echo $view->dom_id;?>'].showSiteFilter();

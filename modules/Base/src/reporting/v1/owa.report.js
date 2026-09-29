@@ -64,11 +64,7 @@ const FILTER_PERIOD_TMPL =
 
 OWA.report = function(dom_id, options) {
     
-    this.options = {
-        autoRefreshResultSets:             false,
-        autoRefreshResultSetsInterval:     15000
-    
-    };
+    this.options = {};
     
     this.overrideOptions(options);
     
@@ -79,14 +75,10 @@ OWA.report = function(dom_id, options) {
     this.timePeriodControl = '';
     // container for resultSetExplorer objects
     this.resultSetExplorers = {};
-    // is window active?
-    this.isActive = false;
     // the dom id of the active tab
     this.activeTab = '';
-    
-    var ar = this.getOption('autoRefreshResultSets');
-    // bind focus/blur handlers
-    
+    // the oldest "as of" any widget on this page has reported, unix seconds
+    this.asOf = null;
 };
 
 OWA.report.prototype = {
@@ -97,155 +89,49 @@ OWA.report.prototype = {
         
     },
     
-    showAutoRefreshControl : function( options ) {
-        
-        var selector = '';
-        
-        if (options.hasOwnProperty('target')) {
-            
-            selector = options.target;
-        } else {
-            selector = '#' + this.dom_id + ' > .liveViewSwitch';        
+    /**
+     * "Data as of <time>" in the header, where the Live View switch was.
+     *
+     * Live View re-polled every widget on a timer, but a widget reads the
+     * reporting cube, which moves only when a build runs -- so it refreshed
+     * nothing. What a reader needs instead is when the numbers were built.
+     *
+     * Each widget's result carries asOf, the newest build time among the rows
+     * it read, and announces it (OWA.resultSetExplorer.setResultSet). The page
+     * shows the OLDEST of those: the widgets read the same cube, so they differ
+     * only if a build landed while the page loaded, and then the older is the
+     * honest stamp for the page.
+     *
+     * The container is rendered only for a period that is not settled yet,
+     * with the installation's timezone and any warning already in it.
+     */
+    showAsOf : function( selector ) {
+
+        var el = jQuery( selector );
+
+        if ( ! el.length ) {
+
+            return;
         }
-        
-        if (options.hasOwnProperty('label')) {
-            
-            var label= options.label;
-        } else {
-            selector = 'Live View: ';        
-        }
-        
-        
-        var c = [];
-        c.push('<div class="autoRefreshControl">');
-        c.push( OWA.util.sprintf( '<span class="label">%s</span>', label ) );
-        c.push('<span class="buttons">');
-        c.push('<input type="radio" name="autorefresh" id="autorefresh-on-button" /><label for="autorefresh-on-button">On</label>');
-        c.push('<input type="radio" name="autorefresh" checked="checked" id="autorefresh-off-button" /><label for="autorefresh-off-button">Off</label>');
-        c.push('</span>');
-        c.push('<div style="clear:both;"></div>');
-        c.push('</div>');
-        
-        jQuery( selector ).append( c.join(' ') );
-        // jQuery-UI 1.12 deprecated buttonset() in favor of controlgroup().
-        // controlgroup auto-enhances the child radio inputs via checkboxradio
-        // (its default `items`), so the On/Off radios become .ui-checkboxradio
-        // .ui-button labels inside a .ui-controlgroup container.
-        //
-        // BUT jQuery-UI 1.13's checkboxradio defaults to `icon:true`, which
-        // prepends a blank radio-dot span (.ui-checkboxradio-icon) to each label
-        // -- so the "Live View" toggle rendered as On/Off buttons WITH radio dots
-        // instead of the clean two-segment switch 1.8.12's buttonset() produced.
-        // Pre-enhance the radios with icon:false FIRST; controlgroup() then adopts
-        // the already-enhanced checkboxradios (it won't re-init them) and the dots
-        // are gone. Order matters: checkboxradio before controlgroup.
-        jQuery( selector + ' > .autoRefreshControl > .buttons > input[type=radio]')
-            .checkboxradio({ icon: false });
-        jQuery( selector + ' > .autoRefreshControl > .buttons').controlgroup();
-        
+
         var that = this;
-        
-        
-        jQuery( selector + ' > .autoRefreshControl > .buttons > #autorefresh-on-button').click( function() {
-            
-            that.startAutoRefresh();            
-        });
-        
-        jQuery( selector + ' > .autoRefreshControl > .buttons > #autorefresh-off-button').click( function() {
-            
-            that.stopAutoRefresh();
-        });
-        
-        // bind window focus events to start auto refresh        
-        jQuery(window).focus(function() { 
-            
-            // set flag
-            that.isActive = true; 
-            
-            // enable auto-refesh if called for
-            if ( that.getOption( 'autoRefreshResultSets' ) ) {
-                
-                that.startAutoRefresh();
+
+        jQuery( document ).on( 'owa:resultSetAsOf', function( e, asOf ) {
+
+            if ( ! asOf || ( that.asOf && that.asOf <= asOf ) ) {
+
+                return;
             }
-                
-        });
-        
-        // bind window blur event to stop needless auto-refreshes
-        jQuery(window).blur(function() { 
-        
-            // set flag
-            that.isActive = false; 
-            //pause. stops but keeps the option set to true
-            if ( that.getOption( 'autoRefreshResultSets' ) ) {
-               
-                that.pauseAutoRefresh();
-            }
-        });
-    
+
+            that.asOf = asOf;
+
+            el.find( '.owa_reportAsOfTime' ).text( OWA.report.formatAsOf( asOf, el.data( 'timezone' ) ) );
+            el.addClass( 'owa_reportAsOfKnown' );
+        } );
     },
-    
-    startAutoRefresh : function() {
-        
-        var interval = this.getOption( 'autoRefreshResultSetsInterval' );
-        
-        if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
-            
-            for ( var name in this.resultSetExplorers )    {
-                
-                if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
-                    
-                    this.resultSetExplorers[name].enableAutoRefresh( interval );
-                }
-            }
-        }
-        
-        // if there are any tabs, start their resultSetExplorers too.
-        if ( this.activeTab ) {
-        
-            this.tabs[ this.activeTab ].startAutoRefresh();    
-        }
-        
-        this.options.autoRefreshResultSets = true;
-            
-    },
-    
-    stopAutoRefresh : function() {
-        
-        if (OWA.util.countObjectProperties( this.resultSetExplorers ) > 0 ) { 
-            
-            for ( var name in this.resultSetExplorers )    {
-                
-                if ( this.resultSetExplorers.hasOwnProperty( name ) ) {
-                    
-                    this.resultSetExplorers[name].stopAutoRefresh( );
-                }
-            }
-        }
-        
-        // if there are any tabs, stop their resultSetExplorers too.
-        // if there are any tabs, start their resultSetExplorers too.
-        if ( this.activeTab ) {
-        
-            this.tabs[ this.activeTab ].stopAutoRefresh();    
-        }
-        
-        
-        this.options.autoRefreshResultSets = false;        
-        
-    },
-    
-    pauseAutoRefresh : function() {
-        
-        this.stopAutoRefresh();
-        this.options.autoRefreshResultSets = true;    
-    },
-    
+
     registerResultSetExplorer : function( name, rse ) {
-        
-        if ( this.getOption( 'autoRefreshResultSets' ) ) {
-            rse.enableAutoRefresh( this.getOption( 'autoRefreshResultSetsInterval' ) );
-        }
-        
+
         this.resultSetExplorers[ name ] = rse;
     },
 
@@ -417,24 +303,14 @@ OWA.report.prototype = {
 
     },
 
-    // Load a tab by its panel id and swap auto-refresh from the previously active
-    // tab to this one. Shared by createTabs' initial load and its activate handler.
+    // Load a tab by its panel id. Shared by createTabs' initial load and its
+    // activate handler.
     selectTab : function( panelId ) {
 
         OWA.debug('tab selected is: %s', panelId);
         this.tabs[ panelId ].load();
 
-        // stop auto refresh of last selected tab
-        if ( this.activeTab && this.getOption('autoRefreshResultSets') ) {
-            this.tabs[ this.activeTab ].stopAutoRefresh();
-        }
-
         this.activeTab = panelId;
-
-        // start auto refresh of selected tab
-        if ( this.activeTab && this.getOption('autoRefreshResultSets') ) {
-            this.tabs[ this.activeTab ].startAutoRefresh();
-        }
     },
 
     getSiteId : function() {
@@ -507,28 +383,6 @@ OWA.report.tab = function(dom_id) {
 
 OWA.report.tab.prototype = {
 
-    startAutoRefresh : function() {
-        
-        for (var rse in this.resultSetExplorers) {
-                
-            if (this.resultSetExplorers.hasOwnProperty(rse)) {
-        
-                this.resultSetExplorers[rse].enableAutoRefresh();
-            }
-        }
-    },
-    
-    stopAutoRefresh : function() {
-        
-        for (var rse in this.resultSetExplorers) {
-                
-            if (this.resultSetExplorers.hasOwnProperty(rse)) {
-                
-                this.resultSetExplorers[rse].stopAutoRefresh();
-            }
-        }
-    },
-    
     addRse : function (name, rse) {
         
         this.resultSetExplorers[name] = rse;
@@ -542,6 +396,35 @@ OWA.report.tab.prototype = {
         this.dom_id = dom_id;
     }
 }
+
+/**
+ * An "as of" time as a person reads it, in the installation's zone -- the same
+ * zone the reports' days are cut in -- rather than the browser's.
+ *
+ * @param {number} asOf      unix seconds
+ * @param {string} timezone  IANA name; the browser's own if absent or unknown
+ * @return {string}
+ */
+OWA.report.formatAsOf = function( asOf, timezone ) {
+
+    var opts = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+
+    if ( timezone ) {
+
+        opts.timeZone = timezone;
+    }
+
+    try {
+
+        return new Intl.DateTimeFormat( undefined, opts ).format( new Date( asOf * 1000 ) );
+
+    } catch ( e ) {
+
+        delete opts.timeZone;
+
+        return new Intl.DateTimeFormat( undefined, opts ).format( new Date( asOf * 1000 ) );
+    }
+};
 
 OWA.report.timePeriodControl = function( dom_id, options ) {
     

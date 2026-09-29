@@ -270,6 +270,29 @@ class ReportController extends \OWA\Core\AdminController {
         $this->setViewMethod('delegate');
 
         /*
+         * "Data as of" in the header. Shown only for a period reaching into
+         * days a build has not settled -- yesterday or today, in practice --
+         * because a closed period reads partitions no routine build changes,
+         * and a stamp there would be noise. The time itself arrives with the
+         * widgets' results; this decides whether the line exists and whether
+         * it warns. Nothing here queries the cube.
+         */
+        $this->set( 'report_as_of', null );
+
+        if ( $siteId && self::showsAsOf( $this->reads_reporting_data,
+                empty( $this->data['reporting_readiness'] ), $this->period->getEndDate()->getYyyymmdd() ) ) {
+
+            $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
+
+            $this->set( 'report_as_of', array(
+                'timezone'    => (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'timezone' ) ?: date_default_timezone_get() ),
+                'warning'     => \OWA\Module\Base\Classes\Cube\Status::asOfWarning( $property_id ),
+                'property_id' => $property_id,
+                'can_view'    => \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_modules' ),
+            ) );
+        }
+
+        /*
          * Derived from the report's identity, not from the action that reached
          * it.
          *
@@ -326,6 +349,25 @@ class ReportController extends \OWA\Core\AdminController {
         $nav = $this->withCustomReports( $nav );
 
         $this->set('top_level_report_nav', $nav);
+    }
+
+    /**
+     * Whether a report's header shows "Data as of".
+     *
+     * Only on a screen that draws cube data, only once reporting is ready, and
+     * only for a period reaching yesterday or today -- the days a routine build
+     * still rewrites. A closed period reads settled partitions, and a build time
+     * there would say nothing about the numbers.
+     *
+     * @param bool       $reads_reporting_data
+     * @param bool       $ready
+     * @param int|string $period_end yyyymmdd
+     * @return bool
+     */
+    public static function showsAsOf( $reads_reporting_data, $ready, $period_end ) {
+
+        return $reads_reporting_data && $ready
+            && (int) $period_end >= (int) date( 'Ymd', strtotime( '-1 day' ) );
     }
 
     function post() {
