@@ -207,12 +207,16 @@ final class EventRawEntityTest extends TestCase
         }
     }
 
-    public function testTheVisitorStoreIsKeyedOnTheVisitorAndNotPartitioned(): void
+    public function testTheVisitorStoreIsUniqueOnTheVisitorAndNotPartitioned(): void
     {
         $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
 
-        $this->assertSame('visitor_id', $entity->getPrimaryKeyColumn(),
+        $this->assertSame(['visitor_id_unique' => ['visitor_id']], $entity->getUniqueIndexes(),
             'Insert-if-absent depends on uniqueness on visitor_id ALONE.');
+
+        // Visitor ids are random, so they are not the clustered key: rows
+        // append on an ascending id instead (Update060).
+        $this->assertSame('id', $entity->getPrimaryKeyColumn());
 
         $this->assertNull($entity->getPartitionColumn(),
             'Partitioning would force last_seen into the key and take that uniqueness away.');

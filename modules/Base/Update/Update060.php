@@ -2,194 +2,89 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * Migrate v1's history into v2 (PLAN.html 2.21).
+ * owa_visitor_acquisition: an ascending surrogate key, and visitor_id unique.
  *
- * FORCED AND BLOCKING. CLI-only, and until it succeeds the schema stays behind
- * and every action refuses -- an installation does not run on v2 with its
- * history left in tables v2 does not read.
+ * Visitor ids are random now (Util.generateRandomGuid), and InnoDB orders a
+ * table's rows by its primary key. Keyed on visitor_id, every new visitor
+ * would land at a random page of a table that can outgrow the buffer pool. On
+ * an AUTO_INCREMENT id new rows append, and the random inserts go to a unique
+ * index on visitor_id whose entries are a fraction of a row's size.
  *
- * HOW MUCH HISTORY IS AN EXPLICIT CHOICE, passed to the update command:
+ * Every read and write already keys on visitor_id by name, and the unique
+ * index keeps insert-if-absent a database guarantee.
  *
- *   php cli.php cmd=update since=2years     what is newer than a cutoff
- *   php cli.php cmd=update since=20240101
- *   php cli.php cmd=update --all            everything
+ * No released installation has this table -- it came with Update034, after
+ * 1.14 -- so on an upgrade from 1.14 Update034 creates it in this shape from
+ * the entity and this finds nothing to do.
  *
- * Without one it prints v1's volume per site and year and fails, which leaves
- * the update pending. Rows older than the cutoff stay in v1's tables until the
- * optional drop removes them; v1's tables are never written.
- *
- * Resumable: an interrupted run continues where it stopped, and a finished site
- * is not read again. A later run must use the same cutoff.
- *
- * On an installation with no v1 tables -- one that was never 1.x -- there is
- * nothing to do.
+ * NOT CLI-ONLY: one ALTER, and the table is empty everywhere but a development
+ * install.
  */
 class Update060 extends \OWA\Core\Update {
 
     var $schema_version = 60;
 
-    var $is_cli_mode_required = true;
-
-    /** The table prefix v1 is read under; a test reads a fixture's. */
-    var $prefix = 'owa_';
+    var $is_cli_mode_required = false;
 
     function up( $force = false ) {
 
-        $migrator = $this->migrator();
+        $table = $this->table();
 
-        if ( ! $migrator ) {
-
-            $this->e->notice( 'No v1 tables: nothing to migrate.' );
+        if ( ! $table || $this->hasSurrogate( $table ) ) {
 
             return true;
         }
 
-        foreach ( $this->preflight( $migrator ) as $line ) {
-
-            $this->e->notice( $line );
-        }
-
-        $raw_since = \OWA\Core\CoreAPI::getRequestParam( 'since' );
-        $all       = (bool) \OWA\Core\CoreAPI::getRequestParam( 'all' );
-
-        if ( (bool) $raw_since === $all ) {
-
-            $this->e->notice( 'Choose how much history to migrate: cmd=update since=<yyyymmdd, or a period'
-                . ' such as 2years or 18m>, or cmd=update --all. Rows older than the cutoff stay in the v1'
-                . ' tables until they are dropped.' );
-
-            return false;
-        }
-
-        $since = null;
-
-        if ( $raw_since ) {
-
-            $since = \OWA\Module\Base\Controller\PartitionsCli::resolveCutoff( $raw_since );
-
-            if ( ! $since ) {
-
-                $this->e->notice( sprintf(
-                    'Could not read since="%s". Use yyyymmdd, or a period such as 2years, 18m, 90days.', $raw_since ) );
-
-                return false;
-            }
-        }
-
-        $migrator = $this->migrator( $since );
-
-        foreach ( $migrator->sites() as $site_id ) {
-
-            try {
-
-                $progress = $migrator->migrateSite( $site_id );
-
-            } catch ( \RuntimeException $e ) {
-
-                $this->e->notice( $e->getMessage() );
-
-                return false;
-            }
-
-            $this->e->notice( sprintf( 'v1 migration, site %s: read %d, wrote %d, refused %d%s',
-                $site_id, $progress['rows_read'], $progress['rows_written'], $progress['rows_refused'],
-                $progress['refusals'] ? ' ' . json_encode( $progress['refusals'] ) : '' ) );
-
-            if ( empty( $progress['completed_at'] ) ) {
-
-                return false;
-            }
-        }
-
-        return true;
+        return $this->alter( $table, sprintf(
+            'ALTER TABLE %s DROP PRIMARY KEY, '
+            . 'ADD COLUMN id BIGINT NOT NULL AUTO_INCREMENT FIRST, '
+            . 'ADD PRIMARY KEY (id), '
+            . 'ADD UNIQUE INDEX %s (visitor_id)',
+            $table, \OWA\Module\Base\Entity\VisitorAcquisition::VISITOR_INDEX ) );
     }
 
-    /**
-     * Delete exactly the rows the migration wrote, site by site.
-     *
-     * The ids are derived from v1's rows, which the migration never writes, so
-     * reading them again derives the same ids. After v1 is dropped there is
-     * nothing to roll back to.
-     */
+    /** The exact inverse: visitor_id the primary key again, and nothing else. */
     function down() {
 
-        $migrator = $this->migrator();
+        $table = $this->table();
 
-        if ( ! $migrator ) {
-
-            $this->e->notice( 'No v1 tables: nothing to revert.' );
+        if ( ! $table || ! $this->hasSurrogate( $table ) ) {
 
             return true;
         }
 
-        try {
+        // Dropping the column drops the primary key on it with it.
+        return $this->alter( $table, sprintf(
+            'ALTER TABLE %s DROP COLUMN id, '
+            . 'DROP INDEX %s, '
+            . 'ADD PRIMARY KEY (visitor_id)',
+            $table, \OWA\Module\Base\Entity\VisitorAcquisition::VISITOR_INDEX ) );
+    }
 
-            foreach ( $migrator->sites() as $site_id ) {
+    /** @return string|null the table, or null where it does not exist */
+    private function table() {
 
-                $this->e->notice( sprintf( 'v1 migration, site %s: deleted %d rows.',
-                    $site_id, $migrator->revertSite( $site_id ) ) );
-            }
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
 
-        } catch ( \RuntimeException $e ) {
+        return \OWA\Core\CoreAPI::dbSingleton()->tableExists( $table ) ? $table : null;
+    }
 
-            $this->e->notice( $e->getMessage() );
+    private function hasSurrogate( $table ) {
+
+        return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            sprintf( "SHOW COLUMNS FROM %s LIKE 'id'", $table ) );
+    }
+
+    private function alter( $table, $sql ) {
+
+        if ( \OWA\Core\CoreAPI::dbSingleton()->query( $sql ) === false ) {
+
+            $this->e->notice( sprintf( 'Re-keying %s failed.', $table ) );
 
             return false;
         }
 
         return true;
-    }
-
-    /**
-     * v1's volume per site and year, and what will be left behind.
-     *
-     * @return string[]
-     */
-    public function preflight( $migrator ) {
-
-        $lines   = array( 'v1 page views, per site and year:' );
-        $total   = 0;
-        $orphans = 0;
-        $unknown = array();
-
-        foreach ( $migrator->volume() as $row ) {
-
-            if ( ! $row['known'] ) {
-
-                $unknown[ $row['site_id'] ] = true;
-                $orphans += $row['rows'];
-
-                continue;
-            }
-
-            $lines[] = sprintf( '  %-40s %4d  %10d', $row['site_id'], $row['year'], $row['rows'] );
-            $total  += $row['rows'];
-        }
-
-        $lines[] = sprintf( '  %-40s %4s  %10d', 'total', '', $total );
-
-        if ( $unknown ) {
-
-            $lines[] = sprintf( '  Not migrated: %d rows for %d site ids no site carries any more.',
-                $orphans, count( $unknown ) );
-        }
-
-        return $lines;
-    }
-
-    /** @return \OWA\Module\Base\Classes\Migration\RequestMigrator|null null without v1 tables */
-    private function migrator( $since = null ) {
-
-        $source = \OWA\Module\Base\Classes\Migration\V1Tables::name(
-            \OWA\Module\Base\Classes\Migration\RequestMigrator::SOURCE, $this->prefix );
-
-        if ( ! \OWA\Core\CoreAPI::dbSingleton()->tableExists( $source ) ) {
-
-            return null;
-        }
-
-        return new \OWA\Module\Base\Classes\Migration\RequestMigrator(
-            $this->prefix, \OWA\Module\Base\Classes\Migration\RequestMigrator::BATCH, $since );
     }
 }
 

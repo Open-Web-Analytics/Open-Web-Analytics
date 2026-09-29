@@ -1395,6 +1395,29 @@ class Entity {
     }
     
     /**
+     * Declare a UNIQUE index, by name.
+     *
+     * For a table whose clustered key is not the column it is unique on: the
+     * primary key orders the rows on disk, so a random natural key belongs in
+     * a secondary index and an ascending surrogate in the primary one.
+     *
+     * @param string   $name
+     * @param string[] $columns
+     */
+    function addUniqueIndex( $name, array $columns ) {
+
+        $this->_tableProperties['unique_indexes'][ $name ] = $columns;
+    }
+
+    /** @return array name => columns */
+    function getUniqueIndexes() {
+
+        return isset( $this->_tableProperties['unique_indexes'] )
+            ? $this->_tableProperties['unique_indexes']
+            : array();
+    }
+
+    /**
      * The multi-column indexes declared on this entity, name => columns.
      *
      * @return array

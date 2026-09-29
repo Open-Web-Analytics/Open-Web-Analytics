@@ -3853,6 +3853,15 @@ class Db extends \OWA\Core\Base {
             }
         }
 
+        if ( method_exists( $entity, 'getUniqueIndexes' ) ) {
+
+            foreach ( $entity->getUniqueIndexes() as $index_name => $index_columns ) {
+
+                $indexes[] = sprintf(
+                    'UNIQUE INDEX %s (%s)', $index_name, implode( ', ', $index_columns ) );
+            }
+        }
+
         if ( $indexes ) {
 
             $columns .= ', ' . implode( ', ', $indexes );
