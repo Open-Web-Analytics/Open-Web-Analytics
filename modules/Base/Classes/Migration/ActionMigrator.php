@@ -74,8 +74,8 @@ class ActionMigrator extends FactMigrator {
      * Whether an event name already means something other than a site's own
      * action: a first-class event, or one a module routes to its own
      * processor. A v1 action called "Purchase" became a purchase row, with
-     * none of a purchase's columns, and one called "domstream" was handed to
-     * the recording store; both are prefixed with action_ instead.
+     * none of a purchase's columns, and one sharing a module's event name was
+     * handed to that module's store; both are prefixed with action_ instead.
      */
     public static function isTaken( $name ) {
 
