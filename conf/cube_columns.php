@@ -34,7 +34,15 @@
  *   medium   the tag, else the referrer classified against the engine and
  *            social lists -- the reading that has to stay rebuildable.
  *   is_exit  the session's last event, once the session has closed.
+ *   is_entrance
+ *            the session's first event, in the same device order.
  *   literal  one value for the whole build.
+ *   new_vs_returning
+ *            whether the session was the visitor's first, as the label a
+ *            report groups by rather than a flag a renderer has to name.
+ *   is_engaged_session
+ *            whether the session was engaged: ten seconds of engagement, two
+ *            page views, or a goal event. Stamped on every row of it.
  *   compute  PHP works it out; see Classes\Cube\ComputeStep.
  *
  * `absent` names the test that is true when the visitor's ACQUISITION was never
@@ -81,6 +89,23 @@ return array(
     'landing_page_title'    => array( 'kind' => 'copy', 'from' => 'session.page_title' ),
 
     'is_exit' => array( 'kind' => 'is_exit' ),
+
+    /*
+     * New or Returning, read off prior_sessions on the row itself -- so no
+     * join, and no second authority for a fact the row already carries.
+     *
+     * Stamped as the LABEL. The reporting engine groups by a column and the
+     * dimension registry has no slot for value labels, so a stored code has no
+     * way to become two named buckets; see Classes\Cube\NewVsReturningStep.
+     */
+    'new_vs_returning' => array( 'kind' => 'new_vs_returning' ),
+
+    // Whether the session was engaged, on every row of it; the thresholds are
+    // in Classes\Cube\IsEngagedSessionStep.
+    'is_engaged_session' => array( 'kind' => 'is_engaged_session' ),
+
+    // The session's first event, the mirror of is_exit off the same window.
+    'is_entrance' => array( 'kind' => 'is_entrance' ),
 
     // The visitor's acquisition, from the visitor store -- a build's only read
     // outside the partition, and the reason that store exists.

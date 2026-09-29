@@ -158,6 +158,17 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertSame( 'ad!=null', $d['constraints'] );
     }
 
+    /** The empty test takes no value and builds the "(not set)" form. */
+    public function testTheEmptyTestsBuildTheNotSetForm(): void
+    {
+        $d = $this->declared(
+            $this->base( array( 'settings' => array( 'constraints' => array(
+                array( 'dimension' => 'sessionCampaign', 'operator' => 'notEmpty' ),
+                array( 'dimension' => 'sessionAd', 'operator' => 'empty' ) ) ) ) ) );
+
+        $this->assertSame( 'sessionCampaign!=(not set),sessionAd==(not set)', $d['constraints'] );
+    }
+
     /** A plain string is still a constraint, which is what most reports use. */
     public function testAStringConstraintIsUsedAsIs(): void
     {
@@ -189,6 +200,11 @@ final class ReportDefinitionFormatTest extends TestCase
             'constraint with no dimension' => array(
                 $base + array( 'settings' => array( 'constraints' => array( array( 'value' => 'x' ) ) ) ),
                 'needs a "dimension"' ),
+
+            'empty test given a value' => array(
+                $base + array( 'settings' => array( 'constraints' => array(
+                    array( 'dimension' => 'ad', 'operator' => 'notEmpty', 'value' => 'x' ) ) ) ),
+                'takes no value' ),
 
             'constraint with no value' => array(
                 $base + array( 'settings' => array( 'constraints' => array( array( 'dimension' => 'ad' ) ) ) ),
@@ -232,7 +248,7 @@ final class ReportDefinitionFormatTest extends TestCase
             'titleSuffix' => '{hostName}',
             'params'      => array( 'hostName' => array( 'lowercase' => false ) ),
             'settings'    => array(
-                'metrics'     => 'visits',
+                'metrics'     => 'sessions',
                 'constraints' => array(
                     array( 'dimension' => 'hostName', 'fromParam' => 'hostName' ) ),
             ),
@@ -378,14 +394,14 @@ final class ReportDefinitionFormatTest extends TestCase
     public function testReportMetricsReachEveryWidget(): void
     {
         $d = $this->declared( $this->base( array(
-            'metrics' => 'visits,pageViews',
+            'metrics' => 'sessions,pageViews',
             'widgets' => array(
                 array( 'type' => 'trend', 'id' => 't', 'query' => array( 'dimensions' => 'date' ) ),
                 array( 'type' => 'grid',  'id' => 'g', 'query' => array( 'dimensions' => 'pagePath' ) ),
             ),
         ) ) );
 
-        $this->assertSame( 'visits,pageViews', $d['metrics'] );
+        $this->assertSame( 'sessions,pageViews', $d['metrics'] );
 
         foreach ( $d['widgets'] as $widget ) {
             $this->assertArrayNotHasKey( 'metrics', $widget['query'],
@@ -398,12 +414,12 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $d = $this->declared(
             $this->base( array(
-                'metrics' => 'visits,{extra}',
+                'metrics' => 'sessions,{extra}',
                 'params'  => array( 'extra' => array() ),
             ) ),
             array( 'extra' => 'bounces' ) );
 
-        $this->assertSame( 'visits,bounces', $d['metrics'] );
+        $this->assertSame( 'sessions,bounces', $d['metrics'] );
     }
 
     /**
@@ -422,7 +438,7 @@ final class ReportDefinitionFormatTest extends TestCase
     public function testAnOverridingWidgetKeepsItsOwnMetricsInTheDefinition(): void
     {
         $d = $this->declared( $this->base( array(
-            'metrics' => 'visits,pageViews',
+            'metrics' => 'sessions,pageViews',
             'widgets' => array(
                 array( 'type' => 'trend', 'id' => 't', 'query' => array( 'dimensions' => 'date' ) ),
                 array( 'type' => 'grid',  'id' => 'g', 'query' => array(
@@ -430,7 +446,7 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ) ) );
 
-        $this->assertSame( 'visits,pageViews', $d['metrics'],
+        $this->assertSame( 'sessions,pageViews', $d['metrics'],
             'the report-wide value is untouched by a widget overriding it' );
 
         $widgets = $d['widgets'];
@@ -447,7 +463,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $d = $this->declared(
             $this->base( array(
-                'metrics' => 'visits',
+                'metrics' => 'sessions',
                 'params'  => array( 'm' => array() ),
                 'widgets' => array( array( 'type' => 'grid', 'id' => 'g',
                     'query' => array( 'metrics' => '{m}', 'dimensions' => 'pagePath' ) ) ),
@@ -483,7 +499,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $controller->setDefinition( array(
             'title'   => 'Override',
-            'metrics' => 'visits,pageViews',
+            'metrics' => 'sessions,pageViews',
             'widgets' => array(
                 array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
                        'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ),
@@ -502,7 +518,7 @@ final class ReportDefinitionFormatTest extends TestCase
             $byVar[ $entry['var'] ] = $entry['query']['metrics'] ?? '';
         }
 
-        $this->assertSame( 'visits,pageViews', $byVar['trendurl'] ?? null,
+        $this->assertSame( 'sessions,pageViews', $byVar['trendurl'] ?? null,
             'a widget that overrides nothing must query the report metrics' );
 
         $this->assertSame( 'transactionRevenue', $byVar['dimurl'] ?? null,
@@ -798,9 +814,9 @@ final class ReportDefinitionFormatTest extends TestCase
                 'id'          => 'card',
                 'container'   => 'card-chart',
                 'title'       => 'Visits',
-                'chartMetric' => 'visits',
+                'chartMetric' => 'sessions',
                 'query'       => array(
-                    'metrics'    => 'visits,uniqueVisitors',
+                    'metrics'    => 'sessions,totalUsers',
                     'dimensions' => 'date',
                     'sort'       => 'date',
                 ),
@@ -891,7 +907,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertNotEmpty( $metrics );
 
         foreach ( $metrics as $m ) {
-            $this->assertSame( 'visits,uniqueVisitors', $m,
+            $this->assertSame( 'sessions,totalUsers', $m,
                 'a metric set replaced a trend card\'s own metrics' );
         }
     }
@@ -997,9 +1013,9 @@ final class ReportDefinitionFormatTest extends TestCase
     private static function threeSets(): array
     {
         return array(
-            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'visits', 'chartMetric' => 'visits' ),
+            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'sessions', 'chartMetric' => 'sessions' ),
             'ecommerce'  => array( 'label' => 'e-commerce', 'metrics' => 'transactions', 'chartMetric' => 'transactions' ),
-            'goals'      => array( 'label' => 'Goals', 'metrics' => 'goalValueAll', 'chartMetric' => 'visits' ),
+            'goals'      => array( 'label' => 'Goals', 'metrics' => 'goalValueAll', 'chartMetric' => 'sessions' ),
         );
     }
 
@@ -1034,7 +1050,7 @@ final class ReportDefinitionFormatTest extends TestCase
             $metrics[] = $q['query']['metrics'];
         }
 
-        $this->assertSame( array( 'visits', 'transactions', 'goalValueAll' ), $metrics );
+        $this->assertSame( array( 'sessions', 'transactions', 'goalValueAll' ), $metrics );
     }
 
     /**
@@ -1053,7 +1069,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Web Pages',
-            'metrics' => 'pageViews,visits',
+            'metrics' => 'pageViews,sessions',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'dim',
                 'container' => 'dimension-grid', 'query' => array( 'dimensions' => 'pagePath' ) ) ),
         ), self::threeSets() );
@@ -1061,7 +1077,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $queries = \OWA\Tests\ReportRenderHarness::queriesIn( $html );
 
         $this->assertCount( 1, $queries, 'a report that measures one way renders one widget' );
-        $this->assertSame( 'pageViews,visits', $queries[0]['query']['metrics'],
+        $this->assertSame( 'pageViews,sessions', $queries[0]['query']['metrics'],
             "the site's sets must not override what the report declared" );
     }
 
@@ -1144,7 +1160,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'R',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
                 'title' => 'Transaction Roster', 'query' => array( 'dimensions' => 'pagePath' ) ) ),
         ), array() );
@@ -1158,7 +1174,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $definition = array(
             'title'   => 'R',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
                 'title' => 'Transaction Roster', 'showTitle' => false,
                 'query' => array( 'dimensions' => 'pagePath' ) ) ),
@@ -1183,7 +1199,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'R',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'g-grid',
                 'query' => array( 'dimensions' => 'pagePath' ) ) ),
         ), array() );
@@ -1218,10 +1234,10 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $definition = array(
             'title'   => 'Constrained',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array(
                 array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
-                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ) + $widgetExtra,
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ) + $widgetExtra,
             ),
         );
 
@@ -1294,11 +1310,11 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $definition = array(
             'title'   => 'Constrained',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'params'  => array( 'host' => array() ),
             'widgets' => array(
                 array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
-                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ),
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ),
                        'constraints' => array( array( 'dimension' => 'host', 'fromParam' => 'host' ) ) ),
             ),
         );
@@ -1374,7 +1390,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Boxes',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array(
                 array( 'type' => 'metric-boxes', 'id' => 'fromsearch',
                        'container' => 'trend-metrics-search',
@@ -1407,16 +1423,16 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'Pie',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array(
                 array( 'type' => 'pie', 'id' => 'medium', 'container' => 'traffic-sources',
-                       'chartMetric' => 'visits',
-                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+                       'chartMetric' => 'sessions',
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ),
             ),
         ), array() );
 
         $this->assertStringContainsString( "medium.options.pieChart.dimension = 'medium';", $html );
-        $this->assertStringContainsString( "medium.options.pieChart.metric = 'visits';", $html );
+        $this->assertStringContainsString( "medium.options.pieChart.metric = 'sessions';", $html );
         $this->assertStringContainsString( "'makePieChart'", $html );
 
         $this->assertSame( 'medium', $this->queryFor( $html, 'mediumurl' )['dimensions'] ?? null,
@@ -1428,18 +1444,18 @@ final class ReportDefinitionFormatTest extends TestCase
      * its own.
      *
      * Absent is the default and means the site's -- Site Usage, e-commerce when
-     * the site setting is on, one per active goal group. Those first two are
-     * global constants despite living behind MetricSets::forSite(); only
+     * the site setting is on. Both are global constants despite living behind
+     * MetricSets::forSite(); only
      * e-commerce's PRESENCE varies by site, and nothing varied by report until
      * this key. That is the gap user-authored reports need closed.
      */
     private function sets(): array
     {
         return array(
-            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'visits',
-                                   'chartMetric' => 'visits' ),
+            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'sessions',
+                                   'chartMetric' => 'sessions' ),
             'ecommerce'  => array( 'label' => 'e-commerce',
-                                   'metrics' => 'visits,transactions',
+                                   'metrics' => 'sessions,transactions',
                                    'chartMetric' => 'transactions' ),
         );
     }
@@ -1447,7 +1463,7 @@ final class ReportDefinitionFormatTest extends TestCase
     private function grid(): array
     {
         return array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
-                      'query' => array( 'dimensions' => 'campaign', 'sort' => 'visits-' ) );
+                      'query' => array( 'dimensions' => 'campaign', 'sort' => 'sessions-' ) );
     }
 
     /**
@@ -1504,7 +1520,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $out = $this->resolveSets(
             array( 'roi' => array( 'label' => 'Return',
-                                   'metrics' => 'transactionRevenue,visits' ) ),
+                                   'metrics' => 'transactionRevenue,sessions' ) ),
             $this->sets() );
 
         $this->assertArrayNotHasKey( 'chartMetric', $out['roi'],
@@ -1514,7 +1530,7 @@ final class ReportDefinitionFormatTest extends TestCase
     public function testADeclaredChartMetricIsLeftAlone(): void
     {
         $out = $this->resolveSets(
-            array( 'roi' => array( 'label' => 'Return', 'metrics' => 'visits,transactions',
+            array( 'roi' => array( 'label' => 'Return', 'metrics' => 'sessions,transactions',
                                    'chartMetric' => 'transactions' ) ),
             $this->sets() );
 
@@ -1523,7 +1539,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
     public function testADeclaredSetReplacesTheSitesRatherThanAddingToThem(): void
     {
-        $roi = array( 'label' => 'Return', 'metrics' => 'visits,transactionRevenue',
+        $roi = array( 'label' => 'Return', 'metrics' => 'sessions,transactionRevenue',
                       'chartMetric' => 'transactionRevenue' );
 
         $out = $this->resolveSets( array( 'roi' => $roi ), $this->sets() );
@@ -1545,7 +1561,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $controller = new \OWA\Core\ConfiguredReport( array( 'siteId' => '1' ) );
         $controller->setDefinition( array(
             'title'      => 'R',
-            'metricSets' => array( 'roi' => array( 'label' => 'Return', 'metrics' => 'visits' ) ),
+            'metricSets' => array( 'roi' => array( 'label' => 'Return', 'metrics' => 'sessions' ) ),
             'widgets'    => array( $this->grid() ),
         ) );
 
@@ -1567,7 +1583,7 @@ final class ReportDefinitionFormatTest extends TestCase
             'title'      => 'R',
             'params'     => array( 'campaign' => array() ),
             'metricSets' => array( 'c' => array(
-                'label' => 'Campaign {campaign}', 'metrics' => 'visits' ) ),
+                'label' => 'Campaign {campaign}', 'metrics' => 'sessions' ) ),
             'widgets'    => array( $this->grid() ),
         ) );
 
@@ -1593,16 +1609,16 @@ final class ReportDefinitionFormatTest extends TestCase
             'not an array'   => array( 'site_usage', 'must be a non-empty list' ),
             'empty'          => array( array(), 'must be a non-empty list' ),
             'list of objects' => array(
-                array( array( 'label' => 'x', 'metrics' => 'visits' ) ),
+                array( array( 'label' => 'x', 'metrics' => 'sessions' ) ),
                 'a set is declared by writing it as an object instead' ),
             'declared with no label' => array(
-                array( 'roi' => array( 'metrics' => 'visits' ) ),
+                array( 'roi' => array( 'metrics' => 'sessions' ) ),
                 'needs a "label" and "metrics"' ),
             'declared with no metrics' => array(
                 array( 'roi' => array( 'label' => 'Return' ) ),
                 'needs a "label" and "metrics"' ),
             'declared as a scalar' => array(
-                array( 'roi' => 'visits' ),
+                array( 'roi' => 'sessions' ),
                 'must be an object with a "label" and "metrics"' ),
 
             /*
@@ -1611,7 +1627,7 @@ final class ReportDefinitionFormatTest extends TestCase
              */
             'alongside metrics' => array(
                 array( 'site_usage' ), 'cannot both be declared',
-                array( 'metrics' => 'visits' ) ),
+                array( 'metrics' => 'sessions' ) ),
         );
     }
 
@@ -1621,7 +1637,7 @@ final class ReportDefinitionFormatTest extends TestCase
      * The switch is `! $view->metrics` in report_widgets.php: a definition that
      * names its own metrics renders one grid of them, and one that does not
      * takes whatever sets the site has -- Site Usage, e-commerce when the site
-     * setting is on, and one per active goal group.
+     * setting is on.
      *
      * This is what `campaigns` was converted onto. Its controller appended
      * `transactions,transactionRevenue` to a single grid when
@@ -1635,15 +1651,15 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->requireDbAsAdmin();
 
         $sets = array(
-            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'visits',
-                                   'chartMetric' => 'visits' ),
+            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'sessions',
+                                   'chartMetric' => 'sessions' ),
             'ecommerce'  => array( 'label' => 'e-commerce',
-                                   'metrics' => 'visits,transactions,transactionRevenue',
+                                   'metrics' => 'sessions,transactions,transactionRevenue',
                                    'chartMetric' => 'transactions' ),
         );
 
         $grid = array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
-                       'query' => array( 'dimensions' => 'campaign', 'sort' => 'visits-' ) );
+                       'query' => array( 'dimensions' => 'campaign', 'sort' => 'sessions-' ) );
 
         $tabbed = $this->renderedWith(
             array( 'title' => 'Campaigns', 'widgets' => array( $grid ) ), $sets );
@@ -1654,7 +1670,7 @@ final class ReportDefinitionFormatTest extends TestCase
             'including the e-commerce set, which is where its metrics now live' );
 
         $single = $this->renderedWith(
-            array( 'title' => 'Campaigns', 'metrics' => 'visits,pageViews,bounces',
+            array( 'title' => 'Campaigns', 'metrics' => 'sessions,pageViews,bounces',
                    'widgets' => array( $grid ) ), $sets );
 
         $this->assertStringNotContainsString( 'id="report-tabs"', $single,
@@ -1673,12 +1689,12 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->requireDbAsAdmin();
 
         $trend = array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
-                        'chartMetric' => 'visits',
+                        'chartMetric' => 'sessions',
                         'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) );
 
         $definition = array(
             'title'   => 'Trend',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
         );
 
         $with = $this->renderedWith( $definition + array( 'widgets' => array( $trend ) ), array() );
@@ -1705,7 +1721,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         return $this->renderedWith( array(
             'title'   => 'Links',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array(
                 array( 'type' => 'report-links', 'title' => 'Related Reports',
                        'links' => array(
@@ -1764,10 +1780,10 @@ final class ReportDefinitionFormatTest extends TestCase
             'trend'        => array( 'type' => 'trend', 'id' => 'trend', 'container' => 'trend-chart',
                                      'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ),
             'grid'         => array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
-                                     'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+                                     'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ),
             'pie'          => array( 'type' => 'pie', 'id' => 'pie', 'container' => 'pie-chart',
-                                     'chartMetric' => 'visits',
-                                     'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+                                     'chartMetric' => 'sessions',
+                                     'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ),
             'metric-boxes' => array( 'type' => 'metric-boxes', 'id' => 'boxes',
                                      'container' => 'boxes-metrics',
                                      'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ),
@@ -1779,7 +1795,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
             $html = $this->renderedWith( array(
                 'title'   => 'One Title',
-                'metrics' => 'visits',
+                'metrics' => 'sessions',
                 'widgets' => array( $widget + array( 'title' => 'A Widget Title' ) ),
             ), array() );
 
@@ -1809,10 +1825,10 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $controller->setDefinition( array(
             'title'   => 'No Renderer Named',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array(
                 array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
-                       'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ),
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ),
             ),
         ) );
 
@@ -1977,109 +1993,16 @@ final class ReportDefinitionFormatTest extends TestCase
      * to suit -- "'pageUrl'". That let a report definition emit arbitrary
      * script, in the file format that is meant to become user-authorable.
      */
-    /**
-     * A widget may name a derived metric list, and only a known one.
-     *
-     * The metrics only exist per site -- one per goal a site has configured --
-     * so `goals` cannot spell them out. Everything about the value reaching a
-     * query says it should be whitelisted like a formatter is.
-     */
-    public function testAnUnknownMetricSourceIsRefused(): void
-    {
-        $error = \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title'   => 'Derived',
-            'widgets' => array(
-                array( 'type' => 'metric-boxes',
-                       'query' => array( 'metrics' => '@activeGoalCompletion' ) ),
-            ),
-        ) );
-
-        $this->assertStringContainsString( 'widget 0', $error );
-        $this->assertStringContainsString( 'activeGoalCompletion', $error );
-        $this->assertStringContainsString( '@activeGoalCompletions', $error,
-            'the error must name what IS available, not only what is not' );
-    }
-
-    public function testAKnownMetricSourceIsAccepted(): void
-    {
-        $this->assertSame( '', (string) \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title'   => 'Derived',
-            'widgets' => array(
-                array( 'type' => 'metric-boxes',
-                       'query' => array( 'metrics' => '@activeGoalCompletions' ) ),
-            ),
-        ) ) );
-    }
-
-    /**
-     * An ordinary metric list starting with no sigil is untouched -- the check
-     * must not treat every metrics value as a source name.
-     */
-    public function testAPlainMetricListIsNotTreatedAsASource(): void
-    {
-        $this->assertSame( '', (string) \OWA\Core\ConfiguredReport::getDefinitionError( array(
-            'title'   => 'Plain',
-            'widgets' => array(
-                array( 'type' => 'metric-boxes',
-                       'query' => array( 'metrics' => 'visits,uniqueVisitors' ) ),
-            ),
-        ) ) );
-    }
-
-    /**
-     * A panel with nothing to measure is dropped, not drawn empty.
-     *
-     * Asking for no metrics returns no columns, and a headed "Goal
-     * Performance" box with nothing in it reads as a broken report rather than
-     * as a site that has not configured any goals. The controller this
-     * replaced made the same choice with `if ($view->goal_metrics)`.
-     */
-    public function testAWidgetWhoseMetricSourceIsEmptyIsDropped(): void
-    {
-        $method = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'resolveMetricSources' );
-        $method->setAccessible( true );
-
-        $widgets = array(
-            array( 'type' => 'trend', 'id' => 'trend', 'query' => array( 'dimensions' => 'date' ) ),
-            array( 'type' => 'metric-boxes', 'id' => 'goalMetrics',
-                   'query' => array( 'metrics' => '@activeGoalCompletions' ) ),
-            array( 'type' => 'report-links', 'links' => array() ),
-        );
-
-        // A site with no goals, so the source resolves to nothing.
-        $out = $method->invoke( null, $widgets, md5( 'definition-format-probe.example' ) );
-
-        $this->assertCount( 2, $out, 'the panel with no metrics is gone' );
-        $this->assertSame( array( 'trend', 'report-links' ), array_column( $out, 'type' ),
-            'and the widgets around it keep their order' );
-        $this->assertSame( array( 0, 1 ), array_keys( $out ),
-            're-indexed: a hole would be rendered as a missing widget' );
-    }
-
-    /** A widget that names no source is passed through untouched. */
-    public function testAWidgetWithoutAMetricSourceIsUnchanged(): void
-    {
-        $method = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'resolveMetricSources' );
-        $method->setAccessible( true );
-
-        $widgets = array(
-            array( 'type' => 'metric-boxes', 'query' => array( 'metrics' => 'visits,uniqueVisitors' ) ),
-        );
-
-        $this->assertSame( $widgets,
-            $method->invoke( null, $widgets, md5( 'definition-format-probe.example' ) ) );
-    }
-
     public function testExcludedColumnsAreEncodedNotInterpolated(): void
     {
         $this->requireDbAsAdmin();
 
         $html = $this->renderedWith( array(
             'title'   => 'Excluding',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array(
                 array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
-                       'query' => array( 'dimensions' => 'pageUrl', 'sort' => 'visits-' ),
+                       'query' => array( 'dimensions' => 'pageUrl', 'sort' => 'sessions-' ),
                        'excludeColumns' => array( "pageUrl'];alert(1);//" ) ),
             ),
         ), array() );
@@ -2142,7 +2065,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith( array(
             'title'   => 'More',
-            'metrics' => 'visits',
+            'metrics' => 'sessions',
             'widgets' => array( $widget + array(
                 'more' => array( 'reportId' => 'pages', 'label' => 'View Full Report' ) ) ),
         ), array() );
@@ -2294,11 +2217,16 @@ final class ReportDefinitionFormatTest extends TestCase
      */
     public function testTheConvertedWidgetsAreCards(): void
     {
+        /*
+         * Two of the original four are gone with their reports:
+         * action-tracking (its dimensions are params paths, which only a
+         * registered custom dimension can reach) and ecommerce's productName
+         * widget (v2 carries no line items). The conversion they recorded is
+         * still recorded by the two that remain.
+         */
         $expected = array(
-            'action-tracking.json' => 'actionsByGroup',
-            'content.json'         => 'toppagetypes',
-            'ecommerce.json'       => 'productName',
-            'visitors.json'        => 'browserTypes',
+            'content.json'  => 'toppagetypes',
+            'visitors.json' => 'browserTypes',
         );
 
         $cards = array();
@@ -2354,13 +2282,13 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         return array(
             'trend' => array( array( 'type' => 'trend', 'id' => 't', 'container' => 'trend-chart',
-                'chartMetric' => 'visits',
+                'chartMetric' => 'sessions',
                 'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ) ),
             'grid' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'dimension-grid',
-                'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ) ),
+                'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ) ),
             'pie' => array( array( 'type' => 'pie', 'id' => 'p', 'container' => 'pie',
-                'chartMetric' => 'visits',
-                'query' => array( 'dimensions' => 'medium', 'sort' => 'visits-' ) ) ),
+                'chartMetric' => 'sessions',
+                'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ) ),
             'metric-boxes' => array( array( 'type' => 'metric-boxes', 'id' => 'm', 'container' => 'mb',
                 'title' => 'Boxes',
                 'query' => array( 'dimensions' => 'date', 'sort' => 'date' ) ) ),

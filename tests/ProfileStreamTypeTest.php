@@ -16,10 +16,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * tracked, and anything without a domain being observed at all.
  *
  * Moving the domain up to the Property was the obvious fix and the wrong one.
- * GA4 answers the same question by typing the LEAF: a property carries no URL,
- * and each data stream declares its kind and supplies what that kind needs.
- * Universal Analytics DID put a website URL on the property, and Google moved
- * it down when a property stopped being able to assume it was a website.
+ * The answer is to type the LEAF: a property carries no URL, and each Profile
+ * declares its kind and supplies what that kind needs.
  */
 final class ProfileStreamTypeTest extends TestCase
 {

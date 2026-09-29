@@ -81,20 +81,6 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     const KNOWN_FORMATTERS = array( 'attributionList' );
 
     /**
-     * Metric lists a widget can ask for by NAME instead of spelling out.
-     *
-     * `"metrics": "@activeGoalCompletions"` resolves per site, because the
-     * metrics only exist per site: one per goal the site has configured. A
-     * static list cannot say that, and it is the only thing standing between
-     * the goals report and being a definition like the rest.
-     *
-     * Whitelisted for the same reason formatters are -- the value reaches a
-     * query -- and kept deliberately small. A report that wants an arbitrary
-     * derived list wants a controller.
-     */
-    const KNOWN_METRIC_SOURCES = array( 'activeGoalCompletions' );
-
-    /**
      * The renderer every configured report uses.
      *
      * Fixed here rather than named by each definition. It was a definition key
@@ -247,28 +233,6 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             }
 
             /*
-             * A widget may name a derived metric list rather than spell one
-             * out. Checked here so a typo is a definition error at load rather
-             * than a query for a metric named "@activeGoalCompletion".
-             */
-            if ( isset( $widget['query']['metrics'] )
-                && is_string( $widget['query']['metrics'] )
-                && strpos( $widget['query']['metrics'], '@' ) === 0 ) {
-
-                $source = substr( $widget['query']['metrics'], 1 );
-
-                if ( ! in_array( $source, self::KNOWN_METRIC_SOURCES, true ) ) {
-
-                    return sprintf(
-                        'widget %s: "%s" is not a metric source this report can resolve; it has %s',
-                        $i, $source,
-                        implode( ', ', array_map(
-                            static function ( $n ) { return '@' . $n; },
-                            self::KNOWN_METRIC_SOURCES ) ) );
-                }
-            }
-
-            /*
              * There is ONE way to constrain a widget, and it adds.
              *
              * `query` is merged over the report-wide defaults with a union, so
@@ -391,8 +355,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         /*
          * Which metric sets this report offers, and in what order.
          *
-         * Absent means the site's own -- Site Usage, e-commerce when the site
-         * setting is on, and one per active goal group. That is what every
+         * Absent means the site's own -- Site Usage, and e-commerce when the site
+         * setting is on. That is what every
          * definition does today and stays the default, so this key only ever
          * narrows or replaces.
          *
@@ -498,6 +462,17 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                 return sprintf( '%sconstraint %s needs a "dimension"', $where, $i );
             }
 
+            if ( isset( self::EMPTY_TESTS[ $part['operator'] ?? '' ] ) ) {
+
+                if ( array_key_exists( 'fromParam', $part ) || array_key_exists( 'value', $part ) ) {
+
+                    return sprintf( '%sconstraint on "%s" is "%s", which takes no value',
+                        $where, $part['dimension'], $part['operator'] );
+                }
+
+                continue;
+            }
+
             if ( ! array_key_exists( 'fromParam', $part ) && ! array_key_exists( 'value', $part ) ) {
 
                 return sprintf( '%sconstraint on "%s" needs either a "value" or a "fromParam"',
@@ -600,9 +575,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         if ( isset( $d['widgets'] ) ) {
 
-            $this->set( 'widgets', self::resolveMetricSources( self::interpolateDeep(
+            $this->set( 'widgets', array_values( self::interpolateDeep(
                 self::resolveWidgetConstraints( (array) $d['widgets'], $constraints, $values ),
-                $values ), $this->getParam( 'siteId' ) ) );
+                $values ) ) );
         }
 
         $this->setTitle(
@@ -847,63 +822,6 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         return $out;
     }
 
-    /**
-     * Replace a widget's named metric list with the site's actual metrics.
-     *
-     * A widget whose list resolves to nothing is DROPPED rather than rendered
-     * empty: asking for no metrics returns no columns, and a headed panel with
-     * no boxes in it reads as a broken report rather than as a site that has
-     * not configured any goals. The controller this replaced made the same
-     * choice with `if ($view->goal_metrics)`.
-     *
-     * @param array<int,array> $widgets
-     * @param string $siteId
-     * @return array<int,array> re-indexed, since a dropped widget leaves a hole
-     */
-    private static function resolveMetricSources( array $widgets, $siteId ) {
-
-        $out = array();
-
-        foreach ( $widgets as $widget ) {
-
-            $declared = isset( $widget['query']['metrics'] ) ? $widget['query']['metrics'] : null;
-
-            if ( ! is_string( $declared ) || strpos( $declared, '@' ) !== 0 ) {
-
-                $out[] = $widget;
-                continue;
-            }
-
-            // Dispatch on the NAME, not on "it must be the only one" -- that
-            // holds today and stops holding the moment a second source exists,
-            // silently resolving the wrong list.
-            switch ( substr( $declared, 1 ) ) {
-
-                case 'activeGoalCompletions':
-                    $metrics = \OWA\Core\MetricSets::activeGoalCompletions( $siteId );
-                    break;
-
-                default:
-                    // getDefinitionError() rejects an unknown source before a
-                    // report can be loaded, so reaching this means the
-                    // whitelist grew without a case being added for it.
-                    $metrics = '';
-                    break;
-            }
-
-            if ( $metrics === '' ) {
-
-                continue;
-            }
-
-            $widget['query']['metrics'] = $metrics;
-
-            $out[] = $widget;
-        }
-
-        return $out;
-    }
-
     private static function resolveWidgetConstraints( array $widgets, $reportConstraints, array $values ) {
 
         $out = array();
@@ -941,6 +859,17 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     }
 
     /**
+     * The unary operators a definition's array form accepts, and the string
+     * form each builds. ResultSetManager::emptyTestFor() reads that form back
+     * as the empty test; "(not set)" is the label for NULL and '', never a
+     * stored value.
+     */
+    const EMPTY_TESTS = array(
+        'empty'    => '==(not set)',
+        'notEmpty' => '!=(not set)',
+    );
+
+    /**
      * Build a constraint string from its parts.
      *
      * Structured rather than a string with placeholders, because the two kinds
@@ -963,6 +892,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         foreach ( $parts as $part ) {
 
             $operator = isset( $part['operator'] ) ? $part['operator'] : '==';
+
+            if ( isset( self::EMPTY_TESTS[ $operator ] ) ) {
+
+                $out[] = $part['dimension'] . self::EMPTY_TESTS[ $operator ];
+                continue;
+            }
 
             if ( array_key_exists( 'fromParam', $part ) ) {
 

@@ -228,7 +228,7 @@ class CoreAPI {
 
     }
     /**
-     * @return \owa_db
+     * @return \OWA\Core\Db
      */
     public static function dbSingleton() {
 
@@ -285,7 +285,7 @@ class CoreAPI {
     }
 
     /**
-     * @return \owa_settings
+     * @return \OWA\Module\Base\Classes\Settings
      */
     public static function configSingleton() {
 
@@ -1096,7 +1096,7 @@ class CoreAPI {
     }
 
     /**
-     * @return \owa_serviceUser
+     * @return \OWA\Module\Base\Classes\ServiceUser
      */
     public static function getCurrentUser() {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -1131,7 +1131,7 @@ class CoreAPI {
     }
     
     /**
-     * @return \owa_service
+     * @return \OWA\Module\Base\Classes\Service
      */
     public static function serviceSingleton() {
 
@@ -1153,7 +1153,7 @@ class CoreAPI {
 
         if ( empty ( $cache ) ) {
 	        
-            $cache = \OWA\Core\Lib::simpleFactory( 'owa_cache', OWA_BASE_CLASS_DIR.'cache.php', $params );
+            $cache = \OWA\Core\Lib::simpleFactory( \OWA\Module\Base\Classes\Cache::class, OWA_BASE_CLASS_DIR.'cache.php', $params );
         }
 
         return $cache;
@@ -1206,7 +1206,7 @@ class CoreAPI {
         if(!isset($request)):
 
 
-            $request = \OWA\Core\Lib::factory(OWA_DIR, '', 'owa_requestContainer');
+            $request = new \OWA\Core\RequestContainer();
 
         endif;
 
@@ -1273,13 +1273,6 @@ class CoreAPI {
             }
         }
 
-        $class = $class_ns.$file.$class_suffix;
-        //print $class;
-        // Require class file if class does not already exist
-        if(!class_exists($class)):
-            \OWA\Core\CoreAPI::moduleRequireOnce($module, '', $file);
-        endif;
-
         /*
          * PSR-4 FIRST, then the compat map.
          *
@@ -1313,6 +1306,29 @@ class CoreAPI {
             return $obj;
         }
 
+        /*
+         * Base's views that live in Core -- restApi, adminPage, mail, cli are
+         * OWA\Core\View\RestApi and the rest. Base only: another module naming
+         * one of these means its own.
+         */
+        $core = '\\OWA\\Core\\' . $class_suffix . '\\' . ucfirst( $file );
+
+        if ( $module === 'base' && $class_suffix && class_exists( $core ) ) {
+
+            $obj = new $core( $params );
+            $obj->module = $module;
+
+            return $obj;
+        }
+
+        $class = $class_ns.$file.$class_suffix;
+        //print $class;
+        // Require class file if class does not already exist
+        if(!class_exists($class)):
+            \OWA\Core\CoreAPI::moduleRequireOnce($module, '', $file);
+        endif;
+
+
         $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/modules/'.\OWA\Core\Lib::moduleDirName($module), '', $class, $params);
 
         //if (isset($obj->module)):
@@ -1323,6 +1339,23 @@ class CoreAPI {
     }
 
     public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+
+        /*
+         * By convention first. Handlers and filters are registered with the
+         * pre-PSR-4 directory names -- 'handlers', 'classes' -- so those are
+         * read as the directories they became.
+         */
+        $dirs = array( 'handlers' => 'Handler', 'classes' => 'Classes', 'filters' => 'Filter' );
+        $dir  = $dirs[ strtolower( (string) $sub_directory ) ] ?? $sub_directory;
+
+        $nsClass = \OWA\Core\Lib::conventionalClass(
+            OWA_DIR . 'modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/' . $dir,
+            '', $file, (string) $class_suffix );
+
+        if ( $nsClass !== null ) {
+
+            return new $nsClass( $params );
+        }
 
         $class = $class_ns.$file.$class_suffix;
 
@@ -1445,6 +1478,17 @@ class CoreAPI {
     }
 
     public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
+
+        // Base's support classes that live in Core -- 'template' is
+        // OWA\Core\Template. Base only: another module naming one means its own.
+        $core = 'OWA\\Core\\' . ucfirst( (string) $class );
+
+        if ( $module === 'base' && preg_match( '/^[A-Za-z0-9_]+$/', (string) $class )
+             && ! class_exists( 'OWA\\Module\\Base\\Classes\\' . ucfirst( (string) $class ) )
+             && class_exists( $core ) ) {
+
+            return new $core( $params );
+        }
 
         $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.\OWA\Core\Lib::moduleDirName($module).'/'.'Classes'.'/', $class_ns, $class, $params);
         //$obj->module = $module;
@@ -1736,6 +1780,21 @@ class CoreAPI {
             $metric_name = $s->getMetricClasses($metric_name);
         }
 
+
+        // By convention first, as entities are: base.configurableMetric is
+        // OWA\Module\Base\Metric\ConfigurableMetric.
+        $parts = explode( '.', (string) $metric_name );
+
+        if ( count( $parts ) === 2 && preg_match( '/^[A-Za-z0-9_]+$/', $parts[1] ) ) {
+
+            $nsClass = 'OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $parts[0] )
+                     . '\\Metric\\' . ucfirst( $parts[1] );
+
+            if ( class_exists( $nsClass ) ) {
+
+                return new $nsClass( $params );
+            }
+        }
 
         return \OWA\Core\CoreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
     }
@@ -2137,13 +2196,25 @@ class CoreAPI {
      * @return boolean
      */
     /**
-     * Every event type this installation accepts from a tracker.
+     * The FIRST-CLASS event types: the ones with a property registry.
      *
-     * The union of v1's list and v2's. Two lists rather than one because they
-     * have different lifetimes -- v1's whole side is retired at cutover, and a
-     * merged list would have to be untangled then -- but every check that asks
-     * "is this a tracking event" has to ask about both, or a v2 event is
-     * refused at the door.
+     * DERIVED, not listed. An event is first-class exactly when some property in
+     * modules/Base/config/tracking_properties.json declares it, so the vocabulary
+     * and the gate cannot disagree -- which they did, expensively. v2_event_types
+     * was a hand-kept list beside the registry, and when the tracker started
+     * sending v2 names the four RENAMED events were in neither it nor v1's list:
+     * logEvent() refused page_view, click and purchase outright, so every beacon
+     * the current tracker sent was dropped. A derived list cannot fall behind a
+     * rename because the rename IS the list.
+     *
+     * v1's names stay a setting. They are not derived from anything -- no v2
+     * property declares base.page_request -- and they have their own lifetime:
+     * the whole v1 side is retired at cutover, where a merged list would have to
+     * be untangled.
+     *
+     * THIS IS ALSO THE RESERVED SET. A custom event may not take one of these
+     * names: reusing one would put a site's own counts into a report measuring
+     * something else. See isTrackingEventType().
      *
      * @return array
      */
@@ -2151,7 +2222,98 @@ class CoreAPI {
 
         return array_merge(
             (array) \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_event_types' ),
-            (array) \OWA\Core\CoreAPI::getSetting( 'base', 'v2_event_types' ) );
+            (array) \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
+    }
+
+    /**
+     * Whether an event type may be accepted from a tracker at all.
+     *
+     * TWO WAYS IN, which is the change. A first-class name is one the registry
+     * declares. Anything else is admitted if it is a legal CUSTOM event name,
+     * because the tracker can emit one with any name -- trackCustomEvent() --
+     * and a site's own events have to reach the pipeline. They were being
+     * refused: trackingEventTypes() was an allowlist, so every custom event a
+     * site defined was dropped at the door.
+     *
+     * A name starts with a letter, uses only letters, numbers and underscores,
+     * and is at most 40 characters, case-sensitive. That is the same pattern a
+     * custom PROPERTY name must match -- so it is stated once and reused rather
+     * than written twice.
+     *
+     * A first-class name reaching the second test would pass it, so the order
+     * matters only for reading; what makes the reserved set work is the TRACKER
+     * refusing to send one (OWATracker.RESERVED_EVENT_NAMES), because the server
+     * cannot tell a site's `click` from its own.
+     *
+    /**
+     * The namespace every tracking event is dispatched under.
+     *
+     * Not stored anywhere. owa_event_raw.event_type holds the name the TRACKER
+     * set -- page_view, my_site_signup -- because that is the data and the
+     * eventName dimension reads it.
+     */
+    const TRACKING_DISPATCH_NAMESPACE = 'tracking';
+
+    /** Every tracking event, for a handler that cannot enumerate them. */
+    public static function anyTrackingEvent() {
+
+        return self::TRACKING_DISPATCH_NAMESPACE
+            . \OWA\Module\Base\Classes\EventDispatch::NAMESPACE_WILDCARD;
+    }
+
+    /**
+     * Whether an event type may be accepted from a tracker at all.
+     *
+     * TWO WAYS IN. A first-class name is one the property registry declares --
+     * trackingEventTypes() derives that set, so the vocabulary and the gate cannot
+     * drift. Anything else is admitted if it is a legal CUSTOM event name, because
+     * the tracker can emit one with any name (trackCustomEvent) and a site's own
+     * events have to reach the pipeline. They were being refused: the gate was an
+     * allowlist, so every custom event a site defined was dropped at the door.
+     *
+     * A name starts with a letter, uses only letters, numbers and underscores,
+     * and is at most 40 characters, case-sensitive. That is the same pattern a
+     * custom PROPERTY name must match, so it is stated once.
+     *
+     * ADMISSION ONLY. This says nothing about routing: an internal event called
+     * install_complete would pass the second test, which is exactly why the
+     * dispatch key is set by logEvent() rather than inferred from a name.
+     *
+     * @param  string $event_type
+     * @return bool
+     */
+    public static function isTrackingEventType( $event_type ) {
+
+        $event_type = (string) $event_type;
+
+        /*
+         * A MATERIALIZED NAME IS NEVER ACCEPTED FROM A TRACKER. session_start and
+         * first_visit are built at ingest from flags on the event that carried
+         * them; a beacon naming one would be stored beside the real one, a
+         * second session start with no session behind it. They also match the
+         * custom-name pattern below, so the refusal has to come first.
+         */
+        if ( \OWA\Module\Base\Classes\TrackingEventHelpers::isMaterialized( $event_type ) ) {
+
+            return false;
+        }
+
+        if ( in_array( $event_type, \OWA\Core\CoreAPI::trackingEventTypes(), true ) ) {
+
+            return true;
+        }
+
+        /*
+         * NO `owa_` PREFIX CHECK HERE, deliberately. The tracker refuses that
+         * prefix, and the server does not need to: a tracking event dispatches as
+         * tracking.<name>, so a site's owa_x cannot collide with OWA's own
+         * routing -- the namespace already separates them. Enforcing it here would
+         * only add a way to LOSE a site's data, and it would fall hardest on a
+         * tracker cached from before the rule existed.
+         */
+        return (bool) preg_match(
+            \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN,
+            $event_type );
     }
 
     public static function logEvent( $event_type, $message = '') {
@@ -2159,7 +2321,7 @@ class CoreAPI {
         \OWA\Core\CoreAPI::debug("Logging new event $event_type");
 		
         // Check to ensure that the event is in fact a tracking event
-        if ( ! in_array( $event_type, \OWA\Core\CoreAPI::trackingEventTypes() ) ) {
+        if ( ! \OWA\Core\CoreAPI::isTrackingEventType( $event_type ) ) {
             
             \OWA\Core\CoreAPI::debug("Not logging. Event with $event_type is not a tracking event.");
             return false;
@@ -2179,6 +2341,24 @@ class CoreAPI {
 	        
             $event = $message;
         }
+
+        /*
+         * NAME THE DISPATCH KEY, here and nowhere else.
+         *
+         * This is the only entry point that knows a tracker sent this, so it is
+         * the only place that can say so -- and saying it once means nothing
+         * downstream has to derive it. A handler that wants every tracking event
+         * registers for the `tracking.` namespace, which is the only shape that
+         * covers a site's own event names as well as OWA's.
+         *
+         * NOT RENAMED. A v1 beacon keeps its own spelling here --
+         * tracking.base.page_request -- because the wildcard catches it either
+         * way; mapping it to the v2 name would be a second place that knows the
+         * compat table for no gain. V2Event::name() still does that where it
+         * matters, on the way into the event_type COLUMN.
+         */
+        $event->setDispatchName(
+            \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.' . $event_type );
         
         /*
          * Named-user logging is a per-Profile decision, so this check runs
@@ -2206,7 +2386,10 @@ class CoreAPI {
         
         // Tracking Event processing STAGE 1
         // sets any necessary environmental properties from SERVER global
-        $teh = \OWA\Core\CoreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $teh = \OWA\Core\CoreAPI::getInstance( \OWA\Module\Base\Classes\TrackingEventHelpers::class, OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $event = \OWA\Module\Base\Classes\Ingest::at(
+            \OWA\Module\Base\Classes\Ingest::EDGE_PRE, $event );
+
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
 		
@@ -2269,6 +2452,14 @@ class CoreAPI {
             return false;
         }
         
+        /*
+         * The last point that can see the request. Everything after this either
+         * goes to a file queue -- drained later, possibly elsewhere, with
+         * $_SERVER long gone -- or straight to the processor.
+         */
+        $event = \OWA\Module\Base\Classes\Ingest::at(
+            \OWA\Module\Base\Classes\Ingest::EDGE_POST, $event );
+
         // queue for later or process event straight away
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'queue_events' ) ||
              \OWA\Core\CoreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
@@ -2280,7 +2471,7 @@ class CoreAPI {
         } else {
 
             // lookup which event processor to use to process this event type
-            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event->getEventType() );
+            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
            
 			\OWA\Core\CoreAPI::debug('About to perform action: '.$processor_action);
 			\OWA\Core\CoreAPI::debug($event);
@@ -2429,6 +2620,15 @@ class CoreAPI {
      */
     public static function validationFactory($class_file, $conf = array()) {
 
+        // OWA's own validators by convention: 'required' is
+        // OWA\Core\Validation\Required. A third-party one still loads from
+        // plugins/validations/ below.
+        $nsClass = 'OWA\\Core\\Validation\\' . ucfirst( (string) $class_file );
+
+        if ( preg_match( '/^[A-Za-z0-9_]+$/', (string) $class_file ) && class_exists( $nsClass ) ) {
+
+            return new $nsClass( $conf );
+        }
 
         return \OWA\Core\Lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, $conf, 'Validation');
 
@@ -2546,19 +2746,77 @@ class CoreAPI {
 
     }
 
-    public static function getEventProcessor($event_type) {
+    /**
+     * @param object|string $event  an event, preferably; a bare type cannot say
+     *                              whether it is a tracking event, so a string
+     *                              resolves only by its own name
+     */
+    public static function getEventProcessor($event) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $processor = $service->getMapValue('event_processors', $event_type);
+
+        // Registered under the DISPATCH name, like the listeners.
+        $dispatch_name = is_object( $event )
+            ? $event->getDispatchName() : (string) $event;
+
+        $processor = $service->getMapValue( 'event_processors', $dispatch_name );
+
+        if ( ! $processor ) {
+
+            /*
+             * The namespace, walked outside in, the way notify() resolves
+             * listeners -- so `tracking.*` answers for every tracking event and a
+             * custom name needs no registration of its own.
+             */
+            $processor = self::namespacedProcessor( $service, $dispatch_name );
+        }
 
         if ( $processor ) {
 
             return $processor;
-        
-        } else {
-            
-            \OWA\Core\CoreAPI::debug("no event processor found for $event_type");
         }
+
+        \OWA\Core\CoreAPI::debug("no event processor found for $dispatch_name");
+    }
+
+    /**
+     * A processor registered for a namespace the dispatch name falls under.
+     *
+     * The same walk EventDispatch::listenersFor() does, for the same reason: a
+     * custom event's name belongs to the site, so nothing can register for it, and
+     * a flat map keyed by exact name leaves it with no processor at all --
+     * performAction(null) then does nothing and the event is accepted and
+     * discarded without an error.
+     *
+     * @param  object $service
+     * @param  string $dispatch_name
+     * @return mixed  the processor, or null
+     */
+    private static function namespacedProcessor( $service, $dispatch_name ) {
+
+        $segments = explode( '.', (string) $dispatch_name );
+
+        // A name is not its own namespace.
+        array_pop( $segments );
+
+        $prefix = '';
+
+        foreach ( $segments as $segment ) {
+
+            $prefix .= $segment;
+
+            $processor = $service->getMapValue( 'event_processors',
+                $prefix . \OWA\Module\Base\Classes\EventDispatch::NAMESPACE_WILDCARD );
+
+            if ( $processor ) {
+
+                return $processor;
+            }
+
+            $prefix .= '.';
+        }
+
+        return null;
     }
 
     /**
@@ -3165,22 +3423,6 @@ class CoreAPI {
         return $s->metrics;
     }
 
-    public static function getGoalManager( $siteId ) {
-
-        static $gm;
-
-        if ( ! $gm ) {
-
-            $gm = array();
-        }
-
-        if ( ! isset( $gm[$siteId] ) )  {
-            $gm[ $siteId ] = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', $siteId);
-        }
-
-        return $gm[$siteId];
-    }
-
     public static function getRequestTimestamp() {
 
         $r = \OWA\Core\CoreAPI::requestContainerSingleton();
@@ -3293,10 +3535,26 @@ class CoreAPI {
         $ed->attachFilter($filter_name, $callback, $priority);
     }
 
-    public static function filter( $filter_name, $value ) {
+    /**
+     * Run a filter, passing any further arguments to each listener as context.
+     *
+     * VARIADIC, because EventDispatch::filter() has always supported context
+     * arguments -- it reads func_get_args() and hands array_slice($args, 1) to
+     * each listener, chaining only the first -- and this wrapper's fixed
+     * two-argument signature silently dropped them. Every filter point in the
+     * application went through here, so the capability existed and was
+     * unreachable.
+     *
+     * @param  string $filter_name
+     * @param  mixed  $value    chained through the listeners
+     * @param  mixed  ...$context  passed to every listener, unchanged
+     * @return mixed
+     */
+    public static function filter( $filter_name, $value, ...$context ) {
 
         $ed = \OWA\Core\CoreAPI::getEventDispatch();
-        return $ed->filter( $filter_name, $value );
+
+        return $ed->filter( $filter_name, $value, ...$context );
     }
     
     public static function loadEntitiesFromArray( $items, $entity_name ) {

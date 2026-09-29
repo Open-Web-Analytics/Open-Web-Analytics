@@ -149,9 +149,12 @@ class Event extends EventRaw {
          * three values and GROUP BY gives each a bucket. 0 therefore covers the
          * not-yet-knowable case, which does not earn a third state.
          *
-         * Engagement time, bounce and duration are NOT columns. They are
-         * read-time aggregates over the session's rows, and materialising them
-         * would be a second authority to keep in step.
+         * Engagement time and duration are NOT columns: they are sums and spans
+         * over the session's rows, and a query answers them. Whether the session
+         * was ENGAGED is a column (is_engaged_session, below), because it is a
+         * verdict over the whole session that no single row's condition can
+         * express -- and engagedSessions, engagementRate and bounceRate are
+         * counts under it.
          */
         $is_exit = $this->column( 'is_exit', OWA_DTD_BOOLEAN, false );
         $is_exit->setNotNull();
@@ -192,6 +195,50 @@ class Event extends EventRaw {
         $built_at = $this->column( 'built_at', OWA_DTD_BIGINT, false );
         $built_at->setNotNull();
         $this->setProperty( $built_at );
+
+        /*
+         * Whether the session this event belongs to was the visitor's first,
+         * as the label a report groups by -- see Classes\Cube\NewVsReturningStep
+         * for why the label and not a flag.
+         *
+         * LAST, AFTER built_at, on purpose. ADD COLUMN appends
+         * (OWA_SQL_ADD_COLUMN_REBUILD), so a cube that got this column from
+         * Update044 carries it at the end; declaring it anywhere else would
+         * leave an upgraded install and a fresh one with the same columns in a
+         * different order. Nothing reads the cube positionally -- the build
+         * names its columns and a staging table is cut from the live DDL -- but
+         * two shapes for one release is a difference somebody eventually has to
+         * explain.
+         *
+         * NOT NULL and no default, like source and medium: a build always
+         * produces a value, the sentinel included. Measured on this server
+         * under STRICT_ALL_TABLES, ADD COLUMN ... NOT NULL on a populated cube
+         * backfills '' rather than failing, so rows written before the next
+         * rebuild read as `(not set)` until one runs.
+         */
+        $this->setProperty( $this->resolved( 'new_vs_returning', OWA_DTD_VARCHAR16 ) );
+
+        /*
+         * Whether the session this event belongs to was engaged, on every row of
+         * it -- see Classes\Cube\IsEngagedSessionStep for the rule. LAST, for the
+         * reason new_vs_returning is: ADD COLUMN appends.
+         *
+         * NOT NULL DEFAULT 0, like is_exit: a nullable boolean holds three values.
+         */
+        $is_engaged = $this->column( 'is_engaged_session', OWA_DTD_BOOLEAN, false );
+        $is_engaged->setNotNull();
+        $is_engaged->setDefaultValue( 0 );
+        $this->setProperty( $is_engaged );
+
+        /*
+         * The session's first event, in device order -- the mirror of is_exit;
+         * see Classes\Cube\IsEntranceStep. Behind the entrances metric only:
+         * like is_exit it is not a dimension. LAST, because ADD COLUMN appends.
+         */
+        $is_entrance = $this->column( 'is_entrance', OWA_DTD_BOOLEAN, false );
+        $is_entrance->setNotNull();
+        $is_entrance->setDefaultValue( 0 );
+        $this->setProperty( $is_entrance );
     }
 
     /**

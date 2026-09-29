@@ -1,6 +1,6 @@
 {
     "title": "Content Overview",
-    "metrics": "visits,pageViews,bounceRate",
+    "metrics": "sessions,pageViews",
     "widgets": [
         {
             "type": "trend-card",
@@ -9,10 +9,9 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date",
-                "metrics": "pageViews,pagesPerVisit,bounceRate"
+                "metrics": "pageViews,pageViewsPerSession"
             },
-            "chartMetric": "pageViews",
-            "headline": "There were {pageViews.raw} {pageViews|page view|page views} of all pages."
+            "chartMetric": "pageViews"
         },
         {
             "type": "grid-card",
@@ -21,13 +20,13 @@
             "title": "Pages",
             "colspan": 6,
             "query": {
-                "metrics": "visits",
+                "metrics": "sessions",
                 "dimensions": "pageTitle",
-                "sort": "visits-"
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "pages",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -37,13 +36,13 @@
             "title": "Page Types",
             "colspan": 3,
             "query": {
-                "metrics": "visits",
-                "dimensions": "pageType",
-                "sort": "visits-"
+                "metrics": "sessions",
+                "dimensions": "contentGroup",
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "page-types",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -52,13 +51,13 @@
             "container": "entry-pages",
             "title": "Entry Pages",
             "query": {
-                "metrics": "visits",
-                "dimensions": "entryPagePath",
-                "sort": "visits-"
+                "metrics": "sessions",
+                "dimensions": "landingPage",
+                "sort": "sessions-"
             },
             "more": {
                 "reportId": "entry-pages",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -67,13 +66,13 @@
             "container": "exit-pages",
             "title": "Exit Pages",
             "query": {
-                "metrics": "visits",
-                "dimensions": "exitPagePath",
-                "sort": "visits-"
+                "metrics": "exits",
+                "dimensions": "pagePath",
+                "sort": "exits-"
             },
             "more": {
                 "reportId": "exit-pages",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -82,13 +81,19 @@
             "container": "clicked-elements",
             "title": "Most Clicked Elements",
             "query": {
-                "metrics": "domClicks",
+                "metrics": "eventCount",
                 "dimensions": "domElementId",
-                "sort": "domClicks-"
+                "sort": "eventCount-"
             },
+            "constraints": [
+                {
+                    "dimension": "eventName",
+                    "value": "click"
+                }
+            ],
             "more": {
                 "reportId": "clicks",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {
@@ -102,11 +107,6 @@
                     "description": "See user mouse movement and keypress recordings."
                 },
                 {
-                    "reportId": "action-tracking",
-                    "label": "Actions",
-                    "description": "See which actions your user performed."
-                },
-                {
                     "reportId": "entry-pages",
                     "label": "Entry Pages",
                     "description": "See which web pages users entered on."
@@ -115,11 +115,6 @@
                     "reportId": "exit-pages",
                     "label": "Exit Pages",
                     "description": "See which web pages users exited on."
-                },
-                {
-                    "reportId": "feeds",
-                    "label": "Feeds",
-                    "description": "See trends for feed subscribers and usage."
                 }
             ]
         }

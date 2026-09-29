@@ -20,6 +20,23 @@ require_once __DIR__ . '/IngestionTestCase.php';
  * registration the module performs, and it makes the test say what it is
  * actually about: the dom.stream event reaching owa_domstream, not whether this
  * particular installation happens to have the feature switched on.
+ *
+ * THE KEY MUST BE THE DISPATCH NAME, NOT THE EVENT TYPE, and this test is where
+ * that went wrong. Tracking events dispatch under the `tracking.` namespace now:
+ * logEvent() sets the dispatch name and EventDispatch::listenersFor() walks the
+ * dotted segments of THAT, so a listener attached under the bare `dom.stream` is
+ * never reached -- listenersFor('tracking.dom.stream') looks at
+ * 'tracking.dom.stream', 'tracking.*' and 'tracking.dom.*', and never at
+ * 'dom.stream'.
+ *
+ * It was invisible on any install with the module ON, because then this attach is
+ * skipped and the module's own (correct) registration runs. It only failed where
+ * the module is OFF -- a fresh install -- which is the isolation sweep, the one CI
+ * job that installs from scratch AND has a database. The configless unit jobs skip
+ * every test that needs one.
+ *
+ * So the constant is shared with the module rather than the string retyped: this
+ * is a duplicated registration key, and the last one rotted silently.
  */
 final class DomStreamIngestionTest extends IngestionTestCase
 {
@@ -42,7 +59,8 @@ final class DomStreamIngestionTest extends IngestionTestCase
         }
 
         \OWA\Core\CoreAPI::getEventDispatch()->attach(
-            'dom.stream',
+            // Exactly what Domstream\Module::_registerEventHandlers() registers.
+            \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.dom.stream',
             array(new \OWA\Module\Domstream\Handler\DomstreamHandlers, 'notify')
         );
 
@@ -78,6 +96,41 @@ final class DomStreamIngestionTest extends IngestionTestCase
         // string values on write, so decode before comparing.
         $this->assertSame($stream, html_entity_decode($row->get('events'), ENT_QUOTES));
         // document_id is content-hashed (loose compare: int vs DB string).
-        $this->assertEquals(owa_lib::setStringGuid($page_url), $row->get('document_id'));
+        $this->assertEquals(\OWA\Core\Lib::setStringGuid($page_url), $row->get('document_id'));
+
+        /*
+         * The viewport, asserted rather than only sent.
+         *
+         * It was passed in above and nothing checked it, which mattered once
+         * page_width and page_height were scoped to `click` in the property
+         * registry: if `events` had been a gate in setTrackerProperties() rather
+         * than a declaration read by paramsForEvent(), this row would have lost
+         * both and no test would have noticed. domstream is not a v2 event at all
+         * -- V2Event refuses it and none of its own fields are in that registry --
+         * so its handler reads these off the event directly.
+         */
+        $this->assertEquals(1280, $row->get('page_width'));
+        $this->assertEquals(3000, $row->get('page_height'));
+        $this->assertEquals(4200, $row->get('duration'));
+
+        /*
+         * THE RECORDING'S TIME IS THE SERVER'S CLOCK.
+         *
+         * owa_domstream.timestamp used to arrive as the `timestamp` property --
+         * the tracker's own clock, on every beacon -- and setProperties() carried
+         * it into the column by name. That property is device-local now, so the
+         * handler derives this from `ts`, the edge receipt in microseconds.
+         *
+         * This was the ONE live reader of `timestamp`, and DomstreamsRestController
+         * orders the roster by max(timestamp) and shows it as a column, so a NULL
+         * here is an empty Timestamp column and an arbitrary sort order.
+         */
+        $this->assertGreaterThan(0, (int) $row->get('timestamp'),
+            'the recording must carry a time; the roster sorts on it');
+
+        $this->assertSame(
+            intdiv((int) owa_coreAPI::getRequestTimestampMicroseconds(), 1000000),
+            (int) $row->get('timestamp'),
+            'and it must be the SERVER edge clock, in seconds, not a client value');
     }
 }

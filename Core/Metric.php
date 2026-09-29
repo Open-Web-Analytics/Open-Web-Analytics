@@ -50,6 +50,17 @@ class Metric extends \OWA\Core\Base {
     protected $precision = null;
 
     /**
+     * A difference's two children: minuend less subtrahend. Named for the same
+     * reason a ratio's sides are.
+     *
+     * @var string
+     */
+    protected $minuend = '';
+
+    /** @var string */
+    protected $subtrahend = '';
+
+    /**
      * The rows this metric counts, when it counts some of them.
      *
      * ['column' => ..., 'value' => ..., 'operator' => '=']. Empty means every
@@ -127,7 +138,7 @@ class Metric extends \OWA\Core\Base {
     
     var $name;
     
-    var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency');
+    var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds');
 
     var $type, $entity, $all_columns;
         
@@ -293,7 +304,7 @@ class Metric extends \OWA\Core\Base {
                     /*
                      * A CONDITION IS THE SAME SCAN, not a subquery. Most of the
                      * v2 vocabulary is "count the rows that are X" --
-                     * pageViews, domClicks, downloads, transactions, keyEvents
+                     * pageViews, downloads, transactions, goalConversions
                      * -- and an event table answers that by testing a column on
                      * each row it is already reading. Measured on this box:
                      * EXPLAIN says select_type=SIMPLE, Using where; Using index.
@@ -345,7 +356,37 @@ class Metric extends \OWA\Core\Base {
                     break;
                 
                 case 'sum':
-                    $statement = $db->sum( $this->getColumn() );
+
+                    /*
+                     * Conditioned the same way count is, and for the same
+                     * reason: summing a column over rows that are not the thing
+                     * being measured answers a different question. Revenue sits
+                     * on a purchase row, so `sum(revenue)` unconditioned would
+                     * be right only for as long as nothing else ever writes to
+                     * that column -- which is a property of today's data, not a
+                     * statement of what the metric means.
+                     *
+                     * ELSE 0, not ELSE NULL, matching count: a grouping with no
+                     * matching rows earned nothing, and 0 is the answer a report
+                     * row wants. The two agree wherever any row matches, so the
+                     * choice only shows up on the empty case.
+                     */
+                    if ( $this->hasCondition() ) {
+
+                        $where = $this->renderCondition();
+
+                        // '' means the condition could not be rendered, and
+                        // summing every row instead would be a metric quietly
+                        // answering a different question.
+                        $statement = $where === ''
+                            ? null
+                            : sprintf( 'sum(CASE WHEN %s THEN %s ELSE 0 END)',
+                                  $where, $this->getColumn() );
+
+                    } else {
+
+                        $statement = $db->sum( $this->getColumn() );
+                    }
                     break;
 
                 /*
@@ -747,6 +788,63 @@ class Metric extends \OWA\Core\Base {
         return $this->precision === null ? $value : round( $value, $this->precision );
     }
 
+    /**
+     * Declare this metric as one number less another -- net revenue is revenue
+     * less refunds. The children are the two sides, recorded where every reader
+     * already looks, exactly as a ratio's are.
+     *
+     * @param string $minuend    a metric name
+     * @param string $subtrahend a metric name
+     * @return void
+     */
+    function setDifference( $minuend, $subtrahend ) {
+
+        $this->minuend    = (string) $minuend;
+        $this->subtrahend = (string) $subtrahend;
+
+        $this->setChildMetric( $this->minuend );
+        $this->setChildMetric( $this->subtrahend );
+    }
+
+    /** @return bool */
+    function isDifference() {
+
+        return $this->minuend !== '' && $this->subtrahend !== '';
+    }
+
+    /** @return string */
+    function getMinuend() {
+
+        return $this->minuend;
+    }
+
+    /** @return string */
+    function getSubtrahend() {
+
+        return $this->subtrahend;
+    }
+
+    /**
+     * One already-computed number less another.
+     *
+     * A side with no value counts as zero -- revenue with no refunds is the
+     * revenue -- but with neither side there is nothing to report.
+     *
+     * @return float|int|null
+     */
+    function computeDifference( $minuend, $subtrahend ) {
+
+        $a = is_numeric( $minuend ) ? $minuend + 0 : null;
+        $b = is_numeric( $subtrahend ) ? $subtrahend + 0 : null;
+
+        if ( $a === null && $b === null ) {
+
+            return null;
+        }
+
+        return ( $a === null ? 0 : $a ) - ( $b === null ? 0 : $b );
+    }
+
     function setMetricType( $type ) {
         $this->type = $type;
 
@@ -757,7 +855,7 @@ class Metric extends \OWA\Core\Base {
          * child resolution and the cleanup that removes children from the
          * output all work unchanged.
          */
-        if ( $type === 'calculated' || $type === 'ratio' ) {
+        if ( $type === 'calculated' || $type === 'ratio' || $type === 'difference' ) {
              $this->is_calculated = true;
         }
     }

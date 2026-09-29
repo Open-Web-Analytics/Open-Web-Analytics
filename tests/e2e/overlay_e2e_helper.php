@@ -67,7 +67,15 @@ const OVERLAY_CLICK_POINTS = [
     ['x' => 110, 'y' => 210, 'n' => 1],
     ['x' => 120, 'y' => 220, 'n' => 1],
 ];
-const OVERLAY_CONSTRAINTS = 'pagePath==' . OVERLAY_PAGE_PATH;
+/*
+ * The heatmap's query, and what its token is bound to.
+ *
+ * eventName==click is part of it: the heatmap groups by clickX and clickY, and
+ * without the filter every non-click row of the page folds into one bucket at
+ * NULL,NULL. The overlay token is minted over this exact string, so the constant
+ * is what keeps the mint and the request in step.
+ */
+const OVERLAY_CONSTRAINTS = 'pagePath==' . OVERLAY_PAGE_PATH . ',eventName==click';
 
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
@@ -113,13 +121,22 @@ function provision(): array
 
     $site_id = md5(OVERLAY_DOMAIN);
 
-    $s = owa_coreAPI::entityFactory('base.site');
-    $s->set('id', $s->generateId($site_id));
-    $s->set('site_id', $site_id);
-    $s->set('domain', OVERLAY_DOMAIN);
-    $s->set('name', 'OWA overlay cross-origin e2e site');
-    $s->set('description', FIXTURE_TAG);
-    $s->create();
+    /*
+     * THROUGH SiteManager, because a site needs a PROPERTY.
+     *
+     * This built the row by hand, which was enough while nothing about this
+     * fixture read the cube. It is not now: a cube belongs to a Property, and
+     * createNewSite() is what mints one -- a site IS an Observation Profile. A
+     * hand-built row has property_id empty, so buildOverlayCube() found no
+     * Property and provision() refused, which is how this fixture went from
+     * passing over v1 rows to failing outright.
+     *
+     * Idempotent, and it recognises an existing site, so cleanup() having run
+     * first is not a precondition.
+     */
+    $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+    $sm->createNewSite(OVERLAY_DOMAIN, 'OWA overlay cross-origin e2e site',
+        FIXTURE_TAG, '', $site_id);
 
     // A user for the token to name. The token carries this user's privileges,
     // scoped to one action and one resource.
@@ -128,29 +145,37 @@ function provision(): array
     $u->createNewUser($user_id, 'admin', 'pw-' . FIXTURE_TAG, $user_id, 'OWA overlay e2e admin');
     $u->load($u->generateId($user_id), 'user_id');
 
-    $document_id    = (string) sprintf('%d', crc32(FIXTURE_TAG . '-doc') + 4000000000);
     $domstream_guid = (string) sprintf('%d', crc32(FIXTURE_TAG . '-ds') + 4000000000);
 
     /*
-     * A real document row, which this fixture did not need before.
+     * NO DOCUMENT ROW, and no owa_click rows either.
      *
-     * The heatmap is an ordinary dimensional query now -- domClicks grouped by
-     * clickX and clickY, constrained on pagePath -- and pagePath resolves
-     * through document_id, so the clicks are reached BY JOINING to the document.
-     * Seeding clicks against an invented id used to be enough because the old
-     * clicks report selected on document_id directly; now it would join to
-     * nothing and the overlay would fetch an empty result set that still
-     * answered 201, which is the shape of a test that passes for the wrong
-     * reason.
+     * The heatmap is an ordinary dimensional query -- eventCount grouped by clickX
+     * and clickY, constrained on pagePath and eventName -- and on v2 every one of
+     * those is a COLUMN on the click row itself. owa_document existed because a v1
+     * click held only a foreign key; page_path and page_location ride the raw row
+     * now, so there is nothing to join to and nothing to pre-create.
+     *
+     * The clicks are seeded THROUGH logEvent below rather than written as
+     * base.click rows. That fixture was self-consistent -- it wrote owa_click and
+     * read owa_click back -- and self-consistency was the problem: the v1 chain is
+     * unregistered, so a real click never reaches that table, and the specs passed
+     * over data no tracked site can produce. The overlay was in fact broken, in
+     * two places at once, and neither showed here.
      */
-    $doc = owa_coreAPI::entityFactory('base.document');
-    $doc->set('id', $document_id);
-    $doc->set('url', OVERLAY_DOMAIN . OVERLAY_PAGE_PATH);
-    $doc->set('uri', OVERLAY_PAGE_PATH);
-    $doc->set('page_type', 'page');
-    $doc->create();
 
-    seedClicks($site_id, $document_id);
+    seedClicks($site_id);
+
+    /*
+     * And the cube the heatmap's query reads. Refuses loudly rather than letting
+     * the overlay fetch an empty result that still answers 201.
+     */
+    $cube = buildOverlayCube($site_id);
+
+    if (! empty($cube['status'])) {
+        fwrite(STDERR, "[overlay_e2e_helper] cube not built: {$cube['status']}\n");
+        exit(4);
+    }
     seedDomstream($site_id, $domstream_guid);
 
     // The player's route is registered by the Domstream module, and a stock
@@ -170,9 +195,15 @@ function provision(): array
         'site_id'        => $site_id,
         'domain'         => OVERLAY_DOMAIN,
         'user_id'        => $user_id,
-        'document_id'    => $document_id,
+        /*
+         * document_id is no longer returned. It named a base.document row this
+         * fixture used to mint so a v1 click had something to join to, and the
+         * heatmap's query joins nothing now -- page_path and page_location are
+         * columns on the click row. Returning an id for a row that does not exist
+         * is worse than omitting it.
+         */
         'domstream_guid' => $domstream_guid,
-        'clicks'         => countRows('owa_click', $site_id),
+        'clicks'         => countClickEvents($site_id),
         // How many DISTINCT points those clicks land on. Fewer than the clicks
         // themselves, which is what lets the spec assert they were weighted
         // rather than merely returned.
@@ -199,11 +230,21 @@ function provision(): array
 }
 
 /**
- * Click rows for the heatmap to plot. Written directly: the point of the spec
- * is the fetch, not the ingestion path, which tracker-beacon.spec.js covers.
+ * Clicks for the heatmap to plot, through the real beacon.
+ *
+ * WRITTEN AS base.click ROWS BEFORE, on the reasoning that the spec is about the
+ * fetch and not the ingestion path. That reasoning held while logEvent() wrote
+ * owa_click; the v1 chain is unregistered now, so those rows are somewhere no
+ * query reaches and the fixture was proving the overlay could read a table no
+ * visitor writes to.
+ *
+ * Each point is its own session, so a click contributes to the coordinate grid
+ * without a page view having to exist for it -- which is also the honest shape:
+ * the heatmap plots clicks, not pages.
  */
-function seedClicks(string $site_id, string $document_id): void
+function seedClicks(string $site_id): void
 {
+    $rc  = owa_coreAPI::requestContainerSingleton();
     $now = time();
     $i   = 0;
 
@@ -211,21 +252,111 @@ function seedClicks(string $site_id, string $document_id): void
 
         for ($k = 0; $k < $point['n']; $k++) {
 
-            $c = owa_coreAPI::entityFactory('base.click');
-            $c->set('id', $c->generateId(FIXTURE_TAG . '-click-' . $i));
-            $c->set('site_id', $site_id);
-            $c->set('document_id', $document_id);
-            $c->set('timestamp', $now - $i);
-            $c->set('yyyymmdd', (int) date('Ymd', $now));
-            $c->set('click_x', $point['x']);
-            $c->set('click_y', $point['y']);
-            $c->set('page_width', 1200);
-            $c->set('page_height', 800);
-            $c->create();
+            $rc->setTimestamp($now - $i);
+
+            $url = OVERLAY_DOMAIN . OVERLAY_PAGE_PATH;
+
+            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event->setEventType('dom.click');
+            $event->setProperties([
+                'site_id'         => $site_id,
+                'session_id'      => overlayGuid(),
+                'visitor_id'      => overlayGuid(),
+                'guid'            => overlayGuid(),
+                'page_url'        => $url,
+                'page_location'   => $url,
+                'page_title'      => 'Overlay e2e page',
+                'HTTP_USER_AGENT' => $_SERVER['HTTP_USER_AGENT'],
+                'ip_address'      => '203.0.113.44',
+                'target_url'      => $url . '#overlay',
+                'click_x'         => $point['x'],
+                'click_y'         => $point['y'],
+                'page_width'      => 1200,
+                'page_height'     => 800,
+                'dom_element_id'  => 'overlay-target',
+                'dom_element_tag' => 'a',
+            ]);
+
+            owa_coreAPI::logEvent('dom.click', $event);
 
             $i++;
         }
     }
+
+    $rc->setTimestamp($now);
+}
+
+/** Click rows stored for this site, counted where a real click lands. */
+function countClickEvents(string $site_id): int
+{
+    $db  = db();
+    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+
+    $rows = $db->get_results(sprintf(
+        "SELECT COUNT(*) AS c FROM %s WHERE site_id = '%s' AND event_type = 'click'",
+        $raw, $db->prepare($site_id)));
+
+    return is_array($rows) && $rows ? (int) ((array) $rows[0])['c'] : 0;
+}
+
+/** Numeric GUID in the tracker's format (BIGINT-safe). */
+function overlayGuid(): string
+{
+    return ((string) time())
+        . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT)
+        . str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
+}
+
+/**
+ * The cube, which is what the heatmap's query reads.
+ *
+ * Raw alone is not enough: every report goes through the cube, so a fixture that
+ * seeds raw and stops hands the overlay an empty result that still answers 201 --
+ * the shape of a test passing for the wrong reason, which is what this fixture
+ * was already doing by another route.
+ */
+function buildOverlayCube(string $site_id): array
+{
+    $site = owa_coreAPI::entityFactory('base.site');
+    $site->load($site_id, 'site_id');
+
+    $property_id = (string) $site->get('property_id');
+
+    if (! $property_id) {
+        return ['status' => 'no property on the overlay fixture site'];
+    }
+
+    $db  = db();
+    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+
+    $span = $db->get_row(sprintf(
+        "SELECT MIN(yyyymmdd) AS lo, MAX(yyyymmdd) AS hi FROM %s WHERE site_id = '%s'",
+        $raw, $db->prepare($site_id)));
+
+    if (empty($span['lo'])) {
+        return ['status' => 'no raw rows to build from'];
+    }
+
+    if (! $db->tableExists(\OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id))
+        && ! \OWA\Module\Base\Classes\Cube\Cubes::create($property_id)) {
+        return ['status' => 'could not create the cube'];
+    }
+
+    $builder = new \OWA\Module\Base\Classes\Cube\Builder($property_id);
+    $rows    = 0;
+
+    foreach ($builder->partitions((int) $span['lo'], (int) $span['hi']) as $partition) {
+
+        $result = $builder->rebuild($partition);
+
+        if (empty($result['ok'])) {
+            return ['status' => 'partition ' . $partition['name'] . ' failed to build'];
+        }
+
+        $rows += (int) $result['rows'];
+    }
+
+    return ['property' => $property_id, 'rows_built' => $rows];
 }
 
 function seedDomstream(string $site_id, string $domstream_guid): void
@@ -262,7 +393,16 @@ function cleanup(): array
     $site_id = md5(OVERLAY_DOMAIN);
     $removed = [];
 
-    foreach (['owa_click', 'owa_domstream'] as $table) {
+    $site = owa_coreAPI::entityFactory('base.site');
+    $site->load($site_id, 'site_id');
+
+    if ($site->get('property_id')) {
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor((string) $site->get('property_id'));
+        try { db()->query('DROP TABLE IF EXISTS ' . $table); } catch (\Throwable $e) {}
+    }
+
+    foreach ([owa_coreAPI::entityFactory('base.event_raw')->getTableName(),
+              'owa_click', 'owa_domstream'] as $table) {
         $db = db();
         $db->deleteFrom($table);
         $db->where('site_id', $site_id);

@@ -880,71 +880,6 @@ OWA.resultSetExplorer.prototype = {
         this.registerDataChangeSubscriber( dom_id );
     },
     
-    /**
-     * Render a headline from a message with named slots.
-     *
-     * The message is DATA -- a sentence a report declares -- and this does the
-     * substituting. It replaces renderTemplate for headlines, where the
-     * template was a jqote string carried in configuration: a definition that
-     * can hand a template engine arbitrary source is a definition that cannot
-     * safely be authored by a user, which is what report configuration is
-     * meant to become.
-     *
-     * Three slot forms, which is everything the 59 existing headlines used:
-     *
-     *   {visits.formatted}              the metric's formatted value
-     *   {uniquePageViews.raw}           its raw value
-     *   {visits|visit|visits}           its count, then singular, then plural
-     *
-     * One is singular; everything else, zero included, takes the plural. That
-     * is what the templates being replaced did (`> 1`), and it is right for
-     * English: "0 visits".
-     *
-     * An unknown metric renders as an empty string rather than the slot text,
-     * so a mistyped name reads as missing data rather than as markup leaking
-     * into the sentence.
-     */
-    renderHeadline : function(message, dom_id) {
-
-        dom_id = dom_id || this.dom_id;
-
-        var that = this;
-
-        var aggregate = function(name) {
-
-            var aggregates = that.resultSet
-                && that.resultSet.aggregates
-                ? that.resultSet.aggregates
-                : {};
-
-            return aggregates[name] || null;
-        };
-
-        var text = String(message).replace(/\{([^}]+)\}/g, function(whole, slot) {
-
-            var parts = slot.split('|');
-
-            // {metric|singular|plural}
-            if (parts.length === 3) {
-
-                var counted = aggregate(parts[0]);
-                var count = counted ? Number(counted.value) : 0;
-
-                return count === 1 ? parts[1] : parts[2];
-            }
-
-            var dotted = slot.split('.');
-            var agg = aggregate(dotted[0]);
-
-            if (!agg) {
-                return '';
-            }
-
-            return dotted[1] === 'raw' ? agg.value : agg.formatted_value;
-        });
-
-        jQuery('#' + dom_id).html(text);
-    },
 
     renderTemplate : function(template, params, mode, dom_id) {
 
@@ -2431,6 +2366,17 @@ OWA.constraintBuilder.prototype = {
 
     },
 
+    /*
+     * THE EMPTY TEST, offered in the picker only. Each key is the whole tail
+     * of the clause: "(not set)" is the label for NULL and '', and the server
+     * reads `==(not set)` / `!=(not set)` as "is empty" / "has a value". Kept
+     * out of `operators` because that map also parses constraint strings.
+     */
+    emptyTests: {
+        '!=(not set)':  'Is Set',
+        '==(not set)':  'Is Not Set'
+    },
+
     parseConstraintString : function( str ) {
 
         var con_obj = {
@@ -2688,7 +2634,17 @@ OWA.constraintBuilder.prototype = {
                     var value = jQuery(this)
                         .children('.constraintValueField').val();
 
-                    if ( value ) {
+                    // An empty test carries its own value.
+                    if ( that.emptyTests.hasOwnProperty( operator ) ) {
+
+                        value = '';
+                        constraints += name + operator;
+
+                        if (index < jQuery(builder_selector + ' > ul > li').length - 1 ) {
+                            constraints += ',';
+                        }
+
+                    } else if ( value ) {
                     //constraints += OWA.util.sprintf('%s%s%s,' name, operator, value);
                         constraints += name + operator + value;
 
@@ -2796,12 +2752,31 @@ OWA.constraintBuilder.prototype = {
         cdp.setDimensions( this.combineRelatedMetricsWithDimensions() );
         cdp.display(name);
 
+        // A parsed `==(not set)` is the empty test, not a typed value.
+        if ( value === '(not set)' && this.emptyTests.hasOwnProperty( operator + value ) ) {
+
+            operator = operator + value;
+            value = '';
+        }
+
         // generate operatior picker
         this.makeOperatorPicker(selector + ' > li:last > .constraintOperatorPicker', operator);
 
         if (value) {
             jQuery(selector + ' > li:last > .constraintValueField').val(value);
         }
+
+        // The value field has nothing to say for an empty test.
+        var $value = jQuery( selector + ' > li:last > .constraintValueField' );
+        var syncValueField = function ( op ) {
+
+            $value.toggle( ! that.emptyTests.hasOwnProperty( op ) );
+        };
+
+        syncValueField( operator );
+
+        jQuery( selector + ' > li:last > .constraintOperatorPicker > .operator-list' )
+            .on( 'change', function () { syncValueField( jQuery( this ).val() ); } );
 
         var $row = jQuery( selector + ' > li:last' );
 
@@ -2863,16 +2838,21 @@ OWA.constraintBuilder.prototype = {
         //c += '<label for="operator-list">Select Operator:</label>';
         c += '<select name="operator-list" class="operator-list">';
 
-        // build the list of operators
-        for (var operator in this.operators) {
+        // build the list of operators, then the empty tests
+        var lists = [ this.operators, this.emptyTests ];
 
-            if ( this.operators.hasOwnProperty( operator ) ) {
+        for ( var l = 0; l < lists.length; l++ ) {
 
-                c += OWA.util.sprintf(
-                        '<option value="%s">%s</option>',
-                        operator,
-                        this.operators[operator]
-                );
+            for (var operator in lists[ l ]) {
+
+                if ( lists[ l ].hasOwnProperty( operator ) ) {
+
+                    c += OWA.util.sprintf(
+                            '<option value="%s">%s</option>',
+                            operator,
+                            lists[ l ][operator]
+                    );
+                }
             }
         }
 
@@ -2897,8 +2877,8 @@ OWA.constraintBuilder.prototype = {
          * `.operator-list` directly, which keeps working because chosen leaves
          * the <select> in place and only hides it.
          *
-         * disable_search because there are six operators; a search box on six
-         * options is furniture.
+         * disable_search because there are seven options; a search box on seven
+         * is furniture.
          *
          * The width is EXPLICIT for the same reason the dimension picker's is:
          * chosen-js 1.x measures the <select> at enhancement time and reads 0

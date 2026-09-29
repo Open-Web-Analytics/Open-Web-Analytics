@@ -24,9 +24,9 @@
  * Without this, DNS, TCP and TLS to a cold origin do not START until the script
  * element is inserted and the browser gets round to fetching it -- three round
  * trips that are pure latency and happen before a single byte of tracker code
- * arrives. A self-hosted tracker feels this far more than a third-party one:
- * GA's origin is already warm in most browsers from some other site, and yours
- * never is.
+ * arrives. A self-hosted tracker feels this far more than a third-party one: a
+ * large vendor's origin is already warm in most browsers from some other site,
+ * and yours never is.
  *
  * Deliberately NOT crossorigin. The tracker script is an ordinary script fetch
  * and the beacon is a no-cors GET or sendBeacon, so an anonymous preconnect

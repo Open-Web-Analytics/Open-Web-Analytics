@@ -104,9 +104,157 @@ final class LegacyClassNameContractTest extends TestCase
          * pre() returns false.
          */
         'owa_processFirstRequestController',
-    ];
 
+        /*
+         * REMOVED on the v2 branch with the v1 conversion evaluator.
+         *
+         * It read a goal event's conditions against the tracking event and set
+         * goal_N on the owa_session row. Both ends are v1: v2 writes no session
+         * row, and a conversion is a flag on the raw event -- one flag, because
+         * an event meeting two goals is still one event. The handler was already
+         * unregistered, so nothing has called it on this branch at all.
+         */
+        'owa_conversionHandlers',
+
+        /*
+         * REMOVED on the v2 branch: the goal{N}Completions, Starts and Value
+         * metric families. They numbered goals by 1.x slot and read the
+         * owa_session.goal_N columns. Unregistered since the v1 metric
+         * vocabulary was removed; v2 counts conversions with goalConversions,
+         * over is_goal_event.
+         */
+        'owa_goalNCompletions',
+        'owa_goalNStarts',
+        'owa_goalNValue',
+
+        /*
+         * REMOVED on the v2 branch: the goal manager. It presented goal events in
+         * 1.x's numbered-slot shape and kept the goal group labels; slots and
+         * groups are both gone (Update056). The site-to-Property lookup it also
+         * held is Entity\GoalEvent::propertyFor().
+         */
+        'owa_goalManager',
+    ];
     private const RETIRED = [
+        /*
+         * RETIRED 2026-09-28: every internal name. v2 closes the deprecation
+         * window this fixture was frozen for.
+         *
+         * What stays is what a module builds on -- the base classes it extends,
+         * owa_coreAPI, which it calls -- and owa_event, which queued data names.
+         * Everything below was a service, a handler, a concrete validator, a
+         * controller or view, a v1 update, a module registry class or owa_lib:
+         * names a module never extended, and OWA's own factories no longer
+         * reach them (CompatMapIsNotLoadBearingTest).
+         */
+        'owa_actionHandler',
+        'owa_actionsPerVisit',
+        'owa_adHandlers',
+        'owa_auth',
+        'owa_base_003_update',
+        'owa_base_004_update',
+        'owa_base_005_update',
+        'owa_base_006_update',
+        'owa_base_007_update',
+        'owa_base_008_update',
+        'owa_base_009_update',
+        'owa_base_010_update',
+        'owa_base_011_update',
+        'owa_baseModule',
+        'owa_browscap',
+        'owa_cache',
+        'owa_caller',
+        'owa_campaignHandlers',
+        'owa_chartData',
+        'owa_clickHandlers',
+        'owa_commerceTransactionHandlers',
+        'owa_configurableMetric',
+        'owa_date',
+        'owa_db',
+        'owa_db_mysql',
+        'owa_dbColumn',
+        'owa_dbEventQueue',
+        'owa_document',
+        'owa_documentHandlers',
+        'owa_domstreamHandlers',
+        'owa_domstreamModule',
+        'owa_emailAddressValidation',
+        'owa_entityDoesNotExistValidation',
+        'owa_entityExistsValidation',
+        'owa_error',
+        'owa_eventDispatch',
+        'owa_feedRequestHandlers',
+        'owa_fileCache',
+        'owa_fileCacheModule',
+        'owa_fileEventQueue',
+        'owa_geolocation',
+        'owa_helloModule',
+        'owa_hostHandlers',
+        'owa_http',
+        'owa_httpEventQueue',
+        'owa_inArrayValidation',
+        'owa_install',
+        'owa_installController',
+        'owa_installManager',
+        'owa_isNotCurrentUserValidation',
+        'owa_lib',
+        'owa_location',
+        'owa_locationHandlers',
+        'owa_logConsole',
+        'owa_logEmail',
+        'owa_logFile',
+        'owa_mailer',
+        'owa_maxmind',
+        'owa_maxmind_geoipModule',
+        'owa_memcachedCache',
+        'owa_memcachedCacheModule',
+        'owa_memoryCache',
+        'owa_notifyHandlers',
+        'owa_optionsUpdateController',
+        'owa_osHandlers',
+        'owa_paginatedResultSet',
+        'owa_pagination',
+        'owa_processEventController',
+        'owa_pslReader',
+        'owa_refererHandlers',
+        'owa_remoteQueueModule',
+        'owa_repeatVisitors',
+        'owa_requestContainer',
+        'owa_requestHandlers',
+        'owa_requiredValidation',
+        'owa_resultSetManager',
+        'owa_sanitize',
+        'owa_searchTermHandlers',
+        'owa_service',
+        'owa_serviceUser',
+        'owa_sessionCommerceSummaryHandlers',
+        'owa_sessionHandlers',
+        'owa_settings',
+        'owa_siteManager',
+        'owa_sitesAddController',
+        'owa_sitesAddView',
+        'owa_sitesEditSettingsController',
+        'owa_sourceHandlers',
+        'owa_state',
+        'owa_stringLengthValidation',
+        'owa_stringMatchValidation',
+        'owa_subStringMatchValidation',
+        'owa_subStringPositionValidation',
+        'owa_template',
+        'owa_timePeriod',
+        'owa_trackingEventHelpers',
+        'owa_userAgentHandlers',
+        'owa_userHandlers',
+        'owa_userManager',
+        'owa_userNameValidation',
+        'owa_usersAddController',
+        'owa_usersController',
+        'owa_usersDeleteController',
+        'owa_usersView',
+        'owa_validator',
+        'owa_visitorHandlers',
+        'owa_visitorUpdateHandlers',
+
         /*
          * RETIRED 2026-09-13: 132 concrete controllers, views and entities.
          *

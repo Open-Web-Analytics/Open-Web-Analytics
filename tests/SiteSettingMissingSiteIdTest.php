@@ -12,10 +12,10 @@ use PHPUnit\Framework\TestCase;
  * returns null for a site that is not persisted, and every caller tests the
  * return value before using it.
  *
- * The goal reports are the path that made this reachable: the controller passes
- * the request's siteId straight into GoalManager, whose constructor calls
- * loadGoals() -> getSiteSetting(). Any request whose siteId did not arrive under
- * that exact name therefore reached getByColumn() with nothing to look up.
+ * The goal reports were the path that made this reachable: the controller passed
+ * the request's siteId straight into the goal manager (since removed), whose
+ * constructor called getSiteSetting(). Any request whose siteId did not arrive
+ * under that exact name therefore reached getByColumn() with nothing to look up.
  *
  * getSiteSetting() now answers the empty case itself, which covers every caller
  * rather than only the one that exposed it.
@@ -75,17 +75,5 @@ final class SiteSettingMissingSiteIdTest extends TestCase
             'an unknown site should answer null'
         );
     }
-
-    /**
-     * The construction that raised. GoalManager's constructor calls
-     * loadGoals(), so building it with no site id exercises the path end to end
-     * and must produce a usable object carrying the default goals.
-     */
-    public function testGoalManagerBuildsWithoutASiteId()
-    {
-        $gm = \OWA\Core\CoreAPI::supportClassFactory('base', 'goalManager', false);
-
-        $this->assertNotNull($gm, 'goalManager should still be constructible');
-        $this->assertIsArray($gm->getGoal(1), 'a default goal should be available');
-    }
 }
+

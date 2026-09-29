@@ -80,7 +80,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test.skip(!SELFHOST,
         'Provisions a site, clicks and a domstream; runs only under the self-host e2e runner.');
 
-    /** @type {{site_id:string, document_id:string, page_path:string, constraints:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
+    /** @type {{site_id:string, page_path:string, constraints:string, domstream_guid:string, heatmap_token:string, player_token:string, clicks:number}} */
     let fx;
 
     test.beforeAll(() => {
@@ -143,7 +143,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
             // An ordinary dimensional query: clicks grouped by coordinate,
             // constrained on the page. There is no clicks report any more.
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_metrics=domClicks'
+                + '&owa_metrics=eventCount'
                 + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
                 + '&owa_constraints=' + encodeURIComponent(fx.constraints)
@@ -264,7 +264,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         const { fetches } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_metrics=domClicks'
+                + '&owa_metrics=eventCount'
                 + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
                 + '&owa_constraints=' + encodeURIComponent('pagePath==/some-other-page')

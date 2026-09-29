@@ -128,23 +128,20 @@ const FIXTURE = {
         elementClass: 'e2e-clickable',
     },
     /*
-     * The actions seeded by seedActions(). The three metrics answer three
-     * different questions and must give three different numbers:
-     *   actions       4  -- how many happened
-     *   uniqueActions 2  -- how many distinct NAMES (submit, cancel)
-     *   actionsValue 22  -- what they were worth (5 + 5 + 2 + 10)
+     * THE ACTION EXPECTATIONS WERE HERE AND ARE REMOVED with the reports that
+     * read them.
      *
-     * Names, groups and labels are LOWERCASE here because the handler
-     * lowercases them on the way in, which is itself worth pinning.
+     * They described three metrics -- actions, uniqueActions, actionsValue -- and
+     * the dimensions actionName, actionLabel and actionGroup. v2 declares none of
+     * those and should declare none: a tracked action is a `custom_event` row like
+     * any other event, so it is counted by the Events report grouping on
+     * eventName, and its own name, label and group ride `params`, which ARE the
+     * custom dimensions.
+     *
+     * seedActions() still fires the four events -- they are real events and the
+     * Events report counts them -- but nothing asserts a shape for them here,
+     * because there is no action vocabulary left to assert against.
      */
-    actions: {
-        total: 4,
-        uniqueNames: 2,
-        value: 22,
-        byGroup: { signup: 3, commerce: 1 },
-        byName: { submit: 3, cancel: 1 },
-        labels: ['form-a', 'cart'],
-    },
     /*
      * The DOM recordings seeded by seedDomstreams().
      *

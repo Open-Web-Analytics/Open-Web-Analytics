@@ -22,24 +22,57 @@ describe('OWATracker event assembly', () => {
         tracker.trackEvent = (event) => { captured.push(event); };
     });
 
-    test('trackAction assembles a track.action event with all fields', () => {
-        tracker.trackAction('test group', 'test action', 'this is just a test', 10);
+    /**
+     * trackAction sends the action's OWN NAME as the event, with the rest as
+     * parameters.
+     *
+     * It used to send event_type 'custom_event' and put the name in an
+     * action_name field: v1's one-event-type-for-everything shape, told apart by
+     * a property. v2 retires it -- an event name is a name, and the group, label
+     * and value describe it, which is why eventName is a dimension.
+     */
+    test('trackAction sends the action name as the event, with ep_ parameters', () => {
+        tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('track.action');
-        expect(e.get('action_group')).toBe('test group');
-        expect(e.get('action_name')).toBe('test action');
-        expect(e.get('action_label')).toBe('this is just a test');
-        expect(e.get('numeric_value')).toBe(10);
+        expect(e.get('event_type')).toBe('newsletter_opt_in');
+        expect(e.get('ep_action_group')).toBe('signup');
+        expect(e.get('ep_action_label')).toBe('footer form');
+        expect(e.get('epn_numeric_value')).toBe(10);
+
+        // The old spellings are gone, not merely unread.
+        expect(e.get('action_name')).toBeUndefined();
+        expect(e.get('action_group')).toBeUndefined();
+        expect(e.get('numeric_value')).toBeUndefined();
     });
 
-    test('trackPageView assembles a base.page_request event', () => {
+    /**
+     * AND AN ACTION NAME THAT IS NOT A LEGAL EVENT NAME IS REFUSED.
+     *
+     * The migration cost, stated as a test. v1 action names were free text, so
+     * 'test action' was ordinary; an event name may not contain a space in v2,
+     * so a site passing one now sends nothing and gets a
+     * debug line saying why.
+     *
+     * Refused rather than reshaped on purpose: silently turning 'test action' into
+     * 'test_action' would invent a name the site never chose and split its history
+     * across two of them.
+     */
+    test('trackAction refuses an action name that is not a legal event name', () => {
+        tracker.trackAction('group', 'test action', 'label', 1);
+        tracker.trackAction('group', '9_starts_numeric', 'label', 1);
+        tracker.trackAction('group', 'page_view', 'label', 1);
+
+        expect(captured).toHaveLength(0);
+    });
+
+    test('trackPageView assembles a page_view event', () => {
         tracker.trackPageView('https://example.com/page');
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('base.page_request');
+        expect(e.get('event_type')).toBe('page_view');
         expect(e.get('page_url')).toBe('https://example.com/page');
     });
 
@@ -47,7 +80,7 @@ describe('OWATracker event assembly', () => {
         tracker.trackPageView();
 
         expect(captured).toHaveLength(1);
-        expect(captured[0].get('event_type')).toBe('base.page_request');
+        expect(captured[0].get('event_type')).toBe('page_view');
     });
 
     test('trackTransaction assembles an ecommerce.transaction event with line items', () => {
@@ -57,7 +90,7 @@ describe('OWATracker event assembly', () => {
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('ecommerce.transaction');
+        expect(e.get('event_type')).toBe('purchase');
         expect(e.get('ct_order_id')).toBe('order-1');
         expect(e.get('ct_order_source')).toBe('web');
         expect(e.get('ct_total')).toBe(42.5);
@@ -65,9 +98,10 @@ describe('OWATracker event assembly', () => {
 
         const items = e.get('ct_line_items');
         expect(items).toHaveLength(1);
-        expect(items[0].li_sku).toBe('SKU-1');
-        expect(items[0].li_product_name).toBe('Widget');
-        expect(items[0].li_quantity).toBe(2);
+        // The shape trackPurchase() takes, so every purchase's items read alike.
+        expect(items[0].item_id).toBe('SKU-1');
+        expect(items[0].item_name).toBe('Widget');
+        expect(items[0].quantity).toBe(2);
     });
 
     test('trackTransaction without a set-up transaction sends nothing', () => {
@@ -75,7 +109,7 @@ describe('OWATracker event assembly', () => {
         expect(captured).toHaveLength(0);
     });
 
-    test('clickEventHandler assembles a dom.click event from a DOM target', () => {
+    test('clickEventHandler assembles a click event from a DOM target', () => {
         // logClicksAsTheyHappen makes the handler hand the click to trackEvent.
         tracker.setOption('logClicksAsTheyHappen', true);
 
@@ -92,7 +126,7 @@ describe('OWATracker event assembly', () => {
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
-        expect(e.get('event_type')).toBe('dom.click');
+        expect(e.get('event_type')).toBe('click');
         // dom_element_tag is lower-cased by getDomElementProperties() for
         // consistent storage regardless of how the browser reports tagName.
         expect(e.get('dom_element_tag')).toBe('a');

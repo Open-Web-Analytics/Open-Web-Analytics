@@ -4,7 +4,7 @@
     "params": {
         "pagePath": {}
     },
-    "metrics": "visits,pageViews",
+    "metrics": "sessions,pageViews",
     "widgets": [
         {
             "type": "trend",
@@ -20,64 +20,7 @@
                     "dimension": "pagePath",
                     "fromParam": "pagePath"
                 }
-            ],
-            "headline": "There were {pageViews.formatted} page views for this page."
-        },
-        {
-            "type": "grid",
-            "id": "priorpages",
-            "container": "priorpages",
-            "title": "Prior Pages Viewed",
-            "query": {
-                "metrics": "visits",
-                "dimensions": "priorPagePath,priorPageTitle",
-                "sort": "visits-",
-                "resultsPerPage": 15
-            },
-            "constraints": [
-                {
-                    "dimension": "pagePath",
-                    "fromParam": "pagePath"
-                }
-            ],
-            "link": {
-                "linkColumn": "priorPagePath",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "priorPagePath"
-            },
-            "colspan": 3
-        },
-        {
-            "type": "grid",
-            "id": "nextpages",
-            "container": "nextpages",
-            "title": "Next Pages Viewed",
-            "query": {
-                "metrics": "visits",
-                "dimensions": "pagePath,pageTitle",
-                "sort": "visits-",
-                "resultsPerPage": 15
-            },
-            "constraints": [
-                {
-                    "dimension": "priorPagePath",
-                    "fromParam": "pagePath"
-                }
-            ],
-            "link": {
-                "linkColumn": "pagePath",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "pagePath"
-            },
-            "colspan": 3
+            ]
         },
         {
             "type": "heatmap-link",

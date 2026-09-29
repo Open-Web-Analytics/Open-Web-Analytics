@@ -18,15 +18,18 @@ namespace OWA\Core;
 /**
  * The metric sets a site offers.
  *
- * A report shows one dimension measured several ways -- site usage, e-commerce,
- * each goal group. Those are METRIC SETS. The interface currently draws them as
+ * A report shows one dimension measured several ways -- site usage, and
+ * e-commerce where the site has it. Those are METRIC SETS. The interface currently draws them as
  * tabs; that is a presentation choice and is expected to change, so nothing
  * here is named after it.
  *
  * They are NOT configuration and a report cannot enumerate them: which sets
- * exist depends on the site, and a new one appears the moment someone adds a
- * goal. So they are derived here, per site, and merged with whatever a report
- * declares.
+ * exist depends on the site. So they are derived here, per site, and merged
+ * with whatever a report declares.
+ *
+ * There was one per goal GROUP too, measuring goal{N}Completions and
+ * goalValueAll. Neither metric exists on v2, and goal groups were removed
+ * (Update056).
  *
  * Extracted from ReportController::pre(), where this was built inline as
  * `$tabs`. One source, two consumers: the widget renderer reads the shape
@@ -74,106 +77,20 @@ class MetricSets {
 
         $sets[ self::DEFAULT_KEY ] = array(
             'label'       => 'Site Usage',
-            'metrics'     => 'visits,pagesPerVisit,visitDuration,bounceRate,uniqueVisitors',
-            'chartMetric' => 'visits',
+            'metrics'     => 'sessions,engagementRate,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
+            'chartMetric' => 'sessions',
         );
 
         if ( \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'enableEcommerceReporting' ) ) {
 
             $sets['ecommerce'] = array(
                 'label'       => 'e-commerce',
-                'metrics'     => 'visits,transactions,transactionRevenue,revenuePerVisit,revenuePerTransaction,ecommerceConversionRate',
+                'metrics'     => 'sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate',
                 'chartMetric' => 'transactions',
             );
         }
 
-        $goals = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-
-        foreach ( (array) $goals->getActiveGoalGroups() as $group ) {
-
-            $sets[ self::goalGroupKey( $group ) ] = self::goalGroupSet(
-                $goals->getGoalGroupLabel( $group ),
-                (array) $goals->getActiveGoalsByGroup( $group )
-            );
-        }
-
         return $sets;
-    }
-
-    /**
-     * One metric per ACTIVE GOAL, flat, across every group.
-     *
-     * Not a metric set and deliberately not registered as one: sets become
-     * tabs, and this is a panel of boxes inside one report. Adding it to
-     * forSite() would grow a spurious tab on every tabbed report in the
-     * install.
-     *
-     * It is the list `goals` draws its Goal Performance boxes from, which its
-     * controller assembled inline. A site with no active goals yields an empty
-     * string -- the report drops the panel rather than asking for no metrics,
-     * which is what the controller's `if ($view->goal_metrics)` did.
-     *
-     * @param string $siteId
-     * @return string comma-separated metric names, or '' when the site has no active goals
-     */
-    public static function activeGoalCompletions( $siteId ) {
-
-        $manager = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-
-        $metrics = array();
-
-        foreach ( (array) $manager->getActiveGoals() as $goal ) {
-
-            if ( isset( $goal['goal_number'] ) ) {
-
-                $metrics[] = sprintf( 'goal%sCompletions', $goal['goal_number'] );
-            }
-        }
-
-        return implode( ',', $metrics );
-    }
-
-    /** The set name for a goal group. */
-    public static function goalGroupKey( $group ) {
-
-        return 'goal_group_' . $group;
-    }
-
-    /**
-     * One goal group's metric set.
-     *
-     * Split out from forSite() because this is the only part with any logic in
-     * it -- assembling a metric name per active goal -- and it was otherwise
-     * only reachable on a site that has goals configured. Dropping the whole
-     * goal-group loop changed nothing observable on a site without them, which
-     * is a branch nothing was checking.
-     *
-     * @param string $label the group's display name
-     * @param array $activeGoals goal numbers active in the group
-     * @return array
-     */
-    public static function goalGroupSet( $label, array $activeGoals ) {
-
-        $metrics = 'visits';
-
-        foreach ( $activeGoals as $goal ) {
-
-            $metrics .= sprintf( ',goal%sCompletions', $goal );
-        }
-
-        /*
-         * Always last, and always present. A group with no active goals still
-         * has a total, and the grid's columns follow the order of this list --
-         * so appending per-goal metrics after it would move the total column
-         * depending on how many goals a group happens to have.
-         */
-        $metrics .= ',goalValueAll';
-
-        return array(
-            'label'       => $label,
-            'metrics'     => $metrics,
-            'chartMetric' => 'visits',
-        );
     }
 
     /**

@@ -98,12 +98,33 @@ final class V2EventTest extends TestCase
             'base.page_request'       => 'page_view',
             'dom.click'               => 'click',
             'ecommerce.transaction'   => 'purchase',
-            'track.action'            => 'custom_event',
         ];
 
         foreach ($map as $v1 => $v2) {
             $this->assertSame($v2, \OWA\Module\Base\Classes\V2Event::name($v1));
         }
+    }
+
+    /**
+     * track.action maps to NOTHING, because custom_event is retired.
+     *
+     * v1 had one event type for everything a site tracked, told apart by an
+     * action_name field. v2 retires that shape: an event name is a name, and the
+     * group, label and value are parameters describing it -- so there is no
+     * custom_event to rename to, and trackAction() now sends the action's own name.
+     *
+     * The dot-flattening fallback is what answers instead, which is name()'s
+     * storage rule: a v1 spelling must not reach a v2 column. Asserted so the
+     * retirement is visible rather than implied by an absence.
+     */
+    public function testTrackActionHasNoV2Name(): void
+    {
+        $this->assertArrayNotHasKey( 'track.action',
+            \OWA\Module\Base\Classes\V2Event::typeMap(),
+            'the compat index still renames track.action' );
+
+        $this->assertSame( 'track_action',
+            \OWA\Module\Base\Classes\V2Event::name( 'track.action' ) );
     }
 
     /**
@@ -129,7 +150,7 @@ final class V2EventTest extends TestCase
 
     public function testEventTypeFitsItsColumn(): void
     {
-        foreach (\OWA\Module\Base\Classes\V2Event::TYPE_MAP as $name) {
+        foreach (\OWA\Module\Base\Classes\V2Event::typeMap() as $name) {
             $this->assertLessThanOrEqual(24, strlen($name),
                 'event_type is VARCHAR(24); a longer name would be trimmed and stop matching.');
         }

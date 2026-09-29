@@ -150,9 +150,8 @@ class StateManager {
 		 * last_req and the server computed no prior_session_lastreq and none of
 		 * the prior_session_* date parts derived from it.
 		 *
-		 * This is what GA does -- measured: a tag that loads and sends nothing
-		 * writes no cookies at all, so it never destroys what was already
-		 * there.
+		 * So a tracker that loads and sends nothing writes no cookies at all, and
+		 * never destroys what was already there.
 		 */
 		this.hydrated[ store_name ] = true;
 
@@ -521,9 +520,8 @@ class StateManager {
              *   'global'  one store for the page, shared by every tracker on it
              *   'site'    one store per site id
              *
-             * This is GA's split: _ga holds the client id and is shared across
-             * every property, _ga_<property> holds session state and there is
-             * one per property. OWA had a single shared session store, so two
+             * The visitor is shared across every site on the page; session state
+             * is one store per site. OWA had a single shared session store, so two
              * trackers on one page produced ONE session id -- and since a
              * session row is loaded by session_id alone, the second site's
              * facts pointed at the first site's session row.

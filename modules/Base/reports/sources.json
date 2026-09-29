@@ -8,26 +8,16 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from all sources."
+            }
         },
         {
             "type": "grid",
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "source,medium",
-                "sort": "visits",
+                "dimensions": "sessionSourceMedium",
+                "sort": "sessions",
                 "resultsPerPage": 30
-            },
-            "link": {
-                "linkColumn": "source",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "source-detail",
-                    "source": "%s"
-                },
-                "valueColumns": "source"
             }
         }
     ]

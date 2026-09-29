@@ -83,7 +83,7 @@ describe('transport selection', () => {
         const beacon = installBeacon(() => true);
         const pixel = installImageSpy();
 
-        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'page_view');
 
         expect(queued).toBe(true);
         expect(beacon.sent).toEqual([URL_UNDER_TEST]);
@@ -97,7 +97,7 @@ describe('transport selection', () => {
         const gone = removeBeacon();
         const pixel = installImageSpy();
 
-        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'page_view');
 
         expect(queued).toBe(false);
         expect(pixel.sent).toEqual([URL_UNDER_TEST]);
@@ -111,7 +111,7 @@ describe('transport selection', () => {
         const beacon = installBeacon(() => false);
         const pixel = installImageSpy();
 
-        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'page_view');
 
         expect(queued).toBe(false);
         expect(beacon.sent).toEqual([URL_UNDER_TEST]);
@@ -126,7 +126,7 @@ describe('transport selection', () => {
         const beacon = installBeacon(() => { throw new Error('refused'); });
         const pixel = installImageSpy();
 
-        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        const queued = newTracker().sendRequest(URL_UNDER_TEST, 'page_view');
 
         expect(queued).toBe(false);
         expect(pixel.sent).toEqual([URL_UNDER_TEST]);
@@ -143,7 +143,7 @@ describe('the delivery signal drives session persistence', () => {
         const t = newTracker();
         const accepted = jest.spyOn(t, 'sendAccepted');
 
-        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
+        t.sendRequest(URL_UNDER_TEST, 'page_view');
 
         expect(accepted).toHaveBeenCalled();
 
@@ -164,7 +164,7 @@ describe('the delivery signal drives session persistence', () => {
 
         const t = newTracker();
         const accepted = jest.spyOn(t, 'sendAccepted');
-        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
+        t.sendRequest(URL_UNDER_TEST, 'page_view');
 
         // Nothing accepted yet: assignment only *initiates* the request.
         expect(accepted).not.toHaveBeenCalled();
@@ -189,7 +189,7 @@ describe('the delivery signal drives session persistence', () => {
 
         const t = newTracker();
         const accepted = jest.spyOn(t, 'sendAccepted');
-        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
+        t.sendRequest(URL_UNDER_TEST, 'page_view');
         created[0].onerror();
 
         // Failure is the ABSENCE of acceptance rather than an event of its own:
@@ -207,7 +207,7 @@ describe('the delivery signal drives session persistence', () => {
         const pixel = installImageSpy();
         const t = newTracker();
         const accepted = jest.spyOn(t, 'sendAccepted');
-        t.sendRequest(URL_UNDER_TEST, 'base.page_request');
+        t.sendRequest(URL_UNDER_TEST, 'page_view');
 
         // The request left, but nothing acknowledged it. Session identity stays
         // out of the cookie, so the next page starts a session the server will
@@ -230,7 +230,7 @@ describe('the delivery signal drives session persistence', () => {
             set src(v) { this._src = v; }
         };
 
-        newTracker().sendRequest(URL_UNDER_TEST, 'base.page_request');
+        newTracker().sendRequest(URL_UNDER_TEST, 'page_view');
 
         expect(typeof created[0].onload).toBe('function');
         expect(created[0].onLoad).toBeUndefined();

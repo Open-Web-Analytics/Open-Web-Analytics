@@ -138,8 +138,25 @@ final class TrackingPropertyOrderTest extends TestCase
             }
         }
 
+        /*
+         * The floor was 25 while eleven v1 date-part callbacks were still
+         * registered -- deriveDay and friends each read `timestamp`, so each was
+         * a dependency this counted. Cutting them took it to 15, and cutting the
+         * dead ingest derivations -- source and medium reading session_referer,
+         * the geo pair reading ip_address -- took it to 7.
+         *
+         * Then to 5, when fsts, psts and sts lost a `default_value: false` that
+         * could never fire: the default branch is gated on `required` and none of
+         * the three is required. So `produced` answers false for them now, which
+         * is the truth -- whatever the wire sent is on the event before the pass
+         * starts -- and the two days_since_* dependencies on them stop being
+         * ordering questions.
+         *
+         * Nothing about the ORDERING changed at any point: there are simply
+         * fewer callbacks left to order.
+         */
         $this->assertGreaterThan(
-            25, $checked,
+            3, $checked,
             'Far fewer dependencies than expected were found, so this test is not looking at '
             . 'what it thinks it is -- most likely the callback parser stopped matching.' );
 

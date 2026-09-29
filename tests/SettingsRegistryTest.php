@@ -322,7 +322,7 @@ final class SettingsRegistryTest extends TestCase
      * Base has not declared yet, and eight of its settings live at profile
      * scope right now -- default_page, domain_aliases, query_string_filters,
      * p3p_policy, enableEcommerceReporting, goals, goal_groups and
-     * v2_raw_collection. Reading "nothing declared it" as "install only" would
+     * v2_raw_collection (goal_groups since removed, Update056). Reading "nothing declared it" as "install only" would
      * refuse every write the Observation Settings screen makes.
      */
     public function testAnUndeclaredSettingIsUnconstrained(): void

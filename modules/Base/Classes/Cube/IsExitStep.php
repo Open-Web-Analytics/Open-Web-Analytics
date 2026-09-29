@@ -8,11 +8,18 @@ namespace OWA\Module\Base\Classes\Cube;
 //
 
 /**
- * is_exit: the session's last event, once the session has closed.
+ * is_exit: the session's last page view, once the session has closed.
+ *
+ * The page view with the highest position -- Context::pageViewKey(): sequence,
+ * then arrival, then id. A PAGE VIEW, not the last event of any kind: a click or
+ * a scroll after it happened on the same page, and the exit is the page. A
+ * session with no page view has none.
  *
  * The only terminal value in the cube. A session still inside the idle timeout
  * gets 0 on every row and a later rebuild settles it -- which works because a
- * build REPLACES the partition, so no session ever holds two exits.
+ * build REPLACES the partition, so no session ever holds two exits. "Closed" is
+ * read off the newest ARRIVAL, not the last position: whether a session has gone
+ * quiet is a wall-clock question.
  */
 class IsExitStep extends Step {
 
@@ -23,8 +30,9 @@ class IsExitStep extends Step {
 
     public function execute( Context $context ) {
 
-        return sprintf( 'CASE WHEN %s.id = %s.session_last_id AND %s.session_last_ts < %d THEN 1 ELSE 0 END',
-            Context::RAW, Context::SESSION, Context::SESSION, $context->closed_before );
+        return sprintf( "CASE WHEN %1\$s.event_type = 'page_view' AND %2\$s = %3\$s.session_last_pv_key"
+                      . ' AND %3$s.session_last_ts < %4$d THEN 1 ELSE 0 END',
+            Context::RAW, Context::pageViewKey( Context::RAW ), Context::SESSION, $context->closed_before );
     }
 }
 

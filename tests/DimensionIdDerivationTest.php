@@ -17,18 +17,36 @@ use OWA\Core\Lib;
  */
 final class DimensionIdDerivationTest extends TestCase
 {
-    /** Every content-derived dimension, its key, and what absence means. */
+    /**
+     * Every content-derived dimension, its key, and what absence means.
+     *
+     * FOUR ENTRIES LEFT THIS MAP: source_dim, search_term_dim, campaign_dim and
+     * ad_dim. Their keys were the properties `source`, `search_terms`,
+     * `campaign` and `ad`, and those are no longer tracking properties at all
+     * -- the cube pass derives the readings now, so ingest computes none of
+     * them and nothing declares them.
+     *
+     * The entities themselves are still registered and nothing writes them:
+     * their writers were the v1 event chain. Removing them is its own change,
+     * and until it happens this map is the honest statement of which
+     * content-derived dimensions still have a key ingest can produce.
+     */
     private const DIMENSIONS = array(
-        'base.source_dim'      => array( array( 'source' ),          'unknown' ),
         'base.host'            => array( array( 'host' ),            'unknown' ),
         'base.ua'              => array( array( 'HTTP_USER_AGENT' ), 'unknown' ),
         'base.os'              => array( array( 'os' ),              'unknown' ),
         'base.document'        => array( array( 'page_url' ),        'unknown' ),
         'base.location_dim'    => array( array( 'country', 'state', 'city' ), 'unknown' ),
-        'base.referer'         => array( array( 'session_referer' ), 'not_applicable' ),
-        'base.search_term_dim' => array( array( 'search_terms' ),    'not_applicable' ),
-        'base.campaign_dim'    => array( array( 'campaign' ),        'not_applicable' ),
-        'base.ad_dim'          => array( array( 'ad' ),              'not_applicable' ),
+        /*
+         * base.referer WAS HERE, keyed on session_referer.
+         *
+         * That property is gone: it was written once at session start and re-sent
+         * from session state on every beacon so the server could attribute from
+         * any event, and the server never needed it -- the session's referrer is
+         * the referer_host of its first row, which the pass reads through the
+         * window it already opens for the landing page. The v1 entity remains and
+         * nothing writes it, like the other four below.
+         */
     );
 
     /** OWA entity name -> class. deriveId() is static, so nothing is instantiated. */
@@ -82,10 +100,22 @@ final class DimensionIdDerivationTest extends TestCase
         $config = json_decode(
             (string) file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
 
-        $known = array();
-        foreach ( (array) $config as $scope => $properties ) {
-            $known = array_merge( $known, array_keys( (array) $properties ) );
-        }
+        // Flat: the file's keys ARE the property names.
+        $known = array_keys( (array) $config );
+
+        /*
+         * A BRIDGED NAME IS A REAL NAME. The registry declares what v2 calls
+         * things, and a spelling an older or shorter beacon uses is declared by
+         * its rename -- page_url for page_location, nps for num_prior_sessions.
+         * base.document is a v1 entity keyed on page_url, so without this it
+         * would read as keying on nothing, which is a different fault from the
+         * one this test looks for.
+         *
+         * The allowlist and WireSurfaceEnumeratedTest read it the same way,
+         * through the same method.
+         */
+        $known = array_merge( $known,
+            \OWA\Module\Base\Classes\Beacon\Compat::bridgedNames() );
 
         foreach ( $key as $property ) {
             $this->assertContains( $property, $known,

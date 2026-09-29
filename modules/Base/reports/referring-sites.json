@@ -8,21 +8,20 @@
             "query": {
                 "dimensions": "date",
                 "sort": "date"
-            },
-            "headline": "There were {visits.formatted} visits from referrals."
+            }
         },
         {
             "type": "grid",
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "referralWebSite",
-                "sort": "visits-",
+                "dimensions": "sessionSource",
+                "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }
     ],
     "settings": {
-        "constraints": "medium==referral"
+        "constraints": "sessionMedium==referral"
     }
 }

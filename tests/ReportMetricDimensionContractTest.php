@@ -94,8 +94,8 @@ final class ReportMetricDimensionContractTest extends TestCase
             foreach ($blocks as $block) {
                 $grab = static function (string $key) use ($block): ?string {
                     // ':' as well as ',' and '=>', so a JSON definition's
-                    // "metrics": "pageViews,visits" is read the same way the
-                    // controller's set('metrics', 'pageViews,visits') was.
+                    // "metrics": "pageViews,sessions" is read the same way the
+                    // controller's set('metrics', 'pageViews,sessions') was.
                     $re = '/[\'"]' . $key . '[\'"]\s*(?:,|=>|:)\s*[\'"]([^\'"]*)[\'"]/';
                     return preg_match($re, $block, $mm) ? $mm[1] : null;
                 };
@@ -270,5 +270,113 @@ final class ReportMetricDimensionContractTest extends TestCase
             . "%d scopes build metrics at runtime and are not sort-checked\n",
             $checked, count($scopes), $dynamic
         ));
+    }
+
+    /**
+     * Every constraint in a JSON definition names a registered dimension or
+     * metric, at the report level and inside every widget.
+     *
+     * The query refuses an unknown constraint name, so a stale one does not
+     * narrow the report: it empties it. `campaign!=null`, `ad!=null` and
+     * `medium==organic-search` survived the v2 rename this way on the
+     * campaigns, ads and keywords reports. The scope reader above takes only
+     * the first match of each key per file, so it never saw them.
+     */
+    public function testEveryConstraintNamesSomethingRegistered(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+        $bad = [];
+        $seen = 0;
+
+        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+
+            $label = str_replace(OWA_DIR, '', $file);
+
+            foreach ($this->constraintNames(json_decode(file_get_contents($file), true), $rsm) as $name) {
+                $seen++;
+                if (!in_array($name, self::$dimensions, true) && !in_array($name, self::$metrics, true)) {
+                    $bad[] = "$label: constraint '$name'";
+                }
+            }
+        }
+
+        $this->assertGreaterThan(10, $seen, 'no constraints were read, so this would pass vacuously');
+
+        $this->assertSame([], $bad,
+            "Reports constrained on a name that is not a registered dimension or metric:\n"
+            . implode("\n", $bad));
+    }
+
+    /** @return string[] every constraint name anywhere in a decoded definition */
+    private function constraintNames($node, $rsm): array
+    {
+        if (!is_array($node)) {
+            return [];
+        }
+
+        $out = [];
+
+        foreach ($node as $key => $value) {
+
+            if ($key === 'constraints' && is_string($value)) {
+                foreach ($rsm->parseConstraintsString($value) as $c) {
+                    $out[] = $c['name'];
+                }
+            } elseif ($key === 'constraints' && is_array($value)) {
+                foreach ($value as $c) {
+                    $out[] = (string) ($c['dimension'] ?? $c['name'] ?? '');
+                }
+            } else {
+                $out = array_merge($out, $this->constraintNames($value, $rsm));
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * No definition asks for "is set" with `!=null`.
+     *
+     * Db renders a negating operator null-tolerantly -- `( col != ? OR col IS
+     * NULL )` -- so `!=null` compares against the string "null" and keeps every
+     * unset row. The campaigns and ads reports listed "(not set)" as their
+     * largest row that way. "Has a value" is `!=(not set)`, or `notEmpty` in
+     * the array form.
+     */
+    public function testNoConstraintUsesNotEqualsNullForIsSet(): void
+    {
+        $bad = [];
+
+        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+
+            $json = json_decode(file_get_contents($file), true);
+
+            array_walk_recursive($json, function ($value, $key) use (&$bad, $file) {
+                if ($key === 'constraints' && is_string($value) && preg_match('/!=null(,|$)/i', $value)) {
+                    $bad[] = str_replace(OWA_DIR, '', $file) . ": $value";
+                }
+            });
+
+            $walk = function ($node) use (&$walk, &$bad, $file) {
+                if (!is_array($node)) {
+                    return;
+                }
+                foreach ($node as $key => $value) {
+                    if ($key === 'constraints' && is_array($value)) {
+                        foreach ($value as $c) {
+                            if (($c['operator'] ?? '') === '!=' && strtolower((string) ($c['value'] ?? '')) === 'null') {
+                                $bad[] = str_replace(OWA_DIR, '', $file) . ': ' . $c['dimension'] . '!=null';
+                            }
+                        }
+                    } else {
+                        $walk($value);
+                    }
+                }
+            };
+            $walk($json);
+        }
+
+        $this->assertSame([], $bad,
+            "`!=null` keeps unset rows; use `!=(not set)` or `notEmpty` for \"has a value\":\n" . implode("\n", $bad));
     }
 }

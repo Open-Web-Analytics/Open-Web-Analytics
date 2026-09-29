@@ -99,26 +99,50 @@ class OverlayLauncher extends \OWA\Core\Controller {
             return '';
         }
 
+        /*
+         * READ OFF THE CUBE, not owa_click joined to owa_document.
+         *
+         * Both of those tables are written by the v1 event chain, which v2
+         * unregistered -- so this query matched nothing on every install, and
+         * urlForPath() cannot tell "no rows" from "no such page": it returns ''
+         * either way and the overlay draws empty. Which is exactly the failure the
+         * docblock above describes as reading like a broken heatmap. The e2e
+         * fixture hid it by writing owa_click rows directly and reading them back.
+         *
+         * NO JOIN NOW. A click row carries both readings of its own URL --
+         * page_path, which is what a path constraint matches, and page_location,
+         * which is the concrete URL to open. v1 needed owa_document because the
+         * click only held a foreign key.
+         *
+         * The cube rather than raw, because the cube is what every other report
+         * reads and it is the table the reporting layer will constrain the same
+         * path against; reading raw here would let the two disagree about which
+         * page has the most clicks.
+         */
+        $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
+
+        if ( $property_id === '' ) {
+
+            return '';
+        }
+
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $property_id );
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->selectFrom( 'owa_click', 'click' );
-        $db->selectColumn( 'document.url AS url, COUNT(*) AS clicks' );
-        /*
-         * INNER, not outer. A click whose document is missing cannot contribute
-         * a url, and the document.uri condition below excludes those rows
-         * anyway, so the join type that matches the intent is the plain one.
-         *
-         * This was OWA_SQL_JOIN_LEFT_INNER, which expanded to "LEFT INNER JOIN"
-         * -- not SQL in any dialect. MySQL rejected the statement, getOneRow()
-         * returns null for a rejected statement exactly as it does for no rows,
-         * and urlForPath() reads that as "no match" and returns ''. So the
-         * overlay drew empty every time, which is the failure the docblock above
-         * describes as reading like a broken heatmap.
-         */
-        $db->join( OWA_SQL_JOIN, 'owa_document', 'document', 'document_id', 'document.id' );
-        $db->where( 'document.uri', $path );
-        $db->where( 'click.site_id', $siteId );
-        $db->groupBy( 'document.url' );
+        if ( ! $db->tableExists( $table ) ) {
+
+            // A Property whose cube has never been built. Nothing to open, and
+            // saying so beats a SQL error on a missing table.
+            return '';
+        }
+
+        $db->selectFrom( $table, 'e' );
+        $db->selectColumn( 'e.page_location AS url, COUNT(*) AS clicks' );
+        $db->where( 'e.event_type', 'click' );
+        $db->where( 'e.page_path', $path );
+        $db->where( 'e.site_id', $siteId );
+        $db->groupBy( 'e.page_location' );
         $db->orderBy( 'clicks', 'DESC' );
 
         $row = $db->getOneRow();

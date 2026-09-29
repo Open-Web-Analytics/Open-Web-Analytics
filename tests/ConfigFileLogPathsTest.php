@@ -101,7 +101,7 @@ final class ConfigFileLogPathsTest extends TestCase
      * above would be guarding nothing.
      *
      * Two real installs carried async_log_dir values pointing at a previous
-     * server's /home/padams/... paths, which is how this came to be pinned.
+     * server's /home/<user>/... paths, which is how this came to be pinned.
      */
     public function testBothPathsRemainConfigFileOnly(): void
     {

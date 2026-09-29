@@ -126,8 +126,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
          *
          * The set timestamp is carried per property because the cube stamps the
          * CURRENT value onto every event row it builds. Without it a row can
-         * say what the value is and not whether it applied yet -- which is what
-         * GA's export carries set_timestamp_micros for (2.26.5).
+         * say what the value is and not whether it applied yet (2.26.5).
          */
         $this->setProperty( $this->column( 'properties', OWA_DTD_JSON ) );
     }

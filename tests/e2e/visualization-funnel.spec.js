@@ -120,19 +120,19 @@ test.describe('visualization: funnel', () => {
         await expect(page.locator('.owa_funnelStepColumn')).toHaveCount(VIZ.steps.length);
     });
 
-    test('every stage counts visitors, so none constrained on nothing', async ({ page }) => {
+    test('every stage counts users, so none constrained on nothing', async ({ page }) => {
         await openFunnel(page);
 
         const counts = await page.locator('.funnelStepCount').allTextContents();
 
         expect(counts.length).toBe(VIZ.steps.length);
-        expect(counts.every((c) => /\d+\s*visitors/.test(c))).toBe(true);
+        expect(counts.every((c) => /\d+\s*users/.test(c))).toBe(true);
 
         // The fixture walks one visitor through every step in order, so every
         // stage MUST count somebody. Zero means a stage is constrained on a
         // path that matches nothing, or the ordering dropped someone who really
         // did go through.
-        expect(counts.some((c) => /^0\s*visitors/.test(c.trim()))).toBe(false);
+        expect(counts.some((c) => /^0\s*users/.test(c.trim()))).toBe(false);
     });
 
     /**
@@ -184,12 +184,12 @@ test.describe('visualization: funnel', () => {
         await openFunnelAs(page, 'visitor');
         const byVisitor = (await page.locator('.funnelStepCount').allTextContents())
             .map((c) => parseInt(c.trim(), 10));
-        await expect(page.locator('.visitorCountLabel').first()).toHaveText('visitors');
+        await expect(page.locator('.visitorCountLabel').first()).toHaveText('users');
 
         await openFunnelAs(page, 'session');
         const bySession = (await page.locator('.funnelStepCount').allTextContents())
             .map((c) => parseInt(c.trim(), 10));
-        await expect(page.locator('.visitorCountLabel').first()).toHaveText('visits');
+        await expect(page.locator('.visitorCountLabel').first()).toHaveText('sessions');
 
         expect(bySession[0]).toBeGreaterThan(byVisitor[0]);
     });
@@ -235,10 +235,10 @@ test.describe('visualization: funnel', () => {
         // A real list, not an empty picker.
         expect(await options.count()).toBeGreaterThan(10);
 
-        // medium is what the segment is most obviously useful for, and it is one
+        // sessionMedium is what the segment is most obviously useful for, and it is one
         // the funnel's outer query can resolve.
         expect(await page.locator(
-            '#owa_filterBuilder-funnelFilter .constraintDimensionPicker option[value="medium"]').count())
+            '#owa_filterBuilder-funnelFilter .constraintDimensionPicker option[value="sessionMedium"]').count())
             .toBeGreaterThan(0);
     });
 
@@ -321,7 +321,7 @@ test.describe('visualization: funnel', () => {
         }
 
         // The groups that remain are still there -- this must not empty the picker.
-        expect(await page.locator(`${picker} option[value="medium"]`).count()).toBeGreaterThan(0);
+        expect(await page.locator(`${picker} option[value="sessionMedium"]`).count()).toBeGreaterThan(0);
         expect(await page.locator(`${picker} option`).count()).toBeGreaterThan(10);
     });
 
@@ -332,7 +332,7 @@ test.describe('visualization: funnel', () => {
      */
     test('a segment that matches nobody empties the funnel', async ({ page }) => {
         await openFunnel(page,
-            '&owa_constraints=' + encodeURIComponent('medium==no-such-medium'));
+            '&owa_constraints=' + encodeURIComponent('sessionMedium==no-such-medium'));
 
         const counts = (await page.locator('.funnelStepCount').allTextContents())
             .map((c) => parseInt(c.trim(), 10));

@@ -19,19 +19,19 @@
  *                 path reads -- boot fetches those; the other eight arrive in
  *                 one batch the first time anything asks.
  *
- *   SCOPED (7)    storable, and overridable per Property or Profile. These are
- *                 the keys the Observation Settings screen writes, plus the
- *                 goal data the GoalManager keeps per site.
+ *   SCOPED (6)    storable, and overridable per Property or Profile. These are
+ *                 the keys the Observation Settings screen writes, plus `goals`,
+ *                 1.x's per-site goal blob, which only Update017 and Update025
+ *                 read to migrate it into goal events.
  *
  * `schema_version` and `is_active` are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, eager and without a default -- a default would let
  * pruneRedundantPersistedSettings() drop them and the module would look
  * uninstalled.
  *
- * Four settings are declared with no default for the same reason:
- * install_complete, domain_aliases, goals and goal_groups are stored and have
- * never had a code default, and inventing one would put them within reach of
- * the prune.
+ * Three settings are declared with no default for the same reason:
+ * install_complete, domain_aliases and goals are stored and have never had a
+ * code default, and inventing one would put them within reach of the prune.
  *
  * The 21 config-file-only settings -- paths, stream targets, database
  * credentials, report_wrapper -- are declared STATIC, which is the same
@@ -99,7 +99,19 @@ return array(
         'cookie_domain' => array( 'default' => false ),
         'cookie_persistence' => array( 'default' => true ),
         'cube_rebuild_window_days' => array( 'default' => 7 ),
-        'currencyISO3' => array( 'default' => 'USD' ),
+        'currencyISO3' => array(
+            'default'  => 'USD',
+            'storable' => true,
+            'autoload' => true,
+            // Not per Profile: a Property's revenue is summed in one cube, and
+            // two currencies in it would add unlike amounts.
+            'scopes'   => array( 'install', 'property' ),
+            'type'     => 'text',
+            'label'    => 'Currency',
+            'description' =>
+                'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. '
+                . 'A purchase that names no currency is recorded in this one.',
+        ),
         'currencyLocal' => array( 'default' => 'en_US' ),
         'db_class_dir' => array(),
         'db_force_new_connections' => array( 'default' => true ),
@@ -141,7 +153,6 @@ return array(
         'feed_subscription_param' => array( 'default' => 'sid' ),
         'geolocation_lookup' => array( 'default' => false ),
         'geolocation_service' => array( 'default' => '' ),
-        'goal_groups' => array( 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'goals' => array( 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
         'images_url' => array( 'default' => '' ),
         'install_complete' => array( 'storable' => true, 'autoload' => true ),
@@ -157,7 +168,6 @@ return array(
             'description' =>
                 'Controls the logging of requests made by named users.',
         ),
-        'log_owa_user_names' => array( 'default' => true ),
         'log_robots' => array(
             'default'  => false,
             'storable' => true,
@@ -170,6 +180,11 @@ return array(
                 . 'spiders. Turning this feature on will dramatically increase the '
                 . 'number of requests that are processed and logged.',
         ),
+        /*
+         * Whether user_id is stored. It gated user_name and user_email, which are
+         * custom user properties now (PLAN.html §2.26.1), so it moves to the one
+         * identity field left in the release vocabulary -- see gateUserId().
+         */
         'log_visitor_pii' => array( 'default' => true ),
         'logo_image_path' => array( 'default' => 'base/i/owa-logo-100w.png' ),
         'mailer-from' => array( 'default' => '' ),
@@ -197,7 +212,34 @@ return array(
                 'This is the e-mail address that new visitor e-mails will be sent to.',
         ),
         'ns' => array( 'default' => 'owa_' ),
-        'numGoalGroups' => array( 'default' => 5 ),
+
+        /*
+         * The URL parameter names a campaign tag arrives under.
+         *
+         * EMPTY MEANS ns-PREFIXED, which is what OWA has always done: owa_source,
+         * owa_medium and so on, honouring a custom `ns`. Setting it names the
+         * parameters explicitly instead, which is how a site opts into
+         * utm_source, utm_medium, utm_campaign, utm_term, utm_content without
+         * having to change its links.
+         *
+         * PROPERTY-SCOPED, because a Property is a website and its links are its
+         * own. The install default covers the common case of one convention
+         * everywhere; a Property whose links already use utm_* overrides it.
+         *
+         * It has to be a SERVER setting. The tracker used to parse the tags and
+         * had setCampaignSourceKey() and friends for exactly this, but the parse
+         * moved server-side and the server built its own ns-prefixed list -- so a
+         * site calling those setters was renaming a key nothing read, and its
+         * campaigns silently stopped being attributed.
+         *
+         * Keyed by ROLE, not by parameter name, so the two ends cannot disagree
+         * about which tag is the medium.
+         */
+        'campaignKeys' => array(
+            'default'  => array(),
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+        ),
         'numGoals' => array( 'default' => 15 ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5' ),
         'owa_user_agent' => array( 'default' => 'Open Web Analytics Bot master' ),
@@ -313,6 +355,5 @@ return array(
         'useStaticConfigOnly' => array( 'default' => false ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true ),
         'user_id_illegal_chars' => array( 'default' => array( ' ', ';', '\'', '"', '|', ')', '(' ) ),
-        'v2_event_types' => array( 'default' => array( 'user_engagement', 'scroll', 'file_download', 'form_start', 'form_submit', 'view_search_results', 'exception', 'custom_event' ) ),
         'wiki_url' => array( 'default' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ),    ),
 );

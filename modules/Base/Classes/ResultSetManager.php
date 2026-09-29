@@ -135,6 +135,7 @@ class ResultSetManager extends \OWA\Core\Base {
             'percentage'     => array($this, 'formatPercentage'),
             'integer'         => array($this, 'numberFormatter'),
             'boolean'         => array($this, 'booleanFormatter'),
+            'milliseconds'    => array($this, 'formatMilliseconds'),
             'currency'        => array($this, 'formatCurrency')
         );
         
@@ -397,6 +398,28 @@ class ResultSetManager extends \OWA\Core\Base {
             return;
         }
 
+        /*
+         * `==(not set)` AND `!=(not set)` ARE THE EMPTY TEST, not a comparison.
+         *
+         * "(not set)" is the label formatDimensionValue() gives NULL and '';
+         * it is never stored. So these two select on emptiness -- both states --
+         * and `!=` loses the null tolerance a negation otherwise gets, which
+         * would keep exactly the rows it is asked to drop.
+         */
+        $unary = self::emptyTestFor( $constraint );
+
+        if ( $unary && $this->isMetric( $constraint['name'] ) ) {
+
+            $this->addError( sprintf( '%s is a metric; only a dimension can be %s.',
+                $constraint['name'], self::NOT_SET_LABEL ) );
+            return;
+        }
+
+        if ( $unary ) {
+
+            $constraint['operator'] = $unary;
+        }
+
         if ( $this->isDimension( $constraint['name'] ) ) {
 
             $dim = $this->lookupDimension($constraint['name'], $entity);
@@ -420,6 +443,31 @@ class ResultSetManager extends \OWA\Core\Base {
                 $this->addError( 'Cannot add a calculated metric to a constraint.' );
             }
         }
+    }
+
+    /**
+     * The Db operator a constraint's empty test maps to, or '' if it is not one.
+     *
+     * @param array $constraint name, value, operator
+     * @return string 'empty', 'notempty' or ''
+     */
+    public static function emptyTestFor( array $constraint ) {
+
+        if ( ! isset( $constraint['value'] ) || trim( (string) $constraint['value'] ) !== self::NOT_SET_LABEL ) {
+
+            return '';
+        }
+
+        switch ( isset( $constraint['operator'] ) ? $constraint['operator'] : '' ) {
+
+            case '==':
+                return 'empty';
+
+            case '!=':
+                return 'notempty';
+        }
+
+        return '';
     }
 
     function setSegment($segment) {
@@ -532,10 +580,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                  *
                  * Every metric can be computed from one or more fact tables,
                  * and a query is answered from ONE of them -- so a combination
-                 * is only askable if the metrics share a table. `domClicks`
-                 * comes from the click table alone; `visits` from the session
-                 * or the request; there is no table that has both, so asking
-                 * for them together is not a thin result, it is not a question.
+                 * is only askable if the metrics share a table. A click-table
+                 * metric and a session-table one have no table that holds both,
+                 * so asking for them together is not a thin result, it is not a
+                 * question.
                  *
                  * It used to be addError(), which puts it with the routine
                  * misses that reports swallow -- so an impossible set came back
@@ -790,7 +838,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * Why a field cannot join the ones already reconciled.
      *
      * NAMES BOTH SIDES. "This combination cannot be queried" tells a reader
-     * nothing they can act on; "domClicks cannot be combined with visits,
+     * nothing they can act on; "scrollDepth cannot be combined with visits,
      * uniqueVisitors" tells them which one to take out. The offender is the
      * field being added when the set of possible fact tables became empty, and
      * the others are what it has to be compatible with.
@@ -1016,8 +1064,23 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $dim = $service->getDenormalizedDimension($name, $entity->getName());
 
         if ($dim) {
-            //apply table aliasing to dimension column
-            $dim['column'] = $entity->getTableAlias().'.'.$dim['column'];
+            /*
+             * A dimension registered as an EXPRESSION already carries its own
+             * SQL, with %1$s wherever the alias belongs. Writing the alias in
+             * FRONT of it -- which is what every column dimension needs -- turns
+             * CONCAT(...) into event.CONCAT(...), and MySQL reads that as a call
+             * to a function named CONCAT in a schema named event.
+             */
+            /*
+             * Two arguments, because a date part reading the clock needs the
+             * timezone as well as the alias. An expression that does not use
+             * the second simply ignores it, which is how one substitution
+             * serves both kinds.
+             */
+            $dim['column'] = ! empty( $dim['expression'] )
+                ? sprintf( $dim['column'], $entity->getTableAlias(),
+                    \OWA\Module\Base\Classes\DimensionExpression::timezone() )
+                : $entity->getTableAlias().'.'.$dim['column'];
         } else {
 
             // check for normalized dim
@@ -1068,10 +1131,16 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function setSort($column, $order) {
-
-        //$this->params['orderby'][] = array($this->getColumnName($column), $order);
-    }
+    /*
+     * setSort() WAS HERE and did nothing: its one statement was commented out,
+     * so every call silently produced an unsorted result. Nothing in the
+     * application called it -- ReportsRest goes through
+     * setSorts( sortStringToArray( ... ) ), which is the working path -- so the
+     * only thing it did was read like the obvious way to sort and then not
+     * sort, which cost one test in this suite its meaning before it was
+     * noticed. Deleted rather than implemented, because the plural is already
+     * the one everything uses.
+     */
 
     function setSorts($array) {
 
@@ -1098,7 +1167,17 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                 if ( $this->isMetric( $sort[0] ) ) {
                     $sort_metric = $this->getMetricImplementation($sort[0]);
-                    if ( $sort_metric->isRatio() ) {
+                    if ( $sort_metric->isDifference() ) {
+
+                        // In SQL, for the reason a ratio is; a side with no rows
+                        // is zero, as the value treats it.
+                        $minuend    = $this->getMetricImplementation( $sort_metric->getMinuend() )->getSelect();
+                        $subtrahend = $this->getMetricImplementation( $sort_metric->getSubtrahend() )->getSelect();
+
+                        $sort_col = sprintf( 'COALESCE((%s), 0) - COALESCE((%s), 0)',
+                            $minuend[0], $subtrahend[0] );
+
+                    } elseif ( $sort_metric->isRatio() ) {
 
                         /*
                          * Rendered into SQL, because a sort has to happen on
@@ -1494,11 +1573,54 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     const NOT_SET_LABEL = '(not set)';
 
+    /**
+     * And a value the PIPELINE could not work out reads as "(unknown)".
+     *
+     * A different statement from absence, which is why it gets a different
+     * word. "(not set)" says the row carried nothing; this says a build had
+     * something to read and could not reach an answer -- a visitor whose
+     * acquisition was never captured, or an event whose prior_sessions never
+     * arrived. Folding the two onto one label would lose the distinction that
+     * Classes\V2Event::UNRESOLVED exists to record.
+     *
+     * The sentinel is a control byte, so without this it rendered as NOTHING:
+     * a blank axis label and an unlabelled pie slice. V2Event's own docblock
+     * had described this rendering since the sentinel was introduced, and
+     * nothing implemented it -- every cube column that resolves can emit it,
+     * source and medium included.
+     */
+    const UNKNOWN_LABEL = '(unknown)';
+
     function formatDimensionValue( $data_type, $value ) {
 
         if ( $value === null || $value === '' ) {
 
             return self::NOT_SET_LABEL;
+        }
+
+        if ( $value === \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) {
+
+            return self::UNKNOWN_LABEL;
+        }
+
+        /*
+         * A dimension built from several columns can carry the sentinel in ONE
+         * of its parts -- `(unknown) / referral` is a true statement about a
+         * session whose source never resolved but whose medium did. The
+         * whole-value comparison above cannot see that, so before this was
+         * here a source/medium pair with an unresolved half rendered as ` / `:
+         * a label that looks empty and says nothing, which is the failure the
+         * sentinel was given a label to avoid in the first place.
+         *
+         * Only a joined dimension can reach this. V2Event::strip() removes
+         * control bytes from every observed value, and a pass writes the
+         * sentinel alone or not at all, so no single column holds it beside
+         * other text.
+         */
+        if ( strpos( (string) $value, \OWA\Module\Base\Classes\V2Event::UNRESOLVED ) !== false ) {
+
+            return str_replace( \OWA\Module\Base\Classes\V2Event::UNRESOLVED,
+                self::UNKNOWN_LABEL, (string) $value );
         }
 
         return $this->formatValue( $data_type, $value );
@@ -1549,17 +1671,89 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return date("G:i:s",mktime(0,0,($value)));
     }
 
+    /**
+     * Milliseconds as a duration.
+     *
+     * THE STORED VALUE STAYS MILLISECONDS, which is what the beacon carries --
+     * `engagement_msec`, accrued on the device. Only the display converts, so
+     * this is
+     * the same rule "(not set)" follows: the row holds the observation and the
+     * renderer decides how to say it.
+     *
+     * NOT formatSeconds(). That is date("G:i:s", mktime(0,0,$s)), which reads
+     * an hour-of-day back out and therefore WRAPS at 24 hours -- a total
+     * engagement time of 25 hours renders as 1:00:00. Fine for the per-visit
+     * averages it was written for, wrong for a sum across a reporting period,
+     * and this type carries both.
+     *
+     * @param int|null $value milliseconds
+     * @return string
+     */
+    function formatMilliseconds($value) {
+
+        if ( $value === null || $value === '' ) {
+
+            return $value;
+        }
+
+        $seconds = (int) round( $value / 1000 );
+
+        $days    = intdiv( $seconds, 86400 );
+        $hours   = intdiv( $seconds % 86400, 3600 );
+        $minutes = intdiv( $seconds % 3600, 60 );
+        $rest    = $seconds % 60;
+
+        if ( $days ) {
+
+            return sprintf( '%dd %d:%02d:%02d', $days, $hours, $minutes, $rest );
+        }
+
+        if ( $hours ) {
+
+            return sprintf( '%d:%02d:%02d', $hours, $minutes, $rest );
+        }
+
+        return sprintf( '%d:%02d', $minutes, $rest );
+    }
+
+    /**
+     * NULL STAYS NULL, like numberFormatter above.
+     *
+     * A ratio answers NULL on a zero denominator, deliberately: "no visits, so
+     * pages per visit is not a number" is a different answer from "pages per
+     * visit is zero". Formatting that NULL as 0.00% throws the distinction away
+     * at the last step, and reads as a measured zero -- which for a conversion
+     * rate claims people came and did not buy, rather than that nobody came.
+     */
     function formatPercentage($value) {
+
+        if ( $value === null ) {
+
+            return $value;
+        }
 
         return number_format($value * 100, 2).'%';
     }
 
+    /** NULL stays NULL, for the same reason formatPercentage does. */
     function formatCurrency($value) {
+
+        if ( $value === null ) {
+
+            return $value;
+        }
+
+        // The Property's currency, which is what its revenue was recorded in.
+        $siteId = $this->query_params['siteId'] ?? $this->getSiteId();
+
+        $currency = $siteId
+            ? \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'currencyISO3' )
+            : \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' );
 
         return \OWA\Core\Lib::formatCurrency(
                 $value,
                 \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ),
-                \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' )
+                $currency ?: \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' )
         );
     }
 
@@ -2326,6 +2520,28 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function computeCalculatedMetrics($rs) {
 
         foreach ($this->calculatedMetrics as $cm) {
+
+            if ( $cm->isDifference() ) {
+
+                $value = $cm->computeDifference(
+                    $rs->getAggregateMetric( $cm->getMinuend() ),
+                    $rs->getAggregateMetric( $cm->getSubtrahend() ) );
+
+                $rs->setAggregateMetric( $cm->getName(), $value, $cm->getLabel(),
+                    $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
+
+                foreach ( $rs->getRowCount() > 0 ? $rs->resultsRows : array() as $k => $row ) {
+
+                    $v = $cm->computeDifference(
+                        $row[ $cm->getMinuend() ]['value'] ?? null,
+                        $row[ $cm->getSubtrahend() ]['value'] ?? null );
+
+                    $rs->appendRow( $k, 'metric', $cm->getName(), $v, $cm->getLabel(),
+                        $cm->getDataType(), $this->formatValue( $cm->getDataType(), $v ) );
+                }
+
+                continue;
+            }
 
             // add aggregate metric
             if ( $cm->isRatio() ) {

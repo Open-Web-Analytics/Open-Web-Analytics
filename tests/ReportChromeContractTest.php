@@ -311,7 +311,7 @@ final class ReportChromeContractTest extends TestCase
          * measures how a report happens to be written; naming what pre() adds
          * measures what the test actually cares about.
          */
-        $declared = Harness::snapshot( 'ReportPages' )['config'];
+        $declared = Harness::snapshot( 'pages' )['config'];
 
         $addedByPre = array_diff( array_keys( $data ), array_keys( $declared ) );
 

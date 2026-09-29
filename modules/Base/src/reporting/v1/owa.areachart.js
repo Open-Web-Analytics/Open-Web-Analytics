@@ -55,10 +55,16 @@ OWA.areaChart = function( options ) {
         /* What the other lines fade to when one is selected in the legend. */
         dimmedOpacity: 0.5,
 
-        /* The x axis a reader can choose between, and what each queries. */
+        /*
+         * The x axis a reader can choose between, and what each queries.
+         *
+         * yearMonth, not month: on v2 `month` is the month of the YEAR, 1 to 12,
+         * so a monthly trend grouped by it merged January of one year with
+         * January of the next.
+         */
         granularities: [
-            { dimension: 'date',  label: 'Day' },
-            { dimension: 'month', label: 'Month' }
+            { dimension: 'date',      label: 'Day' },
+            { dimension: 'yearMonth', label: 'Month' }
         ],
 
         monthFormat: "%b %Y"
@@ -143,9 +149,8 @@ OWA.areaChart.prototype = {
                 OWA.debug('year: %s, month: %s, day: %s, timestamp: %s',year,month,day,d);
                 break;
                 
-            // 202608 -> the first of that month. The `month` COLUMN stores
-            // yyyymm despite its name, which is why a month axis orders
-            // correctly across a year boundary.
+            // 202608 -> the first of that month. yearMonth stores yyyymm, which
+            // is why a month axis orders correctly across a year boundary.
             case 'yyyymm':
 
                 var m_year  = String( value ).substring( 0, 4 ) * 1;
@@ -462,7 +467,7 @@ OWA.areaChart.prototype = {
 
         var points = [];
 
-        if ( x_name === 'month' ) {
+        if ( x_name === 'yearMonth' ) {
 
             var month = new Date( Date.UTC( start.getUTCFullYear(), start.getUTCMonth(), 1 ) );
 
@@ -685,6 +690,16 @@ OWA.areaChart.prototype = {
                 return {
                     min: floor,
                     /*
+                     * A share of something is at most all of it. flot pads the
+                     * axis past the data, so a rate peaking at 100% was drawn
+                     * against a 125% tick; stop at 100% unless a value exceeds it.
+                     */
+                    max: ( dataseries || [] ).some( function ( s ) {
+
+                        return s.data.some( function ( point ) { return point[1] > 1; } );
+
+                    } ) ? null : 1,
+                    /*
                      * The value is a FRACTION -- the server formats it by
                      * multiplying by a hundred -- so the label needs two fewer
                      * decimals than the axis was scaled to. Without that, an
@@ -728,6 +743,19 @@ OWA.areaChart.prototype = {
                     tickFormatter: function ( value ) {
 
                         return that.formatDuration( value );
+                    }
+                };
+
+            case 'milliseconds':
+
+                // Engagement time is recorded in milliseconds; labelled as the
+                // same duration the metric box shows, not as a count.
+                return {
+                    min: floor,
+                    tickDecimals: 0,
+                    tickFormatter: function ( value ) {
+
+                        return that.formatDuration( value / 1000 );
                     }
                 };
 

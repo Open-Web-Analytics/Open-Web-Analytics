@@ -41,7 +41,7 @@ class Mailer {
     /**
      * Constructor
      *
-     * @return \owa_mailer
+     * @return \OWA\Module\Base\Classes\Mailer
      * @throws \PHPMailer\PHPMailer\Exception
      */
     function __construct() {

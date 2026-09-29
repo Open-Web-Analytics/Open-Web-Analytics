@@ -22,18 +22,28 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  */
 final class CanonicalUrlIsStorageSafeTest extends TestCase
 {
+    /**
+     * THE CALLBACK DIRECTLY, not through setTrackerProperties().
+     *
+     * page_url was the vehicle until the registry stopped declaring it -- it is
+     * v1's name for the page's URL and a compat rename now. Its replacement
+     * cannot be another property, because of an asymmetry worth naming:
+     * setTrackerProperties() writes a filtered value back only when the property
+     * is `required` or the value is truthy, so a callback CANNOT blank a
+     * non-required property. makeUrlCanonical() answers '' for an unusable
+     * scheme, and on target_url -- required: false -- that answer is discarded
+     * and the original survives on the event.
+     *
+     * What this file is about is the canonicaliser, so it calls it. The
+     * write-back gate is a separate question about the pipeline, and hiding it
+     * behind a property that happens to be required is how it stayed unnoticed.
+     */
     private function stored( string $wire ): string
     {
-        $definitions = Helpers::clientProperties();
-
         $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
         $event->setSiteId( 'no-such-site-for-this-test' );
-        $event->set( 'page_url', $wire );
 
-        ( new Helpers() )->setTrackerProperties(
-            $event, array( 'page_url' => $definitions['page_url'] ) );
-
-        return (string) $event->get( 'page_url' );
+        return (string) Helpers::makeUrlCanonical( $wire, $event );
     }
 
     /** @dataProvider mustNotSurviveRaw */

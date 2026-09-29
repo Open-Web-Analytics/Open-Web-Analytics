@@ -3,21 +3,21 @@
 namespace OWA\Tests;
 
 /**
- * Captures what each report controller DECLARES, so a conversion can be shown
- * to preserve it.
+ * Runs a report and records what it DECLARES, and anything it complained about.
  *
- * A report is defined by the query it will issue and the widgets it declares,
- * not by the pixels it eventually produces. Every one of the config-driven
- * controllers expresses both as a bag of key/value pairs set during action(),
- * so that bag IS the report -- and comparing it before and after a rewrite is
- * the only available definition of "did not change the report".
+ * A report is defined by the query it will issue and the widgets it declares, not
+ * by the pixels it eventually produces, so that declaration IS the report. Tests
+ * built on this ask two questions of every report: does running it raise a
+ * diagnostic, and does each parameter it reads reach what it declares.
  *
- * SCOPE: the config-driven reports only. The bespoke ones prefetch result sets
- * through the data-access layer, so what they hold depends on a database and on
- * which rows happen to exist; snapshotting that would produce a fixture that
- * passes on one machine. Those are listed explicitly below rather than filtered
- * by a predicate, so the exclusion is a decision someone made and can revisit
- * rather than an accident of a regex.
+ * It began as the recording that held the controller-to-JSON conversion to what
+ * each controller had declared. The conversion is finished and the recording is
+ * gone; what is left never depended on it.
+ *
+ * SCOPE: reports that declare, not reports that prefetch. The bespoke ones fetch
+ * result sets through the data-access layer, so what they hold depends on which
+ * rows happen to exist. Those are listed explicitly below rather than filtered by
+ * a predicate, so the exclusion is a decision someone made and can revisit.
  */
 final class ReportCharacterizationHarness
 {
@@ -60,150 +60,21 @@ final class ReportCharacterizationHarness
      * of that transformation keeps the assertions exact, so a report that
      * mangles the value in any OTHER way still fails loudly.
      */
-    /**
-     * Report id => the controller class that used to implement it.
-     *
-     * These 47 reports are configuration now: modules/Base/reports/<id>.json,
-     * rendered by Core\ConfiguredReport. The map is what lets the conversion
-     * keep being checked after the controllers are gone -- the golden file
-     * records what each of them DECLARED, and that record is still the standard
-     * the JSON has to meet.
-     *
-     * So the fixture stays keyed by class name on purpose. It is a record of
-     * what those controllers did, not a directory of reports that exist now;
-     * re-keying it to report ids would rewrite the evidence.
-     */
-    public const CONVERTED = array(
-        'action-detail'             => 'ReportActionDetail',
-        'action-group'              => 'ReportActionGroup',
-        'action-groups'             => 'ReportActionGroups',
-        'action-tracking'           => 'ReportActionTracking',
-        'attribution-history'       => 'ReportAttributionHistory',
-        'document'                  => 'ReportDocument',
-        'visitors'                  => 'ReportVisitors',
-        'dom-clicks'                => 'ReportDomClicks',
-        'campaigns'                 => 'ReportCampaigns',
-        'ad-detail'                 => 'ReportAdDetail',
-        'ad-type-detail'            => 'ReportAdTypeDetail',
-        'ad-types'                  => 'ReportAdTypes',
-        'ads'                       => 'ReportAds',
-        'anchortext'                => 'ReportAnchortext',
-        'avg-order-value'           => 'ReportAvgOrderValue',
-        'browsers'                  => 'ReportBrowsers',
-        'campaign-detail'           => 'ReportCampaignDetail',
-        'content'                   => 'ReportContent',
-        'dashboard'                 => 'ReportDashboard',
-        'creative-performance'      => 'ReportCreativePerformance',
-        'days-to-purchase'          => 'ReportDaysToPurchase',
-        'ecommerce'                 => 'ReportEcommerce',
-        'ecommerce-conversion-rate' => 'ReportEcommerceConversionRate',
-        'entry-pages'               => 'ReportEntryPages',
-        'exit-pages'                => 'ReportExitPages',
-        'feeds'                     => 'ReportFeeds',
-        'geolocation'               => 'ReportGeolocation',
-        'goals'                     => 'ReportGoals',
-        'hosts'                     => 'ReportHosts',
-        'keywords'                  => 'ReportKeywords',
-        'os'                        => 'ReportOs',
-        'page-types'                => 'ReportPageTypes',
-        'pages'                     => 'ReportPages',
-        'product-categories'        => 'ReportProductCategories',
-        'product-skus'              => 'ReportProductSkus',
-        'products'                  => 'ReportProducts',
-        'referring-sites'           => 'ReportReferringSites',
-        'revenue'                   => 'ReportRevenue',
-        'search-engines'            => 'ReportSearchEngines',
-        'source-detail'             => 'ReportSourceDetail',
-        'sources'                   => 'ReportSources',
-        'traffic'                   => 'ReportTraffic',
-        'transactions'              => 'ReportTransactions',
-        'visitors-age'              => 'ReportVisitorsAge',
-        'visitors-loyalty'          => 'ReportVisitorsLoyalty',
-        'visitors-recency'          => 'ReportVisitorsRecency',
-        'visits-to-purchase'        => 'ReportVisitsToPurchase',
-    );
-
-    /**
-     * Definitions written as definitions, with no controller behind them.
-     *
-     * CONVERTED maps a report to the controller it replaced, which was every
-     * definition while the conversion was the only way one came to exist. It is
-     * not any more: the format exists so reports can be AUTHORED, and the first
-     * one that is has no predecessor to be equivalent to.
-     *
-     * Kept separate rather than folded in, because the two mean different
-     * things -- a converted report has a recorded standard to meet, an authored
-     * one has only its own baseline.
-     */
-    public const AUTHORED = array( 'clicks', 'latest-visits' );
-
     public const SENTINEL = 'characterization_sentinel';
 
     /**
-     * Every in-scope report, named the way the fixture names it.
+     * Every report the harness runs: each definition file by the id it is
+     * registered under, and any report still implemented by a controller by its
+     * class name.
      *
-     * Two kinds now: reports still implemented by a controller, and the
-     * converted ones, which are JSON. Both are named by the controller class,
-     * because the fixture records what those controllers DECLARED and that
-     * record is the standard a conversion has to meet -- renaming the keys
-     * because the implementation moved would discard the evidence.
-     *
-     * So a converted report leaves this list only when it stops being a report,
-     * never merely because its file was deleted.
+     * Asked of the tree as it is, not of a list kept beside it, so a report that
+     * is added is covered without anyone remembering this file exists.
      *
      * @return array<int, string> sorted
      */
-
-
-    /**
-     * Widgets deliberately MOVED or RESIZED since the conversion, and why.
-     *
-     * The golden fixture records the layout a controller declared. A report
-     * being redesigned no longer has that layout on purpose -- the dashboard's
-     * Latest Visits grid now sits directly under the site trend at full width,
-     * because it groups by seven dimensions and half a row was never enough
-     * room for them.
-     *
-     * NAMED, and narrow. Only the widgets listed here may differ in position or
-     * span; every other widget must still be in its recorded place with its
-     * recorded size, the widget id set must still match exactly, and every
-     * other key of every widget -- query, sort, title, link -- is still
-     * compared. Relaying a report out is not a licence to change what it asks
-     * for.
-     *
-     * class => [ widget ids whose position and span are no longer the record's ]
-     */
-
-
-
-
-
-    /**
-     *
-     * The golden fixture is the pre-conversion record and cannot be
-     * regenerated into agreement: the controllers it was taken from are
-     * deleted, so a regeneration would capture the definitions' own output and
-     * the equivalence proof would become a comparison with itself. So a
-     * deliberate change is named here instead.
-     *
-     * Each entry is one value, by path, with what the controller declared and
-     * what the definition says now. `null` on the right means the key is gone.
-     * The allowance is checked as it is applied -- a value that is not what the
-     * entry says it is now fails, so an entry cannot outlive the change it
-     * describes.
-     *
-     * class => [ widget id => [ path => [ was, is ] ] ]
-     */
-
-
-
-
-
-
-
     public static function reportNames(): array
     {
-        $names = array();
+        $names = self::definitionIds();
 
         foreach ( glob( OWA_DIR . 'modules/Base/Controller/Report*.php' ) as $file ) {
 
@@ -220,10 +91,6 @@ final class ReportCharacterizationHarness
             $names[] = $name;
         }
 
-        foreach ( self::CONVERTED as $class ) {
-            $names[] = $class;
-        }
-
         $names = array_values( array_unique( $names ) );
 
         sort( $names );
@@ -231,12 +98,29 @@ final class ReportCharacterizationHarness
         return $names;
     }
 
-    /** The report id a converted report is registered under, or '' if it is not one. */
-    public static function idForConverted( string $name ): string
+    /**
+     * Every report that is configuration, by the id it is registered under.
+     *
+     * THE DIRECTORY IS THE LIST. There used to be a hand-kept map here, of report
+     * id to the controller each one replaced, plus a second list for reports
+     * authored as JSON from the start. Both were scaffolding for the conversion,
+     * and a report authored afterwards had to be added to one of them before any
+     * test would look at it -- so the four that were never converted, Scroll Depth
+     * among them, had never been checked for diagnostics at all.
+     *
+     * @return string[]
+     */
+    public static function definitionIds(): array
     {
-        $id = array_search( $name, self::CONVERTED, true );
+        $ids = array();
 
-        return $id === false ? '' : (string) $id;
+        foreach ( glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+            $ids[] = basename( $file, '.json' );
+        }
+
+        sort( $ids );
+
+        return $ids;
     }
 
     /** Request parameters a controller reads, in source order. */
@@ -282,7 +166,7 @@ final class ReportCharacterizationHarness
     /**
      * Run one report's action() and return a normalised snapshot.
      *
-     * Values are normalised rather than captured raw so the fixture says the
+     * Values are normalised rather than captured raw so a snapshot says the
      * same thing on any machine: an object becomes its class name, because its
      * contents depend on a database, while its PRESENCE is part of the
      * contract.
@@ -290,16 +174,14 @@ final class ReportCharacterizationHarness
     public static function snapshot( string $name ): array
     {
         /*
-         * A converted report has no controller to run, so it is run from its
-         * definition instead. Dispatching here rather than in the tests keeps
-         * "what this report declares" one question with one answer, whichever
-         * way the report happens to be implemented.
+         * A report that is configuration has no controller to run, so it is run
+         * from its definition instead. Dispatching here rather than in the tests
+         * keeps "what this report declares" one question with one answer,
+         * whichever way the report happens to be implemented.
          */
-        $convertedId = self::idForConverted( $name );
+        if ( is_file( self::definitionPath( $name ) ) ) {
 
-        if ( $convertedId !== '' ) {
-
-            return self::snapshotConfigured( $convertedId );
+            return self::snapshotConfigured( $name );
         }
 
         $class  = '\\OWA\\Module\\Base\\Controller\\' . $name;
@@ -329,8 +211,7 @@ final class ReportCharacterizationHarness
          * These controllers had never been executed by a test before this
          * harness, and the first CI run surfaced three deprecations and a
          * warning that had been there all along. Recording them means a report
-         * cannot start warning -- or keep warning -- without the fixture
-         * saying so.
+         * cannot start warning -- or keep warning -- without a test saying so.
          */
         $diagnostics = array();
 
@@ -383,15 +264,15 @@ final class ReportCharacterizationHarness
     }
 
 
-    /** Absolute path to a converted report's definition file. */
+    /** Absolute path to a report's definition file. */
     public static function definitionPath( string $id ): string
     {
         return OWA_DIR . 'modules/Base/reports/' . $id . '.json';
     }
 
     /**
-     * Run a converted report from its JSON and return the same shape snapshot()
-     * returns for a controller, so the two are directly comparable.
+     * Run a report from its JSON and return the same shape snapshot() returns for
+     * a controller, so the two are directly comparable.
      */
     public static function snapshotConfigured( string $id ): array
     {
@@ -405,8 +286,7 @@ final class ReportCharacterizationHarness
          * supplied without parsing anything -- which is what paramsFor() had to
          * do against a controller, variable-named getParam() calls included.
          *
-         * Sorted, because the fixture records them sorted and the two have to
-         * be comparable.
+         * Sorted, so a snapshot of the same report is the same every time.
          */
         $params = array_keys( (array) ( $definition['params'] ?? array() ) );
         sort( $params );

@@ -275,8 +275,8 @@ class ReportController extends \OWA\Core\AdminController {
         $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
         
         /*
-         * The metric sets this site offers -- site usage, e-commerce if the
-         * site has it, one per active goal group.
+         * The metric sets this site offers -- site usage, and e-commerce if the
+         * site has it.
          *
          * Derived by Core\MetricSets rather than built here: a report shows one
          * dimension measured several ways, and which ways exist depends on the

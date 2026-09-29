@@ -184,7 +184,7 @@ function owa_upgrade_cycle_expect( $seeded ) {
     $expected = owa_upgrade_cycle_expected_goals();
 
     $rows = (array) $db->get_results(
-        'SELECT id, property_id, name, goal_number, goal_group, is_active, value,
+        'SELECT id, property_id, name, goal_number, is_active, value,
                 trigger_event_type FROM owa_goal_event' );
 
     $events = array();

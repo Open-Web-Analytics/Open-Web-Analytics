@@ -23,7 +23,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
     /**
      * How many steps one funnel may have.
      *
-     * Ten, which is where GA caps a funnel exploration too.
+     * Ten.
      *
      * This was briefly a structural limit -- each step was a derived table
      * nested inside the next, so the count was the nesting depth of the query.

@@ -12,8 +12,8 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
  *
  * A page can carry more than one tracker -- two site ids, typically a sub-site
  * and the network it belongs to. They share the VISITOR and keep their own
- * SESSION, which is the split GA makes: _ga carries the client id across every
- * property, _ga_<property> carries session state per property.
+ * SESSION: the visitor store is shared across every site, the session store
+ * is one per site.
  *
  * They used to share both, and this file used to assert that as correct. It was
  * not: a session row is loaded by session_id alone, so one shared id could not
@@ -74,7 +74,7 @@ describe('two trackers sharing the state stores', () => {
     test('both report the session as starting here, because it did', () => {
         const { beacons } = trackBoth();
 
-        // is_new_session marks THIS EVENT as occurring at the start of a new
+        // is_new_session_start marks THIS EVENT as the one that created a new
         // session -- which is what resolveEntryPage() reads it as server-side.
         // It is a fact about the page load, not about which tracker happened to
         // derive it first, so it lives in the page store and both trackers see
@@ -87,8 +87,8 @@ describe('two trackers sharing the state stores', () => {
         // actually happens is that the second site gets no session row of its
         // own, which is the per-site limitation below, not something this flag
         // causes.
-        expect(beacons.a[0].is_new_session).toBe(true);
-        expect(beacons.b[0].is_new_session).toBe(true);
+        expect(beacons.a[0].is_new_session_start).toBe(true);
+        expect(beacons.b[0].is_new_session_start).toBe(true);
     });
 
     test('each site owns the session its facts point at', () => {
@@ -103,10 +103,8 @@ describe('two trackers sharing the state stores', () => {
          * site B's request facts referenced site A's session. Reporting for B
          * that joined the session read A's data, silently.
          *
-         * The store is scoped to a site now, which is where GA splits too:
-         * _ga holds the client id across every property, _ga_<property> holds
-         * session state per property. Measured on a live GA tag with two
-         * properties configured -- one _ga, two _ga_<id> cookies.
+         * The store is scoped to a site now: the visitor is shared across every
+         * site, and session state is held per site.
          */
         const { beacons } = trackBoth();
 
@@ -155,7 +153,7 @@ describe('two trackers sharing the state stores', () => {
     });
 
     test('VISITOR-scoped state still rides the events of both', () => {
-        // The visitor is shared -- GA's _ga -- so anything scoped to the
+        // The visitor is shared, so anything scoped to the
         // visitor is shared with it. user_id is the v2 example: setUserId()
         // writes the 'v' store, and every tracker collects it from there.
         // A visitor-scoped CUSTOM var used to be the payload here; those are

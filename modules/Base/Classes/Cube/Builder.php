@@ -817,13 +817,95 @@ class Builder {
             $columns[] = sprintf( 'FIRST_VALUE(w.%s) OVER session_w AS %s', $column, $alias );
         }
 
-        $columns[] = 'LAST_VALUE(w.id) OVER session_w AS session_last_id';
-        $columns[] = 'LAST_VALUE(w.ts) OVER session_w AS session_last_ts';
+        /*
+         * The session's first and last PAGE VIEWS, which is what an entrance and
+         * an exit are: the page it began on and the page it ended on. Keyed on
+         * the page view's position (Context::pageViewKey), so only page views can
+         * hold either -- not a click after the last page, and not the
+         * session_start or first_visit materialized beside the first.
+         *
+         * An aggregate over the same frame, so it adds no sort. A session with no
+         * page view has neither.
+         */
+        $pv_key = Context::pageViewKey( 'w' );
 
+        $columns[] = sprintf( "MIN(CASE WHEN w.event_type = 'page_view' THEN %s END) OVER session_w"
+                   . ' AS session_first_pv_key', $pv_key );
+        $columns[] = sprintf( "MAX(CASE WHEN w.event_type = 'page_view' THEN %s END) OVER session_w"
+                   . ' AS session_last_pv_key', $pv_key );
+
+        /*
+         * But the most recent ARRIVAL, which is a different question.
+         *
+         * This feeds the idle-timeout test -- "has this session gone quiet long
+         * enough to call its exit final" -- and that is about wall-clock
+         * recency, not about position. LAST_VALUE was the same thing as MAX
+         * while the sort was on ts; once the sort is on event_seq it is not,
+         * and a session whose latest beacon arrived late would have been judged
+         * closed on an earlier timestamp.
+         */
+        $columns[] = 'MAX(w.ts) OVER session_w AS session_last_ts';
+
+        /*
+         * WHAT DECIDES WHETHER THE SESSION WAS ENGAGED -- see IsEngagedSessionStep.
+         *
+         * Aggregates over the same window, so they cost no second sort. The goal
+         * test leaves out materialized events: a goal event triggered by
+         * session_start or first_visit is not the visitor engaging.
+         */
+        $materialized = array();
+
+        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::materializedEventNames() as $name ) {
+
+            $materialized[] = "'" . \OWA\Core\CoreAPI::dbSingleton()->prepare( $name ) . "'";
+        }
+
+        $not_materialized = $materialized
+            ? 'w.event_type NOT IN (' . implode( ', ', $materialized ) . ')'
+            : '1 = 1';
+
+        $columns[] = 'SUM(COALESCE(w.engagement_msec, 0)) OVER session_w AS session_engagement_msec';
+        $columns[] = "SUM(CASE WHEN w.event_type = 'page_view' THEN 1 ELSE 0 END) OVER session_w"
+                   . ' AS session_page_views';
+        $columns[] = sprintf( 'MAX(CASE WHEN w.is_goal_event = 1%s THEN 1 ELSE 0 END) OVER session_w'
+                   . ' AS session_has_goal',
+            ' AND ' . $not_materialized );
+
+        /*
+         * DEVICE ORDER FIRST, arrival order second.
+         *
+         * `ts` is stamped at edge receipt, so sorting a session on it orders
+         * events by when they ARRIVED rather than by when they happened. A
+         * beacon that lands late -- the unload beacon is the standing case --
+         * sorts after events that occurred after it, which puts is_exit on the
+         * wrong row and mis-orders any funnel spanning it.
+         *
+         * event_seq is counted on the device as each event is built, so it says
+         * what the sort needs and no clock can be wrong about it.
+         *
+         * COALESCE to 0, not to ts -- the two are not comparable scales, and a
+         * fallback that mixed them would sort a microsecond timestamp above
+         * every real position. 0 is below every position (they count from 1),
+         * so:
+         *
+         *   - a session whose rows all carry a sequence sorts by it, with ts
+         *     breaking ties between duplicates from two tabs;
+         *   - a session from a tracker cached from before this has 0 on every
+         *     row, so ts orders it and nothing changes;
+         *   - a session spanning a tracker upgrade puts its un-sequenced rows
+         *     first, in arrival order. Rare, bounded to one session, and the
+         *     alternative -- sorting them last -- would move a real exit onto
+         *     an older event.
+         *
+         * `id` stays the final tiebreak so the sort is deterministic: it is
+         * derived from the event's own inputs, so a rebuild reaches the same
+         * answer as the build before it.
+         */
         return sprintf(
             'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d%s '
           . 'WINDOW session_w AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
-          . 'ORDER BY w.ts, w.id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)',
+          . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, w.id '
+          . 'ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)',
             implode( ', ', $columns ),
             $this->tables['raw'],
             (int) $from,

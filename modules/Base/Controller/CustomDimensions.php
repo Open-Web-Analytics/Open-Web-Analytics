@@ -17,7 +17,6 @@ namespace OWA\Module\Base\Controller;
  * PER PROPERTY, because the cube is. Two Properties may use the same key for
  * different things, which is the whole point -- v1's numbered slots forced one
  * namespace on an installation and cv3 meant something different on every site.
- * GA registers custom definitions on the property for the same reason.
  *
  * ADDRESSED BY siteId even so, like the goal events screen: it is reached from
  * a Profile in the nav and resolves the Property itself, so the context line

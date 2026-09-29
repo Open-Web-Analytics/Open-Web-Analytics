@@ -18,13 +18,11 @@
  * Backward-compatibility bridge for the PSR-4 namespace migration (Phase 6).
  * =========================================================================
  *
- * OWA's ~340 framework classes are being renamed from the global-namespace
- * `owa_` prefix convention (owa_coreAPI, owa_document, ...) into real PSR-4
- * namespaces (OWA\Core\CoreAPI, OWA\Module\Base\Entity\Document, ...). Every
- * legacy `owa_*` name must keep resolving for a full major-version deprecation
- * window — third-party modules, the WordPress plugin, and serialized state all
- * reference the old names, and OWA's own factories synthesize them at runtime
- * ('owa_' . $file, see owa_lib::factory / owa_coreAPI::moduleSpecificFactory).
+ * OWA's framework classes were renamed from the global-namespace `owa_`
+ * prefix convention (owa_coreAPI, owa_entity, ...) into PSR-4 namespaces
+ * (OWA\Core\CoreAPI, OWA\Core\Entity, ...). In v2 only the names a module
+ * builds on keep resolving -- the base classes it extends and the static API
+ * it calls -- plus owa_event for queued data. See owa_compat_class_map().
  *
  * HOW THE BRIDGE WORKS — a LAZY forward-alias autoloader.
  * -------------------------------------------------------
@@ -52,12 +50,12 @@
  * once the class has been renamed. The `owa_` prefix short-circuit keeps it a
  * no-op for every non-legacy class name.
  *
- * THE MAP. owa_compat_class_map() below is the single source of truth of
- * old->new renames. The rename stages are COMPLETE: it now holds an entry for
- * every migrated class and is the lookup both this bridge and
- * Lib::resolveNamespacedClass() read. A `class_exists(<old>, false)` guard in
- * the alias step prevents redefining an old name that some code still declares
- * directly.
+ * THE MAP. owa_compat_class_map() below is the whole list. OWA's own
+ * factories do not read it for their own classes: each finds the namespaced
+ * class by convention first, and reaches Lib::resolveNamespacedClass() only
+ * for a legacy name a third party handed it. A `class_exists(<old>, false)`
+ * guard in the alias step prevents redefining an old name that some code
+ * still declares directly.
  *
  * RESIDUAL BREAK (documented, not worked around): a module doing string
  * equality on a class name — `get_class($x) === 'owa_foo'` or
@@ -67,227 +65,68 @@
  */
 
 /**
- * The authoritative legacy-name -> new-namespaced-name map.
+ * The legacy names v2 keeps: the classes a module EXTENDS, the static API it
+ * CALLS, and one name stored DATA still carries.
  *
- * One entry per renamed class:
- *   'owa_document' => 'OWA\\Module\\Base\\Entity\\Document',
+ * Everything else the namespace migration renamed -- services, handlers,
+ * concrete validators, controllers, views, v1 updates, module registry
+ * classes, owa_lib -- was an internal name, and v2 dropped it. OWA itself
+ * resolves nothing through this map: its factories find namespaced classes
+ * by convention (CompatMapIsNotLoadBearingTest).
  *
- * Entries are removed only when the deprecation window closes at v2.0 — see
- * the Maintenance contract in tests/LegacyClassNameContractTest.php.
+ * tests/fixtures/legacy_class_names.json is the same list, as the promise.
  *
  * @return array<string, string>
  */
 function owa_compat_class_map(): array
 {
     return [
-        // --- one entry per renamed class ---
+        // --- what a module extends ---
 
-        // root framework classes -> OWA\Core\ (Phase 6 stage 2, roots batch)
         'owa_base' => 'OWA\\Core\\Base',
-        'owa_coreAPI' => 'OWA\\Core\\CoreAPI',
-        'owa_db' => 'OWA\\Core\\Db',
-        'owa_lib' => 'OWA\\Core\\Lib',
-        'owa_auth' => 'OWA\\Core\\Auth',
-        'owa_caller' => 'OWA\\Core\\Caller',
-        'owa_install' => 'OWA\\Core\\Install',
-        'owa_location' => 'OWA\\Core\\Location',
+        'owa_module' => 'OWA\\Core\\Module',
         'owa_observer' => 'OWA\\Core\\Observer',
-        'owa_template' => 'OWA\\Core\\Template',
-        'owa_requestContainer' => 'OWA\\Core\\RequestContainer',
-        'owa_http' => 'OWA\\Core\\Http',
+        'owa_update' => 'OWA\\Core\\Update',
+
         'owa_controller' => 'OWA\\Core\\Controller',
         'owa_adminController' => 'OWA\\Core\\AdminController',
         'owa_reportController' => 'OWA\\Core\\ReportController',
-        'owa_entity' => 'OWA\\Core\\Entity',
-        'owa_metric' => 'OWA\\Core\\Metric',
-        'owa_module' => 'OWA\\Core\\Module',
-        'owa_view' => 'OWA\\Core\\View',
+        'owa_cliController' => 'OWA\\Core\\Controller\\Cli',
 
-        // owa_view.php subclasses -> OWA\Core\View\ (Phase 6 stage 3)
-        'owa_mailView' => 'OWA\\Core\\View\\Mail',
-        'owa_restApiView' => 'OWA\\Core\\View\\RestApi',
+        'owa_view' => 'OWA\\Core\\View',
         'owa_adminPageView' => 'OWA\\Core\\View\\AdminPage',
+        'owa_restApiView' => 'OWA\\Core\\View\\RestApi',
+        'owa_mailView' => 'OWA\\Core\\View\\Mail',
         'owa_cliView' => 'OWA\\Core\\View\\Cli',
 
-        // validators -> OWA\Core\Validation\ (Phase 6 stage 3; base + 11 plugins)
-        'owa_validation' => 'OWA\\Core\\Validation\\Validation',
-        'owa_emailAddressValidation' => 'OWA\\Core\\Validation\\EmailAddress',
-        'owa_entityDoesNotExistValidation' => 'OWA\\Core\\Validation\\EntityDoesNotExist',
-        'owa_entityExistsValidation' => 'OWA\\Core\\Validation\\EntityExists',
-        'owa_inArrayValidation' => 'OWA\\Core\\Validation\\InArray',
-        'owa_isNotCurrentUserValidation' => 'OWA\\Core\\Validation\\IsNotCurrentUser',
-        'owa_requiredValidation' => 'OWA\\Core\\Validation\\Required',
-        'owa_stringLengthValidation' => 'OWA\\Core\\Validation\\StringLength',
-        'owa_stringMatchValidation' => 'OWA\\Core\\Validation\\StringMatch',
-        'owa_subStringMatchValidation' => 'OWA\\Core\\Validation\\SubStringMatch',
-        'owa_subStringPositionValidation' => 'OWA\\Core\\Validation\\SubStringPosition',
-        'owa_userNameValidation' => 'OWA\\Core\\Validation\\UserName',
-
-        // db driver plugin -> OWA\Core\Db\ (Phase 6 stage 3)
-        'owa_db_mysql' => 'OWA\\Core\\Db\\Mysql',
-        // 'pdo' is kept as a friendly alias for the MySQL-over-PDO driver.
-
-        // module.php registry classes -> OWA\Module\<Mod>\Module (Phase 6 stage 3)
-        'owa_baseModule' => 'OWA\\Module\\Base\\Module',
-        'owa_domstreamModule' => 'OWA\\Module\\Domstream\\Module',
-        'owa_fileCacheModule' => 'OWA\\Module\\FileCache\\Module',
-        'owa_helloModule' => 'OWA\\Module\\Hello\\Module',
-        'owa_maxmind_geoipModule' => 'OWA\\Module\\MaxmindGeoip\\Module',
-        'owa_memcachedCacheModule' => 'OWA\\Module\\MemcachedCache\\Module',
-        'owa_remoteQueueModule' => 'OWA\\Module\\RemoteQueue\\Module',
-
-        // modules/base/entities (Phase 6 stage 2)
-        /*
-         * Not legacy names -- nothing ever called these. The entity factory
-         * resolves 'base.organization' by checking class_exists('owa_organization'),
-         * so an entity is unreachable without an entry here whatever its age.
-         * Same reason owa_custom_report appears below despite postdating the
-         * namespace migration, and the same reason neither belongs in
-         * tests/fixtures/legacy_class_names.json: that fixture lists names the
-         * project promises to keep resolving, which is a different claim.
-         */
-
-        // modules/base/metrics (Phase 6 stage 2)
-        'owa_actionsPerVisit' => 'OWA\\Module\\Base\\Metric\\ActionsPerVisit',
-        'owa_configurableMetric' => 'OWA\\Module\\Base\\Metric\\ConfigurableMetric',
-        'owa_goalNCompletions' => 'OWA\\Module\\Base\\Metric\\GoalNCompletions',
-        'owa_goalNStarts' => 'OWA\\Module\\Base\\Metric\\GoalNStarts',
-        'owa_goalNValue' => 'OWA\\Module\\Base\\Metric\\GoalNValue',
-        'owa_repeatVisitors' => 'OWA\\Module\\Base\\Metric\\RepeatVisitors',
-
-        // modules/base/classes (Phase 6 stage 2). Abstract framework bases ->
-        // OWA\Core\ (they straddle the Core/Module seam); the rest ->
-        // OWA\Module\Base\Classes\. validation.php HELD for the Core\Validation
-        // consolidation with plugins/validations/.
+        'owa_entity' => 'OWA\\Core\\Entity',
         'owa_factTable' => 'OWA\\Core\\Entity\\FactTable',
+        'owa_metric' => 'OWA\\Core\\Metric',
         'owa_calculatedMetric' => 'OWA\\Core\\Metric\\CalculatedMetric',
-        'owa_cliController' => 'OWA\\Core\\Controller\\Cli',
-        'owa_installController' => 'OWA\\Core\\Controller\\Install',
+
+        'owa_validation' => 'OWA\\Core\\Validation\\Validation',
         'owa_cacheType' => 'OWA\\Core\\CacheType',
         'owa_eventQueue' => 'OWA\\Core\\EventQueue',
-        'owa_update' => 'OWA\\Core\\Update',
-        'owa_browscap' => 'OWA\\Module\\Base\\Classes\\Browscap',
-        'owa_cache' => 'OWA\\Module\\Base\\Classes\\Cache',
-        'owa_chartData' => 'OWA\\Module\\Base\\Classes\\ChartData',
-        'owa_dbColumn' => 'OWA\\Module\\Base\\Classes\\DbColumn',
-        'owa_date' => 'OWA\\Module\\Base\\Classes\\Date',
-        'owa_dbEventQueue' => 'OWA\\Module\\Base\\Classes\\DbEventQueue',
-        'owa_error' => 'OWA\\Module\\Base\\Classes\\Error',
+
+        // --- what a module calls ---
+
+        'owa_coreAPI' => 'OWA\\Core\\CoreAPI',
+
+        // --- what stored data names ---
+
+        /*
+         * Queue items serialized before the migration name their event
+         * owa_event, and unserialize() needs the name to exist
+         * (EventQueue::allowedEventClasses()).
+         */
         'owa_event' => 'OWA\\Module\\Base\\Classes\\Event',
-        'owa_eventDispatch' => 'OWA\\Module\\Base\\Classes\\EventDispatch',
-        'owa_fileEventQueue' => 'OWA\\Module\\Base\\Classes\\FileEventQueue',
-        'owa_geolocation' => 'OWA\\Module\\Base\\Classes\\Geolocation',
-        'owa_goalManager' => 'OWA\\Module\\Base\\Classes\\GoalManager',
-        'owa_httpEventQueue' => 'OWA\\Module\\Base\\Classes\\HttpEventQueue',
-        'owa_installManager' => 'OWA\\Module\\Base\\Classes\\InstallManager',
-        'owa_logConsole' => 'OWA\\Module\\Base\\Classes\\LogConsole',
-        'owa_logEmail' => 'OWA\\Module\\Base\\Classes\\LogEmail',
-        'owa_logFile' => 'OWA\\Module\\Base\\Classes\\LogFile',
-        'owa_mailer' => 'OWA\\Module\\Base\\Classes\\Mailer',
-        'owa_memoryCache' => 'OWA\\Module\\Base\\Classes\\MemoryCache',
-        'owa_paginatedResultSet' => 'OWA\\Module\\Base\\Classes\\PaginatedResultSet',
-        'owa_pagination' => 'OWA\\Module\\Base\\Classes\\Pagination',
-        'owa_pslReader' => 'OWA\\Module\\Base\\Classes\\PslReader',
-        'owa_resultSetManager' => 'OWA\\Module\\Base\\Classes\\ResultSetManager',
-        'owa_sanitize' => 'OWA\\Module\\Base\\Classes\\Sanitize',
-        'owa_service' => 'OWA\\Module\\Base\\Classes\\Service',
-        'owa_serviceUser' => 'OWA\\Module\\Base\\Classes\\ServiceUser',
-        'owa_settings' => 'OWA\\Module\\Base\\Classes\\Settings',
-        'owa_siteManager' => 'OWA\\Module\\Base\\Classes\\SiteManager',
-        'owa_state' => 'OWA\\Module\\Base\\Classes\\State',
-        'owa_timePeriod' => 'OWA\\Module\\Base\\Classes\\TimePeriod',
-        'owa_trackingEventHelpers' => 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers',
-        'owa_userManager' => 'OWA\\Module\\Base\\Classes\\UserManager',
-        'owa_validator' => 'OWA\\Module\\Base\\Classes\\Validator',
-
-        // modules/base/handlers (Phase 6 stage 2) -> OWA\Module\Base\Handler\*
-        // (all extend owa_observer; registered by short name, factory synthesizes
-        // 'owa_'.$name -> resolved here via moduleGenericFactory).
-        'owa_actionHandler' => 'OWA\\Module\\Base\\Handler\\ActionHandler',
-        'owa_adHandlers' => 'OWA\\Module\\Base\\Handler\\AdHandlers',
-        'owa_campaignHandlers' => 'OWA\\Module\\Base\\Handler\\CampaignHandlers',
-        'owa_clickHandlers' => 'OWA\\Module\\Base\\Handler\\ClickHandlers',
-        'owa_commerceTransactionHandlers' => 'OWA\\Module\\Base\\Handler\\CommerceTransactionHandlers',
-        'owa_conversionHandlers' => 'OWA\\Module\\Base\\Handler\\ConversionHandlers',
-        'owa_documentHandlers' => 'OWA\\Module\\Base\\Handler\\DocumentHandlers',
-        'owa_feedRequestHandlers' => 'OWA\\Module\\Base\\Handler\\FeedRequestHandlers',
-        'owa_hostHandlers' => 'OWA\\Module\\Base\\Handler\\HostHandlers',
-        'owa_locationHandlers' => 'OWA\\Module\\Base\\Handler\\LocationHandlers',
-        'owa_notifyHandlers' => 'OWA\\Module\\Base\\Handler\\NotifyHandlers',
-        'owa_osHandlers' => 'OWA\\Module\\Base\\Handler\\OsHandlers',
-        'owa_refererHandlers' => 'OWA\\Module\\Base\\Handler\\RefererHandlers',
-        'owa_requestHandlers' => 'OWA\\Module\\Base\\Handler\\RequestHandlers',
-        'owa_searchTermHandlers' => 'OWA\\Module\\Base\\Handler\\SearchTermHandlers',
-        'owa_sessionCommerceSummaryHandlers' => 'OWA\\Module\\Base\\Handler\\SessionCommerceSummaryHandlers',
-        'owa_sessionHandlers' => 'OWA\\Module\\Base\\Handler\\SessionHandlers',
-        'owa_sourceHandlers' => 'OWA\\Module\\Base\\Handler\\SourceHandlers',
-        'owa_userAgentHandlers' => 'OWA\\Module\\Base\\Handler\\UserAgentHandlers',
-        'owa_userHandlers' => 'OWA\\Module\\Base\\Handler\\UserHandlers',
-        'owa_visitorHandlers' => 'OWA\\Module\\Base\\Handler\\VisitorHandlers',
-        'owa_visitorUpdateHandlers' => 'OWA\\Module\\Base\\Handler\\VisitorUpdateHandlers',
-
-        // modules/base/updates (Phase 6 stage 2) -> OWA\Module\Base\Update\*.
-        // Files are numeric (003.php ...); updateFactory synthesizes the legacy
-        // key 'owa_'.$module.'_'.$filename.'_update' (owa_base_003_update), so
-        // THAT exact string is the bridge key.
-        'owa_base_003_update' => 'OWA\\Module\\Base\\Update\\Update003',
-        'owa_base_004_update' => 'OWA\\Module\\Base\\Update\\Update004',
-        'owa_base_005_update' => 'OWA\\Module\\Base\\Update\\Update005',
-        'owa_base_006_update' => 'OWA\\Module\\Base\\Update\\Update006',
-        'owa_base_007_update' => 'OWA\\Module\\Base\\Update\\Update007',
-        'owa_base_008_update' => 'OWA\\Module\\Base\\Update\\Update008',
-        'owa_base_009_update' => 'OWA\\Module\\Base\\Update\\Update009',
-        'owa_base_010_update' => 'OWA\\Module\\Base\\Update\\Update010',
-        'owa_base_011_update' => 'OWA\\Module\\Base\\Update\\Update011',
-
-        // non-base modules' leaf classes (Phase 6 stage 2). Each is reached by a
-        // string-based factory lookup (registerImplementation / registerFilter /
-        // registerRestApiRoute / registerEventHandler / admin-panel 'do'), so the
-        // registration literals are untouched and these bridge keys cover them.
-        // module.php files (the module-registry classes themselves) stay global —
-        // deferred to the module.php special-case stage.
-        'owa_domstreamHandlers' => 'OWA\\Module\\Domstream\\Handler\\DomstreamHandlers',
-        'owa_fileCache' => 'OWA\\Module\\FileCache\\Classes\\FileCache',
-        'owa_maxmind' => 'OWA\\Module\\MaxmindGeoip\\Classes\\Maxmind',
-        'owa_memcachedCache' => 'OWA\\Module\\MemcachedCache\\Classes\\MemcachedCache',
-
-        // modules/base/controllers (Phase 6 stage 3). AFFIX->NAMESPACE: the
-        // Controller/View suffix becomes the sub-namespace, so the class short
-        // name drops BOTH owa_ and the suffix. The 9 files were each a
-        // Controller+View PAIR sharing one file; split one-class-per-file (the
-        // View extracted to a sibling <name>View.php). Controllers reached by
-        // literal 'owa_*RestController'/'owa_*CliController' registration
-        // strings (registerRestApiRoute / registerAction) + the corsPreflight
-        // simpleFactory literal; Views by setView('base.<x>') -> moduleFactory
-        // synthesizing 'owa_'.<file>.'View'. All legacy names bridged here.
-
-        // modules/base flat pages — SINGLE-class files (Phase 6 stage 3).
-        // In-place affix->namespace (no split needed): Controller suffix ->
-        // ...Base\\Controller\\<Name>, View suffix -> ...Base\\View\\<Name>.
-        'owa_optionsUpdateController' => 'OWA\\Module\\Base\\Controller\\OptionsUpdate',
-        'owa_processEventController' => 'OWA\\Module\\Base\\Controller\\ProcessEvent',
-        'owa_sitesEditSettingsController' => 'OWA\\Module\\Base\\Controller\\SitesEditSettings',
-        'owa_usersAddController' => 'OWA\\Module\\Base\\Controller\\UsersAdd',
-        'owa_usersDeleteController' => 'OWA\\Module\\Base\\Controller\\UsersDelete',
-
-        // modules/base flat pages — Controller/View PAIR files (Phase 6 stage 3).
-        // Split one-class-per-file (order-agnostic), then affix->namespace.
-        'owa_sitesAddController' => 'OWA\\Module\\Base\\Controller\\SitesAdd',
-        'owa_sitesAddView' => 'OWA\\Module\\Base\\View\\SitesAdd',
-        'owa_usersController' => 'OWA\\Module\\Base\\Controller\\Users',
-        'owa_usersView' => 'OWA\\Module\\Base\\View\\Users',
-
-        // modules/base flat pages — EDGE cases (Phase 6 stage 3):
-        // report.php (owa_reportView + 3 dimensional subviews) and the
-        // asymmetric apiRequest.php (owa_apiRequestController + owa_apiErrorView).
     ];
 }
 
-// The aliasing autoloader can be disabled (for testing that OWA runs fully on
-// its new namespaced names, and to preview the v2.0 bridge drop) by defining
-// OWA_DISABLE_COMPAT_BRIDGE = true before this file loads. The map function
-// above stays available either way (the factories read it as their old->new
-// translator). Default is ON — the bridge remains the third-party contract.
+// OWA_DISABLE_COMPAT_BRIDGE = true, defined before this file loads, turns the
+// bridge off: no aliasing autoloader here, and Lib::resolveNamespacedClass()
+// answers null. OWA runs fully that way (CompatMapIsNotLoadBearingTest).
+// Default is ON -- the bridge is the third-party contract.
 if (defined('OWA_DISABLE_COMPAT_BRIDGE') && OWA_DISABLE_COMPAT_BRIDGE) {
     return;
 }

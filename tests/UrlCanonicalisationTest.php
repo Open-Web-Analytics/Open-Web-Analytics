@@ -11,8 +11,8 @@ use OWA\Module\Base\Classes\V2Event;
  *
  * THE EVIDENCE IS NOT EDITED. page_location is stored exactly as it arrived,
  * because it is what a corrected parse gets re-applied to -- v1 needed
- * keepCompleteUrl() to stash the URL before its own canonicaliser ate it, and
- * GA reaches the same place with its own page_location. The READINGS --
+ * keepCompleteUrl() to stash the URL before its own canonicaliser ate it. The
+ * READINGS --
  * page_path, page_query, host -- are what reports group by, and those are
  * canonicalised, because a reading that varies where the page does not is a
  * broken report.
@@ -164,7 +164,7 @@ final class UrlCanonicalisationTest extends TestCase
     /**
      * utm_* SURVIVES, because it is the site's tagging and not ours.
      *
-     * v1 keeps it and so does GA. Removing it would also remove the evidence a
+     * v1 keeps it. Removing it would also remove the evidence a
      * stale tracker's campaign is re-parsed from.
      */
     public function testTheSitesOwnCampaignTaggingIsKept(): void

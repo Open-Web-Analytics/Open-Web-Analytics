@@ -62,10 +62,12 @@ class RequestHandlers extends \OWA\Core\Observer {
 
             if ($result == true) {
 
-                $eq = \OWA\Core\CoreAPI::getEventDispatch();
-                $nevent = $eq->makeEvent($event->getEventType().'_logged');
-                $nevent->setProperties($event->getProperties());
-                $eq->asyncNotify($nevent);
+                /*
+                 * The *_logged raise was here. It existed to hand the v1
+                 * star-schema handlers a second event to hang off, and they
+                 * are unregistered -- so it raised an event with no listeners
+                 * on every beacon.
+                 */
                 return OWA_EHS_EVENT_HANDLED;
             } else {
                 return OWA_EHS_EVENT_FAILED;

@@ -68,7 +68,7 @@ test.describe('goal events', () => {
         await expect(page.locator('select[name="conditionMatch"]')).toBeVisible();
 
         await page.fill('input[name="name"]', name);
-        await page.selectOption('select[name="conditionProperty[]"]', 'page_uri');
+        await page.selectOption('select[name="conditionProperty[]"]', 'page_path');
         await page.selectOption('select[name="conditionOperator[]"]', 'begins');
         await page.fill('input[name="conditionValue[]"]', '/thanks');
         await page.fill('input[name="value"]', '2.50');

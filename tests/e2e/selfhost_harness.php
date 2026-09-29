@@ -334,6 +334,21 @@ function registerHarnessSite(string $repoRoot): void
 {
     $site_id = 'e2e-tracker-harness';
 
+    /*
+     * THROUGH SiteManager, not by writing the row.
+     *
+     * This built the owa_site row with the entity directly, and claimed above
+     * to be "otherwise identical to one the admin UI creates". That stopped
+     * being true when Properties landed: createSite() derives a Property for a
+     * site that names none, and a hand-written row has no property_id at all.
+     *
+     * A Profile with no Property has no cube -- Entity\Event stays unbound and
+     * the next getTableName() throws -- so any test that reached reporting
+     * through the default site failed on the scratch install while passing on
+     * a developer's, which is exactly the difference the isolation sweep runs
+     * on a scratch install to find. Two cases in ReportsRestControllerTest
+     * were red for this reason and neither was about site creation.
+     */
     $php = escapeshellarg(PHP_BINARY);
     $cmd = $php . ' -r ' . escapeshellarg(
         'require "' . $repoRoot . 'owa.php";'
@@ -342,12 +357,12 @@ function registerHarnessSite(string $repoRoot): void
       . ' $id = $s->generateId("' . $site_id . '");'
       . ' $s->load($id);'
       . ' if (!$s->wasPersisted()) {'
-      . '   $s->set("id", $id);'
-      . '   $s->set("site_id", "' . $site_id . '");'
-      . '   $s->set("name", "E2E tracker harness");'
-      . '   $s->set("domain", "http://127.0.0.1");'
-      . '   $s->create();'
+      . '   $sm = owa_coreAPI::supportClassFactory("base", "siteManager");'
+      . '   $sm->createSite("http://127.0.0.1", "E2E tracker harness", "", "", "' . $site_id . '");'
       . ' }'
+      . ' $s = owa_coreAPI::entityFactory("base.site");'
+      . ' $s->load($s->generateId("' . $site_id . '"));'
+      . ' if (!$s->get("property_id")) { echo "harness site has no property\n"; exit(1); }'
       . ' echo "harness site registered\n";'
     ) . ' 2>&1';
 

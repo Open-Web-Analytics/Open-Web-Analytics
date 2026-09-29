@@ -30,8 +30,8 @@ namespace OWA\Module\Base\Classes;
  * every step a subject reached on some other medium, and the funnel would
  * collapse for reasons that have nothing to do with the funnel. Constraining a
  * domstream list the same way would hide recordings made by exactly the people
- * the segment asked for. GA's segments pick the users and then show all of
- * their activity; this does the same.
+ * the segment asked for. So a segment picks the users and then shows all of
+ * their activity.
  *
  * WHY IT RUNS THROUGH ResultSetManager
  *
@@ -75,7 +75,7 @@ class ReportSegment {
 
     /** The dimension that names each kind of subject. */
     const SUBJECT_DIMENSIONS = array(
-        'visitor' => 'visitorId',
+        'visitor' => 'clientId',
         'session' => 'sessionId',
     );
 
@@ -152,7 +152,7 @@ class ReportSegment {
 
         $rsm = new ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
+        $rsm->metrics = $rsm->metricsStringToArray( 'sessions' );
         $rsm->setSiteId( $this->siteId );
         $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );
         $rsm->setLimit( 1 );
@@ -214,7 +214,7 @@ class ReportSegment {
 
         $rsm = new ResultSetManager;
 
-        $rsm->metrics = $rsm->metricsStringToArray( 'visits' );
+        $rsm->metrics = $rsm->metricsStringToArray( 'sessions' );
         $rsm->setDimensions( $rsm->dimensionsStringToArray( $dimension ) );
         $rsm->setSiteId( $this->siteId );
         $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );

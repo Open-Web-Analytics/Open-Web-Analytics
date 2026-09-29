@@ -377,7 +377,7 @@ class Report extends \OWA\Core\Controller {
 
         $data['title_actions'] = array(
             array(
-                'url'   => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )
+                'url'   => ( new \OWA\Core\Template() )
                                ->makeLink( $link, true ),
                 'label' => $is_viz ? 'Edit visualization' : 'Edit report',
                 'icon'  => 'fas fa-pencil-alt',
@@ -437,7 +437,7 @@ class Report extends \OWA\Core\Controller {
             // add_state TRUE, or the round trip drops siteId and period and the
             // reader lands on a different view of the report than they left.
             // add_nonce TRUE, because the target action demands one.
-            'url' => \OWA\Core\CoreAPI::supportClassFactory( 'base', 'template' )->makeLink(
+            'url' => ( new \OWA\Core\Template() )->makeLink(
                 array(
                     'do'             => 'base.customReportMarkFavorite',
                     'customReportId' => $report['id'],

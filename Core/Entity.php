@@ -260,19 +260,30 @@ class Entity {
     }
     
     /**
-     * Substitute the "(not set)" label when an empty value reaches a column
-     * that declares it.
+     * Normalise a value that is really absence, on the way into a column.
      *
-     * This is where v1's storage convention lives now. The tracking-property
-     * pipeline used to apply it before dispatch, which made the literal the
-     * value every READER saw -- so a handler, and v2, could not tell "no value"
-     * from a value that happens to be that string. Applying it at the column
-     * instead keeps every v1 column exactly as it was, with nothing to
-     * backfill, while the event carries absence as absence.
+     * WHAT IS LEFT OF A LARGER MECHANISM. This applied the '(not set)' storage
+     * label: a v1 column already held that literal on every historical row, so
+     * writing NULL to half a column would have been worse than either spelling,
+     * and the label was declared per property in tracking_properties.json.
      *
-     * Only for columns that hold text. A numeric column has no use for a label
-     * and, with strict mode off, would silently coerce it to 0 -- which is how a
-     * city name once reached a boolean column.
+     * Nothing declares it any more -- v2 carries absence as NULL from the first
+     * row, and the twelve v1 declarations came out with the properties they were
+     * on -- so the lookup could never fire. It is removed, along with the nullable
+     * and numeric opt-outs that existed only to keep the label away from columns
+     * that should not hold text.
+     *
+     * The whitespace guard stays, and is the reason this method still exists.
+     * '   ' is three bytes that look like a value, sort like one and group as
+     * their own row in a report; the label used to catch it in passing, so
+     * removing the last declaration left the one case that must be normalised
+     * with nothing normalising it. The pipeline trims before this is reached --
+     * this is the entity's own guard for a caller handing setProperties() a value
+     * directly.
+     *
+     * @param  string $column
+     * @param  mixed  $value
+     * @return mixed  the value, or null where it was whitespace only
      */
     protected function applyStorageDefault( $column, $value ) {
         
@@ -293,87 +304,16 @@ class Entity {
             return $value;
         }
         
-        /*
-         * A NULLABLE COLUMN IS OPTED OUT, and this is the load-bearing half of
-         * what setNullable() means.
-         *
-         * The label is looked up by PROPERTY NAME across every registered map,
-         * with no notion of which entity is being written -- so a v2 column
-         * that merely SHARES a name with a v1 tracking property inherits v1's
-         * sentinel. owa_event_raw.language, .host and .page_title all did, and
-         * landed holding the literal '(not set)' in a table whose whole
-         * premise is that absence is NULL.
-         *
-         * The rule this protects is about columns that ALREADY hold the label
-         * on historical rows, where writing NULL to half a column would be
-         * worse than either spelling. A nullable column has no such history by
-         * construction.
-         */
-        if ( ! empty( $this->properties[ $column ]->nullable ) ) {
+        // Every other flavour of absence -- null, '', false -- is stored as
+        // itself, and a column holding '' or NULL reads as absence everywhere.
+        if ( is_string( $value ) && $value !== '' && trim( $value ) === '' ) {
             
-            return $value;
+            return null;
         }
         
-        $type = (string) $this->properties[ $column ]->get( 'data_type' );
-        
-        if ( in_array( $type, $this->numericColumnTypes(), true ) ) {
-            
-            return $value;
-        }
-        
-        return self::storageDefaultFor( $column ) ?? $value;
+        return $value;
     }
     
-    /**
-     * The declared storage label for a tracking property, or null.
-     *
-     * Read from the registered property maps rather than a list kept here, so
-     * the declaration stays in one place -- modules/Base/config/
-     * tracking_properties.json -- and a module registering its own properties
-     * gets the same treatment. Only the absent-value label is honoured; every
-     * other default is a real value and belongs to the event, where the pipeline
-     * still applies it.
-     */
-    protected static function storageDefaultFor( $property ) {
-        
-        if ( self::$storageDefaults === null ) {
-            
-            self::$storageDefaults = array();
-            
-            /*
-             * From the property DEFINITIONS, not the registered service maps.
-             *
-             * The maps are populated by module registration, and a process that
-             * writes rows does not always have them -- they came back empty from
-             * a CLI context while this was being built. A lookup that silently
-             * finds nothing would store NULL where every existing row holds the
-             * label, and nothing would have reported it. These three read the
-             * config file directly and cache, so they answer the same everywhere.
-             */
-            $definitions = array_merge(
-                \OWA\Module\Base\Classes\TrackingEventHelpers::requestProperties(),
-                \OWA\Module\Base\Classes\TrackingEventHelpers::clientProperties(),
-                \OWA\Module\Base\Classes\TrackingEventHelpers::serverProperties() );
-            
-            {
-                foreach ( $definitions as $name => $definition ) {
-                    
-                    if ( isset( $definition['default_value'] )
-                         && $definition['default_value'] === \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL ) {
-                        
-                        self::$storageDefaults[ $name ] = $definition['default_value'];
-                    }
-                }
-            }
-        }
-        
-        return isset( self::$storageDefaults[ $property ] )
-            ? self::$storageDefaults[ $property ]
-            : null;
-    }
-    
-    /** property name => the absent-value label, built once per process. */
-    protected static $storageDefaults = null;
     
     /**
      * The dimension class that derives $column on $entity, or null.
@@ -1357,13 +1297,42 @@ class Entity {
     
     /**
      * The DbColumn object behind a column name.
+     *
+     * REFUSES A COLUMN THE ENTITY DOES NOT DECLARE, by name, because the two
+     * callers that reach here with one are both migrations and both mean the
+     * same mistake.
+     *
+     * An update that DROPS a column has a down() which must put it back -- and
+     * by then the entity no longer declares it, because removing it is what
+     * up() did. So addColumn()/addColumnIfMissing() ask here for a definition
+     * that cannot exist. Undefined array key, a DbColumn that is null, and a
+     * down() that reports failure without saying why; the upgrade cycle is the
+     * only job that runs it, so it surfaces far from the change that caused it.
+     *
+     * The fix is always the same and the message says it: a down() restoring a
+     * removed column spells out its own type, the way Update039 and Update046
+     * do. Naming that here means the next one is a sentence rather than an
+     * afternoon.
+     *
+     * @param string $column_name
+     * @return \OWA\Module\Base\Classes\DbColumn
+     * @throws \InvalidArgumentException
      */
     function getColumn($column_name) {
     
         if (empty($this->properties)) {
             return $this->$column_name;
         }
-        
+
+        if ( ! array_key_exists( $column_name, $this->properties ) ) {
+
+            throw new \InvalidArgumentException( sprintf(
+                '%s does not declare a column called "%s". If this is an update\'s '
+              . 'down() restoring a column its up() removed, the entity cannot '
+              . 'describe it any more -- spell the type out in the update itself.',
+                get_class( $this ), $column_name ) );
+        }
+
         return $this->properties[$column_name];
     }
     

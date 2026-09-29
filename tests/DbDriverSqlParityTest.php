@@ -212,14 +212,14 @@ final class DbDriverSqlParityTest extends TestCase
     {
         $this->assertSameSql(function ($db) {
             $db->selectFrom('owa_request', 'r');
-            $db->selectColumn('COUNT(*)', 'visits');
+            $db->selectColumn('COUNT(*)', 'sessions');
             $db->selectColumn('r.page_url', 'pagePath');
             $db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'd', 'r.document_id', 'd.id');
             $db->where('r.site_id', "site'1");
             $db->where('r.yyyymmdd', ['start' => '20260101', 'end' => '20260131'], 'BETWEEN');
             $db->groupBy('r.page_url');
-            $db->having('visits', 5, '>');
-            $db->orderBy('visits', OWA_SQL_DESCENDING);
+            $db->having('sessions', 5, '>');
+            $db->orderBy('sessions', OWA_SQL_DESCENDING);
             $db->limit(25);
             $db->offset(50);
         }, 'a report-shaped query differs between drivers');

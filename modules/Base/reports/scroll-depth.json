@@ -1,0 +1,47 @@
+{
+    "title": "Scroll Depth",
+    "metrics": "eventCount",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "eventCount",
+            "query": {
+                "dimensions": "date",
+                "sort": "date",
+                "metrics": "eventCount"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "depth",
+            "container": "depth-reached",
+            "title": "Depth Reached",
+            "query": {
+                "metrics": "eventCount",
+                "dimensions": "scrollDepth",
+                "sort": "scrollDepth"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "pages",
+            "container": "depth-by-page",
+            "title": "Depth Reached by Page",
+            "query": {
+                "metrics": "eventCount",
+                "dimensions": "pagePath,scrollDepth",
+                "sort": "eventCount-"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "eventName",
+                "value": "scroll"
+            }
+        ]
+    }
+}

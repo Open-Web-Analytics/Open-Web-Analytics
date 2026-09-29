@@ -131,7 +131,7 @@ test.describe('reporting: domstreams', () => {
     test.describe('the segment filter', () => {
 
         test('narrows the list to the visits it selects', async ({ page }) => {
-            await openDomstreams(page, `medium==${DS.a.medium}`);
+            await openDomstreams(page, `sessionMedium==${DS.a.medium}`);
             await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
 
             await expect(rows(page)).toHaveCount(1);
@@ -144,7 +144,7 @@ test.describe('reporting: domstreams', () => {
          * filter that always returned the first row would pass the test above.
          */
         test('a different segment selects a different recording', async ({ page }) => {
-            await openDomstreams(page, `medium==${DS.b.medium}`);
+            await openDomstreams(page, `sessionMedium==${DS.b.medium}`);
             await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
 
             await expect(rows(page)).toHaveCount(1);
@@ -187,7 +187,7 @@ test.describe('reporting: domstreams', () => {
             }
 
             // ...and it is not passing because the picker is empty.
-            expect(names).toContain('medium');
+            expect(names).toContain('sessionMedium');
         });
     });
 

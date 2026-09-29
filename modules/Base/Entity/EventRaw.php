@@ -60,7 +60,18 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'id', OWA_DTD_BIGINT, false ) );
         $this->properties['id']->setPrimaryKey();
 
-        $this->setProperty( $this->column( 'event_type', OWA_DTD_VARCHAR24, false ) );
+        /*
+         * Wide enough for any name a site may give a custom event -- 40
+         * characters, TrackingEventHelpers::CUSTOM_NAME_PATTERN -- and NOT
+         * TRUNCATABLE. It was VARCHAR(24), and the entity layer trims an
+         * over-long value to fit, so a 25-40 character name was stored cut while
+         * the row id was derived from the whole name: two events sharing their
+         * first 24 characters reported as one. Refused rather than trimmed now,
+         * because a trimmed name is a different event. Update055.
+         */
+        $event_type = $this->column( 'event_type', OWA_DTD_VARCHAR64, false );
+        $event_type->setTruncatable( false );
+        $this->setProperty( $event_type );
         $this->setProperty( $this->column( 'site_id', OWA_DTD_VARCHAR64, false ) );
 
         $this->setProperty( $this->column( 'visitor_id', OWA_DTD_BIGINT, false ) );
@@ -79,11 +90,6 @@ class EventRaw extends \OWA\Core\Entity {
         // session colliding on the derived id.
         $this->setProperty( $this->column( 'ts', OWA_DTD_BIGINT, false ) );
 
-        // Server ts minus the client's own clock at send. Skew becomes visible
-        // instead of silently wrong. NULL where the beacon carried no client
-        // time.
-        $this->setProperty( $this->column( 'clock_offset_usec', OWA_DTD_BIGINT ) );
-
         $this->setProperty( $this->column( 'yyyymmdd', OWA_DTD_INT, false ) );
         $this->setPartitionColumn( 'yyyymmdd' );
 
@@ -91,21 +97,54 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'prior_sessions', OWA_DTD_INT ) );
 
         /*
-         * The visitor's previous event, in server time. Carried, not derived:
-         * the tracker keeps last_req for its own session decision, so 1.5.3's
-         * rule applies -- an anchor the client already maintains is sent.
+         * The session's start, and the PREVIOUS session's start.
          *
-         * It was a window function in a build until that was measured. The
-         * window partitions by visitor where the other partitions by session,
-         * so it cannot share a sort, and it cost 128 of 195 seconds at a
-         * million rows.
+         * Anchors, both of them: offsets are derived from them downstream,
+         * because an offset computed at collection cannot be re-derived when
+         * the rule for it changes. `psts` is what daysSinceLastVisit reads --
+         * the tracker's own comment says so, and says why the seconds interval
+         * it replaced was wrong ("a continuous seconds value gives one bucket
+         * per distinct second, so it was a metric wearing a dimension's
+         * clothes. Days bucket; seconds do not").
          *
-         * Corrected to server time at ingest with clock_offset_usec, which is
-         * what makes carrying it acceptable -- the objection to the client's
-         * value was provenance, and that column did not exist when the window
-         * was chosen.
+         * Both were already on the wire and reached NO column, while
+         * prev_event_ts was written to a column nothing read. The value that
+         * was stored was not the one anybody wanted.
          */
-        $this->setProperty( $this->column( 'prev_event_ts', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'session_start_ts', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'prior_session_start_ts', OWA_DTD_BIGINT ) );
+
+        /*
+         * The event's position in its session, counted on the DEVICE.
+         *
+         * NULLABLE, and that is the contract: a tracker cached from before this
+         * existed sends nothing, and the sort has to read that as "no device
+         * order for this session" rather than as position zero. Every row of an
+         * old session is NULL together, so those sessions fall back to arrival
+         * order and behave exactly as they did.
+         *
+         * Counted from 1, so a stored 0 is not a position and never appears.
+         */
+        $this->setProperty( $this->column( 'event_seq', OWA_DTD_INT ) );
+
+        /*
+         * Which BEACON FORMAT generation wrote this row.
+         *
+         * Stored rather than merely sniffed, and that is the whole point: the
+         * compat bridges between an old beacon and the current one can only be
+         * deleted on evidence that nothing is still sending the old shape, and
+         * the only place that evidence can come from is the rows themselves.
+         * OWA hands a static file to the customer's origin and loses sight of
+         * how long it is cached, so counting is the only way to know.
+         *
+         *     SELECT beacon_version, COUNT(*) ... GROUP BY 1
+         *
+         * NULL is generation 0 -- a tracker from before versioning, which is
+         * every tracker in the wild on the day this shipped. Nullable for
+         * exactly that reason, and it must stay nullable while any of them can
+         * still be cached.
+         */
+        $this->setProperty( $this->column( 'beacon_version', OWA_DTD_INT ) );
 
         /*
          * The page. page_location is the evidence; every reading of it is its
@@ -152,8 +191,13 @@ class EventRaw extends \OWA\Core\Entity {
          * Device and browser, resolved from raw_ua at ingest so realtime can
          * report on them. raw_ua is kept beside them so a parser fix can be
          * re-applied to history.
+         *
+         * `browser` was here too, VARCHAR(128), written from the same property as
+         * browser_type and read by nothing -- dimensions.php declares browserType
+         * against browser_type. Dropped in Update052: on a table whose row cannot
+         * exceed 65,535 bytes, a second copy of a value is budget a real
+         * dimension does not get.
          */
-        $this->setProperty( $this->column( 'browser', OWA_DTD_VARCHAR128 ) );
         $this->setProperty( $this->column( 'browser_type', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'browser_version', OWA_DTD_VARCHAR32 ) );
         $this->setProperty( $this->column( 'os', OWA_DTD_VARCHAR64 ) );
@@ -162,6 +206,9 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'device_brand', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'device_model', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'language', OWA_DTD_VARCHAR16 ) );
+
+        // The device's screen, WIDTHxHEIGHT in CSS pixels, as the tracker read it.
+        $this->setProperty( $this->column( 'screen_resolution', OWA_DTD_VARCHAR16 ) );
 
         // Geography, from ip_address at ingest.
         $this->setProperty( $this->column( 'country', OWA_DTD_VARCHAR64 ) );
@@ -187,15 +234,77 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'page_width', OWA_DTD_INT ) );
         $this->setProperty( $this->column( 'page_height', OWA_DTD_INT ) );
 
-        // Where a click, download or outbound link went. target_host is parsed
-        // at ingest beside host, so "which domains do people leave to" is a
-        // group-by rather than a parse.
+        // Where a click or download went. target_host is parsed at ingest beside
+        // host, so "which domains do people leave to" is a group-by rather than a
+        // parse, and is_outbound below is the comparison of the two.
         $this->setProperty( $this->column( 'target_url', OWA_DTD_VARCHAR1024 ) );
         $this->setProperty( $this->column( 'target_host', OWA_DTD_VARCHAR255 ) );
 
-        $this->setProperty( $this->column( 'element_path', OWA_DTD_VARCHAR512 ) );
+        /*
+         * Whether that target was off-site, decided at ingest from target_url's
+         * host against page_location's.
+         *
+         * NOT NULL WITH A DEFAULT, like is_goal_event and for the same reason: a
+         * boolean holding three values groups as three things, and the boolean
+         * formatter renders NULL and 0 both as 'No' -- two GROUP BY buckets under
+         * one label, which is the isNewVisitor pie defect. It can be two-valued
+         * because the question is asked of the ROW: a page_view is not an
+         * outbound click, and 0 says so truthfully.
+         */
+        $is_outbound = $this->column( 'is_outbound', OWA_DTD_BOOLEAN, false );
+        $is_outbound->setNotNull();
+        $is_outbound->setDefaultValue( 0 );
+        $this->setProperty( $is_outbound );
+
+        /*
+         * element_path is GONE -- see Update053. It was a CSS selector built by
+         * walking up to eight ancestors with :nth-of-type() indexes, which no
+         * report, widget or overlay ever read, and which a template edit
+         * renumbers wholesale. The heatmap places clicks by coordinate.
+         */
         $this->setProperty( $this->column( 'element_tag', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'element_id', OWA_DTD_VARCHAR255 ) );
+
+        /*
+         * THE DOWNLOAD, as columns -- the only two of the eleven param-bound
+         * first-class properties promoted (Update054).
+         *
+         * A downloads report is a question every install asks, and a params key is
+         * unreportable in v2 until someone registers it as a CUSTOM dimension:
+         * without these, every site would spend one of its 20 registration slots
+         * on a value OWA set itself.
+         *
+         * The element and form params STAY in the bag on purpose. Most installs
+         * will never group by an element class or a form name, and a column is
+         * width on every row of every Property whether or not anyone reads it.
+         * Measured on MySQL 8.4: promoting nine of them took the custom-dimension
+         * ceiling from 62 to 37.
+         *
+         * file_name is the PATH, without host, query or fragment. The extension
+         * is bounded by the tracker's downloadExtensions list, so 32 is generous.
+         */
+        $this->setProperty( $this->column( 'file_name', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'file_extension', OWA_DTD_VARCHAR32 ) );
+
+        /*
+         * THE SITE-SEARCH TERM, promoted out of `params` for the same reason as the
+         * two above: a params key is unreportable until a site registers it as a
+         * custom dimension, and "what do people search for" is not a question an
+         * install should spend one of its twenty slots on.
+         *
+         * NO MIGRATION, unlike the two above. Update034 creates owa_event_raw from
+         * THIS ENTITY, so every upgrade path that reaches 34 builds the table with
+         * whatever columns are declared here -- and v2 has never shipped, so no
+         * install exists that was created before this line. Update053 and Update054
+         * are no-ops on the same reasoning; they served exactly one dev install.
+         * While v2 is unshipped, adding a column here is the whole change.
+         *
+         * 255 because it is what somebody typed into a box. Longer than that is a
+         * paste, and strict mode refuses an over-long value rather than truncating
+         * -- so the entity's own fitToColumn() is what keeps a pasted essay from
+         * aborting the insert.
+         */
+        $this->setProperty( $this->column( 'search_term', OWA_DTD_VARCHAR255 ) );
 
         // Percentage. TINYINT holds 0-100 with room to spare.
         $this->setProperty( $this->column( 'scroll_depth', OWA_DTD_TINYINT4 ) );
@@ -205,21 +314,62 @@ class EventRaw extends \OWA\Core\Entity {
         // than one page.
         $this->setProperty( $this->column( 'engagement_msec', OWA_DTD_INT ) );
 
-        // Set on the row a goal condition MATERIALISED, never on the ordinary
-        // event that triggered it -- flagging both would double-count and blur
-        // which row is the conversion. NOT NULL with a default because a
-        // boolean holding three values groups as three things.
+        /*
+         * Set on the event that MET the condition -- a goal event is an
+         * ordinary event flagged, so eventCount stays a count of what happened
+         * and a conversion needs no row of its own. Decided per
+         * event by Classes\GoalMarking on Ingest::TRACKING_EVENTS_PRE_SAVE.
+         *
+         * NOT NULL with a default, because a boolean holding three values
+         * groups as three things.
+         */
         $is_goal_event = $this->column( 'is_goal_event', OWA_DTD_BOOLEAN, false );
         $is_goal_event->setNotNull();
         $is_goal_event->setDefaultValue( 0 );
         $this->setProperty( $is_goal_event );
 
-        // Minor units, with the currency beside it -- without which a
-        // multi-currency store sums minor units of different things.
+        /*
+         * THE PURCHASE, as columns.
+         *
+         * Minor units, with the currency beside it -- without which a
+         * multi-currency store sums minor units of different things.
+         *
+         * Tax and shipping are columns rather than params because each is a
+         * SUMMED METRIC, and a metric needs a column to sum: taxRevenue and
+         * shippingRevenue cannot be expressed over a JSON document without a
+         * generated column to index. The gateway and the order source stay
+         * params, because nothing adds them up.
+         *
+         * transaction_id is a column for a different reason: it is what makes a
+         * purchase countable once. Without it, two beacons for one order are two
+         * transactions and there is nothing to group a line item back to.
+         */
+        $this->setProperty( $this->column( 'transaction_id', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->column( 'revenue', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'tax', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'shipping', OWA_DTD_BIGINT ) );
         $this->setProperty( $this->column( 'currency', OWA_DTD_CHAR3 ) );
 
         $this->setProperty( $this->column( 'raw_ua', OWA_DTD_VARCHAR1024 ) );
+
+        /*
+         * THE VISITOR'S NETWORK, reverse DNS of their address -- a third host,
+         * and not either of the other two.
+         *
+         *   host         the page's own hostname, cut from page_location
+         *   HTTP_HOST    this server's, the Host header of the beacon request
+         *   remote_host  the visitor's, which is what this is
+         *
+         * v1 reduced it to a registered domain through the Public Suffix List and
+         * reported it as the `host` dimension -- Entity\Host says "the visitor
+         * came from some host" -- and v2 gave that NAME to the page's host. So the
+         * fact needs a column of its own or it has nowhere to live.
+         *
+         * Usually empty, and that is the server's choice rather than ours: Apache
+         * fills REMOTE_HOST only with HostnameLookups On, which is off by default
+         * because it costs a DNS round trip per request.
+         */
+        $this->setProperty( $this->column( 'remote_host', OWA_DTD_VARCHAR255 ) );
 
         // Only what cannot be a column: site-defined keys unknown at release
         // time, and nested arrays. Everything the release knows the name of
@@ -235,6 +385,10 @@ class EventRaw extends \OWA\Core\Entity {
          */
         $this->addCompositeIndex( 'site_date', array( 'site_id', 'yyyymmdd' ) );
         $this->addCompositeIndex( 'site_type_date', array( 'site_id', 'event_type', 'yyyymmdd' ) );
+
+        // A purchase already stored under this transaction id, looked up per
+        // purchase at ingest (Classes\PurchaseDeduplication). Update057.
+        $this->addCompositeIndex( 'site_transaction', array( 'site_id', 'transaction_id' ) );
     }
 
     /**

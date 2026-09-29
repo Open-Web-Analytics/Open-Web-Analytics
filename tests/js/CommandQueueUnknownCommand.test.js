@@ -69,7 +69,7 @@ describe('a command that throws is skipped, not fatal', () => {
             ]);
             q.process();
 
-            const pageview = spy.sent.find((u) => /event_type=base\.page_request/.test(u));
+            const pageview = spy.sent.find((u) => /event_type=page_view/.test(u));
 
             expect(pageview).toBeTruthy();
             expect(pageview).toMatch(/[?&]site_id=throw-site/);
@@ -132,7 +132,7 @@ describe('an unknown command is skipped, not fatal', () => {
             ]);
             q.process();
 
-            const pageview = spy.sent.find((u) => /event_type=base\.page_request/.test(u));
+            const pageview = spy.sent.find((u) => /event_type=page_view/.test(u));
 
             // The page view survived the unknown command in front of it.
             expect(pageview).toBeTruthy();

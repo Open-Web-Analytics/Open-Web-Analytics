@@ -36,7 +36,14 @@ class Update037 extends \OWA\Core\Update {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
-        if ( $this->addColumnIfMissing( $entity, 'prev_event_ts' ) === false ) {
+        /*
+         * The type is SPELLED OUT rather than read from the entity, because
+         * Update046 drops prev_event_ts -- so from that version on the entity
+         * does not declare it and cannot describe it. An update runs against
+         * every schema older than itself, including a brand new install's, so
+         * it cannot depend on a shape that a later update changes.
+         */
+        if ( $this->addColumnIfMissing( $entity, 'prev_event_ts', OWA_DTD_BIGINT ) === false ) {
 
             $this->e->notice( sprintf(
                 'Adding %s.prev_event_ts failed', $entity->getTableName() ) );

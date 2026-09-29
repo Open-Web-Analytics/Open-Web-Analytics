@@ -75,4 +75,12 @@ if (is_file($owa_vendor_autoload)) {
             }
         }
     }
+
+    /*
+     * The OWA_SQL_* and OWA_DTD_* constants are file-scope defines in the
+     * MySQL dialect, so they exist once the driver class loads. The loop above
+     * used to load it as a side effect of owa_db_mysql being in the map; v2
+     * retired that name, so it is loaded here by name.
+     */
+    class_exists(\OWA\Core\Db\Mysql::class);
 }

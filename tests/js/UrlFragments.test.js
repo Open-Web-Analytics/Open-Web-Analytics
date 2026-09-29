@@ -4,10 +4,8 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 /**
  * The #fragment is not part of a page's URL.
  *
- * Stripped in the TRACKER rather than at ingest, which is where GA does it:
- * page_location defaults to location.href and "the default value excludes the
- * fragment portion of the URL". So the hash never reaches the wire instead of
- * being removed by a server that has already received it.
+ * Stripped in the TRACKER rather than at ingest, so the hash never reaches the
+ * wire instead of being removed by a server that has already received it.
  *
  * THE TWO HALVES HAVE TO AGREE, and that is what most of this file is about. A
  * fragment left out of the reported URL but kept in the route comparison gives
@@ -86,7 +84,13 @@ describe('the fragment and the current URL', () => {
     });
 });
 
+/** Let a route change settle, which is when its page view is sent. */
+const settle = () => jest.advanceTimersByTime(OWATracker.ROUTE_SETTLE_MSEC);
+
 describe('a hash change is not a route change', () => {
+
+    beforeEach(() => { jest.useFakeTimers(); });
+    afterEach(() => { jest.useRealTimers(); });
 
     test('an anchor click raises no page view', () => {
         // Already ON the page: the only thing that changes is the anchor.
@@ -98,8 +102,9 @@ describe('a hash change is not a route change', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/pricing#faq');
+        settle();
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(0);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
     });
 
     test('but a real route change still does', () => {
@@ -109,8 +114,9 @@ describe('a hash change is not a route change', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/features');
+        settle();
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(1);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1);
     });
 
     test('moving between anchors on one page raises nothing', () => {
@@ -123,12 +129,16 @@ describe('a hash change is not a route change', () => {
 
         window.history.pushState({}, '', '/docs#two');
         window.history.pushState({}, '', '/docs#three');
+        settle();
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(0);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
     });
 });
 
 describe('a site that routes on the hash turns both halves back on', () => {
+
+    beforeEach(() => { jest.useFakeTimers(); });
+    afterEach(() => { jest.useRealTimers(); });
 
     test('the fragment comes back into the URL', () => {
         window.history.replaceState({}, '', '/app#/settings');
@@ -145,8 +155,9 @@ describe('a site that routes on the hash turns both halves back on', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/app#/settings');
+        settle();
 
-        const views = sent.filter(e => e.event_type === 'base.page_request');
+        const views = sent.filter(e => e.event_type === 'page_view');
 
         expect(views).toHaveLength(1);
         expect(views[0].page_location).toContain('#/settings');
@@ -161,10 +172,12 @@ describe('a site that routes on the hash turns both halves back on', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/app#/two');
+        settle();
         window.history.pushState({}, '', '/app#/three');
+        settle();
 
         const urls = sent
-            .filter(e => e.event_type === 'base.page_request')
+            .filter(e => e.event_type === 'page_view')
             .map(e => e.page_location);
 
         expect(urls).toHaveLength(2);

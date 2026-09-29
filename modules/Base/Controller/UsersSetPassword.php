@@ -43,7 +43,7 @@ class UsersSetPassword extends \OWA\Core\Controller {
         $event = $this->getParam('event');
 
         /**
-         * @var $userManager \owa_userManager
+         * @var \OWA\Module\Base\Classes\UserManager $userManager
          */
         $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
         $u = $userManager->updateUserPassword([

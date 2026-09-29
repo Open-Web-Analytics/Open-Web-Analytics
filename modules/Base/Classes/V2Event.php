@@ -19,21 +19,41 @@ namespace OWA\Module\Base\Classes;
 class V2Event {
 
     /**
-     * v1 event type -> v2 event name.
+     * The event-name renames, read from conf/beacon_compat.php.
      *
      * v2 speaks the vocabulary the market already speaks; arguing about the
      * names is not where this project should spend its budget. A name already
      * in that vocabulary passes through untouched, which is what lets the
-     * tracker send `scroll` or `file_download` directly without a line here.
+     * tracker send `scroll` or `file_download` directly with no entry at all.
+     *
+     * A const here was the only enumerable bridge of the seven, and it was
+     * enumerable by accident rather than design -- nothing tied it to the other
+     * six. They are indexed together now, and this one is APPLIED from there.
+     *
+     * Memoised because name() runs once per beacon and loadConf() stats two
+     * paths and includes a file on every call.
+     *
+     * @var array|null
      */
-    const TYPE_MAP = array(
-        'base.page_request'       => 'page_view',
-        'dom.click'               => 'click',
-        'ecommerce.transaction'   => 'purchase',
-        'track.action'            => 'custom_event',
-    );
+    private static $type_map = null;
 
-    /** Raised by the server from flags on a page_view. No browser sends them. */
+    /** @return array old event type => v2 name */
+    public static function typeMap() {
+
+        if ( self::$type_map === null ) {
+
+            $conf = (array) \OWA\Core\CoreAPI::loadConf(
+                'beacon_compat.php', 'beacon.compat' );
+
+            self::$type_map = isset( $conf['event_names'] )
+                ? (array) $conf['event_names']
+                : array();
+        }
+
+        return self::$type_map;
+    }
+
+    /** Materialized at ingest from flags on the event that carried them. No tracker sends them. */
     const MARKER_SESSION_START = 'session_start';
     const MARKER_FIRST_VISIT   = 'first_visit';
 
@@ -75,9 +95,11 @@ class V2Event {
 
         $event_type = (string) $event_type;
 
-        if ( isset( self::TYPE_MAP[ $event_type ] ) ) {
+        $map = self::typeMap();
 
-            return self::TYPE_MAP[ $event_type ];
+        if ( isset( $map[ $event_type ] ) ) {
+
+            return $map[ $event_type ];
         }
 
         /*
@@ -238,7 +260,7 @@ class V2Event {
      * reading only: the URL as it arrived is stored untouched beside it, so
      * nothing here can destroy what was observed.
      *
-     * Two collapses, both of which v1 does and neither of which GA does:
+     * Two collapses, both of which v1 does too:
      *
      *   - the site's default page. /store/index.html and /store/ are one page
      *     to everyone except a report that groups on the raw path.

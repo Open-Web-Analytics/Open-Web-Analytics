@@ -29,10 +29,11 @@ namespace OWA\Module\Base\Handler;
  *   - Derives the row id from the event's own content (Classes\V2Event::id),
  *     so a redelivered beacon derives the same ids instead of a second random
  *     one.
- *   - EXPANDS the beacon. The client sends one page_view carrying flags; the
- *     server raises session_start and first_visit from them, here, into raw.
- *     The test for which side a derivation falls on is whether it is a pure
- *     function of ONE beacon: these are, so they happen at ingest. Acquisition
+ *   - MATERIALIZES events from the beacon. The client sends one event carrying
+ *     flags; callbacks on Ingest::TRACKING_EVENTS_PRE_SAVE raise session_start
+ *     and first_visit from them, and all of them are saved together. The test
+ *     for which side a derivation falls on is whether it is a pure function of
+ *     ONE beacon: these are, so they happen at ingest. Acquisition
  *     and session finalisation need other events, so they are the build's.
  *   - Records EVIDENCE and stops. The tagged values are transcribed; whether a
  *     referring host counts as organic search, a social network or a plain
@@ -52,6 +53,28 @@ class EventRawHandlers extends \OWA\Core\Observer {
     const EVENT_PROPERTY_PREFIX = 'ep_';
     const USER_PROPERTY_PREFIX  = 'up_';
 
+    /**
+     * The numeric halves, `epn_` and `upn_`.
+     *
+     * A query string carries no types, so a value arrives as text whatever the
+     * site set. The prefix is the tracker saying which it meant, and it is the
+     * only way to tell 42 from a string that merely looks like one -- a
+     * version, a postcode, an order id with leading zeros.
+     */
+    const EVENT_PROPERTY_NUMBER_PREFIX = 'epn_';
+    const USER_PROPERTY_NUMBER_PREFIX  = 'upn_';
+
+    /**
+     * How many custom properties one event may carry, per scope.
+     *
+     * The tracker refuses a 26th at the setter, where an author can see it.
+     * This is the SECOND gate, because the tracker is not the only thing that
+     * can post to the endpoint -- and because params is one JSON column on a
+     * row already using most of MySQL's 65,535-byte limit, where an over-long
+     * row is refused outright rather than truncated.
+     */
+    const MAX_CUSTOM_PROPERTIES = 25;
+
 
     /**
      * @param object $event
@@ -68,7 +91,44 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_HANDLED;
         }
 
-        $rows = $this->expand( $event );
+        /*
+         * The events this beacon will be saved as, the incoming one first. The
+         * callbacks decide: materializers append session_start and first_visit,
+         * goal marking sets is_goal_event on each. See Ingest.
+         */
+        $events = \OWA\Module\Base\Classes\Ingest::at(
+            \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
+
+        return $this->saveTrackingEvents( array_values( (array) $events ), $event );
+    }
+
+    /**
+     * Save the events one beacon became, in one transaction.
+     *
+     * @param  array  $events    incoming event first
+     * @param  object $incoming  the event as it arrived at this handler
+     * @return int
+     */
+    protected function saveTrackingEvents( array $events, $incoming ) {
+
+        $rows = array();
+
+        foreach ( $events as $event ) {
+
+            $row = $this->row( $event,
+                \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
+
+            /*
+             * An event that cannot say which site, visitor, session or instant it
+             * belongs to is dropped by row(). The incoming one dropped means there
+             * is nothing to save; a materialized one dropped cannot happen without
+             * the incoming one being dropped too, since it holds the same values.
+             */
+            if ( $row ) {
+
+                $rows[] = $row;
+            }
+        }
 
         if ( ! $rows ) {
 
@@ -80,14 +140,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
          *
          * A redelivered beacon derives the same ids, so every insert below
          * would fail on the primary key -- benignly, but indistinguishably from
-         * an insert that failed for a real reason. Since the whole expansion
-         * has to land together or not at all, "some inserts failed" cannot be
-         * the signal to roll back unless duplicates are excluded first.
+         * an insert that failed for a real reason. Since the whole set has to
+         * land together or not at all, "some inserts failed" cannot be the
+         * signal to roll back unless duplicates are excluded first.
          *
          * So ask about the first row. Every row of one beacon is written in one
          * transaction, so the first one being present means all of them are,
-         * and the beacon is already ingested. One lookup per beacon, which is
-         * the same shape v1's RequestHandlers already pays.
+         * and the beacon is already ingested. One lookup per beacon.
          */
         if ( $this->alreadyIngested( $rows[0] ) ) {
 
@@ -96,66 +155,57 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_HANDLED;
         }
 
-        return $this->store( $rows, $event );
+        return $this->store( $rows, $incoming );
     }
 
     /**
-     * One beacon -> the rows it becomes, primary event first.
+     * The row one event will be stored as, before anything is written.
      *
-     * ORDER MATTERS ONLY FOR THE CALLER's idempotence check, not for the ids:
-     * each id is derived from the event name, so nothing here depends on the
-     * order rows are built in.
+     * For a callback on Ingest::TRACKING_EVENTS_PRE_SAVE that decides on what a
+     * row WILL hold. Goal conditions name columns, and row() is where a value
+     * becomes what its column stores -- `(not set)` becomes NULL, a count
+     * becomes an integer -- so a condition tested against the raw property would
+     * disagree with the row it describes.
      *
-     * @param object $event
-     * @return array[] each an array of column => value
+     * @param  object $event
+     * @return array|null  null when the event cannot be identified
      */
-    protected function expand( $event ) {
+    public static function rowFor( $event ) {
 
-        $name = \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() );
-
-        $primary = $this->row( $event, $name );
-
-        if ( ! $primary ) {
-
-            return array();
-        }
-
-        $rows = array( $primary );
-
-        /*
-         * The markers. Raised from flags that are already on this beacon, in
-         * the same write, so a marker cannot be lost while its own page view
-         * survives -- the beacon carrying the flag can be lost, and then the
-         * session simply has no marker row, which a later build cannot repair
-         * either way because re-reading raw reproduces the same partial state.
-         *
-         * is_new_session_start and is_new_visitor_created are REQUEST scoped:
-         * they mark the one request that created the session or minted the
-         * visitor. The page-scoped is_new_session / is_new_visitor ride every
-         * event of a page or a session and answer a different question, so
-         * they cannot raise a marker -- using them would raise one marker per
-         * event of the first page.
-         */
-        if ( $name === 'page_view' ) {
-
-            if ( $event->get( 'is_new_session_start' ) ) {
-
-                $rows[] = $this->row(
-                    $event, \OWA\Module\Base\Classes\V2Event::MARKER_SESSION_START );
-            }
-
-            if ( $event->get( 'is_new_visitor_created' ) ) {
-
-                $rows[] = $this->row(
-                    $event, \OWA\Module\Base\Classes\V2Event::MARKER_FIRST_VISIT );
-            }
-        }
-
-        return array_values( array_filter( $rows ) );
+        return ( new self() )->row( $event,
+            \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
     }
 
     /**
-     * Build one raw row.
+     * Build one raw row -- A MAPPING, NOT A DERIVATION.
+     *
+     * Every column is one property read off a formed event and coerced to what
+     * the column stores. Nothing here works a value out: the registry declares
+     * how each property is set and a callback sets it, so this method's whole
+     * job is property name -> column name.
+     *
+     * It did not start that way. Sixteen columns were computed in here -- five
+     * readings of the user agent, five campaign tags, six readings of a URL and
+     * the three money conversions -- two of them in helper methods whose result
+     * was merged with `+=`, which silently discards a key the literal already
+     * set. That is how browser_version came to be the parser's answer in one
+     * place and the beacon's claim in another.
+     *
+     * The rule now, and RowIsAMappingTest holds it: if a column exists, a
+     * property backs it, and the property's value is what lands there. Two
+     * things follow. A column cannot appear that no property declares, which is
+     * the `revenue` bug -- this read a property of that name, the registry
+     * declares none, and every purchase stored NULL. And every event in the
+     * set handed to Ingest::TRACKING_EVENTS_PRE_SAVE is complete, so anything
+     * wanting to decide something about one listens there rather than being a
+     * step in here.
+     *
+     * Three columns are not a property read, and RowIsAMappingTest lists each
+     * with its reason: `id`, a hash OF the properties; `event_type`, the v2 name
+     * of the event's type, which the `event_type` property -- what the beacon
+     * SENT -- need not be; and `params`, which is by definition everything with
+     * no column.
+
      *
      * @param object $event
      * @param string $name  the v2 event name
@@ -174,54 +224,24 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * gaps, because the id is derived from exactly these and a missing one
          * would silently collide every such event onto one id.
          */
-        if ( ! $site_id || ! $visitor_id || ! $session_id || ! $ts ) {
+        if ( ! $site_id || ! $visitor_id || ! $session_id || ! $ts || ! $name ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'v2 ingest: dropping %s, it carries no %s.',
-                $name,
+                'v2 ingest: dropping an event, it carries no %s.',
                 ! $site_id ? 'site id' : ( ! $visitor_id ? 'visitor id'
-                    : ( ! $session_id ? 'session id' : 'timestamp' ) ) ) );
+                    : ( ! $session_id ? 'session id'
+                    : ( ! $ts ? 'timestamp' : 'event name' ) ) ) ) );
 
             return null;
         }
 
         /*
-         * The COMPLETE URL, not the canonical one. page_url has had the
-         * campaign parameters and the site's query_string_filters stripped out
-         * of it by the time a handler sees it, which is right for v1's document
-         * identity and wrong for evidence -- the tags are parsed out of this.
-         * page_location is sent by the v2 tracker and stashed by
-         * TrackingEventHelpers::keepCompleteUrl() for older beacons; page_url
-         * is the last resort, and then the query is genuinely gone.
-         */
-        $location = $event->get( 'page_location' ) ?: $event->get( 'page_url' );
-
-        $page = \OWA\Module\Base\Classes\V2Event::parseUrl( $location );
-        $target = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'target_url' ) );
-        $referer = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'HTTP_REFERER' ) );
-
-        /*
-         * THE READINGS ARE CANONICALISED; THE EVIDENCE IS NOT.
-         *
-         * page_location is stored exactly as it arrived, because it is what a
-         * corrected parse gets re-applied to. page_path and page_query are what
-         * reports group by, and a reading that varies where the page does not
-         * is a broken report -- /store, /store/ and /store/index.html are one
-         * page, and owa_state is OWA's own plumbing appearing in somebody's
-         * page report.
-         *
-         * The referrer is deliberately left alone beyond its host: it is
-         * somebody else's URL, and collapsing it against THIS site's default
-         * page would be a category error.
+         * getSiteId() prefers `siteId` over `site_id`, where the guard above
+         * reads `site_id`. Left as it was: the id hash and the stored column
+         * agree with each other, which is the part that matters, and changing
+         * which of the two names wins is not a change to the row builder.
          */
         $site_id = $event->getSiteId();
-
-        $page['path'] = \OWA\Module\Base\Classes\V2Event::canonicalPath(
-            $page['path'], (string) \OWA\Core\CoreAPI::getSetting(
-                'base', 'default_page', 'profile', $site_id ) );
-
-        $page['query'] = \OWA\Module\Base\Classes\V2Event::filterQuery(
-            $page['query'], $this->droppedQueryParams( $site_id ) );
 
         $row = array(
 
@@ -235,34 +255,40 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'user_id'    => $this->text( $event->get( 'user_id' ) ),
 
             'ts'                => $ts,
-            'clock_offset_usec' => $this->clockOffset( $event, $ts ),
             'yyyymmdd'          => $event->get( 'yyyymmdd' ),
 
             'visitor_fsts'   => $this->number( $event->get( 'fsts' ) ),
             'prior_sessions' => $this->number( $event->get( 'num_prior_sessions' ) ),
-            'prev_event_ts'  => $this->previousEventTs( $event, $ts ),
+            'session_start_ts'       => $this->number( $event->get( 'sts' ) ),
+            'prior_session_start_ts' => $this->number( $event->get( 'psts' ) ),
+            'event_seq'      => $this->number( $event->get( 'event_seq' ) ),
+            'beacon_version' => $this->number( $event->get( 'beacon_version' ) ),
 
-            'page_location' => $this->text( $location ),
-            'page_path'     => $page['path'],
-            'page_query'    => $page['query'],
+            'page_location' => $this->text( $event->get( 'page_location' ) ),
+            'page_path'     => $this->text( $event->get( 'page_path' ) ),
+            'page_query'    => $this->text( $event->get( 'page_query' ) ),
             'page_title'    => $this->text( $event->get( 'page_title' ) ),
             'content_group' => $this->text( $event->get( 'content_group' ) ),
             'referer_url'   => $this->text( $event->get( 'HTTP_REFERER' ) ),
-            'referer_host'  => $referer['host'],
-            'referer_query' => $referer['query'],
+            'referer_host'  => $this->text( $event->get( 'referer_host' ) ),
+            'referer_query' => $this->text( $event->get( 'referer_query' ) ),
 
-            'browser'         => $this->text( $event->get( 'browser_type' ) ),
             'browser_type'    => $this->text( $event->get( 'browser_type' ) ),
-            'browser_version' => $this->text( $event->get( 'browser' ) ),
+            'browser_version' => $this->text( $event->get( 'browser_version' ) ),
+            'os_version'      => $this->text( $event->get( 'os_version' ) ),
+            'device_type'     => $this->text( $event->get( 'device_type' ) ),
+            'device_brand'    => $this->text( $event->get( 'device_brand' ) ),
+            'device_model'    => $this->text( $event->get( 'device_model' ) ),
             'os'              => $this->text( $event->get( 'os' ) ),
             'language'        => $this->text( $event->get( 'language' ) ),
+            'screen_resolution' => $this->text( $event->get( 'screen_resolution' ) ),
 
             'country'      => $this->text( $event->get( 'country' ) ),
             'country_code' => $this->text( $event->get( 'country_code' ) ),
             'city'         => $this->text( $event->get( 'city' ) ),
             'region'       => $this->text( $event->get( 'state' ) ),
 
-            'host'          => $page['host'] ?: $this->text( $event->get( 'host' ) ),
+            'host'          => $this->text( $event->get( 'host' ) ),
             'ip_address'    => $this->text( $event->get( 'ip_address' ) ),
             'consent_state' => $this->text( $event->get( 'consent_state' ) ),
 
@@ -271,247 +297,73 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'page_width'  => $this->number( $event->get( 'page_width' ) ),
             'page_height' => $this->number( $event->get( 'page_height' ) ),
 
-            'target_url'  => $this->text( $event->get( 'target_url' ) ),
-            'target_host' => $target['host'],
+            'tagged_source'       => $this->text( $event->get( 'tagged_source' ) ),
+            'tagged_medium'       => $this->text( $event->get( 'tagged_medium' ) ),
+            'tagged_campaign'     => $this->text( $event->get( 'tagged_campaign' ) ),
+            'tagged_ad'           => $this->text( $event->get( 'tagged_ad' ) ),
+            'tagged_search_terms' => $this->text( $event->get( 'tagged_terms' ) ),
 
-            'element_path' => $this->text( $event->get( 'element_path' ) ),
+            'target_url'  => $this->text( $event->get( 'target_url' ) ),
+            'target_host' => $this->text( $event->get( 'target_host' ) ),
+
             'element_tag'  => $this->text( $event->get( 'dom_element_tag' ) ),
             'element_id'   => $this->text( $event->get( 'dom_element_id' ) ),
+
+            /*
+             * Whether the click left the site, decided by deriveIsOutbound().
+             *
+             * flag() rather than number(). On a beacon the property is always
+             * set: setTrackerProperties() walks the whole derived map and does not
+             * gate on `events`, so the callback runs for every event type and
+             * answers 0 where there is no target. Off that path -- an event built
+             * in process, or one drained from the queue -- the property is absent,
+             * Event::get() answers false, and number() would hand NULL to a
+             * NOT NULL column, which strict mode aborts the whole insert over.
+             */
+            'is_outbound' => $this->flag( $event->get( 'is_outbound' ) ),
+
+            'file_name'      => $this->text( $event->get( 'file_name' ) ),
+            'file_extension' => $this->text( $event->get( 'file_extension' ) ),
+            'search_term'    => $this->text( $event->get( 'search_term' ) ),
 
             'scroll_depth'    => $this->number( $event->get( 'scroll_depth' ) ),
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
 
-            // Set on the row a goal condition MATERIALISED, never on its
-            // trigger. Nothing materialises goal events yet, so this is 0 on
-            // every row -- written explicitly because the column is NOT NULL
-            // and a boolean that can be absent groups as three values.
-            'is_goal_event' => 0,
+            /*
+             * Whether this event met a goal event's conditions, set by
+             * Classes\GoalMarking on the tracking_events_pre_save filter. flag(),
+             * because the column is NOT NULL: an event the marking never saw
+             * stores 0.
+             */
+            'is_goal_event' => $this->flag( $event->get( 'is_goal_event' ) ),
 
+            /*
+             * ct_total, ct_tax and ct_shipping are the names the wire has
+             * carried since 1.x and the ones the registry declares for the
+             * purchase event; the columns are minor units, and toMinorUnits()
+             * has already converted each property to what its column stores.
+             *
+             * This read a property named `revenue`, which the registry does not
+             * declare, so the column was NULL on every purchase ever stored.
+             */
             'revenue'  => $this->number( $event->get( 'revenue' ) ),
+            'tax'      => $this->number( $event->get( 'ct_tax' ) ),
+            'shipping' => $this->number( $event->get( 'ct_shipping' ) ),
             'currency' => $this->text( $event->get( 'currency' ) ),
 
-            'raw_ua' => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
+            /*
+             * The order's own id, under the name v2 reports it by. Nothing
+             * derived: it is the merchant's identifier and the only thing that
+             * makes one purchase countable once.
+             */
+            'transaction_id' => $this->text( $event->get( 'ct_order_id' ) ),
+
+            'raw_ua'      => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
+            'remote_host' => $this->text( $event->get( 'REMOTE_HOST' ) ),
             'params' => $this->params( $event ),
         );
 
-        $row += $this->deviceColumns( $event );
-        $row += $this->taggedColumns( $event, $name );
-
         return $row;
-    }
-
-    /**
-     * Server receipt minus the client's own clock at send, in microseconds.
-     *
-     * Skew becomes a stored number instead of a silent error. 1.x subtracts a
-     * client clock from a server one -- last_req from timestamp -- and records
-     * no provenance for either, so a device whose clock is a day out produces a
-     * session length nobody can identify as wrong.
-     *
-     * NULL where the beacon carried no client time, which is not the same as
-     * zero skew.
-     *
-     * NOT GA's event_server_timestamp_offset, which its schema defines as
-     * collection time minus upload time. That is queue lag and answers a
-     * different question.
-     *
-     * @param object $event
-     * @param int    $ts  server receipt, microseconds
-     * @return int|null
-     */
-    protected function clockOffset( $event, $ts ) {
-
-        $client = $event->get( 'client_ts_usec' );
-
-        if ( ! $client || ! is_numeric( $client ) ) {
-
-            return null;
-        }
-
-        return (int) $ts - (int) $client;
-    }
-
-    /**
-     * The visitor's previous event, in server time.
-     *
-     * The tracker sends last_req -- the prior request's time, read from the
-     * session store BEFORE the session decision discards it, so the first event
-     * of a new session carries the last event of the PREVIOUS one. That is
-     * exactly what "time since last visit" means.
-     *
-     * Client-clock, so it is corrected by the same offset this row already
-     * records. Without a client clock there is nothing to correct against and
-     * the answer is NULL, which is the honest reading -- not zero, and not a
-     * value silently mixing two clocks the way 1.x does.
-     *
-     * NULL is also right when the state store is gone: nothing knows when the
-     * visitor was last here, and inventing an anchor would be worse.
-     *
-     * @param object $event
-     * @param int    $ts  server receipt, microseconds
-     * @return int|null microseconds
-     */
-    protected function previousEventTs( $event, $ts ) {
-
-        $last_req = $event->get( 'last_req' );
-
-        if ( ! $last_req || ! is_numeric( $last_req ) ) {
-
-            return null;
-        }
-
-        $offset = $this->clockOffset( $event, $ts );
-
-        if ( $offset === null ) {
-
-            return null;
-        }
-
-        // last_req is seconds on the client's clock.
-        return (int) ( $last_req * 1000000 ) + $offset;
-    }
-
-    /**
-     * browser / os version and the device, from the one user-agent parse.
-     *
-     * Split out because all six come from the same parser object and asking it
-     * once is the point -- resolveBrowserType() and friends each fetch the
-     * browscap singleton separately, which is free only because it is cached.
-     *
-     * device_type is DERIVED here rather than read: ua-parser has no such
-     * field. Its device rules answer brand, model and family, and 'Other' is
-     * its word for "no rule matched" -- an answer about a desktop browser and
-     * an absence about a phone. The OS family is what tells those apart, so the
-     * rule reads the OS first and falls through to NULL rather than guessing
-     * desktop, because a wrong 'desktop' is indistinguishable from a real one.
-     *
-     * @param object $event
-     * @return array
-     */
-    protected function deviceColumns( $event ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $bcap    = $service->getBrowscap( $event->get( 'HTTP_USER_AGENT' ) );
-
-        $brand = $this->text( $bcap->getDeviceBrand() );
-        $model = $this->text( $bcap->getDeviceModel() );
-        $os    = strtolower( (string) $bcap->getOsFamily() );
-
-        $mobile_os = array( 'android', 'ios', 'windows phone', 'blackberry os',
-                            'firefox os', 'kaios', 'harmonyos' );
-
-        $desktop_os = array( 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
-                             'chrome os', 'fedora', 'debian', 'freebsd' );
-
-        $family = strtolower( (string) $bcap->getDeviceFamily() );
-
-        if ( $family === 'ipad' || strpos( $family, 'tablet' ) !== false ) {
-
-            $device_type = 'tablet';
-
-        } elseif ( in_array( $os, $mobile_os, true ) ) {
-
-            $device_type = 'mobile';
-
-        } elseif ( in_array( $os, $desktop_os, true ) ) {
-
-            $device_type = 'desktop';
-
-        } else {
-
-            $device_type = null;
-        }
-
-        return array(
-            'browser_version' => $this->text( $bcap->getUaVersion() ),
-            'os_version'      => $this->text( $bcap->getOsVersion() ),
-            'device_type'     => $device_type,
-            // 'Other' is the parser saying it has no rule, not a brand.
-            'device_brand'    => strtolower( (string) $brand ) === 'other' ? null : $brand,
-            'device_model'    => strtolower( (string) $model ) === 'other' ? null : $model,
-        );
-    }
-
-    /**
-     * The tagged_* columns -- evidence, on the landing event only.
-     *
-     * The landing URL rides the landing beacon and no other, so the tags reach
-     * exactly one raw row per session and every later row holds NULL. The pass
-     * reads that first event anyway, for the landing page, so carrying the
-     * reading across the session adds no read.
-     *
-     * Transcription, never classification: what the URL CLAIMED. The answer
-     * over it -- tag if there was one, else the referrer classified -- is the
-     * pass's, on the cube row, where correcting the classifier is a
-     * reprocess rather than an edit.
-     *
-     * @param object $event
-     * @param string $name
-     * @return array
-     */
-    protected function taggedColumns( $event, $name ) {
-
-        $absent = array(
-            'tagged_source'       => null,
-            'tagged_medium'       => null,
-            'tagged_campaign'     => null,
-            'tagged_ad'           => null,
-            'tagged_search_terms' => null,
-        );
-
-        /*
-         * Which event is the landing one. session_start is materialised from
-         * the session's first page_view and first_visit from the visitor's, so
-         * all three of these are the same beacon -- the landing beacon -- and
-         * each keeps its own copy, since a build reads whichever of them it
-         * finds first.
-         */
-        $is_landing = $event->get( 'is_new_session_start' )
-                   || $event->get( 'is_new_session' );
-
-        if ( ! $is_landing ) {
-
-            return $absent;
-        }
-
-        /*
-         * TrackingEventHelpers::taggedValue() is the parse, and it already has
-         * the precedence right: a tagged_* the beacon actually SENT wins, and
-         * the parse of landing_url is the fallback. Trackers are cached in
-         * browsers, so beacons from before the parse moved to the server keep
-         * arriving; a value that was transmitted beats one re-derived from
-         * evidence.
-         *
-         * tagged_terms is the one key whose two halves do not share a stem --
-         * owa_search_terms on the URL, tagged_terms on the wire -- and v2 names
-         * the column tagged_search_terms. Mapped here rather than renaming
-         * either side, since both are already in the wild.
-         *
-         * tagged_ad_type is parsed by that helper and deliberately NOT stored:
-         * v2's raw table has `ad` and no ad_type, and a column that exists only
-         * to receive a value v1 happened to collect is how the star schema got
-         * its width.
-         */
-        return array(
-            'tagged_source'       => $this->tagged( $event, 'tagged_source' ),
-            'tagged_medium'       => $this->tagged( $event, 'tagged_medium' ),
-            'tagged_campaign'     => $this->tagged( $event, 'tagged_campaign' ),
-            'tagged_ad'           => $this->tagged( $event, 'tagged_ad' ),
-            'tagged_search_terms' => $this->tagged( $event, 'tagged_terms' ),
-        );
-    }
-
-    /**
-     * One tagged value off the landing URL, or null.
-     *
-     * @param object $event
-     * @param string $name  a wire property name, e.g. tagged_source
-     * @return string|null
-     */
-    protected function tagged( $event, $name ) {
-
-        return $this->text(
-            \OWA\Module\Base\Classes\TrackingEventHelpers::taggedValue( $event, $name ) );
     }
 
     /**
@@ -558,19 +410,70 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * below, which are names the release knows. `up_` is the other half and
          * goes to the visitor store, not here.
          */
+        $custom = 0;
+
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
-            if ( strpos( (string) $key, self::EVENT_PROPERTY_PREFIX ) !== 0 ) {
+            $key = (string) $key;
+
+            /*
+             * The numeric prefix is tested FIRST, because 'ep_' is a prefix of
+             * nothing else but 'epn_' begins with neither -- test the shorter
+             * one first and `epn_plan` is read as an event property named
+             * `n_plan`, which is a real value under a name nobody set.
+             */
+            if ( strpos( $key, self::EVENT_PROPERTY_NUMBER_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::EVENT_PROPERTY_NUMBER_PREFIX ) );
+                $numeric = true;
+
+            } elseif ( strpos( $key, self::EVENT_PROPERTY_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::EVENT_PROPERTY_PREFIX ) );
+                $numeric = false;
+
+            } else {
 
                 continue;
             }
 
-            $name = substr( (string) $key, strlen( self::EVENT_PROPERTY_PREFIX ) );
+            if ( $name === '' || $value === null || $value === false || $value === '' ) {
 
-            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
-
-                $params[ $name ] = $value;
+                continue;
             }
+
+            if ( $custom >= self::MAX_CUSTOM_PROPERTIES ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'v2 ingest: refused custom event property "%s"; the cap is %d.',
+                    $name, self::MAX_CUSTOM_PROPERTIES ) );
+
+                continue;
+            }
+
+            $custom++;
+
+            /*
+             * A declared number that will not convert is DROPPED, not stored as
+             * text: the prefix is a claim about the type, and storing a string
+             * under it would make the claim unreliable for every reader that
+             * trusted it.
+             */
+            if ( $numeric ) {
+
+                if ( ! is_numeric( $value ) ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        'v2 ingest: custom event property "%s" is declared numeric and is not.',
+                        $name ) );
+
+                    continue;
+                }
+
+                $value = $value + 0;
+            }
+
+            $params[ $name ] = $value;
         }
 
         /*
@@ -585,14 +488,50 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * page_view came out carrying {"numeric_value": 0}, a param the event
          * does not have wearing a value it was never given.
          */
-        foreach ( $this->declaredParams( $event ) as $key ) {
+        foreach ( $this->declaredParams( $event ) as $wire => $key ) {
 
-            $value = $event->get( $key );
+            $value = $event->get( $wire );
 
-            if ( $value !== null && $value !== false && $value !== '' ) {
+            if ( $value === null || $value === false || $value === '' ) {
 
-                $params[ $key ] = $value;
+                continue;
             }
+
+            /*
+             * A `json` PROPERTY IS DECODED BEFORE IT IS NESTED, or it lands as a
+             * string inside a string.
+             *
+             * ct_line_items arrives from the wire as JSON TEXT, and Sanitize::
+             * cleanJson() validates it and hands the text back. Assigning that here
+             * meant json_encode() escaped it again, so the column held
+             * {"items": "[{\"sku\": ...}]"} -- the value of $.items being one
+             * scalar string. Measured on a seeded purchase. JSON_TABLE over
+             * '$.items[*]' then sees a single string rather than a row per line
+             * item, which is why the Products report has nothing to read.
+             *
+             * Decoded, so the document nests: {"items": [{"sku": ...}]}.
+             *
+             * A document that will not decode keeps its raw text rather than being
+             * dropped -- evidence a site sent something is worth more than a tidy
+             * column -- and says so once per beacon.
+             */
+            if ( \OWA\Module\Base\Classes\TrackingEventHelpers::dataTypeFor( $wire ) === 'json'
+                 && is_string( $value ) ) {
+
+                $decoded = json_decode( $value, true );
+
+                if ( is_array( $decoded ) ) {
+
+                    $value = $decoded;
+
+                } else {
+
+                    \OWA\Core\CoreAPI::notice( sprintf(
+                        'v2 ingest: %s did not decode as JSON; stored as text.', $wire ) );
+                }
+            }
+
+            $params[ $key ] = $value;
         }
 
         if ( ! $params ) {
@@ -622,30 +561,27 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
-     * The param names this event type may carry.
+     * The params this event type may carry, as wire name => params key.
+     *
+     * READ FROM THE REGISTRY. This was a map written by hand here, and the hand
+     * was wrong: it listed `transaction_id, tax, shipping, gateway, items` for a
+     * purchase while the wire sends `ct_order_id, ct_tax, ct_shipping,
+     * ct_gateway, ct_line_items`, so every lookup missed, `params` came back
+     * NULL, and a NULL params column is indistinguishable from an event that
+     * carried none. Four of its click entries -- link_url, link_domain,
+     * link_text, outbound -- named fields no tracker has ever sent.
+     *
+     * Every one of those is a fact the registry already holds: which events carry
+     * a property, what the wire calls it, and what key it is reached by. Asking
+     * it is how the three stop drifting apart.
      *
      * @param object $event
-     * @return string[]
+     * @return array  wire name => params key
      */
     protected function declaredParams( $event ) {
 
-        $by_type = array(
-            'click'               => array( 'link_url', 'link_domain', 'link_text', 'outbound' ),
-            'file_download'       => array( 'link_url', 'file_name', 'file_extension' ),
-            'view_search_results' => array( 'search_term' ),
-            'form_start'          => array( 'form_id', 'form_name' ),
-            'form_submit'         => array( 'form_id', 'form_name' ),
-            'purchase'            => array( 'transaction_id', 'tax', 'shipping', 'gateway', 'items' ),
-            // The old four-slot action shape. Carried as params rather than
-            // columns because it is v1's vocabulary, not v2's: a custom event
-            // in v2 is a NAME plus params, and these are what an action's four
-            // slots become when it is migrated.
-            'custom_event'        => array( 'action_group', 'action_name', 'action_label', 'numeric_value' ),
-        );
-
-        $name = \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() );
-
-        return isset( $by_type[ $name ] ) ? $by_type[ $name ] : array();
+        return \OWA\Module\Base\Classes\TrackingEventHelpers::paramsForEvent(
+            \OWA\Module\Base\Classes\V2Event::name( $event->getEventType() ) );
     }
 
     /**
@@ -667,11 +603,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * Write the rows, and the visitor store row if this is a first session.
      *
-     * ONE ATOMIC WRITE OF EVERYTHING THE BEACON BECOMES. A page_view that
-     * landed without its session_start is not something a later build can
-     * repair: the flag was on the beacon that half-wrote, so re-reading raw
-     * reproduces the same partial state. The guarantee has to be made where the
-     * rows are created.
+     * ONE ATOMIC WRITE OF EVERYTHING THE BEACON BECOMES, whether that is one
+     * event or several: a single event writes its row, the visitor acquisition
+     * and the user properties together. A page_view that landed without its
+     * session_start is not something a later build can repair: the flag was on
+     * the beacon that half-wrote, so re-reading raw reproduces the same partial
+     * state. The guarantee has to be made where the rows are created.
      *
      * 1.x does not do this. Db::beginTransaction() exists and the fact tables
      * are InnoDB, but its only callers are the schema-update CLI -- nothing
@@ -720,7 +657,71 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $db->endTransaction();
 
+        $this->announce( $event, $rows );
+
         return OWA_EHS_EVENT_HANDLED;
+    }
+
+    /**
+     * Tell anything that cares what just happened.
+     *
+     * AFTER THE COMMIT, deliberately. Raised inside the transaction, a beacon
+     * that then rolled back would still have announced a session that does not
+     * exist -- and an email is not retractable.
+     *
+     * SYNCHRONOUS, and it needs nothing else. EventDispatch::notify() calls the
+     * listeners in-process and logs "no listeners registered" when there are
+     * none, so an event nobody wants costs a array_key_exists and stops.
+     * asyncNotify() is a deprecated alias for exactly this.
+     *
+     * NOTHING ACCUMULATES. The queue is a RETRY queue, not a dispatch queue:
+     * notify() only calls sendMessage() when a handler returns EVENT_FAILED.
+     * So these raise no rows unless a listener actually fails, which is what
+     * the queue is for.
+     *
+     * WHY HERE AND NOT FROM v1. base.new_session used to be raised by v1's
+     * SessionHandlers, two hops downstream of the beacon -- page_request to
+     * page_request_logged to the session write to the announcement. Every hop
+     * was v1 machinery kept alive to deliver one signal. v2 knows all three
+     * facts at ingest, because it is what materialises the marker rows.
+     *
+     * The event carries the BEACON's properties, which is what the
+     * announcement templates read: visitor_id, user_name, host, city, country,
+     * page_title, page_url.
+     *
+     * @param object  $event the incoming tracking event
+     * @param array[] $rows  the rows just written, primary first
+     * @return void
+     */
+    protected function announce( $event, array $rows ) {
+
+        $names = array();
+
+        foreach ( $rows as $row ) {
+
+            $names[ (string) $row['event_type'] ] = true;
+        }
+
+        $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
+
+        $announcements = array(
+            \OWA\Module\Base\Classes\V2Event::MARKER_SESSION_START => 'base.new_session',
+            \OWA\Module\Base\Classes\V2Event::MARKER_FIRST_VISIT   => 'base.new_visitor',
+            'page_view'                                             => 'base.new_page_view',
+        );
+
+        foreach ( $announcements as $marker => $announcement ) {
+
+            if ( ! isset( $names[ $marker ] ) ) {
+
+                continue;
+            }
+
+            $notice = $dispatch->makeEvent( $announcement );
+            $notice->setProperties( $event->getProperties() );
+
+            $dispatch->notify( $notice );
+        }
     }
 
     /**
@@ -728,16 +729,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * LAST VALUE WINS, which is the opposite discipline from the acquisition
      * columns beside them: acq_* is write-once evidence captured at the first
-     * visit, and a property is mutable state a site sets whenever it likes. GA
-     * resolves the same way -- "the most recent value of a user property for
-     * each user".
+     * visit, and a property is mutable state a site sets whenever it likes.
      *
      * EACH CARRIES WHEN IT WAS SET, and the timestamp is a guard as well as a
      * record. The build stamps the CURRENT value onto every event row, so
      * without it a row says what the value is and not whether it applied yet;
      * and comparing it is what stops an out-of-order queue drain overwriting a
-     * newer value with an older beacon. Same shape as GA's
-     * set_timestamp_micros.
+     * newer value with an older beacon.
      *
      *   {"plan": {"v": "enterprise", "ts": 1790000000000000}}
      *
@@ -754,17 +752,48 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         foreach ( (array) $event->getProperties() as $key => $value ) {
 
-            if ( strpos( (string) $key, self::USER_PROPERTY_PREFIX ) !== 0 ) {
+            $key = (string) $key;
+
+            // Longest prefix first; see the note in params().
+            if ( strpos( $key, self::USER_PROPERTY_NUMBER_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::USER_PROPERTY_NUMBER_PREFIX ) );
+                $numeric = true;
+
+            } elseif ( strpos( $key, self::USER_PROPERTY_PREFIX ) === 0 ) {
+
+                $name    = substr( $key, strlen( self::USER_PROPERTY_PREFIX ) );
+                $numeric = false;
+
+            } else {
 
                 continue;
             }
 
-            $name = substr( (string) $key, strlen( self::USER_PROPERTY_PREFIX ) );
+            if ( $name === '' || $value === null || $value === false || $value === '' ) {
 
-            if ( $name !== '' && $value !== null && $value !== false && $value !== '' ) {
-
-                $incoming[ $name ] = (string) $value;
+                continue;
             }
+
+            if ( count( $incoming ) >= self::MAX_CUSTOM_PROPERTIES ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'v2 ingest: refused custom user property "%s"; the cap is %d.',
+                    $name, self::MAX_CUSTOM_PROPERTIES ) );
+
+                continue;
+            }
+
+            if ( $numeric && ! is_numeric( $value ) ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'v2 ingest: custom user property "%s" is declared numeric and is not.',
+                    $name ) );
+
+                continue;
+            }
+
+            $incoming[ $name ] = $numeric ? $value + 0 : (string) $value;
         }
 
         // Nothing set on this beacon, which is almost every beacon.
@@ -889,8 +918,14 @@ class EventRawHandlers extends \OWA\Core\Observer {
      */
     protected function writeVisitorAcquisition( $event, $row ) {
 
-        $is_first_session = $event->get( 'is_new_visitor' )
-                         || (string) $event->get( 'num_prior_sessions' ) === '0';
+        /*
+         * prior_sessions == 0 alone. The session-scoped is_new_visitor flag
+         * said the same thing and was ORed in for robustness -- ANY event of
+         * the first session may write this row -- but that robustness is what
+         * this half already gives: the count rides every beacon, so losing one
+         * still leaves the rest able to write the acquisition.
+         */
+        $is_first_session = (string) $event->get( 'num_prior_sessions' ) === '0';
 
         if ( ! $is_first_session ) {
 
@@ -1007,65 +1042,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * @param mixed $value
      * @return string|null
      */
-    /**
-     * Query parameters that do not belong in a page report.
-     *
-     * Three lists in one: OWA's own control parameters, the installation's
-     * query_string_filters, and the site's. The same set v1 strips in
-     * makeUrlCanonical(), read the same way -- getSiteSetting() is a scoped
-     * read of the configuration already in memory, so this costs the write path
-     * nothing.
-     *
-     * NOT utm_*. Those are the site's own tagging rather than ours, v1 keeps
-     * them, and so does GA.
-     *
-     * The list is per site and settings change, so what a report shows depends
-     * on the list as it was when the row was written. Making a corrected list
-     * re-apply to history means filtering in the build instead, which is the
-     * argument the cube exists for and is deferred rather than dismissed
-     * (2.28.2).
-     *
-     * @param string $site_id
-     * @return string[]
-     */
-    protected function droppedQueryParams( $site_id ) {
-
-        $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
-
-        $drop = array(
-            $ns . 'source',
-            $ns . 'medium',
-            $ns . 'campaign',
-            $ns . 'ad',
-            $ns . 'ad_type',
-            $ns . 'overlay',
-            $ns . 'state',
-            $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
-        );
-
-        foreach ( array(
-            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
-            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $site_id ),
-        ) as $configured ) {
-
-            if ( ! $configured ) {
-
-                continue;
-            }
-
-            foreach ( explode( ',', (string) $configured ) as $name ) {
-
-                $name = trim( $name );
-
-                if ( $name !== '' ) {
-
-                    $drop[] = $name;
-                }
-            }
-        }
-
-        return $drop;
-    }
 
     protected function text( $value ) {
 
@@ -1104,6 +1080,24 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return (int) $value;
+    }
+
+    /**
+     * A boolean column's value: 1 or 0, never null.
+     *
+     * Kept apart from number(), which answers null for an absent value. These
+     * columns are NOT NULL because a boolean holding three values groups as
+     * three things, so absence has to resolve to a reading -- and for a flag
+     * asked of every row, "no" is that reading. Event::get() answers false for a
+     * property the event does not carry, which is exactly the input this has to
+     * turn into 0 rather than into a strict-mode abort.
+     *
+     * @param mixed $value
+     * @return int
+     */
+    protected function flag( $value ) {
+
+        return $value ? 1 : 0;
     }
 }
 

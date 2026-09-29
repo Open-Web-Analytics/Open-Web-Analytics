@@ -253,14 +253,39 @@ class Util {
         return decodeURIComponent(str.replace(/\+/g, '%20'));
     }
     
+    /**
+     * The query parameters of a URL, lower-cased keys, decoded values.
+     *
+     * IT NOW HONOURS ITS ARGUMENT. The signature has always taken a url and the
+     * body always read `location.href` regardless -- so a caller passing one got
+     * the browser's parameters instead, silently. Nothing passed one until site
+     * search needed to read the URL a virtual page view names rather than the
+     * document's, which is where the mismatch would have shown up as the wrong
+     * search term rather than none.
+     *
+     * @param {string} [url]  defaults to the current document's URL
+     */
     static parseUrlParams ( url ) {
         
         var _GET = {};
-        for(var i,a,m,n,o,v,p=location.href.split(/[?&]/),l=p.length,k=1;k<l;k++)
+
+        // A malformed escape (%E0%A4) made decodeURI throw out of every caller;
+        // the raw text is kept instead.
+        var safeDecode = function ( part ) {
+            try {
+                return decodeURI( part );
+            } catch ( e ) {
+                return part;
+            }
+        };
+        var href = ( typeof url === 'string' && url )
+            ? url
+            : ( ( typeof location !== 'undefined' && location ) ? location.href : '' );
+        for(var i,a,m,n,o,v,p=href.split(/[?&]/),l=p.length,k=1;k<l;k++)
             if( (m=p[k].match(/(.*?)(\..*?|\[.*?\])?=([^#]*)/)) && m.length==4){
-                n=decodeURI(m[1]).toLowerCase(),o=_GET,v=decodeURI(m[3]);
+                n=safeDecode(m[1]).toLowerCase(),o=_GET,v=safeDecode(m[3]);
                 if(m[2])
-                    for(a=decodeURI(m[2]).replace(/\[\s*\]/g,"[-1]").split(/[\.\[\]]/),i=0;i<a.length;i++)
+                    for(a=safeDecode(m[2]).replace(/\[\s*\]/g,"[-1]").split(/[\.\[\]]/),i=0;i<a.length;i++)
                         o=o[n]?o[n]:o[n]=(parseInt(a[i])==a[i])?[]:{}, n=a[i].replace(/^["\'](.*)["\']$/,"$1");
                         n!='-1'?o[n]=v:o[o.length]=v;
             }

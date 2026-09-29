@@ -277,11 +277,15 @@ class Heatmap {
     /**
      * The fetched rows as plottable points.
      *
-     * A heatmap is now an ordinary dimensional query -- domClicks grouped by
-     * clickX and clickY -- so a row is {clickX:{value},clickY:{value},
-     * domClicks:{value}} rather than the flat {x,y} the bespoke clicks report
-     * used to alias into being. The count comes back as the metric, which is
-     * the weight each point is drawn with.
+     * A heatmap is now an ordinary dimensional query -- eventCount grouped by
+     * clickX and clickY, constrained to eventName==click -- so a row is
+     * {clickX:{value},clickY:{value},eventCount:{value}} rather than the flat
+     * {x,y} the bespoke clicks report used to alias into being. The count comes
+     * back as the metric, which is the weight each point is drawn with.
+     *
+     * A row that arrives without the metric is drawn at weight 1. That is a
+     * visible loss rather than a silent one: every point weighs the same and
+     * the map flattens, so the name has to match what the request asks for.
      */
     getClicks() {
 
@@ -303,7 +307,7 @@ class Heatmap {
                 continue;
             }
 
-            var weight = row.domClicks ? parseInt( row.domClicks.value, 10 ) : 1;
+            var weight = row.eventCount ? parseInt( row.eventCount.value, 10 ) : 1;
 
             points.push( { x: x, y: y, weight: ( weight > 0 ? weight : 1 ) } );
         }

@@ -51,7 +51,11 @@ class ConfigurableMetric extends \OWA\Core\Metric {
              * as everything else is concerned -- the ratio just has nothing to
              * substitute.
              */
-            if ( ! empty( $params['numerator'] ) ) {
+            if ( ! empty( $params['minuend'] ) ) {
+
+                $this->setDifference( $params['minuend'], $params['subtrahend'] );
+
+            } elseif ( ! empty( $params['numerator'] ) ) {
 
                 $this->setRatio(
                     $params['numerator'],

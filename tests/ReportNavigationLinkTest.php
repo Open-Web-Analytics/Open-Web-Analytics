@@ -432,11 +432,13 @@ final class ReportNavigationLinkTest extends TestCase
      * the list that has to remain reachable, so this is where it is recorded.
      */
     private const ECOMMERCE_REPORTS = array(
-        'products',
-        'product-skus',
-        'product-categories',
-        'visits-to-purchase',
-        'days-to-purchase',
+        /*
+         * products, product-skus, product-categories, visits-to-purchase and
+         * days-to-purchase were here. All five are gone: the first three need
+         * line items, which v2's one-revenue-figure-per-purchase row does not
+         * carry, and the last two need daysToTransaction / visitsToTransaction,
+         * computed dimensions v2 has not built.
+         */
         'avg-order-value',
         'revenue',
         'ecommerce-conversion-rate',

@@ -239,7 +239,7 @@ final class EventQueueProcessingTest extends TestCase
 
     public function testNotifyHandlerDoesNotFailForUnregisteredSite(): void
     {
-        $handler = new owa_notifyHandlers();
+        $handler = new \OWA\Module\Base\Handler\NotifyHandlers();
 
         // A site_id that is guaranteed not to resolve to a persisted site.
         $event = $this->makeEvent('base.new_session', [
@@ -259,7 +259,7 @@ final class EventQueueProcessingTest extends TestCase
 
     public function testNotifyHandlerHandlesEventWithNoSiteId(): void
     {
-        $handler = new owa_notifyHandlers();
+        $handler = new \OWA\Module\Base\Handler\NotifyHandlers();
 
         $event = $this->makeEvent('base.new_session', []); // no site_id
 

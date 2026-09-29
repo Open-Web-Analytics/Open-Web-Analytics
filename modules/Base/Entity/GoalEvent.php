@@ -56,10 +56,6 @@ class GoalEvent extends \OWA\Core\Entity {
     const MATCH_ALL = 'all';
     const MATCH_ANY = 'any';
 
-    /** What a condition is for. See GoalEventCondition. */
-    const ROLE_MATCH = 'match';
-    const ROLE_START = 'start';
-
     /**
      * The comparisons an author can choose, in the order they are offered.
      *
@@ -144,9 +140,26 @@ class GoalEvent extends \OWA\Core\Entity {
         return false;
     }
 
-    /** What 1.x's single implemented goal type watches. */
+    /**
+     * What 1.x's single implemented goal type watched, in 1.x's words.
+     *
+     * A v1 event type and a v1 property name. Update025 wrote both when it
+     * migrated the twenty numbered slots, and Update049 translates them:
+     * base.page_request is page_view, and page_uri is the page_path column.
+     * Kept because that is what those rows SAY, and a migration reading them has
+     * to name the thing it is reading.
+     */
     const TRIGGER_PAGE_VIEW = 'base.page_request';
     const PROPERTY_PAGE_URI = 'page_uri';
+
+    /**
+     * What a goal event triggers on when nobody chose.
+     *
+     * A v2 event name, because this is what gets STORED on a save -- and
+     * trigger_event_type is a gate at ingest now, so a v1 name here would match
+     * no row at all.
+     */
+    const TRIGGER_DEFAULT = 'page_view';
 
     function __construct() {
 
@@ -163,9 +176,7 @@ class GoalEvent extends \OWA\Core\Entity {
          *
          * A behaviour worth counting is a fact about the product: two Profiles
          * of one website both want to count the same signup, and defining it
-         * twice is how the two definitions drift. GA puts key events on the
-         * property for the same reason and applies them across every data
-         * stream under it.
+         * twice is how the two definitions drift.
          *
          * COUNTING stays per Profile regardless, because in 1.x a conversion is
          * a flag on the session row and a session belongs to a Profile. So the
@@ -228,24 +239,19 @@ class GoalEvent extends \OWA\Core\Entity {
         $this->setProperty( $value );
 
         /*
-         * The legacy slot, 1 to 20, or NULL for a goal event created after the
-         * slots stopped existing.
+         * The 1.x slot a goal event was migrated from (Update025), or NULL for
+         * one created since. Nothing writes it any more and nothing on v2 reads
+         * it: the goal{N} metrics it numbered were removed with the v1 metric
+         * vocabulary. It is the only link between a goal event and the
+         * owa_session.goal_N columns that hold 1.x's conversion history.
          *
-         * Kept because 45 registered metrics -- goal{N}Completions, Starts and
-         * Value -- resolve by NUMBER, and a saved custom report or an API
-         * client naming goal3Completions has to keep working through a 1.x
-         * release. v2 drops both the column and those metrics for
-         * sessionGoalEventRate:<name>, parameterised by name and unlimited.
-         *
-         * A goal event beyond the twentieth simply has no numbered metric.
+         * PENDING REMOVAL. Kept only for the v1-to-v2 history migration; drop it
+         * (an update, since Update025 shipped it in 1.13) once that migration
+         * no longer needs to map goal_N to a goal event.
          */
         $goal_number = new \OWA\Module\Base\Classes\DbColumn( 'goal_number', OWA_DTD_INT );
         $goal_number->setIndex();
         $this->setProperty( $goal_number );
-
-        /* The 1.x grouping label, carried so the goals reports keep grouping. */
-        $goal_group = new \OWA\Module\Base\Classes\DbColumn( 'goal_group', OWA_DTD_VARCHAR255 );
-        $this->setProperty( $goal_group );
 
         /*
          * Falsy is INACTIVE, and that is deliberate. 1.x's goal_status was a
@@ -267,44 +273,54 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * The 1.x goal shape, for code that still speaks it.
+     * The Property a Profile observes.
      *
-     * The conversion evaluator and the goals reports read goals as the nested
-     * array the blob held. Rebuilding that here means the storage change is not
-     * also a rewrite of everything that reads a goal -- which would have made
-     * one change impossible to review.
+     * Goal events belong to the Property -- the website -- and every Profile of
+     * it inherits them. Callers hold a Profile id because that is what the
+     * request carries and what a session belongs to, so the hop happens here
+     * rather than at each of them.
      *
-     * @return array
+     * Memoized: the conversion evaluator asks per event.
+     *
+     * @return string|null
      */
-    public function toGoalArray() {
+    public static function propertyFor( $site_id ) {
 
-        $conditions = $this->loadConditions();
-        $first      = $conditions ? $conditions[0] : null;
+        static $cache = array();
 
-        return array(
-            'goal_number' => $this->get( 'goal_number' ),
-            'goal_name'   => $this->get( 'name' ),
-            'goal_group'  => $this->get( 'goal_group' ),
-            'goal_status' => $this->isActive() ? 'active' : 'disabled',
-            'goal_value'  => self::centsToDecimal( $this->get( 'value' ) ),
-            'goal_type'   => 'url_destination',
-            'details'     => array_filter( array(
-                /*
-                 * The FIRST condition only.
-                 *
-                 * The 1.x goal shape holds one match_type and one goal_url, so
-                 * a goal event with several conditions cannot be described in
-                 * it. Everything that evaluates a conversion reads the
-                 * conditions directly now; this shape is what the goals REPORTS
-                 * still speak, and they show a single rule.
-                 */
-                'match_type'   => $first ? $first->get( 'condition_operator' ) : '',
-                'goal_url'     => $first ? $first->get( 'condition_value' ) : '',
-            ), static function ( $value ) {
+        if ( ! $site_id ) {
 
-                return $value !== array() && $value !== null;
-            } ),
-        );
+            return null;
+        }
+
+        if ( ! array_key_exists( $site_id, $cache ) ) {
+
+            /*
+             * Read the column, not the entity.
+             *
+             * base.site is cachable and getByColumn() answers from that cache,
+             * which is populated by whatever loaded the site first -- so this
+             * could be handed a Site object that predates its property_id being
+             * set, and return a different Property than the row actually has.
+             * Measured: the write and the read resolved two different
+             * Properties in the same process.
+             *
+             * A column read cannot be stale, and this is on the conversion
+             * path, where it is asked once per event.
+             */
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $site->getTableName() );
+            $db->selectColumn( 'property_id' );
+            $db->where( 'site_id', $site_id );
+
+            $row = $db->getOneRow();
+
+            $cache[ $site_id ] = ! empty( $row['property_id'] ) ? $row['property_id'] : null;
+        }
+
+        return $cache[ $site_id ];
     }
 
     /** Once per session (1.x's only behaviour) or once per event. */
@@ -335,7 +351,7 @@ class GoalEvent extends \OWA\Core\Entity {
      *
      * @return array of \OWA\Module\Base\Entity\GoalEventCondition
      */
-    public function loadConditions( $role = self::ROLE_MATCH ) {
+    public function loadConditions() {
 
         if ( ! $this->get( 'id' ) ) {
 
@@ -357,17 +373,6 @@ class GoalEvent extends \OWA\Core\Entity {
             $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
             $condition->setProperties( $row );
 
-            /*
-             * Filtered here rather than in the query: role is falsy on every
-             * condition that predates it, and Db::where() drops an empty value
-             * rather than matching it -- so where( 'role', 'match' ) would
-             * return everything, and where( 'role', '' ) would too.
-             */
-            if ( $condition->role() !== $role ) {
-
-                continue;
-            }
-
             $conditions[] = $condition;
         }
 
@@ -375,44 +380,149 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * Did this event BEGIN the goal event?
+     * Delete this goal event AND the conditions that belong to it.
      *
-     * Separate from matchesEvent() because starting and completing are
-     * different questions with different answers, and 1.x records both.
+     * Entity::delete() removes one row from one table, so every delete until
+     * now left the conditions behind with nothing able to reach them. Measured
+     * on the test install before the fix: 31 of 40 condition rows pointed at a
+     * goal event that no longer existed.
      *
-     * No start condition means no start -- the same rule as matching, and for
-     * the same reason: a vacuously true rule would mark every event as
-     * beginning every goal event on the site.
+     * ON THE ENTITY rather than in GoalEventDelete, because that controller is
+     * not the only caller: the e2e fixtures and the tests delete goal events
+     * too, and a cascade living in one of several callers is a cascade that
+     * happens sometimes.
+     *
+     * BY ANY COLUMN, because the inherited signature allows it. The ids are
+     * resolved first, so delete( $property_id, 'property_id' ) cascades as well
+     * as delete( $id ) does.
+     *
+     * CONDITIONS GO ONE AT A TIME, BY ID. GoalEventCondition is cachable, and
+     * Entity::delete() evicts the key it was given -- so a single
+     * delete( $goal_event_id, 'goal_event_id' ) would clear the wrong key and
+     * leave every condition still in cache under its own id.
+     *
+     * @param  mixed  $value
+     * @param  string $col
+     * @return bool
      */
-    public function startedByEvent( $event ) {
+    public function delete( $value = '', $col = 'id' ) {
 
-        $conditions = $this->loadConditions( self::ROLE_START );
+        if ( empty( $value ) ) {
 
-        if ( ! $conditions ) {
+            $value = $this->get( 'id' );
+        }
+
+        foreach ( $this->conditionIdsFor( $col, $value ) as $condition_id ) {
+
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition->delete( $condition_id );
+        }
+
+        return parent::delete( $value, $col );
+    }
+
+    /**
+     * The condition ids belonging to whichever goal events ( $col, $value )
+     * names -- every role, which is why this is not loadConditions().
+     *
+     * @param  string $col
+     * @param  mixed  $value
+     * @return array
+     */
+    protected function conditionIdsFor( $col, $value ) {
+
+        if ( empty( $value ) ) {
+
+            return array();
+        }
+
+        $ids = array( $value );
+
+        if ( $col !== 'id' ) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $this->getTableName() );
+            $db->selectColumn( 'id' );
+            $db->where( $col, $value );
+
+            $ids = array_column( (array) $db->getAllRows(), 'id' );
+        }
+
+        $out = array();
+
+        foreach ( $ids as $id ) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom( $entity->getTableName() );
+            $db->selectColumn( 'id' );
+            $db->where( 'goal_event_id', $id );
+
+            foreach ( (array) $db->getAllRows() as $row ) {
+
+                $out[] = $row['id'];
+            }
+        }
+
+        return $out;
+    }
+    /**
+     * Does this ROW satisfy the goal event?
+     *
+     * THE ROW, NOT THE EVENT, and that is the whole point of moving this. A
+     * condition used to be matched against the tracking event, which meant it
+     * could only test what the beacon and the property callbacks had produced.
+     * Half the vocabulary an author would reach for does not exist until the
+     * row is assembled: device_type is derived in the handler from the
+     * user-agent parse, and the tagged_* columns are transcribed there too. A
+     * goal on "mobile" or "organic" was therefore unexpressible, and a goal
+     * declared on one of those names matched nothing without saying so.
+     *
+     * The row is the one EventRawHandlers::rowFor() says the event will be
+     * stored as, so a condition can name any column the row has.
+     *
+     * THE TRIGGER IS A GATE NOW. trigger_event_type has been stored since
+     * Update025 and read by NOTHING, so a goal declared on a page view was
+     * evaluated against every event on the site -- clicks, scrolls,
+     * session_start, everything. It mostly went unnoticed because a condition
+     * on a page column finds that column NULL on a click, but a goal on, say,
+     * host would have fired on every event type there is.
+     *
+     * AN EMPTY TRIGGER MATCHES NOTHING, the same answer as no conditions. It
+     * used to mean every event, for rows written before the column existed --
+     * but Update025 gives every migrated goal event a trigger and GoalEventSave
+     * defaults one, so no such row exists. Meaning "every event" would have
+     * marked the page view AND the session_start and first_visit materialized
+     * beside it, three conversions for one visit to a goal page.
+     *
+     * AN ABSENT OR NULL COLUMN CANNOT ANSWER, so it does not match -- whatever
+     * the operator. Passing NULL through to compare() would make `not` true for
+     * every row that simply does not carry the column: a condition meant to
+     * exclude one medium would mark every event with no medium at all, which is
+     * most of them. The cost is that "medium is not set" is not expressible as
+     * a condition, and that is the right way round.
+     *
+     * @param  array $row         the assembled raw row
+     * @param  array|null $conditions  the conditions, already loaded, or null to
+     *                                 load them -- the caller passes them when
+     *                                 it is matching many rows against the same
+     *                                 goal event, which is ingest's shape.
+     * @return bool
+     */
+    public function matchesRow( array $row, $conditions = null ) {
+
+        $trigger = (string) $this->get( 'trigger_event_type' );
+
+        if ( $trigger === '' || $trigger !== (string) ( $row['event_type'] ?? '' ) ) {
 
             return false;
         }
 
-        foreach ( $conditions as $condition ) {
+        if ( $conditions === null ) {
 
-            if ( ! $condition->matches( $event->get( $condition->get( 'condition_property' ) ) ) ) {
-
-                return false;
-            }
+            $conditions = $this->loadConditions();
         }
-
-        return true;
-    }
-
-    /**
-     * Does this event satisfy the goal event?
-     *
-     * @param  object $event  the tracking event
-     * @return bool
-     */
-    public function matchesEvent( $event ) {
-
-        $conditions = $this->loadConditions();
 
         /*
          * NO conditions means no match, not every match.
@@ -432,7 +542,10 @@ class GoalEvent extends \OWA\Core\Entity {
 
         foreach ( $conditions as $condition ) {
 
-            $matched = $condition->matches( $event->get( $condition->get( 'condition_property' ) ) );
+            $property = (string) $condition->get( 'condition_property' );
+
+            $matched = isset( $row[ $property ] )
+                       && $condition->matches( $row[ $property ] );
 
             if ( $any && $matched ) {
 

@@ -49,14 +49,14 @@ final class OverlayApiLinkTest extends TestCase
     {
         /*
          * The real heatmap query: clicks grouped by coordinate, constrained on
-         * the page. The token pins `constraints`, because that is the parameter
-         * carrying which page the link is for -- there is no clicks report and
-         * no document_id any more.
+         * the page AND to clicks. The token pins `constraints`, because that is
+         * the parameter carrying which page the link is for -- there is no
+         * clicks report and no document_id any more.
          */
         return $t->makeOverlayApiLink([
-            'metrics'     => 'domClicks',
+            'metrics'     => 'eventCount',
             'dimensions'  => 'clickX,clickY',
-            'constraints' => 'pagePath==' . urlencode('/pricing'),
+            'constraints' => 'pagePath==' . urlencode('/pricing') . ',eventName==click',
             'module'      => 'base',
             'version'     => 'v1',
             'do'          => 'reports',
@@ -96,7 +96,7 @@ final class OverlayApiLinkTest extends TestCase
     {
         $link = $this->heatmapLink($this->reportTemplate());
 
-        $this->assertStringContainsString('metrics=domClicks', $link);
+        $this->assertStringContainsString('metrics=eventCount', $link);
         $this->assertStringContainsString('constraints=', $link);
         $this->assertStringContainsString('do=reports', $link);
         $this->assertStringContainsString('overlayToken=', $link);
@@ -119,7 +119,7 @@ final class OverlayApiLinkTest extends TestCase
             $token,
             'reports',
             static fn($name) => $name === 'constraints'
-                ? 'pagePath==' . urlencode('/pricing')
+                ? 'pagePath==' . urlencode('/pricing') . ',eventName==click'
                 : ''
         );
 

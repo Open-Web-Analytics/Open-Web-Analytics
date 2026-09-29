@@ -52,21 +52,15 @@ class SessionHandlers extends \OWA\Core\Observer {
 
         /*
          * 'is_new_session_start' marks the one REQUEST that created the
-         * session. 'is_new_session' is PAGE scoped -- every event from the page
-         * the session started on carries it -- so it answers a different
-         * question and cannot decide create-vs-update on its own.
+         * session, and is now the only flag there is -- the page-scoped twin
+         * that used to back it up is gone, along with the v1 create-vs-update
+         * decision that was the reason for the pair.
          *
-         * The fallback is for trackers cached from before the two were split,
-         * which send only the page-scoped flag. It is safe to be imprecise
-         * here: logSession() now falls through to logSessionUpdate() when the
-         * session already exists, so a wrong 'yes' costs a lookup rather than a
-         * dropped hit.
+         * Still safe to be imprecise: logSession() falls through to
+         * logSessionUpdate() when the session already exists, so a wrong 'yes'
+         * costs a lookup rather than a dropped hit.
          */
         $starts_session = $event->get('is_new_session_start');
-
-        if ( ! $starts_session ) {
-            $starts_session = $event->get('is_new_session');
-        }
 
         if ( $starts_session ) {
             return $this->logSession($event);

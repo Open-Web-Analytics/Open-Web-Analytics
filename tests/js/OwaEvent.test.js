@@ -15,8 +15,8 @@ describe('OwaEvent', () => {
 
     test('setEventType stores under event_type', () => {
         const e = new OwaEvent();
-        e.setEventType('track.action');
-        expect(e.get('event_type')).toBe('track.action');
+        e.setEventType('custom_event');
+        expect(e.get('event_type')).toBe('custom_event');
     });
 
     test('set/get round-trips a property', () => {

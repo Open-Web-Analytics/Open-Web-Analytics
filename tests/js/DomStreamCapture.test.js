@@ -105,7 +105,7 @@ describe('domstream capture (event_queue)', () => {
 
             expect(t.event_queue).toHaveLength(1);
             const props = t.event_queue[0];
-            expect(props.event_type).toBe('dom.click');
+            expect(props.event_type).toBe('click');
             expect(props.dom_element_id).toBe('buy-now');
             // getDomElementProperties lower-cases the tag for consistent storage.
             expect(props.dom_element_tag).toBe('button');
@@ -150,7 +150,7 @@ describe('domstream capture (event_queue)', () => {
             expect(blob).toContain('"event_type":"dom.scroll"');
             expect(blob).toContain('"event_type":"dom.movement"');
             expect(blob).toContain('"event_type":"dom.keypress"');
-            expect(blob).toContain('"event_type":"dom.click"');
+            expect(blob).toContain('"event_type":"click"');
             // The queue is drained on flush.
             expect(t.event_queue).toHaveLength(0);
         } finally {

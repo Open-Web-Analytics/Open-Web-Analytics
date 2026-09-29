@@ -10,8 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "revenuePerTransaction",
-            "headline": "Average order Value was {revenuePerTransaction.formatted} across all transactions."
+            "chartMetric": "revenuePerTransaction"
         },
         {
             "type": "grid",

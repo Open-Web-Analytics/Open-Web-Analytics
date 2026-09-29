@@ -35,6 +35,117 @@ final class ContentDerivedIdCoverageTest extends TestCase
     /** Rows sampled per entity. Enough to be sure, cheap enough to run. */
     private const SAMPLE = 25;
 
+    /** Distinctive enough that the cleanup cannot reach a real row. */
+    private const SEED = 'owa-content-derived-id-coverage-';
+
+    /**
+     * Rows this test SEEDS so that discovery has something to discover.
+     *
+     * WHY SEEDING AND NOT READING WHATEVER IS THERE. Discovery works by trying
+     * to reproduce a row's id from its own columns, so it needs rows. On a
+     * developer's database there are thousands and it finds twelve entities;
+     * on a scratch install there is almost nothing and it found ONE, which
+     * tripped the guard below and made this the last file failing the
+     * isolation sweep. It passed in the full suite only because tests that ran
+     * earlier had left rows behind -- which is the definition of the thing
+     * that sweep looks for.
+     *
+     * Seeding does not weaken the method. These rows are written through the
+     * ordinary entity path with ids derived the ordinary way, so discovery
+     * still has to REPRODUCE them by hashing, and an entity that stopped being
+     * content-derived would stop being found here exactly as before. What the
+     * seed removes is the dependence on ambient data, not the discovery.
+     *
+     * @return array<string, array<string, string>> entity => columns to set
+     */
+    private static function seeds(): array
+    {
+        return [
+            'base.os' => [
+                'name' => self::SEED . 'os',
+            ],
+            'base.ua' => [
+                'ua'           => self::SEED . 'ua',
+                'browser_type' => 'browser',
+                'browser'      => 'Seeded',
+            ],
+            'base.document' => [
+                'url'        => 'http://example.test/' . self::SEED . 'document',
+                'uri'        => '/' . self::SEED . 'document',
+                'page_title' => 'Seeded document',
+                'page_type'  => 'page',
+            ],
+            'base.search_term_dim' => [
+                'terms'      => self::SEED . 'terms',
+                'term_count' => 1,
+            ],
+        ];
+    }
+
+    /** The column whose value the id is derived from, per seeded entity. */
+    private static function seedContentColumn(string $entity): string
+    {
+        return [
+            'base.os'               => 'name',
+            'base.ua'               => 'ua',
+            'base.document'         => 'url',
+            'base.search_term_dim'  => 'terms',
+        ][$entity];
+    }
+
+    public static function setUpBeforeClass(): void
+    {
+        if (!owa_test_db_available()) {
+            return;
+        }
+
+        self::dropSeeds();
+
+        foreach (self::seeds() as $name => $columns) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory($name);
+
+            /*
+             * The id is derived the way ingestion derives it, because a hand
+             * -picked one would make discovery's reproduction trivially true
+             * and prove nothing about how the entity actually behaves.
+             */
+            $columns['id'] = \OWA\Core\Lib::setStringGuid(
+                $columns[self::seedContentColumn($name)]);
+
+            $entity->setProperties($columns);
+
+            if (!$entity->create()) {
+                throw new \RuntimeException(sprintf('seeding %s failed: %s',
+                    $name, \OWA\Core\CoreAPI::dbSingleton()->lastQueryError()));
+            }
+        }
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        if (owa_test_db_available()) {
+            self::dropSeeds();
+        }
+    }
+
+    private static function dropSeeds(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (self::seeds() as $name => $columns) {
+
+            $entity = \OWA\Core\CoreAPI::entityFactory($name);
+            $column = self::seedContentColumn($name);
+
+            // By the derived id, not by a LIKE on the content: the id is what
+            // uniquely identifies the row this test wrote.
+            $db->query(sprintf('DELETE FROM %s WHERE id = %s',
+                $entity->getTableName(),
+                $db->prepare((string) \OWA\Core\Lib::setStringGuid($columns[$column]))));
+        }
+    }
+
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
@@ -108,11 +219,21 @@ final class ContentDerivedIdCoverageTest extends TestCase
     {
         $found = $this->discover();
 
-        // Guard against passing for the wrong reason: on a database with no
-        // usable rows this would find nothing and assert nothing.
-        $this->assertGreaterThan(3, count($found),
-            'too few content-derived ids discovered for this check to mean anything; '
-            . 'the database may be empty, in which case this test proves nothing');
+        /*
+         * Guard against passing for the wrong reason: with no usable rows this
+         * would find nothing and assert nothing. The seeded entities put a
+         * floor under it on any database, so reaching here means discovery ran
+         * rather than that the installation happened to be busy.
+         */
+        $this->assertGreaterThanOrEqual(count(self::seeds()), count($found),
+            'discovery found fewer entities than this test seeded, so it is not '
+            . 'reproducing ids it should be able to reproduce');
+
+        foreach (array_keys(self::seeds()) as $seeded) {
+
+            $this->assertArrayHasKey($seeded, $found,
+                $seeded . ' was seeded with a content-derived id and discovery did not find it');
+        }
 
         $covered = $this->covered();
         $missing = [];

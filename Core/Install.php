@@ -63,7 +63,7 @@ class Install extends \OWA\Core\Base{
     /**
      * Constructor
      *
-     * @return \owa_install
+     * @return \OWA\Core\Install
      */
 
     function __construct() {

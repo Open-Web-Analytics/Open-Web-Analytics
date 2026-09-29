@@ -8,13 +8,21 @@ require_once __DIR__ . '/CatalogCharacterizationHarness.php';
 use OWA\Tests\CatalogCharacterizationHarness as Harness;
 
 /**
- * Pins the metric and dimension catalog before it is changed to hold two schema
- * generations under one name.
+ * The metric and dimension catalog, recorded so a change to it is visible.
  *
- * The recording includes two known defects rather than correcting them, so that
- * fixing them produces a visible, intentional diff. Each has a test below that
- * names it, and those tests are EXPECTED TO CHANGE -- they mark where the
- * behaviour moved, and are not a claim that today's behaviour is right.
+ * REWRITTEN when the v1 vocabulary was removed. The previous version pinned the
+ * catalog "before it is changed to hold two schema generations under one name",
+ * and said in its own docblock that the tests asserting that shape were
+ * EXPECTED TO CHANGE. They have: there is one generation now.
+ *
+ * What went with them were assertions that only made sense while both existed
+ * -- that a name holds several entities, that normalized dimensions exist at
+ * all, that the related-dimension recording runs past 250 entries. Every one
+ * described the 1.x star schema, and keeping them would have meant asserting
+ * the shape v2 exists to replace.
+ *
+ * What stays is the part that was always the point: a recording, and enough
+ * mutation guards to show the recording would notice a change.
  */
 final class CatalogCharacterizationTest extends TestCase
 {
@@ -31,310 +39,89 @@ final class CatalogCharacterizationTest extends TestCase
 
     public function testTheCatalogMatchesItsRecording(): void
     {
-        $this->assertSame(
-            $this->recorded(),
-            Harness::snapshot(),
-            'The catalog changed. If that was intended, regenerate the fixture and let the diff '
-            . 'be the evidence; if not, something registered or stopped registering.' );
+        $this->assertSame( $this->recorded(), Harness::snapshot(),
+            'The catalog changed. If that was intended, re-record it; if not, a '
+          . 'registration moved without anyone meaning it to.' );
     }
 
-    /*
-     * ---- the recording must be able to fail --------------------------------
-     *
-     * A characterization suite is only worth the confidence placed in it if it
-     * can be shown to notice. These feed doctored input to the harness rather
-     * than mutating the live registry, so sensitivity is proved without leaving
-     * global state behind for the next test.
-     */
-
+    /** The recording notices a dimension pointing somewhere else. */
     public function testTheRecordingWouldNoticeADimensionChangingItsEntity(): void
     {
         $before = Harness::snapshot();
+        $after  = $before;
 
-        $name = array_key_first( $before['dimensionsNormalized'] );
+        $name = array_key_first( $after['dimensionsDenormalized'] );
+        $entity = array_key_first( $after['dimensionsDenormalized'][ $name ] );
 
-        $after = $before;
-        $after['dimensionsNormalized'][ $name ]['entity'] = 'base.somethingElse';
+        $after['dimensionsDenormalized'][ $name ][ $entity ]['entity'] = 'base.somethingElse';
 
-        $this->assertNotSame(
-            $before, $after,
+        $this->assertNotSame( $before, $after,
             'A dimension pointing at a different entity must show in the recording.' );
     }
 
-    public function testTheRecordingWouldNoticeAMetricLosingAnImplementation(): void
+    /** And a metric disappearing. */
+    public function testTheRecordingWouldNoticeAMetricVanishing(): void
+    {
+        $before = Harness::snapshot();
+        $after  = $before;
+
+        unset( $after['metrics'][ array_key_first( $after['metrics'] ) ] );
+
+        $this->assertNotSame( $before, $after );
+    }
+
+    /**
+     * EVERY dimension resolves against the cube, and only the cube.
+     *
+     * This is the invariant the removal bought, and the reason it was worth
+     * doing. While both vocabularies existed a name could resolve to a v1 fact
+     * table for one report and to the cube for another, depending on the base
+     * entity -- so a metric existed for one report and not the next, and a
+     * report mixing the two rendered NOTHING with no error anywhere.
+     */
+    public function testEveryDimensionResolvesAgainstTheCube(): void
     {
         $snapshot = Harness::snapshot();
 
-        $multi = null;
+        $this->assertEmpty( $snapshot['dimensionsNormalized'],
+            'a normalized dimension is a join against a v1 dimension table; there are none' );
+
+        $this->assertNotEmpty( $snapshot['dimensionsDenormalized'] );
+
+        foreach ( $snapshot['dimensionsDenormalized'] as $name => $byEntity ) {
+
+            $this->assertSame( array( 'base.event' ), array_keys( $byEntity ),
+                $name . ' must resolve against the cube and nothing else' );
+        }
+    }
+
+    /** And every metric likewise. */
+    public function testEveryMetricResolvesAgainstTheCube(): void
+    {
+        $snapshot = Harness::snapshot();
+
+        $this->assertNotEmpty( $snapshot['metrics'] );
 
         foreach ( $snapshot['metrics'] as $name => $implementations ) {
 
-            if ( count( $implementations ) > 1 ) {
-
-                $multi = $name;
-
-                break;
-            }
+            $this->assertCount( 1, $implementations,
+                $name . ' has more than one implementation, which is what made a '
+              . 'name resolve differently per report' );
         }
-
-        $this->assertNotNull(
-            $multi,
-            'No metric has more than one implementation, so this test proves nothing. One name '
-            . 'resolving to several entities is the mechanism the coming change relies on.' );
-
-        $reduced = $snapshot;
-        array_pop( $reduced['metrics'][ $multi ] );
-
-        $this->assertNotSame( $snapshot, $reduced );
-        $this->assertCount(
-            count( $snapshot['metrics'][ $multi ] ) - 1,
-            $reduced['metrics'][ $multi ] );
     }
 
-    public function testTheEntryCounterHandlesBothTheCurrentAndTheComingShape(): void
-    {
-        /*
-         * The harness has to survive the commit it is judging. If counting only
-         * understood today's flat shape it would have to be edited by the very
-         * change it measures, leaving nothing independent.
-         */
-        $flat = array(
-            'pageTitle' => array( 'name' => 'pageTitle', 'entity' => 'base.document' ),
-        );
-
-        $entityKeyed = array(
-            'pageTitle' => array(
-                'base.document' => array( 'name' => 'pageTitle', 'entity' => 'base.document' ),
-                'base.event'    => array( 'name' => 'pageTitle', 'entity' => 'base.event' ),
-            ),
-        );
-
-        $this->assertSame( 1, Harness::countFlatEntries( $flat ) );
-        $this->assertSame( 2, Harness::countFlatEntries( $entityKeyed ) );
-
-        $this->assertFalse( Harness::isEntityKeyed( $flat['pageTitle'] ) );
-        $this->assertTrue( Harness::isEntityKeyed( $entityKeyed['pageTitle'] ) );
-    }
-
-    /*
-     * ---- the two defects, recorded on purpose ------------------------------
+    /**
+     * The recording is not trivially small.
+     *
+     * A guard against the snapshot silently collapsing -- which is exactly what
+     * an empty registry looks like, and what every other assertion here would
+     * pass on.
      */
-
-    public function testNormalizedDimensionsAreKeyedByEntity(): void
+    public function testTheRecordingIsSubstantial(): void
     {
-        /*
-         * The shape, not a count.
-         *
-         * An earlier version asserted entries outnumbered names, using userName
-         * as its example -- which held only because userName was MISREGISTERED
-         * as normalized against seven entities. Fixing that left the assertion
-         * pinning a defect, and it began failing the moment the defect went. A
-         * capability should be tested directly, not through the accident that
-         * happened to exercise it.
-         *
-         * Every normalized dimension currently names exactly one entity, which
-         * is what a normalized dimension SHOULD do: it points at the table it
-         * joins. The structure still has to hold several, because that is what
-         * lets a second schema generation register under an existing name.
-         */
         $snapshot = Harness::snapshot();
 
-        $this->assertNotEmpty( $snapshot['dimensionsNormalized'] );
-
-        foreach ( $snapshot['dimensionsNormalized'] as $name => $entry ) {
-
-            $this->assertTrue(
-                Harness::isEntityKeyed( $entry ),
-                "The normalized dimension '$name' is not keyed by entity, so a second "
-                . 'definition under this name would overwrite it rather than sit beside it.' );
-        }
-    }
-
-    public function testTheRegistryHoldsSeveralEntitiesUnderOneName(): void
-    {
-        /*
-         * Exercised through the denormalized registry, which shares the shape
-         * and genuinely carries multi-entity names -- `date` is registered
-         * against every fact table. Both halves are now name => entity =>
-         * registration, so this proves the structure both rely on.
-         */
-        $counts = Harness::snapshot()['counts'];
-
-        $this->assertGreaterThan(
-            $counts['dimensionNamesDenormalized'],
-            $counts['dimensionEntriesDenormalized'] );
-
-        $entities = \OWA\Core\CoreAPI::serviceSingleton()
-            ->getDimensionEntities( 'userName' );
-
-        $this->assertSame(
-            array(), $entities,
-            'userName is denormalized now, so it holds no NORMALIZED entities. If this starts '
-            . 'returning entities it has been re-registered the old way.' );
-    }
-
-    public function testDenormalizedDimensionsAlreadyHoldManyEntitiesEach(): void
-    {
-        $counts = Harness::snapshot()['counts'];
-
-        /*
-         * The contrast that shows defect 1 is a defect and not a design: the
-         * denormalized branch of the very same loop is entity-keyed, and carries
-         * several times as many entries as names.
-         */
-        $this->assertGreaterThan(
-            $counts['dimensionNamesDenormalized'],
-            $counts['dimensionEntriesDenormalized'],
-            'Denormalized dimensions are entity-keyed and must hold more entries than names.' );
-    }
-
-    public function testAnUnscopedAnswerStillReturnsOneEntryPerName(): void
-    {
-        $counts = Harness::snapshot()['counts'];
-
-        /*
-         * getAllDimensions() flattens by letting the last entity win. That was
-         * DEFECT 2 while it was the only thing on offer; it is now the
-         * deliberate unscoped behaviour, kept because the picker and its
-         * validation are written against one entry per name.
-         *
-         * The UNION of the two registries, not the sum. A name may be
-         * registered in both shapes at once -- v1 normalised against a
-         * dimension table, v2 denormalised against the cube -- while v2's
-         * dimensions replace v1's, and the sum would count such a name twice.
-         * What the accessor owes is one entry per NAME, which is what this
-         * says.
-         */
-        $snapshot = Harness::snapshot();
-
-        $names = array_unique( array_merge(
-            array_keys( (array) $snapshot['dimensionsNormalized'] ),
-            array_keys( (array) $snapshot['dimensionsDenormalized'] ) ) );
-
-        $this->assertSame( count( $names ), $counts['accessorDimensionNames'] );
-
-        $entry = \OWA\Core\CoreAPI::getAllDimensions()['userName'];
-
-        $this->assertArrayHasKey(
-            'column', $entry,
-            'An unscoped entry must still be a registration, not a map of them -- ten callers '
-            . 'read it directly.' );
-    }
-
-    public function testScopingAnswersOnlyDimensionsDefinedOnThoseEntities(): void
-    {
-        $scoped = \OWA\Core\CoreAPI::getAllDimensions( array( 'base.session' ) );
-        $all    = \OWA\Core\CoreAPI::getAllDimensions();
-
-        $this->assertLessThan(
-            count( $all ), count( $scoped ),
-            'Scoping to one entity must narrow the catalog.' );
-
-        $this->assertArrayHasKey( 'userName', $scoped );
-
-        $this->assertSame(
-            'base.session', $scoped['userName']['entity'],
-            'A scoped answer must give the definition for the entity asked for, not whichever '
-            . 'was registered last.' );
-    }
-
-    public function testANameDefinedOnNoScopedEntityIsAbsentEntirely(): void
-    {
-        /*
-         * Absent rather than present-and-wrong. This is the property that makes
-         * scoping structural: a caller cannot accidentally use a dimension from
-         * the other generation, because it is not in the answer to filter out.
-         */
-        $scoped = \OWA\Core\CoreAPI::getAllDimensions( array( 'base.nonexistentEntity' ) );
-
-        $this->assertSame( array(), $scoped );
-    }
-
-    public function testGetDimensionAnswersByEntityWhenAsked(): void
-    {
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        /*
-         * siteDomain rather than userName: a dimension that is genuinely
-         * normalized, naming the table it joins.
-         */
-        $this->assertSame(
-            'base.site',
-            $service->getDimension( 'siteDomain', 'base.site' )['entity'] );
-
-        $this->assertNull(
-            $service->getDimension( 'siteDomain', 'base.nonexistentEntity' ),
-            'An entity a dimension is not defined on must answer nothing, not a fallback.' );
-
-        $this->assertNotNull(
-            $service->getDimension( 'siteDomain' ),
-            'Asking without an entity must still answer, as the flat registry did.' );
-    }
-
-    public function testEveryEntityStillReachesTheDimensionsItDid(): void
-    {
-        /*
-         * The regression this file failed to catch the first time.
-         *
-         * getAllRelatedDimensions() reads $service->dimensions as a PUBLIC
-         * PROPERTY, so re-keying the registry changed what it saw without any
-         * accessor being involved -- and both accessors were verified
-         * byte-identical against master, which is exactly why the change looked
-         * safe. Its answer silently halved, 305 dimensions to 153, and the
-         * reports that broke did so by dropping constraints and returning MORE
-         * rows than asked for.
-         *
-         * Counted per entity rather than in total so a compensating pair of
-         * changes cannot cancel out.
-         */
-        $recorded = $this->recorded()['relatedDimensions'];
-        $actual   = Harness::relatedDimensions();
-
-        $this->assertSame( array_keys( $recorded ), array_keys( $actual ) );
-
-        foreach ( $recorded as $entity => $families ) {
-
-            $this->assertSame(
-                $families, $actual[ $entity ],
-                "The dimensions reachable from $entity changed. A report can only constrain by "
-                . 'a dimension it can reach, and an unreachable constraint is dropped silently.' );
-        }
-    }
-
-    public function testTheRelatedRecordingIsSubstantial(): void
-    {
-        /*
-         * Guards the guard. If getAllRelatedDimensions() ever returns nothing --
-         * a construction failure, say -- every per-entity comparison above would
-         * still pass against an equally empty recording.
-         */
-        $total = 0;
-
-        foreach ( Harness::relatedDimensions() as $families ) {
-
-            foreach ( $families as $names ) {
-
-                $total += count( $names );
-            }
-        }
-
-        $this->assertGreaterThan( 250, $total );
-    }
-
-    public function testTheRecordingIsNotEmpty(): void
-    {
-        /*
-         * Cheap, and it catches the failure mode where a boot problem yields an
-         * empty catalog that then matches an equally empty regenerated fixture.
-         */
-        $counts = Harness::snapshot()['counts'];
-
-        $this->assertGreaterThan( 50, $counts['metricNames'] );
-        $this->assertGreaterThan( 50, $counts['accessorDimensionNames'] );
-        $this->assertGreaterThan(
-            $counts['metricNames'],
-            $counts['metricImplementations'],
-            'Some metric must resolve to more than one entity, or the entity-keyed mechanism the '
-            . 'coming change depends on is not actually in use.' );
+        $this->assertGreaterThan( 40, count( $snapshot['dimensionsDenormalized'] ) );
+        $this->assertGreaterThan( 10, count( $snapshot['metrics'] ) );
     }
 }

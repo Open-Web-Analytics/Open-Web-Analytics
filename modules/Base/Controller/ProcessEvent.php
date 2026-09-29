@@ -72,7 +72,7 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         // TODO: move this all into the coreAPI::logEvent method. We really don't need the overhead of a controller for this.
 
-        $teh = \OWA\Core\CoreAPI::getInstance( 'owa_trackingEventHelpers', OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $teh = \OWA\Core\CoreAPI::getInstance( \OWA\Module\Base\Classes\TrackingEventHelpers::class, OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
 
@@ -80,6 +80,13 @@ class ProcessEvent extends \OWA\Core\Controller {
         // now happens in coreAPI::logEvent
 
         // STAGE 2 - process incomming properties
+
+        /*
+         * Before any callback runs. The beacon compat layer normalises here, so
+         * every callback below sees the current shape and none of them needs to
+         * know an older one existed.
+         */
+        $this->event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::PROPERTY_PRE, $this->event );
 
         $properties = $s->getMap( 'tracking_properties_regular' );
 
@@ -129,11 +136,14 @@ class ProcessEvent extends \OWA\Core\Controller {
          * re-applied over the split result by the sanitized-properties step
          * below.
          */
-        $derived_properties = $teh->addCustomVariableProperties( $derived_properties );
+
         $teh->setTrackerProperties( $this->event, $derived_properties );
 
         // re-apply sanitized properties to event.
         $this->event->setProperties( $sanitized_properties );
+
+        // Every property resolved, before the event is dispatched to handlers.
+        $this->event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::PROPERTY_POST, $this->event );
     }
 
     function post() {
@@ -163,12 +173,19 @@ class ProcessEvent extends \OWA\Core\Controller {
         }
     }
     
+    /**
+     * ONE RULE, ASKED OF ONE PLACE.
+     *
+     * This kept its own copy of the test -- in_array() against
+     * trackingEventTypes() -- which is an allowlist, so a custom event admitted by
+     * logEvent() was refused again here and never dispatched. Three places asked
+     * "is this a tracking event" with three copies of the answer; they now share
+     * CoreAPI::isTrackingEventType(), which admits a first-class name or a legal
+     * custom one.
+     */
     function isTrackingEvent() {
-        
-        if ( in_array( $this->event->getEventType(), \OWA\Core\CoreAPI::trackingEventTypes() ) ) {
-            
-            return true;
-        }
+
+        return \OWA\Core\CoreAPI::isTrackingEventType( $this->event->getEventType() );
     }
 }
 

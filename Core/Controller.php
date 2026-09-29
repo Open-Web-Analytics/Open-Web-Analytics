@@ -1059,8 +1059,7 @@ class Controller extends \OWA\Core\Base {
                        'capability' => 'edit_sites' ),
                 /*
                  * Goal events describe a behaviour on the WEBSITE, so they
-                 * belong here and every Profile of it inherits them -- the same
-                 * place GA puts key events, and for the same reason. Counting
+                 * belong here and every Profile of it inherits them. Counting
                  * still happens per Profile, because a conversion is a flag on
                  * a session and a session belongs to one.
                  *
@@ -1074,8 +1073,7 @@ class Controller extends \OWA\Core\Base {
                  * Custom dimensions belong to the Property because the
                  * reporting cube does -- one cube per Property, so the column a
                  * registration adds is the Property's and two Properties may
-                 * use the same key for different things. GA registers custom
-                 * definitions on the property for the same reason.
+                 * use the same key for different things.
                  *
                  * Addressed by siteId like the goal events beside it: reached
                  * from a Profile, and it resolves the Property itself.

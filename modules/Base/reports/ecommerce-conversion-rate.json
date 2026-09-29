@@ -1,6 +1,6 @@
 {
     "title": "Conversion Rate",
-    "metrics": "visits,ecommerceConversionRate",
+    "metrics": "sessions,ecommerceConversionRate",
     "widgets": [
         {
             "type": "trend",
@@ -10,8 +10,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "ecommerceConversionRate",
-            "headline": "There were {ecommerceConversionRate.formatted} across all visits."
+            "chartMetric": "ecommerceConversionRate"
         },
         {
             "type": "grid",

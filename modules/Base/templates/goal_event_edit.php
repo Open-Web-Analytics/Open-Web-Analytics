@@ -44,6 +44,25 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
 
     <div class="setting">
+        <div class="title">On this event</div>
+        <div class="description">Which event the conditions are tested against. Only
+        this event type can count as this goal &mdash; a condition is checked against
+        what that event carries, so a click's target cannot be tested on a page
+        view.</div>
+        <div class="field">
+            <select name="<?php echo $view->getNs();?>triggerEvent">
+            <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
+                <option value="<?php $view->out( $owa_event );?>"
+                    <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
+                    <?php $view->out( $owa_event );?>
+                </option>
+            <?php endforeach;?>
+            </select>
+            <span class="validation_error"><?php $view->out( $view->validation_errors['triggerEvent'] ?? '' );?></span>
+        </div>
+    </div>
+
+    <div class="setting">
         <div class="title">Counts when</div>
         <div class="description">An event matching these conditions is counted as a goal
         event.</div>
@@ -102,28 +121,6 @@ the event, how to compare it, and what to compare it to.</div>
             <?php endforeach;?>
             </ul>
             <span class="validation_error"><?php $view->out( $view->validation_errors['conditionValue'] ?? '' );?></span>
-        </div>
-    </div>
-
-    <div class="setting">
-        <div class="title">Group</div>
-        <div class="description">Goal events are grouped, and every group with an active goal
-        event becomes a tab on the tabbed reports. Renaming a group renames that tab
-        everywhere.</div>
-        <div class="field">
-            <select name="<?php echo $view->getNs();?>goalGroup">
-            <?php foreach ( (array) $view->goalGroups as $owa_num => $owa_label ):?>
-                <option value="<?php $view->out( $owa_num );?>"
-                    <?php echo ( (string) ( $owa_ke['goal_group'] ?? '' ) === (string) $owa_num ) ? 'selected' : '';?>>
-                    <?php $view->out( $owa_label );?>
-                </option>
-            <?php endforeach;?>
-            </select>
-            <input class="owa_mediumFormField" type="text" placeholder="Rename this group"
-                   name="<?php echo $view->getNs();?>newGoalGroupName" value="">
-            <span class="form-instructions">Leave the rename empty to keep the group's
-            current name.</span>
-            <span class="validation_error"><?php $view->out( $view->validation_errors['newGoalGroupName'] ?? '' );?></span>
         </div>
     </div>
 

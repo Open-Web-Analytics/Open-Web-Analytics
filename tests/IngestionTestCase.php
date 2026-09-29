@@ -123,21 +123,19 @@ abstract class IngestionTestCase extends TestCase
         $this->cleanup[] = [$entity, $pk, $col];
     }
 
-    /**
-     * Override OWA's authoritative server-assigned event time.
+    /*
+     * setServerTime() stood here and is removed: no test called it, and its
+     * docblock described a mechanism that no longer exists.
      *
-     * OWA does not trust the client-supplied `timestamp`: the environmental
-     * `timestampDefault` filter always overwrites it with the request
-     * container's receive time (set once per process). Tests that need to
-     * order events in time (e.g. a session update, which only fires when a
-     * later request's time exceeds the session's last_req) must move this
-     * server clock forward between beacons — the client `timestamp` alone has
-     * no effect on what gets persisted.
+     * It assigned requestContainer->timestamp, and said the `timestampDefault`
+     * filter would carry that onto the event. That filter is gone, and v2's event
+     * clock is `ts` -- edge receipt in MICROSECONDS, read from the container's
+     * separate timestamp_usec field. So the method moved a clock the stored row
+     * does not read, and a test using it to order events would have ordered
+     * nothing while appearing to.
+     *
+     * Use RequestContainer::setTimestamp(), which moves both fields together.
      */
-    protected function setServerTime(int $timestamp): void
-    {
-        owa_coreAPI::requestContainerSingleton()->timestamp = $timestamp;
-    }
 
     /**
      * Drive the SERVER-SIDE user-agent the ingestion pipeline sees.
@@ -251,7 +249,34 @@ abstract class IngestionTestCase extends TestCase
             $json = file_get_contents(__DIR__ . '/fixtures/beacon_contracts.json');
             $data = json_decode($json, true);
             unset($data['_comment']);
-            self::$contracts = $data;
+
+            /*
+             * EVERY VERSION, flattened. The registry is keyed by beacon format
+             * version, and ingest sees all of them -- a browser caches a
+             * tracker, so an older generation keeps arriving long after the
+             * current one ships. A handler fed a field that only an older wire
+             * carried is still being fed something real.
+             *
+             * The versions cannot collide: each names its event types in its
+             * own vocabulary, so v1's base.page_request and v2's page_view are
+             * separate keys.
+             */
+            $flattened = array();
+
+            foreach ($data as $version => $contracts) {
+
+                foreach ((array) $contracts as $event_type => $fields) {
+
+                    if ($event_type === '_comment') {
+                        continue;
+                    }
+
+                    $flattened[$event_type] = array_values(array_unique(array_merge(
+                        $flattened[$event_type] ?? array(), (array) $fields)));
+                }
+            }
+
+            self::$contracts = $flattened;
         }
         return self::$contracts;
     }

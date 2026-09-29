@@ -66,9 +66,21 @@ final class TrackingValuesAreTrimmedTest extends TestCase
             'spaces'          => array( 'page_title', '  Spaced Title  ', 'Spaced Title' ),
             'trailing break'  => array( 'page_title', "Title\n",          'Title' ),
             'tabs'            => array( 'page_title', "\tTitle\t",        'Title' ),
-            'custom var'      => array( 'cv1_value',  '  value  ',        'value' ),
-            'user name'       => array( 'user_name',  '  Peter Adams  ',  'Peter Adams' ),
-            'a url'           => array( 'page_url',   '  https://x.test/a  ', 'https://x.test/a' ),
+            /*
+             * cv1_value was here. The cv{n} slots are not part of the current
+             * vocabulary -- the tracker emits no cv key -- so an example drawn
+             * from them tests the compat layer, not this one.
+             */
+            'content group'   => array( 'content_group', '  Docs  ',      'Docs' ),
+            /*
+             * user_name was here, and it is no longer a declared property: it is a
+             * custom USER property now (PLAN.html §2.26.1), so it arrives as
+             * up_user_name and is trimmed by the tracker before it is sent. An
+             * example drawn from it would test the custom path, not this one --
+             * the same reason cv1_value came out above.
+             */
+            'consent state'   => array( 'consent_state', '  granted  ', 'granted' ),
+            'a url'           => array( 'target_url', '  https://x.test/a  ', 'https://x.test/a' ),
         );
     }
 
@@ -97,8 +109,8 @@ final class TrackingValuesAreTrimmedTest extends TestCase
          * Not asserted on a custom variable: cv{n}_name and cv{n}_value are
          * added dynamically and pick up the CATCH-ALL definition, whose callback
          * is lowercaseString(). So they are lowercased today, and this change
-         * neither causes that nor fixes it -- whether user-supplied custom
-         * variable values should be case-folded is its own question.
+         * neither causes that nor fixes it -- whether user-supplied values
+         * should be case-folded is its own question.
          */
     }
 
@@ -106,7 +118,7 @@ final class TrackingValuesAreTrimmedTest extends TestCase
     public function testInteriorWhitespaceSurvives(): void
     {
         $this->assertSame( 'a  b', $this->through( 'page_title', 'a  b' ) );
-        $this->assertSame( 'two  spaces here', $this->through( 'cv1_value', '  two  spaces here  ' ) );
+        $this->assertSame( 'two  spaces here', $this->through( 'content_group', '  two  spaces here  ' ) );
     }
 
     /**
@@ -161,16 +173,25 @@ final class TrackingValuesAreTrimmedTest extends TestCase
          * ...and the column treats it as absence either way. The entity is the
          * last line of defence here: a caller that hands setProperties() a value
          * directly has not been through the pipeline's trim, and a column that
-         * stored '   ' would be neither a value nor the label every other empty
-         * row carries.
+         * stored '   ' would be a value that looks like one and is not.
+         *
+         * ABSENCE IS NULL, not a label. page_title declared '(not set)' as its
+         * default until the sentinels came out of the registry: on the v2 path
+         * that label was never applied to the event and never reached a nullable
+         * column, and the reporting layer renders absence as that same string at
+         * read time. What this asserts is that whitespace does not survive as a
+         * value -- which is the part that matters and is unchanged.
          */
         foreach ( array( '   ', "\t", '', null, false ) as $nothing ) {
 
             $document = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
             $document->setProperties( array( 'page_title' => $nothing ) );
 
-            $this->assertSame( Helpers::ABSENT_VALUE_LABEL, $document->get( 'page_title' ),
-                var_export( $nothing, true ) . ' should store as absence' );
+            $stored = $document->get( 'page_title' );
+
+            $this->assertTrue( $stored === null || $stored === '' || $stored === false,
+                var_export( $nothing, true ) . ' should store as absence, not as '
+                . var_export( $stored, true ) );
         }
     }
 

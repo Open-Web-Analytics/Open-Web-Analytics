@@ -8,17 +8,17 @@ require_once __DIR__ . '/ReportCharacterizationHarness.php';
 use OWA\Tests\ReportCharacterizationHarness as Harness;
 
 /**
- * The converted reports render, and rendering them raises nothing.
+ * Every report renders, and rendering it raises nothing.
  *
- * This began as a recording of what 35 report controllers declared, made before
- * any of them moved, so the conversion could be held to it. That recording is
- * retired along with the gate that read it -- see ReportConfigEquivalenceTest
- * for why -- and what is left is the part that never depended on it: these
- * reports are executed, and executing them must stay silent.
+ * Every report: each definition file in modules/Base/reports, and any report
+ * still implemented by a controller. Asked of the tree rather than of a list kept
+ * beside it. That list used to be the conversion ledger, so a report authored
+ * after the conversion -- Clicks, Events, Latest Visits, Scroll Depth -- was run by
+ * none of these tests until it had been added to a map by hand.
  *
- * That silence is worth its own test. These controllers had never been run by
- * any test until this harness existed, and the first CI run turned up three
- * deprecations and a warning that had been there the whole time.
+ * That silence is worth its own test. The controllers these reports replaced had
+ * never been run by any test until this harness existed, and the first CI run
+ * turned up three deprecations and a warning that had been there the whole time.
  */
 final class ReportCharacterizationTest extends TestCase
 {
@@ -53,7 +53,7 @@ final class ReportCharacterizationTest extends TestCase
     {
         $checked = 0;
 
-        foreach ( Harness::CONVERTED as $id => $name ) {
+        foreach ( Harness::definitionIds() as $id ) {
 
             $snapshot = Harness::snapshotConfigured( $id );
 
@@ -80,7 +80,7 @@ final class ReportCharacterizationTest extends TestCase
          */
         $declared = 0;
 
-        foreach ( array_keys( Harness::CONVERTED ) as $id ) {
+        foreach ( Harness::definitionIds() as $id ) {
 
             $definition = json_decode( (string) file_get_contents(
                 OWA_DIR . "modules/Base/reports/$id.json" ), true );
@@ -164,7 +164,7 @@ final class ReportCharacterizationTest extends TestCase
      */
     public function testTheHarnessObservesRealControllerWork(): void
     {
-        $snap = Harness::snapshot( 'ReportPages' );
+        $snap = Harness::snapshot( 'pages' );
 
         // pages is laid out as widgets now: the subview is the grid renderer,
         // and what used to be top-level metrics/resultsPerPage is the query of

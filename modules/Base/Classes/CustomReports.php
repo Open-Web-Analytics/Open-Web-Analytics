@@ -772,9 +772,9 @@ class CustomReports {
      *
      * Every metric is computed from one or more FACT TABLES, and a query is
      * answered from one of them -- so a set is only askable if its metrics
-     * share a table. `domClicks` is measured in the click table alone and
-     * `visits` in the session or the request; no table holds both, so asking
-     * for them together is not a thin result, it is not a question.
+     * share a table. A click-table metric and a session-table one have no table
+     * that holds both, so asking for them together is not a thin result, it is
+     * not a question.
      *
      * The answer comes from ResultSetManager, which performs exactly this
      * reduction when it chooses a base entity. Asking IT rather than keeping a
@@ -1242,9 +1242,9 @@ class CustomReports {
      * The dimension a report is constrained on, for the parameter it takes.
      *
      * Usually the same name as the parameter, and that is preferred when the
-     * report constrains several dimensions from one value: document.json
-     * constrains pagePath AND priorPagePath from `pagePath`, and a link into it
-     * is a link from a pagePath column.
+     * report constrains several dimensions from one value: a report
+     * constraining pagePath AND pageReferrer from `pagePath` is a link target
+     * from a pagePath column.
      *
      * @param array  $definition
      * @param string $param

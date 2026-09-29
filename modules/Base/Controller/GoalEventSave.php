@@ -46,19 +46,53 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
 
         /*
-         * A renamed group must be given an actual name.
+         * THE TRIGGER HAS TO BE AN EVENT, and the conditions have to name columns
+         * that event carries.
          *
-         * The field is optional -- leaving it empty keeps the group's current
-         * label -- but a name of nothing but spaces is not "no rename", it is a
-         * blank label. Every group with an active goal event becomes a tab on
-         * every tabbed report, so a blank name is an unlabelled tab across the
-         * whole reporting UI.
+         * Both are gates at ingest now: marking refuses a row whose event_type is
+         * not the trigger, and a condition naming a column the row does not have
+         * cannot answer, so it never matches. Either mistake produces a goal that
+         * says "active" and counts zero for ever -- which is exactly the state
+         * this install was already in, and the reason to refuse it at the one
+         * point where someone is looking at the screen.
          */
-        $newGroupName = (string) $this->getParam( 'newGoalGroupName' );
+        $trigger = (string) $this->getParam( 'triggerEvent' );
 
-        if ( $newGroupName !== '' && trim( $newGroupName ) === '' ) {
+        if ( $trigger !== '' && ! in_array( $trigger,
+                \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
 
-            $this->addValidation( 'newGoalGroupName', '', 'required' );
+            $this->addValidation( 'triggerEvent', '', 'required', array(
+                'errorMsg' => 'That is not an event OWA collects, so nothing would '
+                              . 'ever match it.' ) );
+
+            $trigger = '';
+        }
+
+        if ( $trigger !== '' ) {
+
+            $available = \OWA\Module\Base\Classes\GoalVocabulary::columnsForEvent( $trigger );
+
+            foreach ( (array) $this->getParam( 'conditionProperty' ) as $i => $property ) {
+
+                $property = (string) $property;
+
+                /*
+                 * An empty VALUE is a row someone added and left alone --
+                 * saveConditions() skips those -- so its property is not a
+                 * mistake and must not be reported as one.
+                 */
+                $value = trim( (string) ( ( (array) $this->getParam( 'conditionValue' ) )[ $i ] ?? '' ) );
+
+                if ( $value === '' || $property === '' || isset( $available[ $property ] ) ) {
+
+                    continue;
+                }
+
+                $this->addValidation( 'conditionValue', '', 'required', array(
+                    'errorMsg' => sprintf(
+                        'A %s event does not carry %s, so a condition on it would '
+                        . 'never match.', $trigger, $property ) ) );
+            }
         }
 
         /*
@@ -87,20 +121,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
     }
 
-    /** Apply a group rename, if one was typed. */
-    private function saveGroupRename( $siteId ) {
-
-        $newGroupName = trim( (string) $this->getParam( 'newGoalGroupName' ) );
-
-        if ( $newGroupName === '' ) {
-
-            return;
-        }
-
-        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $gm->saveGoalGroupLabel( (int) $this->getParam( 'goalGroup' ), $newGroupName );
-        unset( $gm );
-    }
     function action() {
 
         $siteId = $this->getParam( 'siteId' );
@@ -116,7 +136,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $this->getParam( 'value' ) );
 
         $goalEvent->set( 'property_id',
-            \OWA\Module\Base\Classes\GoalManager::propertyFor( $siteId ) );
+            \OWA\Module\Base\Entity\GoalEvent::propertyFor( $siteId ) );
         $goalEvent->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
         /*
          * ALWAYS once per session, whatever was submitted.
@@ -138,19 +158,26 @@ class GoalEventSave extends \OWA\Core\AdminController {
                 : \OWA\Module\Base\Entity\GoalEvent::MATCH_ALL );
         $goalEvent->set( 'value', $cents === null ? 0 : $cents );
         $goalEvent->set( 'is_active', $this->getParam( 'isActive' ) ? 1 : 0 );
-        $goalEvent->set( 'goal_group', (string) $this->getParam( 'goalGroup' ) );
 
         /*
-         * The event type the condition is evaluated against. Fixed for now,
-         * because 1.x has exactly one implemented goal type and evaluates it
-         * against page requests -- but stored per row rather than assumed, so
-         * v2 can offer a choice without a migration.
+         * The event type the conditions are evaluated against, as chosen.
+         *
+         * It was fixed at 1.x's one goal type -- and at 1.x's NAME for it -- on
+         * the reasoning that the column could be offered as a choice later
+         * without a migration. The choice is here now, and the migration was
+         * needed anyway: nothing read the column, so every row said
+         * base.page_request and marking now gates on it.
+         *
+         * validate() has already refused anything that is not an event name, so
+         * a value reaching this point is one; falling back to the default rather
+         * than the submitted value keeps a form with no field at all (an API
+         * caller) working.
          */
-        if ( ! $goalEvent->get( 'trigger_event_type' ) ) {
+        $trigger = (string) $this->getParam( 'triggerEvent' );
 
-            $goalEvent->set( 'trigger_event_type',
-                \OWA\Module\Base\Entity\GoalEvent::TRIGGER_PAGE_VIEW );
-        }
+        $goalEvent->set( 'trigger_event_type', $trigger !== '' ? $trigger
+            : ( $goalEvent->get( 'trigger_event_type' )
+                ?: \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT ) );
 
         if ( $goalEvent->wasPersisted() ) {
 
@@ -158,24 +185,12 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         } else {
 
-            /*
-             * A NEW goal event takes the next free numbered slot if there is one,
-             * and none at all once twenty are used.
-             *
-             * The 45 goal{N} metrics resolve by number, so a goal event with a
-             * slot can be reported through them and one without cannot. Giving
-             * out slots while they last means nothing REGRESSES -- what could
-             * be reported before still can -- without capping goal events at
-             * twenty the way the slots did.
-             */
             $goalEvent->set( 'id', $goalEvent->generateId(
                 'goal_event:' . $siteId . ':' . uniqid( '', true ) ) );
-            $goalEvent->set( 'goal_number', self::nextFreeSlot( $siteId ) );
             $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
             $goalEvent->create();
         }
 
-        $this->saveGroupRename( $siteId );
         $this->saveConditions( $goalEvent->get( 'id' ) );
 
         $this->set( 'siteId', $siteId );
@@ -189,12 +204,26 @@ class GoalEventSave extends \OWA\Core\AdminController {
             return;
         }
 
+        /*
+         * The old conditions go through the ENTITY, one at a time by id.
+         *
+         * goal_event_condition is cachable and the cache is persisted to disk, so
+         * a raw DELETE by goal_event_id removes the rows and leaves every one of
+         * them still answering from cache under its own id key -- a save that
+         * appears to work and then keeps counting the conditions it replaced.
+         */
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->deleteFrom( $entity->getTableName() );
+        $db->selectFrom( $entity->getTableName() );
+        $db->selectColumn( 'id' );
         $db->where( 'goal_event_id', $goalEventId );
-        $db->executeQuery();
+
+        foreach ( (array) $db->getAllRows() as $old ) {
+
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' )
+                ->delete( $old['id'] );
+        }
 
         $properties = (array) $this->getParam( 'conditionProperty' );
         $operators  = (array) $this->getParam( 'conditionOperator' );
@@ -231,50 +260,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
             $condition->create();
         }
     }
-    /**
-     * The lowest numbered slot not already taken on this site, or null.
-     *
-     * The ceiling is numGoals, and has to be: that one setting is what sizes
-     * every other half of a numbered slot. owa_session carries physical
-     * goal_<N>, goal_<N>_start and goal_<N>_value columns for 1..numGoals
-     * (Entity\Session), the goal<N>Completions metric family is registered
-     * over the same range (Base\Module), and GoalManager::saveGoal() refuses a
-     * number above it.
-     *
-     * This loop used to run to a hardcoded 20 while numGoals was 15, so slots
-     * 16-20 were handed out with none of that behind them: ConversionHandlers
-     * builds 'goal_' . <number> and sets it on the session, which for 16 names
-     * a column that does not exist, so the completion was dropped in silence
-     * and no metric could have reported it anyway. That is strictly worse than
-     * returning null, which is the deliberate, handled "no numbered slot"
-     * state -- the goal event is still created and still works, it just has no
-     * numbered metric.
-     */
-    public static function nextFreeSlot( $siteId ) {
-
-        $taken = array();
-
-        foreach ( GoalEvents::listFor( $siteId ) as $row ) {
-
-            if ( (int) $row['goal_number'] > 0 ) {
-
-                $taken[ (int) $row['goal_number'] ] = true;
-            }
-        }
-
-        $ceiling = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'numGoals' );
-
-        for ( $i = 1; $i <= $ceiling; $i++ ) {
-
-            if ( ! isset( $taken[ $i ] ) ) {
-
-                return $i;
-            }
-        }
-
-        return null;
-    }
-
     function errorAction() {
 
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
@@ -285,7 +270,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
             'name'            => $this->getParam( 'name' ),
             'condition_match' => $this->getParam( 'conditionMatch' ),
             'count_mode'      => $this->getParam( 'countMode' ),
-            'goal_group'      => $this->getParam( 'goalGroup' ),
             'value'           => \OWA\Module\Base\Entity\GoalEvent::decimalToCents(
                                      $this->getParam( 'value' ) ) ?: 0,
             'is_active'       => $this->getParam( 'isActive' ) ? 1 : 0,
@@ -313,12 +297,26 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         $this->set( 'conditions', $conditions );
 
-        $gm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'goalManager', $siteId );
-        $this->set( 'goalGroups', $gm->getAllGoalGroupLabels() );
-
         $this->set( 'goalEventId', $this->getParam( 'goalEventId' ) );
         $this->set( 'siteId', $siteId );
-        $this->set( 'conditionProperties', GoalEventEdit::conditionProperties() );
+        /*
+         * The SUBMITTED trigger, so the re-rendered form offers the vocabulary of
+         * the event the author had chosen -- not of the default. Falling back to
+         * the default only when nothing was submitted.
+         */
+        $trigger = (string) $this->getParam( 'triggerEvent' );
+
+        if ( ! in_array( $trigger,
+                \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+
+            $trigger = \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT;
+        }
+
+        $this->set( 'triggerEvent', $trigger );
+        $this->set( 'triggerEvents',
+            \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
+        $this->set( 'conditionProperties',
+            GoalEventEdit::conditionProperties( $trigger, $conditions ) );
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 3 );

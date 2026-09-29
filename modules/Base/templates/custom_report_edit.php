@@ -1485,6 +1485,17 @@ $owa_max        = (int) $view->get('max_widgets');
         '=@': 'Contains'
     };
 
+    /*
+     * The empty test, as the grid's filter builder offers it. Each key is the
+     * whole tail of the clause: the server reads `==(not set)` / `!=(not set)`
+     * as "is empty" / "has a value". Not in CONSTRAINT_OPERATORS, which also
+     * splits stored clauses.
+     */
+    var EMPTY_TESTS = {
+        '!=(not set)': 'Is Set',
+        '==(not set)': 'Is Not Set'
+    };
+
     /**
      * Split one clause into name / operator / value.
      *
@@ -1504,11 +1515,19 @@ $owa_max        = (int) $view->get('max_widgets');
 
             if ( at > 0 ) {
 
-                return {
+                var part = {
                     name:     jQuery.trim( clause.slice( 0, at ) ),
                     operator: ops[ i ],
                     value:    jQuery.trim( clause.slice( at + ops[ i ].length ) )
                 };
+
+                if ( EMPTY_TESTS.hasOwnProperty( part.operator + part.value ) ) {
+
+                    part.operator += part.value;
+                    part.value = '';
+                }
+
+                return part;
             }
         }
 
@@ -1546,7 +1565,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         var $op = jQuery( '<select class="operator-list"></select>' );
 
-        jQuery.each( CONSTRAINT_OPERATORS, function ( value, label ) {
+        jQuery.each( jQuery.extend( {}, CONSTRAINT_OPERATORS, EMPTY_TESTS ), function ( value, label ) {
             $op.append( jQuery( '<option></option>' ).attr( 'value', value ).text( label ) );
         } );
 
@@ -1556,6 +1575,15 @@ $owa_max        = (int) $view->get('max_widgets');
         if ( name )     { $dim.val( name ); }
         if ( operator ) { $op.val( operator ); }
         if ( value )    { $row.children( '.constraintValueField' ).val( value ); }
+
+        // The value field has nothing to say for an empty test.
+        var syncValueField = function () {
+            $row.children( '.constraintValueField' )
+                .toggle( ! EMPTY_TESTS.hasOwnProperty( $op.val() ) );
+        };
+
+        syncValueField();
+        $op.on( 'change', syncValueField );
 
         if ( after && after.length ) {
 
@@ -1651,7 +1679,9 @@ $owa_max        = (int) $view->get('max_widgets');
 
             var part = readConstraintRow( this );
 
-            if ( part.name && part.value ) {
+            if ( part.name && EMPTY_TESTS.hasOwnProperty( part.op ) ) {
+                out.push( part.name + part.op );
+            } else if ( part.name && part.value ) {
                 out.push( part.name + part.op + part.value );
             }
         } );
@@ -1691,7 +1721,7 @@ $owa_max        = (int) $view->get('max_widgets');
                 return;
             }
 
-            if ( ! part.value ) {
+            if ( ! part.value && ! EMPTY_TESTS.hasOwnProperty( part.op ) ) {
                 problem = 'Constraint ' + ( i + 1 ) + ' on ' + part.name
                         + ' has no value.';
             }

@@ -532,7 +532,7 @@ namespace OWA\Module\Base\Classes;
      }
       
      /**
-      * Ovverrides settings - used in some controllers (@see owa_caller )
+      * Ovverrides settings - used in some controllers (@see \OWA\Core\Caller )
       * @param string $module
       * @param array $config
       */
@@ -2613,6 +2613,14 @@ namespace OWA\Module\Base\Classes;
                  */
                 'ns'                                => 'owa_',
                 'app_ns'                            => '',
+                /*
+                 * EMPTY MEANS ns-PREFIXED -- owa_source, owa_medium and so on.
+                 * Naming the parameters explicitly is how a site opts into
+                 * utm_* without changing its links, and is a Property
+                 * setting because a Property is a website and its links are
+                 * its own. See TrackingEventHelpers::campaignKeysFor().
+                 */
+                'campaignKeys'                      => array(),
                 'feed_subscription_param'            => 'sid',
                 'source_param'                        => 'source',
                 'site_id'                            => '',
@@ -2776,7 +2784,6 @@ namespace OWA\Module\Base\Classes;
                         'everyone' => array('install_schema')
                 ),
                 'numGoals'                            => 15,
-                'numGoalGroups'                        => 5,
                 'enableEcommerceReporting'            => false, // move to site settings
                 'currencyLocal'                        => 'en_US', // move to site settings
                 'currencyISO3'                        => 'USD',   // move to site settings
@@ -2792,7 +2799,6 @@ namespace OWA\Module\Base\Classes;
                 'scheduler_enabled'                    => true,
                 'maxCustomVars'                        => 5, //sdk
                 'update_session_user_name'            => true, // updates the session with latest user_name value
-                'log_owa_user_names'                => true,  // logs the OWA user name as the user_name property on events
                 'logo_image_path'                    => 'base/i/owa-logo-100w.png',
                 // Content-derived dimension ids are 63-bit. This flag marks an
                 // installation whose existing ids are the old 32-bit crc32
@@ -2809,27 +2815,6 @@ namespace OWA\Module\Base\Classes;
                 'allow_slowly_changing_dimensions'	=> true,
                 'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
-                /*
-                 * v2's event names. Kept as their own list rather than merged
-                 * into tracking_event_types, so that what v1 collects and what
-                 * v2 collects stay legible as two sets -- the whole of v1's
-                 * side is retired at cutover, and a merged list would have to
-                 * be untangled then.
-                 *
-                 * page_view, click and purchase are NOT here: they arrive under
-                 * their v1 names and Classes\V2Event maps them. Only the names
-                 * that have no v1 spelling need admitting.
-                 */
-                'v2_event_types'                    => [
-                    'user_engagement',
-                    'scroll',
-                    'file_download',
-                    'form_start',
-                    'form_submit',
-                    'view_search_results',
-                    'exception',
-                    'custom_event',
-                ],
                 'tracking_event_types'              => [
                     'dom.click', 
                     'ecommerce.transaction', 

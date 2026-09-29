@@ -13,12 +13,9 @@ namespace OWA\Module\Base\Update;
  * at all.
  *
  * Moving the domain up to the Property was the obvious fix and the wrong one.
- * GA4 answers the same question by typing the LEAF: a property carries no URL,
- * and each data stream declares web / Android / iOS and supplies whatever that
- * kind needs. Universal Analytics did put a website URL on the property, and
- * Google moved it down when a property stopped being able to assume it was a
- * website. A property holding a site and its apps has no single domain to put
- * there.
+ * The answer is to type the LEAF: a property carries no URL, and each Profile
+ * declares what it observes and supplies whatever that kind needs. A property
+ * holding a site and its apps has no single domain to put there.
  *
  * So the type goes on the Profile, and the type decides which identifier is
  * required: a web Profile needs a domain, an app Profile needs a bundle id or

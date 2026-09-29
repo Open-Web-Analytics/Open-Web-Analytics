@@ -42,17 +42,64 @@ final class EventRawEntityTest extends TestCase
     {
         $columns = $this->raw()->getColumns();
 
-        $this->assertCount(57, $columns);
+        /*
+         * 66. It was 62: element_path went and is_outbound arrived (Update053, net
+         * zero), then file_name and file_extension were promoted out of `params`
+         * (Update054) and search_term after them, which needed no migration at all --
+         * Update034 builds this table from the entity and v2 has never shipped.
+         * screen_resolution (Update058) is a VARCHAR(16) the tracker sends on
+         * every event.
+         *
+         * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
+         * param-bound first-class properties were deliberately left in the bag --
+         * most installs will never group by an element class or a form name, and a
+         * column is width on every row of every Property. Promoting nine of them
+         * was measured at taking the custom-dimension ceiling from 62 to 37 on
+         * MySQL 8.4. This number moving is how that decision gets noticed being
+         * reversed one column at a time.
+         */
+        $this->assertCount(66, $columns);
+
+        // browser_type, and NOT `browser`. Both columns existed and both were
+        // written from the one property -- config/dimensions.php declares
+        // browserType against browser_type, and nothing read the other. Update052
+        // dropped the VARCHAR(128) copy: on a table whose row cannot exceed
+        // 65,535 bytes, a duplicate is budget a real dimension does not get.
+        $this->assertContains('browser_type', $columns);
+        $this->assertNotContains('browser', $columns,
+            'browser was a copy of browser_type that no dimension read');
 
         // Spot the ones that carry a decision rather than listing all 54.
         foreach ([
             'id', 'event_type', 'site_id', 'visitor_id', 'session_id', 'ts',
             'yyyymmdd', 'page_location', 'page_path', 'page_query',
             'tagged_source', 'tagged_medium', 'tagged_campaign',
-            'engagement_msec', 'scroll_depth', 'element_path', 'consent_state',
-            'user_id', 'content_group', 'currency', 'clock_offset_usec',
+            'engagement_msec', 'scroll_depth', 'is_outbound', 'consent_state',
+            // Promoted out of params; the element and form params were not.
+            'file_name', 'file_extension', 'search_term',
+            'user_id', 'content_group', 'currency', 'session_start_ts',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
-            'referer_host', 'referer_query', 'prev_event_ts',
+            'referer_host', 'referer_query', 'prior_session_start_ts',
+            // Device order, so a late beacon does not sort after events that
+            // happened after it.
+            'event_seq',
+            // Which tracker generation wrote the row -- the evidence a compat
+            // bridge can ever be deleted on.
+            'beacon_version',
+            /*
+             * The purchase, past its total: tax and shipping are SUMMED metrics
+             * and a metric needs a column to sum, and transaction_id is what
+             * makes a purchase countable once. The gateway and the order source
+             * are params, because nothing adds them up.
+             */
+            'transaction_id', 'tax', 'shipping',
+            /*
+             * The VISITOR's network host, reverse DNS of their address. Three
+             * hosts reach an event -- the page's (host), this server's
+             * (HTTP_HOST) and the visitor's -- and v1 reported the third as its
+             * `host` dimension, a name v2 gave to the first.
+             */
+            'remote_host',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }
@@ -64,6 +111,14 @@ final class EventRawEntityTest extends TestCase
             'document_id', 'referer_id', 'ua_id', 'host_id', 'os_id',
             'location_id', 'source_id', 'campaign_id', 'ad_id', 'is_robot',
             'landing_url', 'source', 'medium', 'campaign',
+            /*
+             * The tracker's own clock in seconds. Sent on every beacon until it
+             * became device-local: `ts` is the edge receipt in microseconds and
+             * client_ts_usec is this same client clock at higher resolution, so
+             * the wire was carrying a third spelling of one instant. Never a
+             * column here, and now not on the wire either.
+             */
+            'timestamp',
         ] as $name) {
             $this->assertNotContains($name, $columns,
                 "$name is deliberately not a raw column -- it is a derivation, a dimension "
@@ -86,7 +141,8 @@ final class EventRawEntityTest extends TestCase
 
         $this->assertSame(
             ['site_date' => ['site_id', 'yyyymmdd'],
-             'site_type_date' => ['site_id', 'event_type', 'yyyymmdd']],
+             'site_type_date' => ['site_id', 'event_type', 'yyyymmdd'],
+             'site_transaction' => ['site_id', 'transaction_id']],
             $entity->getCompositeIndexes());
 
         $this->assertTrue($entity->isColumnIndexed('visitor_id'));
@@ -113,7 +169,7 @@ final class EventRawEntityTest extends TestCase
         foreach (['user_id', 'page_query', 'content_group', 'tagged_source',
                   'city', 'region', 'country_code', 'ip_address', 'consent_state',
                   'click_x', 'engagement_msec', 'scroll_depth', 'revenue',
-                  'currency', 'params', 'clock_offset_usec', 'language',
+                  'currency', 'params', 'session_start_ts', 'language',
                   'host', 'page_title'] as $name) {
             $this->assertNotEmpty($entity->getColumn($name)->nullable,
                 "$name must be nullable: absence is stored as NULL in v2.");

@@ -18,10 +18,8 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
  * action that storage migrations peg to, and 'tracker.init'. A store cannot be
  * scoped to a site nobody has named yet.
  *
- * GA has no equivalent gap because the property id is an argument to the call
- * that CREATES the tag -- gtag('config', ID) -- never a later setter. Measured
- * against a real GA tag: an event fired before config() is dropped entirely,
- * while one carrying send_to fires regardless of ordering.
+ * So the site id is an argument to the call that CREATES the tracker, never a
+ * later setter.
  *
  * ORDER MUST NOT MATTER, and that is the point of the look-ahead. OWA's own
  * snippet template puts setDebug ahead of setSiteId whenever the install is in
@@ -92,7 +90,7 @@ describe('a tracker is constructed knowing its site', () => {
         expect(OWA.state.storeMeta).not.toHaveProperty('s');
     });
 
-    test('config creates a tracker for a site, gtag style', () => {
+    test('config creates a tracker for a site', () => {
         const q = new CommandQueue();
         q.push(['config', 'configured-site']);
 

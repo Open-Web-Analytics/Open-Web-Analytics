@@ -79,7 +79,7 @@ class Auth extends \OWA\Core\Base {
     /**
      * Auth class Singleton
      *
-     * @return \owa_auth
+     * @return \OWA\Core\Auth
      */
     public static function get_instance($plugin = '') {
 
@@ -98,7 +98,7 @@ class Auth extends \OWA\Core\Base {
     /**
      * Class Constructor
      *
-     * @return \owa_auth
+     * @return \OWA\Core\Auth
      */
     function __construct() {
 

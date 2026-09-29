@@ -11,9 +11,16 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  *
  * It used to be 440 lines of PHP literal, where a typo was a parse error and
  * the file could not be wrong in an interesting way. As data in a file it can
- * be: malformed, missing a scope, or naming a callback that does not exist.
+ * be: malformed, missing an axis, or naming a callback that does not exist.
  * Nothing catches the last one until an event arrives in production and the
  * derivation quietly does not happen.
+ *
+ * THE FILE IS FLAT. It grouped properties under request / client / server, which
+ * made "how does this value get set" implicit in an entry's POSITION -- and the
+ * position was also doing duty as the dependency order, since a callback reads
+ * whatever is already on the event. Every entry declares `set_by` and `from`
+ * now, so the two stop being one fact, and TrackingPropertyFormatTest is where
+ * the axes are checked.
  */
 final class TrackingPropertyConfigTest extends TestCase
 {
@@ -33,17 +40,43 @@ final class TrackingPropertyConfigTest extends TestCase
         return $config;
     }
 
-    public function testEveryScopeIsPresentAndPopulated(): void
+    public function testEverySetterIsPresentAndPopulated(): void
     {
         $config = $this->raw();
 
-        $this->assertSame(
-            array( 'request', 'client', 'server' ), array_keys( $config ),
-            'The scopes, and their order, are the order the pipeline applies them in.' );
+        $counts = array();
 
-        foreach ( $config as $scope => $properties ) {
+        foreach ( $config as $name => $definition ) {
 
-            $this->assertNotEmpty( $properties, "The $scope scope is empty." );
+            $this->assertArrayHasKey( 'set_by', $definition,
+                "$name does not say how its value gets set." );
+
+            $counts[ $definition['set_by'] ] = ( $counts[ $definition['set_by'] ] ?? 0 ) + 1;
+        }
+
+        ksort( $counts );
+
+        $this->assertSame( array( 'client', 'event', 'request' ), array_keys( $counts ),
+            'All three setters must be in use, or the vocabulary has lost one.' );
+
+        /*
+         * A MINIMUM PER SETTER. It was `> 5` for all three, which the request
+         * bucket no longer satisfies: HTTP_HOST went (always this install's own
+         * host), and user_name and user_email moved to `client`, which is what
+         * they always were -- the tracker has a setter for user_name, and
+         * declaring it request-set made an environmental property of it, so
+         * admitRequestParams() refused the value the beacon carried.
+         *
+         * Five is what is left, and every one is a genuine reading of the
+         * REQUEST: the agent, the address, the language, the visitor's network
+         * host and the edge clock.
+         */
+        $floors = array( 'client' => 30, 'event' => 15, 'request' => 5 );
+
+        foreach ( $floors as $set_by => $least ) {
+
+            $this->assertGreaterThanOrEqual( $least, $counts[ $set_by ] ?? 0,
+                "Only {$counts[$set_by]} properties are set by $set_by." );
         }
     }
 
@@ -52,32 +85,38 @@ final class TrackingPropertyConfigTest extends TestCase
         $missing = array();
         $checked = 0;
 
-        foreach ( $this->raw() as $scope => $properties ) {
+        foreach ( $this->raw() as $name => $definition ) {
 
-            foreach ( $properties as $name => $definition ) {
+            /* registerCallbacks() skips empty(), so '' -- which one entry
+               uses instead of array() -- is never called. Mirror that here
+               rather than inventing a failure the pipeline cannot have. */
+            if ( empty( $definition['callbacks'] ) ) {
 
-                /* registerCallbacks() skips empty(), so '' -- which one entry
-                   uses instead of array() -- is never called. Mirror that here
-                   rather than inventing a failure the pipeline cannot have. */
-                if ( empty( $definition['callbacks'] ) ) {
+                continue;
+            }
 
-                    continue;
-                }
+            foreach ( (array) $definition['callbacks'] as $callback ) {
 
-                foreach ( (array) $definition['callbacks'] as $callback ) {
+                $checked++;
 
-                    $checked++;
+                if ( ! is_callable( $callback ) ) {
 
-                    if ( ! is_callable( $callback ) ) {
-
-                        $missing[] = "$scope.$name names $callback, which is not callable";
-                    }
+                    $missing[] = "$name names $callback, which is not callable";
                 }
             }
         }
 
         $this->assertGreaterThan(
-            30, $checked, 'Almost no callbacks were found, so this test is not reading the config.' );
+            15, $checked, 'Almost no callbacks were found, so this test is not reading the config.'
+            /*
+             * The floor was 30 while the v1 date parts, the five attribution
+             * readings and the v1 handler inputs still had callbacks. Cutting
+             * those took the real count to 25 without changing what this test
+             * checks, which is that every callback NAMED in the config exists.
+             * Then to 19, when timestampDefault and microtimeDefault went with
+             * their properties -- two spellings of the instant `ts` already
+             * carries, one reaching no column and the other nothing at all.
+             */ );
 
         $this->assertSame( array(), $missing, implode( "\n  ", $missing ) );
     }
@@ -87,14 +126,11 @@ final class TrackingPropertyConfigTest extends TestCase
     {
         $noted = 0;
 
-        foreach ( $this->raw() as $properties ) {
+        foreach ( $this->raw() as $definition ) {
 
-            foreach ( $properties as $definition ) {
+            if ( isset( $definition['note'] ) ) {
 
-                if ( isset( $definition['note'] ) ) {
-
-                    $noted++;
-                }
+                $noted++;
             }
         }
 
@@ -119,13 +155,23 @@ final class TrackingPropertyConfigTest extends TestCase
 
         $map = array( 'request' => 'requestProperties',
                       'client'  => 'clientProperties',
-                      'server'  => 'serverProperties' );
+                      'event'   => 'serverProperties' );
 
-        foreach ( $map as $scope => $method ) {
+        foreach ( $map as $set_by => $method ) {
+
+            $declared = array();
+
+            foreach ( $config as $name => $definition ) {
+
+                if ( $definition['set_by'] === $set_by ) {
+
+                    $declared[] = $name;
+                }
+            }
 
             $this->assertSame(
-                array_keys( $config[ $scope ] ), array_keys( Helpers::$method() ),
-                "The $scope properties, or their order, differ between the config and what the "
+                $declared, array_keys( Helpers::$method() ),
+                "The $set_by properties, or their order, differ between the config and what the "
                 . 'helper hands to the registry.' );
         }
     }

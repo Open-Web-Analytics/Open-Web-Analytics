@@ -109,17 +109,17 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
         return json.data;
     }
 
-    const visitsOf = (row) => Number(
-        row?.visits?.value ?? row?.visits ?? row?.metrics?.visits?.value ?? row?.metrics?.visits
+    const sessionsOf = (row) => Number(
+        row?.sessions?.value ?? row?.sessions ?? row?.metrics?.sessions?.value ?? row?.metrics?.sessions
     );
     const dimOf = (row, name) => String(
         row?.[name]?.value ?? row?.[name] ?? row?.dimensions?.[name]?.value ?? row?.dimensions?.[name] ?? ''
     );
 
     test('the unconstrained aggregate matches the seeded total', async ({ request }) => {
-        const data = await report(request, { owa_metrics: 'visits' });
+        const data = await report(request, { owa_metrics: 'sessions' });
 
-        expect(Number(data.aggregates.visits.value)).toBe(fx.expected.total_visits);
+        expect(Number(data.aggregates.sessions.value)).toBe(fx.expected.total_visits);
     });
 
     /**
@@ -131,14 +131,14 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
     test('a constraint filters, and each value gives its own count', async ({ request }) => {
         for (const [source, expected] of Object.entries(fx.expected.by_source)) {
             const data = await report(request, {
-                owa_metrics: 'visits',
-                owa_constraints: `source==${source}`,
+                owa_metrics: 'sessions',
+                owa_constraints: `sessionSource==${source}`,
             });
 
-            expect(Number(data.aggregates.visits.value),
+            expect(Number(data.aggregates.sessions.value),
                 `constraint source==${source} returned the wrong count`).toBe(expected);
 
-            expect(Number(data.aggregates.visits.value),
+            expect(Number(data.aggregates.sessions.value),
                 `constraint source==${source} returned the UNCONSTRAINED total -- the constraint was ignored`
             ).not.toBe(fx.expected.total_visits);
         }
@@ -146,11 +146,11 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
 
     test('a constraint matching nothing returns zero, not everything', async ({ request }) => {
         const data = await report(request, {
-            owa_metrics: 'visits',
-            owa_constraints: `source==${fx.expected.absent_source}`,
+            owa_metrics: 'sessions',
+            owa_constraints: `sessionSource==${fx.expected.absent_source}`,
         });
 
-        expect(Number(data.aggregates.visits.value)).toBe(0);
+        expect(Number(data.aggregates.sessions.value)).toBe(0);
     });
 
     /**
@@ -164,8 +164,8 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
      */
     test('an empty constraint value does not silently return everything', async ({ request }) => {
         const data = await report(request, {
-            owa_metrics: 'visits',
-            owa_constraints: 'source==',
+            owa_metrics: 'sessions',
+            owa_constraints: 'sessionSource==',
         });
 
         const errors = JSON.stringify(data.errors || []);
@@ -176,8 +176,8 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
          * there is no aggregate to read -- reading one unguarded is what this
          * assertion used to do, and it threw once the refusal landed.
          */
-        const value = data.aggregates && data.aggregates.visits
-            ? Number(data.aggregates.visits.value)
+        const value = data.aggregates && data.aggregates.sessions
+            ? Number(data.aggregates.sessions.value)
             : null;
 
         expect(/constraint/i.test(errors),
@@ -213,13 +213,13 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
      */
     test('a breakdown without a sort still returns its rows', async ({ request }) => {
         const data = await report(request, {
-            owa_metrics: 'visits',
-            owa_dimensions: 'source',
+            owa_metrics: 'sessions',
+            owa_dimensions: 'sessionSource',
         });
 
         const got = {};
         for (const row of data.resultsRows) {
-            got[dimOf(row, 'source')] = visitsOf(row);
+            got[dimOf(row, 'sessionSource')] = sessionsOf(row);
         }
 
         expect(got,
@@ -229,14 +229,14 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
 
     test('a dimensional breakdown gives the right count per value', async ({ request }) => {
         const data = await report(request, {
-            owa_metrics: 'visits',
-            owa_dimensions: 'source',
-            owa_sort: 'visits-',
+            owa_metrics: 'sessions',
+            owa_dimensions: 'sessionSource',
+            owa_sort: 'sessions-',
         });
 
         const got = {};
         for (const row of data.resultsRows) {
-            got[dimOf(row, 'source')] = visitsOf(row);
+            got[dimOf(row, 'sessionSource')] = sessionsOf(row);
         }
 
         expect(got).toEqual(fx.expected.by_source);
@@ -244,47 +244,47 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
 
     test('the dimensional rows reconcile with the aggregate', async ({ request }) => {
         const data = await report(request, {
-            owa_metrics: 'visits',
-            owa_dimensions: 'source',
-            owa_sort: 'visits-',
+            owa_metrics: 'sessions',
+            owa_dimensions: 'sessionSource',
+            owa_sort: 'sessions-',
         });
 
-        const sum = data.resultsRows.reduce((t, r) => t + visitsOf(r), 0);
+        const sum = data.resultsRows.reduce((t, r) => t + sessionsOf(r), 0);
 
         expect(sum, 'the breakdown does not sum to the aggregate').toBe(
-            Number(data.aggregates.visits.value)
+            Number(data.aggregates.sessions.value)
         );
     });
 
     test('sorting orders the rows by the metric', async ({ request }) => {
         const desc = await report(request, {
-            owa_metrics: 'visits',
-            owa_dimensions: 'source',
-            owa_sort: 'visits-',
+            owa_metrics: 'sessions',
+            owa_dimensions: 'sessionSource',
+            owa_sort: 'sessions-',
         });
 
-        expect(desc.resultsRows.map((r) => dimOf(r, 'source'))).toEqual(fx.expected.sources_desc);
+        expect(desc.resultsRows.map((r) => dimOf(r, 'sessionSource'))).toEqual(fx.expected.sources_desc);
 
         const asc = await report(request, {
-            owa_metrics: 'visits',
-            owa_dimensions: 'source',
-            owa_sort: 'visits',
+            owa_metrics: 'sessions',
+            owa_dimensions: 'sessionSource',
+            owa_sort: 'sessions',
         });
 
-        expect(asc.resultsRows.map((r) => dimOf(r, 'source')))
+        expect(asc.resultsRows.map((r) => dimOf(r, 'sessionSource')))
             .toEqual([...fx.expected.sources_desc].reverse());
     });
 
     /** A second dimension must split the rows, not repeat the first one's totals. */
     test('a secondary dimension splits the breakdown', async ({ request }) => {
         const data = await report(request, {
-            owa_metrics: 'visits',
-            owa_dimensions: 'source,medium',
-            owa_sort: 'visits-',
+            owa_metrics: 'sessions',
+            owa_dimensions: 'sessionSource,sessionMedium',
+            owa_sort: 'sessions-',
         });
 
         const got = data.resultsRows
-            .map((r) => ({ source: dimOf(r, 'source'), medium: dimOf(r, 'medium'), visits: visitsOf(r) }))
+            .map((r) => ({ source: dimOf(r, 'sessionSource'), medium: dimOf(r, 'sessionMedium'), visits: sessionsOf(r) }))
             .sort((a, b) => (a.source + a.medium).localeCompare(b.source + b.medium));
 
         const want = [...fx.expected.by_source_medium]
@@ -295,15 +295,15 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
 
     test('a constraint and a breakdown compose', async ({ request }) => {
         const data = await report(request, {
-            owa_metrics: 'visits',
-            owa_dimensions: 'medium',
-            owa_constraints: 'source==google.com',
-            owa_sort: 'visits-',
+            owa_metrics: 'sessions',
+            owa_dimensions: 'sessionMedium',
+            owa_constraints: 'sessionSource==google.com',
+            owa_sort: 'sessions-',
         });
 
         const got = {};
         for (const row of data.resultsRows) {
-            got[dimOf(row, 'medium')] = visitsOf(row);
+            got[dimOf(row, 'sessionMedium')] = sessionsOf(row);
         }
 
         // google's mediums only -- not every medium in the fixture.

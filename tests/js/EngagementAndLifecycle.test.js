@@ -37,6 +37,8 @@ beforeEach(() => {
     OWA.setSetting('loggerPause', false);
 
     hidden = 'visible';
+    // jsdom answers false; a page being read has focus.
+    document.hasFocus = () => true;
     Object.defineProperty(document, 'visibilityState', {
         configurable: true,
         get() { return hidden; },
@@ -108,9 +110,79 @@ describe('engagement deltas', () => {
         t.resetEngagement();
         atTime(t, 2500);
 
-        t.trackPageView('https://eng.example/a');
+        t.trackCustomEvent('signup');
 
         expect(sent[0].engagement_msec).toBe(1500);
+    });
+
+    /*
+     * What accrues before the first page view is the gap between the tracker
+     * being built and the snippet asking for one -- not reading time. The clock
+     * restarts there.
+     */
+    test('the first page view carries no engagement, and the clock restarts at it', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 1000);
+        t.resetEngagement();
+        atTime(t, 2500);
+
+        t.trackPageView('https://eng.example/a');
+        expect(sent[0].engagement_msec).toBeUndefined();
+
+        atTime(t, 4000);
+        t.trackCustomEvent('signup');
+        expect(sent[1].engagement_msec).toBe(1500, 'counted from the page view, not from 1000');
+    });
+
+    test('a later page view carries what accrued since the last report', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+        t.trackPageView('https://eng.example/a');
+
+        atTime(t, 3000);
+        t.trackPageView('https://eng.example/b');
+
+        expect(sent[1].engagement_msec).toBe(3000);
+    });
+
+    /*
+     * UNDER A SECOND IS NOT AN EVENT. The residue is not dropped, though: it
+     * stays unreported and the next event carries it.
+     */
+    test('a residue under one second sends nothing, and rides the next event', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+
+        atTime(t, 500);
+        t.trackEngagement();
+        expect(sent).toHaveLength(0);
+
+        t.startEngagement();
+        atTime(t, 1500);
+        t.trackCustomEvent('signup');
+
+        expect(sent[0].engagement_msec).toBe(1500, 'the 500 ms before the hide, and the second after it');
+    });
+
+    test('one second exactly is sent', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+        atTime(t, 1000);
+        t.trackEngagement();
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0].engagement_msec).toBe(1000);
     });
 
     test('an event carries no engagement when none has accrued', () => {
@@ -128,12 +200,108 @@ describe('engagement deltas', () => {
 
 describe('page lifecycle', () => {
 
+    /*
+     * A visible window behind another application, or on a second monitor, is
+     * not being read. Blur pauses the clock and sends nothing; focus resumes it.
+     */
+    test('blur pauses the clock without sending; focus resumes it', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+
+        atTime(t, 3000);
+        window.dispatchEvent(new Event('blur'));
+        expect(sent).toHaveLength(0, 'a blur is a pause, not a report');
+
+        atTime(t, 13000);
+        window.dispatchEvent(new Event('focus'));
+
+        atTime(t, 15000);
+        hidden = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0].engagement_msec).toBe(5000, 'three seconds before the blur and two after the focus');
+    });
+
+    test('a page loaded without focus does not count until it gets focus', () => {
+        document.hasFocus = () => false;
+
+        let now = 0;
+        const clock = jest.spyOn(OWATracker.prototype, 'getTime').mockImplementation(() => now);
+
+        try {
+            const t = newTracker();
+            const sent = captureSends(t);
+
+            now = 10000;
+            window.dispatchEvent(new Event('focus'));
+
+            now = 12000;
+            hidden = 'hidden';
+            document.dispatchEvent(new Event('visibilitychange'));
+
+            expect(sent[0].engagement_msec).toBe(2000, 'counted from the focus, not from the load');
+        } finally {
+            clock.mockRestore();
+        }
+    });
+
+    /*
+     * THE PRODUCTION PATH. A tracker built the way a page builds it -- the
+     * constructor and the snippet's commands, nothing else -- must measure
+     * engagement. Nothing called bindPageLifecycleEvents() outside these tests,
+     * which called it by hand, so on a real page the clock never started and no
+     * user_engagement was ever sent.
+     */
+    test('a tracker built the way a page builds it sends the residue on hide', () => {
+        let now = 1000;
+        const clock = jest.spyOn(OWATracker.prototype, 'getTime').mockImplementation(() => now);
+
+        try {
+            const t = newTracker();
+            const sent = captureSends(t);
+
+            for (const cmd of ['trackPageView', 'trackClicks', 'trackForms', 'trackScroll', 'trackSiteSearch']) {
+                t[cmd]();
+            }
+
+            now = 31000;
+            hidden = 'hidden';
+            document.dispatchEvent(new Event('visibilitychange'));
+
+            const engagement = sent.filter(e => e.event_type === 'user_engagement');
+            expect(engagement).toHaveLength(1);
+            expect(engagement[0].engagement_msec).toBe(30000);
+        } finally {
+            clock.mockRestore();
+        }
+    });
+
+    test('binding is once per tracker, so a hide is not sent twice', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        atTime(t, 0);
+        t.resetEngagement();
+        t.bindPageLifecycleEvents();
+        t.bindPageLifecycleEvents();
+
+        atTime(t, 4000);
+        hidden = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        expect(sent.filter(e => e.event_type === 'user_engagement')).toHaveLength(1);
+    });
+
     test('hiding the page delivers the residue; showing it restarts the clock', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
         atTime(t, 0);
-        t.bindPageLifecycleEvents();
+        t.resetEngagement();
 
         atTime(t, 5000);
         hidden = 'hidden';
@@ -162,7 +330,7 @@ describe('page lifecycle', () => {
         const sent = captureSends(t);
 
         atTime(t, 0);
-        t.bindPageLifecycleEvents();
+        t.resetEngagement();
 
         atTime(t, 1000);
         window.dispatchEvent(new Event('pagehide'));
@@ -187,7 +355,7 @@ describe('page lifecycle', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
-        t.bindPageLifecycleEvents();
+        t.resetEngagement();
         window.dispatchEvent(new Event('pageshow'));
 
         expect(sent).toHaveLength(0);
@@ -196,7 +364,13 @@ describe('page lifecycle', () => {
 
 describe('SPA route changes', () => {
 
-    test('pushState is a page view', () => {
+    beforeEach(() => { jest.useFakeTimers(); });
+    afterEach(() => { jest.useRealTimers(); });
+
+    /** Let a route change settle, which is when its page view is sent. */
+    const settle = () => jest.advanceTimersByTime(OWATracker.ROUTE_SETTLE_MSEC);
+
+    test('pushState is a page view, once the URL has settled', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
@@ -204,7 +378,11 @@ describe('SPA route changes', () => {
 
         window.history.pushState({}, '', '/route-b');
 
-        const views = sent.filter(e => e.event_type === 'base.page_request');
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
+
+        settle();
+
+        const views = sent.filter(e => e.event_type === 'page_view');
         expect(views).toHaveLength(1);
         expect(views[0].page_url).toContain('/route-b');
     });
@@ -218,12 +396,13 @@ describe('SPA route changes', () => {
         t.trackRouteChanges();
 
         window.history.replaceState({ filter: 'x' }, '', '/route-c');
+        settle();
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(0,
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0,
             'replaceState is used to store UI state, and each of those is not a page view.');
     });
 
-    test('the engagement of the route being LEFT lands before the new page view', () => {
+    test('the engagement of the route being LEFT is sent at the moment of leaving', () => {
         const t = newTracker();
 
         window.history.pushState({}, '', '/route-d');
@@ -236,9 +415,12 @@ describe('SPA route changes', () => {
         atTime(t, 7000);
         window.history.pushState({}, '', '/route-e');
 
+        expect(sent).toHaveLength(1);
         expect(sent[0].event_type).toBe('user_engagement');
         expect(sent[0].engagement_msec).toBe(7000);
-        expect(sent[1].event_type).toBe('base.page_request');
+
+        settle();
+        expect(sent[1].event_type).toBe('page_view');
 
         atTime(t, 7500);
         expect(t.consumeEngagementDelta()).toBe(500,
@@ -255,7 +437,205 @@ describe('SPA route changes', () => {
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/route-g');
+        settle();
 
-        expect(sent.filter(e => e.event_type === 'base.page_request')).toHaveLength(1);
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1);
+    });
+
+    /*
+     * Frameworks set document.title AFTER pushState. A page view sent from
+     * inside the patched call carried the previous screen's title.
+     */
+    test('the title is read when the page view is sent, not when the URL changed', () => {
+        const t = newTracker();
+        document.title = 'Screen One';
+        window.history.pushState({}, '', '/screen-one');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/screen-two');
+        jest.advanceTimersByTime(100);
+        document.title = 'Screen Two';
+        settle();
+
+        const views = sent.filter(e => e.event_type === 'page_view');
+        expect(views).toHaveLength(1);
+        expect(views[0].page_title).toBe('Screen Two');
+    });
+
+    test('pushes inside the settle window are one page view, for the URL they settle on', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/start');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/redirecting');
+        jest.advanceTimersByTime(50);
+        window.history.pushState({}, '', '/destination');
+        settle();
+
+        const views = sent.filter(e => e.event_type === 'page_view');
+        expect(views).toHaveLength(1);
+        expect(views[0].page_url).toContain('/destination');
+        expect(sent.filter(e => e.event_type === 'user_engagement').length).toBeLessThanOrEqual(1,
+            'the page left is left once');
+    });
+
+    test('leaving and coming back inside the window is no page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/stay');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/elsewhere');
+        window.history.replaceState({}, '', '/stay');
+        settle();
+
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
+    });
+
+    /*
+     * The referrer of a route is the route before it. document.referrer names
+     * the page the DOCUMENT loaded from, and repeating it on every route said
+     * each screen had been reached from the external site.
+     */
+    test('a route page view names the previous route as its referrer', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/first?x=1');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/second');
+        settle();
+
+        const view = sent.find(e => e.event_type === 'page_view');
+        expect(view.HTTP_REFERER).toBe(window.location.origin + '/first?x=1');
+    });
+
+    test('...and so does every later event on that route', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/third');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/fourth');
+        settle();
+
+        t.trackCustomEvent('newsletter_signup', {});
+
+        const custom = sent.find(e => e.event_type === 'newsletter_signup');
+        expect(custom.HTTP_REFERER).toBe(window.location.origin + '/third');
+    });
+
+    test('before any route change the referrer is the document\'s', () => {
+        const t = newTracker();
+
+        expect(t.getPageReferrer()).toBe(document.referrer);
+    });
+
+    /*
+     * A ROUTE'S DEPTH IS A PAGE'S DEPTH. A loaded page that fits the viewport
+     * reports its marks at load; a route that fits reported nothing, because
+     * only a scroll ever checked.
+     */
+    test('a route that fits the viewport reports its marks, after its page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/long-page');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 0;
+        t.trackScroll();
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/short-route');
+        t.getScrollDepth = () => 100;
+        settle();
+
+        const names = sent.map(e => e.event_type).filter(n => n !== 'user_engagement');
+        expect(names).toEqual(['page_view', 'scroll', 'scroll', 'scroll', 'scroll']);
+        expect(sent.filter(e => e.event_type === 'scroll').map(e => e.scroll_depth))
+            .toEqual([25, 50, 75, 90]);
+    });
+
+    test('scrolling while a route settles sends nothing before its page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/before-settle');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 0;
+        t.trackScroll();
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/settling');
+        t.getScrollDepth = () => 60;
+        t.checkScrollDepth();
+
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(0);
+
+        settle();
+
+        const names = sent.map(e => e.event_type).filter(n => n !== 'user_engagement');
+        expect(names).toEqual(['page_view', 'scroll', 'scroll']);
+    });
+
+    test('each route starts its marks again', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/read-to-end');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 100;
+        t.trackScroll();
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(4);
+
+        t.trackRouteChanges();
+        window.history.pushState({}, '', '/next-route');
+        t.getScrollDepth = () => 30;
+        settle();
+
+        const scrolls = sent.filter(e => e.event_type === 'scroll');
+        expect(scrolls.slice(4).map(e => e.scroll_depth)).toEqual([25]);
+    });
+
+    test('without scroll tracking, a route change sends no scroll event', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/no-scroll-a');
+
+        const sent = captureSends(t);
+        t.getScrollDepth = () => 100;
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/no-scroll-b');
+        settle();
+
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(0);
+    });
+
+    /*
+     * A route page view still waiting when the page goes away is sent then,
+     * not lost with the timer.
+     */
+    test('a pending route page view is sent when the page is hidden', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/before-hide');
+
+        const sent = captureSends(t);
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/hidden-soon');
+        hidden = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        const views = sent.filter(e => e.event_type === 'page_view');
+        expect(views).toHaveLength(1);
+        expect(views[0].page_url).toContain('/hidden-soon');
+
+        settle();
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1,
+            'and the timer does not send it a second time');
     });
 });

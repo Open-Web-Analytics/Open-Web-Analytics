@@ -498,12 +498,10 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 /* ---------------------------------------------------------------------------
  * Metric-set tabs
  *
- * The tabs are how a site's metric sets make themselves visible -- Site Usage,
- * e-commerce, one per goal group. Their labels come from three different
- * places: two literals in MetricSets and whatever the site owner typed into a
- * goal group's name. Title-casing them HERE is what makes the row read as one
- * control rather than three sources, and it is a presentation rule, so it does
- * not go and rewrite a label the owner chose.
+ * The tabs are how a site's metric sets make themselves visible -- Site Usage
+ * and e-commerce, two literals in MetricSets with different casing.
+ * Title-casing them HERE is what makes the row read as one control, and it is
+ * a presentation rule, so it does not go and rewrite the labels.
  * ------------------------------------------------------------------------- */
 
 .owa .ui-tabs-nav .ui-tabs-anchor {

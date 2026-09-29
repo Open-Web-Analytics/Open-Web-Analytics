@@ -99,7 +99,19 @@ class Module extends \OWA\Core\Module {
      */
     function _registerEventHandlers() {
 
-        $this->registerEventHandler('dom.stream', 'domstreamHandlers');
+        /*
+         * UNDER THE TRACKING NAMESPACE, because that is where logEvent() dispatches
+         * a tracking event now. The key is the namespace plus the name as the
+         * beacon sent it, so `dom.stream` keeps its dot -- unlike the STORAGE rule
+         * in V2Event::name(), which flattens it to keep a v1 spelling out of a v2
+         * column.
+         *
+         * Registered by its full name rather than tracking.dom.* so nothing else
+         * under that prefix reaches the recordings handler.
+         */
+        $this->registerEventHandler(
+            \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.dom.stream',
+            'domstreamHandlers' );
     }
 
     /**

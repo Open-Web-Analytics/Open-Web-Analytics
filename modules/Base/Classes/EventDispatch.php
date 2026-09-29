@@ -197,6 +197,33 @@ class EventDispatch {
      * @param    $event    array
      * @return bool
      */
+
+    /**
+     * NAMESPACE SUBSCRIPTION. A listener may register for `foo.*` and hear every
+     * event dispatched under `foo.`.
+     *
+     * WHY THIS EXISTS. Two different things were being called the event type: the
+     * NAME a tracker sets, which is data -- it is stored in
+     * owa_event_raw.event_type and is the eventName dimension -- and the key this
+     * dispatcher routes on, which is plumbing shared with OWA's internal events.
+     * They were the same string, and that was fine while every event name was
+     * known at registration time.
+     *
+     * v2 broke that: a site can send an event with any legal name
+     * (trackCustomEvent), so a handler that must see every tracking event cannot
+     * list them, and a flat map keyed by exact name cannot express it. The first
+     * attempt at this was a magic key plus a conditional in notify() asking
+     * "is this a tracking event" -- which put knowledge of tracking into the
+     * dispatcher and left the two meanings conflated.
+     *
+     * Tracking events are dispatched under `tracking.` instead -- logEvent() sets
+     * the key on the event as it arrives (Event::setDispatchName) -- so "every
+     * tracking event" is `tracking.*` and this mechanism knows nothing about
+     * tracking, only about prefixes. v1's names were already namespaced, which is
+     * where the convention comes from.
+     */
+    const NAMESPACE_WILDCARD = '.*';
+
     /**
      * The name of whatever a listener will run.
      *
@@ -220,17 +247,60 @@ class EventDispatch {
         return is_object( $target ) ? get_class( $target ) : (string) $target;
     }
 
+    /**
+     * Every listener id for a dispatch name: the exact registrations, then each
+     * namespace the name falls under.
+     *
+     * Walks the dotted segments from the outside in, so `tracking.dom.stream` is
+     * heard by `tracking.*` and by `tracking.dom.*`. De-duplicated, so a handler
+     * registered both by name and by namespace runs once.
+     *
+     * @param  string $dispatch_name
+     * @return array  observer ids, in registration order
+     */
+    function listenersFor( $dispatch_name ) {
+
+        $dispatch_name = (string) $dispatch_name;
+
+        $ids = (array) ( $this->listenersByEventType[ $dispatch_name ] ?? array() );
+
+        $segments = explode( '.', $dispatch_name );
+
+        // Drop the last segment: a name is not its own namespace.
+        array_pop( $segments );
+
+        $prefix = '';
+
+        foreach ( $segments as $segment ) {
+
+            $prefix .= $segment;
+
+            $ids = array_merge( $ids, (array) (
+                $this->listenersByEventType[ $prefix . self::NAMESPACE_WILDCARD ] ?? array() ) );
+
+            $prefix .= '.';
+        }
+
+        return array_values( array_unique( $ids ) );
+    }
+
     function notify($event) {
 
         $responses = array();
         \OWA\Core\CoreAPI::debug("Notifying listeners of ".$event->getEventType());
         //print_r($this->listenersByEventType[$event_type] );
         //print $event->getEventType();
-        if (array_key_exists($event->getEventType(), $this->listenersByEventType)) {
-            $list = $this->listenersByEventType[$event->getEventType()];
-            //print_r($list);
+        /*
+         * The listeners for this dispatch name, plus any registered for a
+         * namespace it falls under. A custom event's name belongs to the site, so
+         * nothing can have registered for it by name; `tracking.*` is how a
+         * handler says it wants them all.
+         */
+        $list = $this->listenersFor( $event->getDispatchName() );
+
+        if ( $list ) {
             if (!empty($list)) {
-                foreach ($this->listenersByEventType[$event->getEventType()] as $k => $observer_id) {
+                foreach ($list as $k => $observer_id) {
 
                     /*
                      * A listener is a callable, and the object half of one may

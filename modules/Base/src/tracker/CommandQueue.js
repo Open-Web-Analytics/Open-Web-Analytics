@@ -112,9 +112,9 @@ class CommandQueue {
             }
 
             // 'config' is a queue-level command, not a tracker method: it
-            // exists to CREATE a tracker for a site, the way gtag('config', ID)
-            // does. By the time we get here the tracker above already has the
-            // site id, so there is nothing further to apply.
+            // exists to CREATE a tracker for a site. By the time we get here the
+            // tracker above already has the site id, so there is nothing further
+            // to apply.
             if ( method === 'config' ) {
 
                 if ( args.length && window[obj_name].getSiteId() !== args[0] ) {

@@ -27,11 +27,8 @@ class OWATracker  {
 	     * 'tracker.init'. A store cannot be scoped to a site that is not known
 	     * yet, and a migration cannot move a per-site cookie it cannot name.
 	     *
-	     * This is what GA does: the property id is an argument to the call that
-	     * CREATES the tag -- gtag('config', ID) -- and to every command after it,
-	     * so there is no window in which a tag exists without knowing what it is.
-	     * Measured: an event fired before config() is dropped, and one carrying
-	     * send_to fires regardless of order.
+	     * So the site id is an argument to the call that CREATES the tracker, and
+	     * there is no window in which a tracker exists without knowing what it is.
 	     *
 	     * setSiteId() still works and is still supported; it means "reconfigure"
 	     * now rather than "finally tell me who I am".
@@ -47,7 +44,7 @@ class OWATracker  {
 	    // Resolved per tracker, not a fixed list: each tracker contributes its
 	    // OWN session store, so cross-domain linking carries site A's session
 	    // and site B's session rather than one store both of them fought over.
-	    this.sharableStateStores =  ['v', 's', 'c', 'b'],
+	    this.sharableStateStores =  ['v', 's', 'b'],
 
 	    /*
 	     * Every property the tracker derives from state, on two axes.
@@ -99,19 +96,39 @@ class OWATracker  {
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
 		    prior_session_id:        { scope: 'session', permanent: false },
-		    is_new_visitor:          { scope: 'session', permanent: false },
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
-		    session_referer:         { scope: 'session', permanent: false },
-		    landing_url:             { scope: 'session', permanent: false },
+		    /*
+		     * session_referer AND landing_url WERE HERE, and being in this map is
+		     * what put them on every beacon of a session.
+		     *
+		     * Both were re-sent from session state so the server could attribute
+		     * the session from any event. It never needed either: the tags are
+		     * parsed from page_location on the session-starting beacon, which is
+		     * the same URL landing_url held, and the session's referrer is the
+		     * referer_host of its first row, which the pass already reads through
+		     * the window it opens for the landing page. Session source is fixed by
+		     * the session's first event, so no cookie needs to hold a URL.
+		     *
+		     * So this removes a URL and a referrer from the cookie and from every
+		     * beacon of every session, for a read the pass performs anyway.
+		     */
 		    nps:                     { scope: 'session', permanent: false },
-		    attribs:                 { scope: 'session', permanent: false },
+		    /*
+		     * attribs WAS HERE, and being in this map is what put it on the
+		     * beacon. It is the campaign attribution history, and the only
+		     * thing that ever read it server-side was SessionHandlers --
+		     * `latest_attributions` on the v1 session row -- which is not
+		     * registered on v2. It reached no raw column and no cube pass.
+		     *
+		     * The whole client-side attribution stack went with it: the two
+		     * models, the 'c' cookie, maxPriorCampaigns and
+		     * trafficAttributionMode. The server resolves tags from page_location on the session-starting beacon.
+		     */
 		    // The site may set a different one, so it is not permanent.
-		    user_name:               { scope: 'session', permanent: false },
 
 		    // Rewritten every page load.
 		    last_req:                { scope: 'page',    permanent: false },
-		    is_new_session:          { scope: 'page',    permanent: false },
 		    page_url:                { scope: 'page',    permanent: false },
 		    page_title:              { scope: 'page',    permanent: false },
 		    page_type:               { scope: 'page',    permanent: false },
@@ -126,9 +143,7 @@ class OWATracker  {
 	    // time when tracker is unloaded
 	    this.endTime =  null;
 	    // campaign state holder
-	    this.campaignState  =  [];
 	    // flag for new campaign status
-	    this.isNewCampaign =  false;
 	    // flag for new session status
 	    this.isNewSessionFlag =  false;
 	    /*
@@ -136,34 +151,35 @@ class OWATracker  {
 	     * sent. Distinct from is_new_session, which is page-scoped and rides
 	     * every event from the session's first page:
 	     *
-	     *   is_new_session_start  this REQUEST created the session. True for
-	     *                         exactly one event, which is what a server
-	     *                         deciding create-vs-update needs.
-	     *   is_new_session        this event happened on the page where the
-	     *                         session started. True for all of them, which
-	     *                         is what a per-event dimension needs.
+	     * True for exactly one beacon, which is what materialising a
+	     * session_start event needs.
 	     *
-	     * One flag cannot answer both, and it was answering the second while
-	     * being read as the first -- so a second trackPageView() on the same
-	     * page re-entered logSession() for a session that already existed.
+	     * THE PAGE-SCOPED TWIN IS GONE. is_new_session rode every event from
+	     * the session's first page, and existed because v1's session listener
+	     * decided create-vs-update on it -- badly, since "we are on the landing
+	     * page" is true several times, so a second trackPageView() re-entered
+	     * logSession() for a session that already existed. Splitting the two
+	     * fixed that; removing v1's listener removes the need for a second flag
+	     * at all.
+	     *
+	     * Nothing session-scoped is sent as a flag now. The tracker reports the
+	     * EVENT -- this request started a session -- and the pass spreads what
+	     * belongs to the whole session across its rows.
 	     */
 	    this.pendingSessionStart = false;
 	    /*
 	     * The visitor half of the same pair, and the same distinction:
 	     *
-	     *   is_new_visitor_created  this REQUEST minted the visitor. One event.
-	     *   is_new_visitor          this SESSION was the visitor's first. Every
-	     *                           event of it.
+	     * This REQUEST minted the visitor, true for one beacon, and first_visit
+	     * is materialised from it on the server.
 	     *
-	     * Nothing consumes the first one yet. It exists so v2 can raise a
-	     * first_visit event from the request that actually created the visitor,
-	     * which is what GA does with its _fv flag -- the session column and the
-	     * is_repeat_visitor dimension both want the session-scoped one, so
-	     * neither can answer "was this the moment". Do not remove it as unused.
+	     * Its session-scoped twin is gone too. The one thing that still wanted
+	     * it -- writing the visitor's acquisition from any event of the first
+	     * session -- reads prior_sessions == 0 instead, which rides every
+	     * beacon and says the same thing.
 	     */
 	    this.pendingVisitorCreated = false;
 	    // flag for whether or not traffic has been attributed
-	    this.isTrafficAttributed =  false;
 	    this.linkedStateSet =  false;
 	    this.hashCookiesToDomain =  true;
 	    	    
@@ -171,10 +187,21 @@ class OWATracker  {
 	     * GET params parsed from URL
 	     */
 	    this.urlParams =  {};
+	    /** The URL this.urlParams was parsed from, so a route change re-parses. */
+	    this.urlParamsFrom = '';
 	    /**
 	     * DOM stream Event Binding Methods
 	     */
 	    this.streamBindings  =  ['bindMovementEvents', 'bindScrollEvents','bindKeypressEvents', 'bindClickEvents'];
+	    /**
+	     * Whether trackScroll() has bound its depth listener, so pushing the
+	     * command twice does not report every threshold twice.
+	     */
+	    this.isScrollTrackingEnabled = false;
+	    /**
+	     * Whether trackForms() has bound its two listeners, for the same reason.
+	     */
+	    this.formTrackingEnabled = false;
 	    /**
 	     * Latest click event
 	     */
@@ -223,6 +250,15 @@ class OWATracker  {
 	    this.engagementSince = null;
 	    this.engagementAccrued = 0;
 	    this.engagementReported = 0;
+	    /** Whether bindPageLifecycleEvents() has run; binding twice sends twice. */
+	    this.pageLifecycleBound = false;
+	    /**
+	     * Whether the window has focus. Read from document.hasFocus() when the
+	     * lifecycle is bound, then kept by the focus and blur events.
+	     */
+	    this.pageFocused = true;
+	    /** Whether a page view has been sent; the first carries no engagement. */
+	    this.pageViewSent = false;
 	    /**
 	     * Whether SPA route changes are being watched. Opt-in, and patching
 	     * history.pushState twice would double every route change.
@@ -265,10 +301,9 @@ class OWATracker  {
 	     * map key in the state manager and the cookie name both follow from it,
 	     * because the cookie is named ns + store name.
 	     *
-	     * 'v' stays global on purpose: it is the visitor, GA's _ga, and two
-	     * trackers SHOULD agree about who the visitor is. Measured on a real GA
-	     * tag with two properties configured: one _ga shared, and _ga_<id> per
-	     * property. 'c' and 'd' stay global for now -- see the note in
+	     * 'v' stays global on purpose: it is the visitor, and two trackers SHOULD
+	     * agree about who the visitor is. The visitor is shared and the session is
+	     * per site. 'c' and 'd' stay global for now -- see the note in
 	     * registerStore() about what that decision costs.
 	     */
 	    this.siteScopedStores = ['s'];
@@ -282,7 +317,11 @@ class OWATracker  {
 	     * only know the logical one.
 	     */
 	    OWA.registerStateStore('v', 364, '', 'json', { owner: this, logical: 'v' });
-	    OWA.registerStateStore('c', 60, '', 'json', { owner: this, logical: 'c' });
+	    /*
+	     * The 'c' campaign store is GONE. It held the attribution stack the
+	     * client used to compute, which the server never read -- see
+	     * setTrafficAttribution().
+	     */
 
 	    // The session store does not load its cookie on first touch, and does
 	    // not write one until the session has been accepted for delivery.
@@ -330,20 +369,29 @@ class OWATracker  {
 	        logDomStreamPercentage: 100,
 	        domstreamLoggingInterval: 3000,
 	        domstreamEventThreshold: 10,
-	        maxPriorCampaigns: 5,
 	        /*
 	         * Whether the #fragment is part of a page's URL. It is not, by
-	         * default, which is GA's default too -- see getCurrentUrl().
+	         * default -- see getCurrentUrl().
 	         */
 	        trackUrlFragments: false,
-	        trafficAttributionMode: 'direct',
 	        sessionLength: 1800,
 	        /*
-	         * Scroll depths, as percentages, that each raise ONE scroll event.
-	         * A single 90% mark by default: one event, at the depth where "read
-	         * to the end" becomes true. Set [25,50,75,100] for quartiles.
+	         * Scroll depths, as percentages, that each raise ONE scroll event per
+	         * page view.
+	         *
+	         * QUARTILES BY DEFAULT, ending at 90 rather than 100. A single 90% mark
+	         * answered only "did they reach the end", which is not a distribution:
+	         * nothing could say how far down people get. Every mark crossed is
+	         * reported, so the count at each mark reads as "how many reached at
+	         * least this far" and the four together are a depth funnel.
+	         *
+	         * 90, not 100, because a sticky footer, a rounding pixel or a trailing
+	         * element keeps many pages from ever reading exactly 100.
+	         *
+	         * Up to four events per page view, and only on pages that scroll. A site
+	         * that wants the old single mark sets [90].
 	         */
-	        scrollThresholds: [ 90 ],
+	        scrollThresholds: [ 25, 50, 75, 90 ],
 	        /*
 	         * Extensions a click is treated as downloading. A list rather than
 	         * "anything with a dot", which reads every /v1.2/ path and every
@@ -352,14 +400,24 @@ class OWATracker  {
 	        downloadExtensions: [
 	            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt',
 	            'rtf', 'zip', 'gz', 'tar', 'rar', '7z', 'dmg', 'pkg', 'exe',
-	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi'
+	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi',
+	            'key', 'pps', 'mpeg', 'mpg', 'mid', 'midi', 'wma'
 	        ],
 	        /*
-	         * Query parameters that carry a site-search term. No convention
-	         * exists -- q, s, search, query and keywords are all common -- so
-	         * the site says which one it uses.
+	         * Query parameters that carry a site-search term, tried in order.
+	         *
+	         * DEFAULTS NOW, and there were none. The reasoning was that no
+	         * convention exists so a default would guess wrong -- and the cost of
+	         * it was the whole feature: view_search_results could not fire on any
+	         * install, because trackSiteSearch() had no caller either. An event
+	         * nothing could raise, a property nothing could set, and a reserved
+	         * name protecting neither.
+	         *
+	         * The guess is cheap and the miss is not. A page with ?q= that is not
+	         * a search is one spurious event; no defaults is no site-search
+	         * reporting anywhere, on any install. A site using ?kw= adds it.
 	         */
-	        siteSearchParams: [],
+	        siteSearchParams: [ 'q', 's', 'search', 'query', 'keyword' ],
 	        cookie_domain: false,
 	        /*
 	         * How long each state store's cookie lives, by LOGICAL store name,
@@ -386,25 +444,20 @@ class OWATracker  {
 	        stateStoreExpirations: {},
 	        cookiePersistence: true,
 	        /*
-	         * 'public' is the parameter a marketer puts in a campaign URL and can
-	         * never move -- those links are already published. 'private' keys the
-	         * campaign params. 'full' is the property name on the wire AND the key
-	         * in the session store, and it is deliberately tagged_*: what the
-	         * tracker reports is what the landing URL CLAIMED, and the server
-	         * decides the answer. They used to share one name, so a value in the
-	         * column recorded no trace of which half produced it.
+	         * campaignKeys WAS HERE, with six setters beside it.
 	         *
-	         * 'full' is now only the name the parse produces for the attribution
-	         * MODEL below -- it no longer names a session-store key or a wire
-	         * property, because the server parses landing_url instead.
+	         * THE v2 TRACKER KNOWS NOTHING ABOUT ATTRIBUTION. It sends
+	         * landing_url and session_referer; the server parses the tags out of
+	         * the landing URL and decides source, medium and campaign. So the
+	         * key list belongs where the parse is, and is now the `campaignKeys`
+	         * setting -- scoped to a Property, so a site whose links use utm_*
+	         * can say so without changing its links.
+	         *
+	         * Keeping the setters here was worse than not having them: the
+	         * server built its own ns-prefixed list and never consulted these,
+	         * so a site calling setCampaignSourceKey('utm_source') renamed a key
+	         * nothing read and its campaigns silently stopped being attributed.
 	         */
-	        campaignKeys: [
-	                { public: 'owa_medium', private: 'md', full: 'tagged_medium' },
-	                { public: 'owa_campaign', private: 'cn', full: 'tagged_campaign' },
-	                { public: 'owa_source', private: 'sr', full: 'tagged_source' },
-	                { public: 'owa_search_terms', private: 'tr', full: 'tagged_terms' },
-	                { public: 'owa_ad', private: 'ad', full: 'tagged_ad' },
-	                { public: 'owa_ad_type', private: 'at', full: 'tagged_ad_type' } ],
 	        logger_endpoint: '',
 	        api_endpoint: '',
 	        maxCustomVars: 5,
@@ -477,6 +530,17 @@ class OWATracker  {
 
 	    // check to se if an overlay session is active
 	    this.checkForOverlaySession();
+
+	    /*
+	     * THE ENGAGEMENT CLOCK STARTS HERE, with the page lifecycle bound.
+	     *
+	     * Not a snippet command: engagement time is what the engagement metrics
+	     * are made of, not a feature a site switches on. Nothing called this
+	     * before -- only the tests did, by hand -- so on a real page the clock
+	     * never started, no user_engagement was sent and no event carried
+	     * engagement_msec.
+	     */
+	    this.bindPageLifecycleEvents();
 
 		OWA.doAction('tracker.init');
 	}
@@ -753,15 +817,34 @@ class OWATracker  {
         }
     }
 
+    /**
+     * One query parameter of the current URL, or false.
+     *
+     * The constructor seeds this.urlParams to {} -- a truthy value -- so the old
+     * `this.urlParams || parseUrlParams()` guard ALWAYS short-circuited to the
+     * empty object and never parsed the URL, making this return false for every
+     * query param (e.g. the ?owa_state= cross-domain linking token in
+     * checkForLinkedState).
+     *
+     * THE CACHE IS KEYED ON THE URL IT WAS PARSED FROM. It used to be filled once
+     * and kept, which is correct for a document that loads once and wrong for an
+     * SPA: after a route change the parameters are the FIRST page's, so a reader
+     * gets a stale answer rather than no answer. Site search is where that showed
+     * up -- every virtual page view would have reported the term from whatever
+     * screen the visitor landed on first.
+     *
+     * Still one parse per URL, so the saving that motivated the cache is intact.
+     */
     getUrlParam(name) {
 
-        // The constructor seeds this.urlParams to {} -- a truthy value -- so the
-        // old `this.urlParams || parseUrlParams()` guard ALWAYS short-circuited to
-        // the empty object and never parsed the URL, making getUrlParam return
-        // false for every query param (e.g. the ?owa_state= cross-domain linking
-        // token in checkForLinkedState). Parse when the cache is still empty.
-        if ( Util.is_object( this.urlParams ) && Object.keys( this.urlParams ).length === 0 ) {
-            this.urlParams = Util.parseUrlParams();
+        var href = ( typeof location !== 'undefined' && location ) ? location.href : '';
+
+        if ( ! Util.is_object( this.urlParams )
+             || this.urlParamsFrom !== href
+             || Object.keys( this.urlParams ).length === 0 ) {
+
+            this.urlParams = Util.parseUrlParams( href );
+            this.urlParamsFrom = href;
         }
 
         if ( this.urlParams.hasOwnProperty( name ) ) {
@@ -807,26 +890,58 @@ class OWATracker  {
     }
 
     /**
-     * Convienence method for setting user name
+     * The person's display name, as a custom USER property.
      *
-     * Visitor-scoped: an identified user outlives the page and the session, so
-     * 'v' is where they belong. This DOES mean the value is now written to the
-     * visitor cookie, which a global event property never was -- it is
-     * long-lived state on the visitor's machine rather than a per-page label.
+     * @deprecated Use setUserProperty('user_name', value).
+     *
+     * IT USED TO WRITE THE VISITOR COOKIE -- OWA.setState('v', 'user_name') --
+     * on the reasoning that an identified user outlives the page and the session.
+     * That was wrong twice over. A display name is TEMPORAL: it can change, and a
+     * different person can sign in on the same browser, so a cookie holding it
+     * outlives the value's own meaning -- the exact failure v1's persisted custom
+     * variables had. And it made the value visitor-scoped TRANSPORT feeding an
+     * event-scoped destination, while trackingProperties declared it `session`, a
+     * scope v2 does not offer for custom values at all (PLAN.html §2.26.1).
+     *
+     * setUserProperty() is page-lifetime and in memory: nothing is written to
+     * a cookie, and the `up_` prefix routes it
+     * to the visitor store at INGEST, where it is recorded with when it was set
+     * (§2.26.5). So what persists is a server record that can say "this was true
+     * from here on" rather than a cookie that cannot.
      */
     setUserName( value ) {
 
-        OWA.setState( 'v', 'user_name', String( value ).trim() );
+        /*
+         * THE PAGE STORE, under the user-property prefix.
+         *
+         * Not setUserProperty(), which writes globalEventProperties -- and that is
+         * per-TRACKER instance state, so a second tracker on the page would not
+         * see it. This method's cross-tracker behaviour is deliberate and has a
+         * test: a site calls it once and every tracker on the page reports it.
+         *
+         * The 'd' store keeps that and drops the cookie, which is the whole point:
+         * it is registered persist:'never', so it is page-lifetime in memory and
+         * shared through the OWA singleton, exactly like setPageTitle(). And
+         * because collectPageProperties() copies the store onto the event key by
+         * key, the prefixed name arrives as up_user_name -- admitted by prefix,
+         * routed to the visitor store by writeUserProperties(), and stamped with
+         * when it was set. No compat layer in the path.
+         */
+        OWA.setState( 'd', OWATracker.USER_PROPERTY_PREFIX + 'user_name',
+            String( value ).trim() );
     }
+
 
     /**
      * The site's OWN id for a logged-in person.
      *
-     * NOT setUserName, which is a display name and a visitor-store value.
-     * user_id is the one field that outlives a cookie, which is what makes it
-     * the only honest basis for joining a person's devices -- the alternative
-     * is a probabilistic join producing numbers nobody can check, and v2 does
-     * not do that.
+     * NOT setUserName, which is a display NAME and a custom user property --
+     * page-lifetime, and recorded server side with when it was set. user_id is the
+     * one field that outlives a cookie, which is what makes it the only honest
+     * basis for joining a person's devices -- the alternative is a probabilistic
+     * join producing numbers nobody can check, and v2 does not do that. It is also
+     * why log_visitor_pii gates this one and not the display name: an install must
+     * be able to stop storing the identifier.
      *
      * FORWARD-ONLY. Events collected before someone identified themselves stay
      * anonymous forever. Relabelling a visitor's earlier events would mean
@@ -1114,10 +1229,8 @@ class OWATracker  {
     /**
      * The page's URL, WITHOUT the fragment.
      *
-     * GA does the same and in the same place -- its page_location defaults to
-     * location.href and its documentation says "the default value excludes the
-     * fragment portion of the URL" -- so the hash never reaches the wire at
-     * all, rather than being removed by a server that has already received it.
+     * Removed HERE, on the client, so the hash never reaches the wire at all,
+     * rather than being removed by a server that has already received it.
      *
      * Nothing is lost by it. A fragment has never carried a campaign tag, so
      * the one thing page_location is EVIDENCE for is unaffected; and what it
@@ -1167,6 +1280,20 @@ class OWATracker  {
             // Registers the handler for the before navigate event so that the dom stream can be logged
             if (window.addEventListener) {
                 window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
+
+                /*
+                 * A MIDDLE-CLICK fires auxclick, not click, and opening a link
+                 * in a new tab that way was never recorded. Links only: a middle
+                 * button anywhere else is autoscroll, not a click on anything.
+                 */
+                window.addEventListener('auxclick', function (e) {
+
+                    if ( e.button === 1 ) {
+
+                        that.clickEventHandler( e, true );
+                    }
+
+                }, false);
             } else if(window.attachEvent) {
                 document.attachEvent('onclick', function (e) {that.clickEventHandler(e);});
             }
@@ -1197,7 +1324,7 @@ class OWATracker  {
     log() {
 
         var event = new OwaEvent
-        event.setEventType("base.page_request");
+        event.setEventType( 'page_view' );
         return this.logEvent(event);
     }
     
@@ -1214,6 +1341,7 @@ class OWATracker  {
         if (this.active) {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
+
             var url = this._assembleRequestUrl(properties);
             var limit = this.getOption('getRequestCharacterLimit');
             if ( url.length > limit ) {
@@ -1705,7 +1833,7 @@ class OWATracker  {
 
         if (targ.nodeType == 3) {
             // defeat Safari bug
-            targ = target.parentNode;
+            targ = targ.parentNode;
         }
 
         return targ;
@@ -1740,24 +1868,33 @@ class OWATracker  {
         // is stored consistently regardless of how the browser reports tagName.
         properties.dom_element_tag = String( targ.tagName ).toLowerCase();
 
-        if (targ.tagName == "A") {
+        /*
+         * Whitespace runs collapse to one space, then trimmed: an indented,
+         * multi-line link is one value, not one per way it was formatted.
+         */
+        var text = function ( value ) {
+
+            return String( value == null ? '' : value ).replace( /\s+/g, ' ' ).trim();
+        };
+
+        if (targ.tagName == "A" || targ.tagName == "AREA") {
 
             if (targ.textContent != undefined) {
-                 properties.dom_element_text = targ.textContent;
+                 properties.dom_element_text = text( targ.textContent );
             } else {
-                 properties.dom_element_text = targ.innerText;
+                 properties.dom_element_text = text( targ.innerText );
             }
 
             properties.target_url =  targ.href;
 
         } else if (targ.tagName == "INPUT") {
 
-            properties.dom_element_text = targ.value;
+            properties.dom_element_text = text( targ.value );
 
         } else if (targ.tagName == "IMG") {
 
             properties.target_url = targ.parentNode.href;
-            properties.dom_element_text = targ.alt;
+            properties.dom_element_text = text( targ.alt );
 
         } else {
 
@@ -1775,74 +1912,33 @@ class OWATracker  {
         return properties;
     }
 
-    /**
-     * A stable CSS-ish path to one element.
-     *
-     * WHAT IT IS FOR: `dom_element_id` is real on 0.09% of clicks and populated
-     * on 94% of them, because 1.x writes '(not set)' when there is no id -- so
-     * the one column that could identify what was clicked identifies nothing.
-     * A path is derivable for every element, whether or not the page author
-     * gave it an id.
-     *
-     * PREFERS AN ID and stops there, because an id is unique by definition and
-     * a path through it is both shorter and more stable than one through the
-     * tree. Otherwise it walks up, recording tag plus nth-of-type, and stops at
-     * the body.
-     *
-     * DEPTH-CAPPED at eight. Deeply nested component frameworks produce paths
-     * longer than the column and longer than anything a human reads, and a
-     * truncated path is worse than a shallow one: it looks complete and
-     * matches the wrong element.
-     *
-     * @param {Element} el
-     * @return {string}
+    /*
+     * getElementPath() IS GONE. It built a CSS selector by walking up to eight
+     * ancestors with :nth-of-type() indexes. Nothing on the server ever read the
+     * column it fed -- no report, widget or overlay -- and a template edit
+     * renumbers every path at once, so it was neither aggregable nor stable across
+     * a deploy. The heatmap places clicks by coordinate.
      */
-    getElementPath( el ) {
-
-        var parts = [];
-        var depth = 0;
-
-        while ( el && el.nodeType === 1 && depth < 8 ) {
-
-            if ( el.id ) {
-
-                parts.unshift( '#' + el.id );
-                break;
-            }
-
-            var tag = String( el.tagName || '' ).toLowerCase();
-
-            if ( ! tag || tag === 'body' || tag === 'html' ) {
-
-                break;
-            }
-
-            var index = 1;
-            var sib   = el;
-
-            while ( ( sib = sib.previousElementSibling ) ) {
-
-                if ( sib.tagName === el.tagName ) {
-
-                    index++;
-                }
-            }
-
-            parts.unshift( index > 1 ? tag + ':nth-of-type(' + index + ')' : tag );
-
-            el = el.parentElement;
-            depth++;
-        }
-
-        return parts.join( ' > ' );
-    }
 
     /**
      * Whether a URL leaves this site.
      *
-     * Compared on HOST, not on the full URL, and against the page's own host
-     * rather than a configured domain -- a site reached at both apex and www
-     * would otherwise report half its internal links as outbound.
+     * Compared on HOST, not on the full URL. Internal is the page's own host, or
+     * the cookie domain or anything under it. Comparing to the page's host alone
+     * reported every link between www and the apex, or to a sibling subdomain,
+     * as outbound.
+     *
+     * THE CLIENT DECIDES THIS, and briefly the server did. Three reasons it
+     * belongs here:
+     *
+     *   - a non-web client has no page_location and target_url to compare, but it
+     *     knows perfectly well whether the thing it just raised left the property.
+     *     A server derivation can only serve senders shaped like a browser;
+     *   - it removes an ordering dependency. A server-derived is_outbound reads two
+     *     OTHER derived properties' inputs, and the property pass walks the
+     *     registry in key order, so correctness rested on where the entry sat;
+     *   - only the client can see the DOM. An href rewritten by script, a target
+     *     inside a shadow root: the server sees whatever string arrived.
      *
      * @param {string} url
      * @return {boolean}
@@ -1854,18 +1950,97 @@ class OWATracker  {
             return false;
         }
 
-        var host = '';
+        var target;
 
         try {
 
-            host = new URL( url, window.location.href ).hostname;
+            target = new URL( url, window.location.href );
 
         } catch ( e ) {
 
             return false;
         }
 
-        return !! host && host !== window.location.hostname;
+        // mailto:, tel:, javascript: -- no host, and not a departure.
+        if ( target.protocol !== 'http:' && target.protocol !== 'https:' ) {
+
+            return false;
+        }
+
+        var host = target.hostname.toLowerCase();
+
+        if ( ! host || host === window.location.hostname.toLowerCase() ) {
+
+            return false;
+        }
+
+        /*
+         * THE COOKIE DOMAIN IS THE SITE. By default it is the page's host without
+         * www., so from www.example.com a link to example.com or to
+         * shop.example.com stays on the site. A site whose property spans other
+         * hosts sets its cookie domain to say so.
+         */
+        var domain = String( this.getCookieDomain() || '' ).replace( /^\./, '' ).toLowerCase();
+
+        if ( domain && ( host === domain
+            || host.slice( - ( domain.length + 1 ) ) === '.' + domain ) ) {
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * The downloaded file's PATH -- no host, no query, no fragment.
+     *
+     * THE PATH, NOT THE BASENAME. It was the basename since download tracking was
+     * added, so /2024/report.pdf and /2025/report.pdf collapsed into one row of a
+     * downloads report. The path keeps them apart.
+     *
+     * The HOST is deliberately dropped: a file served from the site and the same
+     * file served from a CDN are one document, and target_host on the same row
+     * answers where it came from for anyone who needs that.
+     *
+     * A method, because the expression was inline and cut the same string THREE
+     * times -- split('#')[0].split('?')[0] twice more inside its own
+     * substring(lastIndexOf()).
+     *
+     * new URL() rather than string surgery, so a relative href resolves against
+     * the page instead of being read as a path that happens to start with a
+     * letter. It throws on input no base can absolutise, and this runs on whatever
+     * href a page carries, so the cut is the fallback.
+     *
+     * Left percent-encoded. decodeURIComponent throws on a malformed sequence.
+     *
+     * @param {string} url
+     * @return {string}
+     */
+    getDownloadFileName( url ) {
+
+        var raw = String( url );
+
+        try {
+
+            return new URL( raw, ( typeof window !== 'undefined' && window.location )
+                ? window.location.href : undefined ).pathname;
+
+        } catch ( e ) {
+
+            var path = raw.split( '#' )[0].split( '?' )[0];
+            var at   = path.indexOf( '//' );
+
+            // Drop scheme://host when there is one, so the fallback answers a path
+            // as well. Without this a failed parse would return the whole URL.
+            if ( at !== -1 ) {
+
+                var slash = path.indexOf( '/', at + 2 );
+
+                return slash === -1 ? '/' : path.substring( slash );
+            }
+
+            return path;
+        }
     }
 
     /**
@@ -1899,42 +2074,85 @@ class OWATracker  {
         return this.getOption( 'downloadExtensions' ).indexOf( ext ) > -1 ? ext : '';
     }
 
-    clickEventHandler(e) {
+    /**
+     * The link a click was on: the element itself, or the a[href] / area[href]
+     * it sits inside, or null. A click on the <span> or <svg> inside a link is
+     * a click on the link -- its URL, its id -- which is how every link with
+     * markup inside it would otherwise lose its destination.
+     *
+     * @param {Element} targ
+     * @return {Element|null}
+     */
+    getClickedLink( targ ) {
+
+        if ( ! targ || typeof targ.closest !== 'function' ) {
+
+            return null;
+        }
+
+        return targ.closest( 'a[href], area[href]' );
+    }
+
+    /**
+     * @param {Event}   e
+     * @param {boolean} linksOnly true for a middle-click, which counts only on a link
+     */
+    clickEventHandler( e, linksOnly ) {
 
         // hack for IE
         e = e || window.event;
 
-        var click = new OwaEvent();
-        // set event type
-        click.setEventType("dom.click");
-
         //clicked DOM element properties
-        var targ = this._getTarget(e);
+        var clicked = this._getTarget(e);
 
-        var dom_name = '(not set)';
-        if ( targ.hasAttribute('name') && targ.name != null && targ.name.length > 0 ) {
-            dom_name = targ.name;
-        }
-        click.set("dom_element_name", dom_name);
+        if ( ! clicked ) {
 
-        var dom_value = '(not set)';
-        if ( targ.hasAttribute('value') && targ.value.length > 0 ) {
-            dom_value = targ.value;
+            return;
         }
-        click.set("dom_element_value", dom_value);
 
-        var dom_id = '(not set)';
-        if ( targ.id && targ.id.length > 0 ) {
-            dom_id = targ.id;
-        }
-        click.set("dom_element_id", dom_id);
+        var link = this.getClickedLink( clicked );
 
-        var dom_class = '(not set)';
-       // if ( targ.hasOwnProperty && targ.hasOwnProperty( 'className' ) && targ.className.length > 0) {
-        if ( targ.className && targ.className.length > 0 ) {
-            dom_class = targ.className;
+        if ( linksOnly && ! link ) {
+
+            return;
         }
-        click.set("dom_element_class", dom_class);
+
+        var targ = link || clicked;
+
+        var click = new OwaEvent();
+
+        // set event type
+        click.setEventType( 'click' );
+
+        /*
+         * NOTHING IS SENT FOR AN ABSENT id, name OR class. It was the literal
+         * '(not set)', which the row builder turns back into NULL: bytes on the
+         * wire meaning nothing.
+         */
+        if ( targ.hasAttribute && targ.hasAttribute('name') && targ.getAttribute('name') ) {
+            click.set("dom_element_name", targ.getAttribute('name'));
+        }
+
+        /*
+         * THE ELEMENT'S VALUE IS NOT COLLECTED.
+         *
+         * A click on an input would have shipped whatever the visitor had typed
+         * into it, and no report has ever shown it: it reached no column, and the
+         * server's registry declares no destination for it. "We store it but
+         * nothing reads it" is the worst version of that trade.
+         */
+
+        if ( targ.id ) {
+            click.set("dom_element_id", targ.id);
+        }
+
+        // getAttribute, not className: an SVG element's className is an
+        // SVGAnimatedString object, not the class list.
+        var dom_class = targ.getAttribute ? targ.getAttribute('class') : '';
+
+        if ( dom_class ) {
+            click.set("dom_element_class", dom_class);
+        }
 
         // dom_element_tag is set (lower-cased) by getDomElementProperties() below,
         // whose merge() would overwrite anything set here -- so no duplicate set.
@@ -1946,11 +2164,16 @@ class OWATracker  {
         var properties = this.getDomElementProperties(targ);
         click.merge(this.filterDomProperties(properties));
 
-        // The stored selector. See getElementPath().
-        click.set( 'element_path', this.getElementPath( targ ) );
+        // Whether this click left the site, decided where the DOM is.
+        click.set( 'is_outbound', this.isOutboundUrl( click.get( 'target_url' ) ) ? 1 : 0 );
+
         // set coordinates
-        click.set("dom_element_x", this.findPosX(targ) + '');
-        click.set("dom_element_y", this.findPosY(targ) + '');
+        /*
+         * The ELEMENT's position is not collected either. The heatmap is an
+         * ordinary dimensional query over click_x and click_y -- the CLICK's
+         * coordinates, set below -- and the element's own offsets reached only
+         * v1's owa_click columns, which v2 ingest does not write.
+         */
         var coords = this.getCoords(e);
         click.set('click_x', coords.x);
         click.set('click_y', coords.y);
@@ -1966,7 +2189,7 @@ class OWATracker  {
             this.trackEvent(click);
         }
 
-        this.classifyClickTarget( click.get( 'target_url' ) );
+        this.classifyClickTarget( click.get( 'target_url' ), click );
 
 
         //this.click = full_click;
@@ -2014,33 +2237,49 @@ class OWATracker  {
 
     }
 
+    /**
+     * The DOMSTREAM's scroll sampling. Part of the recording, nothing else.
+     *
+     * TWO FEATURES SHARE THIS DOM EVENT AND ARE OTHERWISE UNRELATED: the recorder
+     * wants a position sample to play back, and scroll-depth tracking wants to know
+     * when a threshold is passed. They were one handler because `window.onscroll`
+     * is a single slot -- assigning it twice clobbers -- so the depth check had to
+     * be bolted onto the recorder's binding, and depth therefore fired only where
+     * domstream was active and only for its sampled fraction of visitors.
+     *
+     * addEventListener, so each feature binds its own. It also stops OWA
+     * overwriting a scroll handler the PAGE installed, which `window.onscroll =`
+     * did unconditionally.
+     */
     bindScrollEvents() {
 
         var that = this;
-        window.onscroll = function (e) { that.scrollEventHandler( e ); }
+
+        window.addEventListener( 'scroll',
+            function ( e ) { that.scrollEventHandler( e ); }, false );
     }
 
+    /**
+     * One position sample for the recording. Queued, never sent on its own -- 1.x
+     * has no server handler for dom.scroll, so this has always been playback data
+     * rather than an event.
+     */
     scrollEventHandler(e) {
 
         // hack for IE
         e = e || window.event;
 
-        /*
-         * The RECORDING sample. Queued for the domstream and never sent on its
-         * own -- 1.x has no server handler for dom.scroll, so this has always
-         * been playback data rather than an event.
-         */
-        if ( this.getOption( 'trackDomStream' ) ) {
+        if ( ! this.getOption( 'trackDomStream' ) ) {
 
-            var sample = new OwaEvent();
-            sample.setEventType( 'dom.scroll' );
-            var coords = this.getScrollingPosition();
-            sample.set( 'x', coords.x );
-            sample.set( 'y', coords.y );
-            this.addToEventQueue( sample );
+            return;
         }
 
-        this.checkScrollDepth();
+        var sample = new OwaEvent();
+        sample.setEventType( 'dom.scroll' );
+        var coords = this.getScrollingPosition();
+        sample.set( 'x', coords.x );
+        sample.set( 'y', coords.y );
+        this.addToEventQueue( sample );
     }
 
     /**
@@ -2055,11 +2294,17 @@ class OWATracker  {
      * across page lengths and viewport sizes, and it answers the question
      * anyone actually asks of it: did they reach the bottom.
      *
-     * The threshold list is an option so a site can ask for quartiles. The
-     * default is a single 90% mark, which is the shape GA settled on -- one
-     * event, at the depth where "read to the end" becomes true.
+     * The threshold list is an option. The default is quartiles -- 25, 50, 75
+     * and 90 -- so the marks read as a depth funnel; a site that wants the one
+     * event at 90%, where "read to the end" becomes true, sets [90].
      */
     checkScrollDepth() {
+
+        // A route change is settling; send() checks once its page view is out.
+        if ( this.routePending ) {
+
+            return;
+        }
 
         var depth = this.getScrollDepth();
 
@@ -2068,7 +2313,20 @@ class OWATracker  {
             return;
         }
 
-        var thresholds = this.getOption( 'scrollThresholds' ) || [ 90 ];
+        /*
+         * ASCENDING, whatever order the site gave. The walk below relies on it:
+         * last_scroll records the deepest mark reported, so with [90, 25] a jump to
+         * the bottom reported 90 and then skipped 25 for good, because 90 is not
+         * below 25.
+         *
+         * Every mark crossed is reported, not only the deepest -- so each mark's
+         * count reads directly as "how many reached at least this far", and a
+         * visitor who jumps to the bottom still counts as having passed halfway.
+         */
+        var thresholds = ( this.getOption( 'scrollThresholds' ) || [ 90 ] )
+            .map( Number )
+            .filter( function ( mark ) { return mark > 0 && mark <= 100; } )
+            .sort( function ( a, b ) { return a - b; } );
 
         for ( var i = 0; i < thresholds.length; i++ ) {
 
@@ -2136,10 +2394,28 @@ class OWATracker  {
      */
     startEngagement() {
 
-        if ( this.engagementSince === null ) {
+        if ( this.engagementSince === null && this.isPageEngaged() ) {
 
             this.engagementSince = this.getTime();
         }
+    }
+
+    /**
+     * Whether the page is being read: visible AND focused.
+     *
+     * Visible alone counted a window left open behind another application, or
+     * on a second monitor, as reading time for as long as it stayed there.
+     *
+     * @return {boolean}
+     */
+    isPageEngaged() {
+
+        if ( typeof document === 'undefined' ) {
+
+            return true;
+        }
+
+        return document.visibilityState !== 'hidden' && this.pageFocused;
     }
 
     /**
@@ -2231,12 +2507,19 @@ class OWATracker  {
 
         this.pauseEngagement();
 
-        var delta = this.consumeEngagementDelta();
-
-        if ( delta <= 0 ) {
+        /*
+         * UNDER A SECOND IS NOT AN EVENT OF ITS OWN. The residue stays
+         * unreported, so the next event carries it if there is one; if the page
+         * is leaving, under a second of it is lost. Without the floor a brief
+         * tab switch sends a user_engagement carrying a few milliseconds.
+         */
+        if ( this.engagementAccrued - this.engagementReported
+             < OWATracker.MIN_ENGAGEMENT_EVENT_MSEC ) {
 
             return;
         }
+
+        var delta = this.consumeEngagementDelta();
 
         var event = this.makeEvent();
         event.setEventType( 'user_engagement' );
@@ -2270,10 +2553,15 @@ class OWATracker  {
      */
     bindPageLifecycleEvents() {
 
-        if ( typeof document === 'undefined' || typeof document.addEventListener !== 'function' ) {
+        if ( this.pageLifecycleBound
+             || typeof document === 'undefined' || typeof document.addEventListener !== 'function' ) {
 
             return;
         }
+
+        this.pageLifecycleBound = true;
+
+        this.pageFocused = typeof document.hasFocus === 'function' ? document.hasFocus() : true;
 
         var that = this;
 
@@ -2281,6 +2569,7 @@ class OWATracker  {
 
             if ( document.visibilityState === 'hidden' ) {
 
+                that.flushPendingRouteView();
                 that.trackEngagement();
 
             } else {
@@ -2290,7 +2579,36 @@ class OWATracker  {
 
         }, false );
 
-        window.addEventListener( 'pagehide', function () { that.trackEngagement(); }, false );
+        /*
+         * A FALLBACK. On every unload the current spec fires visibilitychange
+         * (hidden) first, and this finds nothing left to send. Safari has unloaded
+         * pages without it, and then this is the only notice the page is leaving.
+         */
+        window.addEventListener( 'pagehide', function () {
+
+            that.flushPendingRouteView();
+            that.trackEngagement();
+
+        }, false );
+
+        /*
+         * Focus pauses and resumes the clock without sending: a visible window
+         * behind another application is not being read. The time banked before
+         * a blur rides the next event, or the hide.
+         */
+        window.addEventListener( 'blur', function () {
+
+            that.pageFocused = false;
+            that.pauseEngagement();
+
+        }, false );
+
+        window.addEventListener( 'focus', function () {
+
+            that.pageFocused = true;
+            that.startEngagement();
+
+        }, false );
 
         /*
          * A bfcache restore is a page that was never torn down coming back.
@@ -2346,7 +2664,71 @@ class OWATracker  {
         this.routeTrackingEnabled = true;
 
         var that = this;
-        var last = this.getCurrentUrl();
+
+        // The URL of the last page view SENT. Intermediate URLs a route passes
+        // through inside the settle window never become page views.
+        var lastTracked = this.getCurrentUrl();
+        var pending = null;
+
+        /*
+         * The page view goes once the URL has been still for ROUTE_SETTLE_MSEC,
+         * and reads the URL and title then. Frameworks set document.title
+         * AFTER pushState, so a page view sent from inside the patched call
+         * carried the previous screen's title; and a redirect pushing twice in
+         * quick succession was two page views.
+         */
+        var send = function () {
+
+            if ( pending ) {
+
+                clearTimeout( pending );
+                pending = null;
+            }
+
+            that.flushRouteView = null;
+            that.routePending = false;
+
+            var url = that.getCurrentUrl();
+
+            // Left and came back inside the window: no route change happened.
+            if ( url === lastTracked ) {
+
+                return;
+            }
+
+            // The previous page is this page's referrer, for the page view and
+            // every event after it on this route. document.referrer still
+            // names the page the DOCUMENT loaded from.
+            that.routeReferrer = lastTracked;
+            lastTracked = url;
+
+            that.trackPageView( url );
+
+            /*
+             * A ROUTE CHANGE TO A RESULTS URL IS A NEW SEARCH, so this is called
+             * per route the way trackPageView is. trackSiteSearch() reads the URL
+             * and raises an event; it binds no listener, so there is nothing that
+             * would have noticed the change by itself.
+             *
+             * This is why getUrlParam()'s cache is keyed on the URL it parsed:
+             * filled once and kept, every route change here would have reported
+             * the term from whatever screen the visitor landed on first.
+             */
+            that.trackSiteSearch();
+
+            /*
+             * THE ROUTE'S DEPTH, measured as a loaded page's is: its marks start
+             * again, and a route that fits the viewport reports them now rather
+             * than waiting for a scroll that will never come. After the page
+             * view, in the order a loaded page sends them.
+             */
+            that.last_scroll = 0;
+
+            if ( that.isScrollTrackingEnabled ) {
+
+                that.checkScrollDepth();
+            }
+        };
 
         var changed = function () {
 
@@ -2356,20 +2738,32 @@ class OWATracker  {
             // because replaceState is used for things other than navigation --
             // storing filter state, for instance -- and each of those would
             // otherwise be a page view.
-            if ( url === last ) {
+            if ( ! pending && url === lastTracked ) {
 
                 return;
             }
 
-            last = url;
+            // The residue of the route being LEFT, delivered at the moment of
+            // leaving, so the time lands against the page it was spent on.
+            if ( ! pending ) {
 
-            // The residue of the route being LEFT, delivered before the new
-            // page view, so the time lands against the page it was spent on.
-            that.trackEngagement();
-            that.resetEngagement();
-            that.last_scroll = 0;
+                that.trackEngagement();
+                that.resetEngagement();
+            }
 
-            that.trackPageView( url );
+            // No scroll event for a route before its page view: depth checks
+            // wait until the page view is sent (see send()).
+            that.routePending = true;
+
+            if ( pending ) {
+
+                clearTimeout( pending );
+            }
+
+            pending = setTimeout( send, OWATracker.ROUTE_SETTLE_MSEC );
+
+            // Sent early if the page is hidden or unloads inside the window.
+            that.flushRouteView = send;
         };
 
         if ( typeof window.history === 'object' && window.history ) {
@@ -2449,7 +2843,6 @@ class OWATracker  {
         event.set('key_value', key_value);
         event.set('key_code', key_code);
         event.set("dom_element_name", targ.name);
-        event.set("dom_element_value", targ.value);
         event.set("dom_element_id", targ.id);
         event.set("dom_element_tag", String( targ.tagName ).toLowerCase());
         //console.log("Keypress: %s %d", key_value, key_code);
@@ -2538,181 +2931,44 @@ class OWATracker  {
         this.streamBindings.push(name);
     }
 
-    // gets campaign related properties from request scope.
-    getCampaignProperties() {
+    /*
+     * getCampaignProperties() WAS HERE and had no caller left.
+     *
+     * The tracker does not read owa_* tags off the URL at all any more. It
+     * sends nothing of the kind: taggedValue() parses the tags out of page_location
+     * server-side -- where a corrected rule reaches data already collected,
+     * which the browser cannot do. The parse survived only because the
+     * attribution models called it, and they are gone for the same reason:
+     * nothing they computed ever reached the server.
+     */
 
-        // load GET params from URL
-        if (!this.urlParams.length > 0)    {
-            this.urlParams = Util.parseUrlParams(document.URL);
-            OWA.debug('GET: '+ JSON.stringify(this.urlParams));
-        }
 
-        // look for attributes in the url of the page
-        var campaignKeys = this.getOption('campaignKeys');
 
-        // pull campaign params from _GET
-        var campaign_params = {};
 
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-			
-			// anytime we see a campaign param on the URL its a new campaign.
-            if ( this.urlParams.hasOwnProperty(campaignKeys[i].public) ) {
 
-                campaign_params[campaignKeys[i].private] = this.urlParams[campaignKeys[i].public];
-                //OWA.debug('campaign params obj: ' + JSON.stringify(campaign_params));
-                this.isNewCampaign = true;
-            }
-        }
 
-        // check for incomplete combos and backfill values if needed
-        if (campaign_params['at'] && !campaign_params['ad']) {
-            campaign_params['ad'] = '(not set)';
-        }
 
-        if (campaign_params['ad'] && !campaign_params['at']) {
-            campaign_params['at'] = '(not set)';
-        }
 
-        return campaign_params;
-    }
 
-    setCampaignSessionState( properties ) {
 
-        var campaignKeys = this.getOption('campaignKeys');
-        for (var i = 0, n = campaignKeys.length; i < n; i++) {
-            if ( properties.hasOwnProperty(campaignKeys[i].private) ) {
-
-                OWA.setState( this.storeName('s'), campaignKeys[i].full, properties[campaignKeys[i].private]);
-            }
-        }
-    }
-
-    directAttributionModel(campaign_params) {
-
-        if ( this.isNewCampaign ) {
-            OWA.debug( 'campaign state length: %s', this.campaignState.length );
-            // add the new campaing params to the prior touches array
-            this.campaignState.push( campaign_params );
-
-            // if there is prior campaign touches, check to see if there is room for one more touch
-            if ( this.campaignState.length > this.options.maxPriorCampaigns ) {
-                // splice array to make room for the new one
-                var removed = this.campaignState.splice( 0, 1 );
-                OWA.debug('Too many prior campaigns in state store. Dropping oldest to make room.');
-                //OWA.debug('campaign state array post slice: ' + JSON.stringify( this.campaignState ) );
-            }
-
-            // set/reset the campaign cookie.
-            this.setCampaignCookie( this.campaignState );
-
-            // set flag
-            this.isTrafficAttributed = true;
-            /*
-             * The parsed tags are NOT persisted to session state any more, and
-             * that is what takes them off the wire: the session store is what
-             * rides every beacon. The server resolves them from landing_url.
-             *
-             * The parse itself stays, because the attribution MODEL below still
-             * runs on it -- campaignState and the `c` cookie are a separate
-             * retirement, decided for v2 and not bundled here.
-             */
-            // return values just in case
-            return campaign_params;
-        }
-    }
-
-    originalAttributionModel( campaign_params ) {
-
-        // orignal touch was set previously. jus use that.
-        if ( this.campaignState.length > 0 ) {
-            // do nothing
-            OWA.debug( 'Original attribution detected.' );
-            // set the attributes from the first campaign touch
-
-            campaign_params = this.campaignState[0];
-            // set flag
-            this.isTrafficAttributed = true;
-
-        // no orginal touch, set one if its a new campaign touch
-        } else {
-            OWA.debug( 'Setting Original Campaign touch.' );
-            if ( this.isNewCampaign ) {
-
-                this.campaignState.push( campaign_params );
-                // set cookie
-                this.setCampaignCookie( this.campaignState );
-                // set flag
-                this.isTrafficAttributed = true;
-            }
-        }
-        // persist state to session store
-        // Not persisted to session state -- see directAttributionModel().
-        // return values just in case
-        return campaign_params;
-
-    }
-
-    setCampaignMediumKey( key ) {
-
-        this.options.campaignKeys[0].public = key;
-    }
-
-    setCampaignNameKey( key ) {
-
-        this.options.campaignKeys[1].public = key;
-    }
-
-    setCampaignSourceKey( key ) {
-
-        this.options.campaignKeys[2].public = key;
-    }
-
-    setCampaignSearchTermsKey( key ) {
-
-        this.options.campaignKeys[3].public = key;
-    }
-
-    setCampaignAdKey( key ) {
-
-        this.options.campaignKeys[4].public = key;
-    }
-
-    setCampaignAdTypeKey( key ) {
-
-        this.options.campaignKeys[5].public = key;
-    }
-
+    /**
+     * Record what the session arrived from.
+     *
+     * THE CLIENT NO LONGER ATTRIBUTES ANYTHING. This loaded a campaign stack
+     * out of the `c` cookie, parsed the URL's owa_* tags, ran one of two
+     * attribution models over them and wrote the stack back -- and none of it
+     * reached the server. NO tracker generation ever put the tags on the wire:
+     * the server parses the tags out of the landing beacon's own page_location
+     * in taggedColumns(), where a corrected rule can reach data already
+     * collected.
+     *
+     * So the models, the stack, the cookie, maxPriorCampaigns and
+     * trafficAttributionMode were a browser deciding an answer nobody read.
+     * What remains is the one thing that does ride the beacon and that the
+     * server cannot derive: the referrer this session arrived on.
+     */
     setTrafficAttribution( event, callback ) {
 
-        var campaignState = OWA.getState( 'c', 'attribs' );
-
-        if (campaignState) {
-            this.campaignState = campaignState;
-        }
-
-        var campaign_params = this.getCampaignProperties();
-
-        // choose attribution mode.
-        switch ( this.options.trafficAttributionMode ) {
-
-            case 'direct':
-                OWA.debug( 'Applying "Direct" Traffic Attribution Model' );
-                campaign_params = this.directAttributionModel( campaign_params );
-                break;
-            case 'original':
-                OWA.debug( 'Applying "Original" Traffic Attribution Model' );
-                campaign_params = this.originalAttributionModel( campaign_params );
-                break;
-            default:
-                OWA.debug( 'Applying Default (Direct) Traffic Attribution Model' );
-                this.directAttributionModel( campaign_params );
-        }
-
-        // if one of the attribution methods attributes the traffic them
-        if ( this.isTrafficAttributed ) {
-
-            OWA.debug( 'Attributed Traffic to: %s', JSON.stringify( campaign_params ) );
-        }
 
         /*
          * The session's referrer is recorded whether or not a campaign was
@@ -2746,28 +3002,6 @@ class OWATracker  {
          * own session, which is the scope contract broken, not just a wrong
          * value. It is written once and re-sent from session state thereafter.
          */
-        if ( this.isNewSessionFlag === true ) {
-
-            OWA.setState( this.storeName('s'), 'referer', document.referrer );
-
-            /*
-             * The URL this session landed on, written once and re-sent from
-             * session state for the rest of it -- the same contract as
-             * `referer` above, and for the same reason: a session-scoped
-             * property must be identical on every event sharing a session_id.
-             *
-             * It replaces the six tagged_* parameters this tracker used to
-             * parse out of the URL and re-send on every beacon. The server
-             * parses it instead, which is what makes the answer re-derivable:
-             * a parser fix, or a site changing `ns`, then applies on reprocess
-             * rather than being frozen in whatever this page load decided.
-             *
-             * The whole URL rather than just its query string, because the
-             * landing page is evidence in its own right and page_url on a later
-             * beacon is a different page.
-             */
-            OWA.setState( this.storeName('s'), 'landing_url', this.getCurrentUrl() );
-        }
 
         // apply traffic attribution realted properties to events
         // all properties should be set in the state store by this point.
@@ -2778,10 +3012,6 @@ class OWATracker  {
         // values from the same place, for every event and every tracker.
 
 
-        // attribs is not copied onto a global here any more. campaignState is
-        // loaded from 'c' at the top of this method and written back by
-        // setCampaignCookie() immediately after every mutation, so the store
-        // holds the same value -- collectStateProperties() reads it from there.
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2791,10 +3021,6 @@ class OWATracker  {
 
 
 
-    setCampaignCookie( values ) {
-	    
-        OWA.setState( 'c', 'attribs', values, '', 'json' );
-    }
     
 
     /**
@@ -2808,7 +3034,7 @@ class OWATracker  {
     addTransaction( order_id, order_source, total, tax, shipping, gateway, city, state, country ) {
 	    
         this.ecommerce_transaction = new OwaEvent();
-        this.ecommerce_transaction.setEventType( 'ecommerce.transaction' );
+        this.ecommerce_transaction.setEventType( 'purchase' );
         this.ecommerce_transaction.set( 'ct_order_id', order_id );
         this.ecommerce_transaction.set( 'ct_order_source', order_source );
         this.ecommerce_transaction.set( 'ct_total', total );
@@ -2816,15 +3042,21 @@ class OWATracker  {
         this.ecommerce_transaction.set( 'ct_shipping', shipping );
         this.ecommerce_transaction.set( 'ct_gateway', gateway );
         this.ecommerce_transaction.set( 'page_url', this.getCurrentUrl() );
-        // Billing address, under the ct_ prefix its sibling transaction fields
-        // already use. These used to be sent as city/state/country, which are
-        // the names of the SERVER-DERIVED geolocation properties -- so a
-        // transaction's billing address silently replaced the location derived
-        // from the visitor's IP, and only on transactions. Two different facts
-        // cannot share three names.
-        this.ecommerce_transaction.set( 'ct_city', city );
-        this.ecommerce_transaction.set( 'ct_state', state );
-        this.ecommerce_transaction.set( 'ct_country', country );
+
+        /*
+         * THE BILLING ADDRESS IS NOT COLLECTED.
+         *
+         * city, state and country are still accepted as arguments, because this
+         * is a public API called positionally and dropping three parameters
+         * would shift `gateway` under `city` in every integration that passes
+         * them. They are discarded here instead.
+         *
+         * Not collected because nothing reports on them: a billing address is
+         * not a reporting dimension, and v2's country
+         * and city are the geolocation readings from the observed IP. The two
+         * facts used to share three names, so a transaction's billing address
+         * silently replaced the visitor's location -- and only on transactions.
+         */
 
         OWA.debug('setting up ecommerce transaction');
 
@@ -2832,22 +3064,248 @@ class OWATracker  {
         OWA.debug('completed setting up ecommerce transaction');
     }
 
+    /**
+     * Add an item to the transaction addTransaction() opened.
+     *
+     * Stored in the same shape trackPurchase() takes -- item_id, item_name,
+     * item_category, price, quantity -- so every purchase's items read alike.
+     *
+     * REFUSED WITHOUT A TRANSACTION. It used to open one called 'none set', so an
+     * item added out of order became a purchase of its own with no order id,
+     * total or currency.
+     */
     addTransactionLineItem( order_id, sku, product_name, category, unit_price, quantity ) {
 
         if ( ! this.ecommerce_transaction ) {
-            this.addTransaction('none set');
+
+            OWA.debug( 'addTransactionLineItem: no transaction is open; call addTransaction() first.' );
+
+            return false;
         }
 
-        var li = {};
-        li.li_order_id = order_id ;
-        li.li_sku = sku ;
-        li.li_product_name = product_name ;
-        li.li_category = category ;
-        li.li_unit_price = unit_price ;
-        li.li_quantity = quantity ;
         var items = this.ecommerce_transaction.get( 'ct_line_items' );
-        items.push( li );
+
+        items.push( OWATracker.purchaseItem( {
+            item_id:       sku,
+            item_name:     product_name,
+            item_category: category,
+            price:         unit_price,
+            quantity:      quantity
+        } ) );
+
         this.ecommerce_transaction.set( 'ct_line_items', items );
+
+        return true;
+    }
+
+    /**
+     * Record a purchase in one call.
+     *
+     *   owa_cmds.push( [ 'trackPurchase', {
+     *       transaction_id: 'T-1001',
+     *       value:    59.98,         // the items: tax and shipping NOT included
+     *       currency: 'USD',
+     *       tax:      4.90,
+     *       shipping: 5.99,
+     *       coupon:   'SPRING',
+     *       affiliation: 'Web store',
+     *       items: [ { item_id: 'SKU-1', item_name: 'Blue mug', price: 19.99, quantity: 2 } ]
+     *   } ] );
+     *
+     * Amounts in MAJOR units, as a price is written; the server converts by the
+     * currency's decimal places. A transaction_id is required: it is what keeps
+     * a reloaded receipt page from recording the purchase twice.
+     *
+     * @param {Object} purchase
+     * @return {boolean} false when refused
+     */
+    trackPurchase( purchase ) {
+
+        var p = purchase || {};
+        var id = p.transaction_id === undefined || p.transaction_id === null
+            ? '' : String( p.transaction_id ).trim();
+
+        if ( id === '' ) {
+
+            OWA.debug( 'trackPurchase: a purchase needs a transaction_id.' );
+
+            return false;
+        }
+
+        var event = new OwaEvent();
+        event.setEventType( 'purchase' );
+        event.set( 'ct_order_id', id );
+        event.set( 'page_url', this.getCurrentUrl() );
+
+        var money = { ct_value: p.value, ct_tax: p.tax, ct_shipping: p.shipping };
+
+        for ( var key in money ) {
+
+            var amount = OWATracker.amount( money[ key ] );
+
+            if ( amount !== null ) {
+
+                event.set( key, amount );
+            }
+        }
+
+        if ( p.currency ) {
+
+            event.set( 'currency', String( p.currency ).trim().toUpperCase() );
+        }
+
+        if ( p.affiliation ) {
+
+            event.set( 'ct_order_source', String( p.affiliation ) );
+        }
+
+        if ( p.coupon ) {
+
+            event.set( 'coupon', String( p.coupon ) );
+        }
+
+        var items = [];
+
+        for ( var i = 0; Array.isArray( p.items ) && i < p.items.length; i++ ) {
+
+            var item = OWATracker.purchaseItem( p.items[ i ] );
+
+            if ( item ) {
+
+                items.push( item );
+            }
+        }
+
+        event.set( 'ct_line_items', items );
+
+        this.trackEvent( event );
+
+        return true;
+    }
+
+    /**
+     * Record a refund of a purchase, whole or in part.
+     *
+     *   owa_cmds.push( [ 'trackRefund', { transaction_id: 'T-1001' } ] );             // all of it
+     *   owa_cmds.push( [ 'trackRefund', { transaction_id: 'T-1001', value: 19.99 } ] );
+     *   owa_cmds.push( [ 'trackRefund', { transaction_id: 'T-1001',
+     *       items: [ { item_id: 'SKU-1', price: 19.99, quantity: 1 } ] } ] );
+     *
+     * The amount refunded is the value when one is given, else the items' price
+     * times quantity, else -- the transaction id alone -- the whole purchase,
+     * which the server looks up. A transaction_id is required: a refund is of
+     * something.
+     *
+     * @param {Object} refund
+     * @return {boolean} false when refused
+     */
+    trackRefund( refund ) {
+
+        var r = refund || {};
+        var id = r.transaction_id === undefined || r.transaction_id === null
+            ? '' : String( r.transaction_id ).trim();
+
+        if ( id === '' ) {
+
+            OWA.debug( 'trackRefund: a refund needs the transaction_id of the purchase.' );
+
+            return false;
+        }
+
+        var event = new OwaEvent();
+        event.setEventType( 'refund' );
+        event.set( 'ct_order_id', id );
+        event.set( 'page_url', this.getCurrentUrl() );
+
+        var money = { ct_value: r.value, ct_tax: r.tax, ct_shipping: r.shipping };
+
+        for ( var key in money ) {
+
+            var amount = OWATracker.amount( money[ key ] );
+
+            if ( amount !== null ) {
+
+                event.set( key, amount );
+            }
+        }
+
+        if ( r.currency ) {
+
+            event.set( 'currency', String( r.currency ).trim().toUpperCase() );
+        }
+
+        var items = [];
+
+        for ( var i = 0; Array.isArray( r.items ) && i < r.items.length; i++ ) {
+
+            var item = OWATracker.purchaseItem( r.items[ i ] );
+
+            if ( item ) {
+
+                items.push( item );
+            }
+        }
+
+        if ( items.length ) {
+
+            event.set( 'ct_line_items', items );
+        }
+
+        this.trackEvent( event );
+
+        return true;
+    }
+
+    /**
+     * One item, in the shape every purchase stores: the known fields only, and
+     * numbers as numbers. NULL for an item naming neither an id nor a name,
+     * which identifies nothing.
+     *
+     * @param {Object} item
+     * @return {Object|null}
+     */
+    static purchaseItem( item ) {
+
+        if ( ! item || typeof item !== 'object' ) {
+
+            return null;
+        }
+
+        var out = {};
+
+        [ 'item_id', 'item_name', 'item_category', 'item_brand', 'item_variant', 'coupon' ]
+            .forEach( function ( key ) {
+
+                if ( item[ key ] !== undefined && item[ key ] !== null && String( item[ key ] ) !== '' ) {
+
+                    out[ key ] = String( item[ key ] );
+                }
+            } );
+
+        [ 'price', 'quantity', 'discount' ].forEach( function ( key ) {
+
+            var n = OWATracker.amount( item[ key ] );
+
+            if ( n !== null ) {
+
+                out[ key ] = n;
+            }
+        } );
+
+        return ( out.item_id || out.item_name ) ? out : null;
+    }
+
+    /** A finite number, or null. */
+    static amount( value ) {
+
+        if ( value === undefined || value === null || value === '' ) {
+
+            return null;
+        }
+
+        var n = Number( value );
+
+        return isFinite( n ) ? n : null;
     }
 
     trackTransaction() {
@@ -2858,26 +3316,44 @@ class OWATracker  {
         }
     }
 
+    /**
+     * How many sessions this visitor had BEFORE this one.
+     *
+     * Counts from zero, which is the whole difficulty: a visitor's first
+     * session stores 0, so "never counted" and "counted once" are not
+     * distinguishable by truthiness. This used to write the STRING "0" the
+     * first time and a NUMBER every time after, and read it back with
+     * `! nps` -- which worked only because "0" is truthy in JavaScript while
+     * 0 is not. The value's type was carrying the distinction, and anything
+     * that normalised the store -- a JSON round-trip, a store that coerces
+     * numeric-looking strings -- would have turned the first session's 0 back
+     * into "absent" and reset the count on every visit. Every session would
+     * then report prior_sessions = 0, and newVsReturning would read New
+     * forever, with nothing anywhere saying so.
+     *
+     * Absence is now tested for directly and the value is a number both ways.
+     * A store still holding the old "0" reads as seen and increments to 1,
+     * which is the right answer for it.
+     *
+     * Reading 0 back out is safe on the wire: collectStateProperties() omits a
+     * property only when it is undefined or '', never when it is falsy.
+     */
     setNumberPriorSessions( event, callback ) {
 
         OWA.debug('setting number of prior sessions');
-        // if check for nps value in vistor cookie.
-        var nps = OWA.getState( 'v', 'nps' );
-        // set value to 1 if not found as it means its he first session.
+
+        var store = this.storeName( 'v' );
+        var nps   = OWA.getState( store, 'nps' );
 
         if ( this.isNewSessionFlag ) {
 
-            if ( ! nps ) {
-                nps = "0";
-            } else {
-                // increment visit count and persist to state store
-                nps = nps * 1;
-                nps++;
-            }
+            var counted = nps !== undefined && nps !== null && nps !== ''
+                       && ! isNaN( nps * 1 );
 
-            OWA.setState( 'v', 'nps', nps, true );
+            nps = counted ? ( nps * 1 ) + 1 : 0;
+
+            OWA.setState( store, 'nps', nps, true );
         }
-
 
         if (callback && (typeof(callback) === "function")) {
             callback(event);
@@ -2903,22 +3379,6 @@ class OWATracker  {
         if ( ! visitor_id ) {
             visitor_id = Util.generateRandomGuid();
 
-            /*
-             * Session state: it says this session was the visitor's FIRST, not
-             * that this request minted them, and the store's lifetime is what
-             * makes that true.
-             *
-             * On a new session the persisted copy is discarded and memory kept,
-             * so a returning visitor's stale flag goes and a genuinely new
-             * one's survives. Written here, ahead of that discard, because
-             * setVisitorId runs before setSessionId in the chain.
-             *
-             * On a later page of the SAME session it hydrates back, which is
-             * the fix: as a per-page global it vanished, so the server derived
-             * is_repeat_visitor = true on page two of a visitor's very first
-             * session while the session row still said is_new_visitor.
-             */
-            OWA.setState( this.storeName('s'), 'is_new_visitor', true );
             this.pendingVisitorCreated = true;
             OWA.debug('Creating new visitor id');
         }
@@ -3152,7 +3612,6 @@ class OWATracker  {
             session_id = Util.generateRandomGuid();
             // it's a new session. generate new session ID
                //mark new session flag on current request
-            OWA.setState( 'd', 'is_new_session', true );
             this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( this.storeName('s'), 'sid', session_id, true );
@@ -3175,7 +3634,6 @@ class OWATracker  {
         if ( ! session_id ) {
             session_id = Util.generateRandomGuid();
             //mark new session flag on current request
-            OWA.setState( 'd', 'is_new_session', true );
             this.pendingSessionStart = true;
             this.isNewSessionFlag = true;
             OWA.setState( this.storeName('s'), 'sid', session_id, true );
@@ -3238,11 +3696,35 @@ class OWATracker  {
      * Scope lives in the NAME, at every layer -- the beacon, the store and
      * eventually the registered dimension -- so nothing downstream has to infer
      * which bag a value belongs to, and the same name in two scopes is two
-     * different things all the way down. GA does the same with `ep.` and `up.`;
-     * underscores here because OWA's own params are read as bare keys.
+     * different things all the way down. Underscores rather than dots because
+     * OWA's own params are read as bare keys.
      */
     static get EVENT_PROPERTY_PREFIX() { return 'ep_'; }
     static get USER_PROPERTY_PREFIX()  { return 'up_'; }
+
+    /**
+     * And the numeric halves, `epn_` and `upn_`.
+     *
+     * THE TYPE IS IN THE NAME for the same reason the scope is: a query string
+     * has no numbers, so without a prefix every value arrives as text and
+     * `params` stores "42" where the site set 42. Nothing downstream can tell
+     * that from a string that merely looks numeric -- a version, a postcode,
+     * an order id with leading zeros -- so guessing at the far end is worse
+     * than being told at this one.
+     */
+    static get EVENT_PROPERTY_NUMBER_PREFIX() { return 'epn_'; }
+    static get USER_PROPERTY_NUMBER_PREFIX()  { return 'upn_'; }
+
+    /*
+     * THERE IS NO CAP HERE, deliberately. How many custom properties an event
+     * may carry is enforced at INGEST, because the tracker is not the only
+     * thing that can post to the endpoint and a limit only this file honours
+     * is a limit only well-behaved callers meet. It was implemented in both
+     * places first, which is worse than either: two numbers that can drift,
+     * and a client-side one that reads like a guarantee while guaranteeing
+     * nothing.
+     */
+
 
     /** Names must survive becoming a JSON key and then a column. */
     static get PROPERTY_NAME_PATTERN() { return /^[A-Za-z][A-Za-z0-9_]{0,39}$/; }
@@ -3254,8 +3736,8 @@ class OWATracker  {
      * in `params` on the raw row. The server never has to guess the scope: the
      * `ep_` prefix says it.
      *
-     * Page-lifetime and in memory, like GA's event parameters -- nothing is
-     * written to a cookie, so a value set here cannot outlive its own meaning
+     * Page-lifetime and in memory -- nothing is written to a cookie, so a value
+     * set here cannot outlive its own meaning
      * the way v1's persisted custom variables could.
      *
      * @param  name   string  letters, digits and underscores; must start with a letter
@@ -3270,19 +3752,28 @@ class OWATracker  {
             return;
         }
 
-        this.setGlobalEventProperty( OWATracker.EVENT_PROPERTY_PREFIX + name, String( value ) );
+        /*
+         * A JS number goes to the numeric prefix, `epn_`. NaN and Infinity are
+         * NOT numbers here: neither survives
+         * JSON, so both would arrive as null and read as absence.
+         */
+        var numeric = typeof value === 'number' && isFinite( value );
+
+        var key = ( numeric ? OWATracker.EVENT_PROPERTY_NUMBER_PREFIX
+                            : OWATracker.EVENT_PROPERTY_PREFIX ) + name;
+
+        this.setGlobalEventProperty( key, numeric ? value : String( value ) );
     }
 
     /**
      * A custom value describing the VISITOR.
      *
-     * Also page-lifetime on the client, and deliberately so: GA holds user
-     * properties in memory for the page, stamps them on each hit, and persists
-     * them server side against the user. Exercising their tracker confirmed it
-     * -- set one, navigate, and the next page's beacons carry nothing until it
-     * is set again; the cookies hold only the client id and session state.
+     * Also page-lifetime on the client, and deliberately so: held in memory for
+     * the page, stamped on each event, and persisted server side against the
+     * user. Set one, navigate, and the next page's beacons carry nothing until it
+     * is set again.
      *
-     * OWA does the same. The `up_` prefix routes it to the visitor store at
+     * The `up_` prefix routes it to the visitor store at
      * ingest, where it is written last-value-wins with the event's timestamp,
      * so what persists is a server record rather than a cookie that can outlive
      * the value it holds.
@@ -3299,7 +3790,17 @@ class OWATracker  {
             return;
         }
 
-        this.setGlobalEventProperty( OWATracker.USER_PROPERTY_PREFIX + name, String( value ) );
+        /*
+         * A JS number goes to the numeric prefix, `upn_`. NaN and Infinity are
+         * NOT numbers here: neither survives
+         * JSON, so both would arrive as null and read as absence.
+         */
+        var numeric = typeof value === 'number' && isFinite( value );
+
+        var key = ( numeric ? OWATracker.USER_PROPERTY_NUMBER_PREFIX
+                            : OWATracker.USER_PROPERTY_PREFIX ) + name;
+
+        this.setGlobalEventProperty( key, numeric ? value : String( value ) );
     }
 
     /**
@@ -3317,8 +3818,8 @@ class OWATracker  {
      * v2 design refuses: it is something the server can derive from the
      * session's own events, and something the client can get wrong -- v1's own
      * session store had a variable outliving the session that set it, because
-     * nothing cleared it at a session boundary. GA offers site authors event
-     * and user scope for the same reason and derives session scope itself.
+     * nothing cleared it at a session boundary. So site authors get event and
+     * user scope, and session scope is derived.
      *
      * The slot is ignored. It was v1 storage -- five numbered columns on a fact
      * table -- and never information; two calls with the same name now mean the
@@ -3393,13 +3894,7 @@ class OWATracker  {
             { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'referer', name: 'session_referer' },
-            // The landing URL, session-scoped like the referer beside it. It is
-            // what the server parses campaign tags out of, now that the tracker
-            // no longer parses them itself.
-            { store: 's', key: 'landing_url', name: 'landing_url' },
             { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
-            { store: 's', key: 'is_new_visitor',    name: 'is_new_visitor' },
             { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
         ];
@@ -3410,30 +3905,34 @@ class OWATracker  {
             // a site-scoped one lives under '<name>_<siteId>'
             var value = OWA.getState( this.storeName( map[i].store ), map[i].key );
 
-            // Defined rather than truthy: nps is legitimately the string "0"
-            // on a visitor's first session, and dsfs is 0 on their first day.
+            // Defined rather than truthy: nps is legitimately 0 on a
+            // visitor's first session, and dsfs is 0 on their first day.
             if ( value !== undefined && value !== '' ) {
                 collected[ map[i].name ] = value;
             }
         }
 
-        // Defined-only, not non-empty: '' is the honest answer on a visitor's
-        // first ever request, and the property is in the beacon contract, so it
-        // has to be present as '' rather than missing.
-        var prior_last_req = OWA.getState( this.storeName('s'), 'prior_last_req' );
+        /*
+         * last_req is no longer collected onto the event.
+         *
+         * THE STORE KEY STAYS. `s.last_req` is how the DEVICE decides a session
+         * has timed out -- isNewSession() compares it with this request -- and
+         * `prior_last_req` still holds the previous session's last hit so the
+         * boundary can read it before it is overwritten. Both are state; neither
+         * needs to be on the wire.
+         *
+         * What the SERVER did with it: v1's logSession() wrote
+         * prior_session_lastreq and six date parts formatted from it, and
+         * visitDuration was AVG(last_req - timestamp). Those handlers are
+         * unregistered, and engagement_msec replaced visitDuration because the
+         * old one could not see the final page. Nothing on v2 reads it, and the
+         * prior session's start arrives as `psts` with a column of its own.
+         *
+         * It was also the one CLIENT-clock value reaching the schema, subtracted
+         * from a SERVER clock -- see project_clock_provenance. Removing it ends
+         * that mixing rather than documenting it.
+         */
 
-        if ( prior_last_req !== undefined ) {
-            collected.last_req = prior_last_req;
-        }
-
-        // The accumulated attribution history. Stored as an array; the wire
-        // format is JSON, and it is omitted entirely when empty rather than
-        // being sent as "[]".
-        var campaign_state = OWA.getState( 'c', 'attribs' );
-
-        if ( campaign_state && campaign_state.length > 0 ) {
-            collected.attribs = JSON.stringify( campaign_state );
-        }
 
         /*
          * The visitor's first-visit DATE, derived from the stored anchor rather
@@ -3442,8 +3941,7 @@ class OWATracker  {
          * A date, not a timestamp and not an elapsed count. Coarsening is the
          * whole point: the anchor is stamped by the visitor's clock, and a clock
          * wrong by minutes or hours yields the same date -- only an error
-         * crossing midnight costs anything, and only ever one day, once. This is
-         * what GA exposes as firstSessionDate, for the same reason.
+         * crossing midnight costs anything, and only ever one day, once.
          *
          * It is also a pure function of a value that never changes, so it is
          * permanent and visitor-scoped: identical on every event this visitor
@@ -3466,7 +3964,7 @@ class OWATracker  {
         // they cannot go in the map above.
         /*
          * The tagged_* keys are no longer collected, because nothing writes
-         * them to session state any more -- the server parses landing_url
+         * them to session state any more -- the server parses page_location
          * instead. The loop that stood here read six keys that are now always
          * absent.
          *
@@ -3515,7 +4013,7 @@ class OWATracker  {
         var collected = {
             'page_url':     this.getCurrentUrl(),
             'page_title':   String( document.title ).trim(),
-            'HTTP_REFERER': document.referrer
+            'HTTP_REFERER': this.getPageReferrer()
         };
 
         var store = OWA.getState( 'd' );
@@ -3554,7 +4052,17 @@ class OWATracker  {
 
         if ( ! event.get( 'HTTP_REFERER') && ! this.getGlobalEventProperty('HTTP_REFERER')) {
 
-            event.set('HTTP_REFERER', document.referrer );
+            event.set('HTTP_REFERER', this.getPageReferrer() );
+        }
+
+        if ( ! event.get( 'screen_resolution' ) ) {
+
+            var resolution = this.getScreenResolution();
+
+            if ( resolution ) {
+
+                event.set( 'screen_resolution', resolution );
+            }
         }
 
         if ( ! event.get( 'page_title') && ! this.getGlobalEventProperty('page_title') ) {
@@ -3584,22 +4092,18 @@ class OWATracker  {
         }
 
         /*
-         * The client's own clock at send, in microseconds.
+         * client_ts_usec was stamped here and is not sent any more.
          *
-         * The server stamps its receipt time and stores the DIFFERENCE, so
-         * skew becomes a number instead of a silent error. 1.x subtracts a
-         * client clock from a server one and records no provenance for either,
-         * so a device an hour out produces a session length nobody can identify
-         * as wrong.
+         * It existed for ONE column: the server subtracted it from its own
+         * receipt time into owa_event_raw.clock_offset_usec, so skew would be a
+         * stored number rather than a silent error. Update046 dropped that
+         * column -- ordering is settled by event_seq, a counter that needs no
+         * clock -- and the field went on being sent for every beacon afterwards,
+         * read by nothing on either side. The tracker never read it back either.
          *
-         * Date.now() is milliseconds; the extra three digits are zeros and not
-         * a claim of precision the browser does not have. What matters is the
-         * UNIT matching the column, so the subtraction is meaningful.
+         * If skew is wanted again it needs the column back, and then this line;
+         * sending the number to nowhere is not a step toward that.
          */
-        if ( ! event.get( 'client_ts_usec' ) ) {
-
-            event.set( 'client_ts_usec', Date.now() * 1000 );
-        }
 
         /*
          * ENGAGEMENT RIDES EVERY EVENT, as a delta.
@@ -3683,11 +4187,15 @@ class OWATracker  {
          * prefixes remove.
          */
 
-        // user_name lives on the visitor, not the page.
-        var user_name = OWA.getState( 'v', 'user_name' );
-        if ( user_name ) {
-            collected.user_name = user_name;
-        }
+        /*
+         * user_name is no longer collected from the visitor store.
+         *
+         * setUserName() writes the PAGE store under the up_ prefix, so
+         * collectPageProperties() has already put it on the event as up_user_name
+         * by the time this runs -- the same shape every other custom user property
+         * arrives in. Reading it back out of a cookie here is what made it
+         * visitor-scoped transport for a value that is page-scoped and temporal.
+         */
 
         for ( var name in collected ) {
 
@@ -3768,15 +4276,21 @@ class OWATracker  {
          * isNewSession() already reads as though this were the case -- its
          * variable is time_since_lastreq and its own comment says "prev session
          * expired, because no requests since some time" -- and sessionLength
-         * means an inactivity window. This makes the value match the name. It
-         * is also how GA behaves: its session cookie carries a most-recent-hit
-         * timestamp updated per event, alongside the session start.
+         * means an inactivity window. This makes the value match the name.
          *
          * Placed after the identity block so the first event of a page still
          * decides sessionization against the PREVIOUS request before this one
          * overwrites it.
          */
         this.advanceLastRequestTime( event );
+
+        // Per event, and for the same reason: a page's events must not share a
+        // position any more than they share a last-request time.
+        this.stampEventSequence( event );
+
+        // Which beacon format this is. Every event, because a row is what the
+        // question gets asked of, not a session.
+        event.set( 'beacon_version', OWATracker.BEACON_FORMAT_VERSION );
 
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
@@ -3797,6 +4311,86 @@ class OWATracker  {
     }
 
     /**
+     * The event's position in its session, counted on the DEVICE.
+     *
+     * WHY A COUNTER AND NOT A TIME. The server stamps `ts` at edge receipt --
+     * it is environmental, so a request cannot set it and a queue drain cannot
+     * restamp it -- and the cube's window sorts a session on that. So events
+     * order by ARRIVAL, and a beacon that lands late sorts after ones that
+     * happened after it. The unload beacon is the standing example: it puts
+     * is_exit on the wrong event and mis-orders any funnel spanning it.
+     *
+     * A client TIMESTAMP would not fix that. A device clock can be wrong,
+     * skewed, or set by hand, and two events a second apart can carry times in
+     * the wrong order. A counter is monotonic whatever the clock says, which is
+     * the only property the sort actually needs.
+     *
+     * STAMPED AT CREATION, NOT AT SEND. This runs on the event as it is built,
+     * so a beacon that is deferred, queued or retried carries the number it had
+     * when it happened. Incrementing at transport time would reproduce exactly
+     * the bug it exists to fix.
+     *
+     * Per EVENT, not per page: it sits beside advanceLastRequestTime() outside
+     * the stateInit guard for that reason. Inside it, every event of a page
+     * would share one number.
+     *
+     * Counts from 1, so 0 is never a legitimate value and absence stays
+     * distinguishable -- unlike nps, which counts from zero and needed the
+     * explicit test this one does not.
+     *
+     * TWO TABS SHARE THE STORE, so both can read n and write n+1, and a
+     * duplicate is possible. Not solved here: the cube's sort keeps `id` as its
+     * final tiebreak, so a duplicate is ordered deterministically rather than
+     * arbitrarily, and the pair is still ordered correctly against every other
+     * event of the session. A lock would cost more than the collision does.
+     */
+    /**
+     * The beacon FORMAT generation this tracker speaks.
+     *
+     * Bumped when the shape of a beacon changes in a way a server has to bridge
+     * -- a renamed token, a changed unit, a re-encoded value -- and not for
+     * ordinary releases. One integer for the whole message, rather than a flag
+     * per field.
+     *
+     * IT IS NOT CONSULTED TO DECIDE WHETHER A BEACON IS ACCEPTABLE. Whether one
+     * beacon can become a row is the server's identity guard, which knows
+     * nothing of versions. This exists so that "has generation N died out yet"
+     * is a query against stored rows instead of a guess about how long a
+     * customer's cache policy lets an old tracker live -- and OWA does not
+     * control that policy.
+     *
+     * ALIGNED TO THE OWA MAJOR, so a beacon format version and the tracker
+     * generation that emitted it are the same number. 2 is this wire. 1 is the
+     * v1 line, which predates the field, sends nothing and lands as NULL.
+     *
+     * Each version's emitted set is recorded standalone in
+     * tests/fixtures/beacon_contracts.json -- a version does not inherit from
+     * another, because the point of keeping an old one is to know what
+     * actually arrived.
+     */
+    static get BEACON_FORMAT_VERSION() {
+
+        return 2;
+    }
+
+    stampEventSequence( event ) {
+
+        var store = this.storeName( 's' );
+        var seq   = OWA.getState( store, 'seq' );
+
+        seq = ( seq === undefined || seq === null || seq === '' || isNaN( seq * 1 ) )
+            ? 1
+            : ( seq * 1 ) + 1;
+
+        OWA.setState( store, 'seq', seq, true );
+
+        // On the event rather than collected from the store later: the value is
+        // THIS event's, and a second tab writing between the two reads would
+        // otherwise hand it somebody else's number.
+        event.set( 'event_seq', seq );
+    }
+
+    /**
      * Sends an OWA event to the server for processing using GET
      * inserts 1x1 pixel IMG tag into DOM
      */
@@ -3813,6 +4407,29 @@ class OWATracker  {
      */
     trackCustomEvent(event_type, properties, block) {
 
+        if ( ! OWATracker.isLegalCustomEventName( event_type ) ) {
+
+            return;
+        }
+
+        return this.raiseEvent( event_type, properties, block );
+    }
+
+    /**
+     * Send an event by name, with no reserved-name check.
+     *
+     * THE INTERNAL HALF of trackCustomEvent(). The guard there exists to stop a
+     * SITE claiming a name OWA defines -- once a beacon arrives the server cannot
+     * tell a site's `click` from its own. OWA raising its OWN first-class event is
+     * not that case, and routing it through the public method made the tracker
+     * refuse form_start, form_submit, view_search_results and exception, which are
+     * reserved precisely because they are ours.
+     *
+     * Measured as four failing specs the moment the guard was added, which is the
+     * distinction the two methods now carry.
+     */
+    raiseEvent( event_type, properties, block ) {
+
         var event = this.makeEvent();
         event.setEventType( event_type );
 
@@ -3822,6 +4439,144 @@ class OWATracker  {
 
         return this.trackEvent( event, block );
     }
+
+    /**
+     * The least unreported engagement, in milliseconds, that is sent as a
+     * user_engagement event of its own. Less than this rides the next event.
+     */
+    static get MIN_ENGAGEMENT_EVENT_MSEC() {
+
+        return 1000;
+    }
+
+    /**
+     * How long a route's URL must be still before its page view is sent. Long
+     * enough for a framework to set the title after pushState; rapid pushes
+     * inside it are one page view, for the URL they settle on.
+     */
+    static get ROUTE_SETTLE_MSEC() {
+
+        return 500;
+    }
+
+    /** Send a route page view still waiting to settle, if there is one. */
+    flushPendingRouteView() {
+
+        if ( typeof this.flushRouteView === 'function' ) {
+
+            this.flushRouteView();
+        }
+    }
+
+    /**
+     * The page this one was reached from: the previous route after a route
+     * change, else the document's referrer.
+     */
+    getPageReferrer() {
+
+        return this.routeReferrer || document.referrer;
+    }
+
+    /**
+     * The screen as WIDTHxHEIGHT in CSS pixels, or '' where there is none.
+     *
+     * The SCREEN, not the viewport: the device's size, which is what
+     * screenResolution reports. The viewport is a click's frame and rides
+     * clicks only.
+     */
+    getScreenResolution() {
+
+        if ( typeof window === 'undefined' || ! window.screen ) {
+
+            return '';
+        }
+
+        var w = Math.round( Number( window.screen.width ) );
+        var h = Math.round( Number( window.screen.height ) );
+
+        return w > 0 && h > 0 ? w + 'x' + h : '';
+    }
+
+    /**
+     * The event names v2 defines for itself, which a custom event may not take.
+     *
+     * The reserved list IS the first-class list -- page_view, click, scroll,
+     * file_download, form_start, form_submit, session_start, first_visit,
+     * user_engagement, view_search_results. Reusing one of them would put a
+     * site's own counts into a report measuring
+     * something else, and on the server it would claim a property vocabulary the
+     * event does not have.
+     *
+     * KEPT IN STEP BY A TEST, not by hand: the server derives the same set from
+     * the property registry -- an event is first-class exactly when some property
+     * declares it -- and TrackerReservedEventNamesTest asserts the two agree. So
+     * adding a first-class event on the server fails here until this is updated,
+     * which is the only direction that can go wrong silently.
+     *
+     * The two markers are included though no browser sends them: they are event
+     * TYPES on stored rows, materialised by the server, so a custom event using
+     * one would be indistinguishable from the real thing.
+     */
+    static get RESERVED_EVENT_NAMES() {
+        return [
+            'page_view', 'click', 'purchase', 'refund',
+            'user_engagement', 'scroll', 'file_download',
+            'form_start', 'form_submit', 'view_search_results',
+            'session_start', 'first_visit'
+        ];
+    }
+
+    /**
+     * A name starts with a letter, uses only letters, numbers and underscores,
+     * and is at most 40 characters. Case-sensitive, so my_event and My_Event are
+     * two events.
+     *
+     * The same pattern the server applies to a custom PROPERTY name -- one rule,
+     * stated once on each side.
+     */
+    static isLegalCustomEventName( name ) {
+
+        name = String( name === undefined || name === null ? '' : name );
+
+        if ( ! /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test( name ) ) {
+
+            OWA.debug( 'Custom event name must start with a letter, contain only letters, digits and underscores, and be at most 40 characters: ' + name );
+
+            return false;
+        }
+
+        if ( OWATracker.RESERVED_EVENT_NAMES.indexOf( name ) !== -1 ) {
+
+            OWA.debug( 'Custom event name is reserved by OWA and cannot be used: ' + name );
+
+            return false;
+        }
+
+        /*
+         * AND THE `owa_` PREFIX IS RESERVED, which is forward protection rather
+         * than a rule about today.
+         *
+         * It keeps room to name a future first-class event without colliding
+         * with one a site has already been sending for years. OWA's own events
+         * are unprefixed -- page_view, click -- so the prefix is not how OWA names
+         * things now; it is how a later addition stays safe.
+         *
+         * A leading underscore and a dotted name are refused by the pattern above
+         * already.
+         */
+        if ( name.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
+
+            OWA.debug( 'Custom event names may not start with '
+                + OWATracker.RESERVED_EVENT_PREFIX + ', which OWA reserves: ' + name );
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /** Reserved so a future first-class event cannot collide with a site's. */
+    static get RESERVED_EVENT_PREFIX() { return 'owa_'; }
 
     trackEvent(event, block) {
         //OWA.debug('pre global event: %s', JSON.stringify(event));
@@ -3868,22 +4623,59 @@ class OWATracker  {
             event.set('page_url', url);
         }
 
-        event.setEventType( "base.page_request" );
+        event.setEventType( 'page_view' );
+
+        /*
+         * THE FIRST PAGE VIEW CARRIES NO ENGAGEMENT. What has accrued before it is
+         * the milliseconds between the tracker being built and the snippet asking
+         * for a page view, which is not reading time. The clock restarts here.
+         */
+        if ( ! this.pageViewSent ) {
+
+            this.pageViewSent = true;
+            this.resetEngagement();
+        }
 
         return this.trackEvent( event );
     }
 
+    /**
+     * A tracked action.
+     *
+     * @deprecated Use trackCustomEvent( name, { ep_*: ... } ).
+     *
+     * THE ACTION'S NAME IS NOW THE EVENT'S NAME. This sent event_type
+     * 'custom_event' with the name as a property, which is v1's shape: one event
+     * type for everything a site tracks, told apart by a field. v2 retires it --
+     * an event name is a name, and the group, label and value are parameters
+     * describing it, which is the reason eventName is a dimension.
+     *
+     * So this maps onto trackCustomEvent(): the name becomes the event, and the
+     * other three become custom event properties in `params`. A site that was
+     * calling it keeps working and its data lands under its own action names
+     * instead of pooled under one.
+     *
+     * An action name that is not a legal event name, or that collides with a
+     * reserved one, is refused by trackCustomEvent() rather than silently
+     * reshaped.
+     */
     trackAction(action_group, action_name, action_label, numeric_value) {
 
-        var event = new OwaEvent;
+        var properties = {};
 
-        event.setEventType('track.action');
-        event.set('action_group', action_group);
-        event.set('action_name', action_name);
-        event.set('action_label', action_label);
-        event.set('numeric_value', numeric_value);
-        this.trackEvent(event);
-        OWA.debug("Action logged");
+        if ( action_group !== undefined && action_group !== null && action_group !== '' ) {
+            properties.ep_action_group = String( action_group );
+        }
+
+        if ( action_label !== undefined && action_label !== null && action_label !== '' ) {
+            properties.ep_action_label = String( action_label );
+        }
+
+        if ( typeof numeric_value === 'number' && isFinite( numeric_value ) ) {
+            properties.epn_numeric_value = numeric_value;
+        }
+
+        return this.trackCustomEvent( action_name, properties );
     }
 
     /**
@@ -3896,12 +4688,15 @@ class OWATracker  {
      * every other tracker names these as events.
      *
      * Outbound is the opposite call: it IS a property of the click, because
-     * "clicks that left the site" is the same count as "clicks", narrowed. So
-     * it rides as a param rather than becoming an event of its own.
+     * "clicks that left the site" is the same count as "clicks", narrowed. So it
+     * is a column on the click row rather than an event of its own, set by
+     * isOutboundUrl() where the DOM is -- and NOT on this event. A download is a
+     * file arriving, not the visitor leaving; the click that raised it answers
+     * that question.
      *
      * @param {string} url
      */
-    classifyClickTarget( url ) {
+    classifyClickTarget( url, click ) {
 
         if ( ! url ) {
 
@@ -3916,8 +4711,20 @@ class OWATracker  {
             event.setEventType( 'file_download' );
             event.set( 'target_url', url );
             event.set( 'file_extension', extension );
-            event.set( 'file_name', String( url ).split( '#' )[0].split( '?' )[0]
-                .substring( String( url ).split( '#' )[0].split( '?' )[0].lastIndexOf( '/' ) + 1 ) );
+            event.set( 'file_name', this.getDownloadFileName( url ) );
+
+            // WHICH LINK, copied from the click: two links to one file are told
+            // apart by these.
+            if ( click ) {
+
+                [ 'dom_element_id', 'dom_element_text' ].forEach( function ( name ) {
+
+                    if ( click.get( name ) ) {
+
+                        event.set( name, click.get( name ) );
+                    }
+                } );
+            }
 
             this.trackEvent( event );
         }
@@ -3926,10 +4733,20 @@ class OWATracker  {
     /**
      * Track form interaction: one form_start per form, and form_submit on send.
      *
-     * form_start fires on the FIRST interaction with a given form and not
+     * form_start fires on the first `change` event in a given form and not
      * again, which is what makes start/submit a funnel rather than two counts
      * of the same thing. Tracked per form element, so two forms on one page
      * each get their own start.
+     *
+     * `change`, NOT FOCUS. A text field raises `change` when the visitor leaves
+     * it with a new value; a select, checkbox or radio when its value changes.
+     * Focus alone, tabbing through, or typing without leaving the field is not a
+     * start -- clicking into a form and walking away is not having begun it.
+     *
+     * A SUBMIT WITH NO START RAISES ONE FIRST, so every form_submit has a
+     * form_start and the funnel cannot show more submits than starts. That
+     * happens when nothing changed (a one-button form) or the value was set by
+     * script. It carries no first-field properties: no field was interacted with.
      *
      * Bound at the document with capture rather than per form, so forms added
      * to the page after load are covered without re-binding -- which is the
@@ -3962,18 +4779,28 @@ class OWATracker  {
             return null;
         };
 
-        document.addEventListener( 'focusin', function ( e ) {
+        var start = function ( form, field ) {
 
-            var form = formOf( e.target );
-
-            if ( ! form || started.indexOf( form ) > -1 ) {
+            if ( started.indexOf( form ) > -1 ) {
 
                 return;
             }
 
             started.push( form );
 
-            that.trackCustomEvent( 'form_start', that.formProperties( form ) );
+            that.raiseEvent( 'form_start', that.formProperties( form, field ) );
+        };
+
+        document.addEventListener( 'change', function ( e ) {
+
+            var form = formOf( e.target );
+
+            if ( form ) {
+
+                // e.target is the field whose value changed, which is what makes
+                // the first-field properties mean anything.
+                start( form, e.target );
+            }
 
         }, true );
 
@@ -3983,25 +4810,219 @@ class OWATracker  {
 
             if ( form ) {
 
-                that.trackCustomEvent( 'form_submit', that.formProperties( form ) );
+                start( form );
+
+                var properties = that.formProperties( form );
+
+                /*
+                 * WHICH BUTTON SENT IT. A form with Save and Save-and-publish is
+                 * two different submissions, and nothing else on the event tells
+                 * them apart. e.submitter is the button on a real submit; a
+                 * dispatched Event has none, and then this is simply absent
+                 * rather than guessed at.
+                 *
+                 * Absent on a script-dispatched submit rather than guessed, which
+                 * is why the jest case for it sets `submitter` explicitly.
+                 */
+                var text = that.submitterText( e );
+
+                if ( text ) {
+
+                    properties.form_submit_text = text;
+                }
+
+                that.raiseEvent( 'form_submit', properties );
             }
 
         }, true );
     }
 
     /**
-     * How a form identifies itself. Both, because either may be absent and a
-     * report keyed on a missing one has nothing to group by.
+     * What a form says about itself.
+     *
+     * BOTH IDENTIFIERS, because either may be absent and a report keyed on a
+     * missing one has nothing to group by.
+     *
+     * `form_destination` is where it submits, resolved to an absolute URL, and it
+     * is the one of these that identifies a form across pages: two pages can each
+     * carry a form with no id and no name, and the action distinguishes them.
+     * Falls back to the page's own URL, which is what a form with no action
+     * actually submits to.
+     *
+     * `form_length` counts the fields a visitor can interact with, so a
+     * form_start on a two-field signup and one on a fourteen-field application are
+     * distinguishable. Buttons are EXCLUDED: a button is not a field to fill in,
+     * and counting it makes the number mean nothing in particular.
+     *
+     * The first-field properties say where the visitor started. On a long form
+     * that is a real signal -- someone who begins at field nine skipped eight --
+     * and it is why form_start carries them and form_submit does not.
+     *
+     * `first_field_type` is the element's `type` property: the input type
+     * (text, email, checkbox ...; 'text' when the attribute is absent), or
+     * 'select-one', 'select-multiple' or 'textarea'.
+     *
+     * ALL PARAMS, NOT COLUMNS. Every one of these rides `params`: most installs
+     * will never group by a form's name, let alone the position of its first
+     * field, and a column is width on every row of every Property. A site that
+     * does want one registers it as a custom dimension.
      *
      * @param {Element} form
+     * @param {Element} [field]  the field whose change started the form
      * @return {Object}
      */
-    formProperties( form ) {
+    formProperties( form, field ) {
 
-        return {
-            form_id:   form.id || '',
-            form_name: form.getAttribute( 'name' ) || ''
+        var fields = this.formFields( form );
+
+        var properties = {
+            form_id:          form.id || '',
+            form_name:        form.getAttribute( 'name' ) || '',
+            form_destination: this.formDestination( form ),
+            form_length:      fields.length
         };
+
+        if ( field ) {
+
+            properties.first_field_id       = field.id || '';
+            properties.first_field_name      = field.getAttribute( 'name' ) || '';
+            properties.first_field_type     = String( field.type || '' ).toLowerCase();
+            // ONE-BASED: "the first field" is position 1, not position 0.
+            properties.first_field_position = fields.indexOf( field ) + 1;
+        }
+
+        return properties;
+    }
+
+    /**
+     * The fields of a form, in document order, excluding anything that submits.
+     *
+     * @param {Element} form
+     * @return {Element[]}
+     */
+    formFields( form ) {
+
+        var out = [];
+        var all = form.querySelectorAll( 'input, select, textarea' );
+
+        for ( var i = 0; i < all.length; i++ ) {
+
+            var type = String( all[i].getAttribute( 'type' ) || '' ).toLowerCase();
+
+            if ( type === 'submit' || type === 'button' || type === 'image'
+                 || type === 'reset' || type === 'hidden' ) {
+
+                continue;
+            }
+
+            out.push( all[i] );
+        }
+
+        return out;
+    }
+
+    /**
+     * The label of the control that submitted the form, or '' if none did.
+     *
+     * `submitter` is on the real submit event. A form submitted by script has no
+     * submitter, and a value is not invented for it.
+     *
+     * @param {Event} e
+     * @return {string}
+     */
+    submitterText( e ) {
+
+        var button = e && e.submitter;
+
+        if ( ! button ) {
+
+            return '';
+        }
+
+        var text = button.value || button.textContent || '';
+
+        return String( text ).trim();
+    }
+
+    /**
+     * Where the form submits, absolute.
+     *
+     * A relative action is resolved against the page, so two sites' /subscribe do
+     * not read as one destination. A form with no action submits to the page
+     * itself, which is what the fallback says.
+     *
+     * @param {Element} form
+     * @return {string}
+     */
+    formDestination( form ) {
+
+        var action = form.getAttribute( 'action' );
+        var here = ( typeof window !== 'undefined' && window.location )
+            ? window.location.href : '';
+
+        if ( ! action ) {
+
+            return here;
+        }
+
+        try {
+
+            return new URL( action, here || undefined ).href;
+
+        } catch ( e ) {
+
+            return action;
+        }
+    }
+
+    /**
+     * Which query parameters carry a site-search term.
+     *
+     * AN ARRAY, AND IT REPLACES THE DEFAULTS rather than adding to them. A site
+     * that uses ?kw= gets kw and nothing else, so its ?q= -- which may mean
+     * something entirely different -- stops being read as a search. Merging would
+     * make the shipped list impossible to get rid of.
+     *
+     * An empty array switches site-search tracking off.
+     *
+     * A NAMED SETTER, like setTrackUrlFragments and setDomstreamSampleRate, because
+     * this is site-facing and setOption() takes any key with no checking. It
+     * REFUSES anything that is not an array, which is the reason it is worth
+     * having: trackSiteSearch() walks the value by index, and a string has a length
+     * and indexes to characters, so setOption('siteSearchParams', 'query') searched
+     * for q, u, e, r and y -- found nothing, reported nothing, said nothing. The
+     * refusal is logged and the previous value stands.
+     *
+     * CALL IT BEFORE trackPageView(), which is where the search is read from the
+     * URL. The standard snippet configures then tracks, so that is the normal
+     * order; a site that calls this afterwards has already had the defaults applied
+     * to its first page view.
+     *
+     * @param {string[]} params  parameter names, tried in order
+     */
+    setSearchQueryParams( params ) {
+
+        if ( ! Array.isArray( params ) ) {
+
+            OWA.debug( 'setSearchQueryParams needs an ARRAY of parameter names. '
+                + 'A bare string indexes to its own characters.' );
+
+            return;
+        }
+
+        var names = [];
+
+        for ( var i = 0; i < params.length; i++ ) {
+
+            var name = String( params[ i ] ).trim();
+
+            if ( name ) {
+
+                names.push( name );
+            }
+        }
+
+        this.setOption( 'siteSearchParams', names );
     }
 
     /**
@@ -4025,20 +5046,48 @@ class OWATracker  {
 
         for ( var i = 0; i < params.length; i++ ) {
 
-            var term = this.getUrlParam( params[ i ] );
+            var term = this.getSearchParam( params[ i ] );
 
-            if ( term ) {
+            if ( term.trim() ) {
 
-                return this.trackCustomEvent( 'view_search_results', { search_term: term } );
+                return this.raiseEvent( 'view_search_results', { search_term: term } );
             }
         }
     }
 
     /**
-     * Report an uncaught script error as an `exception` event.
+     * One query-string parameter, decoded the way a form submits it.
      *
-     * The name is GA's, because the question it answers is the same one and
-     * nothing is gained by inventing a different word for it.
+     * NOT getUrlParam(), whose parser left `+` as `+` and `%26` encoded, read
+     * parameters out of the fragment, lower-cased names, took the LAST of a
+     * repeated parameter and threw on a malformed escape. A search box submits
+     * `Red+Shoes`; the term is `Red Shoes`.
+     *
+     * The query string only, the first value, the name as written. '' when the
+     * parameter is absent.
+     *
+     * @param {string} name
+     * @return {string}
+     */
+    getSearchParam( name ) {
+
+        var search = ( typeof location !== 'undefined' && location ) ? location.search : '';
+        var value = null;
+
+        try {
+
+            value = new URLSearchParams( search ).get( name );
+
+        } catch ( e ) {
+
+            return '';
+        }
+
+        return value === null ? '' : value;
+    }
+
+    /**
+     * Report an uncaught script error as an `exception` event.
      *
      * NO STACK TRACE ON THE WIRE. A stack from a minified bundle is noise to
      * anyone reading a report, and it is the field most likely to carry a URL
@@ -4061,10 +5110,18 @@ class OWATracker  {
 
             try {
 
-                that.trackCustomEvent( 'exception', {
-                    description: String( message ).substring( 0, 255 ),
-                    source:      String( source || '' ).substring( 0, 255 ),
-                    line:        line || 0
+                /*
+                 * PREFIXED, because these are custom event properties.
+                 *
+                 * They were sent bare -- description, source, line -- and not one
+                 * of them is a declared property or carries a prefix, so
+                 * admitRequestParams() dropped all three and every exception event
+                 * arrived carrying nothing but its site id. Measured.
+                 */
+                that.raiseEvent( 'exception', {
+                    ep_description: String( message ).substring( 0, 255 ),
+                    ep_source:      String( source || '' ).substring( 0, 255 ),
+                    epn_line:       line || 0
                 } );
 
             } catch ( e ) {
@@ -4086,6 +5143,85 @@ class OWATracker  {
         this.setOption('logClicksAsTheyHappen', true);
         this.bindClickEvents();
 
+    }
+
+    /**
+     * Raise a `scroll` event when the page passes a depth threshold.
+     *
+     * ITS OWN LISTENER, not the domstream recorder's. The two are separate features
+     * that happen to share a DOM event, and they were fused because
+     * `window.onscroll` is a single slot -- so scroll depth fired only on installs
+     * with domstream active, and only for its sampled fraction of visitors. A
+     * first-class event gated on an unrelated feature's sample rate.
+     *
+     * Idempotent, like trackClicks(): the snippet pushes each command once, but a
+     * site can push one twice and two listeners would report every threshold twice.
+     */
+    trackScroll() {
+
+        if ( this.isScrollTrackingEnabled || typeof window === 'undefined' ) {
+
+            return;
+        }
+
+        this.isScrollTrackingEnabled = true;
+
+        var that    = this;
+        var pending = false;
+
+        /*
+         * ONE CHECK PER FRAME. `scroll` fires many times a second and every check
+         * reads scrollHeight and offsetHeight, which forces layout. Nothing can
+         * change the answer faster than the page repaints, so a check per frame
+         * loses nothing and a check per event is pure cost for the whole visit.
+         */
+        var onScroll = function () {
+
+            if ( pending ) {
+
+                return;
+            }
+
+            if ( typeof window.requestAnimationFrame !== 'function' ) {
+
+                that.checkScrollDepth();
+
+                return;
+            }
+
+            pending = true;
+
+            window.requestAnimationFrame( function () {
+
+                pending = false;
+                that.checkScrollDepth();
+            } );
+        };
+
+        window.addEventListener( 'scroll', onScroll, false );
+
+        /*
+         * AND ONCE WITHOUT A SCROLL, because a page that fits in the viewport is
+         * read to the end without ever firing one -- and so never reported its
+         * depth at all.
+         *
+         * At `load`, not now. The snippet can run this before the document is laid
+         * out, and a long page measured then has a small height, which reads as
+         * scrolled to the bottom -- a false event on exactly the pages that are
+         * least likely to be read to the end.
+         */
+        if ( typeof document !== 'undefined' && document.readyState === 'complete' ) {
+
+            this.checkScrollDepth();
+
+        } else {
+
+            window.addEventListener( 'load', function () {
+
+                that.checkScrollDepth();
+
+            }, { once: true } );
+        }
     }
 
     logDomStream() {

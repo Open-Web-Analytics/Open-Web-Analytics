@@ -10,7 +10,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * The boolean flags must not be able to write NULL.
  *
  * A boolean column that also holds NULL has three values, and each groups
- * separately: a report counting is_browser = 0 silently misses every NULL row.
+ * separately: a report counting a flag = 0 silently misses every NULL row.
  * is_repeat_visitor did exactly this from 2015 until 8d24fc65 -- its callback
  * fell off the end returning null, and nothing turned that into false.
  *
@@ -28,8 +28,22 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 final class BooleanPropertyTypeTest extends TestCase
 {
     /** The three flags whose callback can fall off the end returning null. */
-    private const FLAGS = array( 'is_browser', 'is_robot', 'is_entry_page',
-                                 'is_repeat_visitor' );
+    /*
+     * is_entry_page and is_repeat_visitor were here. Both were v1 derivations
+     * reading flags the tracker no longer sends -- and removing the flags
+     * without them would have left each computing a wrong value rather than
+     * none, which is the defect this whole file is about.
+     */
+    /*
+     * is_browser and is_robot were here and are gone. Both were computed on
+     * every beacon and read only by v1 handlers -- neither reached a raw column
+     * or a cube pass -- so they went with the rest of the dead derivations.
+     *
+     * The two that remain are the session and visitor markers, and they are the
+     * better subjects anyway: they arrive FROM the wire, where a boolean's
+     * three states actually bite.
+     */
+    private const FLAGS = array( 'is_new_session_start', 'is_new_visitor_created' );
 
     private function runPipeline( array $definition )
     {
@@ -52,7 +66,17 @@ final class BooleanPropertyTypeTest extends TestCase
 
     public function testEveryBooleanFlagDeclaresItsType(): void
     {
-        $server = Helpers::serverProperties();
+        /*
+         * Every group, not just the derived one. The two flags that remain are
+         * CLIENT properties -- they arrive from the wire -- and the derived
+         * booleans that used to live here, is_browser and is_robot, are gone
+         * with the v1 handlers that were their only readers. What is being
+         * checked is the declaration of a boolean, wherever it is declared.
+         */
+        $server = array_merge(
+            Helpers::requestProperties(),
+            Helpers::clientProperties(),
+            Helpers::serverProperties() );
 
         foreach ( self::FLAGS as $flag ) {
 
@@ -71,7 +95,17 @@ final class BooleanPropertyTypeTest extends TestCase
      */
     public function testEveryBooleanFlagIsRequiredWithAFalseDefault(): void
     {
-        $server = Helpers::serverProperties();
+        /*
+         * Every group, not just the derived one. The two flags that remain are
+         * CLIENT properties -- they arrive from the wire -- and the derived
+         * booleans that used to live here, is_browser and is_robot, are gone
+         * with the v1 handlers that were their only readers. What is being
+         * checked is the declaration of a boolean, wherever it is declared.
+         */
+        $server = array_merge(
+            Helpers::requestProperties(),
+            Helpers::clientProperties(),
+            Helpers::serverProperties() );
 
         foreach ( self::FLAGS as $flag ) {
 

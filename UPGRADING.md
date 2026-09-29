@@ -133,24 +133,35 @@ The contract on both paths is pinned by `tests/ViewScopeCompatTest.php`.
 **What changed.** OWA's framework classes moved from the global namespace with an
 `owa_` prefix into real PSR-4 namespaces:
 
-| Deprecated | Current |
+| Legacy | Current |
 | --- | --- |
 | `owa_coreAPI` | `OWA\Core\CoreAPI` |
 | `owa_base` | `OWA\Core\Base` |
 | `owa_entity` | `OWA\Core\Entity` |
 | `owa_module` | `OWA\Core\Module` |
+| `owa_lib` | `OWA\Core\Lib` |
 | `owa_db_mysql` | `OWA\Core\Db\Mysql` |
 
-**What still works.** A lazy alias bridge (`owa_compat_aliases.php`) resolves
-every legacy `owa_*` name to its namespaced class on demand, so `new
-owa_document`, `extends owa_entity`, and `instanceof` in both directions all
-continue to work. The bridge is **on by default**.
+**What still works in v2.** The alias bridge (`owa_compat_aliases.php`) resolves
+only the names a module builds on:
 
-**Testing against the v2.0 behavior now.** Define
-`OWA_DISABLE_COMPAT_BRIDGE = true` in your config before OWA boots. With the
-bridge off, only the namespaced names resolve — which is what v2.0 will do. OWA
-itself runs correctly in that mode; if your module does not, it still has legacy
-references to migrate.
+- the base classes it extends: `owa_base`, `owa_module`, `owa_observer`,
+  `owa_update`, `owa_controller`, `owa_adminController`, `owa_reportController`,
+  `owa_cliController`, `owa_view`, `owa_adminPageView`, `owa_restApiView`,
+  `owa_mailView`, `owa_cliView`, `owa_entity`, `owa_factTable`, `owa_metric`,
+  `owa_calculatedMetric`, `owa_validation`, `owa_cacheType`, `owa_eventQueue`;
+- the static API it calls: `owa_coreAPI`;
+- `owa_event`, which queued data written before the migration names.
+
+**Removed in v2.** Every other legacy name, including `owa_lib`, the service
+classes (`owa_siteManager`, `owa_userManager`, `owa_settings`, ...), the event
+handlers, the concrete validators, controllers and views, and `owa_db_mysql`.
+A module that used one gets "class not found" and must use the namespaced name.
+`tests/LegacyClassNameContractTest.php` lists every retired name.
+
+**Checking a module.** Define `OWA_DISABLE_COMPAT_BRIDGE = true` in your config
+before OWA boots. With it set, no legacy name resolves. OWA itself runs correctly
+that way; if your module does not, it still has legacy references to migrate.
 
 ---
 

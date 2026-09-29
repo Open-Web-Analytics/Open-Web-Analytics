@@ -92,7 +92,7 @@ describe('trackClicks()', () => {
     });
 });
 
-describe('clickEventHandler builds the dom.click event', () => {
+describe('clickEventHandler builds the click event', () => {
 
     test('captures an anchor element id/name/class/tag/text/target_url/coords', () => {
         const t = newTracker();
@@ -104,7 +104,7 @@ describe('clickEventHandler builds the dom.click event', () => {
         t.clickEventHandler(clickOn(document.getElementById('lnk')));
 
         const c = t.click.getProperties();
-        expect(c.event_type).toBe('dom.click');
+        expect(c.event_type).toBe('click');
         expect(c.dom_element_id).toBe('lnk');
         expect(c.dom_element_name).toBe('nav');
         expect(c.dom_element_class).toBe('btn');
@@ -115,17 +115,111 @@ describe('clickEventHandler builds the dom.click event', () => {
         expect(c.click_y).toBe('34');
     });
 
-    test('falls back to "(not set)" for absent id/name/value', () => {
+    test('sends nothing for an absent id, name or class, and no element value', () => {
         const t = newTracker();
         t.setOption('logClicksAsTheyHappen', false);
-        document.body.innerHTML = '<span id="sp">hi</span>';
-
-        t.clickEventHandler(clickOn(document.getElementById('sp')));
+        document.body.innerHTML = '<span>hi</span>';
+        t.clickEventHandler(clickOn(document.querySelector('span')));
 
         const c = t.click.getProperties();
-        expect(c.dom_element_name).toBe('(not set)');
-        expect(c.dom_element_value).toBe('(not set)');
+        expect(c).not.toHaveProperty('dom_element_name');
+        expect(c).not.toHaveProperty('dom_element_id');
+        expect(c).not.toHaveProperty('dom_element_class');
         expect(c.dom_element_tag).toBe('span');
+
+        /*
+         * THE ELEMENT'S VALUE IS NOT COLLECTED. A click on an input would have
+         * shipped whatever the visitor had typed into it, and nothing ever read
+         * it: no column, and the server's registry declares no destination. Its
+         * own offsets go too -- the heatmap reads the CLICK's coordinates.
+         */
+        expect(c.dom_element_value).toBeUndefined();
+        expect(c.dom_element_x).toBeUndefined();
+        expect(c.dom_element_y).toBeUndefined();
+    });
+
+    /*
+     * A CLICK INSIDE A LINK IS A CLICK ON THE LINK. Only a click directly on the
+     * <a>, or on an <img> in one, used to carry the URL, so most modern link
+     * markup reached the server with no destination: not outbound, not a
+     * download, and named by the inner element's missing id.
+     */
+    test('a click on markup inside a link reports the link', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML =
+            '<a id="out" class="cta" href="https://elsewhere.example/p"><span><b id="deep">Go</b></span></a>';
+
+        t.clickEventHandler(clickOn(document.getElementById('deep')));
+
+        const c = t.click.getProperties();
+        expect(c.dom_element_id).toBe('out');
+        expect(c.dom_element_class).toBe('cta');
+        expect(c.dom_element_tag).toBe('a');
+        expect(c.target_url).toBe('https://elsewhere.example/p');
+        expect(c.dom_element_text).toBe('Go');
+        expect(c.is_outbound).toBe(1);
+        expect(c.click_x).toBe('12', 'the coordinates are still the click\'s');
+    });
+
+    test('an svg inside a link reports the link, and an svg class is read as a string', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML =
+            '<a id="icon-link" href="/inside"><svg class="icon"><circle id="c"></circle></svg></a>'
+            + '<svg id="bare" class="chart"><rect id="r"></rect></svg>';
+
+        t.clickEventHandler(clickOn(document.getElementById('c')));
+        expect(t.click.getProperties().dom_element_id).toBe('icon-link');
+
+        t.clickEventHandler(clickOn(document.getElementById('bare')));
+        expect(t.click.getProperties().dom_element_class).toBe('chart');
+    });
+
+    test('an anchor with no href is not a link, so the clicked element stands', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<a id="named"><span id="inner">x</span></a>';
+
+        t.clickEventHandler(clickOn(document.getElementById('inner')));
+
+        expect(t.click.getProperties().dom_element_id).toBe('inner');
+    });
+
+    /*
+     * A MIDDLE-CLICK fires auxclick, not click: opening a link in a new tab was
+     * never recorded. It counts on a link only.
+     */
+    test('a middle-click on a link is a click; on anything else it is nothing', () => {
+        const t = newTracker();
+        const sent = [];
+        t.logEvent = (properties) => { sent.push(properties); return true; };
+        t.setOption('logClicksAsTheyHappen', true);
+        t.bindClickEvents();
+        document.body.innerHTML = '<a id="tab" href="https://elsewhere.example/t"><span id="s">t</span></a>'
+            + '<div id="plain">p</div>';
+
+        const middle = (el) => el.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 }));
+        const right = (el) => el.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 2 }));
+
+        middle(document.getElementById('s'));
+        middle(document.getElementById('plain'));
+        right(document.getElementById('s'));
+
+        const clicks = sent.filter((p) => p.event_type === 'click');
+        expect(clicks).toHaveLength(1);
+        expect(clicks[0].dom_element_id).toBe('tab');
+        expect(clicks[0].is_outbound).toBe(1);
+    });
+
+    test('a click on a text node is attributed to its element', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<a id="t" href="/x">text</a>';
+
+        t.clickEventHandler(clickOn(document.getElementById('t').firstChild));
+
+        expect(t.click.getProperties().dom_element_id).toBe('t');
     });
 
     test('fires a dom.click beacon when logClicksAsTheyHappen is on', () => {
@@ -136,7 +230,7 @@ describe('clickEventHandler builds the dom.click event', () => {
         t.clickEventHandler(clickOn(document.getElementById('b')));
 
         expect(beacons.length).toBe(1);
-        expect(beacons[0]).toMatch(/dom\.click/);
+        expect(beacons[0]).toMatch(/click/);
     });
 
     test('queues (does not beacon) the click when DomStream capture is active', () => {
@@ -216,7 +310,7 @@ describe('logDomStream() queue flush', () => {
         const t = newTracker();
         expect(t.getOption('domstreamEventThreshold')).toBe(10);
         // 1 event, threshold 10: below threshold -> no-op.
-        t.event_queue = [{ event_type: 'dom.click' }];
+        t.event_queue = [{ event_type: 'click' }];
 
         const result = t.logDomStream();
 
@@ -230,7 +324,7 @@ describe('logDomStream() queue flush', () => {
         const t = newTracker();
         const queue = [];
         for (let i = 0; i < 11; i++) {
-            queue.push({ event_type: 'dom.click', n: i });
+            queue.push({ event_type: 'click', n: i });
         }
         t.event_queue = queue;
 
@@ -248,7 +342,7 @@ describe('logDomStream() queue flush', () => {
         const t = newTracker();
         const fill = () => {
             const q = [];
-            for (let i = 0; i < 11; i++) q.push({ event_type: 'dom.click', n: i });
+            for (let i = 0; i < 11; i++) q.push({ event_type: 'click', n: i });
             t.event_queue = q;
         };
 
