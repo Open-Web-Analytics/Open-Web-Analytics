@@ -35,27 +35,12 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
     function action() {
 
-        
-        $entity = '';
-        $id = '';
-
         $url = '';
 
         if ( $this->get('pagePath') ) {
 
             $url = $this->urlForPath( (string) $this->get('pagePath'), (string) $this->get('siteId') );
 
-        } elseif ($this->get('document_id')) {
-
-	        $entity = 'base.document';
-	        $url_param = 'url';
-	        $id = $this->get('document_id');
-
-
-	        $d = \OWA\Core\CoreAPI::entityFactory( $entity );
-			$d->load( $id );
-
-	        $url = trim( (string) $d->get( $url_param ) );
         }
 
         if ( $url !== '' ) {
