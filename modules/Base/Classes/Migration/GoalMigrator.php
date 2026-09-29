@@ -133,10 +133,16 @@ class GoalMigrator extends FactMigrator {
             $this->properties[ $site_id ] = \OWA\Module\Base\Update\Update025::propertyFor( $site_id );
         }
 
-        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $id   = (string) $goal->generateId( 'goal_event:' . $this->properties[ $site_id ] . ':' . $n );
+        $id = \OWA\Module\Base\Update\Update025::goalEventFor( $this->properties[ $site_id ], $n );
+
+        if ( $id === null ) {
+
+            return null;
+        }
 
         if ( ! array_key_exists( $id, $this->compiled ) ) {
+
+            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
             $goal->load( $id );
 

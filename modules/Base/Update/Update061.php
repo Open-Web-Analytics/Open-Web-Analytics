@@ -280,15 +280,29 @@ class Update061 extends \OWA\Core\Update {
             }
 
             // The destination: the goal event Update025 made of this goal.
-            $goal_event = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $goal_event_id = Update025::goalEventFor( $property, $goal_number );
 
-            $steps[] = array(
-                'name'          => (string) $goal['goal_name'],
-                'goal_event_id' => $goal_event->generateId( 'goal_event:' . $property . ':' . $goal_number ),
-                'step_number'   => count( $steps ) + 1,
-            );
+            if ( $goal_event_id === null ) {
 
-            if ( count( $steps ) > self::MAX_STEPS ) {
+                $notes[] = sprintf( 'goal "%s" has no goal event to end on, so the funnel stops at its last page',
+                    $goal['goal_name'] );
+
+            } else {
+
+                $steps[] = array(
+                    'name'          => (string) $goal['goal_name'],
+                    'goal_event_id' => $goal_event_id,
+                    'step_number'   => count( $steps ) + 1,
+                );
+            }
+
+            if ( count( $steps ) > self::MAX_STEPS && $goal_event_id === null ) {
+
+                $notes[] = sprintf( 'kept the first %d of its %d steps', self::MAX_STEPS, count( $steps ) );
+
+                $steps = array_slice( $steps, 0, self::MAX_STEPS );
+
+            } elseif ( count( $steps ) > self::MAX_STEPS ) {
 
                 $notes[] = sprintf( 'kept the first %d of its %d steps and the destination',
                     self::MAX_STEPS - 1, count( $steps ) - 1 );

@@ -26,6 +26,13 @@ namespace OWA\Module\Base\Update;
  * table after it holds rows rewrites every one of them, and partition-init is
  * explicitly a conversion command for installations that predate partitioning.
  * A table created inside the lead never needs converting.
+ *
+ * FIRST, 32-BIT IDS ARE RE-KEYED (Classes\Migration\WideIds). This is the
+ * first update a 1.14 installation runs, and every later one derives ids --
+ * settings, goal events, visualizations -- so the installation stops deriving
+ * 32-bit ids here, before any of them do, and the kept rows still holding one
+ * are moved to 64-bit. It does not depend on the administrator having run
+ * rederive-dimension-ids on 1.14, which v2 no longer has.
  */
 class Update034 extends \OWA\Core\Update {
 
@@ -44,6 +51,28 @@ class Update034 extends \OWA\Core\Update {
     }
 
     function up( $force = false ) {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
+
+            \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash_before_v2', true );
+        }
+
+        // Cleared first: from here on every derivation, in this update and the
+        // ones after it, is 64-bit.
+        \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
+
+        $ids = new \OWA\Module\Base\Classes\Migration\WideIds();
+        $ok  = $ids->widen();
+
+        foreach ( $ids->report as $line ) {
+
+            $this->e->notice( $line );
+        }
+
+        if ( ! $ok ) {
+
+            return false;
+        }
 
         foreach ( $this->tables() as $name ) {
 
@@ -86,6 +115,25 @@ class Update034 extends \OWA\Core\Update {
 
                 return false;
             }
+        }
+
+        // An installation that arrived deriving 32-bit ids goes back to them.
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash_before_v2' ) ) {
+
+            \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash_before_v2', false );
+
+            // Before narrowing, so a settings row it writes is narrowed with the rest.
+            \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', true );
+
+            $ids = new \OWA\Module\Base\Classes\Migration\WideIds();
+            $ok  = $ids->narrow();
+
+            foreach ( $ids->report as $line ) {
+
+                $this->e->notice( $line );
+            }
+
+            return $ok;
         }
 
         return true;

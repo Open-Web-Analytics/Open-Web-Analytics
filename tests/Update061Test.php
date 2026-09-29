@@ -11,6 +11,11 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class Update061Test extends TestCase
 {
     private const SITE = 'update061-site';
+
+    private const PROPERTY = '1790000000000061001';
+
+    /** Goal slot 1 as Update025 made it on an installation still deriving 32-bit ids. */
+    private const NARROW_GOAL = '2400061001';
     private const REPORT = '9200000000000005001';
     private const BROKEN = '9200000000000005002';
 
@@ -28,8 +33,10 @@ final class Update061Test extends TestCase
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->query('INSERT INTO owa_site (id, site_id, domain, name) VALUES (?, ?, ?, ?)',
-            [\OWA\Core\Lib::setStringGuid(self::SITE), self::SITE, 'shop.example', 'Shop']);
+        $db->query('INSERT INTO owa_site (id, site_id, domain, name, property_id) VALUES (?, ?, ?, ?, ?)',
+            [\OWA\Core\Lib::setStringGuid(self::SITE), self::SITE, 'shop.example', 'Shop', self::PROPERTY]);
+        $db->query("INSERT INTO owa_goal_event (id, property_id, name, goal_number) VALUES (?, ?, 'Signup', 1)",
+            [self::NARROW_GOAL, self::PROPERTY]);
 
         $this->report(self::REPORT, ['title' => 'Weekly', 'widgets' => [
             ['type' => 'grid', 'query' => ['metrics' => 'visits,actions', 'dimensions' => 'source']],
@@ -72,6 +79,7 @@ final class Update061Test extends TestCase
         $db->query('DELETE FROM owa_custom_report WHERE id IN (?, ?)', [self::REPORT, self::BROKEN]);
         $db->query("DELETE FROM owa_setting WHERE name = 'goals' AND scope_id = ?", [self::SITE]);
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
+        $db->query('DELETE FROM owa_goal_event WHERE property_id = ?', [self::PROPERTY]);
     }
 
     private function plans(): array
@@ -146,12 +154,24 @@ final class Update061Test extends TestCase
         $this->assertSame(['/pricing', '/signup'], array_column(array_slice($steps, 0, 2), 'path'), 'in step order');
         $this->assertSame([1, 2, 3], array_column($steps, 'step_number'));
         $this->assertSame('Signup', $steps[2]['name']);
-        $this->assertArrayHasKey('goal_event_id', $steps[2]);
+        $this->assertSame(self::NARROW_GOAL, (string) $steps[2]['goal_event_id'],
+            'found by property and slot, whatever the width of its id');
         $this->assertStringContainsString('marked required', implode(' ', $plan['notes']));
 
         $this->assertCount(1, $this->plans(), 'a goal without a funnel is not one');
         $this->assertTrue($this->update->up());
         $this->assertSame($row['creation_timestamp'], $this->row($plan['id'])['creation_timestamp'], 'not re-created');
+    }
+
+    public function testAFunnelWhoseGoalEventIsMissingEndsAtItsLastPage(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE property_id = ?', [self::PROPERTY]);
+
+        $plan = $this->plans()[0];
+
+        $this->assertSame(['/pricing', '/signup'], array_column($plan['steps'], 'path'));
+        $this->assertCount(2, $plan['steps']);
+        $this->assertStringContainsString('no goal event to end on', implode(' ', $plan['notes']));
     }
 
     public function testDownRestoresTheReportsRemovesTheFunnelsAndTheColumn(): void

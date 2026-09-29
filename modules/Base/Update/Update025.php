@@ -239,6 +239,26 @@ class Update025 extends \OWA\Core\Update {
         return $site->get( 'property_id' );
     }
 
+    /**
+     * The goal event this update made of a Property's goal slot, or null.
+     *
+     * Read by property and slot, NOT by re-deriving the id this update gave it.
+     * An installation that ran it while still on 32-bit ids holds a 32-bit id
+     * here, and a later derivation is 64-bit: it would find nothing.
+     *
+     * @return string|null
+     */
+    public static function goalEventFor( $property_id, $goal_number ) {
+
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
+            'SELECT id FROM %s WHERE property_id = ? AND goal_number = ? ORDER BY id LIMIT 1',
+            $goal->getTableName() ), array( (string) $property_id, (int) $goal_number ) );
+
+        return isset( $row['id'] ) ? (string) $row['id'] : null;
+    }
+
 
 
     /**

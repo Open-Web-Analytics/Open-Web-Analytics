@@ -353,6 +353,9 @@ return array(
         'update_session_user_name' => array( 'default' => true ),
         'useStaticConfigOnly' => array( 'default' => false ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true ),
+        // Set by Update034 when it re-keyed an installation that arrived still
+        // deriving 32-bit ids, so its down() can put them back.
+        'use_32bit_hash_before_v2' => array( 'default' => false, 'storable' => true ),
         'user_id_illegal_chars' => array( 'default' => array( ' ', ';', '\'', '"', '|', ')', '(' ) ),
         'wiki_url' => array( 'default' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ),    ),
 );

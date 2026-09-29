@@ -73,12 +73,16 @@ final class MigrateMoreSourcesTest extends TestCase
         }
     }
 
+    /**
+     * Slots 1 and 2 as Update025 made them on an installation still deriving
+     * 32-bit ids: the migrator must find them by property and slot, not by
+     * deriving an id.
+     */
     private function goalIds(): array
     {
         $property = \OWA\Module\Base\Update\Update025::propertyFor(self::SITE);
-        $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
 
-        return array_map(fn ($n) => (string) $goal->generateId('goal_event:' . $property . ':' . $n), [1, 2]);
+        return array_map(fn ($n) => (string) crc32('goal_event:' . $property . ':' . $n), [1, 2]);
     }
 
     private function insert(string $table, array $row): void
