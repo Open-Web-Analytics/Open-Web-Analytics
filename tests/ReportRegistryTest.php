@@ -344,7 +344,11 @@ final class ReportRegistryTest extends TestCase
         $allowed = (array) ( new \OWA\Module\Base\Controller\Report(
             array( 'reportId' => 'pages' ) ) )->doAction();
 
-        $this->assertSame( 'base.reportWidgets', $allowed['subview'] ?? null );
+        // Reaching the report is what this asserts, not whether it has data to
+        // draw: with no cube for the resolved Profile's Property the report
+        // is reached and shows why instead (ReportController::post()).
+        $this->assertContains( $allowed['subview'] ?? null,
+            array( 'base.reportWidgets', 'base.reportNotReady' ) );
     }
 
     /**
