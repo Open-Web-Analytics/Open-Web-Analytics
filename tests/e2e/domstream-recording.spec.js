@@ -65,17 +65,22 @@ test.describe('a recording lands @selfhost-only', () => {
         await page.click('#typed-field');
         await page.keyboard.type(TYPED, { delay: 30 });
 
-        // Waited for on the PAGE, through the recorder's periodic flush
-        // (domstreamFlushInterval, 3s). Asserting it after leaving made the test
-        // depend on the pagehide flush's beacon alone, which did not arrive in
-        // two CI runs of nine -- a question about unload delivery, not about
-        // whether a recording lands.
+        // Routing off BEFORE leaving. While any route is registered Playwright
+        // intercepts every request the page makes, and a beacon sent from
+        // pagehide is still held by that interception when the page is gone --
+        // so it is aborted, and never reaches the server. Measured: half of the
+        // pagehide flushes were lost with the route in place, none without it.
+        // Real browsers have no such layer; this is the test's own doing.
+        await page.unrouteAll({ behavior: 'wait' });
+
+        // Leaving the page flushes what is left, as a real visitor's would --
+        // typing took under a second, so no periodic flush has run.
+        await page.goto('about:blank');
+
         await expect.poll(() => {
             const recs = helper('recordings', `site=${HARNESS_SITE_ID}`).recordings;
             return recs.length ? recs[0].chunks.reduce((n, c) => n + Number(c.keypress_count), 0) : 0;
         }, { timeout: 20_000 }).toBe(TYPED.length);
-
-        await page.goto('about:blank');
 
         const { recordings } = helper('recordings', `site=${HARNESS_SITE_ID}`);
 
