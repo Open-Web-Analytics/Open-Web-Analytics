@@ -28,6 +28,8 @@ final class Update062Test extends TestCase
 
         $this->update = new \OWA\Module\Base\Update\Update062();
         $this->update->prefix = V1Schema::PREFIX;
+        // The installation's own raw table and cubes are not the tests' to re-partition.
+        $this->update->partitioned_tables = [];
 
         // A site the migration recognises, and two page views a year apart.
         \OWA\Core\CoreAPI::dbSingleton()->query(
@@ -113,6 +115,42 @@ final class Update062Test extends TestCase
 
         $this->assertTrue($this->update->up());
         $this->assertSame([20260921], $this->days());
+    }
+
+    /** v2's partitioned tables reach back to the oldest day migrated, and no further. */
+    public function testPartitionsReachBackToTheOldestDayMigrated(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        if (!$db->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
+
+        $table = 'owa_test_reach_' . bin2hex(random_bytes(4));
+        $this->update->partitioned_tables = [$table];
+
+        try {
+            foreach ([['since', '20260101', '20260901'], ['all', true, '20250901']] as [$param, $value, $start]) {
+                $db->query(sprintf('DROP TABLE IF EXISTS %s', $table));
+                $db->query(sprintf('CREATE TABLE %s (id BIGINT NOT NULL, yyyymmdd INT NOT NULL,'
+                    . ' PRIMARY KEY (id, yyyymmdd))', $table));
+                $db->partitionTable($table, 'yyyymmdd',
+                    \OWA\Core\Db::makePartitionRanges('20260901', '20260930', 'daily'));
+
+                foreach (['since', 'all'] as $name) {
+                    \OWA\Core\CoreAPI::setRequestParam($name, null);
+                }
+                \OWA\Core\CoreAPI::setRequestParam($param, $value);
+                $this->clean();
+                $db->query('INSERT INTO owa_site (id, site_id, domain, name) VALUES (?, ?, ?, ?)',
+                    [\OWA\Core\Lib::setStringGuid(self::SITE), self::SITE, 'mig-update.example.com', 'Migration update']);
+
+                $this->assertTrue($this->update->up());
+                $this->assertSame($start, $db->getPartitionSpans($table)[0]['start'], $param);
+            }
+        } finally {
+            $db->query(sprintf('DROP TABLE IF EXISTS %s', $table));
+        }
     }
 
     public function testThePreflightCountsWhatWillBeLeftBehind(): void

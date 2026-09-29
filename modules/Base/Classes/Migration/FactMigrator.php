@@ -101,6 +101,22 @@ abstract class FactMigrator {
     }
 
     /**
+     * The oldest day this pass will write, as yyyymmdd; null when it has none.
+     *
+     * v2's tables need dated partitions reaching back to it before the rows
+     * arrive (Update062).
+     *
+     * @return int|null
+     */
+    public function earliestDay() {
+
+        $row = (array) $this->db()->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS d FROM %s WHERE yyyymmdd >= %d',
+            V1Tables::name( static::SOURCE, $this->prefix ), max( 19700101, (int) $this->since ) ) );
+
+        return empty( $row['d'] ) ? null : (int) $row['d'];
+    }
+
+    /**
      * The sites v1 holds page views for that still exist.
      *
      * A site_id no site row carries -- one deleted outright, or a test's -- is

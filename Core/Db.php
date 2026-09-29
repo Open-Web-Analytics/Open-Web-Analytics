@@ -3404,6 +3404,62 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Give a table dated partitions reaching back to a day.
+     *
+     * The first partition has no lower bound, so rows older than its start are
+     * already accepted -- into a partition whose name says it begins later.
+     * Retention would read them as the first partition's period, and a cube
+     * build refuses to rebuild a range no dated partition covers. That first
+     * partition is split into periods starting at the month holding $from.
+     *
+     * Done before older rows are written it moves nothing but the first
+     * partition's own rows. A table already reaching $from is left alone.
+     *
+     * @param string $table_name
+     * @param string $from         yyyymmdd the partitions must reach back to
+     * @param string $granularity  of the periods added, monthly by default
+     * @param bool   $dry_run
+     * @return array ['added','start','covered']
+     */
+    function extendPartitionsBack( $table_name, $from, $granularity = 'monthly', $dry_run = false ) {
+
+        $result = array( 'added' => array(), 'start' => null, 'covered' => false );
+
+        $spans = $this->getPartitionSpans( $table_name );
+
+        if ( ! $spans || ! preg_match( '/^\d{8}$/', (string) $from ) ) {
+
+            return $result;
+        }
+
+        $first = $spans[0];
+
+        $result['start'] = $first['start'];
+
+        if ( (string) $first['start'] <= (string) $from ) {
+
+            $result['covered'] = true;
+
+            return $result;
+        }
+
+        $ranges = self::makePartitionRangesForSpan(
+            substr( (string) $from, 0, 6 ) . '01', $first['less_than'], $granularity );
+
+        if ( ! $ranges ) {
+
+            return $result;
+        }
+
+        if ( $dry_run || $this->reorganizePartitions( $table_name, array( $first['name'] ), $ranges ) ) {
+
+            $result['added'] = array_values( array_diff( array_keys( $ranges ), array( $first['name'] ) ) );
+        }
+
+        return $result;
+    }
+
+    /**
      * Which partitions hold only data older than a cutoff.
      *
      * A partition is droppable only when everything in it precedes the cutoff,

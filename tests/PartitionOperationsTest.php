@@ -381,6 +381,58 @@ final class PartitionOperationsTest extends TestCase
         $this->assertSame($before, $this->partitionNames($t));
     }
 
+    /**
+     * Older rows written into a table partitioned later land in its first
+     * partition. Reaching back splits that partition into dated months
+     * without losing a row, and a second run changes nothing.
+     */
+    public function testReachingBackSplitsTheFirstPartition()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges('20260901', '20260903', 'daily'));
+        $db->query(sprintf('INSERT INTO %s VALUES (1,20210915),(2,20260901),(3,20260902)', $t));
+
+        $result = $db->extendPartitionsBack($t, '20210915');
+
+        $this->assertFalse($result['covered']);
+        $this->assertSame('20260901', $result['start'], 'where the table began');
+        $this->assertCount(60, $result['added'], 'September 2021 to August 2026, a month each');
+        $this->assertSame('p20210901', $result['added'][0]);
+
+        $spans = $db->getPartitionSpans($t);
+
+        $this->assertSame('20210901', $spans[0]['start']);
+        $this->assertSame(array('name' => 'p20260901', 'start' => '20260901', 'less_than' => '20260902'), $spans[60],
+            'the first day keeps its partition');
+        $this->assertSame(3, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'no rows may be lost');
+        $this->assertSame(1, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t PARTITION (p20210901)")['n']);
+        $this->assertSame(1, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t PARTITION (p20260901)")['n']);
+
+        $names  = $this->partitionNames($t);
+        $second = $db->extendPartitionsBack($t, '20210915');
+
+        $this->assertTrue($second['covered']);
+        $this->assertEmpty($second['added']);
+        $this->assertSame($names, $this->partitionNames($t));
+    }
+
+    /** A dry run names the partitions and changes nothing. */
+    public function testReachingBackDryRun()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges('20260901', '20260930', 'monthly'));
+
+        $before = $this->partitionNames($t);
+        $result = $db->extendPartitionsBack($t, '20260620', 'monthly', true);
+
+        $this->assertSame(array('p20260601', 'p20260701', 'p20260801'), $result['added']);
+        $this->assertSame($before, $this->partitionNames($t));
+    }
+
     /** Every scheme is recognisable from the boundaries it cuts on. */
     public function testGranularityIsInferredFromTheTable()
     {

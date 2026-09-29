@@ -39,6 +39,9 @@ class Update062 extends \OWA\Core\Update {
     /** The table prefix v1 is read under; a test reads a fixture's. */
     var $prefix = 'owa_';
 
+    /** The partitioned tables reachBack() extends; null for raw and every cube. A test names its own. */
+    var $partitioned_tables = null;
+
     function up( $force = false ) {
 
         if ( ! $this->hasV1() ) {
@@ -78,6 +81,11 @@ class Update062 extends \OWA\Core\Update {
 
                 return false;
             }
+        }
+
+        if ( ! $this->reachBack( $since ) ) {
+
+            return false;
         }
 
         foreach ( self::PASSES as $class => $label ) {
@@ -205,6 +213,67 @@ class Update062 extends \OWA\Core\Update {
         }
 
         return $lines;
+    }
+
+    /**
+     * Dated partitions on owa_event_raw and every cube, reaching back to the
+     * oldest day migrated.
+     *
+     * v2's tables were partitioned from the day they were created. Older rows
+     * would land in the first partition, which retention and the cube build
+     * both read as starting on that later day -- a build of 2021 refuses, as no
+     * dated partition covers it. Done before the passes, so the split moves
+     * only rows v2 wrote itself.
+     */
+    private function reachBack( $since ) {
+
+        $earliest = null;
+
+        foreach ( array_keys( self::PASSES ) as $class ) {
+
+            $migrator = $this->migrator( $class, $since );
+            $day      = $migrator ? $migrator->earliestDay() : null;
+
+            if ( $day && ( $earliest === null || $day < $earliest ) ) {
+
+                $earliest = $day;
+            }
+        }
+
+        if ( $earliest === null ) {
+
+            return true;
+        }
+
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $tables = $this->partitioned_tables ?? array_merge(
+            array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ),
+            array_values( \OWA\Module\Base\Classes\Cube\Cubes::existing() ) );
+
+        foreach ( $tables as $table ) {
+
+            if ( ! $db->isPartitioned( $table ) ) {
+
+                continue;
+            }
+
+            $result = $db->extendPartitionsBack( $table, (string) $earliest );
+
+            if ( ! $result['covered'] && ! $result['added'] ) {
+
+                $this->e->notice( sprintf( '%s: adding partitions back to %d failed.', $table, $earliest ) );
+
+                return false;
+            }
+
+            if ( $result['added'] ) {
+
+                $this->e->notice( sprintf( '%s: %d partitions added, reaching back to %s.',
+                    $table, count( $result['added'] ), $result['added'][0] ) );
+            }
+        }
+
+        return true;
     }
 
     private function hasV1() {
