@@ -27,17 +27,26 @@ final class EventEntityTest extends TestCase
 
     public function testItLeadsWithRawsColumnsInRawsOrder(): void
     {
-        $raw   = $this->raw()->getColumns();
         $event = $this->event()->getColumns();
 
-        $this->assertSame($raw, array_slice($event, 0, count($raw)),
-            'owa_event must open with owa_event_raw verbatim: same columns, same order. '
+        // Raw's columns less the one the cube deliberately drops: created_at,
+        // when a row reached raw, which no report reads (Entity\Event).
+        $copied = array_values(array_intersect($this->raw()->getColumns(), $event));
+
+        $this->assertSame(['created_at'],
+            array_values(array_diff($this->raw()->getColumns(), $event)),
+            'the cube leaves out exactly the raw columns it means to');
+
+        $this->assertSame($copied, array_slice($event, 0, count($copied)),
+            'owa_event must open with the raw columns it copies, in raw\'s order. '
           . 'EXCHANGE PARTITION compares the two tables column by column.');
     }
 
     public function testTheNineteenDerivedColumns(): void
     {
-        $derived = array_slice($this->event()->getColumns(), count($this->raw()->getColumns()));
+        // By difference, not by skipping raw's column count: the cube does not
+        // carry every raw column (created_at), so the count would be off.
+        $derived = array_values(array_diff($this->event()->getColumns(), $this->raw()->getColumns()));
 
         // new_vs_returning, is_engaged_session and is_entrance sit AFTER built_at
         // because ADD COLUMN appends, so a cube that gained them and a fresh one
