@@ -873,11 +873,26 @@ class Controller extends \OWA\Core\Base {
             
         $action = $action ?: $this->getParam('do') ?: $this->getParam('action');
 
-        $matching_nonce = \OWA\Core\CoreAPI::createNonce($action);
-        \OWA\Core\CoreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
-        if ($nonce === $matching_nonce) {
-            return true;
+        /*
+         * The current window and the one before it. A window is a fixed bucket
+         * of the epoch, not a span starting when the form was drawn, so the
+         * current window alone gives a form anywhere from nought seconds to
+         * nonce_expiration_period to live. With the previous one it gets at
+         * least a full period and at most two.
+         */
+        $tick = \OWA\Core\CoreAPI::getNonceTimeInterval();
+
+        foreach ([$tick, $tick - 1] as $t) {
+
+            if (is_string($nonce) && hash_equals(\OWA\Core\CoreAPI::createNonce($action, $t), $nonce)) {
+
+                return true;
+            }
         }
+
+        \OWA\Core\CoreAPI::debug("nonce for $action did not match the current or previous window");
+
+        return false;
     }
 
     /**
