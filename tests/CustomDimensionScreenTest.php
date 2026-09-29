@@ -322,4 +322,5 @@ final class CustomDimensionScreenTest extends TestCase
             substr_count( $template, 'createNonceFormField' ),
             'a form without a nonce is a mutation any page could trigger' );
     }
+
 }

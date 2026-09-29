@@ -502,3 +502,6 @@
     gap: 8px;
     align-items: flex-start;
 }
+
+/* The tracking tag on Sites > Invocation: as wide as its container, never wider. */
+.owa_trackingCode {width:100%; box-sizing:border-box; font-family:monospace; font-size:12px;}

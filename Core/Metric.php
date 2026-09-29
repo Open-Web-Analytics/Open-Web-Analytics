@@ -370,6 +370,10 @@ class Metric extends \OWA\Core\Base {
                      * matching rows earned nothing, and 0 is the answer a report
                      * row wants. The two agree wherever any row matches, so the
                      * choice only shows up on the empty case.
+                     *
+                     * And COALESCE on the column: a matching row can hold NULL
+                     * -- a purchase with no tax -- and SUM over NULL alone is
+                     * NULL, which a report showed as a blank cell beside zeros.
                      */
                     if ( $this->hasCondition() ) {
 
@@ -381,11 +385,11 @@ class Metric extends \OWA\Core\Base {
                         $statement = $where === ''
                             ? null
                             : sprintf( 'sum(CASE WHEN %s THEN %s ELSE 0 END)',
-                                  $where, $this->getColumn() );
+                                  $where, sprintf( OWA_SQL_COALESCE, $this->getColumn(), '0' ) );
 
                     } else {
 
-                        $statement = $db->sum( $this->getColumn() );
+                        $statement = sprintf( OWA_SQL_COALESCE, $db->sum( $this->getColumn() ), '0' );
                     }
                     break;
 

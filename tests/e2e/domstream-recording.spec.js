@@ -65,13 +65,17 @@ test.describe('a recording lands @selfhost-only', () => {
         await page.click('#typed-field');
         await page.keyboard.type(TYPED, { delay: 30 });
 
-        // Leaving the page flushes what is left, as a real visitor's would.
-        await page.goto('about:blank');
-
+        // Waited for on the PAGE, through the recorder's periodic flush
+        // (domstreamFlushInterval, 3s). Asserting it after leaving made the test
+        // depend on the pagehide flush's beacon alone, which did not arrive in
+        // two CI runs of nine -- a question about unload delivery, not about
+        // whether a recording lands.
         await expect.poll(() => {
             const recs = helper('recordings', `site=${HARNESS_SITE_ID}`).recordings;
             return recs.length ? recs[0].chunks.reduce((n, c) => n + Number(c.keypress_count), 0) : 0;
         }, { timeout: 20_000 }).toBe(TYPED.length);
+
+        await page.goto('about:blank');
 
         const { recordings } = helper('recordings', `site=${HARNESS_SITE_ID}`);
 

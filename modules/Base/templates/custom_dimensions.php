@@ -30,7 +30,7 @@
 
 <?php else: ?>
 
-    <fieldset class="options">
+    <fieldset>
     <legend>Registered</legend>
 
     <?php if ( ! $view->dimensions ): ?>
@@ -102,62 +102,64 @@
     <?php if ( count( $view->dimensions ) < $view->cube['capacity'] ): ?>
 
     <form method="post" name="owa-custom-dimension-form">
-        <fieldset class="options">
+        <fieldset>
         <legend>Register another</legend>
 
-        <div class="field">
-            <label for="owa-cd-key">Name</label>
-            <input type="text" id="owa-cd-key" name="<?php echo $view->getNs(); ?>dimensionKey"
-                value="<?php $view->out( $view->submitted['dimensionKey'] ); ?>"
-                autocomplete="off">
-            <div class="field_help">
-                Exactly the name your tracker sets it under &mdash;
+        <div class="setting">
+            <div class="title"><label for="owa-cd-key">Name</label></div>
+            <div class="description">Exactly the name your tracker sets it under &mdash;
                 <code>setEventProperty('plan', ...)</code> is <code>plan</code>.
-                Letters, digits and underscores, starting with a letter.
+                Letters, digits and underscores, starting with a letter.</div>
+            <div class="field">
+                <input type="text" id="owa-cd-key" name="<?php echo $view->getNs(); ?>dimensionKey"
+                    value="<?php $view->out( $view->submitted['dimensionKey'] ); ?>"
+                    autocomplete="off">
             </div>
         </div>
 
-        <div class="field">
-            <label for="owa-cd-label">Label</label>
-            <input type="text" id="owa-cd-label" name="<?php echo $view->getNs(); ?>label"
-                value="<?php $view->out( $view->submitted['label'] ); ?>">
-            <div class="field_help">What reports call it. Defaults to the name.</div>
+        <div class="setting">
+            <div class="title"><label for="owa-cd-label">Label</label></div>
+            <div class="description">What reports call it. Defaults to the name.</div>
+            <div class="field">
+                <input type="text" id="owa-cd-label" name="<?php echo $view->getNs(); ?>label"
+                    value="<?php $view->out( $view->submitted['label'] ); ?>">
+            </div>
         </div>
 
-        <div class="field">
-            <label for="owa-cd-scope">Scope</label>
-            <select id="owa-cd-scope" name="<?php echo $view->getNs(); ?>scope">
-                <?php foreach ( $view->scopes as $scope ): ?>
-                <option value="<?php $view->out( $scope ); ?>"
-                    <?php if ( $view->submitted['scope'] === $scope ): ?>selected<?php endif; ?>>
-                    <?php $view->out( $scope ); ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-            <div class="field_help">
-                <b>event</b> &mdash; describes one thing that happened, set with
+        <div class="setting">
+            <div class="title"><label for="owa-cd-scope">Scope</label></div>
+            <div class="description"><b>event</b> &mdash; describes one thing that happened, set with
                 <code>setEventProperty()</code>.
                 <b>user</b> &mdash; describes the visitor, set with
                 <code>setUserProperty()</code>, and carried onto every event of theirs.
                 There is no session scope: a session-scoped value is one a report derives,
-                not one a browser carries.
+                not one a browser carries.</div>
+            <div class="field">
+                <select id="owa-cd-scope" name="<?php echo $view->getNs(); ?>scope">
+                    <?php foreach ( $view->scopes as $scope ): ?>
+                    <option value="<?php $view->out( $scope ); ?>"
+                        <?php if ( $view->submitted['scope'] === $scope ): ?>selected<?php endif; ?>>
+                        <?php $view->out( $scope ); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
         </div>
 
-        <div class="field">
-            <label for="owa-cd-type">Type</label>
-            <select id="owa-cd-type" name="<?php echo $view->getNs(); ?>dataType">
-                <?php foreach ( $view->types as $type ): ?>
-                <option value="<?php $view->out( $type ); ?>"
-                    <?php if ( $view->submitted['dataType'] === $type ): ?>selected<?php endif; ?>>
-                    <?php $view->out( $type ); ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
-            <div class="field_help">
-                Fixed when the column is made, so it cannot be changed afterwards without
+        <div class="setting">
+            <div class="title"><label for="owa-cd-type">Type</label></div>
+            <div class="description">Fixed when the column is made, so it cannot be changed afterwards without
                 removing the dimension and registering it again. A value that will not
-                convert is stored as nothing rather than failing the report.
+                convert is stored as nothing rather than failing the report.</div>
+            <div class="field">
+                <select id="owa-cd-type" name="<?php echo $view->getNs(); ?>dataType">
+                    <?php foreach ( $view->types as $type ): ?>
+                    <option value="<?php $view->out( $type ); ?>"
+                        <?php if ( $view->submitted['dataType'] === $type ): ?>selected<?php endif; ?>>
+                        <?php $view->out( $type ); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
         </div>
 
@@ -169,9 +171,7 @@
             value="base.customDimensionSave">
         <?php echo $view->createNonceFormField( 'base.customDimensionSave' ); ?>
 
-        <div class="submit">
-            <input type="submit" value="Register" class="button">
-        </div>
+        <input class="owa-button" type="submit" value="Register">
         </fieldset>
     </form>
 
