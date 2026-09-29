@@ -164,7 +164,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   what can ship in 1.x first, and the order to build it in.</p>
 </header>
 <div class="meta">
-  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep · pass measured 21 Sep</span>
+  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep · pass measured 21 Sep · built out 29 Sep</span>
   <span>Branch <code>research/v2-single-fact-table</code></span>
   <span>Detail: <code>research/v2-schema/README.md</code></span>
 </div>
@@ -461,6 +461,12 @@ test asserts against.</p>
 feeds the existing explorer widget's pickers &mdash; so v2 formalises it rather than inventing it.
 <strong>Freshness belongs in the response envelope</strong> beside the row count, because it is a
 property of a result set rather than of the installation.</p>
+<p class="note"><strong>Built 29&nbsp;Sep (#1152).</strong> Each report query carries
+<code>MAX(built_at)</code> on the aggregate query it already runs, returned as <code>asOf</code>, and a
+report's header says <em>Data as of &hellip;</em> where Live View was &mdash; for a period reaching
+yesterday or today only, and amber when the scheduler is not running or its last build stopped on
+this cube. Live View is removed: it re-polled widgets that read the cube, which moves only at a
+build. A Property with no cube yet shows why instead of its widgets, and nothing queries it (#1151).</p>
 
 <h3 id="s17"><span class="num">1.7</span>The UI layer <span class="chip c-dec">Decided</span></h3>
 <ul>
@@ -1117,7 +1123,8 @@ v2 needs no new machinery, only registrations.</p>
 <div class="scroll"><table>
 <thead><tr><th>Job</th><th>Unit of work</th><th>Does</th><th>State</th></tr></thead>
 <tbody>
-<tr><td><code>denormalise</code></td><td>One raw partition</td><td>Reads every raw row in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug.</td><td>To build (<a href="#s219">Phase&nbsp;5 item&nbsp;1</a>)</td></tr>
+<tr><td><code>rebuild-cube</code></td><td>One cube partition</td><td>Reads every raw row of the Property in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug. Oldest partition first; a cube's run stops at its first failure.</td><td><span class="chip c-done">Shipped</span> every five minutes, spread (#1153). A routine run covers yesterday and today, reaches back over anything an outage or a failed run left unsettled (#1149), skips a partition nothing has reached since it settled (#1153), and a cube it creates is built from the Property's first raw day (#1148)</td></tr>
+<tr><td><code>apply-custom-dimensions</code></td><td>Every cube with pending registrations</td><td>Adds and drops registered custom-dimension columns, under the cube's build lock (<a href="#s227">&sect;2.26.7</a>).</td><td><span class="chip c-done">Shipped</span> every fifteen minutes, spread</td></tr>
 <tr><td><code>visitor-ttl</code></td><td>Whole store</td><td>Drops visitor rows whose <code>last_seen</code> is outside the 14-month sliding inactivity window.</td><td>To build</td></tr>
 <tr><td><code>partition-rotate</code></td><td>Whole table</td><td>Extends the lead, merges expired fine partitions back to monthly, drops what retention releases &mdash; extend, then a REORGANIZE per merge, then drops, all in one run under one lock.</td><td><span class="chip c-done">Shipped</span> 1.11, registered with empty params so nothing is ever deleted until an installation asks</td></tr>
 <tr><td><code>queue-drain</code></td><td>Queue</td><td>Retries the file-backed event queue.</td><td><span class="chip c-done">Shipped</span>, opt-in by config</td></tr>
@@ -1150,6 +1157,30 @@ which is where a late <code>first_visit</code> is actually picked up.</p>
 <p class="note">One constraint from the shipped scheduler: <strong>the lock is
 keyed on the job name</strong>, so a single name serialises every partition that job touches.
 Rebuilding the window in parallel would need per-partition job names.</p>
+<p><strong>Built 29&nbsp;Sep: one cadence, every five minutes, and a skip.</strong> The two cadences
+became one run plus a walk. A routine run covers yesterday and today; <code>Builder::catchUpFrom()</code>
+walks back from yesterday and adds every partition last built before its period ended plus a session
+length, or empty in the cube while raw has rows, stopping at the first settled one (#1149). What makes
+five minutes affordable is that a run <strong>skips a partition nothing has reached since it
+settled</strong> (#1153): raw carries <code>created_at</code>, when a row reached raw (not
+<code>ts</code>, which a queued event carries from before it lands), and a partition whose
+<code>built_at</code> is at least one session length after its newest <code>created_at</code> is
+current &mdash; nothing arrived since, and every session had closed when it was built. It compares
+arrival times, not row counts, so it holds if the pass later adds rows.</p>
+<div class="scroll"><table>
+<thead><tr><th>Raw rows in the day</th><th>Build of that partition</th><th>The skip check</th></tr></thead>
+<tbody>
+<tr><td class="n">0</td><td class="n">0.22&nbsp;s</td><td class="n">&mdash;</td></tr>
+<tr><td class="n">1,000</td><td class="n">0.58&nbsp;s</td><td class="n">4&nbsp;ms</td></tr>
+<tr><td class="n">10,000</td><td class="n">1.44&nbsp;s</td><td class="n">31&nbsp;ms</td></tr>
+<tr><td class="n">100,000</td><td class="n">12.57&nbsp;s</td><td class="n">341&nbsp;ms</td></tr>
+</tbody></table></div>
+<p class="note"><span class="chip c-meas">Measured</span> 29&nbsp;Sep on the dev install's
+<code>db.t4g.small</code>, one daily partition of a throwaway cube, five events per session. The
+100k figure agrees with &sect;2.7.2's 13.1&nbsp;s. An active Property rebuilds today's partition each
+run &mdash; up to about 4% of the RDS's time at 100k rows a day &mdash; and a quiet one costs a scan
+per partition and no swap. An installation can change the cadence in
+<code>OWA_SCHEDULED_JOBS</code>.</p>
 
 <h3 id="s26"><span class="num">2.6</span>Ingest <span class="chip c-dec">Decided</span></h3>
 <p><strong>One beacon becomes several events, and the expansion happens at ingest rather than in
@@ -2017,7 +2048,7 @@ report off.</p>
 <div class="scroll"><table>
 <thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead>
 <tbody>
-<tr><td>10</td><td><strong><code>owa_event</code>, the reporting cube, and the build that fills it</strong> &mdash; the build into staging and a partition swap (<a href="#s27">&sect;2.7</a>), with the partition cycle and scheduling model <a href="#s15">&sect;1.5</a> brought with it.</td><td><strong>Done</strong>, PR&nbsp;#1120. Cube, build and <code>cmd=cube-rebuild</code>; columns are configuration and a step may compute in PHP (<a href="#s27">&sect;2.7.1</a>); the partition cycle (<a href="#s28">&sect;2.8</a>) is folded into <code>partition-rotate</code>, which now runs daily. Measured and costed in <a href="#s27">&sect;2.7.2</a>&ndash;3. Open: the build ships unregistered, and budget priority between the two halves of the lead. <code>search_terms</code> keeps both paths and the NULL-not-<code>(not provided)</code> rule, DECIDED 22&nbsp;Sep against dropping it on volume: the tag path is unaffected by search-engine decay, v1&rsquo;s <code>referralSearchTerms</code> dimension would lose its v2 equivalent, and <code>SearchTermsStep</code> is the only <code>ComputeStep</code> there is &mdash; every test of the compute machinery drives it</td></tr>
+<tr><td>10</td><td><strong><code>owa_event</code>, the reporting cube, and the build that fills it</strong> &mdash; the build into staging and a partition swap (<a href="#s27">&sect;2.7</a>), with the partition cycle and scheduling model <a href="#s15">&sect;1.5</a> brought with it.</td><td><strong>Done</strong>, PR&nbsp;#1120. Cube, build and <code>cmd=cube-rebuild</code>; columns are configuration and a step may compute in PHP (<a href="#s27">&sect;2.7.1</a>); the partition cycle (<a href="#s28">&sect;2.8</a>) is folded into <code>partition-rotate</code>, which now runs daily. Measured and costed in <a href="#s27">&sect;2.7.2</a>&ndash;3. Registered: <code>rebuild-cube</code> runs every five minutes (<a href="#s25">&sect;2.5.1</a>, #1153). Open: budget priority between the two halves of the lead. <code>search_terms</code> keeps both paths and the NULL-not-<code>(not provided)</code> rule, DECIDED 22&nbsp;Sep against dropping it on volume: the tag path is unaffected by search-engine decay, v1&rsquo;s <code>referralSearchTerms</code> dimension would lose its v2 equivalent, and <code>SearchTermsStep</code> is the only <code>ComputeStep</code> there is &mdash; every test of the compute machinery drives it</td></tr>
 <tr><td>10b</td><td><strong>Reporting off the cube</strong> &mdash; v2 metrics and dimensions
 <em>replacing</em> v1&rsquo;s (<a href="#s223">&sect;2.23</a>), <code>ResultSetManager</code> binding
 the cube to the Property the request names, and report configs edited only where a name did not
@@ -2048,25 +2079,19 @@ rather than a later phase: un-migrated history is unreportable the moment metric
 <tr><td>14</td><td><strong>Drop v1</strong> &mdash; an optional command removing the 20 v1 tables by name (<a href="#s221b">&sect;2.21</a>), refusing until the migration has completed. The tables v2 keeps are untouched.</td><td><strong>Done</strong> 29&nbsp;Sep (#1141): <code>cmd=v1-drop</code> reports each v1 table, its rows and how many the migration read, and drops them only with <code>--drop</code>. Refused until Update062 has run; once it has dropped them, Update062&rsquo;s <code>down()</code> refuses.</td></tr>
 </tbody></table></div>
 
-<div class="flag"><strong>Status &mdash; 2026-09-24</strong>
-<p><strong>Checked against the code, not against this list.</strong> Of the fourteen items: 4, 5, 7
-and 8 are done (Phase&nbsp;6), 9 is partly done, 6 is not started; 10 is done (Phase&nbsp;7) and 10b
-is not started; 11&ndash;14 are not started. The 21&nbsp;Sep status block this replaces said all
-fourteen were unstarted and was left behind by its own tables &mdash; <strong>the tables are the
-authority, and a status paragraph that restates them will go stale again.</strong></p>
-<p><strong>The phases were resequenced on 21&nbsp;Sep</strong>, when the pipeline stopped being two
-(<a href="#s19">&sect;1.9</a>). The raw store comes before the pass, because every collection change
-writes a raw column. The tracker comes before the migration, because migrated rows cannot exercise
-the half of the schema that is new &mdash; <code>tagged_*</code> is empty where v1 stored a verdict,
-twelve columns were never collected, and the id formula never runs because the migrator assigns ids
-itself.</p>
-<p><strong>What changed on 24&nbsp;Sep.</strong> <a href="#s223">&sect;2.23</a> was reversed: one
-reporting path instead of two, v2 metrics and dimensions <em>replacing</em> v1&rsquo;s rather than
-sitting beside them under <code>/v2</code>. That adds 10b and pulls the migrator (11) forward into
-the reporting arc, because un-migrated history is unreportable once metrics read the cube. The
-custom-dimensions admin screen shipped on 23&nbsp;Sep (<code>71a3d0c7</code>), which was the last
-open piece of <a href="#s227">&sect;2.27</a>.</p>
-<p><strong>What is left is code, not another decision.</strong></p></div>
+<div class="flag"><strong>Status &mdash; 2026-09-29</strong>
+<p><strong>All fourteen items are done</strong>, each recorded in its row above; the tables are the
+authority, and this note only dates them. Phases 5&ndash;9 landed between 21 and 29&nbsp;Sep, the last
+being the migration's reconciliation (#1144).</p>
+<p><strong>Built on top of them, 29&nbsp;Sep:</strong> a Property's first cube build reads back to its
+first raw day (#1148); a routine build catches up on partitions an outage left unsettled (#1149); an
+install-wide <em>Reporting Cubes</em> screen with a green, yellow or red status per cube (#1150);
+nothing queries a cube that does not exist, and a report says why it has no data yet (#1151);
+reports say when their numbers were built, and Live View is removed (#1152, <a href="#s16">&sect;1.6</a>);
+<code>rebuild-cube</code> every five minutes with the skip (#1153, <a href="#s25">&sect;2.5.1</a>).</p>
+<p><strong>Next:</strong> <code>v2</code> merges to master once reporting runs off v2, which it now
+does. What stands between is a readiness pass &mdash; the 1.14 upgrade on a copy of a real install, a
+fresh install, the deploy runbook, release notes &mdash; not another build item.</p></div>
 
 <h3 id="s220"><span class="num">2.20</span>Goals became goal events <span class="chip c-done">Shipped</span></h3>
 <p>3&nbsp;Sep&nbsp;2026, PR&nbsp;#1064. <a href="#s13">&sect;1.3</a> says v2 has no numbered goal
@@ -3190,9 +3215,9 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <thead><tr><th>Question</th><th>What is undecided</th><th>What would settle it</th></tr></thead>
 <tbody>
 <tr><td><strong>Client-side lateness</strong></td><td>How late a beacon can arrive — unload beacons behind a later hit, browser retries, bfcache restores, a device that was offline.</td><td>Measurement. It is not visible server-side, and it is the number the late-arrival window is derived from.</td></tr>
-<tr><td><strong>Late-arrival window</strong></td><td>How far back each pass reaches, and what becomes of an event landing outside it.</td><td>Falls out of the above, plus the file queue's drain cadence, which is configured rather than measured.</td></tr>
+<tr><td><strong>Late-arrival window</strong></td><td>How far back each pass reaches, and what becomes of an event landing outside it.</td><td>Falls out of the above, plus the file queue's drain cadence. <strong>Measurable since 29&nbsp;Sep</strong>: <code>created_at &minus; ts</code> is how late each row reached raw, so the server-side part can be read off real traffic. A row landing on a partition that has already settled is still left for an operator's <code>from=</code>.</td></tr>
 <tr><td><strong>Rebuild granularity</strong> <span class="chip c-dec">Decided</span></td><td><strong>Daily, fixed, and not a setting.</strong> The measurement was taken (<a href="#s27">&sect;2.7.2</a>) and it argues for the finest granularity available: the build cost tracks the partition's row count, mildly superlinearly, so a month-end rebuild under monthly granularity is the case that stalls.</td><td>Settled. The reason it is not configurable is <a href="#s28">&sect;2.8</a>: the interval and the granularity are one decision, so a free knob beside the cadence lets an install configure a stall that nothing reports. <strong>Built</strong> as the first two months of the one lead (<a href="#s28">&sect;2.8.1</a>).</td></tr>
-<tr><td><strong>Rebuild set</strong></td><td>Whether each pass rebuilds the whole late-arrival window or something narrower.</td><td>The whole window is the only provably correct option given a late flagged event; narrower needs a way to know which partitions changed.</td></tr>
+<tr><td><strong>Rebuild set</strong> <span class="chip c-dec">Decided</span></td><td>Whether each pass rebuilds the whole late-arrival window or something narrower.</td><td>Settled 29&nbsp;Sep: the window, less what nothing has reached. <code>raw.created_at</code> is the way to know which partitions changed that this row asked for &mdash; a partition current by it is skipped (<a href="#s25">&sect;2.5.1</a>).</td></tr>
 <tr><td><strong>Raw retention</strong></td><td>How long raw is kept.</td><td>A trade: storage against how far back the model can be re-derived.</td></tr>
 <tr><td><strong>Cost on a small install</strong></td><td>What a pass costs in practice. Demo is 326k sessions and peteradamsphoto 203k <em>in total</em>, so the row count is not the problem.</td><td>Measuring against the shared RDS instance, which is the real constraint — eight WordPress sites are on it.</td></tr>
 <tr><td><strong>Custom variables in reporting</strong></td><td>Unregistered custom variables replace 1.x's five fixed slots, and are queryable from the denormalised table. A wide-window report grouped by a custom variable therefore scans events.</td><td>A decision on whether unregistered keys are ever promoted into a precomputed form, or only per site &mdash; the treatment <a href="#s213">&sect;2.13</a> already gives param paths.</td></tr>
