@@ -63,9 +63,8 @@ class Event {
      * knows a tracker sent this. Nothing downstream derives it. Two earlier
      * attempts did derive it and both were wrong -- inferring "is this a tracking
      * event" from the NAME matches install_complete, which replaced the install
-     * handler with ingest; and resolving through V2Event::name() flattens a dot,
-     * which turned dom.stream into tracking.dom_stream and routed it past its own
-     * handler.
+     * handler with ingest; and deriving it from a flattened name turned a dotted
+     * type into a different dispatch key and routed it past its own handler.
      *
      * A CLASS VAR, deliberately not in $properties: the property bag is the wire
      * surface, and OWA's routing state does not belong in it. Survives the queue

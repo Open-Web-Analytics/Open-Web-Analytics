@@ -278,6 +278,7 @@ if (!isset($_SERVER['HTTP_USER_AGENT'])) {
 $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '203.0.113.10';
 
 require_once($owa_root . 'owa.php');
+require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
 // If the live install has new-session announcements enabled (announce_visitors +
@@ -464,9 +465,15 @@ function seed(): array
     $out['notifications_seeded'] = seedNotifications();
 
 
-    // 7. DOM recordings, so the domstreams report has recordings to list --
+    // 7. Recordings, so the recordings report has something to list --
     //    including one stored as several chunks, which is the case its
-    //    aggregates exist for.
+    //    aggregates exist for. The report, its tables and its route are the
+    //    Domstream module's, which a fresh install does not activate.
+    if (!owa_coreAPI::getSetting('domstream', 'is_active')) {
+        owa_coreAPI::installModule('domstream');
+        $out['domstream_module'] = 'installed';
+    }
+
     $out['domstreams_seeded'] = seedDomstreams();
 
     // 8. A custom report owned by a user who never signs in, so a test can open
@@ -701,19 +708,20 @@ function unseedOthersReport(): int
 }
 
 /**
- * DOM recordings for the domstreams report.
+ * Recordings for the recordings report.
  *
- * WHY THE FIRST ONE IS THREE ROWS
+ * WHY THE FIRST ONE IS THREE CHUNKS
  *
- * Because that is what a real recording is. The tracker flushes its event queue
- * on a timer, so one recording is stored as however many rows it took, all
- * sharing a domstream_guid, and each carrying the CUMULATIVE elapsed seconds at
- * the moment it was flushed. A fixture of one row per recording would report
- * the same numbers whether the report grouped and aggregated or not.
+ * Because that is what a real recording is. The recorder flushes on a timer, so
+ * one recording is stored as however many chunks it took, all sharing a
+ * recording_id, each saying where in the recording it starts and how long it
+ * covers. A fixture of one chunk per recording would report the same numbers
+ * whether the report grouped and aggregated or not.
  *
- * The three chunks carry 12, 40 and 95 seconds and are written out of order, so
- * "the last one" and "the largest" are different answers and neither is "the
- * first row". Together they hold 600 bytes of events.
+ * The three chunks start at 0, 30 and 80 seconds and cover 12, 10 and 15, and
+ * are written out of order. The recording's length is where its last chunk
+ * ends -- 95 seconds -- which is neither the first chunk's 12, the covered 37,
+ * nor the 147 the chunk ends sum to.
  *
  * WHY EACH IS ON A DIFFERENT VISIT
  *
@@ -723,13 +731,17 @@ function unseedOthersReport(): int
  * fixture info -- a spec that hardcoded "organic-search" would be asserting
  * against the referer list rather than against what was seeded.
  *
+ * IDEMPOTENT by construction: the recording id is derived from the visit and
+ * the page, and a chunk's id from the recording and its seq, so a re-seed
+ * stores nothing new.
+ *
  * @return array what was seeded, for the fixture info
  */
 function seedDomstreams(): array
 {
     $site_id = E2E_SITE_ID;
-    $db      = owa_coreAPI::dbSingleton();
-    $db->connect();
+
+    DomstreamFixtures::ensure();
 
     /*
      * The visits the two recordings are attached to, chosen BY MEDIUM rather
@@ -740,22 +752,29 @@ function seedDomstreams(): array
      *
      * Both mediums are derived by the attribution chain from the referring URLs
      * in E2E_REFERERS, so they are the real pipeline's output.
+     *
+     * Each chunk: seq => [offset seconds, covered seconds, samples].
      */
     $recordings = [
-        ['medium' => 'organic-search', 'page' => '/pricing', 'chunks' => [12 => 100, 95 => 350, 40 => 150]],
-        ['medium' => 'referral',       'page' => '/',        'chunks' => [8  => 90]],
+        ['medium' => 'organic-search', 'page' => '/pricing', 'chunks' => [
+            1 => [0,  12, [[0, 'm', 10, 10], [200, 'm', 5, 5], [100, 'c', 15, 15, 'a', 'buy', ''], [900, 's', 300]]],
+            3 => [80, 15, [[0, 's', 600], [300, 'c', 40, 40, 'button', 'send', ''], [50, 'k', 'input', 'email', 'email'],
+                           [50, 'm', 1, 1], [50, 'm', 1, 1]]],
+            2 => [30, 10, [[0, 'm', 20, 20], [400, 'm', -5, 0], [400, 's', 450]]],
+        ]],
+        ['medium' => 'referral', 'page' => '/', 'chunks' => [
+            1 => [0, 8, [[0, 'm', 50, 50], [250, 'm', 10, 0], [250, 's', 120]]],
+        ]],
     ];
 
     $seeded = 0;
     $out    = [];
 
-    foreach ($recordings as $i => $recording) {
+    foreach ($recordings as $recording) {
 
         /*
          * The visit this recording hangs off, found by the REFERRER that gives it
-         * the medium the fixture promises. This asked owa_session for a row with
-         * that medium, and v2 writes no such row -- so both recordings were
-         * skipped on every run and the nine domstream specs had nothing to read.
+         * the medium the fixture promises.
          */
         $index = E2E_MEDIUM_REFERERS[$recording['medium']] ?? null;
 
@@ -769,72 +788,45 @@ function seedDomstreams(): array
             continue;
         }
 
-        $session['medium'] = $recording['medium'];
-        $guid              = numericGuid();
-
-        // Idempotent the way the rest of the seeder is: a recording already
-        // present for this page and visit is left alone rather than doubled.
-        $existing = $db->get_results(
-            "SELECT domstream_guid FROM owa_domstream"
-            . " WHERE site_id = '" . $db->prepare($site_id) . "'"
-            . " AND session_id = " . (int) $session['id']
-            . " AND page_url = '" . $db->prepare(E2E_SITE_DOMAIN . $recording['page']) . "' LIMIT 1"
-        );
-
-        if (is_array($existing) && $existing) {
-            $out[] = [
-                'medium'   => $session['medium'],
-                'page'     => $recording['page'],
-                'duration' => max(array_keys($recording['chunks'])),
-                'segments' => count($recording['chunks']),
-            ];
-            continue;
-        }
+        $recording_id = (string) (crc32($session['id'] . '|' . $recording['page']) + 1000000000);
 
         // Midday on the visit's own day, matching seedPageviews() so the
         // recording lands inside the same reporting window as everything else.
-        $ts = mktime(12, 0, 0,
+        $start = mktime(12, 0, 0,
             (int) substr((string) $session['yyyymmdd'], 4, 2),
             (int) substr((string) $session['yyyymmdd'], 6, 2),
             (int) substr((string) $session['yyyymmdd'], 0, 4));
 
-        $offset = 0;
+        $samples = 0;
 
-        foreach ($recording['chunks'] as $duration => $bytes) {
+        foreach ($recording['chunks'] as $seq => [$offset, $covered, $tuples]) {
 
-            $ds = owa_coreAPI::entityFactory('base.domstream');
+            DomstreamFixtures::chunk($site_id, [
+                'recording_id'  => $recording_id,
+                'seq'           => $seq,
+                'visitor_id'    => (string) $session['visitor_id'],
+                'session_id'    => (string) $session['id'],
+                'page_location' => E2E_SITE_DOMAIN . $recording['page'],
+                'page_path'     => $recording['page'],
+                'ts'            => ($start + $offset) * 1000000,
+                'yyyymmdd'      => (int) $session['yyyymmdd'],
+                'offset_ms'     => $offset * 1000,
+                'duration_ms'   => $covered * 1000,
+            ], $tuples);
 
-            $ds->set('id', numericGuid());
-            $ds->set('site_id', $site_id);
-            $ds->set('domstream_guid', $guid);
-            $ds->set('session_id', $session['id']);
-            $ds->set('visitor_id', $session['visitor_id']);
-            $ds->set('page_url', E2E_SITE_DOMAIN . $recording['page']);
-            $ds->set('page_width', 1280);
-            $ds->set('page_height', 800);
-            $ds->set('duration', $duration);
-            $ds->set('events', str_repeat('e', $bytes));
-            $ds->set('timestamp', $ts + $offset);
-            $ds->set('yyyymmdd', (int) $session['yyyymmdd']);
-            $ds->set('year', (int) substr((string) $session['yyyymmdd'], 0, 4));
-            $ds->set('month', (int) substr((string) $session['yyyymmdd'], 4, 2));
-            $ds->set('day', (int) substr((string) $session['yyyymmdd'], 6, 2));
-            $ds->create();
-
-            $offset += 30;
+            $samples += count($tuples);
             $seeded++;
         }
 
         $out[] = [
-            'medium'   => $session['medium'],
-            'page'     => $recording['page'],
-            'duration' => max(array_keys($recording['chunks'])),
-            'segments' => count($recording['chunks']),
-            'bytes'    => array_sum($recording['chunks']),
+            'medium'  => $recording['medium'],
+            'page'    => $recording['page'],
+            'chunks'  => count($recording['chunks']),
+            'samples' => $samples,
         ];
     }
 
-    return ['seeded' => $seeded, 'recordings' => $out];
+    return ['chunks' => $seeded, 'recordings' => $out];
 }
 
 /**
@@ -1146,6 +1138,9 @@ function teardown(): array
      * they are empty on this branch, so clearing them costs one no-op DELETE
      * each and keeps teardown correct on a branch where the chain is registered.
      */
+    DomstreamFixtures::deleteSite($site_id);
+    $removed['recordings'] = 'cleared';
+
     foreach ([rawTable(),
               'owa_request', 'owa_session', 'owa_action_fact', 'owa_click', 'owa_domstream',
               'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
@@ -1833,18 +1828,20 @@ function clickTotals(string $key): array
 }
 
 /**
- * Actions, fired as real track.action events.
+ * Actions, fired as the custom events a site sends: the event is named by the
+ * action, and its group, label and value are its parameters.
  *
- * Same reasoning as the clicks: ActionHandler is what lowercases the name,
- * group and label and coerces the value to a number, so writing owa_action_fact
- * directly would seed rows in a shape the tracker never produces.
+ * They were fired as track.action, v1's one type for every action. That name
+ * has no current equivalent and the edge refuses it, so none was stored -- and
+ * the date-split spec, which counts the visit these events make, came up one
+ * day short.
  *
  * @return array
  */
 function seedActions(): array
 {
     $expected = array_sum(array_column(E2E_ACTIONS, 'n'));
-    $existing = countRawRows('custom_event');
+    $existing = countActionRows();
 
     /* Idempotent for the same reason as the clicks above. */
     if ($existing > 0) {
@@ -1879,7 +1876,7 @@ function seedActions(): array
             $offset++;
 
             $event = owa_coreAPI::supportClassFactory('base', 'event');
-            $event->setEventType('track.action');
+            $event->setEventType($action['name']);
             $event->setProperties([
                 'site_id'          => E2E_SITE_ID,
                 'session_id'       => $session_id,
@@ -1889,13 +1886,12 @@ function seedActions(): array
                 'page_title'       => 'E2E Home',
                 'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
                 'ip_address'       => '203.0.113.31',
-                'action_group'     => $action['group'],
-                'action_name'      => $action['name'],
-                'action_label'     => $action['label'],
-                'numeric_value'    => $action['value'],
+                'ep_group'         => $action['group'],
+                'ep_label'         => $action['label'],
+                'epn_value'        => $action['value'],
             ]);
 
-            if (owa_coreAPI::logEvent('track.action', $event) !== false) {
+            if (owa_coreAPI::logEvent($action['name'], $event) !== false) {
                 $written++;
             }
         }
@@ -1905,7 +1901,7 @@ function seedActions(): array
 
     return [
         'actions'       => $written,
-        'rows_in_db'    => countRawRows('custom_event'),
+        'rows_in_db'    => countActionRows(),
         /*
          * The three answers the three metrics should give. Computed from the
          * fixture so the numbers cannot drift apart from the data, and kept
@@ -2014,6 +2010,12 @@ function sessionByReferer(string $site_id, string $referer_url): ?array
  * is `click` and a tracked action is `custom_event` -- so this is the same
  * question asked where the answer now lives.
  */
+/** Stored rows of the fixture's action events. */
+function countActionRows(): int
+{
+    return array_sum(array_map('countRawRows', array_unique(array_column(E2E_ACTIONS, 'name'))));
+}
+
 function countRawRows(?string $event_type = null): int
 {
     $db = owa_coreAPI::dbSingleton();

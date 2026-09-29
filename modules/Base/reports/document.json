@@ -37,14 +37,6 @@
             "container": "more-analytics",
             "links": [
                 {
-                    "reportId": "domstreams",
-                    "label": "Domstreams",
-                    "description": "mouse movement recordings.",
-                    "params": {
-                        "pagePath": "{pagePath}"
-                    }
-                },
-                {
                     "reportId": "dom-clicks",
                     "label": "Dom Clicks",
                     "description": "analysis of dom clicks.",

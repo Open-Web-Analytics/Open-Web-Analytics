@@ -64,8 +64,8 @@ jobs:
     # NOTE: these are exact paths rather than globs, with one deliberate exception
     # noted below. tar's --exclude wildcards match slashes, so a tidier
     # './modules/*/src' would exclude more than it looks like -- any module's src,
-    # not just the one meant. Only modules/Base/src is unbuilt source; webpack
-    # compiles it into public/base/dist.
+    # not just the one meant. modules/Base/src and modules/Domstream/src are the
+    # unbuilt source; webpack compiles both into public/base/dist.
     #
     # The exception is './playwright*.config.js'. Listing the configs by exact name
     # silently missed playwright.install-nostash.config.js, which therefore shipped
@@ -81,7 +81,7 @@ jobs:
     # list.
     - name: Generate Release Tarball
       run: |
-        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./modules/Base/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.gitattributes' --exclude='./.gitconfig' --exclude='./.github' --exclude='./.git' --exclude='./tests' --exclude='./phpunit.xml' --exclude='./phpstan.neon' --exclude='./phpstan-baseline.neon' --exclude='./phpstan-migration.neon' --exclude='./phpstan-migration-baseline.neon' --exclude='./phpstan-templates.neon' --exclude='./jest.config.js' --exclude='./babel.config.js' --exclude='./playwright*.config.js' --exclude='./.phpunit.cache' --exclude='./test-results' --exclude='./playwright-report' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
+        tar --directory ./ --exclude='./composer.json' --exclude='./composer.lock' --exclude='./package-lock.json' --exclude='./package.json' --exclude='./webpack.config.js' --exclude='./modules/Base/src' --exclude='./modules/Domstream/src' --exclude='./node_modules' --exclude='./.gitignore' --exclude='./.gitattributes' --exclude='./.gitconfig' --exclude='./.github' --exclude='./.git' --exclude='./tests' --exclude='./phpunit.xml' --exclude='./phpstan.neon' --exclude='./phpstan-baseline.neon' --exclude='./phpstan-migration.neon' --exclude='./phpstan-migration-baseline.neon' --exclude='./phpstan-templates.neon' --exclude='./jest.config.js' --exclude='./babel.config.js' --exclude='./playwright*.config.js' --exclude='./.phpunit.cache' --exclude='./test-results' --exclude='./playwright-report' --exclude='./owa_${{ env.VERSION}}_packaged.tar' -pcvf ./owa_${{ env.VERSION}}_packaged.tar ./
     #create a draft release on github and attach tarball as asset
     - name: Create Draft Github Release
       id: create_release

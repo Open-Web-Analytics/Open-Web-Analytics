@@ -484,24 +484,6 @@ describe('scroll depth', () => {
     });
 
     /*
-     * THE RECORDER'S BINDING IS A DIFFERENT FEATURE. It samples scroll position for
-     * playback; this checks whether a depth threshold was passed. They were one
-     * handler because window.onscroll is a single slot, which is why depth fired
-     * only where domstream was active -- and why neither uses that slot now.
-     */
-    test('the domstream sampler queues nothing when domstream is off', () => {
-        const t = newTracker();
-        const sent = captureSends(t);
-        const queued = [];
-        t.addToEventQueue = (event) => queued.push(event.get('event_type'));
-
-        t.scrollEventHandler({});
-
-        expect(queued).toEqual([]);
-        expect(sent).toHaveLength(0);
-    });
-
-    /*
      * THE DEFAULT IS QUARTILES ENDING AT 90. A single 90% mark answered only "did
      * they reach the end"; nothing could say how far down people get. The tests
      * around this one pin [90] themselves because they are about the mechanism,

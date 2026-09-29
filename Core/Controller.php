@@ -1146,7 +1146,8 @@ class Controller extends \OWA\Core\Base {
             }
         }
 
-        return $nav;
+        // nav_hierarchy: the whole nav, sections and entries, for this scope.
+        return (array) \OWA\Core\CoreAPI::filter( 'nav_hierarchy', $nav, $siteId, $propertyId );
     }
 
     /**

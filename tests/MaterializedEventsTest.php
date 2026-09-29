@@ -206,12 +206,13 @@ final class MaterializedEventsTest extends IngestionTestCase
             $this->site, (int) $visitor, (int) $session));
 
         /*
-         * The failed handler puts the incoming event on the retry queue. Assert
-         * it went there, then remove it: a later drain, with the probe inert,
+         * The failed handler puts the incoming event on the retry queue, under
+         * its current name -- logEvent() renamed the v1 spelling this fixture
+         * fires. Assert it went there, then remove it: a later drain, with the probe inert,
          * would write the rows this test just proved were not written.
          */
         $queued = (array) $db->get_results(sprintf(
-            "SELECT id FROM owa_queue_item WHERE event_type = 'base.page_request' "
+            "SELECT id FROM owa_queue_item WHERE event_type = 'page_view' "
             . "AND status = 'unhandled' AND LOCATE('%d', event) > 0", (int) $visitor));
 
         foreach ($queued as $item) {

@@ -20,6 +20,16 @@ class OWA {
 	    };
 	    
 	    this.overlay = '';
+
+	    /*
+	     * Overlay modes by action name. The overlay params name an action, and
+	     * whatever registered it runs it. Base registers the heatmap; a module
+	     * registers its own (registerOverlayMode) from code compiled into the
+	     * bundle.
+	     */
+	    this.overlayModes = {
+	        loadHeatmap: ( p ) => this.loadHeatmap( p ),
+	    };
 	    this.config = {
 	        // The WIRE namespace: cookie names, the owa_state cross-domain
 	        // handoff and the owa_overlay anchor -- everything OWA writes into a
@@ -281,6 +291,20 @@ class OWA {
         return this.config['rest_api_endpoint'] || this.getSetting('baseUrl') + 'api/';
     }
     
+    /**
+     * Run `fn( params )` when an overlay session names `action`.
+     *
+     * @param {string}   action
+     * @param {function} fn
+     */
+    registerOverlayMode( action, fn ) {
+
+        if ( typeof action === 'string' && action && typeof fn === 'function' ) {
+
+            this.overlayModes[ action ] = fn;
+        }
+    }
+
     loadHeatmap(p) {
 	    
         var that = this;
@@ -299,22 +323,6 @@ class OWA {
         });
     }
     
-    loadPlayer() {
-	    
-        this.debug("about to load Domstream Player");
-        
-        var that = this;
-
-        Util.loadCss(this.getSetting('baseUrl')+'public/base/css/owa.overlay.css', function(){});
-
-	    // dynamic import of the Player class
-	    import(/* webpackChunkName: "owa.player" */ '../tracker/Player.js').then( ( { Player } ) => { 
-			that.debug("Loading Domstream Player");
-            that.overlay = new Player();   
-            that.overlay.init(); 
-        });    
-    }
-    
     startOverlaySession(p) {
         
         // set global is overlay actve flag
@@ -323,7 +331,7 @@ class OWA {
         // Hold the overlay params for this page's lifetime.
         //
         // They used to be written to an owa_overlay cookie on the TRACKED
-        // site's own domain, so Heatmap.fetchData() and Player.fetchData()
+        // site's own domain, so the overlays' fetchData()
         // could read api_url back out -- which meant every other script on
         // that page could read the credential in it, and the browser re-sent
         // it to that site on every request. The params only ever need to
@@ -336,12 +344,16 @@ class OWA {
             this.setApiEndpoint(p.api_url);
         }
         
-        var params = p;
-        // evaluate the action param
-        if (params.action === 'loadHeatmap') {
-            this.loadHeatmap(p);
-        } else if (params.action === 'loadPlayer') {
-            this.loadPlayer(p);
+        var mode = p && Object.prototype.hasOwnProperty.call( this.overlayModes, p.action )
+            ? this.overlayModes[ p.action ] : null;
+
+        if ( typeof mode === 'function' ) {
+
+            mode( p );
+
+        } else {
+
+            this.debug( 'No overlay mode registered for action: ' + ( p ? p.action : '' ) );
         }
         
     }
@@ -358,7 +370,7 @@ class OWA {
     /**
      * The params for the overlay session running on this page, or null.
      *
-     * Heatmap.fetchData() and Player.fetchData() read api_url from here. If
+     * The overlays' fetchData() read api_url from here. If
      * this is missing they get undefined, jQuery.ajax is called with an
      * undefined URL, and the overlay silently never draws -- so it is covered
      * by tests/js/OverlayParamsInMemory.test.js rather than trusted.

@@ -16,7 +16,7 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * JSONP is not a transport, it is a way around the same-origin policy: the
  * response comes back as a `<script>` the browser executes, so the endpoint is
  * reachable by any page on the internet and its body runs with that page's
- * privileges. OWA used it for the heatmap overlay and the domstream player
+ * privileges. OWA used it for the heatmap overlay and the recording player
  * because those run on the *tracked* site and call back to the OWA origin --
  * genuinely cross-origin, and CORS did not work.
  *
@@ -62,7 +62,7 @@ describe('the overlay fetches over CORS, not JSONP', () => {
     }
 
     async function playerFetch() {
-        const { Player } = await import('../../modules/Base/src/tracker/Player.js');
+        const { Player } = await import('../../modules/Domstream/src/tracker/Player.js');
         const p = new Player();
         p.fetchData();
         return calls[0];

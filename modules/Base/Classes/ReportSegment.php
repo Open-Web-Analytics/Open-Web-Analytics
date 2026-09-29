@@ -29,8 +29,8 @@ namespace OWA\Module\Base\Classes;
  * Constraining a funnel's own rows with `medium==organic-search` would drop
  * every step a subject reached on some other medium, and the funnel would
  * collapse for reasons that have nothing to do with the funnel. Constraining a
- * domstream list the same way would hide recordings made by exactly the people
- * the segment asked for. So a segment picks the users and then shows all of
+ * list of a visitor's activity the same way would hide exactly the activity of
+ * the people the segment asked for. So a segment picks the users and then shows all of
  * their activity.
  *
  * WHY IT RUNS THROUGH ResultSetManager

@@ -17,10 +17,10 @@ namespace OWA\Core;
 //
 
 /**
- * A short-lived, scoped credential for the heatmap overlay and domstream
- * player.
+ * A short-lived, scoped credential for an overlay: the heatmap, or one a
+ * module registers.
  *
- * Those two run on the *tracked* site and fetch from the OWA origin, so they
+ * Overlays run on the *tracked* site and fetch from the OWA origin, so they
  * cannot use a session cookie -- it would be a third-party cookie, which
  * browsers increasingly refuse -- and they cannot send an Authorization header
  * without turning a simple cross-origin GET into a preflighted one. The

@@ -41,27 +41,34 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     protected function factTables( $only = null ) {
 
         $s      = \OWA\Core\CoreAPI::serviceSingleton();
-        $ns     = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
         $tables = array();
 
-        foreach ( $s->modules['base']->getEntities() as $name ) {
+        /*
+         * EVERY ACTIVE MODULE'S partitioned entities, not only Base's: a module
+         * that stores rows by day rotates and expires with everything else,
+         * without Base naming it.
+         */
+        foreach ( $s->modules as $module ) {
 
-            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.' . $name );
+            foreach ( (array) $module->getEntities() as $name ) {
 
-            if ( ! method_exists( $entity, 'getPartitionColumn' )
-                 || ! $entity->getPartitionColumn() ) {
+                $entity = \OWA\Core\CoreAPI::entityFactory( $module->name . '.' . $name );
 
-                continue;
+                if ( ! method_exists( $entity, 'getPartitionColumn' )
+                     || ! $entity->getPartitionColumn() ) {
+
+                    continue;
+                }
+
+                $table = $entity->getTableName();
+
+                if ( $only && $table !== $only ) {
+
+                    continue;
+                }
+
+                $tables[] = $table;
             }
-
-            $table = $ns . $name;
-
-            if ( $only && $table !== $only ) {
-
-                continue;
-            }
-
-            $tables[] = $table;
         }
 
         /*

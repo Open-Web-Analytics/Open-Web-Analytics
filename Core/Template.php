@@ -684,7 +684,7 @@ class Template extends TemplateEngine {
     }
 
     /**
-     * An API link for the heatmap overlay or the domstream player.
+     * An API link for an overlay: the heatmap, or a module's.
      *
      * These two are the only cross-origin API consumers: they run on the
      * *tracked* site and call back to the OWA origin. They used to be built

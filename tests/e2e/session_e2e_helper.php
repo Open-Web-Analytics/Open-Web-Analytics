@@ -40,6 +40,7 @@ const SCRATCH_DB_SENTINEL = 'owa_e2e_selfhost';
 
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
+require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
 $connected_db = (string) owa_coreAPI::getSetting('base', 'db_name');
@@ -57,8 +58,10 @@ $cmd = $argv[1] ?? '';
 switch ($cmd) {
     case 'session-state': out(sessionState(argSite($argv))); break;
     case 'reset':         out(resetSite(argSite($argv)));    break;
+    case 'recordings':    out(recordings(argSite($argv)));   break;
     default:
-        fwrite(STDERR, "Unknown command '$cmd'. Use: session-state site=<id> | reset site=<id>\n");
+        fwrite(STDERR, "Unknown command '$cmd'. Use: session-state site=<id> | reset site=<id>"
+            . " | recordings site=<id>\n");
         exit(2);
 }
 
@@ -266,6 +269,33 @@ function sessionState(string $site_id): array
     ];
 }
 
+/**
+ * The site's recordings as stored: each one's chunks, and its samples as the
+ * player receives them.
+ */
+function recordings(string $site_id): array
+{
+    DomstreamFixtures::ensure();
+
+    $table = owa_coreAPI::entityFactory('domstream.domstream_chunk')->getTableName();
+
+    $chunks = (array) db()->get_results(
+        "SELECT recording_id, seq, page_view_seq, page_path, sample_count, click_count, keypress_count,"
+        . " viewport_w, viewport_h FROM $table WHERE site_id = ? ORDER BY recording_id, seq", [$site_id]);
+
+    $out = [];
+
+    foreach ($chunks as $chunk) {
+        $chunk = (array) $chunk;
+        $id = (string) $chunk['recording_id'];
+
+        $out[$id] = $out[$id] ?? ['chunks' => [], 'samples' => \OWA\Module\Domstream\Controller\DomstreamsRestController::recording($site_id, $id)['samples']];
+        $out[$id]['chunks'][] = $chunk;
+    }
+
+    return ['recordings' => array_values($out)];
+}
+
 function resetSite(string $site_id): array
 {
     $deleted = [];
@@ -275,6 +305,9 @@ function resetSite(string $site_id): array
      * branch and each costs one no-op DELETE, which keeps reset correct on a
      * branch where the chain is registered.
      */
+    DomstreamFixtures::deleteSite($site_id);
+    $deleted[] = 'recordings';
+
     foreach ([rawTable(), 'owa_request', 'owa_session', 'owa_click', 'owa_domstream',
               'owa_commerce_transaction_fact'] as $t) {
         $db = db();

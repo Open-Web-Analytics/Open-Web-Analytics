@@ -1,189 +1,108 @@
 <?php
 namespace OWA\Module\Domstream\Controller;
 
+//
+// Open Web Analytics - An Open Source Web Analytics Framework
+//
+// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
+//
 
 /**
- * Open Web Analytics - The Open Source Web Analytics Framework
- * Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
- * Website: http://www.openwebanalytics.con
- */
-
-
-/**
- * Domstreams Controller
+ * GET domstreams: one recording, for the player.
  *
- * Lists available domstreams for a document
- * 
+ * Its chunks' samples in seq order, as one list, with the viewport of the
+ * first chunk. The report builds the list of recordings itself; this serves
+ * only playback, from the overlay session on the recorded page.
  */
 class DomstreamsRestController extends \OWA\Core\AdminController {
-	
-	function __construct($params) {
-		
-        parent::__construct($params);
-        $this->setRequiredCapability('view_reports');
+
+    function __construct( $params ) {
+
+        parent::__construct( $params );
+        $this->setRequiredCapability( 'view_reports' );
     }
 
-	
-	function validate() {
-		
-		$this->addValidation('siteId', $this->getParam('siteId'), 'required', array('stopOnError'	=> true));
-	    //$this->addValidation('document_id', $this->getParam('document_id'), 'required', array('stopOnError'	=> true));
-	}
-	
+    function validate() {
+
+        $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'required', array( 'stopOnError' => true ) );
+        $this->addValidation( 'recording_id', $this->getParam( 'recording_id' ), 'required', array( 'stopOnError' => true ) );
+    }
+
     function action() {
-		
-		
-		// this should really be broken out into its own REST endpoint and not bundled here as it's an entirely
-		// different database query
-		if ( $this->get( 'domstream_guid' ) ) {
-			
-            return $this->getDomstream( $this->get( 'domstream_guid' ) );
-        }
-		 
-        // get resultSet Manager instance
-		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
- 
-        $rsm->db->selectFrom('owa_domstream');
-       
-        $rsm->db->selectColumn("domstream_guid, max(timestamp) as timestamp, page_url, duration, id as domstream_id, page_height, page_width");
-      
-        $rsm->db->selectColumn('document_id');
-       
-        $rsm->db->groupby('domstream_guid');
-        
-        // get domstreams for a particular document/page
-        if ($this->get('pageUrl')) {
-	        
-            $rsm->db->where('page_url', $this->get('pageUrl'));
-            $rsm->setQueryStringParam('pageUrl', $this->get('pageUrl') );
-        }
-		
-		$rsm->db->orderBy('timestamp', 'DESC');
-        
-        //$rsm->setSiteId( $this->get('siteId') );
-        $rsm->db->where('site_id',  $this->get('siteId') );
-		$rsm->setQueryStringParam('siteId', $this->get('siteId') );
-        
-		 // set time period
-        $rsm->setTimePeriod(
-        	$this->get( 'period' ),
-            $this->get('startDate'),
-            $this->get('endDate'),
-            $this->get('startTime'),
-            $this->get('endTime')
+
+        $this->set( 'response', self::recording(
+            (string) $this->getParam( 'siteId' ), (string) $this->getParam( 'recording_id' ) ) );
+    }
+
+    /**
+     * @param  string $site_id
+     * @param  string $recording_id
+     * @return array  recording_id, viewport_w, viewport_h, samples
+     */
+    public static function recording( $site_id, $recording_id ) {
+
+        $out = array(
+            'recording_id' => $recording_id,
+            'viewport_w'   => null,
+            'viewport_h'   => null,
+            'samples'      => array(),
         );
-        
-		// set limit
-        $resultsPerPage = $this->get( 'resultsPerPage' ) ?: 50;
-        $rsm->setLimit( $resultsPerPage );
-		
-		// set pagination
-        $page = $this->get( 'page' ) ?: 1;
-        $rsm->setPage( $this->get('page') );
-		
-		// fetch results
-		$rs = $rsm->queryResults();
-		
-        $rs->setLabels(array('id' => 'Domstream ID', 'page_url' => 'Page Url', 'duration' => 'Duration', 'timestamp' => 'Timestamp'));
-	
-        
-        $this->set('response', $rs);
-        
+
+        if ( ! preg_match( '/^[1-9][0-9]{0,18}$/', $recording_id ) ) {
+
+            return $out;
+        }
+
+        $chunk   = \OWA\Core\CoreAPI::entityFactory( 'domstream.domstream_chunk' );
+        $payload = \OWA\Core\CoreAPI::entityFactory( 'domstream.domstream_payload' );
+
+        /*
+         * The chunk table's composite index finds the recording; the join
+         * repeats yyyymmdd so each payload lookup prunes to its partition.
+         */
+        $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
+            'SELECT c.seq, c.viewport_w, c.viewport_h, p.payload FROM %s c'
+            . ' JOIN %s p ON p.id = c.id AND p.yyyymmdd = c.yyyymmdd'
+            . ' WHERE c.site_id = ? AND c.recording_id = ? ORDER BY c.seq ASC',
+            $chunk->getTableName(), $payload->getTableName() ),
+            array( $site_id, $recording_id ) );
+
+        foreach ( $rows as $row ) {
+
+            $row = (array) $row;
+
+            if ( $out['viewport_w'] === null ) {
+
+                $out['viewport_w'] = $row['viewport_w'] === null ? null : (int) $row['viewport_w'];
+                $out['viewport_h'] = $row['viewport_h'] === null ? null : (int) $row['viewport_h'];
+            }
+
+            $json    = @gzdecode( (string) $row['payload'] );
+            $samples = $json === false ? null : json_decode( $json, true );
+
+            if ( is_array( $samples ) ) {
+
+                foreach ( $samples as $sample ) {
+
+                    $out['samples'][] = $sample;
+                }
+            }
+        }
+
+        return $out;
     }
-    
+
     function success() {
-	    
-	    http_response_code(201);
-	    
-	    $this->setView( 'domstream.domstreamsRest' );
+
+        http_response_code( 201 );
+        $this->setView( 'domstream.domstreamsRest' );
     }
-    
+
     function errorAction() {
-	    
-	    http_response_code(422);
-	    
-	    $this->setView( 'domstream.domstreamsRest' );
+
+        http_response_code( 422 );
+        $this->setView( 'domstream.domstreamsRest' );
     }
-    
-    // api method callback gets an individual domstream
-    function getDomstream( $domstream_guid ) {
-
-       
-        // Fetch document object
-        $d = \OWA\Core\CoreAPI::entityFactory('base.domstream');
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        // Narrow to the days the recording can span. Without it a partitioned
-        // owa_domstream is visited partition by partition, and this table is
-        // the heaviest of them -- it holds serialised DOM events, so scanning
-        // it is expensive per row as well as per partition.
-        //
-        // The range comes from the timestamp the guid carries, which the
-        // tracker mints from the browser's clock. It is a hint, so a miss is
-        // repeated unbounded below rather than reported as no recording.
-        $range = \OWA\Core\Db::factDateRangeFromId( $domstream_guid );
-
-        $fetch = function ( $bounds ) use ( $db, $d, $domstream_guid ) {
-
-            $db->select('*');
-            $db->from( $d->getTableName() );
-            $db->where( 'domstream_guid', $domstream_guid );
-
-            if ( $bounds ) {
-                $db->where( 'yyyymmdd', $bounds, 'between' );
-            }
-
-            $db->orderBy('timestamp', 'ASC');
-
-            return $db->getAllRows();
-        };
-
-        $ret = $fetch( $range );
-
-        if ( ! $ret && $range ) {
-
-            $ret = $fetch( null );
-        }
-        //print_r($ret);
-        $combined = '';
-
-        if ( $ret ) {
-            // if rows then combine the events
-            foreach ($ret as $row) {
-                $combined = $this->mergeStreamEvents( htmlspecialchars_decode( $row['events'] ), $combined );
-            }
-
-            $row['events'] = json_decode( $combined  );
-        } else {
-            // no rows found for some reason?..
-            $error = 'No domstream rows found for domstream_guid: ' . $domstream_guid;
-            \OWA\Core\CoreAPI::debug( $error );
-        }
-
-        $this->set('response', $row);
-    }
-    
-    function mergeStreamEvents($new, $old = '') {
-
-        if ( $old) {
-            $old = json_decode($old);
-        } else {
-            $old = array();
-        }
-        //owa_coreAPI::debug('old: '.print_r($old, true));
-        $new = json_decode($new);
-        //owa_coreAPI::debug('new: '.print_r($new, true));
-
-        foreach ($new as $v) {
-            $old[] = $v;
-        }
-        
-        $combined = $old;
-        //owa_coreAPI::debug('combined: '.print_r($combined, true));
-        //owa_coreAPI::debug('combined count: '.count($combined));
-        $combined = json_encode($combined);
-        return $combined;
-    }
-
 }
+
+?>

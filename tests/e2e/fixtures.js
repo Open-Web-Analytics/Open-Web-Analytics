@@ -133,25 +133,24 @@ const FIXTURE = {
      *
      * They described three metrics -- actions, uniqueActions, actionsValue -- and
      * the dimensions actionName, actionLabel and actionGroup. v2 declares none of
-     * those and should declare none: a tracked action is a `custom_event` row like
-     * any other event, so it is counted by the Events report grouping on
-     * eventName, and its own name, label and group ride `params`, which ARE the
-     * custom dimensions.
+     * those and should declare none: a tracked action is a custom event named
+     * by the action, like any other event, so it is counted by the Events
+     * report grouping on eventName, and its group, label and value ride
+     * `params`, which ARE the custom dimensions.
      *
      * seedActions() still fires the four events -- they are real events and the
      * Events report counts them -- but nothing asserts a shape for them here,
      * because there is no action vocabulary left to assert against.
      */
     /*
-     * The DOM recordings seeded by seedDomstreams().
+     * The recordings seeded by seedDomstreams().
      *
-     * `a` is stored as THREE rows -- one per flush of the tracker's event queue
-     * -- which is what a real recording is. Each row carries the cumulative
-     * elapsed seconds at the moment it was flushed, so the recording's duration
-     * is the LARGEST of them (95) and not their sum (147) or the first written
-     * (12). Those three numbers are all different on purpose: a fixture where
-     * they agree cannot tell a grouped-and-aggregated list from an ungrouped
-     * one.
+     * `a` is stored as THREE chunks -- one per flush of the recorder -- which
+     * is what a real recording is. They start at 0, 30 and 80 seconds and cover
+     * 12, 10 and 15, so the recording's length is where the last one ends (95),
+     * and not the first chunk's 12, the 37 covered, or the 147 the chunk ends
+     * sum to. Those numbers all differ on purpose: a fixture where they agree
+     * cannot tell a grouped-and-aggregated list from an ungrouped one.
      *
      * The two recordings are attached to visits with different mediums, which
      * is what makes the segment filter testable: filtering to `a.medium` must
@@ -162,20 +161,19 @@ const FIXTURE = {
         a: {
             medium: 'organic-search',
             page: '/pricing',
-            duration: 95,
-            durationLabel: '0:01:35',
-            segments: 3,
-            bytes: 600,
-            sizeLabel: '600 B',
+            lengthLabel: '0:01:35',
+            wrongLengthLabels: ['0:00:12', '0:00:37', '0:02:27'],
+            events: 12,
+            clicks: 2,
+            keypresses: 1,
         },
         b: {
             medium: 'referral',
             page: '/',
-            duration: 8,
-            durationLabel: '0:00:08',
-            segments: 1,
-            bytes: 90,
-            sizeLabel: '90 B',
+            lengthLabel: '0:00:08',
+            events: 3,
+            clicks: 0,
+            keypresses: 0,
         },
     },
     // Notifications seeded for the header bell. Dismissing is permanent and

@@ -182,13 +182,13 @@ final class BeaconCompatInventoryTest extends TestCase
 
         foreach ( $names as $old => $new ) {
 
-            $this->assertSame( $new, \OWA\Module\Base\Classes\V2Event::name( $old ),
+            $this->assertSame( $new, \OWA\Module\Base\Classes\Beacon\Compat::eventName( $old ),
                 $old . ' must resolve through conf/beacon_compat.php' );
         }
 
         // A name already in the v2 vocabulary is untouched, so the mapping is
         // not swallowing everything.
-        $this->assertSame( 'scroll', \OWA\Module\Base\Classes\V2Event::name( 'scroll' ) );
+        $this->assertSame( 'scroll', \OWA\Module\Base\Classes\Beacon\Compat::eventName( 'scroll' ) );
     }
 
     /**

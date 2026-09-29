@@ -138,8 +138,6 @@ class OWATracker  {
 		    is_new_session_start:    { scope: 'request', permanent: false },
 		    is_new_visitor_created:  { scope: 'request', permanent: false }
 	    },
-	    // Time When tracker is loaded
-	    this.startTime =  null;
 	    // time when tracker is unloaded
 	    this.endTime =  null;
 	    // campaign state holder
@@ -190,10 +188,6 @@ class OWATracker  {
 	    /** The URL this.urlParams was parsed from, so a route change re-parses. */
 	    this.urlParamsFrom = '';
 	    /**
-	     * DOM stream Event Binding Methods
-	     */
-	    this.streamBindings  =  ['bindMovementEvents', 'bindScrollEvents','bindKeypressEvents', 'bindClickEvents'];
-	    /**
 	     * Whether trackScroll() has bound its depth listener, so pushing the
 	     * command twice does not report every threshold twice.
 	     */
@@ -207,24 +201,11 @@ class OWATracker  {
 	     */
 	    this.click  =  '';
 	    /**
-	     * Domstream event
-	     */
-	    this.domstream  =  '';
-	    /**
-	     * Latest Movement Event
-	     */
-	    this.movement  =  '';
-	    /**
-	     * Latest Keystroke Event
-	     */
-	    this.keystroke  =  '';
-	    /**
 	     * Latest Hover Event
 	     */
 	    this.hover  =  '';
 	
 	    this.last_event  =  '';
-	    this.last_movement  =  '';
 	    /**
 	     * The last scroll depth REPORTED, as a percentage.
 	     *
@@ -264,11 +245,6 @@ class OWATracker  {
 	     * history.pushState twice would double every route change.
 	     */
 	    this.routeTrackingEnabled = false;
-	    /**
-	     * DOM Stream Event Queue
-	     */
-	    this.event_queue  =  [];
-	    this.player =  '';
 	    this.overlay =  '';
 	
 	
@@ -277,8 +253,6 @@ class OWATracker  {
 		//OWA.event = event;
 	
 	    //this.setDebug(true);
-	    // set start time
-	    this.startTime = this.getTimestamp();
 	
 	    // register cookies
 	    //
@@ -365,10 +339,6 @@ class OWATracker  {
 	        logClicks: true,
 	        logPage: true,
 	        encodeProperties: false,
-	        movementInterval: 100,
-	        logDomStreamPercentage: 100,
-	        domstreamLoggingInterval: 3000,
-	        domstreamEventThreshold: 10,
 	        /*
 	         * Whether the #fragment is part of a page's URL. It is not, by
 	         * default -- see getCurrentUrl().
@@ -526,7 +496,6 @@ class OWATracker  {
 	    // private vars
 	    this.ecommerce_transaction = '';
 	    this.isClickTrackingEnabled = false;
-	    this.domstream_guid = '';
 
 	    // check to se if an overlay session is active
 	    this.checkForOverlaySession();
@@ -542,8 +511,77 @@ class OWATracker  {
 	     */
 	    this.bindPageLifecycleEvents();
 
+	    // Compiled-in plugins (see registerPlugin) set up on every tracker.
+	    OWATracker.plugins().forEach( ( plugin ) => {
+
+	        if ( typeof plugin.init === 'function' ) {
+
+	            plugin.init( this );
+	        }
+	    } );
+
 		OWA.doAction('tracker.init');
 	}
+
+    /**
+     * Compiled into the tracker bundle from a module's source, registered here.
+     *
+     * A module contributes code to owa.tracker.js through its build manifest
+     * (`contributes`), and that code registers itself with this rather than the
+     * tracker naming it. A plugin is an object with:
+     *
+     *   name                a unique name
+     *   reservedEventNames  event names it sends, which trackCustomEvent() then
+     *                       refuses -- a site's event may not borrow one
+     *   methods             { name: function } added to the tracker, so a
+     *                       snippet command can call them. A method the tracker
+     *                       already has is NOT replaced.
+     *   init( tracker )     run for each tracker, at the end of its constructor
+     *
+     * Registering the same name twice keeps the first.
+     *
+     * @param {object} plugin
+     * @return {boolean} whether it was registered
+     */
+    static registerPlugin( plugin ) {
+
+        if ( ! plugin || typeof plugin.name !== 'string' || ! plugin.name ) {
+
+            return false;
+        }
+
+        var registered = OWATracker.plugins();
+
+        if ( registered.some( ( p ) => p.name === plugin.name ) ) {
+
+            return false;
+        }
+
+        var methods = plugin.methods || {};
+
+        Object.keys( methods ).forEach( ( name ) => {
+
+            if ( typeof methods[ name ] === 'function' && ! ( name in OWATracker.prototype ) ) {
+
+                OWATracker.prototype[ name ] = methods[ name ];
+            }
+        } );
+
+        registered.push( plugin );
+
+        return true;
+    }
+
+    /** @return {object[]} the registered plugins, in registration order */
+    static plugins() {
+
+        if ( ! Object.prototype.hasOwnProperty.call( OWATracker, '_plugins' ) ) {
+
+            OWATracker._plugins = [];
+        }
+
+        return OWATracker._plugins;
+    }
 
     setDebug(bool) {
 
@@ -1277,7 +1315,6 @@ class OWATracker  {
 
         if ( ! this.isClickTrackingEnabled ) {
             var that = this;
-            // Registers the handler for the before navigate event so that the dom stream can be logged
             if (window.addEventListener) {
                 window.addEventListener('click', function (e) {that.clickEventHandler(e);}, false);
 
@@ -1301,21 +1338,6 @@ class OWATracker  {
             this.isClickTrackingEnabled = true;
         }
 
-    }
-
-    setDomstreamSampleRate(value) {
-
-        this.setOption('logDomStreamPercentage', value);
-    }
-
-    startDomstreamTimer() {
-
-        var interval = this.getOption('domstreamLoggingInterval')
-        var that = this;
-        var domstreamTimer = setInterval(
-            function(){ that.logDomStream() },
-            interval
-        );
     }
 
     /**
@@ -2178,11 +2200,10 @@ class OWATracker  {
         click.set('click_x', coords.x);
         click.set('click_y', coords.y);
 
-        // add to event queue is logging dom stream
-        if (this.getOption('trackDomStream')) {
-            this.addToEventQueue(click)
-        }
-        var full_click = Util.clone(click);
+        // Anything compiled in that wants every click hears it here, before
+        // it is sent or classified.
+        OWA.doAction( 'tracker.click', { tracker: this, click: click, domEvent: e } );
+
         //if all that works then log
         if (this.getOption('logClicksAsTheyHappen')) {
             //this.trackEvent(full_click);
@@ -2201,85 +2222,6 @@ class OWATracker  {
 
         return properties;
 
-    }
-
-    callMethod(string, data) {
-
-        return this[string](data);
-    }
-
-    addDomStreamEventBinding(method_name) {
-	    
-        this.streamBindings.push(method_name);
-    }
-
-    bindMovementEvents() {
-
-        var that = this;
-        document.onmousemove = function (e) {that.movementEventHandler(e);}
-    }
-
-    movementEventHandler(e) {
-
-        // hack for IE
-        e = e || window.event;
-        var now = this.getTime();
-        if (now > this.last_movement + this.getOption('movementInterval')) {
-            // set event type
-            this.movement = new OwaEvent();
-            this.movement.setEventType("dom.movement");
-            var coords = this.getCoords(e);
-            this.movement.set('cursor_x', coords.x);
-            this.movement.set('cursor_y', coords.y);
-            this.addToEventQueue(this.movement);
-            this.last_movement = now;
-        }
-
-    }
-
-    /**
-     * The DOMSTREAM's scroll sampling. Part of the recording, nothing else.
-     *
-     * TWO FEATURES SHARE THIS DOM EVENT AND ARE OTHERWISE UNRELATED: the recorder
-     * wants a position sample to play back, and scroll-depth tracking wants to know
-     * when a threshold is passed. They were one handler because `window.onscroll`
-     * is a single slot -- assigning it twice clobbers -- so the depth check had to
-     * be bolted onto the recorder's binding, and depth therefore fired only where
-     * domstream was active and only for its sampled fraction of visitors.
-     *
-     * addEventListener, so each feature binds its own. It also stops OWA
-     * overwriting a scroll handler the PAGE installed, which `window.onscroll =`
-     * did unconditionally.
-     */
-    bindScrollEvents() {
-
-        var that = this;
-
-        window.addEventListener( 'scroll',
-            function ( e ) { that.scrollEventHandler( e ); }, false );
-    }
-
-    /**
-     * One position sample for the recording. Queued, never sent on its own -- 1.x
-     * has no server handler for dom.scroll, so this has always been playback data
-     * rather than an event.
-     */
-    scrollEventHandler(e) {
-
-        // hack for IE
-        e = e || window.event;
-
-        if ( ! this.getOption( 'trackDomStream' ) ) {
-
-            return;
-        }
-
-        var sample = new OwaEvent();
-        sample.setEventType( 'dom.scroll' );
-        var coords = this.getScrollingPosition();
-        sample.set( 'x', coords.x );
-        sample.set( 'y', coords.y );
-        this.addToEventQueue( sample );
     }
 
     /**
@@ -2813,43 +2755,6 @@ class OWATracker  {
 
     }
 
-    bindFocusEvents() {
-
-        var that = this;
-
-    }
-
-    bindKeypressEvents() {
-
-        var that = this;
-        document.onkeypress = function (e) {that.keypressEventHandler(e);}
-
-    }
-
-    keypressEventHandler(e) {
-
-        e = e || window.event;
-
-        var targ = this._getTarget(e);
-
-        if (targ.tagName === 'INPUT' && targ.type === 'password') {
-            return;
-        }
-
-        var key_code = e.keyCode? e.keyCode : e.charCode
-        var key_value = String.fromCharCode(key_code);
-        var event = new OwaEvent();
-        event.setEventType('dom.keypress');
-        event.set('key_value', key_value);
-        event.set('key_code', key_code);
-        event.set("dom_element_name", targ.name);
-        event.set("dom_element_id", targ.id);
-        event.set("dom_element_tag", String( targ.tagName ).toLowerCase());
-        //console.log("Keypress: %s %d", key_value, key_code);
-        this.addToEventQueue(event);
-
-    }
-
     // utc epoch in seconds
     getTimestamp() {
 
@@ -2860,11 +2765,6 @@ class OWATracker  {
     getTime() {
 
         return Math.round(new Date().getTime());
-    }
-
-    getElapsedTime() {
-
-        return this.getTimestamp() - this.startTime;
     }
 
     getOption(name) {
@@ -2882,27 +2782,6 @@ class OWATracker  {
     setLastEvent(event) {
 	    
         return;
-    }
-
-    addToEventQueue(event) {
-
-        if (this.active && !this.isPausedBySibling()) {
-
-            var now = this.getTimestamp();
-
-            if (event != undefined) {
-                this.event_queue.push(event.getProperties());
-                OWA.debug("Now logging %s for: %d", event.get('event_type'), now);
-            } else {
-                OWA.debug("No event properties to log");
-            }
-
-        }
-    }
-
-    isPausedBySibling() {
-
-        return OWA.getSetting('loggerPause');
     }
 
     sleep(delay) {
@@ -2923,12 +2802,6 @@ class OWATracker  {
     // Event object Factory
     makeEvent() {
         return new OwaEvent();
-    }
-
-    // adds a new Domstream event binding. takes function name
-    addStreamEventBinding(name) {
-
-        this.streamBindings.push(name);
     }
 
     /*
@@ -4518,12 +4391,27 @@ class OWATracker  {
      * one would be indistinguishable from the real thing.
      */
     static get RESERVED_EVENT_NAMES() {
-        return [
+
+        var names = [
             'page_view', 'click', 'purchase', 'refund',
             'user_engagement', 'scroll', 'file_download',
             'form_start', 'form_submit', 'view_search_results',
             'session_start', 'first_visit'
         ];
+
+        // And whatever a compiled-in plugin sends (registerPlugin).
+        OWATracker.plugins().forEach( ( plugin ) => {
+
+            ( plugin.reservedEventNames || [] ).forEach( ( name ) => {
+
+                if ( names.indexOf( name ) === -1 ) {
+
+                    names.push( name );
+                }
+            } );
+        } );
+
+        return names;
     }
 
     /**
@@ -4636,7 +4524,13 @@ class OWATracker  {
             this.resetEngagement();
         }
 
-        return this.trackEvent( event );
+        var ret = this.trackEvent( event );
+
+        // Sent, with its event_seq and session stamped: anything compiled in
+        // that attaches to the page view reads them here.
+        OWA.doAction( 'tracker.pageView', { tracker: this, event: event } );
+
+        return ret;
     }
 
     /**
@@ -4985,7 +4879,7 @@ class OWATracker  {
      *
      * An empty array switches site-search tracking off.
      *
-     * A NAMED SETTER, like setTrackUrlFragments and setDomstreamSampleRate, because
+     * A NAMED SETTER, like setTrackUrlFragments, because
      * this is site-facing and setOption() takes any key with no checking. It
      * REFUSES anything that is not an array, which is the reason it is worth
      * having: trackSiteSearch() walks the value by index, and a string has a length
@@ -5148,11 +5042,10 @@ class OWATracker  {
     /**
      * Raise a `scroll` event when the page passes a depth threshold.
      *
-     * ITS OWN LISTENER, not the domstream recorder's. The two are separate features
-     * that happen to share a DOM event, and they were fused because
-     * `window.onscroll` is a single slot -- so scroll depth fired only on installs
-     * with domstream active, and only for its sampled fraction of visitors. A
-     * first-class event gated on an unrelated feature's sample rate.
+     * ITS OWN LISTENER. Scroll depth once shared a single `window.onscroll`
+     * slot with another feature and fired only where that feature was active,
+     * for its sampled fraction of visitors -- a first-class event gated on an
+     * unrelated feature's sample rate.
      *
      * Idempotent, like trackClicks(): the snippet pushes each command once, but a
      * site can push one twice and two listeners would report every threshold twice.
@@ -5224,61 +5117,6 @@ class OWATracker  {
         }
     }
 
-    logDomStream() {
-
-        var domstream = new OwaEvent;
-		
-        if ( this.event_queue.length > this.options.domstreamEventThreshold ) {
-
-            // make an domstream_id if one does not exist. needed for upstream processing
-            if ( ! this.domstream_guid ) {
-                this.domstream_guid = Util.generateRandomGuid();
-            }
-            domstream.setEventType( 'dom.stream' );
-            domstream.set( 'domstream_guid', this.domstream_guid );
-            domstream.set( 'duration', this.getElapsedTime());
-            domstream.set( 'stream_events', JSON.stringify(this.event_queue));
-            domstream.set( 'stream_length', this.event_queue.length );
-
-            var viewport = this.getViewportDimensions();
-            domstream.set('page_width', viewport.width);
-            domstream.set('page_height', viewport.height);
-
-            // clear event queue now instead of waiting for new trackevent
-            // which might be delayed if using an ifram to POST data
-            this.event_queue = [];
-            return this.trackEvent( domstream );
-
-        } else {
-            OWA.debug("Domstream had too few events to log.");
-        }
-    }
-
-    trackDomStream() {
-
-        if (this.active) {
-
-            // check random number against logging percentage
-            var rand = Math.floor(Math.random() * 100 + 1 );
-
-            if (rand <= this.getOption('logDomStreamPercentage')) {
-
-                // needed by click handler
-                this.setOption('trackDomStream', true);
-                // loop through stream event bindings
-                var len = this.streamBindings.length;
-                for ( var i = 0; i < len; i++ ) {
-                //for (method in this.streamBindings) {
-
-                    this.callMethod(this.streamBindings[i]);
-                }
-
-                this.startDomstreamTimer();
-            } else {
-                OWA.debug("not tracking domstream for this user.");
-            }
-        }
-    }
 }
 
 export { OWATracker };

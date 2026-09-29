@@ -1,61 +1,33 @@
 <?php
 namespace OWA\Module\Domstream;
 
-
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
-// Copyright 2016 Peter Adams. All rights reserved.
-//
 // Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// $Id$
-//
-
 
 /**
- * Remote Queue Module
- * 
+ * Domstream: recordings of what a visitor's pointer, scroll, clicks and key
+ * presses did on a page, and their playback.
+ *
+ * Everything the server knows about recordings is here, and only while the
+ * module is active: the `domstream` tracking event (routed to
+ * domstream.processEvent by name), its two tables and their updates, the
+ * report, the playback endpoint and the nav entries. The recorder and the
+ * player are this module's source, compiled into the tracker bundle by its
+ * build manifest.
+ *
+ * Key presses are recorded as THAT a key was pressed in a field -- never
+ * which key.
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2016 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.6.1
  */
-
 class Module extends \OWA\Core\Module {
 
-    /**
-     * Register this module's actions against their controllers.
-     *
-     * See Base\Module::registerActions() -- registration keeps
-     * CoreAPI::performAction() on the safe branch instead of reconstructing a
-     * class name and filesystem path from the request's own 'do' param.
-     */
-    function registerActions() {
-
-        // NOTE: registerAction() prefixes $file with OWA_BASE_MODULE_DIR, which is
-        // hardcoded to modules/Base/ -- so a non-Base module cannot express a
-        // correct path through it. Pass none: the class name is the PSR-4 name,
-        // so Composer autoloads it and simpleFactory() short-circuits on
-        // class_exists() before the path is ever consulted.
-        //
-        // Not changing that prefix here on purpose: third-party modules calling
-        // registerAction() today are passing Base-relative paths, and switching
-        // it to $this->path would break them silently. registerRestApiRoute() is
-        // the module-aware equivalent if this ever needs revisiting.
-        $this->registerAction( 'domstream.domstreamsRest',
-            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController',
-            '' );
-    }
+    /** The event name the recorder sends: dispatched as tracking.domstream. */
+    const EVENT_NAME = 'domstream';
 
     function __construct() {
 
@@ -63,29 +35,86 @@ class Module extends \OWA\Core\Module {
         $this->display_name = 'Domstream';
         $this->group = 'logging';
         $this->author = 'Peter Adams';
-        $this->version = '1.0';
-        $this->description = 'Logs the users mouse and other DOM movements.';
+        $this->version = '2.0';
+        $this->description = 'Records the pointer, scroll, clicks and key presses on a page, for playback.';
         $this->config_required = false;
-        $this->required_schema_version = 1;
+        $this->required_schema_version = 2;
 
-        // register named queues
+        parent::__construct();
 
-        return parent::__construct();
+        $this->registerTrackingProperties( 'regular', self::trackingProperties() );
+    }
+
+    /**
+     * The fields a chunk carries beyond what every event does.
+     *
+     * Registered so log.php's allowlist admits them: it passes only registered
+     * client properties, and the tracker's common ones (site, visitor, session,
+     * page) are Base's. Scoped to this event; none is a column of the event
+     * table, since a chunk is never stored as an event.
+     *
+     * @return array property name => definition
+     */
+    public static function trackingProperties() {
+
+        $properties = array();
+
+        foreach ( array(
+            'recording_id'  => 'string',
+            'seq'           => 'integer',
+            'page_view_seq' => 'integer',
+            'offset_ms'     => 'integer',
+            'duration_ms'   => 'integer',
+            'viewport_w'    => 'integer',
+            'viewport_h'    => 'integer',
+            'samples'       => 'json',
+        ) as $name => $type ) {
+
+            $properties[ $name ] = array(
+                'set_by'    => 'client',
+                'from'      => array( $name ),
+                'events'    => array( self::EVENT_NAME ),
+                'data_type' => $type,
+                'required'  => false,
+                'callbacks' => array(),
+            );
+        }
+
+        return $properties;
+    }
+
+    /**
+     * Registered by class name with no path: the class is PSR-4, so it is
+     * autoloaded and the path registerAction() would prefix is never read.
+     */
+    function registerActions() {
+
+        $this->registerAction( 'domstream.processEvent',
+            'OWA\\Module\\Domstream\\Controller\\ProcessEvent', '' );
+        $this->registerAction( 'domstream.reportDomstreams',
+            'OWA\\Module\\Domstream\\Controller\\ReportDomstreams', '' );
+        $this->registerAction( 'domstream.domstreamsRest',
+            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController', '' );
+    }
+
+    function _registerEntities() {
+
+        $this->registerEntity( array( 'domstream_chunk', 'domstream_payload' ) );
+    }
+
+    /** A chunk goes to this module's processor, never to Base's. */
+    function _registerEventProcessors() {
+
+        $this->addTrackingEventProcessor( self::EVENT_NAME, 'domstream.processEvent' );
     }
 
     function registerFilters() {
 
-        // adds tracking cmd to js tracker.
-        if ( \OWA\Core\CoreAPI::getSetting( 'domstream', 'is_active' ) ) {
-
-            $this->registerFilter('tracker_tag_cmds', $this, 'addToTracker', 99);
-        }
+        $this->registerFilter( 'tracker_tag_cmds', $this, 'addToTracker', 99 );
+        $this->registerFilter( 'report_links', $this, 'addReportLinks', 10 );
     }
 
-    /**
-     * Adds domstream logging to the JS tracker tag.
-      * @return array
-      */
+    /** The snippet starts the recorder. */
     function addToTracker( $cmds ) {
 
         $cmds[] = "owa_cmds.push(['trackDomStream']);";
@@ -94,41 +123,44 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Registers Event Handlers with queue queue
-     *
+     * Recordings from the reports that lead to them: Page Detail's "more
+     * analytics" (this page's recordings) and Content's related reports.
      */
-    function _registerEventHandlers() {
+    function addReportLinks( $links, $reportId = '', $widgetId = '' ) {
 
-        /*
-         * UNDER THE TRACKING NAMESPACE, because that is where logEvent() dispatches
-         * a tracking event now. The key is the namespace plus the name as the
-         * beacon sent it, so `dom.stream` keeps its dot -- unlike the STORAGE rule
-         * in V2Event::name(), which flattens it to keep a v1 spelling out of a v2
-         * column.
-         *
-         * Registered by its full name rather than tracking.dom.* so nothing else
-         * under that prefix reaches the recordings handler.
-         */
-        $this->registerEventHandler(
-            \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.dom.stream',
-            'domstreamHandlers' );
+        if ( $reportId === 'document' && $widgetId === 'moreAnalytics' ) {
+
+            array_unshift( $links, array(
+                'reportId'    => 'domstreams',
+                'label'       => 'Recordings',
+                'description' => 'pointer, scroll and click recordings of this page.',
+                'params'      => array( 'pagePath' => '{pagePath}' ),
+            ) );
+        }
+
+        if ( $reportId === 'content' && $widgetId === 'related' ) {
+
+            array_unshift( $links, array( 'reportId' => 'domstreams', 'label' => 'Recordings' ) );
+        }
+
+        return $links;
     }
 
-    /**
-     * Registers Reports in Main Navigation
-     *
-     */
+    function registerReports() {
+
+        $this->registerReport( 'domstreams', array( 'controller' => 'domstream.reportDomstreams' ) );
+    }
+
     function registerNavigation() {
 
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'domstreams' ), 'Domstreams', 5);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'domstreams' ), 'Recordings', 7 );
     }
 
-    /**
-     * Register API methods
-     *
-     */
     function registerApiMethods() {
-		
-		$this->registerRestApiRoute( 'v1', 'domstreams', 'GET', 'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController', 'Controller/DomstreamsRestController.php' );
+
+        $this->registerRestApiRoute( 'v1', 'domstreams', 'GET',
+            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController', '' );
     }
 }
+
+?>

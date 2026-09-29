@@ -37,6 +37,9 @@
              stays complete. preventDefault keeps the click from navigating. -->
         <a href="#sec?a=1&b=2" id="tracked-link"
            onclick="return false;">a tracked fragment link</a>
+
+        <!-- A field to type into, for the recorder (?record=1). -->
+        <input type="text" id="typed-field" name="typed-field">
     </div>
 
     <script>
@@ -89,6 +92,12 @@
             // site opts into the same way.
             if (params.get('routes') === '1') {
                 window.owa_cmds.push(['trackRouteChanges']);
+            }
+
+            // Pointer, scroll, click and key-press recording (?record=1), which
+            // the Domstream module's snippet command starts.
+            if (params.get('record') === '1') {
+                window.owa_cmds.push(['trackDomStream']);
             }
 
             var _owa = document.createElement('script');

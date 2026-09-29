@@ -2815,14 +2815,6 @@ namespace OWA\Module\Base\Classes;
                 'allow_slowly_changing_dimensions'	=> true,
                 'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL'],
-                'tracking_event_types'              => [
-                    'dom.click', 
-                    'ecommerce.transaction', 
-                    'base.page_request', 
-                    'dom.stream', 
-                    'base.feed_request', 
-                    'track.action' 
-                ],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
         );

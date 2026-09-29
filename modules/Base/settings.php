@@ -349,7 +349,6 @@ return array(
                 . 'reports spanning the change will mix the two. Depending on how far '
                 . 'the zones are apart, a day boundary can move by up to 21 hours.',
         ),
-        'tracking_event_types' => array( 'default' => array( 'dom.click', 'ecommerce.transaction', 'base.page_request', 'dom.stream', 'base.feed_request', 'track.action' ) ),
         'ua-regexes' => array( 'default' => '' ),
         'update_session_user_name' => array( 'default' => true ),
         'useStaticConfigOnly' => array( 'default' => false ),

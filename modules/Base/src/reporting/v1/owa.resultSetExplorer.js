@@ -1401,21 +1401,20 @@ OWA.dataGrid.prototype = {
             },
 
             /*
-             * The Play link on a domstream recording.
+             * A link that opens a page in an overlay session.
              *
-             * Named, not supplied: the report names this formatter and the cell
-             * carries only DATA -- {overlay, url, width, height}. A report that
-             * assembled the anchor itself would be handing the grid markup, and
-             * the grid has no way to tell markup it built from markup it was
+             * Named, not supplied: a report names this formatter and the cell
+             * carries only DATA -- {overlay, url, width, height, label}. A report
+             * that assembled the anchor itself would be handing the grid markup,
+             * and the grid has no way to tell markup it built from markup it was
              * given.
              *
-             * The href is the recorded page with the player's parameters on the
+             * The href is the page with the overlay's parameters on the
              * fragment, which is how the overlay reaches the tracker on that
-             * page. The viewport travels as data attributes because the click
-             * handler needs it to size the window -- the replay positions events
-             * against the geometry they were recorded in.
+             * page. The viewport travels as data attributes, for an overlay that
+             * needs the window sized to the geometry it was recorded in.
              */
-            domstreamPlayer : function( cellvalue ) {
+            overlayLink : function( cellvalue ) {
 
                 var data = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
                          ? cellvalue.value
@@ -1440,10 +1439,10 @@ OWA.dataGrid.prototype = {
                         .replace( /'/g, '&#39;' );
                 };
 
-                return '<a class="play" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
+                return '<a class="owa_overlayLink" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
                      + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
                      + '" data-height="' + esc( parseInt( data.height, 10 ) || 0 )
-                     + '">Play</a>';
+                     + '">' + esc( data.label || 'Open' ) + '</a>';
             }
 
         });
@@ -2487,9 +2486,9 @@ OWA.constraintBuilder.prototype = {
          *
          * The leading #id of the selector is the element the filter belongs
          * to, and it is already unique on the page, so it names the dialog:
-         * `#owa_filterBuilder-trend-breakdown`, `-domstreamFilter`,
-         * `-funnelFilter`. A selector that does not start with an id falls
-         * back to the sanitised whole thing, which is still unique.
+         * `#owa_filterBuilder-trend-breakdown`, `-funnelFilter`. A selector
+         * that does not start with an id falls back to the sanitised whole
+         * thing, which is still unique.
          */
         var owner = String( that.dom_selector ).match( /^#([A-Za-z0-9_-]+)/ );
 

@@ -1,20 +1,12 @@
 // @ts-check
 /**
- * The domstreams report: a recording is a recording, not a row.
+ * The recordings report (Domstream module): a recording is a recording, not a
+ * chunk.
  *
- * WHAT THIS EXISTS FOR
- *
- * The tracker flushes its event queue on a timer, so one DOM recording is
- * stored as however many rows it took to hold it, all sharing a
- * domstream_guid, and each carrying the CUMULATIVE elapsed seconds at the
- * moment it was flushed. The list groups them back together.
- *
- * The previous query grouped and then selected `duration` as a BARE column.
- * sql_mode is '' on every connection, so ONLY_FULL_GROUP_BY is off and MySQL
- * answered with an arbitrary row's value instead of refusing -- a twenty-minute
- * recording could report as the ninety seconds its first chunk covered. The
- * fixture's first recording is three chunks of 12, 95 and 40 seconds precisely
- * so every wrong answer is a different number from the right one.
+ * The recorder flushes on a timer, so one recording is stored as however many
+ * chunks it took, all sharing a recording_id. The list groups them back
+ * together; the fixture's first recording is three chunks whose wrong
+ * aggregates are each a different number from the right one.
  *
  * WHAT IS ASSERTED
  *
@@ -58,6 +50,11 @@ function rowFor(page, path) {
     return rows(page).filter({ has: page.locator('td').filter({ hasText: exact }) });
 }
 
+/** One of a row's cells, by column name. */
+function cell(row, name) {
+    return row.locator(`td[aria-describedby$="_${name}"]`);
+}
+
 test.describe('reporting: domstreams', () => {
 
     test.beforeEach(async ({ page }) => {
@@ -68,41 +65,43 @@ test.describe('reporting: domstreams', () => {
         await openDomstreams(page);
         await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
 
-        // Four rows are stored: three chunks of one recording and one of the
-        // other. Two recordings is the whole point of grouping.
+        // Four chunks are stored: three of one recording and one of the other.
         await expect(rows(page)).toHaveCount(DS.recordings);
     });
 
-    test('a multi-chunk recording reports its whole duration', async ({ page }) => {
+    test('a multi-chunk recording reports its whole length', async ({ page }) => {
         await openDomstreams(page);
         await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
 
         const row = rowFor(page, DS.a.page);
 
         await expect(row).toHaveCount(1);
+        await expect(cell(row, 'length')).toHaveText(DS.a.lengthLabel);
 
-        // 0:01:35 -- the largest chunk. Its neighbours would be 0:00:12 (first
-        // written) and 0:02:27 (summed), so this cannot pass by accident.
-        await expect(row).toContainText(DS.a.durationLabel);
-        await expect(row).not.toContainText('0:00:12');
-        await expect(row).not.toContainText('0:02:27');
+        for (const wrong of DS.a.wrongLengthLabels) {
+            await expect(row).not.toContainText(wrong);
+        }
     });
 
-    test('a recording reports how many chunks and how much was recorded', async ({ page }) => {
+    test('a recording sums its chunks\' events, clicks and key presses', async ({ page }) => {
         await openDomstreams(page);
         await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
 
-        const cells = rowFor(page, DS.a.page).locator('td');
+        const row = rowFor(page, DS.a.page);
 
-        await expect(cells.filter({ hasText: new RegExp(`^${DS.a.segments}$`) })).toHaveCount(1);
-        await expect(rowFor(page, DS.a.page)).toContainText(DS.a.sizeLabel);
+        await expect(cell(row, 'samples')).toHaveText(String(DS.a.events));
+        await expect(cell(row, 'clicks')).toHaveText(String(DS.a.clicks));
+        await expect(cell(row, 'keypresses')).toHaveText(String(DS.a.keypresses));
     });
 
     test('a single-chunk recording is listed too', async ({ page }) => {
         await openDomstreams(page);
         await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
 
-        await expect(rowFor(page, DS.b.page)).toContainText(DS.b.durationLabel);
+        const row = rowFor(page, DS.b.page);
+
+        await expect(cell(row, 'length')).toHaveText(DS.b.lengthLabel);
+        await expect(cell(row, 'samples')).toHaveText(String(DS.b.events));
     });
 
     /**
@@ -113,9 +112,10 @@ test.describe('reporting: domstreams', () => {
         await openDomstreams(page);
         await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
 
-        const play = rowFor(page, DS.a.page).locator('a.play');
+        const play = rowFor(page, DS.a.page).locator('a.owa_overlayLink');
 
         await expect(play).toHaveCount(1);
+        await expect(play).toHaveText('Play');
 
         const href = await play.getAttribute('href');
 
@@ -124,8 +124,8 @@ test.describe('reporting: domstreams', () => {
 
         // The window is sized to the viewport the recording was made in,
         // because the replay positions events against that geometry.
-        await expect(play).toHaveAttribute('data-width', /^[0-9]+$/);
-        await expect(play).toHaveAttribute('data-height', /^[0-9]+$/);
+        await expect(play).toHaveAttribute('data-width', /^[1-9][0-9]*$/);
+        await expect(play).toHaveAttribute('data-height', /^[1-9][0-9]*$/);
     });
 
     test.describe('the segment filter', () => {

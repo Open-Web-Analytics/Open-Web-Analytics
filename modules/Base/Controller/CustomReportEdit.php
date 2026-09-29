@@ -27,9 +27,8 @@ namespace OWA\Module\Base\Controller;
  * Every metric and dimension offered here is read out of the reporting stack
  * rather than listed in this file. A list of our own would eventually offer a
  * name the validator then refuses, and the author would have no way to tell a
- * typo from a name that was never real. It is the same reason the segment
- * filter on the funnel and domstreams reports reads its options from the
- * result-set manager.
+ * typo from a name that was never real. It is the same reason a segment
+ * filter (ReportSegment) reads its options from the result-set manager.
  *
  * @since owa 1.8.0
  */

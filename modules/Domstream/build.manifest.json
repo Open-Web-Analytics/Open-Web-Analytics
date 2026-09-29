@@ -1,0 +1,7 @@
+{
+    "contributes": {
+        "owa.tracker.js": [
+            "src/tracker/Recorder.js"
+        ]
+    }
+}

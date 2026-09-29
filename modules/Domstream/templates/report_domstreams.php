@@ -8,16 +8,14 @@
  * of the reporting UI and drifted from it. The grid is the same control every
  * other report draws, fed rows this report computed rather than a URL.
  *
- * The Play link is built by a NAMED formatter rather than assembled here: the
- * grid renders cells, and a cell's value is data. See owa.resultSetExplorer.js.
+ * The Play link is built by the grid's overlayLink formatter rather than
+ * assembled here: the grid renders cells, and a cell's value is data.
  */
 $owa_filter_dimensions = (array) $view->get('domstreams_filter_dimensions');
 $owa_filter_metrics    = (array) $view->get('domstreams_filter_metrics');
 $owa_table             = (array) $view->get('domstreams');
 $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['resultsRows'] : array();
 ?>
-
-<?php if ( ! empty( $view->document ) ): require('item_document.php'); endif;?>
 
 <div class="owa_reportControls">
 
@@ -70,7 +68,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 
 <?php elseif ( ! $view->get('domstreams_segment_error') ):?>
 <div class="owa_reportSectionContent">
-    There are no Dom Streams this time period.
+    There are no recordings for this period.
 </div>
 <?php endif;?>
 
@@ -106,7 +104,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 
         // The Play cell carries the player's parameters as its value; this is
         // what turns them into a link.
-        OWA.items.domstreams.options.grid.columnFormatters = { play: 'domstreamPlayer' };
+        OWA.items.domstreams.options.grid.columnFormatters = { play: 'overlayLink' };
 
         OWA.items.domstreams.setResultSet( recordings );
         OWA.items.domstreams.refreshGrid();
@@ -138,7 +136,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
      *
      * Delegated, so it keeps working when the grid redraws its rows.
      */
-    jQuery( '#domstreams-grid' ).on( 'click', 'a.play', function ( e ) {
+    jQuery( '#domstreams-grid' ).on( 'click', 'a.owa_overlayLink', function ( e ) {
 
         e.preventDefault();
 
@@ -148,7 +146,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 
         window.open(
             link.attr( 'href' ),
-            'OWA Dom Stream',
+            'OWA Recording',
             'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=yes'
                 + ',height=' + height + ',width=' + width
         );

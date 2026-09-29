@@ -19,7 +19,7 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  * getUrlAnchorValue returns the raw fragment.
  *
  * setPageTitle / setPageType / setUserName just trim and stash a global event
- * property. pause/restart flip `active`; isPausedBySibling reflects the shared
+ * property. pause/restart flip `active`.
  */
 
 function setDocumentDomain(domain) {
@@ -200,7 +200,7 @@ describe('page-property convenience setters', () => {
     });
 });
 
-describe('lifecycle: pause / restart / isPausedBySibling', () => {
+describe('lifecycle: pause / restart', () => {
 
     test('pause deactivates and restart reactivates the tracker', () => {
         const t = newTracker();
@@ -213,13 +213,6 @@ describe('lifecycle: pause / restart / isPausedBySibling', () => {
         expect(t.active).toBe(true);
     });
 
-    test('isPausedBySibling reflects the shared loggerPause setting', () => {
-        const t = newTracker();
-        expect(t.isPausedBySibling()).toBeFalsy();
-
-        OWA.setSetting('loggerPause', true);
-        expect(t.isPausedBySibling()).toBe(true);
-    });
 });
 
 describe('state-derived properties are collected onto each event', () => {

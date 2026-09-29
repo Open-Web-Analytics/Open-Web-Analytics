@@ -76,11 +76,11 @@ final class OverlayApiLinkTest extends TestCase
         $t = $this->reportTemplate();
 
         $link = $t->makeOverlayApiLink([
-            'domstream_guid' => '4921417228',
-            'module'         => 'domstream',
-            'version'        => 'v1',
-            'do'             => 'domstreams',
-        ], 'domstream_guid');
+            'recording_id' => '4921417228',
+            'module'       => 'domstream',
+            'version'      => 'v1',
+            'do'           => 'domstreams',
+        ], 'recording_id');
 
         // DomstreamsRestController::validate() declares siteId required.
         $this->assertStringContainsString('siteId=', $link);

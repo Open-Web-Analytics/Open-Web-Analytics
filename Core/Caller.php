@@ -159,8 +159,6 @@ class Caller extends \OWA\Core\Base {
      *
      * $options = array('do_not_log_pageview' => true);
      *
-     * Option keys include: 'do_not_log_pageview', 'do_not_log_clicks', 'do_not_log_domstream'
-     *
      * @param     $echo        bool     if true the function will echo. if false the tracker is returned asa string.
      * @param    $options    array    an key value pair option array
      * @return     $tag         string    the tracker javascript.
