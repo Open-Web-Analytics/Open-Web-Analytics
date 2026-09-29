@@ -1999,6 +1999,48 @@ final class CustomReportsTest extends TestCase
             'a report that no longer validates must not render');
     }
 
+    /**
+     * And the reader is told WHY, not "could not be found": the page is there,
+     * one name in it is not.
+     */
+    public function testAReportThatCannotBeDrawnSaysWhy(): void
+    {
+        $this->requireDb();
+
+        $saved = $this->store(array('name' => 'Goes Stale'));
+
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.custom_report');
+        $entity->load($saved['id']);
+
+        $definition = $this->definition();
+        $definition['widgets'][1]['query']['dimensions'] = 'aDimensionThatNoLongerExists';
+
+        $entity->set('definition', json_encode($definition));
+        $entity->update();
+
+        ob_start();
+        $returned = (new \OWA\Module\Base\Controller\Report(array(
+            'reportId' => 'custom-' . $saved['id'],
+            'period'   => 'last_thirty_days',
+        )))->doAction();
+        $page = ob_get_clean() . (is_string($returned) ? $returned : '');
+
+        $this->assertStringContainsString("This saved report can't be drawn", $page);
+        $this->assertStringContainsString('aDimensionThatNoLongerExists', $page);
+        $this->assertStringNotContainsString('could not be found', $page);
+
+        // ...and the list says so before anyone opens it.
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole('admin');
+        $user->setAuthStatus(true);
+
+        $list = (array) (new \OWA\Module\Base\Controller\CustomReports(array()))->doAction();
+        $row = array_values(array_filter((array) ($list['custom_reports'] ?? array()),
+            fn ($r) => (string) $r['id'] === (string) $saved['id']))[0] ?? array();
+
+        $this->assertStringContainsString('aDimensionThatNoLongerExists', (string) ($row['invalid'] ?? ''));
+    }
+
     public function testAnUnknownCustomIdIsNotFound(): void
     {
         $this->requireDb();

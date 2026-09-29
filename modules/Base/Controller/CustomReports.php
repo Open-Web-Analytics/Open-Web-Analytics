@@ -113,6 +113,22 @@ class CustomReports extends \OWA\Core\ReportController {
             ? ( $sort === \OWA\Module\Base\Classes\CustomReports::ROSTER_DEFAULT_SORT )
             : $descending );
 
+        /*
+         * Which ones cannot be drawn, and why. Here and not in roster(): the
+         * navigation reads the roster on every page, and this costs about half
+         * a millisecond a report. A report saved before an upgrade can name
+         * something that no longer exists, and it should say so in the list,
+         * not only when someone opens it.
+         */
+        if ( $this->rosterType() === \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT ) {
+
+            foreach ( $reports as $i => $report ) {
+
+                $reports[ $i ]['invalid'] = \OWA\Module\Base\Classes\CustomReports::validate(
+                    (array) ( $report['definition'] ?? array() ) );
+            }
+        }
+
         $this->set( 'custom_reports', $reports );
         $this->set( 'roster_type', $this->rosterType() );
         $this->set( 'sees_all', $sees_all );

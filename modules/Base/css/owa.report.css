@@ -2117,6 +2117,19 @@ li.constraintRow {
     border-radius: 2px;
 }
 
+/* A saved report that cannot be drawn; the title says why. */
+.owa .owa_rosterBroken {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9a1c1c;
+    background-color: #fbeaea;
+    border-radius: 2px;
+}
+
 /* A sortable heading, and the arrow marking the one the order is actually by. */
 .owa table.owa_customReportRoster th a {
     color: inherit;

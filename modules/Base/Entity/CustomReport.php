@@ -116,6 +116,14 @@ class CustomReport extends \OWA\Core\Entity {
         $definition = new \OWA\Module\Base\Classes\DbColumn( 'definition', OWA_DTD_BLOB );
         $this->setProperty( $definition );
 
+        /*
+         * The definition as 1.14 saved it, where Update061 rewrote it into
+         * v2's names. NULL for every report written on v2. Kept so nothing a
+         * person built is lost to the rewrite, and so down() can restore it.
+         */
+        $v1_definition = new \OWA\Module\Base\Classes\DbColumn( 'v1_definition', OWA_DTD_BLOB );
+        $this->setProperty( $v1_definition );
+
         $creation_timestamp = new \OWA\Module\Base\Classes\DbColumn( 'creation_timestamp', OWA_DTD_INT );
         $this->setProperty( $creation_timestamp );
 

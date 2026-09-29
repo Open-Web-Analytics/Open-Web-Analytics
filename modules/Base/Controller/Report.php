@@ -260,8 +260,13 @@ class Report extends \OWA\Core\Controller {
              * 500, and named. A saved report that no longer validates is not
              * the reader's mistake, and rendering it with the bad part dropped
              * would show a report that is quietly missing a widget.
+             *
+             * And the reason is SHOWN. It names a metric, a dimension or a
+             * widget -- nothing a reader of reports could not already query --
+             * and "could not be found" sent people looking for a missing page
+             * when the page was there and one name in it was not.
              */
-            return $this->reportNotResolved( $id, $error, 500 );
+            return $this->reportCannotBeDrawn( $id, $error );
         }
 
         $missing = array();
@@ -497,6 +502,19 @@ class Report extends \OWA\Core\Controller {
      * indistinguishable from an unresolvable action, which is what it is --
      * and keeps this controller from inventing a second error convention.
      */
+    private function reportCannotBeDrawn( $id, $error ) {
+
+        \OWA\Core\CoreAPI::notice( sprintf( 'Custom report %s cannot be drawn: %s', $id, $error ) );
+
+        if ( ! headers_sent() ) {
+
+            http_response_code( 500 );
+        }
+
+        return \OWA\Core\CoreAPI::displayView( array( 'error_msg' => sprintf(
+            'This saved report can\'t be drawn: %s. Edit the report to fix it.', $error ) ), 'base.error' );
+    }
+
     private function reportNotResolved( $id, $message, $status ) {
 
         return \OWA\Core\CoreAPI::actionNotResolved(
