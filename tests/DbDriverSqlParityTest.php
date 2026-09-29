@@ -232,23 +232,25 @@ final class DbDriverSqlParityTest extends TestCase
      */
     public function testCalculatedMetricSelectExpressionsAreIdentical(): void
     {
-        // Fully qualified on purpose: metricFactory() with a BARE name resolves
-        // through getMetricClasses(), which returns an ARRAY when a metric is
-        // registered by more than one module, and moduleSpecificFactory() then
-        // explodes it -- a TypeError. Not this test's business to fix, but it is
-        // why these are 'base.x' rather than 'x'.
-        $metrics = ['base.bounceRate', 'base.actionsPerVisit', 'base.revenuePerVisit', 'base.ecommerceConversionRate'];
+        // Resolved as the result-set manager resolves them: each name's
+        // registered implementation, built with its own params. These are
+        // declared in config, so there is no class of the metric's own name.
+        $metrics = ['bounceRate', 'pageViewsPerSession', 'revenuePerSession', 'ecommerceConversionRate'];
         $checked = 0;
+        $service = owa_coreAPI::serviceSingleton();
 
         foreach ($metrics as $name) {
 
-            try {
-                $metric = owa_coreAPI::metricFactory($name);
-            } catch (\Throwable $e) {
+            $implementations = (array) $service->getMetricClasses($name);
+            $implementation  = reset($implementations);
+
+            if (! is_array($implementation) || empty($implementation['class'])) {
                 // Not registered in this build; the count assertion below is what
                 // stops the whole test quietly passing on an empty list.
                 continue;
             }
+
+            $metric = owa_coreAPI::metricFactory($implementation['class'], $implementation['params'] ?? []);
 
             if ( ! is_object($metric) || ! method_exists($metric, 'getSelect') ) {
                 continue;

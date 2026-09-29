@@ -1043,20 +1043,9 @@ class Module extends \OWA\Core\Module {
     function _registerEntities() {
 
         $this->registerEntity(array(
-                'request',
-                'session',
-                'document',
-                'feed_request',
-                'click',
-                'ua',
-                'referer',
                 'site',
                 'organization',
                 'property',
-                'visitor',
-                'host',
-                'os',
-                'impression',
             /*
              * 'configuration' is NOT here. Update043 unpacked that table into
              * install-scope rows of owa_setting and dropped it, so a fresh
@@ -1070,15 +1059,6 @@ class Module extends \OWA\Core\Module {
             'goal_event',
             'goal_event_condition',
                 'user',
-                'domstream',
-                'action_fact',
-                'search_term_dim',
-                'ad_dim',
-                'source_dim',
-                'campaign_dim',
-                'location_dim',
-                'commerce_transaction_fact',
-                'commerce_line_item_fact',
                 'queue_item',
                 'scheduled_job',
                 'notification',

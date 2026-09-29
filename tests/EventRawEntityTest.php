@@ -21,15 +21,6 @@ final class EventRawEntityTest extends TestCase
         return owa_coreAPI::entityFactory('base.event_raw');
     }
 
-    public function testItIsNotAFactTable(): void
-    {
-        $this->assertNotInstanceOf(\OWA\Core\Entity\FactTable::class, $this->raw(),
-            'FactTable\'s constructor is the star schema -- ten dimension foreign keys, '
-          . 'eight date parts -- and inheriting it would declare every one of them.');
-
-        $this->assertInstanceOf(\OWA\Core\Entity::class, $this->raw());
-    }
-
     public function testItCarriesNoForeignKeys(): void
     {
         // null when none were declared -- getAllForeignKeys() reads a table
@@ -270,31 +261,4 @@ final class EventRawEntityTest extends TestCase
         }
     }
 
-    /**
-     * The partition commands select on the entity declaring a partition column,
-     * not on the base class -- which is what lets owa_event_raw join the
-     * rotation without extending FactTable.
-     */
-    public function testEveryFactTableStillDeclaresAPartitionColumn(): void
-    {
-        $service = owa_coreAPI::serviceSingleton();
-
-        $found = 0;
-
-        foreach ($service->modules['base']->getEntities() as $name) {
-
-            $entity = owa_coreAPI::entityFactory('base.' . $name);
-
-            if (!$entity instanceof \OWA\Core\Entity\FactTable) {
-                continue;
-            }
-
-            $found++;
-            $this->assertSame('yyyymmdd', $entity->getPartitionColumn(),
-                "base.$name is a FactTable but declares no partition column, so the "
-              . 'partition commands would silently stop covering it.');
-        }
-
-        $this->assertGreaterThan(5, $found);
-    }
 }

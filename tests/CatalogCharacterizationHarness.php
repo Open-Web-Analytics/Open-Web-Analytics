@@ -300,9 +300,7 @@ final class CatalogCharacterizationHarness
     }
 
     /** Entities a report is commonly built on. */
-    public const RELATED_ENTITIES = array(
-        'base.session', 'base.request', 'base.action_fact', 'base.click', 'base.domstream',
-    );
+    public const RELATED_ENTITIES = array( 'base.event' );
 
     /**
      * Which dimensions each entity can actually reach.

@@ -163,7 +163,7 @@ final class DbCharacterEncodingTest extends TestCase {
      */
     public function testAnEntityCanNameItsOwnTableEncoding(): void
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.click' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
         $this->assertArrayNotHasKey( 'character_encoding', $entity->getTableOptions(),
             'absent must mean "use the installation default", not a value' );
@@ -241,7 +241,7 @@ final class DbCharacterEncodingTest extends TestCase {
     {
         $emoji = "report \xF0\x9F\x93\x8A ok";
 
-        $default = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $default = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
         $default->set( 'page_title', $emoji );
 
         $this->assertStringNotContainsString( "\xF0\x9F\x93\x8A", (string) $default->get( 'page_title' ),
@@ -249,7 +249,7 @@ final class DbCharacterEncodingTest extends TestCase {
         $this->assertStringContainsString( 'ok', (string) $default->get( 'page_title' ),
             'and must still keep everything after it' );
 
-        $wide = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $wide = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
         $wide->setCharacterEncoding( 'utf8mb4' );
         $wide->set( 'page_title', $emoji );
 
@@ -267,7 +267,7 @@ final class DbCharacterEncodingTest extends TestCase {
 
         // Named after construction, which is when a factory-built entity
         // already has all of its columns.
-        $late = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $late = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
         $late->setCharacterEncoding( 'utf8mb4' );
         $late->set( 'page_title', $emoji );
 
@@ -275,7 +275,7 @@ final class DbCharacterEncodingTest extends TestCase {
 
         // And a change after a value has already been set must take effect for
         // the next one, rather than being latched on first use.
-        $changed = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
+        $changed = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
         $changed->set( 'page_title', 'plain' );
         $changed->setCharacterEncoding( 'utf8mb4' );
         $changed->set( 'page_title', $emoji );

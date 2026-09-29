@@ -1125,25 +1125,14 @@ function teardown(): array
 {
     $site_id = E2E_SITE_ID;
 
-    // Remove fact/session/request rows for the fixture site. Dimension rows are
-    // content-hashed and shared, so (as in the ingestion tests) we leave them.
-    // site_id is an md5 hex string (no escaping needed), but use the query
-    // builder's parameterized where() rather than string interpolation anyway.
+    // Remove the fixture site's raw rows. site_id is an md5 hex string (no
+    // escaping needed), but use the query builder's parameterized where()
+    // rather than string interpolation anyway.
     $removed = [];
-    /*
-     * owa_event_raw FIRST, because it is the one every v2 report reads. It was
-     * missing from this list: the v1 tables were all that got cleared, so a
-     * re-seed stacked new raw rows on top of the previous run's and every exact
-     * count a spec asserts drifted upward. The v1 tables stay in the list --
-     * they are empty on this branch, so clearing them costs one no-op DELETE
-     * each and keeps teardown correct on a branch where the chain is registered.
-     */
     DomstreamFixtures::deleteSite($site_id);
     $removed['recordings'] = 'cleared';
 
-    foreach ([rawTable(),
-              'owa_request', 'owa_session', 'owa_action_fact', 'owa_click', 'owa_domstream',
-              'owa_commerce_transaction_fact', 'owa_commerce_line_item_fact'] as $table) {
+    foreach ([rawTable()] as $table) {
         try {
             $db = owa_coreAPI::dbSingleton();
             $db->deleteFrom($table);
@@ -1335,11 +1324,8 @@ function seedTransactions(): int
     $seeded  = 0;
     foreach (E2E_TXNS as $txn) {
         /*
-         * Idempotent on the RAW row, not on the v1 fact.
-         *
-         * The fact table is empty on this branch, so this guard never tripped and
-         * a re-seed wrote each order again -- and the commerce assertions use
-         * exact revenue totals, so a second run doubled every one of them.
+         * Idempotent on the raw row: the commerce assertions use exact revenue
+         * totals, so a second write of an order would double every one of them.
          */
         if (purchaseAlreadySeeded($txn['order_id'])) {
             continue;
@@ -1360,18 +1346,8 @@ function seedTransactions(): int
         $session = sessionForDay($site_id, (int) date('Ymd', $ts));
 
         /*
-         * THE v2 PURCHASE, through the real beacon.
-         *
-         * This function wrote the v1 fact tables ONLY, on the reasoning that the
-         * facts "have to be reportable, not realistic" -- which was true while
-         * logEvent() wrote owa_event_raw alongside them on the same call. It does
-         * not any more: the v1 chain is unregistered, so raw had no `purchase`
-         * row for either order and every v2 commerce metric read an empty table.
-         * revenue, tax, shipping and transaction_id are columns ON THE RAW ROW.
-         *
-         * Fired before the entity writes below, so a failure to log is visible in
-         * the count rather than masked by v1 rows that report fine on a branch
-         * where nothing reads them.
+         * THE PURCHASE, through the real beacon. revenue, tax, shipping and
+         * transaction_id are columns ON THE RAW ROW.
          *
          * Amounts go on the wire as the author's DECIMAL -- ct_total is 42.60 --
          * because toMinorUnits() is what converts them to what the column stores.
@@ -1418,93 +1394,9 @@ function seedTransactions(): int
 
         $rc->setTimestamp(time());
 
-        $t = owa_coreAPI::entityFactory('base.commerce_transaction_fact');
-        $t->set('id', numericGuid());
-        $t->set('site_id', $site_id);
-        $t->set('session_id', $session['id'] ?? 0);
-        $t->set('visitor_id', $session['visitor_id'] ?? 0);
-        $t->set('order_id', $txn['order_id']);
-        $t->set('order_source', 'e2e-fixture');
-        $t->set('gateway', 'e2e');
-        // Currency is stored in CENTS -- the columns are BIGINT and the real
-        // handler runs every amount through prepareCurrencyValue() ($v * 100).
-        // Writing dollars here would report $0.43 for a $42.60 order.
-        $t->set('total_revenue', \OWA\Core\Lib::prepareCurrencyValue($txn['revenue']));
-        $t->set('tax_revenue', \OWA\Core\Lib::prepareCurrencyValue($txn['tax']));
-        $t->set('shipping_revenue', \OWA\Core\Lib::prepareCurrencyValue($txn['shipping']));
-        $t->set('timestamp', $ts);
-        $t->set('yyyymmdd', (int) date('Ymd', $ts));
-        $t->set('year', (int) date('Y', $ts));
-        $t->set('month', (int) date('n', $ts));
-        $t->set('day', (int) date('j', $ts));
-        $t->save();
         $seeded++;
-        foreach ($txn['items'] as $item) {
-            $li = owa_coreAPI::entityFactory('base.commerce_line_item_fact');
-            $li->set('id', numericGuid());
-            $li->set('site_id', $site_id);
-            $li->set('session_id', $session['id'] ?? 0);
-            $li->set('visitor_id', $session['visitor_id'] ?? 0);
-            $li->set('order_id', $txn['order_id']);
-            $li->set('sku', $item['sku']);
-            $li->set('product_name', $item['name']);
-            $li->set('category', $item['category']);
-            $li->set('unit_price', \OWA\Core\Lib::prepareCurrencyValue($item['price']));
-            $li->set('quantity', $item['qty']);
-            $li->set('item_revenue', \OWA\Core\Lib::prepareCurrencyValue($item['price'] * $item['qty']));
-            $li->set('timestamp', $ts);
-            $li->set('yyyymmdd', (int) date('Ymd', $ts));
-            $li->set('year', (int) date('Y', $ts));
-            $li->set('month', (int) date('n', $ts));
-            $li->set('day', (int) date('j', $ts));
-            $li->save();
-        }
-
-        if (!empty($session['id'])) {
-            summariseCommerceOntoSession($session['id']);
-        }
     }
     return $seeded;
-}
-
-/**
- * Roll the session's commerce columns up from the fact tables.
- *
- * Deliberately uses the SAME owa_coreAPI::summarize() calls as
- * SessionCommerceSummaryHandlers rather than computing the numbers here, so the
- * fixture cannot drift from what the application would have written had these
- * facts arrived through the tracker.
- */
-function summariseCommerceOntoSession($session_pk): void
-{
-    $s = owa_coreAPI::entityFactory('base.session');
-    $s->getByPk('id', $session_pk);
-    if (!$s->get('id')) {
-        return;
-    }
-
-    $txn = owa_coreAPI::summarize([
-        'entity'      => 'base.commerce_transaction_fact',
-        'columns'     => ['id' => 'count', 'total_revenue' => 'sum',
-                          'tax_revenue' => 'sum', 'shipping_revenue' => 'sum'],
-        'constraints' => ['session_id' => $session_pk],
-    ]);
-    $s->set('commerce_trans_count', $txn['id_count']);
-    $s->set('commerce_trans_revenue', $txn['total_revenue_sum']);
-    $s->set('commerce_tax_revenue', $txn['tax_revenue_sum']);
-    $s->set('commerce_shipping_revenue', $txn['shipping_revenue_sum']);
-
-    $items = owa_coreAPI::summarize([
-        'entity'      => 'base.commerce_line_item_fact',
-        'columns'     => ['sku' => 'count_distinct', 'item_revenue' => 'sum',
-                          'quantity' => 'sum'],
-        'constraints' => ['session_id' => $session_pk],
-    ]);
-    $s->set('commerce_items_count', $items['sku_dcount']);
-    $s->set('commerce_items_revenue', $items['item_revenue_sum']);
-    $s->set('commerce_items_quantity', $items['quantity_sum']);
-
-    $s->update();
 }
 
 function seedPageviews(int $n): int

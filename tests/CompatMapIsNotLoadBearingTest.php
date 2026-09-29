@@ -42,7 +42,7 @@ final class CompatMapIsNotLoadBearingTest extends TestCase
             "these resolved only through the compat map:\n" . implode("\n", $verdict['errors']));
 
         // Each family was actually driven, or the empty error list means nothing.
-        foreach (['metric' => 30, 'entity' => 30, 'validator' => 11, 'view' => 4,
+        foreach (['metric' => 30, 'entity' => 20, 'validator' => 11, 'view' => 4,
                   'handler' => 4, 'implementation' => 3, 'callback' => 30] as $family => $floor) {
             $this->assertGreaterThanOrEqual($floor, $verdict['checked'][$family] ?? 0,
                 "the probe drove too few of: $family");

@@ -218,38 +218,6 @@ class Entity {
         
         foreach ($properties as $k => $v) {
             
-            /*
-             * A content-derived dimension key is DERIVED here, not copied.
-             *
-             * It used to be copied: the tracking-property pipeline hashed it
-             * onto the event before dispatch and this loop carried the result
-             * into the column. That put the derivation in the pipeline, where
-             * v2 has to pay for it and where it had drifted into three
-             * disagreeing copies. Deriving at write time puts it in the one
-             * place that owns the dimension, and leaves the event carrying only
-             * content.
-             *
-             * Deriving beats copying even while both run: a value the pipeline
-             * hashed can be stale by the time a fact is written, because a
-             * handler may have changed the content underneath it.
-             */
-            $dimension = self::contentDerivedDimensionFor( $this, $v );
-            
-            if ( $dimension !== null && self::addresses( $dimension, $array ) ) {
-                
-                $id = $dimension::deriveId( $array );
-                
-                // null means absence that is NOT_APPLICABLE -- this event has no
-                // such thing, so the column is left alone rather than set to an
-                // id that names no row.
-                if ( $id !== null && ! empty( $this->properties ) ) {
-                    
-                    $this->set( $v, $id, $apply_filters, false );
-                }
-                
-                continue;
-            }
-            
             //if ( ! empty( $array[$v] ) ) {
             if ( array_key_exists( $v, $array ) ) {
                 if ( ! empty( $this->properties ) ) {
@@ -314,109 +282,6 @@ class Entity {
         return $value;
     }
     
-    
-    /**
-     * The dimension class that derives $column on $entity, or null.
-     *
-     * Null for every column that is not a foreign key, for a foreign key whose
-     * target is not a dimension (site_id is a minted identifier, visitor_id
-     * comes from the tracker), and for a second foreign key into a dimension
-     * that already has a canonical column -- owa_session.first_page_id and
-     * .last_page_id both point at base.document, and only document_id is the
-     * one derived from page_url.
-     *
-     * @return string|null A DimensionEntity subclass name.
-     */
-    protected static function contentDerivedDimensionFor( $entity, $column ) {
-        
-        $target = isset( $entity->_tableProperties['foreign_keys'][ $column ] )
-            ? $entity->_tableProperties['foreign_keys'][ $column ]
-            : null;
-        
-        if ( ! $target ) {
-            
-            return null;
-        }
-        
-        // Resolved once per entity name per process: this runs for every column
-        // of every fact row written.
-        if ( ! array_key_exists( $target, self::$dimensionClasses ) ) {
-            
-            $class = \OWA\Core\CoreAPI::namespacedEntityClass( $target );
-            
-            self::$dimensionClasses[ $target ] =
-                ( $class !== null
-                  && is_subclass_of( $class, '\\OWA\\Core\\Entity\\DimensionEntity' )
-                  && $class::isContentDerived() )
-                ? $class
-                : null;
-        }
-        
-        $class = self::$dimensionClasses[ $target ];
-        
-        if ( $class === null || $class::FK_COLUMN !== $column ) {
-            
-            return null;
-        }
-        
-        return $class;
-    }
-    
-    /**
-     * Whether $array is ABOUT this dimension at all.
-     *
-     * "The content says there is no value" and "this bag does not carry this
-     * content" are different things, and only the first is absence. Several
-     * call sites hand setProperties() a partial bag -- a session update, a
-     * re-dispatched event -- and re-deriving from one of those would overwrite
-     * a correct id with the unresolved one. That is a regression the copying
-     * behaviour did not have, because the pipeline's already-derived id was in
-     * the bag and got copied back over itself.
-     *
-     * So: if not one key of the content key is present, the column is left
-     * exactly as it was. If any key IS present, the content is authoritative --
-     * including when it is empty, which is how a genuinely unresolved value
-     * still reaches its shared row.
-     */
-    protected static function addresses( $dimension, $array ) {
-        
-        foreach ( $dimension::CONTENT_KEY as $name ) {
-            
-            if ( array_key_exists( $name, $array ) ) {
-                
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * This entity's columns that are derived from content rather than carried.
-     *
-     * Used to strip them back out when an entity's properties are merged onto a
-     * downstream event: a derived key riding along is exactly what let a handler
-     * consume one second-hand instead of deriving it.
-     *
-     * @return string[]
-     */
-    function contentDerivedKeys() {
-        
-        $keys = array();
-        
-        foreach ( $this->getColumns() as $column ) {
-            
-            if ( self::contentDerivedDimensionFor( $this, $column ) !== null ) {
-                
-                $keys[] = $column;
-            }
-        }
-        
-        return $keys;
-    }
-    
-    /** entity name => DimensionEntity class, or null when it is not one. */
-    protected static $dimensionClasses = array();
     
     function setGuid($string) {
         
@@ -1522,60 +1387,6 @@ class Entity {
     function generateId($string) {
         //require_once(OWA_DIR.'owa_lib.php');
         return \OWA\Core\Lib::setStringGuid($string);
-    }
-
-    /**
-     * Report a dimension row that was found by a content-derived id but does
-     * NOT hold that content.
-     *
-     * Dimension handlers all share one shape: derive an id from the content,
-     * load the row at that id, and if a row comes back, reuse it. That last
-     * step silently assumes the row IS the content it was derived from, which
-     * is true right up until two different values hash to the same id. Then the
-     * fact row's foreign key points at somebody else's dimension, and the two
-     * are merged in every report that touches them, permanently and invisibly.
-     *
-     * Widening the hash makes this rare rather than impossible: at 63 bits, a
-     * table of ten million dimension rows carries roughly a 0.0005% chance of
-     * one collision. Rare and silent is a bad combination, so it is worth one
-     * comparison to turn it into something that leaves a trace.
-     *
-     * Deliberately does NOT refuse or alter the row. There is no correct
-     * recovery to perform here -- both values legitimately own that id under
-     * this scheme -- and dropping the event would lose data over an event this
-     * rare. Reporting is the whole job.
-     *
-     * @param string $column  the property holding the content the id came from
-     * @param string $source  the content the id was just derived from
-     * @return bool  true when a collision was detected
-     */
-    public function detectIdCollision( $column, $source ) {
-
-        $stored = $this->get( $column );
-
-        // A row that was not found, or content we cannot compare, tells us
-        // nothing. Only a row that exists AND disagrees is evidence.
-        if ( ! $this->wasPersisted() || $stored === null || $stored === '' || $source === null || $source === '' ) {
-
-            return false;
-        }
-
-        if ( (string) $stored === (string) $source ) {
-
-            return false;
-        }
-
-        \OWA\Core\CoreAPI::notice( sprintf(
-            'ID COLLISION on %s id %s: stored %s = "%s" but this event derived the same id from "%s". '
-          . 'Both are now recorded against one dimension row and reports will merge them.',
-            $this->getTableName(),
-            (string) $this->get( 'id' ),
-            $column,
-            self::truncateForLog( $stored ),
-            self::truncateForLog( $source )
-        ) );
-
-        return true;
     }
 
     /**

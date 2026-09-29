@@ -769,8 +769,8 @@ final class PartitionOperationsTest extends TestCase
      *
      * This is exercised through a real entity rather than the db seam, because
      * the retry lives in Entity::getByColumn() precisely so that no call site
-     * has to remember it. A session that is not found is not a slow path -- it
-     * is a second session row for a visit that already had one.
+     * has to remember it. A row that is not found is not a slow path -- it is
+     * a second row written for one that already exists.
      */
     public function testEntityLoadRetriesWhenTheConstraintExcludesTheRow()
     {
@@ -779,33 +779,34 @@ final class PartitionOperationsTest extends TestCase
         $id = (string) random_int(1, PHP_INT_MAX);
         $ymd = date('Ymd', strtotime('-90 days'));
 
-        $s = \OWA\Core\CoreAPI::entityFactory('base.session');
+        $s = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $s->set('id', $id);
         $s->set('site_id', 'phpunit-partition');
+        $s->set('event_type', 'page_view');
         $s->set('yyyymmdd', $ymd);
-        $s->set('timestamp', strtotime('-90 days'));
+        $s->set('ts', strtotime('-90 days') * 1000000);
         $s->create();
 
         try {
             // A window nowhere near the row -- what a browser clock decades out
-            // would produce, or a session older than the lookup window.
+            // would produce, or an event older than the lookup window.
             $wrong = \OWA\Core\Db::factDateConstraint(date('Ymd'));
 
             $this->assertNotEmpty($wrong, 'the fixture needs a real constraint to be a test');
 
-            $found = \OWA\Core\CoreAPI::entityFactory('base.session');
+            $found = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
             $found->getByPk('id', $id, $wrong);
 
             $this->assertSame($id, (string) $found->get('id'), 'the row must be found despite the wrong window');
-            $this->assertTrue($found->wasPersisted(), 'and must be reported as persisted, not as a new session');
+            $this->assertTrue($found->wasPersisted(), 'and must be reported as persisted, not as new');
 
             // The unconstrained load agrees, so the retry returns the same row.
-            $plain = \OWA\Core\CoreAPI::entityFactory('base.session');
+            $plain = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
             $plain->getByPk('id', $id);
             $this->assertSame((string) $plain->get('yyyymmdd'), (string) $found->get('yyyymmdd'));
 
         } finally {
-            $db->query(sprintf("DELETE FROM owa_session WHERE id = '%s'", $db->prepare($id)));
+            $db->query('DELETE FROM owa_event_raw WHERE id = ?', [$id]);
         }
     }
 

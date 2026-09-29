@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
  * WHY BY TYPE, NOT BY REMOVING THE GUARD
  * The two falsy cases are not alike. On a numeric column, 0 is a value. On a
  * string column, '' is what a caller passes when it has nothing, and several
- * handlers depend on `set('medium', $maybeEmpty)` leaving the existing value
+ * handlers depend on `set('tagged_medium', $maybeEmpty)` leaving the existing value
  * alone -- storing empties there would blank data that is deliberately kept
  * today. So numeric columns widened; everything else unchanged.
  *
@@ -40,42 +40,42 @@ final class EntityFalsyWriteTest extends TestCase
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    private function session()
+    private function row()
     {
-        return owa_coreAPI::entityFactory('base.session');
+        return owa_coreAPI::entityFactory('base.event_raw');
     }
 
     public function testANumericColumnAcceptsZero(): void
     {
-        $s = $this->session();
-        $s->set('num_pageviews', 0);
+        $s = $this->row();
+        $s->set('event_seq', 0);
 
-        $this->assertSame(0, $s->get('num_pageviews'),
+        $this->assertSame(0, $s->get('event_seq'),
             'a numeric column silently discarded a legitimate 0');
     }
 
     public function testABooleanColumnAcceptsZeroAndFalse(): void
     {
-        $s = $this->session();
+        $s = $this->row();
 
-        $s->set('is_bounce', 0);
-        $this->assertSame(0, $s->get('is_bounce'));
+        $s->set('is_goal_event', 0);
+        $this->assertSame(0, $s->get('is_goal_event'));
 
-        $s2 = $this->session();
-        $s2->set('is_bounce', false);
-        $this->assertFalse($s2->get('is_bounce'));
+        $s2 = $this->row();
+        $s2->set('is_goal_event', false);
+        $this->assertFalse($s2->get('is_goal_event'));
     }
 
     /** Storing it is only half the job; update() has to include it. */
     public function testAFalsyValueIsMarkedDirtySoUpdateWillWriteIt(): void
     {
-        $s = $this->session();
-        $s->set('is_bounce', 1);
+        $s = $this->row();
+        $s->set('is_goal_event', 1);
         $s->dirty = [];              // as if freshly loaded from the database
 
-        $s->set('is_bounce', 0);
+        $s->set('is_goal_event', 0);
 
-        $this->assertArrayHasKey('is_bounce', $s->dirty,
+        $this->assertArrayHasKey('is_goal_event', $s->dirty,
             'setting a column to 0 left it un-dirty, so update() would skip it');
     }
 
@@ -86,15 +86,15 @@ final class EntityFalsyWriteTest extends TestCase
      */
     public function testAStringColumnStillIgnoresAnEmptyValue(): void
     {
-        $s = $this->session();
-        $s->set('medium', 'organic');
+        $s = $this->row();
+        $s->set('tagged_medium', 'organic');
 
-        $s->set('medium', '');
-        $this->assertSame('organic', $s->get('medium'),
+        $s->set('tagged_medium', '');
+        $this->assertSame('organic', $s->get('tagged_medium'),
             "an empty string blanked a text column -- handlers depend on it being ignored");
 
-        $s->set('medium', null);
-        $this->assertSame('organic', $s->get('medium'), 'null blanked a text column');
+        $s->set('tagged_medium', null);
+        $this->assertSame('organic', $s->get('tagged_medium'), 'null blanked a text column');
     }
 
     /** A numeric column must not accept a non-numeric falsy value either. */
@@ -109,16 +109,16 @@ final class EntityFalsyWriteTest extends TestCase
      */
     public function testClearEmptiesAStringColumnThatSetWillNotTouch(): void
     {
-        $s = $this->session();
-        $s->set('medium', 'organic');
+        $s = $this->row();
+        $s->set('tagged_medium', 'organic');
 
         // Precondition: set() cannot do this, which is why clear() exists.
-        $s->set('medium', '');
-        $this->assertSame('organic', $s->get('medium'));
+        $s->set('tagged_medium', '');
+        $this->assertSame('organic', $s->get('tagged_medium'));
 
-        $s->clear('medium');
+        $s->clear('tagged_medium');
 
-        $this->assertSame('', $s->get('medium'),
+        $this->assertSame('', $s->get('tagged_medium'),
             'clear() did not empty the column');
     }
 
@@ -129,19 +129,19 @@ final class EntityFalsyWriteTest extends TestCase
      */
     public function testAClearedColumnIsMarkedDirtySoUpdateWritesIt(): void
     {
-        $s = $this->session();
-        $s->set('medium', 'organic');
-        $s->clear('medium');
+        $s = $this->row();
+        $s->set('tagged_medium', 'organic');
+        $s->clear('tagged_medium');
 
-        $this->assertArrayHasKey('medium', $s->dirty,
+        $this->assertArrayHasKey('tagged_medium', $s->dirty,
             'a cleared column is not dirty, so update() would not write the blank');
-        $this->assertSame('', $s->dirty['medium']);
+        $this->assertSame('', $s->dirty['tagged_medium']);
     }
 
     /** clear() on a column the entity does not have is a no-op, not a fatal. */
     public function testClearIgnoresAnUnknownColumn(): void
     {
-        $s = $this->session();
+        $s = $this->row();
         $s->clear('no_such_column_here');
 
         $this->assertArrayNotHasKey('no_such_column_here', $s->dirty);
@@ -149,14 +149,14 @@ final class EntityFalsyWriteTest extends TestCase
 
     public function testANumericColumnStillIgnoresEmptyAndNull(): void
     {
-        $s = $this->session();
-        $s->set('num_pageviews', 7);
+        $s = $this->row();
+        $s->set('event_seq', 7);
 
-        $s->set('num_pageviews', '');
-        $this->assertSame(7, $s->get('num_pageviews'));
+        $s->set('event_seq', '');
+        $this->assertSame(7, $s->get('event_seq'));
 
-        $s->set('num_pageviews', null);
-        $this->assertSame(7, $s->get('num_pageviews'));
+        $s->set('event_seq', null);
+        $this->assertSame(7, $s->get('event_seq'));
     }
 
     /**
@@ -172,32 +172,33 @@ final class EntityFalsyWriteTest extends TestCase
 
         $db = owa_coreAPI::dbSingleton();
         $id = '9111222333444555777';
-        $db->query("DELETE FROM owa_session WHERE id = $id");
+        $db->query("DELETE FROM owa_event_raw WHERE id = $id");
 
         try {
-            $s = $this->session();
+            $s = $this->row();
             $s->set('id', $id);
             $s->set('site_id', 'entity-falsy-test');
             $s->set('yyyymmdd', (int) date('Ymd'));
-            $s->set('timestamp', time());
-            $s->set('is_bounce', 1);
-            $s->set('num_pageviews', 3);
+            $s->set('event_type', 'page_view');
+            $s->set('ts', time() * 1000000);
+            $s->set('is_goal_event', 1);
+            $s->set('event_seq', 3);
             $s->create();
 
-            $s2 = $this->session();
+            $s2 = $this->row();
             $s2->getByPk('id', $id);
-            $s2->set('is_bounce', 0);
+            $s2->set('is_goal_event', 0);
             $s2->update();
 
-            $row = $db->get_row("SELECT is_bounce, num_pageviews FROM owa_session WHERE id = ?", [$id]);
+            $row = $db->get_row("SELECT is_goal_event, event_seq FROM owa_event_raw WHERE id = ?", [$id]);
 
-            $this->assertSame('0', (string) $row['is_bounce'],
+            $this->assertSame('0', (string) $row['is_goal_event'],
                 'the 0 never reached the database');
-            $this->assertSame('3', (string) $row['num_pageviews'],
+            $this->assertSame('3', (string) $row['event_seq'],
                 'an untouched column was overwritten by the update');
 
         } finally {
-            $db->query("DELETE FROM owa_session WHERE id = $id");
+            $db->query("DELETE FROM owa_event_raw WHERE id = $id");
         }
     }
 
@@ -219,7 +220,7 @@ final class EntityFalsyWriteTest extends TestCase
      */
     public function testTheNumericTypeListIsDerivedFromDeclaredTypesNotLiterals(): void
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory('base.click');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $method = new ReflectionMethod($entity, 'numericColumnTypes');
         $method->setAccessible(true);
@@ -257,7 +258,7 @@ final class EntityFalsyWriteTest extends TestCase
      */
     public function testDeclaredIntegerTypesAreRecognisedThroughTheirConstants(): void
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory('base.click');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $method = new ReflectionMethod($entity, 'numericColumnTypes');
         $method->setAccessible(true);

@@ -38,7 +38,7 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
             $checked++;
         }
 
-        $this->assertGreaterThan(20, $checked, 'the entity list looks empty; the sweep proved nothing');
+        $this->assertGreaterThan(15, $checked, 'the entity list looks empty; the sweep proved nothing');
     }
 
     /**

@@ -561,14 +561,13 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
     // still passes, and the installation simply has no retention story. It
     // would surface much later, as a DELETE nobody can afford to run.
     //
-    // Asserted on owa_request as the representative fact table: it is the one
-    // every installation writes to first.
-    $checks['request_partitioned'] = false;
-    $checks['request_has_lead']    = false;
+    // Asserted on owa_event_raw: every tracked event is written there first.
+    $checks['raw_partitioned'] = false;
+    $checks['raw_has_lead']    = false;
 
     $r = mysqli_query($m, "SELECT PARTITION_NAME, PARTITION_DESCRIPTION
         FROM information_schema.PARTITIONS
-        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'owa_request'
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'owa_event_raw'
           AND PARTITION_NAME IS NOT NULL");
 
     if ($r) {
@@ -586,14 +585,14 @@ function assertInstalled(string $repoRoot, string $db, string $expectedAdminId, 
         // Partitioned at all, and with somewhere for a write past the last
         // boundary to go -- without the catch-all, tracking stops dead the day
         // the range runs out.
-        $checks['request_partitioned'] = ($bounds && $catchAll);
+        $checks['raw_partitioned'] = ($bounds && $catchAll);
 
         // And covering future periods, not just today. A single current period
         // would mean everything from next month landing in the catch-all,
         // where no retention cutoff can ever reach it.
         if ($bounds) {
             sort($bounds);
-            $checks['request_has_lead'] = (end($bounds) > date('Ymd', strtotime('+60 days')));
+            $checks['raw_has_lead'] = (end($bounds) > date('Ymd', strtotime('+60 days')));
         }
     }
 

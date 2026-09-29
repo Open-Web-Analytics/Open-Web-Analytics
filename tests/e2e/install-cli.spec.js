@@ -66,7 +66,7 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         // of future periods. Nothing else here would notice its absence: the
         // install succeeds either way, and the loss only shows up much later,
         // when there is no cheap way to drop old data.
-        expect(result.checks.request_partitioned).toBe(true);
-        expect(result.checks.request_has_lead).toBe(true);
+        expect(result.checks.raw_partitioned).toBe(true);
+        expect(result.checks.raw_has_lead).toBe(true);
     });
 });

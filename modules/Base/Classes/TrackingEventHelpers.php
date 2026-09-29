@@ -1298,12 +1298,8 @@ class TrackingEventHelpers {
     /*
      * generateLocationId() and generateDimensionId() stood here.
      *
-     * They hashed a dimension key onto the event before dispatch, which put the
-     * derivation upstream of every handler and made it something v2 would have
-     * had to pay for and then ignore. It is now done by the dimension that owns
-     * it, at the moment a row is written -- DimensionEntity::deriveId(), reached
-     * from Entity::setProperties() for fact rows and from each dimension handler
-     * for its own row.
+     * They hashed a dimension key onto the event before dispatch, for v1's
+     * dimension tables. v2 stores the values themselves and derives no keys.
      *
      * The event carries content. Nothing derived rides along on it.
      */

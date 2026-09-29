@@ -37,11 +37,6 @@ final class RefererCrawlRemovedTest extends TestCase
     public static function goneProvider(): array
     {
         return array(
-            'the entity method' => array(
-                'function crawlReferer',
-                'modules/Base/Entity/Referer.php',
-                'the referer entity can still fetch its own url',
-            ),
             'the setting' => array(
                 'fetch_refering_page_info',
                 'modules/Base/Classes/Settings.php',

@@ -23,14 +23,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * The partitioned tables, by name.
      *
-     * Selected by whether the entity DECLARES a partition column, not by
-     * whether it extends Entity\FactTable. Every fact table calls
-     * setPartitionColumn('yyyymmdd') in that base constructor, so the set is
-     * unchanged for them -- but v2's owa_event_raw is partitioned on the same
-     * scheme while deliberately NOT extending FactTable, whose constructor
-     * hard-codes the star's ten dimension foreign keys. Asking about the
-     * property that actually matters lets it join the set instead of needing a
-     * second copy of every partition command.
+     * Selected by whether the entity DECLARES a partition column: owa_event_raw
+     * and any module's table partitioned by day.
      *
      * THE CUBES ARE NOT IN THE REGISTRY. There is one per Property, so they are
      * enumerated from the database and appended -- see Classes\Cube\Cubes.

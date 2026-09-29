@@ -316,11 +316,23 @@ final class CliCommandsTest extends CliControllerTestCase
             $this->markTestSkipped("Expected {$module} to be inactive for this regression.");
         }
 
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
-            'moduleDeactivateCli.php',
-            ['module' => $module]
-        );
+        // Building the module runs its init(), and fileCache's turns object
+        // caching on for the rest of the process. A CLI run exits straight
+        // after; this process goes on to run every later test, so it is put
+        // back.
+        $caching = owa_coreAPI::getSetting('base', 'cache_objects');
+        $type    = owa_coreAPI::getSetting('base', 'cacheType');
+
+        try {
+            $result = $this->runCommand(
+                \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
+                'moduleDeactivateCli.php',
+                ['module' => $module]
+            );
+        } finally {
+            owa_coreAPI::setSetting('base', 'cache_objects', $caching);
+            owa_coreAPI::setSetting('base', 'cacheType', $type);
+        }
 
         $this->assertNull($result['view'],
             'Deactivating a not-boot-loaded module should run cleanly, not fatal.');

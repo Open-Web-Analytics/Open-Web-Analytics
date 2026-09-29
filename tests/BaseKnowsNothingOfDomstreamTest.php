@@ -11,17 +11,13 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * READS THE SOURCE: an event property, a setting or a nav entry that slipped
  * back into Base would work, and nothing at runtime would say where it lives.
  *
- * The exceptions are v1's, and go with it: its entity, its place in Base's
- * entity list, in instance-info's table list and in the migration's list of
- * v1 tables, and the compat layer, whose job is to know v1's names.
+ * The exceptions are v1's: the migration's list of v1 tables, which the drop
+ * removes by name, and the compat layer, whose job is to know v1's names.
  */
 final class BaseKnowsNothingOfDomstreamTest extends TestCase
 {
     /** file => how many lines may mention it */
     private const V1 = [
-        'modules/Base/Entity/Domstream.php'            => null,
-        'modules/Base/Module.php'                      => 1,
-        'modules/Base/Controller/InstanceInfoCli.php'  => 1,
         'modules/Base/Classes/Migration/V1Tables.php'  => 1,
         'conf/beacon_compat.php'                       => 1,
     ];

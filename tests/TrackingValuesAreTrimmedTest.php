@@ -184,10 +184,10 @@ final class TrackingValuesAreTrimmedTest extends TestCase
          */
         foreach ( array( '   ', "\t", '', null, false ) as $nothing ) {
 
-            $document = \OWA\Core\CoreAPI::entityFactory( 'base.document' );
-            $document->setProperties( array( 'page_title' => $nothing ) );
+            $row = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
+            $row->setProperties( array( 'page_title' => $nothing ) );
 
-            $stored = $document->get( 'page_title' );
+            $stored = $row->get( 'page_title' );
 
             $this->assertTrue( $stored === null || $stored === '' || $stored === false,
                 var_export( $nothing, true ) . ' should store as absence, not as '
