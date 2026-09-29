@@ -61,7 +61,6 @@ final class CliCommandsTest extends CliControllerTestCase
             'flush-processed-events'     => ['flush-processed-events',     'base.flushProcessedEventsCli'],
             'prune-event-queue-archives' => ['prune-event-queue-archives', 'base.pruneEventQueueArchivesCli'],
             'change-password'            => ['change-password',            'base.changeUserPasswordCli'],
-            'update-document'            => ['update-document',            'base.crawlDocumentCli'],
             'reset-secrets'              => ['reset-secrets',              'base.resetSecretsCli'],
         ];
     }
@@ -389,32 +388,6 @@ final class CliCommandsTest extends CliControllerTestCase
 
         $this->assertNotCapable($result, 'install-module requires edit_modules.');
     }
-
-    // =================================================================
-    // Crawl maintenance: update-document (cap: edit_settings).
-    // Contract-only: with no id this crawls EVERY stored document over the
-    // network (crawlDocument() does a live HTTP fetch), and with a
-    // non-existent id it loads a blank row and fatals. Neither is safe to run
-    // in a test, so we assert only the capability gate, which runs before any
-    // crawling.
-    //
-    // update-referral was the same shape and is gone: OWA no longer fetches
-    // referring pages at all. See RefererCrawlRemovedTest.
-    // =================================================================
-
-    public function testUpdateDocumentRejectsUnprivilegedUser(): void
-    {
-        $this->authenticateAs('viewer');
-
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\CrawlDocumentCli::class,
-            'crawlDocumentCli.php',
-            ['doc' => '0']
-        );
-
-        $this->assertNotCapable($result, 'update-document requires edit_settings.');
-    }
-
 
     // =================================================================
     // Event-queue maintenance: processEventQueue / flush-processed-events /

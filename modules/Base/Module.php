@@ -276,7 +276,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.apiRequest',                    'OWA\\Module\\Base\\Controller\\ApiRequest',                   'Controller/ApiRequest.php' );
         $this->registerAction( 'base.changeUserPasswordCli',         'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli',        'Controller/ChangeUserPasswordCli.php' );
         $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight',                'Controller/CorsPreflight.php' );
-        $this->registerAction( 'base.crawlDocumentCli',              'OWA\\Module\\Base\\Controller\\CrawlDocumentCli',             'Controller/CrawlDocumentCli.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
         $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli',             'Controller/CubeRebuildCli.php' );
@@ -310,7 +309,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.goalEventSave',                  'OWA\\Module\\Base\\Controller\\GoalEventSave',                 'Controller/GoalEventSave.php' );
         $this->registerAction( 'base.goalEventDelete',                'OWA\\Module\\Base\\Controller\\GoalEventDelete',               'Controller/GoalEventDelete.php' );
         $this->registerAction( 'base.optionsModules',                'OWA\\Module\\Base\\Controller\\OptionsModules',               'Controller/OptionsModules.php' );
-        $this->registerAction( 'base.repairGeoEncodingCli',          'OWA\\Module\\Base\\Controller\\RepairGeoEncodingCli',         'Controller/RepairGeoEncodingCli.php' );
         $this->registerAction( 'base.optionsReset',                  'OWA\\Module\\Base\\Controller\\OptionsReset',                 'Controller/OptionsReset.php' );
         $this->registerAction( 'base.optionsUpdate',                 'OWA\\Module\\Base\\Controller\\OptionsUpdate',                'Controller/OptionsUpdate.php' );
         $this->registerAction( 'base.overlayLauncher',               'OWA\\Module\\Base\\Controller\\OverlayLauncher',              'Controller/OverlayLauncher.php' );
@@ -328,8 +326,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.customDimensionApplyCli',       'OWA\\Module\\Base\\Controller\\CustomDimensionApplyCli',     'Controller/CustomDimensionApplyCli.php' );
         $this->registerAction( 'base.customDimensionRegisterCli',    'OWA\\Module\\Base\\Controller\\CustomDimensionRegisterCli',  'Controller/CustomDimensionRegisterCli.php' );
         $this->registerAction( 'base.customDimensionDeregisterCli',  'OWA\\Module\\Base\\Controller\\CustomDimensionDeregisterCli','Controller/CustomDimensionDeregisterCli.php' );
-        $this->registerAction( 'base.rederiveDimensionIdsCli',       'OWA\\Module\\Base\\Controller\\RederiveDimensionIdsCli',    'Controller/RederiveDimensionIdsCli.php' );
-        $this->registerAction( 'base.backfillVisitorAcquisitionCli', 'OWA\\Module\\Base\\Controller\\BackfillVisitorAcquisitionCli', 'Controller/BackfillVisitorAcquisitionCli.php' );
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
         $this->registerAction( 'base.instanceInfoCli',              'OWA\\Module\\Base\\Controller\\InstanceInfoCli',           'Controller/InstanceInfoCli.php' );
@@ -396,7 +392,6 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
         $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');
         $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
-        $this->registerCliCommand('repair-geo-encoding', 'base.repairGeoEncodingCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('install', 'base.installCli');
         $this->registerCliCommand('activate', 'base.moduleActivateCli');
@@ -406,14 +401,11 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
         $this->registerCliCommand('partition-status', 'base.partitionStatusCli');
-        $this->registerCliCommand('rederive-dimension-ids', 'base.rederiveDimensionIdsCli');
-        $this->registerCliCommand('backfill-visitor-acquisition', 'base.backfillVisitorAcquisitionCli');
         $this->registerCliCommand('partition-init', 'base.partitionInitCli');
         $this->registerCliCommand('partition-drop', 'base.partitionDropCli');
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');
         $this->registerCliCommand('partition-rotate', 'base.partitionRotateCli');
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
-        $this->registerCliCommand('update-document', 'base.crawlDocumentCli');
         $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
