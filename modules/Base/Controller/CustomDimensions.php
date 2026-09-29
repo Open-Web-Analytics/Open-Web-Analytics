@@ -54,8 +54,6 @@ class CustomDimensions extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\Cube\Dimensions::forProperty( $property_id ) );
 
         $this->set( 'cube', self::cubeState( $property_id ) );
-        $this->set( 'scopes', \OWA\Module\Base\Entity\CustomDimension::scopes() );
-        $this->set( 'types', \OWA\Module\Base\Entity\CustomDimension::types() );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );

@@ -73,8 +73,8 @@ final class CustomDimensionScreenTest extends TestCase
     {
         $actions = (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'actions' );
 
-        foreach ( ['base.customDimensions', 'base.customDimensionSave',
-                   'base.customDimensionDelete'] as $action ) {
+        foreach ( ['base.customDimensions', 'base.customDimensionEdit',
+                   'base.customDimensionSave', 'base.customDimensionDelete'] as $action ) {
 
             $this->assertArrayHasKey( $action, $actions,
                 "$action is linked to but not registered, so the screen 404s." );
@@ -265,19 +265,34 @@ final class CustomDimensionScreenTest extends TestCase
     }
 
     /**
-     * The template says the column is not there yet.
+     * The screens say the column is not there yet.
      *
      * The gap between registering and reporting is the one thing about this
-     * design a person would otherwise read as a fault.
+     * design a person would otherwise read as a fault: the list says a
+     * registration is being added, and the register screen says past events
+     * are not filled in.
      */
-    public function testTheScreenExplainsThatTheColumnArrivesLater(): void
+    public function testTheScreensExplainThatTheColumnArrivesLater(): void
     {
-        $template = file_get_contents(
+        $list = file_get_contents(
             __DIR__ . '/../modules/Base/templates/custom_dimensions.php' );
 
-        $this->assertStringContainsString( 'Being added', $template );
-        $this->assertStringContainsString( 'rebuild the cube', $template,
+        $this->assertStringContainsString( 'Being added', $list );
+
+        $edit = file_get_contents(
+            __DIR__ . '/../modules/Base/templates/custom_dimension_edit.php' );
+
+        $this->assertStringContainsString( 'rebuild the cube', $edit,
             'and that nothing already collected is filled in automatically' );
+    }
+
+    /** Each template beside the View that renders it. */
+    public static function screens(): array
+    {
+        return [
+            'list'     => ['custom_dimensions.php', 'CustomDimensions.php'],
+            'register' => ['custom_dimension_edit.php', 'CustomDimensionEdit.php'],
+        ];
     }
 
     /**
@@ -287,17 +302,17 @@ final class CustomDimensionScreenTest extends TestCase
      * string, so a template reading something the view forgot is a blank
      * screen, not a blank field -- and the two halves are in different files
      * with nothing but habit holding them together.
+     *
+     * @dataProvider screens
      */
-    public function testTheTemplateReadsNothingTheViewDoesNotSet(): void
+    public function testTheTemplateReadsNothingTheViewDoesNotSet( string $template, string $viewFile ): void
     {
-        $template = file_get_contents(
-            __DIR__ . '/../modules/Base/templates/custom_dimensions.php' );
+        $markup = file_get_contents( __DIR__ . '/../modules/Base/templates/' . $template );
 
-        $view = file_get_contents(
-            __DIR__ . '/../modules/Base/View/CustomDimensions.php' );
+        $view = file_get_contents( __DIR__ . '/../modules/Base/View/' . $viewFile );
 
         // $view->name, but not $view->method(...)
-        preg_match_all( '/\$view->([A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\()/', $template, $matches );
+        preg_match_all( '/\$view->([A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\()/', $markup, $matches );
 
         $this->assertNotEmpty( $matches[1], 'the scan found nothing, so it proves nothing' );
 
@@ -306,21 +321,185 @@ final class CustomDimensionScreenTest extends TestCase
             $this->assertMatchesRegularExpression(
                 "/'" . preg_quote( $name, '/' ) . "'/",
                 $view,
-                "the template reads \$view->$name and the view never sets it, so the "
+                "$template reads \$view->$name and $viewFile never sets it, so the "
               . 'screen renders as nothing' );
         }
     }
 
-    /** Every form on the screen carries a nonce field. */
-    public function testEveryFormIsNonced(): void
+    /**
+     * Every form on either screen carries a nonce field.
+     *
+     * @dataProvider screens
+     */
+    public function testEveryFormIsNonced( string $template ): void
     {
-        $template = file_get_contents(
-            __DIR__ . '/../modules/Base/templates/custom_dimensions.php' );
+        $markup = file_get_contents( __DIR__ . '/../modules/Base/templates/' . $template );
 
         $this->assertSame(
-            substr_count( $template, '<form method="post"' ),
-            substr_count( $template, 'createNonceFormField' ),
+            substr_count( $markup, '<form method="post"' ),
+            substr_count( $markup, 'createNonceFormField' ),
             'a form without a nonce is a mutation any page could trigger' );
+    }
+
+    /** A template as it renders, given only what its View sets. */
+    private function render( string $template, array $vars ): string
+    {
+        $t = new \OWA\Core\Template( 'base' );
+
+        foreach ( $vars as $k => $v ) {
+            $t->set( $k, $v );
+        }
+
+        $this->assertTrue( $t->set_template( $template ) );
+
+        return $t->fetch();
+    }
+
+    private function cube( bool $exists = true, int $capacity = 20 ): array
+    {
+        return ['table' => 'owa_event_x', 'exists' => $exists, 'capacity' => $capacity, 'cap' => 20];
+    }
+
+    private function renderList( array $overrides = [] ): string
+    {
+        return $this->render( 'custom_dimensions.php', array_merge( [
+            'siteId'     => 'site-a',
+            'propertyId' => (string) self::PROPERTY,
+            'dimensions' => [],
+            'cube'       => $this->cube(),
+        ], $overrides ) );
+    }
+
+    private function renderRegister( array $overrides = [] ): string
+    {
+        return $this->render( 'custom_dimension_edit.php', array_merge( [
+            'siteId'            => 'site-a',
+            'propertyId'        => (string) self::PROPERTY,
+            'cube'              => $this->cube(),
+            'used'              => 0,
+            'scopes'            => ['event', 'user'],
+            'types'             => ['string', 'integer'],
+            'submitted'         => ['dimensionKey' => '', 'scope' => '', 'dataType' => '', 'label' => ''],
+            'validation_errors' => [],
+        ], $overrides ) );
+    }
+
+    private function registered( int $count ): array
+    {
+        $rows = [];
+
+        for ( $i = 1; $i <= $count; $i++ ) {
+            $rows[] = ['dimension_key' => "plan$i", 'label' => "Plan $i", 'scope' => 'event',
+                       'data_type' => 'string', 'state' => 'applied', 'state_message' => ''];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * REGISTERING IS ITS OWN SCREEN, reached from the list.
+     *
+     * The list links to base.customDimensionEdit the way Goal Events links to
+     * its editor, and carries no registration form of its own.
+     */
+    public function testTheListLinksToTheRegisterScreenAndHoldsNoForm(): void
+    {
+        $html = $this->renderList();
+
+        $this->assertStringContainsString( 'base.customDimensionEdit', $html,
+            'the list offers no way to register one' );
+        $this->assertStringNotContainsString( 'base.customDimensionSave', $html,
+            'the registration form belongs on its own screen' );
+    }
+
+    /** With no room, or no cube, the list offers nothing to register. */
+    public function testTheListOffersNoRegisterLinkWhenNothingCanBeRegistered(): void
+    {
+        $full = $this->renderList( [
+            'dimensions' => $this->registered( 2 ),
+            'cube'       => $this->cube( true, 2 ),
+        ] );
+
+        $this->assertStringNotContainsString( 'base.customDimensionEdit', $full );
+        $this->assertStringContainsString( '2 of 2 used.', $full );
+
+        $noCube = $this->renderList( ['cube' => $this->cube( false )] );
+
+        $this->assertStringNotContainsString( 'base.customDimensionEdit', $noCube );
+        $this->assertStringContainsString( 'has not collected anything yet', $noCube );
+    }
+
+    /** The register screen carries the whole form, posting to the save action. */
+    public function testTheRegisterScreenCarriesTheForm(): void
+    {
+        $html = $this->renderRegister();
+
+        foreach ( ['dimensionKey', 'label', 'scope', 'dataType', 'base.customDimensionSave',
+                   'propertyId', 'siteId'] as $needle ) {
+
+            $this->assertStringContainsString( $needle, $html, "$needle is missing from the form" );
+        }
+    }
+
+    /**
+     * A REFUSED FORM COMES BACK WITH THE REASON BESIDE THE NAME and what was
+     * typed still in the fields.
+     */
+    public function testARefusalShowsTheReasonAndWhatWasTyped(): void
+    {
+        $html = $this->renderRegister( [
+            'validation_errors' => ['dimensionKey' => 'Alice is not a usable name.'],
+            'submitted'         => ['dimensionKey' => 'bob.plan', 'scope' => 'user',
+                                    'dataType' => 'integer', 'label' => 'Bob plan'],
+        ] );
+
+        $this->assertMatchesRegularExpression(
+            '/class="validation_error">Alice is not a usable name\.</', $html );
+        $this->assertStringContainsString( 'value="bob.plan"', $html );
+        $this->assertStringContainsString( 'value="Bob plan"', $html );
+        $this->assertMatchesRegularExpression( '/value="user"\s+selected/', $html );
+        $this->assertMatchesRegularExpression( '/value="integer"\s+selected/', $html );
+    }
+
+    /**
+     * Reached by URL with nothing to register against, the screen says why
+     * instead of offering a form the registrar would refuse.
+     */
+    public function testTheRegisterScreenOffersNoFormWhenNothingCanBeRegistered(): void
+    {
+        $noCube = $this->renderRegister( ['cube' => $this->cube( false )] );
+
+        $this->assertStringContainsString( 'has not collected anything yet', $noCube );
+        $this->assertStringNotContainsString( 'base.customDimensionSave', $noCube );
+
+        $full = $this->renderRegister( ['cube' => $this->cube( true, 2 ), 'used' => 2] );
+
+        $this->assertStringContainsString( 'no room for another', $full );
+        $this->assertStringNotContainsString( 'base.customDimensionSave', $full );
+    }
+
+    /**
+     * A refusal renders the REGISTER screen, not the list, carrying what was
+     * typed.
+     */
+    public function testARefusalRendersTheRegisterScreen(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'errorAction() resolves the site and its Property' );
+        }
+
+        $controller = new \OWA\Module\Base\Controller\CustomDimensionSave( [
+            'propertyId' => (string) self::PROPERTY, 'dimensionKey' => ' bob.plan ',
+            'scope' => 'user', 'dataType' => 'integer', 'label' => 'Bob plan',
+        ] );
+
+        $controller->errorAction();
+
+        $this->assertSame( 'base.customDimensionEdit', $controller->data['subview'] );
+        $this->assertSame( [
+            'dimensionKey' => 'bob.plan', 'scope' => 'user',
+            'dataType' => 'integer', 'label' => 'Bob plan',
+        ], $controller->data['submitted'] );
     }
 
 }

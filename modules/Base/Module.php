@@ -316,6 +316,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
         $this->registerAction( 'base.customDimensions',              'OWA\\Module\\Base\\Controller\\CustomDimensions',           'Controller/CustomDimensions.php' );
+        $this->registerAction( 'base.customDimensionEdit',           'OWA\\Module\\Base\\Controller\\CustomDimensionEdit',        'Controller/CustomDimensionEdit.php' );
         $this->registerAction( 'base.customDimensionSave',           'OWA\\Module\\Base\\Controller\\CustomDimensionSave',        'Controller/CustomDimensionSave.php' );
         $this->registerAction( 'base.customDimensionDelete',         'OWA\\Module\\Base\\Controller\\CustomDimensionDelete',      'Controller/CustomDimensionDelete.php' );
         $this->registerAction( 'base.customDimensionListCli',        'OWA\\Module\\Base\\Controller\\CustomDimensionListCli',      'Controller/CustomDimensionListCli.php' );

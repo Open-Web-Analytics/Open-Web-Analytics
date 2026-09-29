@@ -18,6 +18,7 @@ final class TemplateClassesAreStyledTest extends TestCase
     {
         return [
             'custom dimensions' => ['custom_dimensions.php'],
+            'custom dimension register' => ['custom_dimension_edit.php'],
             'invocation'        => ['invocation.php'],
         ];
     }
