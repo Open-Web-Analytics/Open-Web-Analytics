@@ -73,7 +73,11 @@ final class Update065Test extends TestCase
         $this->assertTrue($update->up());
         $this->assertSame(['channel', 'acq_channel'], $this->channels($table));
 
-        $this->assertFalse(owa_coreAPI::dbSingleton()->hasInstantColumns($table),
+        $db      = owa_coreAPI::dbSingleton();
+        $mariadb = stripos((string) ($db->get_row('SELECT VERSION() AS v')['v'] ?? ''), 'mariadb') !== false;
+
+        // MariaDB reports no instant-column state (CubeInstantColumnsTest), so there it is unknown.
+        $this->assertSame($mariadb ? null : false, $db->hasInstantColumns($table),
             'added by a rebuild, so the cube still swaps');
     }
 }
