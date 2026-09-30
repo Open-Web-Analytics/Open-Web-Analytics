@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 64;
+        $this->required_schema_version = 65;
         return parent::__construct();
     }
 
@@ -782,6 +782,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
         $this->registerReport( 'browsers', 'reports/browsers.json' );
         $this->registerReport( 'campaigns', 'reports/campaigns.json' );
+        $this->registerReport( 'channels', 'reports/channels.json' );
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
@@ -945,6 +946,7 @@ class Module extends \OWA\Core\Module {
 
         //Traffic
         $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 3, 'view_reports', 'Reports','fa fa-random');
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'channels' ), 'Channels', 0);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);

@@ -47,7 +47,7 @@ const E2E_PAGEVIEWS   = 11;                        // number of synthetic pagevi
  * session_referer is the ONE input the attribution chain derives from --
  * deriveMedium, deriveSource and extractSearchTerm all read it, and the
  * referer/search-term dimension ids are minted off those. Two search engines
- * and one ordinary referral give organic-search 2, referral 1, direct 1.
+ * and one ordinary referral give organic 2, referral 1, (none) 1.
  *
  * Held here rather than only inside $visits so teardown can delete exactly the
  * referer rows this fixture created.
@@ -68,7 +68,7 @@ const E2E_REFERERS = [
  * fixtures that want one -- see sessionByReferer().
  */
 const E2E_MEDIUM_REFERERS = [
-    'organic-search' => 0,   // google
+    'organic'        => 0,   // google
     'referral'       => 1,   // news.ycombinator.com
 ];
 
@@ -728,7 +728,7 @@ function unseedOthersReport(): int
  * The segment filter selects VISITS, so the two recordings have to belong to
  * visits that differ in something the filter can name. They are attached to
  * sessions with different mediums, and both mediums are reported back in the
- * fixture info -- a spec that hardcoded "organic-search" would be asserting
+ * fixture info -- a spec that hardcoded "organic" would be asserting
  * against the referer list rather than against what was seeded.
  *
  * IDEMPOTENT by construction: the recording id is derived from the visit and
@@ -756,7 +756,7 @@ function seedDomstreams(): array
      * Each chunk: seq => [offset seconds, covered seconds, samples].
      */
     $recordings = [
-        ['medium' => 'organic-search', 'page' => '/pricing', 'chunks' => [
+        ['medium' => 'organic', 'page' => '/pricing', 'chunks' => [
             1 => [0,  12, [[0, 'm', 10, 10], [200, 'm', 5, 5], [100, 'c', 15, 15, 'a', 'buy', ''], [900, 's', 300]]],
             3 => [80, 15, [[0, 's', 600], [300, 'c', 40, 40, 'button', 'send', ''], [50, 'k', 'input', 'email', 'email'],
                            [50, 'm', 1, 1], [50, 'm', 1, 1]]],
@@ -1415,7 +1415,7 @@ function seedPageviews(int $n): int
     /*
      * Attribution, so the Traffic reports have rows to draw.
      *
-     * Without it every session was medium='direct' and Traffic's pie and three
+     * Without it every session was medium='(none)' and Traffic's pie and three
      * grids all returned nothing.
      *
      * Only the referring URL is seeded. `session_referer` is the single input
@@ -1430,10 +1430,10 @@ function seedPageviews(int $n): int
      * Sent on EVERY request of the visit, as the tracker does: the session
      * handler's new-session branch does not copy medium onto the session, so
      * attribution reaches it through the update branch a later request takes.
-     * A single-request visit would stay medium='direct'.
+     * A single-request visit would stay medium='(none)'.
      *
-     * Spread so each medium has a distinct count: organic-search 2,
-     * referral 1, direct 1.
+     * Spread so each medium has a distinct count: organic 2,
+     * referral 1, (none) 1.
      */
     $visits = [
         ['day_ago' => 23, 'visitor' => 0, 'new_visitor' => true,  'pages' => ['/', '/pricing'],

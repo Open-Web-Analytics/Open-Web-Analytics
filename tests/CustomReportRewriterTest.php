@@ -68,7 +68,8 @@ final class CustomReportRewriterTest extends TestCase
         $out = $this->rewrite([['type' => 'grid', 'query' => ['metrics' => 'visits', 'dimensions' => 'source'],
             'constraints' => 'medium==organic-search,isNewVisitor==1,actionName==signup,browserType=@Chrome']]);
 
-        $this->assertSame('sessionMedium==organic-search,newVsReturning==New,browserType=@Chrome',
+        // v1's medium held its classification; v2 keeps that in the channel.
+        $this->assertSame('sessionChannel==Organic Search,newVsReturning==New,browserType=@Chrome',
             $out['definition']['widgets'][0]['constraints']);
         $this->assertStringContainsString('now counts more than it did', implode("\n", $out['changes']));
     }

@@ -26,7 +26,7 @@ namespace OWA\Module\Base\Classes;
  * report is then drawn over everything those subjects did. It is deliberately
  * not a filter on the report's own rows, and the difference is not academic.
  *
- * Constraining a funnel's own rows with `medium==organic-search` would drop
+ * Constraining a funnel's own rows with `medium==organic` would drop
  * every step a subject reached on some other medium, and the funnel would
  * collapse for reasons that have nothing to do with the funnel. Constraining a
  * list of a visitor's activity the same way would hide exactly the activity of

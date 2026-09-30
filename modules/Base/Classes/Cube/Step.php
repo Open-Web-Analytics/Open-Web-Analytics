@@ -88,6 +88,23 @@ abstract class Step {
      * @throws \RuntimeException where the step cannot produce its column
      */
     abstract public function execute( Context $context );
+
+    /**
+     * A statement run on the staging table after the build statement, or null.
+     *
+     * For a column computed FROM OTHER COLUMNS of the same row: one SELECT
+     * cannot read its own aliases, and repeating their expressions per rule
+     * would multiply the statement. The build runs it before the row count
+     * and the swap, so a failure publishes nothing.
+     *
+     * @param Context $context
+     * @param string  $staging the staging table
+     * @return string|null
+     */
+    public function after( Context $context, $staging ) {
+
+        return null;
+    }
 }
 
 ?>

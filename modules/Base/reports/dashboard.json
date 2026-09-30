@@ -62,12 +62,12 @@
             "type": "pie",
             "id": "visitorMediums",
             "container": "visitor-mediums",
-            "title": "Traffic Sources",
+            "title": "Channels",
             "colspan": 3,
             "chartMetric": "sessions",
             "query": {
                 "metrics": "sessions",
-                "dimensions": "sessionMedium",
+                "dimensions": "sessionChannel",
                 "sort": "sessions-"
             }
         },

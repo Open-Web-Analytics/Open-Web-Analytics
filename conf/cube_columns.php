@@ -67,7 +67,16 @@ return array(
         'host' => 'session.referer_host',
     ),
 
-    'campaign' => array( 'kind' => 'copy', 'from' => 'session.tagged_campaign', 'text' => true ),
+    // The tag, else (not set) for a tagged visit with no campaign, else a
+    // placeholder mirroring the medium: (direct), (organic), (referral).
+    'campaign' => array(
+        'kind'   => 'campaign',
+        'tag'    => 'session.tagged_campaign',
+        'tags'   => array( 'session.tagged_source', 'session.tagged_medium', 'session.tagged_ad' ),
+        'medium' => array( 'tag' => 'session.tagged_medium', 'host' => 'session.referer_host' ),
+    ),
+    // GA's default channel group, from this row's source, medium and campaign.
+    'channel' => array( 'kind' => 'channel', 'source' => 'source', 'medium' => 'medium', 'campaign' => 'campaign' ),
     'ad'       => array( 'kind' => 'copy', 'from' => 'session.tagged_ad', 'text' => true ),
 
     /*
@@ -124,9 +133,14 @@ return array(
     ),
 
     'acq_campaign' => array(
-        'kind' => 'copy', 'from' => 'visitor.acq_campaign',
-        'text' => true, 'absent' => 'acquisition.missing',
+        'kind'   => 'campaign',
+        'tag'    => 'visitor.acq_campaign',
+        'tags'   => array( 'visitor.acq_source', 'visitor.acq_medium', 'visitor.acq_ad' ),
+        'medium' => array( 'tag' => 'visitor.acq_medium', 'host' => 'visitor.acq_referer_host' ),
+        'absent' => 'acquisition.missing',
     ),
+    'acq_channel' => array( 'kind' => 'channel', 'source' => 'acq_source', 'medium' => 'acq_medium',
+        'campaign' => 'acq_campaign' ),
 
     'acq_ad' => array(
         'kind' => 'copy', 'from' => 'visitor.acq_ad',

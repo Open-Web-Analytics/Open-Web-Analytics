@@ -8,18 +8,26 @@ namespace OWA\Module\Base\Classes\Cube;
 //
 
 /**
- * medium, and acq_medium: the tag if there was one, else the referrer
- * classified as organic search, a social network, a plain referral, or direct.
+ * medium, and acq_medium: the tag if there was one, else the medium Google
+ * Analytics assigns to an untagged visit.
+ *
+ *   no referrer                           (none)
+ *   an AI assistant (conf/aiassistants)   ai-agent -- GA says ai-assistant
+ *   a search engine (conf/searchengines)  organic
+ *   any other site, social ones included  referral
+ *
+ * A MEDIUM, NOT A CHANNEL. Social, paid and the rest are the channel's to say
+ * (ChannelStep), from the source and the medium together; a Facebook visit is
+ * medium `referral` and channel Organic Social, as in GA. This used to put
+ * the classification here -- `organic-search`, `social-network` -- so the
+ * column mixed what a site tagged with what OWA decided.
  *
  * THE CLASSIFICATION IS IN THE CUBE, NOT AT INGEST, and that is the whole
- * reason this step exists rather than a column. The list grows and gets
- * corrected -- duckduckgo was missing from it until January 2023, so every OWA
- * install recorded those arrivals as `referral` and v1 can never fix that
- * history. Here the same correction plus a rebuild fixes every affected row.
- *
- * The list is read in PHP and compiled into the statement, which is the
- * existing proof that PHP already shapes this SQL -- what it does not do is
- * stream rows.
+ * reason this step exists rather than a column. The lists grow and get
+ * corrected -- duckduckgo was missing from the search list until January 2023,
+ * so every OWA install recorded those arrivals as `referral` and v1 can never
+ * fix that history. Here the same correction plus a rebuild fixes every
+ * affected row.
  */
 class MediumStep extends Step {
 
@@ -59,8 +67,8 @@ class MediumStep extends Step {
 
     public function execute( Context $context ) {
 
-        $resolved = sprintf( "COALESCE(NULLIF(TRIM(LOWER(%s)), ''), CASE %s ELSE 'referral' END)",
-            $this->tag, implode( ' ', $this->branches( $context ) ) );
+        $resolved = sprintf( 'COALESCE(NULLIF(TRIM(LOWER(%s)), \'\'), %s)',
+            $this->tag, $this->untagged( $context ) );
 
         if ( $this->absent === null ) {
 
@@ -72,45 +80,22 @@ class MediumStep extends Step {
     }
 
     /**
-     * @param Context $context
-     * @return string[]
+     * The medium of an untagged visit, from its referring host alone.
+     *
+     * CampaignStep mirrors it for an untagged visit's campaign, so the two
+     * are one expression and cannot disagree.
      */
-    private function branches( Context $context ) {
+    public function untagged( Context $context ) {
 
-        $helpers = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $host = sprintf( 'LOWER(%s)', $this->host );
 
-        $branches = array(
-            sprintf( "WHEN %s IS NULL OR %s = '' THEN 'direct'", $this->host, $this->host ),
-        );
-
-        foreach ( array(
-            'organic-search' => call_user_func( array( $helpers, 'getSearchEngineList' ) ),
-            'social-network' => call_user_func( array( $helpers, 'getSocialNetworkList' ) ),
-        ) as $medium => $list ) {
-
-            $tests = array();
-
-            foreach ( (array) $list as $entry ) {
-
-                if ( empty( $entry['domain'] ) ) {
-
-                    continue;
-                }
-
-                // Substring containment, as isSearchEngine() matches: the list
-                // holds 'google', not a hostname. OWA_SQL_CONTAINS because
-                // LOCATE is MySQL's spelling of it and this step must not know.
-                $tests[ $entry['domain'] ] = sprintf( OWA_SQL_CONTAINS,
-                    $context->literal( $entry['domain'] ), $this->host );
-            }
-
-            if ( $tests ) {
-
-                $branches[] = sprintf( "WHEN %s THEN '%s'", implode( ' OR ', $tests ), $medium );
-            }
-        }
-
-        return $branches;
+        // AI assistants first: gemini.google.com is an assistant, and on the
+        // search list's `google` it would read as organic.
+        return sprintf( "CASE WHEN %1\$s IS NULL OR %1\$s = '' THEN '(none)'"
+          . " WHEN %2\$s THEN 'ai-agent' WHEN %3\$s THEN 'organic' ELSE 'referral' END",
+            $this->host,
+            SiteLists::matches( $host, 'ai', $context ),
+            SiteLists::matches( $host, 'search', $context ) );
     }
 }
 

@@ -4,9 +4,9 @@
         "metricImplementations": 37,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 79,
-        "dimensionEntriesDenormalized": 79,
-        "accessorDimensionNames": 79
+        "dimensionNamesDenormalized": 81,
+        "dimensionEntriesDenormalized": 81,
+        "accessorDimensionNames": 81
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -1406,7 +1406,20 @@
                 "column": "acq_campaign",
                 "family": "traffic source",
                 "label": "First Campaign",
-                "description": "The campaign that acquired the user.",
+                "description": "The campaign that acquired the user, or the placeholder for how they arrived untagged.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "firstChannel": {
+            "base.event": {
+                "name": "firstChannel",
+                "entity": "base.event",
+                "column": "acq_channel",
+                "family": "traffic source",
+                "label": "First Channel",
+                "description": "What kind of traffic acquired the user, by the same channel rules.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -1919,7 +1932,20 @@
                 "column": "campaign",
                 "family": "traffic source",
                 "label": "Campaign",
-                "description": "The campaign this session was tagged with.",
+                "description": "The campaign this session was tagged with. An untagged session is (direct), (organic), (referral) or (ai-agent), after its medium; a tagged one without a campaign is (not set).",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "sessionChannel": {
+            "base.event": {
+                "name": "sessionChannel",
+                "entity": "base.event",
+                "column": "channel",
+                "family": "traffic source",
+                "label": "Channel",
+                "description": "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- by Google Analytics' default channel rules.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -1945,7 +1971,7 @@
                 "column": "medium",
                 "family": "traffic source",
                 "label": "Medium",
-                "description": "How this session arrived -- organic search, social, referral or direct.",
+                "description": "How this session arrived: the tagged medium, else organic, referral, ai-agent or (none) for a direct visit.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -2433,7 +2459,18 @@
             "column": "acq_campaign",
             "family": "traffic source",
             "label": "First Campaign",
-            "description": "The campaign that acquired the user.",
+            "description": "The campaign that acquired the user, or the placeholder for how they arrived untagged.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "firstChannel": {
+            "name": "firstChannel",
+            "entity": "base.event",
+            "column": "acq_channel",
+            "family": "traffic source",
+            "label": "First Channel",
+            "description": "What kind of traffic acquired the user, by the same channel rules.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -2872,7 +2909,18 @@
             "column": "campaign",
             "family": "traffic source",
             "label": "Campaign",
-            "description": "The campaign this session was tagged with.",
+            "description": "The campaign this session was tagged with. An untagged session is (direct), (organic), (referral) or (ai-agent), after its medium; a tagged one without a campaign is (not set).",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "sessionChannel": {
+            "name": "sessionChannel",
+            "entity": "base.event",
+            "column": "channel",
+            "family": "traffic source",
+            "label": "Channel",
+            "description": "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- by Google Analytics' default channel rules.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -2894,7 +2942,7 @@
             "column": "medium",
             "family": "traffic source",
             "label": "Medium",
-            "description": "How this session arrived -- organic search, social, referral or direct.",
+            "description": "How this session arrived: the tagged medium, else organic, referral, ai-agent or (none) for a direct visit.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -3130,6 +3178,7 @@
             "traffic source": [
                 "firstAd",
                 "firstCampaign",
+                "firstChannel",
                 "firstMedium",
                 "firstSearchTerms",
                 "firstSource",
@@ -3137,6 +3186,7 @@
                 "referrerHost",
                 "sessionAd",
                 "sessionCampaign",
+                "sessionChannel",
                 "sessionMedium",
                 "sessionSearchTerms",
                 "sessionSource",

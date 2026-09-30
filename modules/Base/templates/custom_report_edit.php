@@ -463,7 +463,7 @@ $owa_max        = (int) $view->get('max_widgets');
         ?>
         <div id="dlgConstraintRows" class="owa_builderConstraints"><ul></ul></div>
         <div class="owa_builderHelp">
-            Rows are combined, e.g. <code>medium</code> is <code>organic-search</code>
+            Rows are combined, e.g. <code>medium</code> is <code>organic</code>
             <em>and</em> <code>browserType</code> contains <code>Chrome</code>.
         </div>
     </div>

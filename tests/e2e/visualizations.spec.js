@@ -383,7 +383,7 @@ test.describe('visualizations', () => {
         }
 
         await property.selectOption('medium');
-        await page.fill('input[name="conditionValue[]"]', 'organic-search');
+        await page.fill('input[name="conditionValue[]"]', 'organic');
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),

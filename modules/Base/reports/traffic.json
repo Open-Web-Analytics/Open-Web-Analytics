@@ -32,15 +32,15 @@
         },
         {
             "type": "pie",
-            "id": "sessionMedium",
+            "id": "sessionChannel",
             "container": "traffic-sources",
             "colspan": 4,
             "chartMetric": "sessions",
             "query": {
-                "dimensions": "sessionMedium",
+                "dimensions": "sessionChannel",
                 "sort": "sessions-"
             },
-            "title": "Mediums"
+            "title": "Channels"
         },
         {
             "type": "pie",

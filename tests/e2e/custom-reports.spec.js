@@ -573,7 +573,7 @@ test.describe('custom reports', () => {
 
             // Filling it in lets the widget be saved, and the constraint
             // reaches the definition rather than being dropped on the way out.
-            await fillConstraintRow(page, { value: 'organic-search' });
+            await fillConstraintRow(page, { value: 'organic' });
 
             await expect(dialogSave(page)).toBeEnabled();
             await dialogSave(page).click();
@@ -586,7 +586,7 @@ test.describe('custom reports', () => {
             });
 
             expect(JSON.parse(definition).widgets[0].constraints)
-                .toBe('sessionMedium==organic-search');
+                .toBe('sessionMedium==organic');
         });
 
         /**
@@ -2001,8 +2001,8 @@ test.describe('custom reports', () => {
             expect(chart.fills.slice(1).every((f) => f === false)).toBe(true);
 
             // The seeded mediums each got a line.
-            expect(chart.labels).toContain('direct');
-            expect(chart.labels).toContain('organic-search');
+            expect(chart.labels).toContain('(none)');
+            expect(chart.labels).toContain('organic');
 
             /*
              * A colour each, and the PIE's colours.
