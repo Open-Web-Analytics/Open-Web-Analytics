@@ -370,7 +370,7 @@ final class CubeCatchUpTest extends TestCase
             'the probe relies on the default sql_mode; an earlier test left it changed');
 
         $this->assertNotFalse($db->query(sprintf(
-            'ALTER TABLE %s ADD COLUMN catch_up_probe INT NOT NULL, ALGORITHM=INPLACE', $table)),
+            'ALTER TABLE %s ADD COLUMN catch_up_probe INT NOT NULL, FORCE, ALGORITHM=INPLACE', $table)),
             'adding the probe column: ' . $db->lastQueryError());
 
         try {
@@ -387,7 +387,7 @@ final class CubeCatchUpTest extends TestCase
             $this->assertSame($was, (new Builder(self::PROPERTY))->builtAt($this->spanFor($b)),
                 'the partition after the failure was not built');
         } finally {
-            $db->query(sprintf('ALTER TABLE %s DROP COLUMN catch_up_probe, ALGORITHM=INPLACE', $table));
+            $db->query(sprintf('ALTER TABLE %s DROP COLUMN catch_up_probe, FORCE, ALGORITHM=INPLACE', $table));
         }
     }
 }

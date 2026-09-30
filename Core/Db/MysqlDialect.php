@@ -162,8 +162,16 @@ if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_RE
  * here -- the default is INSTANT, and an instant column leaves row-format
  * metadata that makes EXCHANGE PARTITION refuse the swap with error 1731, so
  * every later cube build would fail having published nothing.
+ *
+ * FORCE because INPLACE alone does not rule INSTANT out on MariaDB, where it
+ * means "in place or better". An instant ADD there skips the row-size check a
+ * CREATE TABLE applies, so a column the ALTER accepted made the staging table
+ * every build creates fail with 1118; and an instant DROP leaves the column's
+ * bytes in the row, so dropping one freed no room. A forced rebuild is checked
+ * like a CREATE and reclaims what it drops. On MySQL, where INPLACE already
+ * rebuilds, it costs nothing extra.
  */
-if ( ! defined( 'OWA_SQL_ALTER_COLUMNS_REBUILD' ) ) { define('OWA_SQL_ALTER_COLUMNS_REBUILD', 'ALTER TABLE %s %s, ALGORITHM=INPLACE'); }
+if ( ! defined( 'OWA_SQL_ALTER_COLUMNS_REBUILD' ) ) { define('OWA_SQL_ALTER_COLUMNS_REBUILD', 'ALTER TABLE %s %s, FORCE, ALGORITHM=INPLACE'); }
 
 /*
  * Reading one value out of a JSON document.
