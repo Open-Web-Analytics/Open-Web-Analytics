@@ -368,16 +368,26 @@ final class MigrateMoreSourcesTest extends TestCase
             'SELECT acq_source FROM owa_visitor_acquisition WHERE visitor_id = ?', [self::VISITOR]))['acq_source']);
     }
 
-    public function testAVisitorWithNoEvidenceGetsNoRow(): void
+    /**
+     * A first session with neither a referrer nor a campaign was a direct
+     * visit: the session is the landing, so that is the answer, not a gap. It
+     * is written as an acquisition with nothing in it and acq_ts set, which
+     * the build reads as direct rather than as the sentinel.
+     */
+    public function testAFirstSessionWithNoEvidenceIsDirect(): void
     {
         $this->insert('session', ['id' => self::SESSION, 'site_id' => self::SITE, 'visitor_id' => self::VISITOR,
             'timestamp' => self::T, 'yyyymmdd' => self::DAY]);
 
         $progress = (new VisitorMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
 
-        $this->assertFalse((bool) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            'SELECT visitor_id FROM owa_visitor_acquisition WHERE visitor_id = ?', [self::VISITOR]));
-        $this->assertEquals(['no_evidence' => 1], $progress['refusals']);
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT * FROM owa_visitor_acquisition WHERE visitor_id = ?', [self::VISITOR]);
+
+        $this->assertSame((string) (self::T * 1000000), (string) ($row['acq_ts'] ?? ''), 'captured');
+        $this->assertNull($row['acq_source']);
+        $this->assertNull($row['acq_referer_host']);
+        $this->assertEquals([], $progress['refusals'], 'nothing refused');
     }
 
     /** v1's record decides which sessions converted; the definition finds the row. */

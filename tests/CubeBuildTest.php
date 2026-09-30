@@ -1072,9 +1072,11 @@ final class CubeBuildTest extends TestCase
         $this->assertNotSame($sentinel, $row['acq_campaign']);
 
         // The two that RESOLVE still do: no referring host is `direct`, which
-        // is a value, so they stay NOT NULL.
-        $this->assertNotNull($row['acq_source']);
-        $this->assertNotNull($row['acq_medium']);
+        // is a value, so they stay NOT NULL. This is the row a direct landing
+        // writes at ingest (EventRawHandlers::writeVisitorAcquisition), so it
+        // must read as direct, never as the sentinel.
+        $this->assertSame('direct', $row['acq_source']);
+        $this->assertSame('direct', $row['acq_medium']);
     }
 
     /**

@@ -15,8 +15,10 @@ namespace OWA\Module\Base\Classes\Migration;
  * (owa_visitor.first_session_id). What it records is evidence, as ingest does:
  * the first session's referrer, for the cube to classify, and the tags only
  * where that session recorded a campaign or an ad -- the attribution rule of
- * PLAN.html 2.21. A visitor with no evidence at all gets no row, and a visitor
- * v2 already has is left alone.
+ * PLAN.html 2.21. A first session with no evidence at all was a direct visit,
+ * and gets a row with nothing in it and acq_ts set, which the build reads as
+ * direct -- the session is the landing, so its having neither a referrer nor
+ * a campaign is the answer, not a gap. A visitor v2 already has is left alone.
  *
  * All of a site's sessions, whatever cutoff the page views were migrated with:
  * a visitor's acquisition is stamped on every later session they have.
@@ -24,8 +26,6 @@ namespace OWA\Module\Base\Classes\Migration;
 class VisitorMigrator extends FactMigrator {
 
     const SOURCE = 'session';
-
-    const NO_EVIDENCE = 'no_evidence';
 
     protected static function progressKey() {
 
@@ -127,14 +127,6 @@ class VisitorMigrator extends FactMigrator {
                 'acq_ts'           => (int) $r['timestamp'] * 1000000,
                 'last_seen'        => (int) substr( (string) $r['yyyymmdd'], 0, 6 ),
             );
-
-            if ( ! $tagged && $row['acq_referer_url'] === null ) {
-
-                $progress['rows_refused']++;
-                $progress['refusals'][ self::NO_EVIDENCE ] = ( $progress['refusals'][ self::NO_EVIDENCE ] ?? 0 ) + 1;
-
-                continue;
-            }
 
             $out[] = $row;
         }

@@ -872,7 +872,7 @@ class Module extends \OWA\Core\Module {
          * claiming a weaker requirement than the group holding it is a
          * disagreement waiting to be read the wrong way.
          */
-        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 5, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
+        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 6, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2, 'view_reports_ecommerce');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3, 'view_reports_ecommerce');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), 'Average Order Value', 4, 'view_reports_ecommerce');
@@ -897,7 +897,7 @@ class Module extends \OWA\Core\Module {
          */
 
         //Content
-        $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 4, 'view_reports', 'Reports','fa fa-newspaper');
+        $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 5, 'view_reports', 'Reports','fa fa-newspaper');
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Pages', 1);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
         /*
@@ -927,7 +927,7 @@ class Module extends \OWA\Core\Module {
          */
 
         //Visitors
-        $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 3, 'view_reports', 'Reports','fa fa-user-friends');
+        $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 4, 'view_reports', 'Reports','fa fa-user-friends');
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'hosts' ), 'Domains', 2);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
@@ -936,7 +936,7 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);
 
         //Traffic
-        $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 2, 'view_reports', 'Reports','fa fa-random');
+        $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 3, 'view_reports', 'Reports','fa fa-random');
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);
@@ -945,7 +945,7 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'creative-performance' ), 'Creative Performance', 8);
 
         //Goals
-        $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 5, 'view_reports', 'Reports','fa fa-bullseye');
+        $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 7, 'view_reports', 'Reports','fa fa-bullseye');
 
     }
 

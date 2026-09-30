@@ -1252,11 +1252,11 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * A visitor whose acquisition is unknown gets NO row. A placeholder would
-     * be found present when the real first_visit arrived late on a queue drain
-     * and would block the real value permanently, and silently.
+     * A LANDING WITH NO TAGS AND NO REFERRER IS DIRECT, and is written as a
+     * captured acquisition with nothing in it: acq_ts set, which the build
+     * reads as direct rather than as the sentinel.
      */
-    public function testNoAcquisitionMeansNoVisitorRow(): void
+    public function testADirectLandingWritesADirectAcquisition(): void
     {
         $rows = $this->firePageView([
             'page_url'      => 'https://owa-test-site/v2/plain',
@@ -1265,8 +1265,40 @@ final class EventRawIngestionTest extends IngestionTestCase
             'HTTP_REFERER'  => '',
         ]);
 
-        $db    = owa_coreAPI::dbSingleton();
-        $count = (array) $db->get_row(sprintf(
+        $this->assertArrayHasKey('first_visit', $rows, 'the fixture is a landing');
+
+        $row = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT * FROM owa_visitor_acquisition WHERE visitor_id = %d',
+            (int) $rows['page_view']['visitor_id']));
+
+        $this->assertSame((string) $rows['page_view']['ts'], (string) ($row['acq_ts'] ?? ''),
+            'captured, at the landing');
+
+        foreach (['acq_source', 'acq_medium', 'acq_campaign', 'acq_ad', 'acq_search_terms',
+                  'acq_referer_url', 'acq_referer_host'] as $column) {
+            $this->assertNull($row[$column], $column);
+        }
+    }
+
+    /**
+     * ANY OTHER EVENT WITH NOTHING GETS NO ROW. The tags ride the landing
+     * alone, so a later event of the first session with neither tags nor a
+     * referrer says nothing -- and a row written from it would block a tagged
+     * landing arriving late on a queue drain, permanently and silently.
+     */
+    public function testANonLandingEventWithNothingWritesNoRow(): void
+    {
+        $rows = $this->firePageView([
+            'page_url'               => 'https://owa-test-site/v2/second-page',
+            'page_location'          => 'https://owa-test-site/v2/second-page',
+            'HTTP_REFERER'           => '',
+            'is_new_session_start'   => false,
+            'is_new_visitor_created' => false,
+        ]);
+
+        $this->assertArrayNotHasKey('first_visit', $rows, 'the fixture is not a landing');
+
+        $count = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
             'SELECT COUNT(*) AS n FROM owa_visitor_acquisition WHERE visitor_id = %d',
             (int) $rows['page_view']['visitor_id']));
 

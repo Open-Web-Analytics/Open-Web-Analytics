@@ -744,8 +744,12 @@ abstract class Module {
      * looking broken next to Base's eight. A generic icon is the honest default:
      * the item IS a report group, and a module with something better to say
      * still says it.
+     *
+     * $order places the item among the group's others, lowest first
+     * (CoreAPI::sortNavigation). Omitted, it follows every item that gave one,
+     * in registration order.
      */
-    public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports', $icon_class = self::DEFAULT_NAV_ICON) {
+    public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = null, $priviledge = 'view_reports', $groupName = 'Reports', $icon_class = self::DEFAULT_NAV_ICON) {
         $this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge, $icon_class);
     }
 
@@ -755,11 +759,11 @@ abstract class Module {
      * @param string $subgroupName
      * @param string $ref
      * @param string $anchortext
-     * @param integer $order
+     * @param integer|null $order lowest first; omitted, after those that give one
      * @param string $priviledge
      * @param string $groupName
      */
-    public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = 0, $priviledge = 'view_reports', $groupName = 'Reports') {
+    public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = null, $priviledge = 'view_reports', $groupName = 'Reports') {
         $this->nav_links[$groupName][$subgroupName]['subgroup'][] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
     }
 
