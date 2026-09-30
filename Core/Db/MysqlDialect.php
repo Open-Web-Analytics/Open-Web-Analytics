@@ -150,8 +150,11 @@ if ( ! defined( 'OWA_SQL_REBUILD_TABLE' ) ) { define('OWA_SQL_REBUILD_TABLE', 'A
  * EXCHANGE PARTITION compares byte for byte. Spending it here beats letting the
  * add be instant and paying for FORCE afterwards, which is the same rebuild
  * plus a window in which the pass cannot publish.
+ *
+ * FORCE for MariaDB, where INPLACE alone still allows INSTANT; see
+ * OWA_SQL_ALTER_COLUMNS_REBUILD below.
  */
-if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_REBUILD', 'ALTER TABLE %s ADD %s %s, ALGORITHM=INPLACE'); }
+if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_REBUILD', 'ALTER TABLE %s ADD %s %s, FORCE, ALGORITHM=INPLACE'); }
 
 /*
  * SEVERAL COLUMN CHANGES IN ONE STATEMENT, still rebuilding rather than instant.
@@ -575,6 +578,91 @@ trait MysqlDialect
         }
 
         return $columns;
+    }
+
+    /**
+     * Whether a table carries instant-column history.
+     *
+     * Asked of InnoDB, per partition: InnoDB names each one db/table#p#name,
+     * and one partition with history is enough for EXCHANGE PARTITION to
+     * refuse (1731). Two counters, because the server's own answer changed:
+     * INSTANT_COLS counts columns added instantly before 8.0.29 and
+     * TOTAL_ROW_VERSIONS counts every instant ADD or DROP since. Which of them
+     * this server has is looked up rather than inferred from its version.
+     *
+     * null when the server cannot say: MariaDB has no INNODB_TABLES, and a
+     * table InnoDB does not list has no answer either.
+     *
+     * The database part of the name is matched exactly only when it is plain
+     * letters, digits and underscores. InnoDB encodes anything else (a hyphen
+     * becomes @002d), so such a name is matched on the table part alone; the
+     * worst that can do is answer true for a same-named table in another
+     * database, which costs one unneeded rebuild.
+     *
+     * @param string $table_name
+     * @return bool|null
+     */
+    function hasInstantColumns( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return null;
+        }
+
+        $counters = $this->instantColumnCounters();
+
+        if ( ! $counters ) {
+
+            return null;
+        }
+
+        $row      = (array) $this->get_row( 'SELECT DATABASE() AS d' );
+        $database = isset( $row['d'] ) ? (string) $row['d'] : '';
+        $prefix   = preg_match( '/^[A-Za-z0-9_]+$/', $database )
+            ? str_replace( '_', '\\_', $database ) . '/'
+            : '%/';
+        $like     = $prefix . str_replace( '_', '\\_', $table_name );
+
+        $row = (array) $this->get_row( sprintf(
+            "SELECT COUNT(*) AS n, SUM(%s) AS instant FROM information_schema.INNODB_TABLES "
+          . "WHERE NAME LIKE '%s' OR NAME LIKE '%s#p#%%'",
+            implode( ' + ', $counters ), $like, $like ) );
+
+        if ( empty( $row['n'] ) ) {
+
+            return null;
+        }
+
+        return (int) $row['instant'] > 0;
+    }
+
+    /**
+     * The INNODB_TABLES counters this server has, asked once per process.
+     *
+     * @return string[]
+     */
+    private function instantColumnCounters() {
+
+        static $counters = null;
+
+        if ( $counters !== null ) {
+
+            return $counters;
+        }
+
+        $counters = array();
+
+        foreach ( (array) $this->get_results(
+                "SELECT COLUMN_NAME AS c FROM information_schema.COLUMNS "
+              . "WHERE TABLE_SCHEMA = 'information_schema' AND TABLE_NAME = 'INNODB_TABLES' "
+              . "AND COLUMN_NAME IN ('INSTANT_COLS', 'TOTAL_ROW_VERSIONS')" ) as $row ) {
+
+            $counters[] = (string) $row['c'];
+        }
+
+        sort( $counters );
+
+        return $counters;
     }
 
     function getPrimaryKeyColumns( $table_name ) {
