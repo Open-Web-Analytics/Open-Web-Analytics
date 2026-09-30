@@ -38,6 +38,56 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
         'tracking_mode' => true,
         'instance_role' => 'logger',
     ]);
+
+    owa_test_pause_scheduler();
+}
+
+/**
+ * Hold every scheduled job's lease for as long as this PHPUnit process runs.
+ *
+ * The suite writes to the configured database, and on a development install
+ * that database also has a cron running `cmd=schedule-run` every minute. The
+ * two collided both ways: a routine cube build picked up a test's fixture
+ * cube and dropped its working tables mid-test, and a build of the install's
+ * real cube failed on a column an update test had just rolled back. With the
+ * leases held, schedule-run skips each job for the tick ("already running")
+ * and nothing is recorded as a failure.
+ *
+ * Only in a PHPUnit process: a child PHP a test starts loads this file too,
+ * and must not wait on leases its parent holds. A job running when the suite
+ * starts is waited for. The lease outlives a crashed run by at most LEASE
+ * seconds, after which the scheduler takes the jobs back on its own.
+ */
+function owa_test_pause_scheduler(): void
+{
+    if (!defined('PHPUNIT_COMPOSER_INSTALL') || !owa_test_db_available()) {
+        return;
+    }
+
+    $lease = 3 * 3600;
+    $held  = [];
+
+    foreach (array_keys(\OWA\Module\Base\Classes\JobStatus::jobs()) as $name) {
+        $lock = new \OWA\Module\Base\Classes\JobLease($name);
+
+        for ($waited = 0; !$lock->acquire($lease); $waited += 2) {
+            if ($waited >= 120) {
+                fwrite(STDERR, "bootstrap: scheduled job \"$name\" is still running after 120s; "
+                    . "the suite runs alongside it.\n");
+                continue 2;
+            }
+
+            sleep(2);
+        }
+
+        $held[] = $lock;
+    }
+
+    register_shutdown_function(static function () use ($held) {
+        foreach ($held as $lock) {
+            $lock->release();
+        }
+    });
 }
 
 /**
