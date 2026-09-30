@@ -344,8 +344,8 @@ abstract class FactMigrator {
      * row rebuilt, exactly as revertSite() does, so the ids are the ones the
      * migration wrote. Per day and event type: rows v1 holds, rows refused,
      * rows the migration should have written, and how many of those are in
-     * raw -- with their revenue and distinct visitors on both sides. Nothing
-     * is written.
+     * raw -- with their revenue, line items and distinct visitors on both
+     * sides. Nothing is written.
      *
      * A site reconciles when every expected row is present with the same
      * revenue and visitors. Refused rows are the accounted-for difference.
@@ -405,6 +405,8 @@ abstract class FactMigrator {
                 $days[ $d ]['types'][ $type ]['expected']         = ( $days[ $d ]['types'][ $type ]['expected'] ?? 0 ) + 1;
                 $days[ $d ]['types'][ $type ]['revenue_expected'] = ( $days[ $d ]['types'][ $type ]['revenue_expected'] ?? 0 )
                     + (int) ( $row['revenue'] ?? 0 );
+                $days[ $d ]['types'][ $type ]['items_expected']   = ( $days[ $d ]['types'][ $type ]['items_expected'] ?? 0 )
+                    + self::itemCount( $row['params'] ?? null );
                 $days[ $d ]['visitors_expected'][ (string) $row['visitor_id'] ] = true;
 
                 $ids[] = (int) $row['id'];
@@ -416,7 +418,8 @@ abstract class FactMigrator {
 
                 // The day range prunes partitions: a lookup by id alone reads every one.
                 $present = (array) $this->db()->get_results( sprintf(
-                    'SELECT id, yyyymmdd, event_type, visitor_id, revenue FROM %s'
+                    'SELECT id, yyyymmdd, event_type, visitor_id, revenue,'
+                    . " JSON_LENGTH(params, '$.items') AS items FROM %s"
                     . ' WHERE yyyymmdd BETWEEN %d AND %d AND id IN (%s)',
                     $table, min( $span ), max( $span ), implode( ',', $ids ) ) );
 
@@ -430,6 +433,8 @@ abstract class FactMigrator {
                     $days[ $d ]['types'][ $type ]['present']         = ( $days[ $d ]['types'][ $type ]['present'] ?? 0 ) + 1;
                     $days[ $d ]['types'][ $type ]['revenue_present'] = ( $days[ $d ]['types'][ $type ]['revenue_present'] ?? 0 )
                         + (int) ( $p['revenue'] ?? 0 );
+                    $days[ $d ]['types'][ $type ]['items_present']   = ( $days[ $d ]['types'][ $type ]['items_present'] ?? 0 )
+                        + (int) ( $p['items'] ?? 0 );
                     $days[ $d ]['visitors_present'][ (string) $p['visitor_id'] ] = true;
                 }
             }
@@ -475,6 +480,12 @@ abstract class FactMigrator {
 
                     $lines[] = sprintf( '%d %s revenue: %d expected, %d in v2 (minor units)', $d, $type,
                         (int) ( $t['revenue_expected'] ?? 0 ), (int) ( $t['revenue_present'] ?? 0 ) );
+                }
+
+                if ( (int) ( $t['items_expected'] ?? 0 ) !== (int) ( $t['items_present'] ?? 0 ) ) {
+
+                    $lines[] = sprintf( '%d %s line items: %d expected, %d in v2', $d, $type,
+                        (int) ( $t['items_expected'] ?? 0 ), (int) ( $t['items_present'] ?? 0 ) );
                 }
             }
 
@@ -526,6 +537,19 @@ abstract class FactMigrator {
         return sprintf( '%d day(s), %d v1 row(s), %d refused%s, %d row(s) in v2 with their markers',
             count( $days ), $read, array_sum( $refused ), $reasons ? ' (' . implode( ', ', $reasons ) . ')' : '',
             $present );
+    }
+
+    /**
+     * How many line items a built row's params carry.
+     *
+     * @param  string|array|null $params
+     * @return int
+     */
+    protected static function itemCount( $params ) {
+
+        $doc = is_array( $params ) ? $params : json_decode( (string) $params, true );
+
+        return is_array( $doc ) && is_array( $doc['items'] ?? null ) ? count( $doc['items'] ) : 0;
     }
 
     /** Drop a site's progress row, so the pass starts over. */
@@ -805,6 +829,12 @@ abstract class FactMigrator {
         }
 
         return $out;
+    }
+
+    /** A v1 table's name under the prefix this migrator reads. */
+    protected function v1Table( $table ) {
+
+        return V1Tables::name( $table, $this->prefix );
     }
 
     /** Whether a v1 table's `id` column is an integer type on this installation. */
