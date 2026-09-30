@@ -401,6 +401,11 @@ class EventRaw extends \OWA\Core\Entity {
         // A purchase already stored under this transaction id, looked up per
         // purchase at ingest (Classes\PurchaseDeduplication). Update057.
         $this->addCompositeIndex( 'site_transaction', array( 'site_id', 'transaction_id' ) );
+
+        // The realtime screen's window: a site's last thirty minutes by ts, so
+        // its cost follows the window rather than the day (Classes\Realtime).
+        // Raw only -- nothing reads the cube by time. Update064.
+        $this->addCompositeIndex( 'site_ts', array( 'site_id', 'ts' ) );
     }
 
     /**

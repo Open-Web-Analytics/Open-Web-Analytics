@@ -91,6 +91,10 @@ class Event extends EventRaw {
          */
         unset( $this->properties['created_at'] );
 
+        // NOR SITE_TS. It serves the realtime screen, which reads raw; on a
+        // cube it would only slow every build's staging insert.
+        unset( $this->_tableProperties['composite_indexes']['site_ts'] );
+
         /*
          * THE ALIAS STAYS, and is the same for every Property.
          *
