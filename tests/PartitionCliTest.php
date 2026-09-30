@@ -193,14 +193,49 @@ final class PartitionCliTest extends CliControllerTestCase
             $this->markTestSkipped('Driver cannot partition.');
         }
 
-        $before = $this->partitionCount('owa_event_raw');
-        $rows   = (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_event_raw')['n'];
+        $before  = $this->partitionCount('owa_event_raw');
+        $rows    = (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_event_raw')['n'];
+        $store   = \OWA\Module\Base\Classes\VisitorExpiry::table();
+        $holding = (int) $db->get_row("SELECT COUNT(*) AS n FROM $store")['n'];
 
         $this->rotate(['keep' => 24, 'table' => 'owa_event_raw', 'dry-run' => 1])->action();
         $this->drop(['older-than' => '1month', 'table' => 'owa_event_raw', 'dry-run' => 1])->action();
 
         $this->assertSame($before, $this->partitionCount('owa_event_raw'), 'no partition may be added or removed');
         $this->assertSame($rows, (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_event_raw')['n'], 'no row may be lost');
+        $this->assertSame($holding, (int) $db->get_row("SELECT COUNT(*) AS n FROM $store")['n'],
+            'no visitor may be deleted');
+    }
+
+    /**
+     * The visitor store follows raw's retention and nothing else: rotate
+     * prunes it under keep= and leaves it whole without one. Run dry, so no
+     * partition of this database is dropped.
+     */
+    public function testTheVisitorStoreIsPrunedOnlyUnderKeep()
+    {
+        if (! \OWA\Core\CoreAPI::dbSingleton()->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
+
+        $calls = function (array $params): int {
+            $cli = new class($params) extends \OWA\Module\Base\Controller\PartitionRotateCli {
+                public $storeCalls = 0;
+
+                protected function expireVisitorStore(array $tables, $dry_run)
+                {
+                    $this->storeCalls++;
+                }
+            };
+
+            $cli->action();
+
+            return $cli->storeCalls;
+        };
+
+        $this->assertSame(1, $calls(['keep' => 24, 'table' => 'owa_event_raw', 'dry-run' => 1]));
+        $this->assertSame(0, $calls(['table' => 'owa_event_raw', 'dry-run' => 1]),
+            'retaining everything keeps every visitor');
     }
 
     /**

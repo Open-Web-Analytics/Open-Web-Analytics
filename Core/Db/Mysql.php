@@ -208,6 +208,11 @@ class Mysql extends \OWA\Core\Db {
 
         \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 
+        // A bound statement's count is only cleared when someone reads it, so
+        // one nobody read would otherwise be reported for the NEXT statement --
+        // an unbound DELETE after a bound INSERT answered the INSERT's 1.
+        $this->rows_affected = null;
+
        try {
         $result = $params
               ? $this->executeBound( $sql, $params )

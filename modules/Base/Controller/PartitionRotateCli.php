@@ -21,6 +21,10 @@ namespace OWA\Module\Base\Controller;
  * Where the lead is refused for want of open files, it is retried after the
  * drop, since dropping is what frees them.
  *
+ * Under keep= it also deletes visitor-store rows whose visitor has no event
+ * left in raw, since the store lives exactly as long as raw does
+ * (Classes\VisitorExpiry). Without keep= that store is kept whole, like raw.
+ *
  *   cmd=partition-rotate                          retain everything; merge old
  *                                                 periods to stay within budget
  *   cmd=partition-rotate keep=24                  keep two years, twelve ahead
@@ -298,6 +302,11 @@ class PartitionRotateCli extends PartitionsCli {
             $this->carveCubeMonths( $table, $budget, $dry_run );
         }
 
+        if ( $cutoff && $rotated ) {
+
+            $this->expireVisitorStore( $tables, $dry_run );
+        }
+
         // Skipping every table is not success. Left as 'ok', a scheduled rotate
         // on an installation that never ran partition-init would report a clean
         // history forever while doing nothing at all -- exactly the silent
@@ -314,5 +323,70 @@ class PartitionRotateCli extends PartitionsCli {
                     : 'no fact table is partitioned'
             ) );
         }
+    }
+
+    /**
+     * Delete the visitor-store rows raw no longer refers to.
+     *
+     * Only under keep=, and only when raw is one of the tables rotated: the
+     * store lives as long as raw does, and never less than a returning
+     * visitor's cookie, so a run that dropped nothing from raw has nothing to
+     * follow. It runs on every such run rather than
+     * only when this one dropped a raw partition, so a store left behind by an
+     * earlier run catches up; with nothing due it is one loose index scan and
+     * an empty indexed read. See Classes\VisitorExpiry.
+     *
+     * @param string[] $tables
+     * @param bool     $dry_run
+     * @return void
+     */
+    protected function expireVisitorStore( array $tables, $dry_run ) {
+
+        $raw = \OWA\Module\Base\Classes\VisitorExpiry::rawTable();
+
+        if ( ! in_array( $raw, $tables, true )
+          || ! \OWA\Core\CoreAPI::dbSingleton()->isPartitioned( $raw ) ) {
+
+            return;
+        }
+
+        $month = \OWA\Module\Base\Classes\VisitorExpiry::cutoff(
+            \OWA\Module\Base\Classes\VisitorExpiry::oldestRawMonth(),
+            \OWA\Module\Base\Classes\VisitorExpiry::now() );
+
+        if ( $month === null ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s is empty, so the visitor store is left alone.', $raw ) );
+
+            return;
+        }
+
+        $store = \OWA\Module\Base\Classes\VisitorExpiry::table();
+        $since = sprintf( '%04d-%02d', intdiv( $month, 100 ), $month % 100 );
+        $what  = sprintf( 'visitor(s) last seen before %s with no event left in %s', $since, $raw );
+
+        if ( $dry_run ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: would delete %d %s.',
+                $store, \OWA\Module\Base\Classes\VisitorExpiry::countExpired( $month ), $what ) );
+
+            return;
+        }
+
+        $deleted = \OWA\Module\Base\Classes\VisitorExpiry::deleteAll(
+            $month, function () { $this->heartbeat(); } );
+
+        if ( $deleted === false ) {
+
+            $this->fail( sprintf(
+                'Deleting from %s was refused. Its rows stay until the next run.', $store ) );
+
+            return;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            '%s: deleted %d %s.', $store, $deleted, $what ) );
     }
 }
