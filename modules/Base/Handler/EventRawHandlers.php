@@ -982,7 +982,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'site_id'    => $row['site_id'],
             'acq_ts'     => $row['ts'],
             // A PERIOD, yyyymm. A build advances it from there; ingest writes
-            // the one it is creating the row in so the TTL has something to
+            // the one it is creating the row in so expiry has something to
             // read before a pass has ever run.
             'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
         ) );

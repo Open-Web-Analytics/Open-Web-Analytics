@@ -39,9 +39,9 @@ namespace OWA\Module\Base\Entity;
  * visitor_id alone -- which insert-if-absent depends on -- stops being
  * enforceable. Partitioning on first-seen would fix the cost objections and buy
  * nothing, because expiry is by INACTIVITY and a first-seen partition holds a
- * mix of long-dead and still-active visitors. Under a TTL this holds active
- * visitors only: 6,761 rows against 445,055 requests on the measured install,
- * so expiry is a plain DELETE against an index.
+ * mix of long-dead and still-active visitors. So expiry is a plain DELETE
+ * against an index, which partition-rotate runs under keep= once raw holds
+ * none of a visitor's events (Classes\VisitorExpiry).
  */
 class VisitorAcquisition extends \OWA\Core\Entity {
 
@@ -102,8 +102,8 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         // and neither one parses a URL in SQL.
         $this->setProperty( $this->column( 'acq_referer_host', OWA_DTD_VARCHAR255 ) );
 
-        // Microseconds, matching owa_event_raw.ts. Not the TTL input -- that is
-        // last_seen -- but the tie-break a full rebuild from raw orders by.
+        // Microseconds, matching owa_event_raw.ts. Not the expiry input -- that
+        // is last_seen -- but the tie-break a full rebuild from raw orders by.
         $this->setProperty( $this->column( 'acq_ts', OWA_DTD_BIGINT ) );
 
         /*
@@ -118,8 +118,8 @@ class VisitorAcquisition extends \OWA\Core\Entity {
          *     a partition twice is a no-op and the column cannot go backwards
          *     when partitions are rebuilt out of order.
          *
-         * Indexed because the only thing that reads it is the TTL sweep:
-         * DELETE ... WHERE last_seen < cutoff.
+         * Indexed because the only thing that reads it is expiry, as the
+         * cheap first filter before raw is asked (Classes\VisitorExpiry).
          */
         $last_seen = $this->column( 'last_seen', OWA_DTD_INT );
         $last_seen->setIndex();
