@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 63;
+        $this->required_schema_version = 64;
         return parent::__construct();
     }
 
@@ -374,6 +374,8 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.updates',                       'OWA\\Module\\Base\\Controller\\Updates',                      'Controller/Updates.php' );
         $this->registerAction( 'base.updatesApply',                  'OWA\\Module\\Base\\Controller\\UpdatesApply',                 'Controller/UpdatesApply.php' );
         $this->registerAction( 'base.notificationsRest',              'OWA\\Module\\Base\\Controller\\NotificationsRest',           'Controller/NotificationsRest.php' );
+        $this->registerAction( 'base.realtimeRest',                  'OWA\\Module\\Base\\Controller\\RealtimeRest',                'Controller/RealtimeRest.php' );
+        $this->registerAction( 'base.reportRealtime',                'OWA\\Module\\Base\\Controller\\ReportRealtime',              'Controller/ReportRealtime.php' );
         $this->registerAction( 'base.notificationMarkReadRest',           'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest',        'Controller/NotificationMarkReadRest.php' );
         $this->registerAction( 'base.notificationDismissRest',       'OWA\\Module\\Base\\Controller\\NotificationDismissRest',    'Controller/NotificationDismissRest.php' );
         $this->registerAction( 'base.notificationsFetchCli',        'OWA\\Module\\Base\\Controller\\NotificationsFetchCli',       'Controller/NotificationsFetchCli.php' );
@@ -599,6 +601,7 @@ class Module extends \OWA\Core\Module {
 		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'OWA\\Module\\Base\\Controller\\DeleteUserRest', 'Controller/DeleteUserRest.php', [ 'params_order' => ['user_id'] ] );
 		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest', 'Controller/SiteAddAllowedUserRest.php' );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'GET', 'OWA\\Module\\Base\\Controller\\NotificationsRest', 'Controller/NotificationsRest.php' );
+		$this->registerRestApiRoute( 'v1', 'realtime', 'GET', 'OWA\\Module\\Base\\Controller\\RealtimeRest', 'Controller/RealtimeRest.php' );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'POST', 'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest', 'Controller/NotificationMarkReadRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', 'Controller/NotificationDismissRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', 'Controller/ReportsRest.php', [ 'params_order' => ['report_name'] ] );
@@ -782,6 +785,8 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'content', 'reports/content.json' );
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
+        // Not configuration: it reads raw, not the cube (Classes\Realtime).
+        $this->registerReport( 'realtime', array( 'controller' => 'base.reportRealtime' ) );
         $this->registerReport( 'document', 'reports/document.json' );
         /*
          * EVENTS, grouped by name, and it replaces the v1 action reports.
@@ -839,6 +844,9 @@ class Module extends \OWA\Core\Module {
     function registerNavigation() {
 
         $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
+
+        // Second, after the dashboard, as GA places it.
+        $this->addNavigationSubGroup('Realtime', $this->reportRef( 'realtime' ), 'Realtime', 2, 'view_reports', 'Reports','fa fa-bolt');
 
         /*
          * The custom report roster. Gated on view_reports rather than on

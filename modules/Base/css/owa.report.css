@@ -4200,3 +4200,220 @@ li.constraintRow {
     white-space: nowrap;
 }
 
+
+/* ------------------------------------------------------------------
+ * The realtime screen (report_realtime.php, owa.realtime.js)
+ * ------------------------------------------------------------------ */
+.owa_realtimeLead,
+.owa_realtimeHint {
+    color: #666666;
+    font-size: 12px;
+    margin: 0 0 12px 0;
+}
+
+.owa_realtimeStatus,
+.owa_realtimeQueued {
+    background: #fff8e1;
+    border-left: 3px solid #9a6700;
+    padding: 6px 10px;
+    margin: 0 0 12px 0;
+    font-size: 12px;
+}
+
+.owa_realtimeStatus.is-stopped {
+    font-weight: bold;
+}
+
+.owa_realtimeHead {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 16px;
+}
+
+.owa_realtimeKpi {
+    border: 1px solid #cccccc;
+    padding: 10px 14px;
+    min-width: 150px;
+}
+
+.owa_realtimeKpiLabel {
+    color: #666666;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.owa_realtimeKpiValue {
+    font-size: 32px;
+    font-weight: bold;
+    color: #505050;
+}
+
+.owa_realtimePerMinute {
+    flex: 1 1 320px;
+    border: 1px solid #cccccc;
+    padding: 10px 14px;
+}
+
+.owa_realtimeBars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 60px;
+    margin-top: 6px;
+}
+
+.owa_realtimeBar {
+    flex: 1 1 0;
+    min-height: 1px;
+    background: #1874CD;
+}
+
+.owa_realtimeBar:last-child {
+    /* This minute so far. */
+    opacity: .5;
+}
+
+.owa_realtimeMapCard {
+    border: 1px solid #cccccc;
+    padding: 10px;
+    margin-bottom: 16px;
+}
+
+.owa_realtimeMap svg {
+    display: block;
+    width: 100%;
+    max-width: 760px;
+    height: auto;
+    margin: 0 auto;
+}
+
+.owa_realtimeMap g[data-cc] {
+    fill: #e3e7ea;
+    stroke: #ffffff;
+    stroke-width: .4;
+}
+
+.owa_realtimeMap g[data-cc].is-active {
+    fill: #1874CD;
+}
+
+.owa_realtimeMap g[data-cc]:hover {
+    stroke: #505050;
+    stroke-width: .8;
+}
+
+.owa_realtimeMapNote {
+    color: #666666;
+    font-size: 11px;
+    margin: 6px 0 0 0;
+}
+
+.owa_realtimeGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.owa_realtimeCard {
+    border: 1px solid #cccccc;
+    padding: 10px 12px;
+    min-width: 0;
+}
+
+.owa_realtimeCard h3 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+}
+
+.owa_realtimeGoalTotal {
+    color: #1874CD;
+}
+
+.owa_realtimeTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    table-layout: fixed;
+}
+
+.owa_realtimeTable th {
+    text-align: left;
+    color: #666666;
+    font-weight: normal;
+    border-bottom: 1px solid #cccccc;
+    padding: 3px 4px;
+}
+
+.owa_realtimeTable td {
+    padding: 3px 4px;
+    border-bottom: 1px solid #efefef;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.owa_realtimeTable .n {
+    text-align: right;
+    width: 70px;
+}
+
+.owa_realtimeEmpty {
+    color: #999999;
+    font-style: italic;
+}
+
+.owa_realtimeEvents {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+
+.owa_realtimeEvents li {
+    display: grid;
+    grid-template-columns: 80px 120px minmax(0, 1fr) minmax(0, 180px);
+    gap: 8px;
+    padding: 4px;
+    border-bottom: 1px solid #efefef;
+}
+
+.owa_realtimeEvents li[data-visitor] {
+    cursor: pointer;
+}
+
+.owa_realtimeEvents li[data-visitor]:hover {
+    background: #f5f8fc;
+}
+
+.owa_realtimeEvents li > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.owa_realtimeType {
+    color: #1874CD;
+}
+
+.owa_realtimeWhere {
+    color: #666666;
+}
+
+.owa_realtimeBack {
+    margin-bottom: 10px;
+}
+
+@media (max-width: 640px) {
+    .owa_realtimeEvents li {
+        grid-template-columns: 70px minmax(0, 1fr);
+    }
+
+    .owa_realtimeEvents .owa_realtimeWhere,
+    .owa_realtimeEvents .owa_realtimeType {
+        display: none;
+    }
+}

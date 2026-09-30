@@ -78,6 +78,7 @@ import './owa.js';
 import './owa.report.js';
 import './owa.resultSetExplorer.js';
 import './owa.sparkline.js';
+import './owa.realtime.js';
 import './owa.areachart.js';
 import './owa.piechart.js';
 import './owa.kpibox.js';
