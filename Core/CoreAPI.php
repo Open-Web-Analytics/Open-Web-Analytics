@@ -2026,10 +2026,65 @@ class CoreAPI {
         /*
          * nav_reports: the merged nav for this group, after every module has
          * contributed, so a filter can also remove or reorder another module's
-         * entries.
+         * entries. Sorted first, so a filter that reorders has the last word.
          */
         return \OWA\Core\CoreAPI::filter( 'nav_reports',
-            isset( $links[ $group_name ] ) ? $links[ $group_name ] : null, $group_name );
+            isset( $links[ $group_name ] ) ? self::sortNavigation( $links[ $group_name ] ) : null, $group_name );
+    }
+
+    /**
+     * A nav group's entries by their `order`, and each entry's links by theirs.
+     *
+     * The order was stored and never read: entries rendered in the order
+     * modules registered them, so the numbers Base declares did nothing and a
+     * new entry went wherever it happened to be added.
+     *
+     * STABLE: equal orders keep registration order. An entry registered with
+     * no order follows the ordered ones, also in registration order, so a
+     * module that never said where its entry goes does not jump to the top.
+     *
+     * @param  array $entries name => link struct, or a list of link structs
+     * @return array
+     */
+    public static function sortNavigation( array $entries ) {
+
+        $keyed = array();
+        $i     = 0;
+
+        foreach ( $entries as $key => $entry ) {
+
+            if ( is_array( $entry ) && isset( $entry['subgroup'] ) && is_array( $entry['subgroup'] ) ) {
+
+                $entry['subgroup'] = self::sortNavigation( $entry['subgroup'] );
+            }
+
+            $order = is_array( $entry ) && isset( $entry['order'] ) && is_numeric( $entry['order'] )
+                ? (float) $entry['order'] : INF;
+
+            $keyed[] = array( $order, $i++, $key, $entry );
+        }
+
+        usort( $keyed, function ( $a, $b ) {
+
+            return $a[0] <=> $b[0] ?: $a[1] <=> $b[1];
+        } );
+
+        $sorted = array();
+        $list   = array_keys( $entries ) === range( 0, count( $entries ) - 1 );
+
+        foreach ( $keyed as $row ) {
+
+            if ( $list ) {
+
+                $sorted[] = $row[3];
+
+            } else {
+
+                $sorted[ $row[2] ] = $row[3];
+            }
+        }
+
+        return $sorted;
     }
 
     /**

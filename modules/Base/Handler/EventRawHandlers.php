@@ -631,7 +631,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
             }
         }
 
-        if ( ! $this->writeVisitorAcquisition( $event, $rows[0] ) ) {
+        // The beacon that raised first_visit is the landing of the visitor's
+        // first session: the one event that carries that session's tags.
+        $landing = in_array( 'first_visit', array_column( $rows, 'event_type' ), true );
+
+        if ( ! $this->writeVisitorAcquisition( $event, $rows[0], $landing ) ) {
 
             $db->rollbackTransaction();
 
@@ -900,13 +904,22 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * A VISITOR WITH NO KNOWN ACQUISITION GETS NO ROW. A placeholder would be
      * found present when the real first_visit arrived late on a queue drain and
      * would block the real value permanently and silently; a build writes its
-     * sentinel from the row being missing instead.
+     * sentinel from the acquisition being missing instead.
+     *
+     * DIRECT IS KNOWN, AND ONLY THE LANDING CAN SAY IT. The tags ride the
+     * landing beacon alone, so a later event of the first session with no tags
+     * and no referrer says nothing about how the visitor arrived -- the landing
+     * it followed may have been a tagged campaign, still in a queue. The landing
+     * itself arriving with neither is a direct visit, and it is written as one:
+     * an acquisition with nothing in it and acq_ts set, which the build reads as
+     * direct (Cube\SourceStep) rather than as the sentinel.
      *
      * @param object $event
-     * @param array  $row  the primary row, already built
+     * @param array  $row     the primary row, already built
+     * @param bool   $landing whether this beacon raised first_visit
      * @return bool
      */
-    protected function writeVisitorAcquisition( $event, $row ) {
+    protected function writeVisitorAcquisition( $event, $row, $landing = false ) {
 
         /*
          * prior_sessions == 0 alone. The session-scoped is_new_visitor flag
@@ -932,8 +945,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'acq_referer_host' => $row['referer_host'],
         );
 
-        // Nothing to stamp, so no row. See above.
-        if ( ! array_filter( $acquisition, function ( $v ) { return $v !== null && $v !== ''; } ) ) {
+        // Nothing to stamp and not the landing: no row. See above.
+        if ( ! $landing
+             && ! array_filter( $acquisition, function ( $v ) { return $v !== null && $v !== ''; } ) ) {
 
             return true;
         }
