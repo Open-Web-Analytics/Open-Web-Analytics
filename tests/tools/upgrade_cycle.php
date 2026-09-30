@@ -109,6 +109,9 @@ owa_upgrade_cycle_guard( $dbName, $force );
  */
 const OWA_UPGRADE_CYCLE_FLOOR = 33;
 
+/** The Property whose cube the cycle creates when the install has none. */
+const OWA_UPGRADE_CYCLE_PROPERTY = 7787000000000001;
+
 $fail = array();
 $note = static function ( $line ) { fwrite( STDOUT, $line . "\n" ); };
 
@@ -128,6 +131,34 @@ if ( $phase === 'down' ) {
 
         fwrite( STDERR, "refusing: schema $installed leaves nothing to roll back.\n" );
         exit( 2 );
+    }
+
+    /*
+     * A CUBE, or no cube update runs on anything.
+     *
+     * Cubes are created only by a scheduled build, and a scratch install has
+     * no Property that has seen data, so without this every CubeColumn loop
+     * walked zero tables. That is how every cube down() here dropped with a
+     * plain, instant DROP -- 1731 at the next swap -- and passed.
+     */
+    if ( ! \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) {
+
+        $property = owa_coreAPI::entityFactory( 'base.property' );
+        $property->setProperties( array(
+            'id'            => OWA_UPGRADE_CYCLE_PROPERTY,
+            'name'          => 'Upgrade cycle',
+            'domain'        => 'example.test',
+            'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
+            'creation_date' => time(),
+        ) );
+
+        if ( ! $property->create() || ! \OWA\Module\Base\Classes\Cube\Cubes::create( OWA_UPGRADE_CYCLE_PROPERTY ) ) {
+
+            fwrite( STDERR, "refusing: could not create a cube for the cube updates to act on.\n" );
+            exit( 2 );
+        }
+
+        $note( 'created ' . \OWA\Module\Base\Classes\Cube\Cubes::tableFor( OWA_UPGRADE_CYCLE_PROPERTY ) );
     }
 
     $before = owa_schema_fingerprint( $db, $dbName );
@@ -397,6 +428,44 @@ $final = owa_schema_fingerprint( $db, $dbName );
 foreach ( owa_fingerprint_diff( $after, $final, 're-application' ) as $problem ) {
 
     $fail[] = $problem;
+}
+
+/*
+ * Every cube still takes a build.
+ *
+ * The fingerprint compares columns and indexes, and an instant column changes
+ * neither -- it is row-format metadata, and EXCHANGE PARTITION refuses the
+ * swap over it (1731). So each cube is asked, and then built.
+ */
+$note( '--- and every cube still swaps a build ---' );
+
+foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
+
+    if ( $db->hasInstantColumns( $table ) === true ) {
+
+        $fail[] = sprintf( "%s has instant-column history after the cycle. Every build of it\n"
+          . "  will fail with 1731 until ALTER TABLE %s FORCE. A cube update ALTERed it\n"
+          . "  without rebuilding.", $table, $table );
+
+        continue;
+    }
+
+    $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdFor( $table );
+
+    if ( $property_id === '' ) {
+
+        continue;
+    }
+
+    $builder = new \OWA\Module\Base\Classes\Cube\Builder( $property_id );
+    $spans   = $builder->partitions( (int) date( 'Ymd' ), (int) date( 'Ymd' ) );
+    $result  = $spans ? $builder->rebuild( $spans[0] ) : array( 'ok' => false, 'error' => 'no partition for today' );
+
+    if ( empty( $result['ok'] ) ) {
+
+        $fail[] = sprintf( "A build of %s failed after the cycle: %s (the server said: %s)",
+            $table, $result['error'], $db->lastQueryError() );
+    }
 }
 
 /* ---- verdict -------------------------------------------------------------- */

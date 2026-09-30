@@ -191,6 +191,15 @@ class Update046 extends \OWA\Core\Update {
                     continue;
                 }
 
+                // A cube is dropped from by a rebuild: a plain DROP is instant
+                // on MySQL 8.0.29+ and the row version it leaves is 1731 at the
+                // next swap. Raw is never swapped, so it takes the plain drop.
+                if ( $table !== $raw
+                  && $db->alterColumnsRebuilding( $table, array(), array( $column ) ) ) {
+
+                    continue;
+                }
+
                 if ( ! $db->query( sprintf( OWA_SQL_DROP_COLUMN, $table, $column ) ) ) {
 
                     $this->e->notice( sprintf( 'Dropping %s.%s failed', $table, $column ) );

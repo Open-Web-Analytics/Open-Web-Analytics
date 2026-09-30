@@ -93,12 +93,27 @@ trait CubeColumn {
      * a list of entity names any more: there is no entity per cube, only the
      * one shape bound to each table in turn.
      *
+     * Rebuilding, like the add. A plain DROP is instant on MySQL 8.0.29+ and
+     * leaves a row version behind, which is 1731 at the next swap; that was
+     * every down() here until clearCubeInstantColumns() had an answer to act
+     * on. The plain drop stays as the fallback, with the rebuild after it.
+     *
      * @param string $column
      * @return bool
      */
     protected function dropCubeColumn( $column ) {
 
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
+
+            $present = (array) $db->get_results( sprintf(
+                "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
+
+            if ( ! $present || $db->alterColumnsRebuilding( $table, array(), array( $column ) ) ) {
+
+                continue;
+            }
 
             if ( $this->dropColumnIfPresent( $this->cubeEntity( $table ), $column ) === false ) {
 
