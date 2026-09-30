@@ -252,9 +252,9 @@ class Event extends EventRaw {
         $this->setProperty( $is_entrance );
 
         /*
-         * GOOGLE ANALYTICS' DEFAULT CHANNEL GROUP, for the session and for the
-         * visit that acquired the user (Classes\Cube\ChannelStep): what kind of
-         * traffic the source, medium and campaign beside it make. NOT NULL --
+         * THE CHANNEL, for the session and for the visit that acquired the
+         * user (Classes\Cube\ChannelStep): what kind of traffic the source,
+         * medium and campaign beside it make, by conf/channels.php. NOT NULL --
          * a row matching no rule is Unassigned, and one whose acquisition was
          * never captured is the sentinel. 32 characters: the longest name,
          * Mobile Push Notifications, is 25, and the cube's row is shared with

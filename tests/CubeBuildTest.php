@@ -995,7 +995,7 @@ final class CubeBuildTest extends TestCase
         $row = $this->built('page_view', self::VISITOR_REFERRED, 8881000000000002, $this->t0);
 
         $this->assertSame('google.com', $row['source'], 'the referring host, without www');
-        $this->assertSame('organic', $row['medium'], "GA's medium for a recognised search engine");
+        $this->assertSame('organic', $row['medium'], 'the medium of a recognised search engine');
         $this->assertSame('(organic)', $row['campaign'], 'an untagged campaign mirrors the medium');
         $this->assertSame('Organic Search', $row['channel']);
     }
@@ -1004,7 +1004,7 @@ final class CubeBuildTest extends TestCase
     {
         $row = $this->built('page_view', self::VISITOR_DIRECT, 8881000000000003, $this->t0);
 
-        // GA's pair, in parentheses because OWA generated them.
+        // In parentheses because OWA generated them.
         $this->assertSame('(direct)', $row['source']);
         $this->assertSame('(none)', $row['medium']);
         $this->assertSame('(direct)', $row['campaign']);
@@ -1017,8 +1017,7 @@ final class CubeBuildTest extends TestCase
      * The channel is written by the statement after the build (Step::after()),
      * so a row still holding the INSERT's placeholder would mean it never ran.
      * An untagged campaign mirrors the medium from the same expression, so a
-     * campaign row and its medium row count the same sessions -- the property
-     * Google Analytics' own (referral) campaign row does not have.
+     * campaign row and its medium row count the same sessions.
      */
     public function testEveryRowHasAChannelAndPlaceholdersMirrorTheMedium(): void
     {

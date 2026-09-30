@@ -1945,7 +1945,7 @@
                 "column": "channel",
                 "family": "traffic source",
                 "label": "Channel",
-                "description": "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- by Google Analytics' default channel rules.",
+                "description": "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- from the channel rules in conf/channels.php.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -2920,7 +2920,7 @@
             "column": "channel",
             "family": "traffic source",
             "label": "Channel",
-            "description": "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- by Google Analytics' default channel rules.",
+            "description": "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- from the channel rules in conf/channels.php.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

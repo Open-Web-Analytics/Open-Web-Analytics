@@ -15,16 +15,14 @@ namespace OWA\Module\Base\Classes\Cube;
  *   untagged                      a placeholder named for how it arrived:
  *                                 (direct), (organic), (ai-agent), (referral)
  *
- * THE PLACEHOLDERS ARE GOOGLE ANALYTICS', so a campaign breakdown reads like
- * GA's: every untagged visit in a row named for how it came, rather than one
- * (not set) row holding most of the site's traffic.
+ * THE PLACEHOLDERS put every untagged visit in a campaign row named for how it
+ * came, rather than one (not set) row holding most of the site's traffic.
  *
  * THEY MIRROR THE MEDIUM, from the same expression MediumStep uses for an
  * untagged visit, so a campaign row and its medium row count the same
- * sessions. GA puts a tagged session with no campaign into (referral) instead,
- * and its (referral) campaign row then disagrees with its referral medium
- * row; here that session is (not set), which is also what shows a site a link
- * missing its utm_campaign.
+ * sessions. A tagged session with no campaign is (not set), not (referral):
+ * filing it there would make the (referral) row disagree with the referral
+ * medium row, and (not set) shows a site a link missing its utm_campaign.
  */
 class CampaignStep extends Step {
 

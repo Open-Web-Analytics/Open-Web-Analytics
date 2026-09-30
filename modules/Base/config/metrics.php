@@ -186,7 +186,7 @@ return array(
          * against a one-in-a-billion collision.
          *
          * Pairing is only necessary where a session id is a bare start timestamp
-         * with no randomness in it -- GA's is exactly that. Ours is not.
+         * with no randomness in it. Ours is not.
          */
         'sessions' => array(
             'label'       => 'Sessions',

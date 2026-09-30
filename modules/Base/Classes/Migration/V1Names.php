@@ -174,7 +174,7 @@ class V1Names {
     /**
      * A v1 medium constraint whose meaning moved in v2, as [ dimension, value ].
      *
-     * v1 put its classification in medium; v2 keeps medium GA's -- organic,
+     * v1 put its classification in medium; v2's medium is organic,
      * referral, (none) -- and puts the classification in the channel. So a v1
      * report filtered on medium==organic-search filters on the Organic Search
      * channel here rather than on a medium value nothing holds any more. A

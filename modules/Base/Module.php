@@ -846,7 +846,7 @@ class Module extends \OWA\Core\Module {
 
         $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
-        // Second, after the dashboard, as GA places it.
+        // Second, after the dashboard.
         $this->addNavigationSubGroup('Realtime', $this->reportRef( 'realtime' ), 'Realtime', 2, 'view_reports', 'Reports','fa fa-bolt');
 
         /*

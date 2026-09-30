@@ -8,8 +8,8 @@ namespace OWA\Module\Base\Classes\Cube;
 //
 
 /**
- * channel, and acq_channel: Google Analytics' default channel group, read from
- * the row's own source, medium and campaign.
+ * channel, and acq_channel: what kind of traffic a session is, read from the
+ * row's own source, medium and campaign.
  *
  * WHAT MEDIUM CANNOT SAY. Medium is what the link said, or the one fact about
  * the referrer; the channel is what kind of traffic that makes, from a fixed
@@ -20,14 +20,11 @@ namespace OWA\Module\Base\Classes\Cube;
  *
  * FROM THE ROW'S STORED VALUES, in a statement run after the build
  * statement (Step::after()). So a channel can never disagree with the source,
- * medium and campaign beside it, and the rules read as GA writes them.
+ * medium and campaign beside it.
  *
  * THE RULES ARE CONFIGURATION, conf/channels.php: an ordered list, first
- * match winning, as in a GA custom channel group. As shipped they are GA's
- * "channels for manual traffic" in the order its page lists them, with GA's AI
- * Assistant as AI Agent. An install replaces the file to change them, and a
- * rebuild re-applies them to history. The site lists are OWA's (SiteLists);
- * GA publishes its own only as a download.
+ * match winning. An install replaces the file to change them, and a rebuild
+ * re-applies them to history.
  */
 class ChannelStep extends Step {
 

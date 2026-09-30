@@ -12,7 +12,7 @@ use OWA\Module\Base\Classes\Cube\SiteLists;
 use OWA\Module\Base\Classes\Cube\SourceStep;
 
 /**
- * Source, medium, campaign and channel, as Google Analytics assigns them.
+ * Source, medium, campaign and channel, from a visit's tags and referrer.
  *
  * Each case runs the steps' real SQL against the server with the inputs as
  * literals, so every rule is checked on whichever server the suite runs on --
@@ -80,7 +80,7 @@ final class ChannelRulesTest extends TestCase
             'a shopping site'            => [null, null, null, 'www.amazon.com', 'www.amazon.com', 'referral', '(referral)', 'Organic Shopping'],
             'an AI assistant'            => [null, null, null, 'chatgpt.com', 'chatgpt.com', 'ai-agent', '(ai-agent)', 'AI Agent'],
             'an assistant on google.com' => [null, null, null, 'gemini.google.com', 'gemini.google.com', 'ai-agent', '(ai-agent)', 'AI Agent'],
-            "GA's ai-assistant, tagged"  => ['partner', 'ai-assistant', 'autumn', null, 'partner', 'ai-assistant', 'autumn', 'AI Agent'],
+            'tagged ai-assistant'        => ['partner', 'ai-assistant', 'autumn', null, 'partner', 'ai-assistant', 'autumn', 'AI Agent'],
             'any other site'             => [null, null, null, 'blog.example', 'blog.example', 'referral', '(referral)', 'Referral'],
             'google / cpc'               => ['google', 'cpc', 'autumn', 'www.google.com', 'google', 'cpc', 'autumn', 'Paid Search'],
             'facebook / cpc'             => ['facebook', 'cpc', 'autumn', null, 'facebook', 'cpc', 'autumn', 'Paid Social'],
@@ -100,7 +100,7 @@ final class ChannelRulesTest extends TestCase
     }
 
     /** @dataProvider visits */
-    public function testEachVisitIsAttributedAsGaWould(?string $st, ?string $mt, ?string $ct, ?string $host,
+    public function testEachVisitIsAttributed(?string $st, ?string $mt, ?string $ct, ?string $host,
                                                        string $source, string $medium, string $campaign, string $channel): void
     {
         $got = $this->attribution($st, $mt, $ct, $host);
@@ -110,8 +110,8 @@ final class ChannelRulesTest extends TestCase
     }
 
     /**
-     * A TAGGED VISIT WITH NO CAMPAIGN IS (not set) -- NULL -- where GA files
-     * it under (referral). So the (referral) campaign row counts exactly the
+     * A TAGGED VISIT WITH NO CAMPAIGN IS (not set) -- NULL -- not
+     * (referral). So the (referral) campaign row counts exactly the
      * referral medium's untagged sessions, and a link missing its utm_campaign
      * is visible rather than hidden in referral.
      */

@@ -8,17 +8,17 @@ namespace OWA\Module\Base\Classes\Cube;
 //
 
 /**
- * medium, and acq_medium: the tag if there was one, else the medium Google
- * Analytics assigns to an untagged visit.
+ * medium, and acq_medium: the tag if there was one, else the medium of an
+ * untagged visit.
  *
  *   no referrer                           (none)
- *   an AI assistant (conf/aiassistants)   ai-agent -- GA says ai-assistant
+ *   an AI assistant (conf/aiassistants)   ai-agent
  *   a search engine (conf/searchengines)  organic
  *   any other site, social ones included  referral
  *
  * A MEDIUM, NOT A CHANNEL. Social, paid and the rest are the channel's to say
  * (ChannelStep), from the source and the medium together; a Facebook visit is
- * medium `referral` and channel Organic Social, as in GA. This used to put
+ * medium `referral` and channel Organic Social. This used to put
  * the classification here -- `organic-search`, `social-network` -- so the
  * column mixed what a site tagged with what OWA decided.
  *

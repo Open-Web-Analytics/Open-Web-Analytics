@@ -9,8 +9,8 @@ namespace OWA\Module\Base\Classes\Cube;
 
 /**
  * source, and acq_source: the tag if there was one, else the referring host,
- * else (direct) -- Google Analytics' value, in parentheses because OWA
- * generated it: a visit tagged utm_source=direct stays `direct`.
+ * else (direct) -- in parentheses because OWA generated it: a visit tagged
+ * utm_source=direct stays `direct`.
  *
  * The reading, not the evidence. It lives in the cube rather than in raw
  * because the cube is rebuilt: a corrected classifier is re-applied by

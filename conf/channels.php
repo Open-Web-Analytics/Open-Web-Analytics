@@ -4,13 +4,9 @@
  * The channel rules: what kind of traffic a session is, from its source,
  * medium and campaign (Classes\Cube\ChannelStep).
  *
- * AS SHIPPED, THESE ARE GOOGLE ANALYTICS' default channel group ("channels for
- * manual traffic"), in the order GA's page lists them, so an OWA channel and
- * a GA channel agree for the same traffic. OWA names GA's AI Assistant channel
- * AI Agent and its medium ai-agent, and accepts GA's ai-assistant medium too.
- *
- * ORDERED, FIRST MATCH WINS -- as in a GA custom channel group. A session
- * matching no rule is Unassigned.
+ * ORDERED, FIRST MATCH WINS. A session matching no rule is Unassigned. AI Agent
+ * sits before the organic rules, so an assistant's referral is never Referral
+ * and gemini.google.com is never Organic Search.
  *
  * TO CHANGE THEM, put a file of the same name in the data directory. It
  * REPLACES this one rather than merging with it, because order is the point:
@@ -25,10 +21,10 @@
  *              in_list (a site list: search, social, ai, video, shopping)
  */
 
-// ^(.*cp.*|ppc|retargeting|paid.*)$ -- GA's paid medium.
+// A paid medium: cpc, ppc, cpm, retargeting, paid-anything.
 $paid = array( 'medium', 'regex', '^(.*cp.*|ppc|retargeting|paid.*)$' );
 
-// GA's shopping campaign.
+// A shopping campaign: shop or shopping in its name.
 $shop_campaign = array( 'campaign', 'regex', '^(.*(([^a-df-z]|^)shop|shopping).*)$' );
 
 $email = array( 'email', 'e-mail', 'e_mail', 'e mail' );
@@ -52,7 +48,6 @@ return array(
 		array( 'medium', 'one_of', array( 'display', 'banner', 'expandable', 'interstitial', 'cpm' ) ),
 	) ),
 	array( 'channel' => 'Paid Other', 'any' => array( $paid ) ),
-	// Before the organic rules, so an assistant's referral is never Referral.
 	array( 'channel' => 'AI Agent', 'any' => array(
 		array( 'medium', 'one_of', array( 'ai-agent', 'ai-assistant' ) ),
 		array( 'source', 'in_list', 'ai' ),

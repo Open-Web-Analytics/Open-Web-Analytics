@@ -73,7 +73,7 @@ const FIXTURE = {
     // these are the real pipeline's output, not values anyone wrote down.
     //
     // Chosen so each medium has a distinct count and nothing is ambiguous:
-    // organic 2, referral 1, (none) 1 -- GA's mediums; direct is (none).
+    // organic 2, referral 1, (none) 1; direct is (none).
     traffic: {
         sources: ['google.com', 'bing.com', 'news.ycombinator.com'],
         searchTerms: ['open web analytics', 'owa analytics'],

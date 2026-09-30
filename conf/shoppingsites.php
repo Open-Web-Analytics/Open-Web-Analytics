@@ -1,10 +1,9 @@
 <?php
 
 /*
- * Shopping sites, for the Organic Shopping and Paid Shopping channels. GA keeps
- * its own list, published only as a download; this approximates it. Matched as
- * whole labels (Classes\Cube\SiteLists). Extend it with a file of the same name
- * in the data directory.
+ * Shopping sites, for the Organic Shopping and Paid Shopping channels. Matched
+ * as whole labels (Classes\Cube\SiteLists). Extend it with a file of the same
+ * name in the data directory.
  */
 return [
 	['domain' => 'amazon'],

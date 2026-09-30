@@ -174,7 +174,7 @@ return array(
             'sessionCampaign' => array( 'column' => 'campaign', 'label' => 'Campaign',
                 'family' => 'traffic source', 'description' => 'The campaign this session was tagged with. An untagged session is (direct), (organic), (referral) or (ai-agent), after its medium; a tagged one without a campaign is (not set).' ),
             'sessionChannel' => array( 'column' => 'channel', 'label' => 'Channel',
-                'family' => 'traffic source', 'description' => "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- by Google Analytics' default channel rules." ),
+                'family' => 'traffic source', 'description' => "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- from the channel rules in conf/channels.php." ),
             'sessionAd' => array( 'column' => 'ad', 'label' => 'Ad',
                 'family' => 'traffic source', 'description' => 'The ad this session was tagged with.' ),
             'sessionSearchTerms' => array( 'column' => 'search_terms', 'label' => 'Search Terms',

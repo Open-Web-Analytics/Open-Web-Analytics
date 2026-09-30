@@ -282,7 +282,7 @@ final class RealtimeTest extends TestCase
         $this->assertSame([['name' => 'Pricing visit', 'count' => 2]], $goals['byGoal']);
     }
 
-    /** GA's user snapshot: one visitor's window, newest first. */
+    /** One visitor's window, newest first. */
     public function testOneVisitorsEvents(): void
     {
         $this->event(1, 5, ['page_path' => '/a']);

@@ -75,7 +75,7 @@ return array(
         'tags'   => array( 'session.tagged_source', 'session.tagged_medium', 'session.tagged_ad' ),
         'medium' => array( 'tag' => 'session.tagged_medium', 'host' => 'session.referer_host' ),
     ),
-    // GA's default channel group, from this row's source, medium and campaign.
+    // The channel rules (conf/channels.php), from this row's source, medium and campaign.
     'channel' => array( 'kind' => 'channel', 'source' => 'source', 'medium' => 'medium', 'campaign' => 'campaign' ),
     'ad'       => array( 'kind' => 'copy', 'from' => 'session.tagged_ad', 'text' => true ),
 

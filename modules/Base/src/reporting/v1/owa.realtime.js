@@ -316,7 +316,7 @@ OWA.realtime.prototype = {
         } );
     },
 
-    /** One visitor's last thirty minutes: GA's user snapshot. */
+    /** One visitor's last thirty minutes. */
     showVisitor: function ( id ) {
 
         var self = this;
