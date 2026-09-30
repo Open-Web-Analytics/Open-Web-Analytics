@@ -164,7 +164,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   what can ship in 1.x first, and the order to build it in.</p>
 </header>
 <div class="meta">
-  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep · pass measured 21 Sep · built out 29 Sep</span>
+  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep · pass measured 21 Sep · built out 29 Sep · visitor store corrected 30 Sep</span>
   <span>Branch <code>research/v2-single-fact-table</code></span>
   <span>Detail: <code>research/v2-schema/README.md</code></span>
 </div>
@@ -408,15 +408,25 @@ than arbitrarily limited: only what is on the event can be reported live. the ta
 that created the visitor. It originates in a first session that may be years old, and no later beacon carries it. Everything else about a visitor rides every event already.</p>
 <ul>
 <li>It holds acquisition <strong>written once and never updated</strong>, plus
-<code>last_seen</code>, which exists only to drive the TTL. Column by column it is
+<code>last_seen</code>, which exists only to decide when a row may go. Column by column it is
 <a href="#s29">&sect;2.9</a>.</li>
-<li><strong>A row expires after N months of inactivity, default 14</strong> &mdash; a sliding
-inactivity window, which is the shape every other vendor uses and roughly where two of them
-independently land. <strong>The default sits deliberately just above the longest cookie that can
-reach it</strong>, Chrome's 400-day cap on any first-party cookie. Below it, a visitor can return
-carrying an id whose store row has gone; above it, the cookie always dies first.</li>
-<li><strong>Expiring a row does not rewrite history.</strong> Rows already denormalised keep the
-acquisition stamped on them; only the ability to attribute <em>future</em> events is lost.</li>
+<li><strong>A row lives as long as raw holds one of its visitor&rsquo;s events, and never less
+than 14 months after the visitor was last seen.</strong> <span class="chip c-done">Shipped</span>
+Both limits are needed:
+<ul>
+<li><strong>Raw.</strong> A build stamps acquisition from the store when it runs; raw carries
+none. A row deleted while raw still holds its visitor&rsquo;s events turns those rows into the
+sentinel on the next rebuild of their partition &mdash; a new cube&rsquo;s first build, or a
+reprocess over old history. So the rows are pruned only when <code>partition-rotate keep=</code>
+prunes raw, and never without it.</li>
+<li><strong>The cookie.</strong> Chrome keeps a first-party cookie up to 400 days. A visitor with
+no event left in raw can still return carrying their id, and with the row gone no
+<code>first_visit</code> is raised, so every new event gets the sentinel. 14 months is just above
+that cap; under <code>keep=</code> of 14 months or more raw outlasts it anyway.</li>
+</ul></li>
+<li><strong>A row is never deleted on a fixed timer.</strong> The 14-month sliding TTL this plan
+first specified would have deleted rows raw still needed; on the dev install it removed 2,345
+before this was caught (<a href="#nA122">A.1.22</a>).</li>
 <li><strong>An expired visitor comes back as a new one, with real attribution.</strong> Their
 cookie is gone too, so <code>is_new_visitor_created</code> fires, a fresh
 <code>first_visit</code> is raised, and acquisition is resolved from <em>that</em> visit &mdash; a referrer-less arrival resolving to <code>direct</code> like any other
@@ -1125,8 +1135,7 @@ v2 needs no new machinery, only registrations.</p>
 <tbody>
 <tr><td><code>rebuild-cube</code></td><td>One cube partition</td><td>Reads every raw row of the Property in partition P, writes them enriched into staging, swaps staging into P. Creates, deletes and updates nothing in place, so <em>rows in equals rows out</em> is an invariant by construction &mdash; and any count mismatch is a bug. Oldest partition first; a cube's run stops at its first failure.</td><td><span class="chip c-done">Shipped</span> every five minutes, spread (#1153). A routine run covers yesterday and today, reaches back over anything an outage or a failed run left unsettled (#1149), skips a partition nothing has reached since it settled (#1153), and a cube it creates is built from the Property's first raw day (#1148)</td></tr>
 <tr><td><code>apply-custom-dimensions</code></td><td>Every cube with pending registrations</td><td>Adds and drops registered custom-dimension columns, under the cube's build lock (<a href="#s227">&sect;2.26.7</a>).</td><td><span class="chip c-done">Shipped</span> every fifteen minutes, spread</td></tr>
-<tr><td><code>visitor-ttl</code></td><td>Whole store</td><td>Drops visitor rows whose <code>last_seen</code> is outside the 14-month sliding inactivity window.</td><td>To build</td></tr>
-<tr><td><code>partition-rotate</code></td><td>Whole table</td><td>Extends the lead, merges expired fine partitions back to monthly, drops what retention releases &mdash; extend, then a REORGANIZE per merge, then drops, all in one run under one lock.</td><td><span class="chip c-done">Shipped</span> 1.11, registered with empty params so nothing is ever deleted until an installation asks</td></tr>
+<tr><td><code>partition-rotate</code></td><td>Whole table</td><td>Extends the lead, merges expired fine partitions back to monthly, drops what retention releases &mdash; extend, then a REORGANIZE per merge, then drops, all in one run under one lock. Under <code>keep=</code> it then deletes visitor-store rows with no event left in raw and not seen for 14 months (<a href="#s15">&sect;1.5.4</a>). There is no separate visitor TTL job.</td><td><span class="chip c-done">Shipped</span> 1.11, registered with empty params so nothing is ever deleted until an installation asks</td></tr>
 <tr><td><code>queue-drain</code></td><td>Queue</td><td>Retries the file-backed event queue.</td><td><span class="chip c-done">Shipped</span>, opt-in by config</td></tr>
 </tbody></table></div>
 
@@ -1627,7 +1636,7 @@ PR&nbsp;#1113.</p>
 <p><strong>This is not a fact table. It is a lookup with one job: stamping first
 attribution.</strong> It holds acquisition &mdash; source, medium, campaign, ad, search terms
 as collected &mdash; write-once from the visitor's first session, plus <code>last_seen</code>, which
-exists only to drive the TTL. Nothing else.</p>
+exists only to decide when a row may go (<a href="#s15">&sect;1.5.4</a>). Nothing else.</p>
 <p><strong>A visitor with no known acquisition has no row.</strong> A row carrying nothing to stamp would answer no question. So the store is not a
 census of visitors: it holds the ones whose first attribution is known, and the pass writes the sentinel
 where the row is absent
@@ -1701,10 +1710,12 @@ first-seen period is a pure function of <code>visitor_id</code>, so the column i
 every lookup can prune to one partition. But expiry is by <em>inactivity</em>, and a first-seen
 partition holds a mix of long-dead and still-active visitors, so it can never be dropped whole
 &mdash; and expiry is the only reason to partition this table.</p>
-<p><strong>So do not partition it, and expire with a plain <code>DELETE</code>.</strong> Under a
-TTL this holds active visitors only: 6,761 on the measured install against 445,055 request rows. A
-site a hundred times busier is still under a million rows, where a monthly
-<code>DELETE &hellip; WHERE last_seen &lt; cutoff</code> against an index is unremarkable.</p>
+<p><strong>So do not partition it, and expire with a plain <code>DELETE</code>.</strong> It holds
+one row per visitor whose acquisition is known, for as long as raw holds their events
+(<a href="#s15">&sect;1.5.4</a>): 181,534 visitors over fourteen years on peteradamsphoto, so a
+retained lifetime is well under a million rows. <code>partition-rotate</code> deletes in batches of
+5,000, reading ids through the <code>last_seen</code> index and probing raw by
+<code>visitor_id</code>, only when <code>keep=</code> has pruned raw.</p>
 
 <h3 id="s210"><span class="num">2.10</span>The landing URL and campaign parse <span class="chip c-done">Shipped</span></h3>
 <p><strong>The campaign parse moves to the server, and the wire carries the landing URL itself</strong>
@@ -3572,13 +3583,14 @@ against 445,055 request rows, removes that state entirely.</p>
 <tr><td><strong>13&ndash;26 months</strong></td><td class="n">192</td><td class="n">0.106%</td></tr>
 <tr><td><strong>over 26 months</strong></td><td class="n">121</td><td class="n">0.067%</td></tr>
 </table></div>
-<p><strong>Expiring the row does not rewrite history.</strong>
-Events already denormalised keep the acquisition values stamped on them; only the ability to
-attribute <em>future</em> events for that visitor is lost, and a visitor returning after thirteen
-months of silence is a new acquisition by any reasonable reading. GA draws the same line
-explicitly &mdash; its retention setting <em>&ldquo;only affects explorations and funnel
-reports&rdquo;</em> and <em>&ldquo;does not affect standard aggregated reports&rdquo;</em>, which
-is exactly the distinction between the per-visitor record and the rows it has already stamped.</p>
+<p><strong>Superseded (30 Sep): &ldquo;expiring the row does not rewrite history.&rdquo;</strong>
+It holds only for partitions nobody rebuilds. A build stamps acquisition from the store when it
+runs, so a rebuild of a partition whose visitors have expired writes the sentinel over the
+acquisition it carried. GA can say its retention setting <em>&ldquo;does not affect standard
+aggregated reports&rdquo;</em> because it does not rebuild them from raw; this design does. Built
+as first specified, the 14-month TTL deleted 2,345 of 4,188 rows on the dev install, all from
+visitors whose events are still in raw. The fourteen months survive as a floor for the returning
+cookie, and the row otherwise lives as long as raw does (<a href="#s15">&sect;1.5.4</a>).</p>
 <h4 id="nA123"><span class="num">A.1.23</span>Why a dimension names a shape instead of carrying SQL</h4>
 <p>The tempting shortcut is to let each computed dimension carry its own SQL. That works until the
 reporting store is not MySQL &mdash; and <a href="#s21">&sect;2.1</a> deliberately holds that door
