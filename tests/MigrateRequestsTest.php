@@ -247,7 +247,9 @@ final class MigrateRequestsTest extends TestCase
      * An installation holding the dimension keys as VARCHAR, against BIGINT
      * dimension ids. MySQL compares a string with an integer exactly when it
      * looks the id up through its index, and as a double when it does not --
-     * and 2^53 and 2^53+1 are one number as doubles.
+     * and 2^53 and 2^53+1 are one number as doubles. MariaDB compares them
+     * exactly either way, so the trap is shown only on MySQL; the migrator must
+     * resolve the right row on both.
      */
     public function testVarcharKeysResolveTheExactDimensionRow(): void
     {
@@ -261,10 +263,13 @@ final class MigrateRequestsTest extends TestCase
             'UPDATE owa_v1fx_request SET ua_id = ? WHERE site_id = ?', ['9007199254740993', self::SITE]);
 
         // The trap, shown: the same join without the index matches both rows.
-        $joined = \OWA\Core\CoreAPI::dbSingleton()->get_results(
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $joined = $db->get_results(
             "SELECT ua.ua FROM owa_v1fx_request r JOIN owa_v1fx_ua ua IGNORE INDEX (PRIMARY) ON r.ua_id = ua.id"
             . " WHERE r.id = 1790000000000000101");
-        $this->assertCount(2, (array) $joined, 'the fixture no longer shows the double comparison');
+        $mariadb = stripos((string) ($db->get_row('SELECT VERSION() AS v')['v'] ?? ''), 'mariadb') !== false;
+        $this->assertCount($mariadb ? 1 : 2, (array) $joined,
+            'the fixture no longer shows how this server compares the keys');
 
         $this->migrator()->migrateSite(self::SITE);
 

@@ -118,6 +118,23 @@ final class ColumnLengthHealTest extends TestCase {
     }
 
     /**
+     * The session's sql_mode, to put back afterwards. Resetting to '' instead
+     * left every later test in the process running non-strict.
+     */
+    private function sqlMode(): string {
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( 'SELECT @@SESSION.sql_mode AS m' );
+
+        return (string) ( $row['m'] ?? '' );
+    }
+
+    private function restoreSqlMode( string $mode ): void {
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( "SET SESSION sql_mode = '%s'",
+            preg_replace( '/[^A-Z_,]/', '', $mode ) ) );
+    }
+
+    /**
      * The point of the whole change: an entity write that strict mode would have
      * refused now succeeds. Uses a TEMPORARY table so nothing real is touched,
      * and sets the strict mode explicitly so the test does not depend on the
@@ -133,6 +150,7 @@ final class ColumnLengthHealTest extends TestCase {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query( 'CREATE TEMPORARY TABLE heal_probe (id BIGINT, page_title VARCHAR(255))' );
+        $mode = $this->sqlMode();
         $db->query( "SET SESSION sql_mode = 'STRICT_ALL_TABLES'" );
 
         $c = $this->column( OWA_DTD_VARCHAR255 );
@@ -145,7 +163,7 @@ final class ColumnLengthHealTest extends TestCase {
 
         $row = $db->get_row( 'SELECT COUNT(*) AS n, CHAR_LENGTH(page_title) AS len FROM heal_probe' );
 
-        $db->query( "SET SESSION sql_mode = ''" );
+        $this->restoreSqlMode( $mode );
 
         $this->assertSame( 1, (int) $row['n'],
             'strict mode refused the row -- the value was not healed before the write' );
@@ -253,6 +271,7 @@ final class ColumnLengthHealTest extends TestCase {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query( 'CREATE TEMPORARY TABLE mb4_heal_probe (id BIGINT, page_title VARCHAR(255))' );
+        $mode = $this->sqlMode();
         $db->query( "SET SESSION sql_mode = 'STRICT_ALL_TABLES'" );
 
         $c = $this->column( OWA_DTD_VARCHAR255 );
@@ -262,7 +281,7 @@ final class ColumnLengthHealTest extends TestCase {
             "INSERT INTO mb4_heal_probe (id, page_title) VALUES (1, '%s')", $c->getValue() ) );
 
         $row = $db->get_row( 'SELECT COUNT(*) AS n, page_title AS t FROM mb4_heal_probe' );
-        $db->query( "SET SESSION sql_mode = ''" );
+        $this->restoreSqlMode( $mode );
 
         $this->assertSame( 1, (int) $row['n'],
             'strict mode refused the row -- the unstorable character was not removed first' );

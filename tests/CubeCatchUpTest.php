@@ -334,10 +334,13 @@ final class CubeCatchUpTest extends TestCase
     /**
      * A RUN STOPS AT ITS FIRST FAILURE, oldest first, and says where.
      *
-     * Forced with an instantly added column: EXCHANGE PARTITION then refuses
-     * every swap (1731, PLAN §2.7.3). The later partition keeps the built_at it
-     * had, so it is still unsettled for the next run, and the message the
-     * scheduler keeps names the cube, the partition and the reason.
+     * Forced with a NOT NULL column that has no default: the build copies
+     * only the columns raw also has, so under STRICT_ALL_TABLES every build
+     * statement is refused. That fails the same way on MySQL and MariaDB,
+     * where an instant column (1731 at the swap) is MySQL's alone. The later
+     * partition keeps the built_at it had, so it is still unsettled for the
+     * next run, and the message the scheduler keeps names the cube, the
+     * partition and the reason.
      */
     public function testARunStopsAtItsFirstFailureAndSaysWhere(): void
     {
@@ -362,10 +365,13 @@ final class CubeCatchUpTest extends TestCase
         $db    = owa_coreAPI::dbSingleton();
         $table = Cubes::tableFor(self::PROPERTY);
 
-        if ($db->query(sprintf('ALTER TABLE %s ADD COLUMN catch_up_probe INT NULL, ALGORITHM=INSTANT',
-                $table)) === false) {
-            $this->markTestSkipped('this server cannot add a column instantly');
-        }
+        $this->assertStringContainsString('STRICT_ALL_TABLES',
+            (string) ($db->get_row('SELECT @@SESSION.sql_mode AS m')['m'] ?? ''),
+            'the probe relies on the default sql_mode; an earlier test left it changed');
+
+        $this->assertNotFalse($db->query(sprintf(
+            'ALTER TABLE %s ADD COLUMN catch_up_probe INT NOT NULL, ALGORITHM=INPLACE', $table)),
+            'adding the probe column: ' . $db->lastQueryError());
 
         try {
             $cli = $this->routine();

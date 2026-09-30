@@ -233,9 +233,10 @@ final class CustomDimensionBuildTest extends TestCase
             $result = $builder->rebuild($span);
 
             $this->assertTrue($result['ok'], sprintf(
-                'rebuild of %s failed. If the server said 1731, a column was added to the '
-              . 'cube instantly and EXCHANGE PARTITION will refuse every build from now on.',
-                $span['name']));
+                'rebuild of %s failed (%s; the server said: %s). If the server said 1731, a '
+              . 'column was added to the cube instantly and EXCHANGE PARTITION will refuse '
+              . 'every build from now on.',
+                $span['name'], $result['error'], owa_coreAPI::dbSingleton()->lastQueryError()));
         }
     }
 
@@ -265,9 +266,16 @@ final class CustomDimensionBuildTest extends TestCase
     {
         $result = Dimensions::reconcile(self::PROPERTY);
 
-        $this->assertTrue($result['ok'], (string) $result['error']);
+        $this->assertTrue($result['ok'], sprintf('%s (the server said: %s)',
+            $result['error'], owa_coreAPI::dbSingleton()->lastQueryError()));
 
         return $result;
+    }
+
+    /** @return string[] filler columns still on the cube */
+    private function fillerLeft(): array
+    {
+        return owa_coreAPI::dbSingleton()->listColumns($this->cube(), 'filler');
     }
 
     /** @return array the registration row, as stored */
@@ -629,33 +637,41 @@ final class CustomDimensionBuildTest extends TestCase
             $batch = (int) ($batch / 2);
         }
 
-        $this->assertLessThan(400, count($filler),
-            'the server should have refused before we ran out of patience');
+        // The filler comes off whatever happens here: left on, the cube has no
+        // room for the columns every later test in this file registers.
+        try {
+            $this->assertLessThan(400, count($filler),
+                'the server should have refused before we ran out of patience');
 
-        $result = Dimensions::register(self::PROPERTY, [['key' => 'doomed', 'scope' => 'event']]);
+            $result = Dimensions::register(self::PROPERTY, [['key' => 'doomed', 'scope' => 'event']]);
 
-        $this->assertTrue($result['ok'], 'registering is a write and still succeeds');
+            $this->assertTrue($result['ok'], 'registering is a write and still succeeds');
 
-        $reconciled = Dimensions::reconcile(self::PROPERTY);
+            $reconciled = Dimensions::reconcile(self::PROPERTY);
 
-        $this->assertFalse($reconciled['ok']);
-        $this->assertNotEmpty($reconciled['skipped']);
-        $this->assertStringContainsString('1118', reset($reconciled['skipped']),
-            'and names the error an operator will actually see');
+            $this->assertFalse($reconciled['ok']);
+            $this->assertNotEmpty($reconciled['skipped']);
+            $this->assertStringContainsString('1118', reset($reconciled['skipped']),
+                'and names the error an operator will actually see');
 
-        $this->assertSame('failed', $this->registration('doomed')['state']);
-        $this->assertNotEmpty($this->registration('doomed')['state_message'],
-            'with the reason, because whoever registered it is long gone');
+            $this->assertSame('failed', $this->registration('doomed')['state']);
+            $this->assertNotEmpty($this->registration('doomed')['state_message'],
+                'with the reason, because whoever registered it is long gone');
 
-        // The cube still builds. One refused registration must not cost a
-        // Property its reporting.
-        $this->seed(['doomed' => 'x']);
-        $this->rebuild();
+            // The cube still builds. One refused registration must not cost a
+            // Property its reporting.
+            $this->seed(['doomed' => 'x']);
+            $this->rebuild();
 
-        $this->assertNotEmpty($this->built());
+            $this->assertNotEmpty($this->built());
+        } finally {
+            // Not asserted: a failure here would replace the one that matters.
+            if ($filler) {
+                $db->alterColumnsRebuilding($this->cube(), [], array_keys($filler));
+            }
+        }
 
-        $this->assertTrue(
-            $db->alterColumnsRebuilding($this->cube(), [], array_keys($filler)));
+        $this->assertSame([], $this->fillerLeft(), 'the filler came off');
     }
 
     /**
