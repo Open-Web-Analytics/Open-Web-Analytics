@@ -89,7 +89,7 @@ jobs:
         run: npm test
 
   isolation:
-    name: Test isolation sweep (each file alone, ${{ matrix.db_driver }})
+    name: Test isolation sweep (each file alone, ${{ matrix.db_label }})
     runs-on: ubuntu-latest
     # Observed between 1m38s and 3m23s.
     timeout-minutes: 20
@@ -109,19 +109,33 @@ jobs:
     #
     # It needs a real database: two of the registries that have caused this are
     # only read by DB-backed cases, which skip without one.
+    #
+    # And where MariaDB is proven: OWA 2.0 runs on MySQL 8.0.21+ or MariaDB
+    # 10.11+ (Classes\DatabaseRequirement), so the database-backed suite runs
+    # on both. PDO is what a MariaDB installation would use.
     strategy:
       fail-fast: false
       matrix:
-        db_driver: ['mysql', 'mysqli']
+        include:
+          - db_driver: mysql
+            db_image: mysql:8.0
+            db_label: mysql
+          - db_driver: mysqli
+            db_image: mysql:8.0
+            db_label: mysqli
+          - db_driver: mysql
+            db_image: mariadb:10.11
+            db_label: MariaDB 10.11
     services:
       mysql:
-        image: mysql:8.0
+        image: ${{ matrix.db_image }}
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 || mariadb-admin ping -h 127.0.0.1"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -183,9 +197,19 @@ jobs:
         run: php tests/e2e/selfhost_harness.php down
 
   upgrade:
-    name: Schema upgrade cycle (rewind, then upgrade)
+    name: Schema upgrade cycle (rewind, then upgrade${{ matrix.db_suffix }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # On MariaDB too: the updates' DDL -- partitions, column adds, indexes -- is
+    # where the two servers are most likely to differ.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - db_image: mysql:8.0
+            db_suffix: ''
+          - db_image: mariadb:10.11
+            db_suffix: ', MariaDB 10.11'
     # THE ONLY JOB IN WHICH THE UPDATES ACTUALLY RUN.
     #
     # Every other environment -- this workflow's unit job, the isolation sweep,
@@ -204,13 +228,14 @@ jobs:
     # See tests/tools/upgrade_cycle.php for what is asserted and why.
     services:
       mysql:
-        image: mysql:8.0
+        image: ${{ matrix.db_image }}
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 || mariadb-admin ping -h 127.0.0.1"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -266,8 +291,18 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   e2e:
-    name: E2E (self-hosted, php -S + MySQL)
+    name: E2E (self-hosted, php -S + ${{ matrix.db_name }})
     runs-on: ubuntu-latest
+    # On MariaDB too: the install, the tracker's writes and every report read,
+    # end to end, on the other server OWA 2.0 supports.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - db_image: mysql:8.0
+            db_name: MySQL
+          - db_image: mariadb:10.11
+            db_name: MariaDB 10.11
     # THE ONE THAT ACTUALLY HANGS. Observed between 4m27s and 10m25s when
     # healthy, and three times today it stopped dead inside "Install Playwright
     # Chromium + OS deps" -- a browser download plus apt, neither of ours -- and
@@ -280,13 +315,14 @@ jobs:
     # OWA_E2E_DB_* env below.
     services:
       mysql:
-        image: mysql:8.0
+        image: ${{ matrix.db_image }}
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 || mariadb-admin ping -h 127.0.0.1"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10

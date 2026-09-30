@@ -40,6 +40,19 @@ class InstallManager extends \OWA\Core\Base {
 
     function installSchema() {
 
+        /*
+         * Refused before a table exists, on a server OWA cannot run on. The web
+         * wizard and the CLI installer both come through here.
+         */
+        $problem = \OWA\Module\Base\Classes\DatabaseRequirement::problem();
+
+        if ( $problem !== null ) {
+
+            \OWA\Core\CoreAPI::error( $problem );
+
+            return false;
+        }
+
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $base = $service->getModule('base');
         $status = $base->install();

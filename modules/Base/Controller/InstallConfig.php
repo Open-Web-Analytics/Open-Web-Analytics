@@ -121,6 +121,14 @@ class InstallConfig extends \OWA\Core\Controller\Install {
             $this->setView('base.install');
             $this->setSubview('base.installConfigEntry');
 
+        } elseif ( ( $problem = \OWA\Module\Base\Classes\DatabaseRequirement::problem() ) !== null ) {
+            // On the form the connection details were typed into, before any
+            // config file is written: the server connects but OWA cannot run on it.
+            $this->set('error_msg', $problem);
+            $this->set('config', $this->params);
+            $this->setView('base.install');
+            $this->setSubview('base.installConfigEntry');
+
         } else {
             //create config file
             $this->c->createConfigFile($this->params);

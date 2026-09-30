@@ -162,26 +162,52 @@ if ( ! defined( 'OWA_SQL_ADD_COLUMN_REBUILD' ) ) { define('OWA_SQL_ADD_COLUMN_RE
  * here -- the default is INSTANT, and an instant column leaves row-format
  * metadata that makes EXCHANGE PARTITION refuse the swap with error 1731, so
  * every later cube build would fail having published nothing.
+ *
+ * FORCE because INPLACE alone does not rule INSTANT out on MariaDB, where it
+ * means "in place or better". An instant ADD there skips the row-size check a
+ * CREATE TABLE applies, so a column the ALTER accepted made the staging table
+ * every build creates fail with 1118; and an instant DROP leaves the column's
+ * bytes in the row, so dropping one freed no room. A forced rebuild is checked
+ * like a CREATE and reclaims what it drops. On MySQL, where INPLACE already
+ * rebuilds, it costs nothing extra.
  */
-if ( ! defined( 'OWA_SQL_ALTER_COLUMNS_REBUILD' ) ) { define('OWA_SQL_ALTER_COLUMNS_REBUILD', 'ALTER TABLE %s %s, ALGORITHM=INPLACE'); }
+if ( ! defined( 'OWA_SQL_ALTER_COLUMNS_REBUILD' ) ) { define('OWA_SQL_ALTER_COLUMNS_REBUILD', 'ALTER TABLE %s %s, FORCE, ALGORITHM=INPLACE'); }
 
 /*
  * Reading one value out of a JSON document.
  *
  * JSON_VALUE is SQL:2016 and not MySQL's alone, but the RETURNING clause and
  * what happens on a conversion error are not uniform, so it is spelled here
- * like everything else. Measured on 8.4: a missing key, a JSON null and a NULL
- * document all give NULL, and so does a value that will not convert -- "abc"
- * RETURNING SIGNED is NULL rather than an error, which is what keeps one site's
- * bad value from failing a whole partition's build.
+ * like everything else. A missing key, a JSON null and a NULL document all give
+ * NULL, and so does a value that will not convert -- which is what keeps one
+ * site's bad value from failing a whole partition's build.
+ *
+ * THE TYPED FORMS DO NOT USE RETURNING, which MariaDB's JSON_VALUE does not
+ * have. Each reads the value as text, trimmed, and converts it only when it is
+ * a number of that type; true and false are 1 and 0. The digit counts keep a
+ * conversion inside its type's range, because an out-of-range CAST inside the
+ * build's INSERT ... SELECT is an ERROR under STRICT_ALL_TABLES, not a NULL.
+ * Measured against RETURNING on MySQL 8.4, the answers are the same except
+ * that a decimal or an exponent in an INTEGER dimension is NULL rather than
+ * rounded -- RETURNING rounded 3.5 to 4 but gave NULL for "3.5" -- and an empty
+ * string in a DOUBLE one is NULL rather than 0.
+ *
+ * Each takes the document and then the path, and uses both more than once.
  *
  * JSON_UNQUOTE(JSON_EXTRACT(...)) is NOT equivalent and must not be substituted:
  * it turns a stored JSON null into the four-character string "null".
  */
 if ( ! defined( 'OWA_SQL_JSON_VALUE' ) ) { define('OWA_SQL_JSON_VALUE', "JSON_VALUE(%s, '%s')"); }
-if ( ! defined( 'OWA_SQL_JSON_VALUE_SIGNED' ) ) { define('OWA_SQL_JSON_VALUE_SIGNED', "JSON_VALUE(%s, '%s' RETURNING SIGNED)"); }
-if ( ! defined( 'OWA_SQL_JSON_VALUE_UNSIGNED' ) ) { define('OWA_SQL_JSON_VALUE_UNSIGNED', "JSON_VALUE(%s, '%s' RETURNING UNSIGNED)"); }
-if ( ! defined( 'OWA_SQL_JSON_VALUE_DOUBLE' ) ) { define('OWA_SQL_JSON_VALUE_DOUBLE', "JSON_VALUE(%s, '%s' RETURNING DOUBLE)"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_SIGNED' ) ) { define('OWA_SQL_JSON_VALUE_SIGNED',
+    "(CASE WHEN TRIM(JSON_VALUE(%1\$s, '%2\$s')) REGEXP '^-?[0-9]{1,18}\$' THEN CAST(TRIM(JSON_VALUE(%1\$s, '%2\$s')) AS SIGNED)"
+  . " WHEN JSON_VALUE(%1\$s, '%2\$s') = 'true' THEN 1 WHEN JSON_VALUE(%1\$s, '%2\$s') = 'false' THEN 0 END)"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_UNSIGNED' ) ) { define('OWA_SQL_JSON_VALUE_UNSIGNED',
+    "(CASE WHEN TRIM(JSON_VALUE(%1\$s, '%2\$s')) REGEXP '^[0-9]{1,19}\$' THEN CAST(TRIM(JSON_VALUE(%1\$s, '%2\$s')) AS UNSIGNED)"
+  . " WHEN JSON_VALUE(%1\$s, '%2\$s') = 'true' THEN 1 WHEN JSON_VALUE(%1\$s, '%2\$s') = 'false' THEN 0 END)"); }
+if ( ! defined( 'OWA_SQL_JSON_VALUE_DOUBLE' ) ) { define('OWA_SQL_JSON_VALUE_DOUBLE',
+    "(CASE WHEN TRIM(JSON_VALUE(%1\$s, '%2\$s')) REGEXP '^-?[0-9]{1,30}(\\\\.[0-9]{1,30})?([eE][-+]?[0-9]{1,2})?\$'"
+  . " THEN CAST(TRIM(JSON_VALUE(%1\$s, '%2\$s')) AS DOUBLE)"
+  . " WHEN JSON_VALUE(%1\$s, '%2\$s') = 'true' THEN 1 WHEN JSON_VALUE(%1\$s, '%2\$s') = 'false' THEN 0 END)"); }
 /*
  * Date parts, read from a yyyymmdd INT rather than from a timestamp.
  *

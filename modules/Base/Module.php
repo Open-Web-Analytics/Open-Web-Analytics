@@ -68,6 +68,19 @@ class Module extends \OWA\Core\Module {
      */
     function update() {
 
+        /*
+         * Before any update: an installation on a server 2.0 cannot run on
+         * must not start the migration and fail partway through it.
+         */
+        $problem = \OWA\Module\Base\Classes\DatabaseRequirement::problem();
+
+        if ( $problem !== null ) {
+
+            \OWA\Core\CoreAPI::notice( $problem );
+
+            return false;
+        }
+
         $recorded = (int) \OWA\Core\CoreAPI::getSetting( $this->name, 'schema_version' );
 
         if ( $recorded < self::OLDEST_UPGRADABLE_SCHEMA ) {
