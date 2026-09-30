@@ -845,8 +845,7 @@ class Module extends \OWA\Core\Module {
 
         $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
-        // Registered second, where it appears: the report nav renders in
-        // registration order. Beside the dashboard, as GA places it.
+        // Second, after the dashboard, as GA places it.
         $this->addNavigationSubGroup('Realtime', $this->reportRef( 'realtime' ), 'Realtime', 2, 'view_reports', 'Reports','fa fa-bolt');
 
         /*

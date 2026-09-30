@@ -1,3 +1,4 @@
+<?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
  * The realtime screen's frame. OWA.realtime (owa.realtime.js) fills every

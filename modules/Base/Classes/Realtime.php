@@ -29,7 +29,11 @@ class Realtime {
 
     const RECENT_MINUTES = 5;
 
-    /** Rows per card, as GA caps its cards: the busiest, not all of them. */
+    /**
+     * Rows per card, as GA caps its cards: the busiest, not all of them.
+     * Every card orders ties by its key as well, so equal counts come back in
+     * the same order on every server -- MySQL and MariaDB do not agree without.
+     */
     const TOP = 10;
 
     const RECENT_EVENTS = 20;
@@ -104,9 +108,9 @@ class Realtime {
         }
 
         return array_map( array( $this, 'event' ), $this->rows(
-            'SELECT ts, event_type, page_path, page_title, country, city, visitor_id FROM {raw} r'
+            'SELECT id, ts, event_type, page_path, page_title, country, city, visitor_id FROM {raw} r'
           . ' WHERE {window} AND r.visitor_id = ' . (string) $visitor_id
-          . ' ORDER BY ts DESC LIMIT ' . self::VISITOR_EVENTS ) );
+          . ' ORDER BY ts DESC, id DESC LIMIT ' . self::VISITOR_EVENTS ) );
     }
 
     // ---- cards -------------------------------------------------------------
@@ -148,7 +152,7 @@ class Realtime {
         }, $this->rows(
             "SELECT page_path, MAX(page_title) AS title, SUM(event_type = 'page_view') AS views,"
           . ' COUNT(DISTINCT visitor_id) AS users FROM {raw} r WHERE {window} AND page_path IS NOT NULL'
-          . ' GROUP BY page_path ORDER BY views DESC, users DESC LIMIT ' . self::TOP ) );
+          . ' GROUP BY page_path ORDER BY views DESC, users DESC, page_path LIMIT ' . self::TOP ) );
     }
 
     private function events() {
@@ -159,7 +163,7 @@ class Realtime {
 
         }, $this->rows(
             'SELECT event_type, COUNT(*) AS n FROM {raw} r WHERE {window}'
-          . ' GROUP BY event_type ORDER BY n DESC LIMIT ' . self::TOP ) );
+          . ' GROUP BY event_type ORDER BY n DESC, event_type LIMIT ' . self::TOP ) );
     }
 
     /**
@@ -232,7 +236,7 @@ class Realtime {
           . ' a.acq_medium AS medium, a.acq_campaign AS campaign, COUNT(*) AS users'
           . ' FROM (SELECT DISTINCT visitor_id FROM {raw} r WHERE {window}) v'
           . ' LEFT JOIN ' . $store . ' a ON a.visitor_id = v.visitor_id'
-          . ' GROUP BY source, medium, campaign ORDER BY users DESC LIMIT ' . self::TOP ) );
+          . ' GROUP BY source, medium, campaign ORDER BY users DESC, source, medium, campaign LIMIT ' . self::TOP ) );
     }
 
     /** Every country with a visitor, for the map; the table shows the first few. */
@@ -245,7 +249,7 @@ class Realtime {
         }, $this->rows(
             'SELECT country_code, MAX(country) AS country, COUNT(DISTINCT visitor_id) AS users'
           . ' FROM {raw} r WHERE {window} AND country_code IS NOT NULL'
-          . ' GROUP BY country_code ORDER BY users DESC' ) );
+          . ' GROUP BY country_code ORDER BY users DESC, country_code' ) );
     }
 
     /** Visitors whose location is known, so the map can say how many it cannot show. */
@@ -265,14 +269,14 @@ class Realtime {
 
         }, $this->rows(
             'SELECT device_type, COUNT(DISTINCT visitor_id) AS users FROM {raw} r WHERE {window}'
-          . ' GROUP BY device_type ORDER BY users DESC LIMIT ' . self::TOP ) );
+          . ' GROUP BY device_type ORDER BY users DESC, device_type LIMIT ' . self::TOP ) );
     }
 
     private function recent() {
 
         return array_map( array( $this, 'event' ), $this->rows(
-            'SELECT ts, event_type, page_path, page_title, country, city, visitor_id FROM {raw} r WHERE {window}'
-          . ' ORDER BY ts DESC LIMIT ' . self::RECENT_EVENTS ) );
+            'SELECT id, ts, event_type, page_path, page_title, country, city, visitor_id FROM {raw} r WHERE {window}'
+          . ' ORDER BY ts DESC, id DESC LIMIT ' . self::RECENT_EVENTS ) );
     }
 
     // ---- plumbing ----------------------------------------------------------
