@@ -886,14 +886,14 @@ class Module extends \OWA\Core\Module {
          */
 
         /*
-         * THE PRODUCT REPORTS ARE GONE, and this is a capability gap rather
-         * than a tidy-up. v2's raw row carries ONE revenue figure per purchase
-         * and no line items, so productName, productSku, productCategory,
-         * lineItemRevenue, lineItemQuantity, shippingRevenue and taxRevenue
-         * have nothing to read. 1.x had owa_commerce_line_item_fact for this.
-         *
-         * Restoring them needs an item-level shape in the schema -- item
-         * revenue, items purchased and the like -- not a report definition.
+         * THE PRODUCT REPORTS ARE NOT BUILT, and the data is kept for them.
+         * A purchase's line items are in raw's params.items, from ingest and
+         * from the v1 migration (PurchaseMigrator), in the tracker's shape. No
+         * cube column or dimension reads them yet, so productName, productSku,
+         * productCategory, lineItemRevenue and lineItemQuantity have no v2
+         * answer. Items are a list per purchase, so reading them is a row per
+         * item -- JSON_TABLE, or an item-grain table a build fills -- not one
+         * more cube column.
          */
 
         //Content

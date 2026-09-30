@@ -228,6 +228,101 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame(1200, (int) $jpy['revenue']);
     }
 
+    private function lineItem(string $id, array $row): void
+    {
+        $this->fact('commerce_line_item_fact', $id, $row);
+    }
+
+    /**
+     * v1's line items become params.items on their purchase, in the shape the
+     * tracker sends: price in major units, whole amounts as integers, empty
+     * fields absent, in the order v1 recorded them. They are migrated because
+     * v1-drop would otherwise take the only record of what was sold.
+     */
+    public function testAPurchaseCarriesItsLineItemsInTheTrackersShape(): void
+    {
+        $this->fact('commerce_transaction_fact', '1790000000000000711', ['order_id' => 'B-1', 'total_revenue' => 4498]);
+        $this->lineItem('1790000000000000721', ['order_id' => 'B-1', 'sku' => 'MUG-1',
+            'product_name' => 'Bob\'s "Big" Mug & Co', 'category' => 'Kitchen', 'unit_price' => 1999, 'quantity' => 2]);
+        $this->lineItem('1790000000000000722', ['order_id' => 'B-1', 'sku' => 'CARD-1',
+            'product_name' => 'Card', 'category' => '', 'unit_price' => 500, 'quantity' => 1]);
+        // Another order's item, and one naming neither a SKU nor a product.
+        $this->lineItem('1790000000000000723', ['order_id' => 'B-2', 'sku' => 'OTHER', 'unit_price' => 100, 'quantity' => 1]);
+        $this->lineItem('1790000000000000724', ['order_id' => 'B-1', 'sku' => '', 'product_name' => '',
+            'unit_price' => 100, 'quantity' => 1]);
+
+        (new PurchaseMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $params = json_decode($this->rows('purchase')[0]['params'], true);
+
+        // Keys sorted: the JSON column stores an object's keys in its own order.
+        $sorted = fn (array $items) => array_map(function ($item) { ksort($item); return $item; }, $items);
+
+        $this->assertSame($sorted([
+            ['item_id' => 'MUG-1', 'item_name' => 'Bob\'s "Big" Mug & Co', 'item_category' => 'Kitchen',
+             'price' => 19.99, 'quantity' => 2],
+            ['item_id' => 'CARD-1', 'item_name' => 'Card', 'price' => 5, 'quantity' => 1],
+        ]), $sorted($params['items'] ?? []));
+    }
+
+    /** The same order id on another site is another order. */
+    public function testLineItemsAreMatchedWithinTheSite(): void
+    {
+        $this->fact('commerce_transaction_fact', '1790000000000000731', ['order_id' => 'C-1', 'total_revenue' => 100]);
+        $this->insert('commerce_line_item_fact', ['id' => '1790000000000000741', 'site_id' => 'another-site',
+            'order_id' => 'C-1', 'sku' => 'NOT-OURS', 'unit_price' => 100, 'quantity' => 1,
+            'timestamp' => self::T, 'yyyymmdd' => self::DAY]);
+
+        (new PurchaseMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $this->assertArrayNotHasKey('items', (array) json_decode((string) $this->rows('purchase')[0]['params'], true));
+    }
+
+    /**
+     * Migrated items read the way live ones do: a refund with no value is
+     * priced from its items, in major units, and a migrated purchase's items
+     * give the amount v1 recorded.
+     */
+    public function testMigratedItemsPriceTheWayIngestReadsThem(): void
+    {
+        $this->fact('commerce_transaction_fact', '1790000000000000751', ['order_id' => 'D-1', 'total_revenue' => 4498]);
+        $this->lineItem('1790000000000000761', ['order_id' => 'D-1', 'sku' => 'MUG-1', 'unit_price' => 1999, 'quantity' => 2]);
+        $this->lineItem('1790000000000000762', ['order_id' => 'D-1', 'sku' => 'CARD-1', 'unit_price' => 500, 'quantity' => 1]);
+
+        (new PurchaseMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $items = json_decode($this->rows('purchase')[0]['params'], true)['items'];
+
+        $refund = owa_coreAPI::supportClassFactory('base', 'event');
+        $refund->setEventType('refund');
+        $refund->set('ct_line_items', json_encode($items));
+        $refund->set('currency', 'USD');
+
+        $this->assertSame(4498, \OWA\Module\Base\Classes\TrackingEventHelpers::refundAmount($refund));
+    }
+
+    /** The reconciliation counts line items, so a purchase that lost them does not pass. */
+    public function testTheReconciliationCountsLineItems(): void
+    {
+        $this->fact('commerce_transaction_fact', '1790000000000000771', ['order_id' => 'E-1', 'total_revenue' => 300]);
+        $this->lineItem('1790000000000000781', ['order_id' => 'E-1', 'sku' => 'A', 'unit_price' => 100, 'quantity' => 1]);
+        $this->lineItem('1790000000000000782', ['order_id' => 'E-1', 'sku' => 'B', 'unit_price' => 200, 'quantity' => 1]);
+
+        $migrator = new PurchaseMigrator(V1Schema::PREFIX);
+        $migrator->migrateSite(self::SITE);
+
+        $this->assertSame([], PurchaseMigrator::discrepancies($migrator->reconcileSite(self::SITE)));
+
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_event_raw SET params = JSON_REMOVE(params, '$.items[1]') WHERE site_id = ? AND event_type = 'purchase'",
+            [self::SITE]);
+
+        $wrong = PurchaseMigrator::discrepancies($migrator->reconcileSite(self::SITE));
+
+        $this->assertCount(1, $wrong);
+        $this->assertStringContainsString('purchase line items: 2 expected, 1 in v2', $wrong[0]);
+    }
+
     public function testTheVisitorStoreTakesTheFirstSessionsEvidence(): void
     {
         $this->insert('session', ['id' => self::SESSION, 'site_id' => self::SITE, 'visitor_id' => self::VISITOR,

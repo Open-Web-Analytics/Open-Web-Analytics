@@ -24,8 +24,8 @@ namespace OWA\Module\Base\Update;
  * IN ORDER: page views, clicks, actions and purchases (FactMigrator's
  * subclasses), then the visitor store from each visitor's first session
  * (VisitorMigrator, over all of a site's history), then v1's recorded goal
- * completions onto the migrated rows (GoalMigrator). Line items are not
- * migrated: v2 has no item-level shape.
+ * completions onto the migrated rows (GoalMigrator). A purchase takes its v1
+ * line items into params.items, and the reconciliation counts them.
  *
  * THEN A RECONCILIATION (PLAN.html 2.22), per site and day, of each pass that
  * writes raw rows: every row v1 holds is either refused, with its reason, or
