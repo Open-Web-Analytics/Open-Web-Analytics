@@ -458,6 +458,19 @@ justify it (<a href="#s21">&sect;2.1</a>).</p>
 </tbody></table></div>
 <p><strong>Realtime is a single dedicated screen</strong> over a short window of raw events,
 replacing 1.x's per-report Live View toggle and the per-widget polling behind it.</p>
+<p class="note"><strong>Built 30&nbsp;Sep (#1160).</strong> The last 30 minutes of a site, from raw
+through <code>v1/realtime</code>, refreshed every 15 seconds while visible. The cards follow GA's
+realtime report where raw can answer:
+<ul>
+<li>active users over 30 and 5 minutes, and per minute;</li>
+<li>first-user source, medium and campaign from the visitor store, as collected;</li>
+<li>pages, event counts, goal completions by goal, countries and devices;</li>
+<li>a country map, drawn from a bundled Natural Earth SVG rather than a tile service;</li>
+<li>recent events, each opening that visitor's 30 minutes.</li>
+</ul>
+Every statement carries the site, a closed <code>yyyymmdd</code> range and a <code>ts</code> range,
+and raw gained <code>site_ts (site_id, ts)</code> for it (Update064), so the cost follows the window.
+It reads no cube, so a site whose reports are not ready yet still has it.</p>
 
 
 <h4><span class="num">1.6.1</span>Eventual consistency is a property of the derived table, not of the schedule</h4>
@@ -2100,6 +2113,14 @@ install-wide <em>Reporting Cubes</em> screen with a green, yellow or red status 
 nothing queries a cube that does not exist, and a report says why it has no data yet (#1151);
 reports say when their numbers were built, and Live View is removed (#1152, <a href="#s16">&sect;1.6</a>);
 <code>rebuild-cube</code> every five minutes with the skip (#1153, <a href="#s25">&sect;2.5.1</a>).</p>
+<p><strong>And 30&nbsp;Sep:</strong>
+<ul>
+<li>MariaDB 10.11+ is supported, and an older server is refused before anything is written (#1155).</li>
+<li>Instant-column history on a cube is found and rebuilt (#1156).</li>
+<li>The visitor store is pruned with raw under <code>keep=</code>, with a 14-month floor, and has no TTL of its own (#1157, <a href="#s15">&sect;1.5.4</a>).</li>
+<li>v1 line items migrate onto their purchases (#1159).</li>
+<li>The realtime screen (#1160, <a href="#s16">&sect;1.6</a>).</li>
+</ul></p>
 <p><strong>Next:</strong> <code>v2</code> merges to master once reporting runs off v2, which it now
 does. What stands between is a readiness pass &mdash; the 1.14 upgrade on a copy of a real install, a
 fresh install, the deploy runbook, release notes &mdash; not another build item.</p></div>
@@ -2289,7 +2310,7 @@ payload tables, and re-encoding v1&rsquo;s event lists into them was not worth i
 <tr><td>page views</td><td><code>owa_request</code></td><td><code>page_view</code>; the entry request raises <code>session_start</code>/<code>first_visit</code></td></tr>
 <tr><td>clicks</td><td><code>owa_click</code></td><td><code>click</code>; outbound worked out as the tracker does, target host against page host</td></tr>
 <tr><td>actions</td><td><code>owa_action_fact</code></td><td>a custom event named by the action, in the tracker's shape (&ldquo;Signup Form Submit&rdquo; &rarr; <code>signup_form_submit</code>, original kept as a parameter); group, label and value as parameters. A name that is a built-in event or one a module routes to itself is prefixed <code>action_</code> (&ldquo;Purchase&rdquo; &rarr; <code>action_purchase</code>) <span class="chip c-dec">Decided 29&nbsp;Sep</span></td></tr>
-<tr><td>purchases</td><td><code>owa_commerce_transaction_fact</code></td><td><code>purchase</code>; v1 stored amount &times; 100 whatever the currency, so a value is divided by 100 and converted to the Property currency's minor units. <strong>Line items are not migrated</strong>: v2 has no item-level shape</td></tr>
+<tr><td>purchases</td><td><code>owa_commerce_transaction_fact</code></td><td><code>purchase</code>; v1 stored amount &times; 100 whatever the currency, so a value is divided by 100 and converted to the Property currency's minor units. <strong>Line items go into <code>params.items</code></strong> in the tracker's shape (#1159), because <code>v1-drop</code> would otherwise take the only record of what was sold, and the reconciliation counts them. No report reads items yet</td></tr>
 <tr><td>visitor store</td><td><code>owa_session</code> + <code>owa_visitor</code></td><td><code>owa_visitor_acquisition</code> from each visitor's first session, over all history: its referrer, and tags only for a campaign-tagged visit. No evidence, no row; an existing row wins</td></tr>
 <tr><td>goal completions</td><td><code>owa_session.goal_N</code></td><td><code>is_goal_event = 1</code> on the first migrated row of a converting session that meets the goal event Update025 made of slot N. v1 decides which sessions converted; the definition only finds the row. Unlocatable completions are counted, not guessed</td></tr>
 </tbody></table></div>
