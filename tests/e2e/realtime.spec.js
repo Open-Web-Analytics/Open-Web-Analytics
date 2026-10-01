@@ -29,7 +29,7 @@ async function sendPageView(page, root) {
     await page.route(harness, (route) => route.fulfill({ contentType: 'text/html', body: HARNESS_HTML }));
     await page.goto(harness, { waitUntil: 'load' });
 
-    await expect.poll(() => beacons.some((u) => /[?&]event_type=page_view/.test(u)), { timeout: 20_000 })
+    await expect.poll(() => beacons.some((u) => /[?&]e_t=page_view/.test(u)), { timeout: 20_000 })
         .toBe(true);
 
     // Leaving would abort an in-flight beacon under a route (see

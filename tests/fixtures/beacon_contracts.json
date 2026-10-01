@@ -171,7 +171,7 @@
         "my_custom_event": [
             "HTTP_REFERER",
             "beacon_version",
-            "ep_label",
+            "eps_label",
             "epn_value",
             "event_seq",
             "event_type",

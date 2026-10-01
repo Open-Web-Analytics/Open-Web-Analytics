@@ -34,8 +34,8 @@ class ActionMigrator extends FactMigrator {
         $name     = self::eventName( $original );
 
         $extra = array(
-            'ep_group' => $r['action_group'] ?? null,
-            'ep_label' => $r['action_label'] ?? null,
+            'eps_group' => $r['action_group'] ?? null,
+            'eps_label' => $r['action_label'] ?? null,
         );
 
         if ( isset( $r['numeric_value'] ) && is_numeric( $r['numeric_value'] ) ) {
@@ -45,7 +45,7 @@ class ActionMigrator extends FactMigrator {
 
         if ( $name !== $original ) {
 
-            $extra['ep_action_name'] = $original;
+            $extra['eps_action_name'] = $original;
         }
 
         return array( $this->baseEvent( $r, $refs, $name, $extra ) );

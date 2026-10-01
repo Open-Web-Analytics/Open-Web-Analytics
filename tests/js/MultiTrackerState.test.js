@@ -148,8 +148,8 @@ describe('two trackers sharing the state stores', () => {
 
         // Named, not just absent: asserting on a key that no longer exists
         // anywhere would pass whatever the tracker did.
-        expect(beacons[0].ep_Plan).toBeUndefined();
-        expect(a.getGlobalEventProperty('ep_Plan')).toBe('Pro');
+        expect(beacons[0].eps_Plan).toBeUndefined();
+        expect(a.getGlobalEventProperty('eps_Plan')).toBe('Pro');
     });
 
     test('VISITOR-scoped state still rides the events of both', () => {

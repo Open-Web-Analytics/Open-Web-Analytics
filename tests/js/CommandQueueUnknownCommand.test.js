@@ -69,10 +69,10 @@ describe('a command that throws is skipped, not fatal', () => {
             ]);
             q.process();
 
-            const pageview = spy.sent.find((u) => /event_type=page_view/.test(u));
+            const pageview = spy.sent.find((u) => /[?&]e_t=page_view/.test(u));
 
             expect(pageview).toBeTruthy();
-            expect(pageview).toMatch(/[?&]site_id=throw-site/);
+            expect(pageview).toMatch(/[?&]site=throw-site/);
         } finally {
             spy.restore();
         }
@@ -132,11 +132,11 @@ describe('an unknown command is skipped, not fatal', () => {
             ]);
             q.process();
 
-            const pageview = spy.sent.find((u) => /event_type=page_view/.test(u));
+            const pageview = spy.sent.find((u) => /[?&]e_t=page_view/.test(u));
 
             // The page view survived the unknown command in front of it.
             expect(pageview).toBeTruthy();
-            expect(pageview).toMatch(/[?&]site_id=skew-site/);
+            expect(pageview).toMatch(/[?&]site=skew-site/);
         } finally {
             spy.restore();
         }

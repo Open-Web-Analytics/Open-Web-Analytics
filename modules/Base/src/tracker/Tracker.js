@@ -10,6 +10,7 @@ import { OWA_instance as OWA } from '../common/owa.js';
 import { Util } from '../common/Util.js';
 import { OwaEvent } from './OwaEvent.js';
 import { Uri } from './Uri.js';
+import { toWire } from './WireNames.js';
  
 class OWATracker  {
 	
@@ -942,7 +943,7 @@ class OWATracker  {
      * scope v2 does not offer for custom values at all (PLAN.html §2.26.1).
      *
      * setUserProperty() is page-lifetime and in memory: nothing is written to
-     * a cookie, and the `up_` prefix routes it
+     * a cookie, and the `vps_` prefix routes it
      * to the visitor store at INGEST, where it is recorded with when it was set
      * (§2.26.5). So what persists is a server record that can say "this was true
      * from here on" rather than a cookie that cannot.
@@ -961,7 +962,7 @@ class OWATracker  {
          * it is registered persist:'never', so it is page-lifetime in memory and
          * shared through the OWA singleton, exactly like setPageTitle(). And
          * because collectPageProperties() copies the store onto the event key by
-         * key, the prefixed name arrives as up_user_name -- admitted by prefix,
+         * key, the prefixed name arrives as vps_user_name -- admitted by prefix,
          * routed to the visitor store by writeUserProperties(), and stamped with
          * when it was set. No compat layer in the path.
          */
@@ -1616,6 +1617,10 @@ class OWATracker  {
 
     prepareRequestData( properties ) {
     
+          // The wire names (WireNames.js): this is the one place a property
+          // name becomes the key it travels under.
+          properties = toWire( properties );
+
           var data = {};
 
         // The APP namespace, not the wire one -- and it is empty.
@@ -1831,13 +1836,6 @@ class OWATracker  {
 
             //properties.target_url = targ.parentNode.href || null;
 
-            if (targ.textContent != undefined) {
-                 //properties.html_element_text = targ.textContent;
-                 properties.html_element_text = '';
-            } else {
-                //properties.html_element_text = targ.innerText;
-                properties.html_element_text = '';
-            }
         }
 
         return properties;
@@ -3481,11 +3479,11 @@ class OWATracker  {
      * different things all the way down. Underscores rather than dots because
      * OWA's own params are read as bare keys.
      */
-    static get EVENT_PROPERTY_PREFIX() { return 'ep_'; }
-    static get USER_PROPERTY_PREFIX()  { return 'up_'; }
+    static get EVENT_PROPERTY_PREFIX() { return 'eps_'; }
+    static get USER_PROPERTY_PREFIX()  { return 'vps_'; }
 
     /**
-     * And the numeric halves, `epn_` and `upn_`.
+     * And the numeric halves, `epn_` and `vpn_`.
      *
      * THE TYPE IS IN THE NAME for the same reason the scope is: a query string
      * has no numbers, so without a prefix every value arrives as text and
@@ -3495,7 +3493,7 @@ class OWATracker  {
      * than being told at this one.
      */
     static get EVENT_PROPERTY_NUMBER_PREFIX() { return 'epn_'; }
-    static get USER_PROPERTY_NUMBER_PREFIX()  { return 'upn_'; }
+    static get USER_PROPERTY_NUMBER_PREFIX()  { return 'vpn_'; }
 
     /*
      * THERE IS NO CAP HERE, deliberately. How many custom properties an event
@@ -3516,7 +3514,7 @@ class OWATracker  {
      *
      * Rides every event this tracker sends for the life of the page, and lands
      * in `params` on the raw row. The server never has to guess the scope: the
-     * `ep_` prefix says it.
+     * `eps_` prefix says it.
      *
      * Page-lifetime and in memory -- nothing is written to a cookie, so a value
      * set here cannot outlive its own meaning
@@ -3555,7 +3553,7 @@ class OWATracker  {
      * user. Set one, navigate, and the next page's beacons carry nothing until it
      * is set again.
      *
-     * The `up_` prefix routes it to the visitor store at
+     * The `vps_` prefix routes it to the visitor store at
      * ingest, where it is written last-value-wins with the event's timestamp,
      * so what persists is a server record rather than a cookie that can outlive
      * the value it holds.
@@ -3573,7 +3571,7 @@ class OWATracker  {
         }
 
         /*
-         * A JS number goes to the numeric prefix, `upn_`. NaN and Infinity are
+         * A JS number goes to the numeric prefix, `vpn_`. NaN and Infinity are
          * NOT numbers here: neither survives
          * JSON, so both would arrive as null and read as absence.
          */
@@ -3946,7 +3944,7 @@ class OWATracker  {
         }
 
         /*
-         * Custom values are global event properties now -- `ep_` and `up_` --
+         * Custom values are global event properties now -- `eps_` and `vps_` --
          * so they are already on the event by the time this runs and need no
          * collection pass. The cv1..cvN stores they replaced were read from
          * three places with a shadowing order, which is the machinery the two
@@ -3956,8 +3954,8 @@ class OWATracker  {
         /*
          * user_name is no longer collected from the visitor store.
          *
-         * setUserName() writes the PAGE store under the up_ prefix, so
-         * collectPageProperties() has already put it on the event as up_user_name
+         * setUserName() writes the PAGE store under the vps_ prefix, so
+         * collectPageProperties() has already put it on the event as vps_user_name
          * by the time this runs -- the same shape every other custom user property
          * arrives in. Reading it back out of a cookie here is what made it
          * visitor-scoped transport for a value that is page-scoped and temporal.
@@ -4429,7 +4427,7 @@ class OWATracker  {
     /**
      * A tracked action.
      *
-     * @deprecated Use trackCustomEvent( name, { ep_*: ... } ).
+     * @deprecated Use trackCustomEvent( name, { eps_*: ... } ).
      *
      * THE ACTION'S NAME IS NOW THE EVENT'S NAME. This sent event_type
      * 'custom_event' with the name as a property, which is v1's shape: one event
@@ -4451,11 +4449,11 @@ class OWATracker  {
         var properties = {};
 
         if ( action_group !== undefined && action_group !== null && action_group !== '' ) {
-            properties.ep_action_group = String( action_group );
+            properties.eps_action_group = String( action_group );
         }
 
         if ( action_label !== undefined && action_label !== null && action_label !== '' ) {
-            properties.ep_action_label = String( action_label );
+            properties.eps_action_label = String( action_label );
         }
 
         if ( typeof numeric_value === 'number' && isFinite( numeric_value ) ) {
@@ -4906,9 +4904,9 @@ class OWATracker  {
                  * arrived carrying nothing but its site id. Measured.
                  */
                 that.raiseEvent( 'exception', {
-                    ep_description: String( message ).substring( 0, 255 ),
-                    ep_source:      String( source || '' ).substring( 0, 255 ),
-                    epn_line:       line || 0
+                    eps_description: String( message ).substring( 0, 255 ),
+                    eps_source:      String( source || '' ).substring( 0, 255 ),
+                    epn_line:        line || 0
                 } );
 
             } catch ( e ) {

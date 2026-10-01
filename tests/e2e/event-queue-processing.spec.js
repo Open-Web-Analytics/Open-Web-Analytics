@@ -141,7 +141,7 @@ test.describe('tracking events queue to a file and ingest on drain @selfhost-onl
         // The pixel GET is fire-and-forget; wait until the page_request beacon is on
         // the wire so log.php has been hit before we inspect the queue.
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
-        const pageview = beacons.find((u) => /[?&]event_type=page_view/.test(u));
+        const pageview = beacons.find((u) => /[?&]e_t=page_view/.test(u));
         expect(pageview, 'no page_view beacon was sent').toBeTruthy();
 
         // --- queued, NOT yet ingested ---------------------------------------

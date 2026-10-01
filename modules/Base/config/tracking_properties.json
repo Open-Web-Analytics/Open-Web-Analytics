@@ -51,7 +51,7 @@
     "screen_resolution": {
         "set_by": "client",
         "from": [
-            "screen_resolution"
+            "d_sr"
         ],
         "column": "screen_resolution",
         "events": [
@@ -104,7 +104,7 @@
     "page_location": {
         "set_by": "client",
         "from": [
-            "page_location"
+            "p_l"
         ],
         "column": "page_location",
         "events": [
@@ -118,7 +118,7 @@
     "page_title": {
         "set_by": "client",
         "from": [
-            "page_title"
+            "p_t"
         ],
         "column": "page_title",
         "events": [
@@ -133,7 +133,7 @@
     "fsts": {
         "set_by": "client",
         "from": [
-            "fsts"
+            "v_fts"
         ],
         "column": "visitor_fsts",
         "events": [
@@ -146,7 +146,7 @@
     "psts": {
         "set_by": "client",
         "from": [
-            "psts"
+            "s_pts"
         ],
         "column": "prior_session_start_ts",
         "events": [
@@ -159,7 +159,7 @@
     "sts": {
         "set_by": "client",
         "from": [
-            "sts"
+            "s_sts"
         ],
         "column": "session_start_ts",
         "events": [
@@ -172,7 +172,7 @@
     "beacon_version": {
         "set_by": "client",
         "from": [
-            "beacon_version"
+            "_v"
         ],
         "column": "beacon_version",
         "events": [
@@ -186,7 +186,7 @@
     "event_seq": {
         "set_by": "client",
         "from": [
-            "event_seq"
+            "e_sq"
         ],
         "column": "event_seq",
         "events": [
@@ -200,7 +200,7 @@
     "num_prior_sessions": {
         "set_by": "client",
         "from": [
-            "nps"
+            "v_nps"
         ],
         "column": "prior_sessions",
         "events": [
@@ -213,7 +213,7 @@
     "is_new_session_start": {
         "set_by": "client",
         "from": [
-            "is_new_session_start"
+            "s_new"
         ],
         "events": [
             "*"
@@ -227,7 +227,7 @@
     "is_new_visitor_created": {
         "set_by": "client",
         "from": [
-            "is_new_visitor_created"
+            "v_new"
         ],
         "events": [
             "*"
@@ -241,7 +241,7 @@
     "HTTP_REFERER": {
         "set_by": "client",
         "from": [
-            "HTTP_REFERER"
+            "p_r"
         ],
         "column": "referer_url",
         "events": [
@@ -255,7 +255,7 @@
     "target_url": {
         "set_by": "client",
         "from": [
-            "target_url"
+            "el_lu"
         ],
         "column": "target_url",
         "events": [
@@ -469,7 +469,7 @@
     "click_x": {
         "set_by": "client",
         "from": [
-            "click_x"
+            "c_x"
         ],
         "column": "click_x",
         "events": [
@@ -483,7 +483,7 @@
     "click_y": {
         "set_by": "client",
         "from": [
-            "click_y"
+            "c_y"
         ],
         "column": "click_y",
         "events": [
@@ -497,7 +497,7 @@
     "page_width": {
         "set_by": "client",
         "from": [
-            "page_width"
+            "p_w"
         ],
         "column": "page_width",
         "events": [
@@ -511,7 +511,7 @@
     "page_height": {
         "set_by": "client",
         "from": [
-            "page_height"
+            "p_h"
         ],
         "column": "page_height",
         "events": [
@@ -525,7 +525,7 @@
     "dom_element_class": {
         "set_by": "client",
         "from": [
-            "dom_element_class"
+            "el_cl"
         ],
         "param": "element_class",
         "events": [
@@ -539,7 +539,7 @@
     "dom_element_id": {
         "set_by": "client",
         "from": [
-            "dom_element_id"
+            "el_id"
         ],
         "column": "element_id",
         "events": [
@@ -554,7 +554,7 @@
     "dom_element_name": {
         "set_by": "client",
         "from": [
-            "dom_element_name"
+            "el_nm"
         ],
         "param": "element_name",
         "events": [
@@ -568,7 +568,7 @@
     "dom_element_tag": {
         "set_by": "client",
         "from": [
-            "dom_element_tag"
+            "el_tg"
         ],
         "column": "element_tag",
         "events": [
@@ -582,7 +582,7 @@
     "dom_element_text": {
         "set_by": "client",
         "from": [
-            "dom_element_text"
+            "el_tx"
         ],
         "param": "element_text",
         "events": [
@@ -597,7 +597,7 @@
     "ct_order_id": {
         "set_by": "client",
         "from": [
-            "ct_order_id"
+            "o_id"
         ],
         "column": "transaction_id",
         "events": [
@@ -612,7 +612,7 @@
     "ct_order_source": {
         "set_by": "client",
         "from": [
-            "ct_order_source"
+            "o_src"
         ],
         "param": "order_source",
         "events": [
@@ -626,7 +626,7 @@
     "coupon": {
         "set_by": "client",
         "from": [
-            "coupon"
+            "o_cpn"
         ],
         "param": "coupon",
         "events": [
@@ -641,7 +641,7 @@
     "ct_gateway": {
         "set_by": "client",
         "from": [
-            "ct_gateway"
+            "o_gw"
         ],
         "param": "gateway",
         "events": [
@@ -655,7 +655,7 @@
     "ct_total": {
         "set_by": "client",
         "from": [
-            "ct_total"
+            "o_tot"
         ],
         "events": [
             "purchase"
@@ -670,7 +670,7 @@
     "ct_tax": {
         "set_by": "client",
         "from": [
-            "ct_tax"
+            "o_tax"
         ],
         "column": "tax",
         "events": [
@@ -687,7 +687,7 @@
     "ct_shipping": {
         "set_by": "client",
         "from": [
-            "ct_shipping"
+            "o_shp"
         ],
         "column": "shipping",
         "events": [
@@ -704,7 +704,7 @@
     "ct_value": {
         "set_by": "client",
         "from": [
-            "ct_value"
+            "o_val"
         ],
         "events": [
             "purchase",
@@ -742,7 +742,7 @@
     "ct_line_items": {
         "set_by": "client",
         "from": [
-            "ct_line_items"
+            "o_items"
         ],
         "param": "items",
         "events": [
@@ -757,7 +757,7 @@
     "event_type": {
         "set_by": "client",
         "from": [
-            "event_type"
+            "e_t"
         ],
         "column": "event_type",
         "events": [
@@ -771,7 +771,7 @@
     "site_id": {
         "set_by": "client",
         "from": [
-            "site_id"
+            "site"
         ],
         "column": "site_id",
         "events": [
@@ -785,7 +785,7 @@
     "session_id": {
         "set_by": "client",
         "from": [
-            "session_id"
+            "s_id"
         ],
         "column": "session_id",
         "events": [
@@ -799,7 +799,7 @@
     "visitor_id": {
         "set_by": "client",
         "from": [
-            "visitor_id"
+            "v_id"
         ],
         "column": "visitor_id",
         "events": [
@@ -813,7 +813,7 @@
     "engagement_msec": {
         "set_by": "client",
         "from": [
-            "engagement_msec"
+            "e_ems"
         ],
         "column": "engagement_msec",
         "events": [
@@ -828,7 +828,7 @@
     "content_group": {
         "set_by": "client",
         "from": [
-            "content_group"
+            "p_cg"
         ],
         "column": "content_group",
         "events": [
@@ -842,7 +842,7 @@
     "consent_state": {
         "set_by": "client",
         "from": [
-            "consent_state"
+            "v_cs"
         ],
         "column": "consent_state",
         "events": [
@@ -856,7 +856,7 @@
     "user_id": {
         "set_by": "client",
         "from": [
-            "user_id"
+            "u_id"
         ],
         "column": "user_id",
         "events": [
@@ -872,7 +872,7 @@
     "currency": {
         "set_by": "client",
         "from": [
-            "currency"
+            "o_cur"
         ],
         "column": "currency",
         "events": [
@@ -889,7 +889,7 @@
     "scroll_depth": {
         "set_by": "client",
         "from": [
-            "scroll_depth"
+            "sc_d"
         ],
         "column": "scroll_depth",
         "events": [
@@ -903,7 +903,7 @@
     "search_term": {
         "set_by": "client",
         "from": [
-            "search_term"
+            "p_q"
         ],
         "column": "search_term",
         "events": [
@@ -917,7 +917,7 @@
     "file_name": {
         "set_by": "client",
         "from": [
-            "file_name"
+            "f_nm"
         ],
         "column": "file_name",
         "events": [
@@ -931,7 +931,7 @@
     "file_extension": {
         "set_by": "client",
         "from": [
-            "file_extension"
+            "f_ext"
         ],
         "column": "file_extension",
         "events": [
@@ -945,7 +945,7 @@
     "form_id": {
         "set_by": "client",
         "from": [
-            "form_id"
+            "fm_id"
         ],
         "param": "form_id",
         "events": [
@@ -960,7 +960,7 @@
     "form_destination": {
         "set_by": "client",
         "from": [
-            "form_destination"
+            "fm_dst"
         ],
         "param": "form_destination",
         "events": [
@@ -975,7 +975,7 @@
     "form_length": {
         "set_by": "client",
         "from": [
-            "form_length"
+            "fm_len"
         ],
         "param": "form_length",
         "events": [
@@ -990,7 +990,7 @@
     "first_field_id": {
         "set_by": "client",
         "from": [
-            "first_field_id"
+            "fm_ffid"
         ],
         "param": "first_field_id",
         "events": [
@@ -1004,7 +1004,7 @@
     "first_field_name": {
         "set_by": "client",
         "from": [
-            "first_field_name"
+            "fm_ffnm"
         ],
         "param": "first_field_name",
         "events": [
@@ -1018,7 +1018,7 @@
     "first_field_type": {
         "set_by": "client",
         "from": [
-            "first_field_type"
+            "fm_fft"
         ],
         "param": "first_field_type",
         "events": [
@@ -1032,7 +1032,7 @@
     "first_field_position": {
         "set_by": "client",
         "from": [
-            "first_field_position"
+            "fm_ffp"
         ],
         "param": "first_field_position",
         "events": [
@@ -1046,7 +1046,7 @@
     "form_submit_text": {
         "set_by": "client",
         "from": [
-            "form_submit_text"
+            "fm_stx"
         ],
         "param": "form_submit_text",
         "events": [
@@ -1060,7 +1060,7 @@
     "form_name": {
         "set_by": "client",
         "from": [
-            "form_name"
+            "fm_nm"
         ],
         "param": "form_name",
         "events": [
@@ -1277,7 +1277,7 @@
     "is_outbound": {
         "set_by": "client",
         "from": [
-            "is_outbound"
+            "el_lo"
         ],
         "column": "is_outbound",
         "events": [

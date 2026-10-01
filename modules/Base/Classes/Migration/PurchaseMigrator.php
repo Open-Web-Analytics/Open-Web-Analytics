@@ -35,9 +35,9 @@ class PurchaseMigrator extends FactMigrator {
     protected function events( array $r, array $refs ) {
 
         $event = $this->baseEvent( $r, $refs, 'purchase', array(
-            'ct_order_id'    => $r['order_id'] ?? null,
-            'ep_order_source' => $r['order_source'] ?? null,
-            'ep_gateway'      => $r['gateway'] ?? null,
+            'ct_order_id'      => $r['order_id'] ?? null,
+            'eps_order_source' => $r['order_source'] ?? null,
+            'eps_gateway'      => $r['gateway'] ?? null,
         ) );
 
         $currency = \OWA\Module\Base\Classes\TrackingEventHelpers::purchaseCurrency( $event );

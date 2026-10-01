@@ -31,14 +31,14 @@ describe('OWATracker event assembly', () => {
      * a property. v2 retires it -- an event name is a name, and the group, label
      * and value describe it, which is why eventName is a dimension.
      */
-    test('trackAction sends the action name as the event, with ep_ parameters', () => {
+    test('trackAction sends the action name as the event, with eps_ parameters', () => {
         tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
         expect(e.get('event_type')).toBe('newsletter_opt_in');
-        expect(e.get('ep_action_group')).toBe('signup');
-        expect(e.get('ep_action_label')).toBe('footer form');
+        expect(e.get('eps_action_group')).toBe('signup');
+        expect(e.get('eps_action_label')).toBe('footer form');
         expect(e.get('epn_numeric_value')).toBe(10);
 
         // The old spellings are gone, not merely unread.

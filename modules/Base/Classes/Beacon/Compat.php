@@ -133,7 +133,7 @@ class Compat {
      * stays.
      *
      * Today's entry is the v1 custom variable slots: v1 carried five numbered
-     * ones, the current format carries named keys under `ep_` and `up_`, and
+     * ones, the current format carries named keys under `eps_` and `vps_`, and
      * params() still reads a slot off an older beacon and writes it out as the
      * same named param a current one produces.
      *

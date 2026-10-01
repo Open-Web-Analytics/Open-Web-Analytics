@@ -50,11 +50,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * belongs to, and the same name in two scopes stays two different things.
      * See Tracker.EVENT_PROPERTY_PREFIX / USER_PROPERTY_PREFIX.
      */
-    const EVENT_PROPERTY_PREFIX = 'ep_';
-    const USER_PROPERTY_PREFIX  = 'up_';
+    const EVENT_PROPERTY_PREFIX = 'eps_';
+    const USER_PROPERTY_PREFIX  = 'vps_';
 
     /**
-     * The numeric halves, `epn_` and `upn_`.
+     * The numeric halves, `epn_` and `vpn_`.
      *
      * A query string carries no types, so a value arrives as text whatever the
      * site set. The prefix is the tracker saying which it meant, and it is the
@@ -62,7 +62,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * version, a postcode, an order id with leading zeros.
      */
     const EVENT_PROPERTY_NUMBER_PREFIX = 'epn_';
-    const USER_PROPERTY_NUMBER_PREFIX  = 'upn_';
+    const USER_PROPERTY_NUMBER_PREFIX  = 'vpn_';
 
     /**
      * How many custom properties one event may carry, per scope.
@@ -400,12 +400,12 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         /*
-         * Custom event properties, by name, with the `ep_` prefix stripped.
+         * Custom event properties, by name, with the `eps_` or `epn_` prefix stripped.
          *
          * The prefix is how the beacon says which scope a value belongs to
          * (Tracker.setEventProperty), so this needs no allowlist and no
          * knowledge of the site's keys -- unlike the per-event-type params
-         * below, which are names the release knows. `up_` is the other half and
+         * below, which are names the release knows. `vps_` is the other half and
          * goes to the visitor store, not here.
          */
         $custom = 0;
@@ -414,12 +414,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             $key = (string) $key;
 
-            /*
-             * The numeric prefix is tested FIRST, because 'ep_' is a prefix of
-             * nothing else but 'epn_' begins with neither -- test the shorter
-             * one first and `epn_plan` is read as an event property named
-             * `n_plan`, which is a real value under a name nobody set.
-             */
+            // The four prefixes are the same length and none begins another,
+            // so the order of these tests does not matter.
             if ( strpos( $key, self::EVENT_PROPERTY_NUMBER_PREFIX ) === 0 ) {
 
                 $name    = substr( $key, strlen( self::EVENT_PROPERTY_NUMBER_PREFIX ) );
@@ -763,7 +759,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
             $key = (string) $key;
 
-            // Longest prefix first; see the note in params().
             if ( strpos( $key, self::USER_PROPERTY_NUMBER_PREFIX ) === 0 ) {
 
                 $name    = substr( $key, strlen( self::USER_PROPERTY_NUMBER_PREFIX ) );

@@ -783,7 +783,7 @@ class TrackingEventHelpers {
      * can admit them without knowing a single one of a site's keys. That is
      * what makes an allowlist possible here at all.
      */
-    const CUSTOM_PREFIXES = array( 'ep_', 'epn_', 'up_', 'upn_' );
+    const CUSTOM_PREFIXES = array( 'eps_', 'epn_', 'vps_', 'vpn_' );
 
     /** A custom name must survive becoming a JSON key; the tracker's rule. */
     const CUSTOM_NAME_PATTERN = '/^[A-Za-z][A-Za-z0-9_]{0,39}$/';
