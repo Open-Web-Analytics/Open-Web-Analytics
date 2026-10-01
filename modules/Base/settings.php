@@ -144,12 +144,36 @@ return array(
         'db_type' => array( 'default' => '' ),
         'db_user' => array( 'default' => '' ),
         'default_cache_expiration_period' => array( 'default' => 604800 ),
-        'default_page' => array( 'default' => '', 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'default_page' => array(
+            'default'  => '',
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'text',
+            'label'    => 'Default Page',
+            'description' =>
+                'The page your web server serves when a URL names none (e.g. index.html), so '
+                . 'www.domain.com and www.domain.com/index.html count as one page.',
+        ),
         'default_reporting_period' => array( 'default' => 'last_seven_days' ),
         'disableAllEndpoints' => array( 'default' => false ),
         'disabledEndpoints' => array( 'default' => array( 'queue.php' ) ),
-        'domain_aliases' => array( 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
-        'enableEcommerceReporting' => array( 'default' => false, 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'domain_aliases' => array(
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'text',
+            'label'    => 'Domain Aliases',
+            'description' =>
+                'Other domain names to treat as this one. If the domain is www.mydomain.com, '
+                . 'an alias of mydomain.com counts both as the same. Separate aliases with commas.',
+        ),
+        'enableEcommerceReporting' => array(
+            'default'  => false,
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'e-commerce Reporting',
+            'description' => 'Adds e-commerce metrics to reports.',
+        ),
         'error_handler' => array( 'default' => 'production' ),
         'error_log_file' => array( 'default' => '' ),
         'excluded_ips' => array(
@@ -256,7 +280,16 @@ return array(
         'numGoals' => array( 'default' => 15 ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5' ),
         'owa_user_agent' => array( 'default' => 'Open Web Analytics Bot master' ),
-        'p3p_policy' => array( 'default' => 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM', 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ) ),
+        'p3p_policy' => array(
+            'default'  => 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'text',
+            'label'    => 'P3P Compact Privacy Policy',
+            'description' =>
+                'The P3P compact privacy policy returned to the browser when OWA sets cookies. '
+                . 'See <a href="https://www.w3.org/P3P/">the W3C&rsquo;s P3P pages</a> for choosing one.',
+        ),
         'partition_detail_months' => array( 'default' => 36 ),
         'partition_max_partitions' => array( 'default' => 0 ),
         'password_length' => array( 'default' => 4 ),

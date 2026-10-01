@@ -86,14 +86,16 @@
                name="<?php echo $view->getNs();?>description" value="<?php $view->out( $view->property['description'] ?? '' );?>">
         <BR><BR>
 
-        <div class="inline_h3">Attribution lookback (days) <span class="owa_optional">optional</span></div>
-        <input class="owa_largeFormField" type="text" size="6"
-               name="<?php echo $view->getNs();?>attributionLookbackDays" value="<?php $view->out( $view->lookback_override ?? '' );?>">
-        <span class="form-instructions">How far back a session that arrives directly takes the
-        visitor&rsquo;s last campaign, search or referral visit as its attributed source. Leave
-        empty to use the install&rsquo;s <?php $view->out( $view->lookback_inherited ?? \OWA\Core\CoreAPI::getSetting( 'base', 'attribution_lookback_days' ) );?> days. A
-        change reaches past reports when their days are rebuilt.</span>
-        <BR><BR>
+        <?php
+            /*
+             * Settings this Property may set for itself, each showing what it
+             * inherits until its Override switch is on. See
+             * SettingsForm::scopedField().
+             */
+            echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+                \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
+                'property', (string) ( $view->property['id'] ?? '' ), $view->getNs() );
+        ?>
 
         <input class="owa-button" type="submit" value="Save Property">
     </form>

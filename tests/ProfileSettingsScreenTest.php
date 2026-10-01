@@ -64,7 +64,7 @@ final class ProfileSettingsScreenTest extends TestCase
         $data = $this->data( $controller );
 
         $this->assertArrayHasKey( 'siteId', $data );
-        $this->assertArrayHasKey( 'config', $data );
+        $this->assertArrayHasKey( 'site', $data );
         $this->assertArrayHasKey( 'hierarchy_nav', $data,
             'the wrapper reads this, and an unset view var throws in ViewScope' );
         $this->assertSame( 'base.profileSettings', $data['subview'] ?? null );
@@ -94,13 +94,13 @@ final class ProfileSettingsScreenTest extends TestCase
         $data = $this->data( $controller );
 
         $this->assertSame( $site_id, $data['siteId'] );
-        $this->assertNotEmpty( $data['config'],
-            'a real Profile has effective settings to show' );
+        $this->assertSame( $site_id, $data['site']['site_id'] ?? null,
+            'the template reads the Profile it renders from here' );
     }
 
     /**
-     * The redisplay. What the form sent has to come back, or the next Save
-     * writes defaults over it.
+     * The redisplay. What the form sent -- each value and each switch -- has to
+     * come back, or the next Save writes over it.
      */
     public function testAValidationFailureRedisplaysWhatTheFormSent(): void
     {
@@ -108,117 +108,84 @@ final class ProfileSettingsScreenTest extends TestCase
         $site_id = $this->aSiteId();
 
         $controller = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-            'siteId' => $site_id,
-            'config' => array( 'default_page_size' => '77' ),
+            'siteId'   => $site_id,
+            'config'   => array( 'base.default_page' => 'home.html' ),
+            'override' => array( 'base.default_page' => '1' ),
         ) );
 
         $controller->errorAction();
 
         $data = $this->data( $controller );
 
-        $this->assertSame( '77', $data['config']['default_page_size'] ?? null,
-            'the value the admin typed must survive the redisplay' );
+        $this->assertSame( 'home.html', $data['posted']['config']['base.default_page'] ?? null );
+        $this->assertSame( '1', $data['posted']['override']['base.default_page'] ?? null );
+
+        $html = \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+            \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.profileObservation' ),
+            'profile', $site_id, 'owa_', $data['posted'] );
+
+        $this->assertMatchesRegularExpression(
+            '#<input type="text" size="50" name="owa_config\[base\.default_page\]" value="home\.html" id=#', $html,
+            'the typed value comes back, enabled' );
     }
 
     /**
-     * ...and a field the form did not send still shows what the Profile
-     * observes with, rather than an empty control.
+     * The wiring: the screen saves through the switch. On stores the value even
+     * when it equals the inherited one; off removes it.
      */
-    public function testFieldsTheFormDidNotSendKeepTheirEffectiveValue(): void
+    public function testTheOverrideSwitchDecidesWhatIsStored(): void
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
-
-        $effective = (array) \OWA\Core\CoreAPI::getEffectiveSettings( 'profile', $site_id, 'base' );
-
-        if ( ! $effective ) {
-            $this->markTestSkipped( 'no effective settings to compare against' );
-        }
-
-        $untouched = array_key_first( $effective );
-
-        $controller = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-            'siteId' => $site_id,
-            'config' => array( 'default_page_size' => '77' ),
-        ) );
-
-        $controller->errorAction();
-
-        $data = $this->data( $controller );
-
-        $this->assertSame( $effective[ $untouched ], $data['config'][ $untouched ] ?? null,
-            "$untouched was not on the post, so it should still show its effective value" );
-    }
-
-    /**
-     * The wiring, not just the decision.
-     *
-     * overrideAction() is asserted on its own in ProfileSettingOverrideTest;
-     * this is the check that action() actually consults it. Posting back a
-     * value the Profile inherits must leave no row behind.
-     */
-    public function testSavingAnInheritedValueCreatesNoOverride(): void
-    {
-        $this->requireDb();
-        $site_id = $this->aSiteId();
-        $key     = 'default_page_size';
-
-        // Start from inheriting, whatever earlier runs left behind.
-        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
-
-        $inherited = \OWA\Core\CoreAPI::getSetting( 'base', $key );
-
-        $controller = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-            'siteId' => $site_id,
-            'config' => array( $key => (string) $inherited ),
-        ) );
-
-        $controller->action();
-
-        $this->assertNull(
-            \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
-            'saving the screen unchanged must not detach the Profile from what it inherits' );
-    }
-
-    /**
-     * And the round trip: a real change is stored, and setting it back to the
-     * inherited value removes the override rather than pinning it.
-     */
-    public function testChangingAValueStoresItAndSettingItBackClearsIt(): void
-    {
-        $this->requireDb();
-        $site_id = $this->aSiteId();
-        $key     = 'default_page_size';
+        $key     = 'default_page';
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
 
-        $inherited = \OWA\Core\CoreAPI::getSetting( 'base', $key );
-        $changed   = (string) ( (int) $inherited + 7 );
+        $inherited = \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'];
+
+        $save = function ( array $params ) use ( $site_id ) {
+
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array( 'siteId' => $site_id ) + $params );
+            $c->action();
+        };
 
         try {
-            $save = function ( $value ) use ( $site_id, $key ) {
+            $save( array(
+                'config'   => array( 'base.default_page' => (string) $inherited ),
+                'override' => array( 'base.default_page' => '1' ),
+            ) );
 
-                $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-                    'siteId' => $site_id,
-                    'config' => array( $key => $value ),
-                ) );
-                $c->action();
-            };
-
-            $save( $changed );
-
-            $this->assertSame( $changed,
+            $this->assertSame( (string) $inherited,
                 \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
-                'a value that differs from the inherited one is an override' );
+                'switched on, the value is this Profile\'s own even when it matches what it inherits' );
 
-            $save( (string) $inherited );
+            // Switched off: the disabled control is not submitted, so nothing arrives for it.
+            $save( array() );
 
             $this->assertNull(
                 \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
-                'setting it back to the inherited value is the way back to inheriting' );
+                'switched off, the Profile goes back to inheriting' );
 
         } finally {
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
         }
+    }
+
+    /** A setting the screen does not show cannot be written through it. */
+    public function testAPostCannotReachASettingTheScreenDoesNotShow(): void
+    {
+        $this->requireDb();
+        $site_id = $this->aSiteId();
+
+        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'excluded_ips' );
+
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+            'siteId'   => $site_id,
+            'config'   => array( 'base.excluded_ips' => '203.0.113.9' ),
+            'override' => array( 'base.excluded_ips' => '1' ),
+        ) );
+        $c->action();
+
+        $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'excluded_ips' ) );
     }
 }

@@ -260,6 +260,16 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .setting .description {border:0px solid #cccccc; font-size:12px; padding: 2px 0 2px 0;}
 .setting .title {font-weight:bold; font-size:16px; padding: 2px 0 2px 0;}
 .setting .field {padding: 2px 0 2px 0;}
+/* A setting below the install: the control, then its Override switch (SettingsForm::scopedField). */
+.setting .owa-overridable {display:flex; align-items:center; gap:12px;}
+.setting .owa-overridable select[disabled], .setting .owa-overridable input[disabled] {opacity:.6;}
+.owa-override {display:inline-flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; white-space:nowrap;}
+.owa-override input {appearance:none; -webkit-appearance:none; width:30px; height:16px; margin:0; border-radius:8px; background:#bbbbbb; position:relative; cursor:pointer; transition:background .15s;}
+.owa-override input::after {content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#ffffff; transition:left .15s;}
+.owa-override input:checked {background:#2a7ae2;}
+.owa-override input:checked::after {left:16px;}
+.owa-override input:focus-visible {outline:2px solid #2a7ae2; outline-offset:2px;}
+.setting .owa-inherit-note {font-size:12px; color:#666666; padding:2px 0;}
 
 /* LAYOUT */
 #admin_nav{font-size:12px;}
