@@ -95,5 +95,3 @@ class CustomDimensionListCli extends CustomDimensionsCli {
 }
 
 ?>
-
-?>
