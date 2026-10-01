@@ -41,7 +41,7 @@ final class DbAffectedRowsTest extends TestCase
             $this->markTestSkipped('pdo_mysql is not installed.');
         }
 
-        $s  = fn (string $k) => owa_coreAPI::getSetting('base', $k);
+        $s  = fn (string $k) => \OWA\Core\CoreAPI::getSetting('base', $k);
         $db = new $class($s('db_host'), $s('db_port'), $s('db_name'), $s('db_user'), $s('db_password'));
 
         $this->assertNotFalse($db->connect(), "$class could not connect");

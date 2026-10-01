@@ -103,9 +103,7 @@ class ReportController extends \OWA\Core\AdminController {
          * not a range: an end date on its own resolved its missing start to
          * today, so "up to the 10th" ran from today BACKWARDS to the 10th.
          *
-         * Constructed rather than named, because addValidation() resolves a
-         * name through the legacy owa_*Validation compat map, and this class
-         * has no legacy name to bridge. setValidation() takes the object.
+         * Constructed rather than named: setValidation() takes the object.
          */
         $range = new \OWA\Core\Validation\DateRange();
 

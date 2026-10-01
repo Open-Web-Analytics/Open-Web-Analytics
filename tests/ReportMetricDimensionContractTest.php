@@ -45,7 +45,7 @@ final class ReportMetricDimensionContractTest extends TestCase
     {
         require_once __DIR__ . '/bootstrap_owa.php';
 
-        $svc = owa_coreAPI::serviceSingleton();
+        $svc = \OWA\Core\CoreAPI::serviceSingleton();
 
         self::$metrics = array_keys($svc->metrics);
 

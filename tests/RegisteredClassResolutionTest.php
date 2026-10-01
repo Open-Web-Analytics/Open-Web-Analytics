@@ -10,9 +10,8 @@ use PHPUnit\Framework\TestCase;
  * ---------------
  * OWA does not reference most of its classes by their PHP class name. It
  * references them by a REGISTERED DOTTED STRING id — 'base.request',
- * 'base.configurableMetric', etc. — that the resolution seam
- * (owa_coreAPI::moduleSpecificFactory / moduleRequireOnce) turns into a file
- * path AND a synthesized class name ('owa_' . <file>) at runtime. Those dotted
+ * 'base.configurableMetric', etc. — that the factories (entityFactory,
+ * metricFactory) turn into a PSR-4 class name at runtime. Those dotted
  * ids live in registration data (service->entities, service->metrics, ...) and
  * are a public contract we deliberately do NOT rename during the migration.
  *
@@ -34,7 +33,7 @@ final class RegisteredClassResolutionTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__ . '/bootstrap_owa.php';
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
         // Force every active module to run its register*() callbacks so the
         // registries are fully populated the way a real request would see them.
         $service->initializeFramework();
@@ -43,19 +42,11 @@ final class RegisteredClassResolutionTest extends TestCase
 
     /**
      * Every registered entity dotted-id resolves through entityFactory to an
-     * owa_entity instance. The registry VALUE is the dotted id (the key is a
+     * OWA\Core\Entity instance. The registry VALUE is the dotted id (the key is a
      * short alias).
      */
     public function testEveryRegisteredEntityResolves(): void
     {
-        // instanceof does NOT autoload. A legacy alias that nothing has touched
-        // yet is simply undefined, and `$obj instanceof owa_entity` then reads
-        // false for EVERY entity -- so this case failed when run alone and
-        // passed in the suite only because some earlier test had loaded the
-        // alias first. Assert the precondition here, where it also loads it,
-        // rather than inheriting it from whatever ran before.
-        $this->assertTrue(class_exists('owa_entity'),
-            'owa_entity must resolve through the compat bridge before instanceof can see it.');
 
         $entities = self::$service->entities;
         $this->assertGreaterThan(
@@ -67,8 +58,8 @@ final class RegisteredClassResolutionTest extends TestCase
         $failures = [];
         foreach ($entities as $short => $dotted) {
             try {
-                $obj = owa_coreAPI::entityFactory($dotted);
-                if (!$obj instanceof owa_entity) {
+                $obj = \OWA\Core\CoreAPI::entityFactory($dotted);
+                if (!$obj instanceof \OWA\Core\Entity) {
                     $failures[] = "$dotted ($short) => "
                         . (is_object($obj) ? get_class($obj) : gettype($obj));
                 }

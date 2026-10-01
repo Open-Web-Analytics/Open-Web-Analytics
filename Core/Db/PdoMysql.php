@@ -29,8 +29,8 @@ namespace OWA\Core\Db;
  *         }
  *     }
  *
- * plus `'owa_db_pdo_pgsql' => PdoPgsql::class` in owa_compat_aliases.php, and an
- * install writes `define( 'OWA_DB_TYPE', 'pdo_pgsql' );`.
+ * in Core/Db/PdoPgsql.php -- the token pdo_pgsql names that class by
+ * convention -- and an install writes `define( 'OWA_DB_TYPE', 'pdo_pgsql' );`.
  *
  * The work is the dialect, not the plumbing: MysqlDialect carries the
  * OWA_DTD and OWA_SQL constants OWA compiles its DDL from, and the

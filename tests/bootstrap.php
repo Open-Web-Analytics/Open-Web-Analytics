@@ -9,7 +9,7 @@
  * WHY THIS EXISTS
  * ---------------
  * Booting OWA constructs the base.configuration entity (owa_settings::__construct
- * -> owa_coreAPI::entityFactory('base.configuration')). entityFactory() only sets
+ * -> \OWA\Core\CoreAPI::entityFactory('base.configuration')). entityFactory() only sets
  * up the storage engine -- the driver file plugins/db/owa_db_<type>.php that
  * define()s OWA_DTD_BIGINT / OWA_DTD_BLOB etc. -- when OWA_DB_TYPE is defined
  * (owa_coreAPI.php ~505). OWA_DB_TYPE normally comes from owa-config.php, which is

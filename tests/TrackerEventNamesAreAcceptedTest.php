@@ -99,10 +99,10 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
          * event is admitted by its NAME matching the pattern, not by being
          * declared, so a contract shape for one failed a list check correctly.
          */
-        $this->assertNotEmpty( (array) owa_coreAPI::trackingEventTypes(),
+        $this->assertNotEmpty( (array) \OWA\Core\CoreAPI::trackingEventTypes(),
             'the first-class list is empty; this test would pass vacuously' );
 
-        $this->assertTrue( owa_coreAPI::isTrackingEventType( $name ),
+        $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( $name ),
             "The tracker emits $name and logEvent() will refuse it: it is neither a "
             . 'first-class name the property registry declares nor a legal custom '
             . 'event name.' );
@@ -138,7 +138,7 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
             'ct_total'      => '1.00',
         ) );
 
-        $db   = owa_coreAPI::dbSingleton();
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
         $rows = (array) $db->get_results( sprintf(
             "SELECT id, event_type FROM owa_event_raw WHERE site_id = '%s' AND session_id = %d",
             $this->site, (int) $session ) );

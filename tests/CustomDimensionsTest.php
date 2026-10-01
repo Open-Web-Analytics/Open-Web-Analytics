@@ -295,7 +295,7 @@ final class CustomDimensionsTest extends TestCase
      */
     public function testNoReleaseColumnOfTheCubeUsesThePrefix(): void
     {
-        foreach (owa_coreAPI::entityFactory('base.event')->getColumns() as $column) {
+        foreach (\OWA\Core\CoreAPI::entityFactory('base.event')->getColumns() as $column) {
             $this->assertStringStartsNotWith(CustomDimension::PREFIX, $column, $column);
         }
     }
@@ -310,7 +310,7 @@ final class CustomDimensionsTest extends TestCase
      */
     public function testARegistrationHasAStateForAPersonToRead(): void
     {
-        $entity = owa_coreAPI::entityFactory('base.custom_dimension');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.custom_dimension');
 
         foreach (['state', 'state_message', 'applied_date'] as $column) {
             $this->assertNotNull($entity->getColumn($column), $column);
@@ -351,7 +351,7 @@ final class CustomDimensionsTest extends TestCase
         // choices, not a fact table -- so the partition commands must leave it
         // alone.
         $this->assertNull(
-            owa_coreAPI::entityFactory('base.custom_dimension')->getPartitionColumn());
+            \OWA\Core\CoreAPI::entityFactory('base.custom_dimension')->getPartitionColumn());
     }
 
     public function testAPropertyThatIsNotAnIdReadsBackNothing(): void

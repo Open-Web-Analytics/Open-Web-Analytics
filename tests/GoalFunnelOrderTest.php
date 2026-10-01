@@ -103,7 +103,7 @@ final class GoalFunnelOrderTest extends TestCase
             return;
         }
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $cube = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
 
@@ -112,11 +112,11 @@ final class GoalFunnelOrderTest extends TestCase
         }
 
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory('base.site')->getTableName(),
+            \OWA\Core\CoreAPI::entityFactory('base.site')->getTableName(),
             $db->prepare(self::SITE)));
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         self::$seeded = false;
     }
@@ -127,12 +127,12 @@ final class GoalFunnelOrderTest extends TestCase
             return;
         }
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         // Whatever a previous crashed run left, before creating it again.
         self::tearDownAfterClass();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties(array(
             'id'            => self::PROPERTY,
             'name'          => 'Funnel order fixture',
@@ -145,7 +145,7 @@ final class GoalFunnelOrderTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties(array(
             // A Profile's primary key is `id`; site_id is the string a beacon
             // quotes and the funnel filters on.

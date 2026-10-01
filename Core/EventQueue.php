@@ -117,18 +117,6 @@ class EventQueue  {
     }
 
     /**
-     * Whether a decoded blob is something the queue can actually drive.
-     *
-     * unserialize() with an allowed_classes list does not fail on a name outside
-     * the list -- it hands back __PHP_Incomplete_Class, which throws on the first
-     * method call. Callers used to invoke a method straight away, so one
-     * undecodable message aborted the whole drain, and on the db queue the item
-     * was never removed, so it threw again on every subsequent run: the queue
-     * stopped permanently and grew from then on.
-     *
-     * Checked rather than trusted, so a bad message is one skipped item.
-     */
-    /**
      * unserialize() a queue blob without letting its diagnostics escape.
      *
      * A malformed blob is an expected input here, not an exceptional one: a
@@ -150,7 +138,8 @@ class EventQueue  {
         try {
 
             return unserialize(
-                $blob, array( 'allowed_classes' => self::allowedEventClasses() )
+                self::currentClassName( (string) $blob ),
+                array( 'allowed_classes' => self::allowedEventClasses() )
             );
 
         } finally {
@@ -159,6 +148,41 @@ class EventQueue  {
         }
     }
 
+    /**
+     * A blob queued before the PSR-4 relocation, renamed to the class it holds.
+     *
+     * Such a payload names the pre-namespace class, `O:9:"owa_event":`. No
+     * class of that name exists any more, and allowed_classes matches the name
+     * as written in the blob, so it would decode to __PHP_Incomplete_Class.
+     * The top-level object's name is rewritten instead -- the only place the
+     * event's class is written, since its properties are arrays and scalars.
+     */
+    protected static function currentClassName( $blob ) {
+
+        $legacy = 'O:9:"owa_event":';
+
+        if ( strncmp( $blob, $legacy, strlen( $legacy ) ) !== 0 ) {
+
+            return $blob;
+        }
+
+        $current = 'OWA\\Module\\Base\\Classes\\Event';
+
+        return sprintf( 'O:%d:"%s":', strlen( $current ), $current ) . substr( $blob, strlen( $legacy ) );
+    }
+
+    /**
+     * Whether a decoded blob is something the queue can actually drive.
+     *
+     * unserialize() with an allowed_classes list does not fail on a name outside
+     * the list -- it hands back __PHP_Incomplete_Class, which throws on the first
+     * method call. Callers used to invoke a method straight away, so one
+     * undecodable message aborted the whole drain, and on the db queue the item
+     * was never removed, so it threw again on every subsequent run: the queue
+     * stopped permanently and grew from then on.
+     *
+     * Checked rather than trusted, so a bad message is one skipped item.
+     */
     protected static function isUsableEvent( $event ) {
 
         return is_object( $event )
@@ -206,30 +230,6 @@ class EventQueue  {
                 // Fall back to the base class. A decode that then fails is
                 // visible as an unprocessable queue item, not a silent
                 // widening of what may be instantiated.
-            }
-
-            // Payloads queued BEFORE the PSR-4 relocation name the pre-namespace
-            // class ('owa_event'). allowed_classes matches the name as written in
-            // the blob, not what that name resolves to, so without the legacy
-            // aliases such a message decodes to __PHP_Incomplete_Class -- and the
-            // first method call on it throws, aborting the entire drain.
-            //
-            // Taken from the compat map rather than written out here, so a class
-            // that gains an alias later needs no edit in this file. The aliases
-            // are the same names class_alias() already resolves to the classes
-            // above, so this widens nothing: it admits the old spelling of a
-            // class that was admissible anyway.
-            if ( function_exists( 'owa_compat_class_map' ) ) {
-
-                $allowed = array_flip( $classes );
-
-                foreach ( owa_compat_class_map() as $legacy => $fqcn ) {
-
-                    if ( isset( $allowed[ $fqcn ] ) ) {
-
-                        $classes[] = $legacy;
-                    }
-                }
             }
 
             $classes = array_values( array_unique( $classes ) );

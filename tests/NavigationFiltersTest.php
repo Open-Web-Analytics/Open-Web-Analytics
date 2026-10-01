@@ -33,7 +33,7 @@ final class NavigationFiltersTest extends TestCase
 
         foreach (['nav_header', 'nav_site_control', 'nav_reports', 'nav_settings',
                   'nav_view', 'nav_hierarchy', 'report_links'] as $filter) {
-            owa_coreAPI::registerFilter($filter, self::class . '::on_' . $filter, 99);
+            \OWA\Core\CoreAPI::registerFilter($filter, self::class . '::on_' . $filter, 99);
         }
     }
 
@@ -97,7 +97,7 @@ final class NavigationFiltersTest extends TestCase
         // The gate keeps an entry exactly when the current user has its
         // capability -- an admin has every one -- so the expectation follows
         // whoever this process is signed in as.
-        $capable = owa_coreAPI::getCurrentUser()->isCapable('no_such_capability_anyone_has');
+        $capable = \OWA\Core\CoreAPI::getCurrentUser()->isCapable('no_such_capability_anyone_has');
 
         $this->assertSame($capable ? ['keep', 'nobody', 'added'] : ['keep', 'added'],
             array_column($links, 'id'),
@@ -130,7 +130,7 @@ final class NavigationFiltersTest extends TestCase
     {
         self::$on = 'nav_reports';
 
-        $nav = (array) owa_coreAPI::getGroupNavigation('Reports');
+        $nav = (array) \OWA\Core\CoreAPI::getGroupNavigation('Reports');
 
         $this->assertSame('Added by a module', end($nav)['label'] ?? null);
         $this->assertSame(['Reports'], self::$context);
@@ -140,7 +140,7 @@ final class NavigationFiltersTest extends TestCase
     {
         self::$on = 'nav_settings';
 
-        $panels = owa_coreAPI::getAdminPanels();
+        $panels = \OWA\Core\CoreAPI::getAdminPanels();
 
         $this->assertSame('added', end($panels)['id'] ?? null);
     }
@@ -149,7 +149,7 @@ final class NavigationFiltersTest extends TestCase
     {
         self::$on = 'nav_view';
 
-        $nav = (array) owa_coreAPI::getNavigation('some.view', 'some_nav');
+        $nav = (array) \OWA\Core\CoreAPI::getNavigation('some.view', 'some_nav');
 
         $this->assertContains('added', array_column($nav, 'id'),
             'a filter can put an entry on a nav nobody registered anything for');

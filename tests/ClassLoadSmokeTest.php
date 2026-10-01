@@ -8,11 +8,10 @@ use PHPUnit\Framework\TestCase;
  *
  * WHY THIS EXISTS
  * ---------------
- * OWA loads its ~340 classes by hand-rolled factories + require_once against
- * an explicit FILE PATH (owa_coreAPI::moduleFactory / owa_lib::factory /
- * moduleRequireOnce). When a class file is missing, mis-named, or its class
- * symbol doesn't match what the factory synthesizes, the failure is SILENT at
- * load time — moduleRequireOnce just debug-logs and returns false — and only
+ * OWA builds most of its ~340 classes through factories that derive a PSR-4
+ * class name from a module and a directory (\OWA\Core\CoreAPI::moduleFactory,
+ * \OWA\Core\Lib::factory). When a class file is missing, mis-named, or its
+ * class symbol doesn't match what the factory derives, the failure only
  * surfaces as a runtime "class not found" on whatever report page or CLI
  * command happens to touch that class. The existing unit + e2e suites walk
  * only a fraction of those paths, so a dropped/renamed class can sail through.

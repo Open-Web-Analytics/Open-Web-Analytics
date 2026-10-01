@@ -33,7 +33,7 @@ final class RealtimeTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id' => self::PROPERTY, 'name' => 'Realtime fixture', 'domain' => 'example.test',
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB, 'creation_date' => time(),
@@ -43,7 +43,7 @@ final class RealtimeTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties([
             'id' => self::PROPERTY * 10, 'site_id' => self::SITE, 'property_id' => self::PROPERTY,
             'name' => 'Realtime fixture profile', 'domain' => 'example.test',
@@ -70,33 +70,33 @@ final class RealtimeTest extends TestCase
         // Now, less a minute, so every seeded row is in the past but today.
         $this->end = (int) round(microtime(true) * 1000000) - 60000000;
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory($entity)->getTableName(), self::SITE));
+                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), self::SITE));
         }
     }
 
     protected function tearDown(): void
     {
         foreach ($this->goals as $id) {
-            owa_coreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [$id]);
-            owa_coreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE id = ?', [$id]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [$id]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE id = ?', [$id]);
         }
     }
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory($entity)->getTableName(), self::SITE));
+                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), self::SITE));
         }
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
     }
 
     /** One raw event, $minutes before the window's end. */
@@ -106,7 +106,7 @@ final class RealtimeTest extends TestCase
         $ts = $this->end - (int) round($minutes * 60 * 1000000);
         $tz = new DateTimeZone(\OWA\Module\Base\Classes\JobStatus::timezone());
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties($values + [
             'id'            => \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::VISITOR + $visitor, 8899400000000000 + $n, $ts, 'page_view'),
             'event_type'    => 'page_view',
@@ -126,7 +126,7 @@ final class RealtimeTest extends TestCase
 
     private function store(int $visitor, array $values): void
     {
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties($values + ['visitor_id' => self::VISITOR + $visitor, 'site_id' => self::SITE]);
 
         $this->assertTrue($entity->create(), 'seeding owa_visitor_acquisition');
@@ -185,7 +185,7 @@ final class RealtimeTest extends TestCase
                 '/r\.site_id = \? AND r\.yyyymmdd BETWEEN \d{8} AND \d{8} AND r\.ts > \d+ AND r\.ts <= \d+/', $sql, $sql);
         }
 
-        $explain = (array) owa_coreAPI::dbSingleton()->get_row(
+        $explain = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             'EXPLAIN ' . $realtime->statements[0], [self::SITE]);
 
         $this->assertStringContainsString('site_ts', (string) ($explain['possible_keys'] ?? ''),
@@ -273,10 +273,10 @@ final class RealtimeTest extends TestCase
         $this->event(3, 1, ['page_path' => '/home', 'is_goal_event' => 1]);
         $this->event(4, 1, ['page_path' => '/pricing']);
 
-        $before = owa_coreAPI::dbSingleton()->lastQueryError();
+        $before = \OWA\Core\CoreAPI::dbSingleton()->lastQueryError();
         $goals  = $this->realtime()->summary()['goals'];
 
-        $this->assertSame($before, owa_coreAPI::dbSingleton()->lastQueryError(),
+        $this->assertSame($before, \OWA\Core\CoreAPI::dbSingleton()->lastQueryError(),
             'a goal raw cannot express is skipped, not sent to the server to be refused');
         $this->assertSame(3, $goals['total']);
         $this->assertSame([['name' => 'Pricing visit', 'count' => 2]], $goals['byGoal']);
@@ -298,7 +298,7 @@ final class RealtimeTest extends TestCase
 
     private function goal(string $name, array $conditions): string
     {
-        $entity = owa_coreAPI::entityFactory('base.goal_event');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
         $id     = $entity->generateId('goal_event:realtime:' . uniqid('', true));
 
         $entity->setProperties(['id' => $id, 'property_id' => self::PROPERTY, 'name' => $name,
@@ -307,7 +307,7 @@ final class RealtimeTest extends TestCase
         $this->assertTrue((bool) $entity->create());
 
         foreach ($conditions as $n => $c) {
-            $row = owa_coreAPI::entityFactory('base.goal_event_condition');
+            $row = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
             $row->setProperties(['id' => $row->generateId('goal_event_condition:' . $id . ':' . $n),
                 'goal_event_id' => $id, 'sort_order' => $n + 1, 'condition_property' => $c[0],
                 'condition_operator' => $c[1], 'condition_value' => $c[2],

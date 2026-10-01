@@ -30,9 +30,7 @@
 #
 # Scope is OWA's own templates only. Third-party module templates,
 # site-owner templates/local/ overrides and custom themes are not in this
-# repo and are still written against the bare-variable contract that
-# extract() supports until v2.0 (see UPGRADING.md) -- they must never be
-# analysed here.
+# repo.
 #
 # Run via:  composer phpstan:templates
 #
@@ -60,20 +58,3 @@ parameters:
     # baseline to be regenerated the moment its 29 errors were fixed.
     reportUnmatchedIgnoredErrors: true
 
-    ignoreErrors:
-        # BY DESIGN, not debt. Two install templates read $this->config[...].
-        # ViewScope deliberately does NOT proxy property reads to the Template:
-        # a template's `$this->config` is the Template's own config, which is a
-        # different thing from a view var that happens to be named 'config', and
-        # conflating them let a view var shadow the property and return the wrong
-        # value. So property reads stay as `$this->` in templates (see the
-        # ViewScope class docblock), and `$this` is legitimately in scope at
-        # runtime because the include happens inside TemplateEngine::fetch().
-        # PHPStan analyses each template as a standalone file, where $this
-        # cannot exist -- an artifact of the analysis, not a defect in the code.
-        -
-            message: '#^Variable \$this might not be defined\.$#'
-            identifier: variable.undefined
-            paths:
-                - modules/Base/templates/install_config_entry.php
-                - modules/Base/templates/install_start.php

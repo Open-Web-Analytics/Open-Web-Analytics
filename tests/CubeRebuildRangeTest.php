@@ -125,7 +125,7 @@ final class CubeRebuildRangeTest extends TestCase
 
         $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
 
-        $this->assertFalse(owa_coreAPI::dbSingleton()->tableExists($table),
+        $this->assertFalse(\OWA\Core\CoreAPI::dbSingleton()->tableExists($table),
             'this Property is chosen because it has no cube');
 
         $held = new \OWA\Module\Base\Classes\JobLease('cube-build:' . $table);

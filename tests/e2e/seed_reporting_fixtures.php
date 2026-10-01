@@ -21,7 +21,7 @@
  * fixture user on the test schema -- never a production account.
  *
  * The pageview events are fired through the SAME ingestion pipeline the tracker
- * beacon uses (owa_coreAPI::logEvent), mirroring tests/IngestionTestCase.php, so
+ * beacon uses (\OWA\Core\CoreAPI::logEvent), mirroring tests/IngestionTestCase.php, so
  * the seeded data is realistic and lands in the real fact/dimension tables.
  */
 
@@ -332,17 +332,17 @@ function seed(): array
     // 1. Site. createNewSite() is still idempotent -- it now recognises the
     //    domain by lookup rather than by deriving its identifier -- and the
     //    identifier is pinned so the specs can reference it without a query.
-    $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+    $sm = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
     $sm->createNewSite(E2E_SITE_DOMAIN, E2E_SITE_NAME, '', '', E2E_SITE_ID);
 
     // 2. User with a known password (idempotent: skip if already present).
-    $u = owa_coreAPI::entityFactory('base.user');
+    $u = \OWA\Core\CoreAPI::entityFactory('base.user');
     $u->load(E2E_USER_ID, 'user_id');
     if (!$u->get('id')) {
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->createNewUser(E2E_USER_ID, E2E_USER_ROLE, E2E_USER_PASS, E2E_USER_ID, E2E_USER_NAME);
         // reload so we have the persisted internal id for the site grant below.
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->load(E2E_USER_ID, 'user_id');
     }
 
@@ -350,10 +350,10 @@ function seed(): array
     //     the admin role's edit_* capabilities are not in
     //     capabilitiesThatRequireSiteAccess, so the admin-actions suite can log
     //     in and reach every options/users/sites/modules screen without one.
-    $a = owa_coreAPI::entityFactory('base.user');
+    $a = \OWA\Core\CoreAPI::entityFactory('base.user');
     $a->load(E2E_ADMIN_ID, 'user_id');
     if (!$a->get('id')) {
-        $a = owa_coreAPI::entityFactory('base.user');
+        $a = \OWA\Core\CoreAPI::entityFactory('base.user');
         $a->createNewUser(E2E_ADMIN_ID, E2E_ADMIN_ROLE, E2E_ADMIN_PASS, E2E_ADMIN_ID, E2E_ADMIN_NAME);
     }
 
@@ -362,10 +362,10 @@ function seed(): array
     //     without a base.site_user relation the login succeeds but every report
     //     page is denied. The relation is keyed by INTERNAL ids (not the md5
     //     site_id / user_id string), mirroring siteAddAllowedUserRestController.
-    $s = owa_coreAPI::entityFactory('base.site');
+    $s = \OWA\Core\CoreAPI::entityFactory('base.site');
     $s->load(E2E_SITE_ID, 'site_id');
     if ($u->get('id') && $s->get('id') && !siteUserRelationExists($u->get('id'), $s->get('id'))) {
-        $rel = owa_coreAPI::entityFactory('base.site_user');
+        $rel = \OWA\Core\CoreAPI::entityFactory('base.site_user');
         $rel->set('user_id', $u->get('id'));
         $rel->set('site_id', $s->get('id'));
         $rel->save();
@@ -375,12 +375,12 @@ function seed(): array
     //     the known starting password + known temp_passkey so the password test
     //     is re-runnable (a prior run's successful change rotates both). The
     //     passkey is what the browser submits as owa_k to the real change form.
-    $pw = owa_coreAPI::entityFactory('base.user');
+    $pw = \OWA\Core\CoreAPI::entityFactory('base.user');
     $pw->load(E2E_PWUSER_ID, 'user_id');
     if (!$pw->get('id')) {
-        $pw = owa_coreAPI::entityFactory('base.user');
+        $pw = \OWA\Core\CoreAPI::entityFactory('base.user');
         $pw->createNewUser(E2E_PWUSER_ID, E2E_PWUSER_ROLE, E2E_PWUSER_PASS, E2E_PWUSER_ID, E2E_PWUSER_NAME);
-        $pw = owa_coreAPI::entityFactory('base.user');
+        $pw = \OWA\Core\CoreAPI::entityFactory('base.user');
         $pw->load(E2E_PWUSER_ID, 'user_id');
     }
     if ($pw->get('id')) {
@@ -395,13 +395,13 @@ function seed(): array
      *     it, so every run resets it -- but a user of its own, because the two
      *     specs would otherwise take turns invalidating each other's login.
      */
-    $ppw = owa_coreAPI::entityFactory('base.user');
+    $ppw = \OWA\Core\CoreAPI::entityFactory('base.user');
     $ppw->load(E2E_PROFILEPW_ID, 'user_id');
     if (!$ppw->get('id')) {
-        $ppw = owa_coreAPI::entityFactory('base.user');
+        $ppw = \OWA\Core\CoreAPI::entityFactory('base.user');
         $ppw->createNewUser(E2E_PROFILEPW_ID, E2E_PROFILEPW_ROLE, E2E_PROFILEPW_PASS,
             E2E_PROFILEPW_ID, E2E_PROFILEPW_NAME);
-        $ppw = owa_coreAPI::entityFactory('base.user');
+        $ppw = \OWA\Core\CoreAPI::entityFactory('base.user');
         $ppw->load(E2E_PROFILEPW_ID, 'user_id');
     }
     if ($ppw->get('id')) {
@@ -457,8 +457,8 @@ function seed(): array
     // 4. E-commerce. The setting is per-site; enabling it is what makes the
     //    e-commerce tab appear on the session-based reports and lets the
     //    commerce reports return rows.
-    owa_coreAPI::persistSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting', true);
-    $out['ecommerce_enabled']   = (bool) owa_coreAPI::getSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting');
+    \OWA\Core\CoreAPI::persistSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting', true);
+    $out['ecommerce_enabled']   = (bool) \OWA\Core\CoreAPI::getSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting');
     $out['transactions_seeded'] = seedTransactions();
 
     // 5. Notifications for the header bell.
@@ -469,8 +469,8 @@ function seed(): array
     //    including one stored as several chunks, which is the case its
     //    aggregates exist for. The report, its tables and its route are the
     //    Domstream module's, which a fresh install does not activate.
-    if (!owa_coreAPI::getSetting('domstream', 'is_active')) {
-        owa_coreAPI::installModule('domstream');
+    if (!\OWA\Core\CoreAPI::getSetting('domstream', 'is_active')) {
+        \OWA\Core\CoreAPI::installModule('domstream');
         $out['domstream_module'] = 'installed';
     }
 
@@ -522,7 +522,7 @@ function seed(): array
  */
 function seedCube(): array
 {
-    $site = owa_coreAPI::entityFactory('base.site');
+    $site = \OWA\Core\CoreAPI::entityFactory('base.site');
     $site->load(E2E_SITE_ID, 'site_id');
 
     $property_id = (string) $site->get('property_id');
@@ -532,8 +532,8 @@ function seedCube(): array
         return array('status' => 'no property on the fixture site');
     }
 
-    $db  = owa_coreAPI::dbSingleton();
-    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+    $db  = \OWA\Core\CoreAPI::dbSingleton();
+    $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 
     $span = $db->get_row(sprintf(
         "SELECT MIN(yyyymmdd) AS lo, MAX(yyyymmdd) AS hi FROM %s WHERE site_id = '%s'",
@@ -587,7 +587,7 @@ function seedCube(): array
  */
 function seedOthersReport(): array
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_custom_report');
     $db->selectColumn('*');
 
@@ -629,7 +629,7 @@ function seedOthersReport(): array
  */
 function seedBreakdownReport(): array
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_custom_report');
     $db->selectColumn('*');
 
@@ -668,7 +668,7 @@ function seedBreakdownReport(): array
 /** Remove the broken-out-trend fixture, by name. */
 function unseedBreakdownReport(): int
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_custom_report');
     $db->selectColumn('*');
 
@@ -689,7 +689,7 @@ function unseedBreakdownReport(): int
 /** Remove the somebody-else's-report fixture, by name. */
 function unseedOthersReport(): int
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_custom_report');
     $db->selectColumn('*');
 
@@ -893,7 +893,7 @@ function unseedPropertyIfEmpty($propertyId): void
         return;
     }
 
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_site');
     $db->selectColumn('id');
     $db->where('property_id', $propertyId);
@@ -902,13 +902,13 @@ function unseedPropertyIfEmpty($propertyId): void
         return;
     }
 
-    owa_coreAPI::entityFactory('base.property')->delete($propertyId, 'id');
+    \OWA\Core\CoreAPI::entityFactory('base.property')->delete($propertyId, 'id');
 }
 
 /** Remove the fixture notifications and every per-user state row pointing at them. */
 function unseedNotifications(): int
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_notification');
     $db->selectColumn('*');
 
@@ -920,9 +920,9 @@ function unseedNotifications(): int
             continue;
         }
 
-        owa_coreAPI::entityFactory('base.notification')->delete($row['id']);
+        \OWA\Core\CoreAPI::entityFactory('base.notification')->delete($row['id']);
 
-        $d = owa_coreAPI::dbSingleton();
+        $d = \OWA\Core\CoreAPI::dbSingleton();
         $d->deleteFrom('owa_notification_state');
         $d->where('notification_id', $row['id']);
         $d->executeQuery();
@@ -957,7 +957,7 @@ function seedFunnelVisualization(): array
         $steps[] = $step + ['step_number' => $i + 1];
     }
 
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_custom_report');
     $db->selectColumn('*');
 
@@ -972,7 +972,7 @@ function seedFunnelVisualization(): array
         }
     }
 
-    $report = owa_coreAPI::entityFactory('base.custom_report');
+    $report = \OWA\Core\CoreAPI::entityFactory('base.custom_report');
 
     if ($id !== '') {
         $report->load($id);
@@ -984,7 +984,7 @@ function seedFunnelVisualization(): array
     // ENCODED: the column is a blob holding JSON, and handing it an array
     // stores the string "Array" -- which renders as a funnel with no steps.
     $report->set('definition', json_encode(['steps' => $steps]));
-    $report->set('last_updated_timestamp', owa_coreAPI::getRequestTimestamp());
+    $report->set('last_updated_timestamp', \OWA\Core\CoreAPI::getRequestTimestamp());
 
     if ($report->wasPersisted()) {
 
@@ -1008,7 +1008,7 @@ function seedFunnelVisualization(): array
          * visualization, not an administrator's.
          */
         $report->set('user_id', E2E_USER_ID);
-        $report->set('creation_timestamp', owa_coreAPI::getRequestTimestamp());
+        $report->set('creation_timestamp', \OWA\Core\CoreAPI::getRequestTimestamp());
         $report->create();
     }
 
@@ -1035,7 +1035,7 @@ function seedFunnelVisualization(): array
 /** Remove the funnel visualization fixture, by name. */
 function unseedFunnelVisualization(): int
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_custom_report');
     $db->selectColumn('*');
 
@@ -1056,7 +1056,7 @@ function unseedFunnelVisualization(): int
 /** The fixture goal event's id: derived, so a re-seed updates rather than duplicates. */
 function e2eGoalEventId(): string
 {
-    return (string) owa_coreAPI::entityFactory('base.goal_event')
+    return (string) \OWA\Core\CoreAPI::entityFactory('base.goal_event')
         ->generateId('goal_event:e2e:' . E2E_SITE_ID);
 }
 
@@ -1076,7 +1076,7 @@ function seedGoal(): array
      */
     $id = e2eGoalEventId();
 
-    $goalEvent = owa_coreAPI::entityFactory('base.goal_event');
+    $goalEvent = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
     $goalEvent->load($id);
 
     $goalEvent->set('property_id', \OWA\Module\Base\Entity\GoalEvent::propertyFor(E2E_SITE_ID));
@@ -1088,28 +1088,28 @@ function seedGoal(): array
         $goalEvent->update();
     } else {
         $goalEvent->set('id', $id);
-        $goalEvent->set('creation_date', owa_coreAPI::getRequestTimestamp());
+        $goalEvent->set('creation_date', \OWA\Core\CoreAPI::getRequestTimestamp());
         $goalEvent->create();
     }
 
-    $db = owa_coreAPI::dbSingleton();
-    $db->deleteFrom(owa_coreAPI::entityFactory('base.goal_event_condition')->getTableName());
+    $db = \OWA\Core\CoreAPI::dbSingleton();
+    $db->deleteFrom(\OWA\Core\CoreAPI::entityFactory('base.goal_event_condition')->getTableName());
     $db->where('goal_event_id', $id);
     $db->executeQuery();
 
-    $condition = owa_coreAPI::entityFactory('base.goal_event_condition');
+    $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
     $condition->set('id', $condition->generateId('goal_event_condition:' . $id . ':1'));
     $condition->set('goal_event_id', $id);
     $condition->set('sort_order', 1);
     $condition->set('condition_property', 'page_path');
     $condition->set('condition_operator', 'exact');
     $condition->set('condition_value', E2E_GOAL_URL);
-    $condition->set('creation_date', owa_coreAPI::getRequestTimestamp());
+    $condition->set('creation_date', \OWA\Core\CoreAPI::getRequestTimestamp());
     $condition->create();
 
     // Read back, so the seed output reports what the database holds rather than
     // what was handed to it.
-    $stored = owa_coreAPI::entityFactory('base.goal_event');
+    $stored = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
     $stored->load($id);
     $conditions = $stored->loadConditions();
 
@@ -1134,7 +1134,7 @@ function teardown(): array
 
     foreach ([rawTable()] as $table) {
         try {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->deleteFrom($table);
             $db->where('site_id', $site_id);
             $db->executeQuery();
@@ -1157,7 +1157,7 @@ function teardown(): array
      */
     foreach (E2E_REFERERS as $url) {
         try {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->deleteFrom('owa_referer');
             $db->where('id', \OWA\Core\Lib::setStringGuid($url));
             $db->executeQuery();
@@ -1188,14 +1188,14 @@ function teardown(): array
     try {
         $goalEventId = e2eGoalEventId();
 
-        $goalEvent = owa_coreAPI::entityFactory('base.goal_event');
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
         $goalEvent->load($goalEventId);
 
         if ($goalEvent->wasPersisted()) {
 
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->deleteFrom(
-                owa_coreAPI::entityFactory('base.goal_event_condition')->getTableName());
+                \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition')->getTableName());
             $db->where('goal_event_id', $goalEventId);
             $db->executeQuery();
 
@@ -1211,12 +1211,12 @@ function teardown(): array
 
     // Remove the site_user grant (keyed by internal ids), then the user & site.
     try {
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->load(E2E_USER_ID, 'user_id');
-        $s = owa_coreAPI::entityFactory('base.site');
+        $s = \OWA\Core\CoreAPI::entityFactory('base.site');
         $s->load($site_id, 'site_id');
         if ($u->get('id') && $s->get('id')) {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->deleteFrom('owa_site_user');
             $db->where('user_id', $u->get('id'));
             $db->where('site_id', $s->get('id'));
@@ -1232,12 +1232,12 @@ function teardown(): array
      * run holding the previous one's rows.
      */
     try {
-        $cubeSite = owa_coreAPI::entityFactory('base.site');
+        $cubeSite = \OWA\Core\CoreAPI::entityFactory('base.site');
         $cubeSite->load(E2E_SITE_ID, 'site_id');
         $property = (string) $cubeSite->get('property_id');
 
         if ($property) {
-            $db    = owa_coreAPI::dbSingleton();
+            $db    = \OWA\Core\CoreAPI::dbSingleton();
             $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property);
 
             // The staging and side tables too: a build that died between
@@ -1253,14 +1253,14 @@ function teardown(): array
     } catch (\Throwable $e) { $removed['cube'] = 'skip: ' . $e->getMessage(); }
 
     // Remove the fixture users (analyst + admin) and site.
-    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_USER_ID, 'user_id'); } catch (\Throwable $e) {}
-    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_ADMIN_ID, 'user_id'); } catch (\Throwable $e) {}
-    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_PWUSER_ID, 'user_id'); } catch (\Throwable $e) {}
-    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_PROFILEPW_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { \OWA\Core\CoreAPI::entityFactory('base.user')->delete(E2E_USER_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { \OWA\Core\CoreAPI::entityFactory('base.user')->delete(E2E_ADMIN_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { \OWA\Core\CoreAPI::entityFactory('base.user')->delete(E2E_PWUSER_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { \OWA\Core\CoreAPI::entityFactory('base.user')->delete(E2E_PROFILEPW_ID, 'user_id'); } catch (\Throwable $e) {}
     // CRUD-test leftovers (only present if an add-then-delete test aborted midway).
-    try { owa_coreAPI::entityFactory('base.user')->delete(E2E_NEW_USER_ID, 'user_id'); } catch (\Throwable $e) {}
+    try { \OWA\Core\CoreAPI::entityFactory('base.user')->delete(E2E_NEW_USER_ID, 'user_id'); } catch (\Throwable $e) {}
     try {
-        $cs = owa_coreAPI::entityFactory('base.site');
+        $cs = \OWA\Core\CoreAPI::entityFactory('base.site');
         // Created through the admin UI, so its identifier is minted and cannot
         // be predicted here. The domain is what this cleanup actually knows.
         $cs->load(E2E_NEW_SITE_DOMAIN, 'domain');
@@ -1271,7 +1271,7 @@ function teardown(): array
         }
     } catch (\Throwable $e) {}
     try {
-        $s = owa_coreAPI::entityFactory('base.site');
+        $s = \OWA\Core\CoreAPI::entityFactory('base.site');
         $s->load($site_id, 'site_id');
         if ($s->get('id')) {
             $property = $s->get('property_id');
@@ -1353,10 +1353,10 @@ function seedTransactions(): int
          * because toMinorUnits() is what converts them to what the column stores.
          * Passing cents here would report a hundredfold.
          */
-        $rc = owa_coreAPI::requestContainerSingleton();
+        $rc = \OWA\Core\CoreAPI::requestContainerSingleton();
         $rc->setTimestamp($ts);
 
-        $purchase = owa_coreAPI::supportClassFactory('base', 'event');
+        $purchase = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $purchase->setEventType('ecommerce.transaction');
         $purchase->setProperties([
             'site_id'         => $site_id,
@@ -1390,7 +1390,7 @@ function seedTransactions(): int
             }, $txn['items'])),
         ]);
 
-        owa_coreAPI::logEvent('ecommerce.transaction', $purchase);
+        \OWA\Core\CoreAPI::logEvent('ecommerce.transaction', $purchase);
 
         $rc->setTimestamp(time());
 
@@ -1402,7 +1402,7 @@ function seedTransactions(): int
 function seedPageviews(int $n): int
 {
     $site_id = E2E_SITE_ID;
-    $rc = owa_coreAPI::requestContainerSingleton();
+    $rc = \OWA\Core\CoreAPI::requestContainerSingleton();
 
     // Two stable visitor identities so repeat-visitor reports have a returning
     // visitor. Generated once; reused across each visitor's two sessions.
@@ -1566,11 +1566,11 @@ function seedPageviews(int $n): int
                 $props['HTTP_REFERER'] = $referer;
             }
 
-            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setEventType('base.page_request');
             $event->setProperties($props);
 
-            if (owa_coreAPI::logEvent('base.page_request', $event) !== false) {
+            if (\OWA\Core\CoreAPI::logEvent('base.page_request', $event) !== false) {
                 $count++;
             }
         }
@@ -1621,7 +1621,7 @@ function seedClicks(): array
         ];
     }
 
-    $rc = owa_coreAPI::requestContainerSingleton();
+    $rc = \OWA\Core\CoreAPI::requestContainerSingleton();
 
     // One visitor, one session, a single day inside the reporting window. The
     // clicks do not need to be spread out -- what varies here is WHERE they
@@ -1644,7 +1644,7 @@ function seedClicks(): array
 
             $url = E2E_SITE_DOMAIN . $click['page'];
 
-            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setEventType('dom.click');
             $event->setProperties([
                 'site_id'            => E2E_SITE_ID,
@@ -1668,7 +1668,7 @@ function seedClicks(): array
                 'dom_element_value'  => '(not set)',
             ]);
 
-            if (owa_coreAPI::logEvent('dom.click', $event) !== false) {
+            if (\OWA\Core\CoreAPI::logEvent('dom.click', $event) !== false) {
                 $written++;
             }
         }
@@ -1749,7 +1749,7 @@ function seedActions(): array
         ];
     }
 
-    $rc = owa_coreAPI::requestContainerSingleton();
+    $rc = \OWA\Core\CoreAPI::requestContainerSingleton();
 
     $visitor_id = numericGuid();
     $session_id = numericGuid();
@@ -1767,7 +1767,7 @@ function seedActions(): array
             $rc->setTimestamp($day + ($offset * 60));
             $offset++;
 
-            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setEventType($action['name']);
             $event->setProperties([
                 'site_id'          => E2E_SITE_ID,
@@ -1783,7 +1783,7 @@ function seedActions(): array
                 'epn_value'        => $action['value'],
             ]);
 
-            if (owa_coreAPI::logEvent($action['name'], $event) !== false) {
+            if (\OWA\Core\CoreAPI::logEvent($action['name'], $event) !== false) {
                 $written++;
             }
         }
@@ -1827,7 +1827,7 @@ function seedActions(): array
 /** The raw table, asked for rather than spelled out. */
 function rawTable(): string
 {
-    return owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+    return \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 }
 
 /**
@@ -1843,7 +1843,7 @@ function rawTable(): string
  */
 function sessionFromRaw(string $site_id, string $and = ''): ?array
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->connect();
 
     $rows = $db->get_results(
@@ -1884,7 +1884,7 @@ function sessionForDay(string $site_id, int $yyyymmdd): ?array
  */
 function sessionByReferer(string $site_id, string $referer_url): ?array
 {
-    $db   = owa_coreAPI::dbSingleton();
+    $db   = \OWA\Core\CoreAPI::dbSingleton();
     $host = (string) parse_url($referer_url, PHP_URL_HOST);
 
     if ($host === '') {
@@ -1910,7 +1910,7 @@ function countActionRows(): int
 
 function countRawRows(?string $event_type = null): int
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->connect();
 
     $rows = $db->get_results(
@@ -1926,7 +1926,7 @@ function countRawRows(?string $event_type = null): int
 /** Whether raw already carries the purchase for this order id. */
 function purchaseAlreadySeeded(string $order_id): bool
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->connect();
 
     $rows = $db->get_results(
@@ -1949,7 +1949,7 @@ function numericGuid(): string
 
 function countSiteRequests(string $site_id): int
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_request');
     $db->selectColumn('COUNT(*) AS c');
     $db->where('site_id', $site_id);
@@ -1960,7 +1960,7 @@ function countSiteRequests(string $site_id): int
 /** Whether a base.site_user grant already links these INTERNAL ids. */
 function siteUserRelationExists($user_internal_id, $site_internal_id): bool
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->selectFrom('owa_site_user');
     $db->selectColumn('COUNT(*) AS c');
     $db->where('user_id', $user_internal_id);

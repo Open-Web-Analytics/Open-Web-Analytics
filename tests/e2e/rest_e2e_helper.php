@@ -42,7 +42,7 @@ $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
-$connected_db = (string) owa_coreAPI::getSetting('base', 'db_name');
+$connected_db = (string) \OWA\Core\CoreAPI::getSetting('base', 'db_name');
 $allowed_db   = getenv('OWA_E2E_DB_NAME') ?: SCRATCH_DB_SENTINEL;
 
 if ($connected_db !== $allowed_db) {
@@ -57,7 +57,7 @@ $cmd = $argv[1] ?? '';
 switch ($cmd) {
     case 'provision': out(provision()); break;
     case 'cleanup':   out(cleanup());   break;
-    case 'modules':   out(['active' => (array) owa_coreAPI::getSetting('base', 'modules')]); break;
+    case 'modules':   out(['active' => (array) \OWA\Core\CoreAPI::getSetting('base', 'modules')]); break;
     default:
         fwrite(STDERR, "Unknown command '$cmd'. Use: provision | cleanup | modules\n");
         exit(2);
@@ -79,13 +79,13 @@ function provision(): array
 
     $user_id = FIXTURE_TAG . '-admin@owatest.example.com';
 
-    $u = owa_coreAPI::entityFactory('base.user');
+    $u = \OWA\Core\CoreAPI::entityFactory('base.user');
     $u->createNewUser($user_id, 'admin', 'pw-' . FIXTURE_TAG, $user_id, 'OWA REST e2e admin');
     $u->load($u->generateId($user_id), 'user_id');
 
     $site_domain = 'https://' . FIXTURE_TAG . '.example.com';
 
-    $s = owa_coreAPI::entityFactory('base.site');
+    $s = \OWA\Core\CoreAPI::entityFactory('base.site');
     $s->set('id', $s->generateId($site_domain));
     $s->set('site_id', $s->generateId($site_domain));
     $s->set('domain', $site_domain);
@@ -104,7 +104,7 @@ function provision(): array
 
 function cleanup(): array
 {
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
 
     // Users and sites this fixture created, matched on the tag so a stray run
     // cannot delete anything a different spec relies on.
@@ -112,7 +112,7 @@ function cleanup(): array
     $db->where('user_id', '%' . FIXTURE_TAG . '%', 'LIKE');
     $db->executeQuery();
 
-    $db = owa_coreAPI::dbSingleton();
+    $db = \OWA\Core\CoreAPI::dbSingleton();
     $db->deleteFrom('owa_site');
     $db->where('domain', '%' . FIXTURE_TAG . '%', 'LIKE');
     $db->executeQuery();

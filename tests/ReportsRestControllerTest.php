@@ -72,7 +72,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     {
         foreach ($this->cubes as $property) {
             foreach (['', '_rebuild', '_computed'] as $suffix) {
-                owa_coreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s%s',
+                \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s%s',
                     \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property), $suffix));
             }
         }

@@ -42,7 +42,7 @@ final class EntityFalsyWriteTest extends TestCase
 
     private function row()
     {
-        return owa_coreAPI::entityFactory('base.event_raw');
+        return \OWA\Core\CoreAPI::entityFactory('base.event_raw');
     }
 
     public function testANumericColumnAcceptsZero(): void
@@ -170,7 +170,7 @@ final class EntityFalsyWriteTest extends TestCase
             $this->markTestSkipped('No database available.');
         }
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $id = '9111222333444555777';
         $db->query("DELETE FROM owa_event_raw WHERE id = $id");
 

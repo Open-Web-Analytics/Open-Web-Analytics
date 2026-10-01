@@ -43,20 +43,20 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
 
         $this->table = 'owa_cube_room_' . bin2hex(random_bytes(3));
 
-        $entity = owa_coreAPI::entityFactory('base.event');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event');
         $entity->setTableName(substr($this->table, 4));
         $entity->createTable();
 
         // Row size has nothing to do with how rows are divided up, and an
         // ALTER across seventy-odd partitions is a rebuild of each. Dropping
         // them takes this file from a minute and a half to a few seconds.
-        owa_coreAPI::dbSingleton()->removePartitioning($this->table);
+        \OWA\Core\CoreAPI::dbSingleton()->removePartitioning($this->table);
     }
 
     protected function tearDown(): void
     {
         if ($this->table !== '') {
-            owa_coreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s', $this->table));
+            \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s', $this->table));
         }
     }
 
@@ -71,7 +71,7 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
      */
     public function testTheCubeIsCreatedWithTheRowFormatItNeeds(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $this->assertTrue($db->tableExists($this->table), 'the probe cube should be created');
 
@@ -93,7 +93,7 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
      */
     public function testTheCubeWouldNotSurviveACompactRow(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $this->assertFalse(
             (bool) @$db->query(sprintf('ALTER TABLE %s ROW_FORMAT=COMPACT', $this->table)),
@@ -115,7 +115,7 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
      */
     public function testThereIsRoomForAUsefulNumberOfDimensions(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $n  = 0;
 
         while ($n < Dimensions::MAX_PER_PROPERTY) {

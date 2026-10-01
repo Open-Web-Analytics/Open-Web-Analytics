@@ -39,7 +39,7 @@ final class DimensionResolutionTest extends TestCase
 
     private function manager(): object
     {
-        return owa_coreAPI::supportClassFactory('base', 'resultSetManager');
+        return \OWA\Core\CoreAPI::supportClassFactory('base', 'resultSetManager');
     }
 
     /**

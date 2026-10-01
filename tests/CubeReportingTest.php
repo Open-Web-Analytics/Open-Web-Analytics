@@ -39,7 +39,7 @@ final class CubeReportingTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Cube reporting fixture',
@@ -52,7 +52,7 @@ final class CubeReportingTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties([
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
@@ -169,20 +169,20 @@ final class CubeReportingTest extends TestCase
             if (!$event->create()) {
                 throw new \RuntimeException(sprintf(
                     'seeding the fixture cube failed (%s): %s', $row[0],
-                    owa_coreAPI::dbSingleton()->lastQueryError()));
+                    \OWA\Core\CoreAPI::dbSingleton()->lastQueryError()));
             }
         }
     }
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory('base.site')->getTableName(), $db->prepare(self::SITE)));
+            \OWA\Core\CoreAPI::entityFactory('base.site')->getTableName(), $db->prepare(self::SITE)));
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         foreach (['', '_rebuild', '_computed'] as $suffix) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor(self::PROPERTY), $suffix));
@@ -263,7 +263,7 @@ final class CubeReportingTest extends TestCase
         $entity = $this->entityFor($this->manager('pageViews', 'pagePath'), 'base.event_raw');
 
         $this->assertSame(
-            owa_coreAPI::entityFactory('base.event_raw')->getTableName(),
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(),
             $entity->getTableName());
     }
 
@@ -277,8 +277,8 @@ final class CubeReportingTest extends TestCase
      */
     public function testTheAliasIsTheSameWhicheverPropertyIsBound(): void
     {
-        $a = owa_coreAPI::entityFactory('base.event');
-        $b = owa_coreAPI::entityFactory('base.event');
+        $a = \OWA\Core\CoreAPI::entityFactory('base.event');
+        $b = \OWA\Core\CoreAPI::entityFactory('base.event');
 
         $unbound = $a->getTableAlias();
 
@@ -363,7 +363,7 @@ final class CubeReportingTest extends TestCase
             'the cube answers, with its own column and no join');
 
         $this->assertSame('base.event',
-            owa_coreAPI::getAllDimensions()['pagePath']['entity'] ?? null,
+            \OWA\Core\CoreAPI::getAllDimensions()['pagePath']['entity'] ?? null,
             'and the unscoped accessor answers with it too');
     }
 
@@ -373,7 +373,7 @@ final class CubeReportingTest extends TestCase
      */
     public function testTheCubeCarriesTheDimensionsEveryQueryConstrainsOn(): void
     {
-        $registry = owa_coreAPI::serviceSingleton();
+        $registry = \OWA\Core\CoreAPI::serviceSingleton();
 
         $r = new ReflectionObject($registry);
         $p = $r->getProperty('denormalizedDimensions');
@@ -406,7 +406,7 @@ final class CubeReportingTest extends TestCase
      */
     public function testEveryDeclaredDimensionNamesARealCubeColumn(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $columns = [];
 
@@ -797,7 +797,7 @@ final class CubeReportingTest extends TestCase
      */
     public function testTheConditionRendersWithoutADatabaseConnection(): void
     {
-        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+        $metric = \OWA\Core\CoreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
             'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
             'condition' => ['column' => 'event_type', 'value' => 'page_view'],
@@ -816,7 +816,7 @@ final class CubeReportingTest extends TestCase
      */
     public function testAValueThatCannotBeALiteralIsRefused(): void
     {
-        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+        $metric = \OWA\Core\CoreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
             'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
             'condition' => ['column' => 'event_type', 'value' => "x' OR '1'='1"],
@@ -836,7 +836,7 @@ final class CubeReportingTest extends TestCase
     /** An operator that is not a comparison never reaches the statement. */
     public function testAnUnknownOperatorIsRefusedRatherThanInterpolated(): void
     {
-        $metric = owa_coreAPI::metricFactory('base.configurableMetric', [
+        $metric = \OWA\Core\CoreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzProbe', 'label' => 'Probe', 'data_type' => 'integer',
             'metric_type' => 'count', 'entity' => 'base.event', 'column' => 'id',
             'condition' => ['column' => 'event_type', 'operator' => ') OR 1=1 --', 'value' => 'x'],
@@ -962,7 +962,7 @@ final class CubeReportingTest extends TestCase
 
             $rs = $rsm->getResults();
         } finally {
-            owa_coreAPI::dbSingleton()->query(sprintf('DELETE FROM %s WHERE id = 909999',
+            \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DELETE FROM %s WHERE id = 909999',
                 Cubes::tableFor(self::PROPERTY)));
         }
 
@@ -994,7 +994,7 @@ final class CubeReportingTest extends TestCase
      */
     public function testRevenueIgnoresRowsThatAreNotPurchases(): void
     {
-        $db    = owa_coreAPI::dbSingleton();
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = Cubes::tableFor(self::PROPERTY);
 
         // Put revenue on a PAGE VIEW, which no purchase metric should see.
@@ -1027,7 +1027,7 @@ final class CubeReportingTest extends TestCase
      */
     public function testPrecisionRoundsAndItsAbsenceDoesNot(): void
     {
-        $rounded = owa_coreAPI::metricFactory('base.configurableMetric', [
+        $rounded = \OWA\Core\CoreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzRounded', 'label' => 'R', 'data_type' => 'decimal',
             'metric_type' => 'ratio', 'entity' => 'base.event',
             'numerator' => 'eventCount', 'denominator' => 'sessions', 'precision' => 2,
@@ -1036,7 +1036,7 @@ final class CubeReportingTest extends TestCase
         $this->assertSame(0.33, $rounded->computeRatio(1, 3));
         $this->assertSame(66.67, $rounded->computeRatio(200, 3));
 
-        $exact = owa_coreAPI::metricFactory('base.configurableMetric', [
+        $exact = \OWA\Core\CoreAPI::metricFactory('base.configurableMetric', [
             'name' => 'zzExact', 'label' => 'E', 'data_type' => 'decimal',
             'metric_type' => 'ratio', 'entity' => 'base.event',
             'numerator' => 'eventCount', 'denominator' => 'sessions',

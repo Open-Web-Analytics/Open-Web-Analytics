@@ -59,8 +59,8 @@ final class SettingsShutdownSaveTest extends TestCase
          * still carries `base.owa_settings_shutdown_probe` because of it. The
          * live one here did, from long before settings became rows.
          */
-        owa_coreAPI::configSingleton()->removeSetting('base', self::KEY);
-        owa_coreAPI::configSingleton()->save();
+        \OWA\Core\CoreAPI::configSingleton()->removeSetting('base', self::KEY);
+        \OWA\Core\CoreAPI::configSingleton()->save();
     }
 
     /** @return array{status:int, stdout:string, stderr:string} */

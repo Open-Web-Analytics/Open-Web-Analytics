@@ -41,38 +41,23 @@ class OptionsModules extends \OWA\Core\AdminController {
 
     function action() {
 
-        $path = OWA_BASE_CLASSES_DIR.'modules/';
         $dirs = array();
 
-        if ($handle = opendir($path)):
-             while (($file = readdir($handle)) !== false) {
+        // Only directories that hold a module (CoreAPI::getPresentModules()).
+        foreach ( (array) \OWA\Core\CoreAPI::getPresentModules() as $file ) {
 
-                 // test for '.' in dir name
-                if (strpos($file, '.') === false):
-
-                    // test for whether file is a dir
-                    if (is_dir($path.$file)):
-
-                         $mod = \OWA\Core\CoreAPI::moduleClassFactory($file);
-                         $dirs[$file]['name'] = $mod->name;
-                         $dirs[$file]['display_name'] = $mod->display_name;
-                         $dirs[$file]['author'] = $mod->author;
-                         $dirs[$file]['group'] = $mod->group;
-                         $dirs[$file]['version'] = $mod->version;
-                         $dirs[$file]['description'] = $mod->description;
-                         $dirs[$file]['config_required'] = $mod->config_required;
-                         $dirs[$file]['current_schema_version'] = $mod->getSchemaVersion();
-                         $dirs[$file]['required_schema_version'] = $mod->getRequiredSchemaVersion();
-                         $dirs[$file]['schema_uptodate'] = $mod->isSchemaCurrent();
-                         //$dirs['stats'] = lstat($path.$file);
-
-                     endif;
-
-                   endif;
-             }
-         endif;
-
-         closedir($handle);
+            $mod = \OWA\Core\CoreAPI::moduleClassFactory($file);
+            $dirs[$file]['name'] = $mod->name;
+            $dirs[$file]['display_name'] = $mod->display_name;
+            $dirs[$file]['author'] = $mod->author;
+            $dirs[$file]['group'] = $mod->group;
+            $dirs[$file]['version'] = $mod->version;
+            $dirs[$file]['description'] = $mod->description;
+            $dirs[$file]['config_required'] = $mod->config_required;
+            $dirs[$file]['current_schema_version'] = $mod->getSchemaVersion();
+            $dirs[$file]['required_schema_version'] = $mod->getRequiredSchemaVersion();
+            $dirs[$file]['schema_uptodate'] = $mod->isSchemaCurrent();
+        }
 
         ksort($dirs);
 

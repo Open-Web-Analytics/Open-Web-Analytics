@@ -45,7 +45,7 @@ final class CustomDimensionBuildTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Custom dimension fixture',
@@ -58,7 +58,7 @@ final class CustomDimensionBuildTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties([
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
@@ -93,7 +93,7 @@ final class CustomDimensionBuildTest extends TestCase
      */
     private static function trimToToday(): void
     {
-        $db    = owa_coreAPI::dbSingleton();
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
         $today = date('Ymd');
         $drop  = [];
 
@@ -123,18 +123,18 @@ final class CustomDimensionBuildTest extends TestCase
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory($entity)->getTableName(), $db->prepare(self::SITE)));
+                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $db->prepare(self::SITE)));
         }
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         $db->query(sprintf('DELETE FROM %s WHERE property_id = %d',
-            owa_coreAPI::entityFactory('base.custom_dimension')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.custom_dimension')->getTableName(), self::PROPERTY));
 
         foreach (['', '_rebuild', '_computed'] as $suffix) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor(self::PROPERTY), $suffix));
@@ -150,7 +150,7 @@ final class CustomDimensionBuildTest extends TestCase
         $this->yyyymmdd = (int) date('Ymd');
         $this->t0       = (time() - 7200) * 1000000;
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         // Every registration this Property has, so each test starts from none
         // -- in ONE ALTER, because each one is a full rebuild of a
@@ -162,7 +162,7 @@ final class CustomDimensionBuildTest extends TestCase
 
         if (Dimensions::forProperty(self::PROPERTY) || $columns) {
             $db->query(sprintf('DELETE FROM %s WHERE property_id = %d',
-                owa_coreAPI::entityFactory('base.custom_dimension')->getTableName(),
+                \OWA\Core\CoreAPI::entityFactory('base.custom_dimension')->getTableName(),
                 self::PROPERTY));
 
             if ($columns) {
@@ -172,7 +172,7 @@ final class CustomDimensionBuildTest extends TestCase
 
         foreach (['base.event_raw', 'base.visitor_acquisition'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory($entity)->getTableName(), $db->prepare(self::SITE)));
+                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $db->prepare(self::SITE)));
         }
     }
 
@@ -190,7 +190,7 @@ final class CustomDimensionBuildTest extends TestCase
         $id = \OWA\Module\Base\Classes\V2Event::id(
             self::SITE, self::VISITOR, self::SESSION, $this->t0, 'page_view');
 
-        $raw = owa_coreAPI::entityFactory('base.event_raw');
+        $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $raw->setProperties([
             'id'            => $id,
             'event_type'    => 'page_view',
@@ -208,7 +208,7 @@ final class CustomDimensionBuildTest extends TestCase
 
         $this->assertTrue($raw->create(), 'seeding owa_event_raw');
 
-        $visitor = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $visitor = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $visitor->setProperties([
             'visitor_id' => self::VISITOR,
             'site_id'    => self::SITE,
@@ -236,7 +236,7 @@ final class CustomDimensionBuildTest extends TestCase
                 'rebuild of %s failed (%s; the server said: %s). If the server said 1731, a '
               . 'column was added to the cube instantly and EXCHANGE PARTITION will refuse '
               . 'every build from now on.',
-                $span['name'], $result['error'], owa_coreAPI::dbSingleton()->lastQueryError()));
+                $span['name'], $result['error'], \OWA\Core\CoreAPI::dbSingleton()->lastQueryError()));
         }
     }
 
@@ -267,7 +267,7 @@ final class CustomDimensionBuildTest extends TestCase
         $result = Dimensions::reconcile(self::PROPERTY);
 
         $this->assertTrue($result['ok'], sprintf('%s (the server said: %s)',
-            $result['error'], owa_coreAPI::dbSingleton()->lastQueryError()));
+            $result['error'], \OWA\Core\CoreAPI::dbSingleton()->lastQueryError()));
 
         return $result;
     }
@@ -275,7 +275,7 @@ final class CustomDimensionBuildTest extends TestCase
     /** @return string[] filler columns still on the cube */
     private function fillerLeft(): array
     {
-        return owa_coreAPI::dbSingleton()->listColumns($this->cube(), 'filler');
+        return \OWA\Core\CoreAPI::dbSingleton()->listColumns($this->cube(), 'filler');
     }
 
     /** @return array the registration row, as stored */
@@ -293,7 +293,7 @@ final class CustomDimensionBuildTest extends TestCase
     /** @return array|false the one built row */
     private function built()
     {
-        return owa_coreAPI::dbSingleton()->get_row(sprintf(
+        return \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT * FROM %s WHERE visitor_id = %d', $this->cube(), self::VISITOR));
     }
 
@@ -342,9 +342,9 @@ final class CustomDimensionBuildTest extends TestCase
 
         // But it IS in raw, which is what makes registering it later and
         // rebuilding bring it back.
-        $raw = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $raw = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT params FROM %s WHERE visitor_id = %d',
-            owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::VISITOR));
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::VISITOR));
 
         $this->assertStringContainsString('unregistered', (string) $raw['params']);
     }
@@ -606,7 +606,7 @@ final class CustomDimensionBuildTest extends TestCase
      */
     public function testAnAlterTheServerRefusesIsRecordedAndDoesNotBreakTheBuild(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         /*
          * Fill the row by ASKING rather than by arithmetic, which is the same
@@ -685,7 +685,7 @@ final class CustomDimensionBuildTest extends TestCase
     {
         $this->register(['key' => 'plan', 'scope' => 'user']);
 
-        $db      = owa_coreAPI::dbSingleton();
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
         $present = [];
 
         foreach ((array) $db->get_results(sprintf(

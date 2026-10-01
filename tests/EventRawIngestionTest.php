@@ -47,7 +47,7 @@ final class EventRawIngestionTest extends IngestionTestCase
             'session_id' => $this->uniqueSessionId(),
         ]);
 
-        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $check->load($visitor, 'visitor_id');
 
         return $check->wasPersisted();
@@ -96,7 +96,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         // and a value that is not those shapes is a broken test, not input.
         $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $site);
 
-        $db   = owa_coreAPI::dbSingleton();
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
         $rows = (array) $db->get_results(sprintf(
             "SELECT * FROM owa_event_raw WHERE site_id = '%s' AND visitor_id = %d AND session_id = %d",
             $site, (int) $visitor, (int) $session));
@@ -521,13 +521,13 @@ final class EventRawIngestionTest extends IngestionTestCase
      */
     public function testATrackerCannotSendAMaterializedName(): void
     {
-        $this->assertFalse(owa_coreAPI::isTrackingEventType('session_start'));
-        $this->assertFalse(owa_coreAPI::isTrackingEventType('first_visit'));
+        $this->assertFalse(\OWA\Core\CoreAPI::isTrackingEventType('session_start'));
+        $this->assertFalse(\OWA\Core\CoreAPI::isTrackingEventType('first_visit'));
 
         // And the gate still admits what it should, so the two refusals above
         // are not the gate refusing everything.
-        $this->assertTrue(owa_coreAPI::isTrackingEventType('page_view'));
-        $this->assertTrue(owa_coreAPI::isTrackingEventType('my_site_signup'));
+        $this->assertTrue(\OWA\Core\CoreAPI::isTrackingEventType('page_view'));
+        $this->assertTrue(\OWA\Core\CoreAPI::isTrackingEventType('my_site_signup'));
     }
 
     /**
@@ -623,7 +623,7 @@ final class EventRawIngestionTest extends IngestionTestCase
             'up_user_name' => 'Alice',
         ]);
 
-        $store = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $store->load($visitor, 'visitor_id');
 
         $this->assertTrue($store->wasPersisted(), 'no visitor record was written');
@@ -654,7 +654,7 @@ final class EventRawIngestionTest extends IngestionTestCase
             'user_name'  => 'Bob',
         ]);
 
-        $store = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $store->load($visitor, 'visitor_id');
 
         $properties = json_decode((string) $store->get('properties'), true) ?: array();
@@ -677,14 +677,14 @@ final class EventRawIngestionTest extends IngestionTestCase
      */
     public function testThePiiGateStopsUserIdBeingStored(): void
     {
-        $before = owa_coreAPI::getSetting('base', 'log_visitor_pii');
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'log_visitor_pii');
 
         $with = $this->firePageView(['user_id' => 'person-42'])['page_view'];
 
         $this->assertSame('person-42', $with['user_id'],
             'with PII logging on, user_id is stored');
 
-        owa_coreAPI::setSetting('base', 'log_visitor_pii', false);
+        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
 
         try {
             $without = $this->firePageView(['user_id' => 'person-42'])['page_view'];
@@ -693,7 +693,7 @@ final class EventRawIngestionTest extends IngestionTestCase
                 'with PII logging off, user_id must not be stored');
 
         } finally {
-            owa_coreAPI::setSetting('base', 'log_visitor_pii', $before);
+            \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', $before);
         }
     }
 
@@ -736,7 +736,7 @@ final class EventRawIngestionTest extends IngestionTestCase
             'ct_line_items' => json_encode($items),
         ]);
 
-        $db  = owa_coreAPI::dbSingleton();
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
         $row = (array) $db->get_row(sprintf(
             "SELECT id, params FROM owa_event_raw WHERE site_id = '%s' AND session_id = %d "
             . "AND event_type = 'purchase'", $this->site, (int) $session));
@@ -1229,7 +1229,7 @@ final class EventRawIngestionTest extends IngestionTestCase
     {
         $rows = $this->firePageView();
 
-        $db  = owa_coreAPI::dbSingleton();
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
         $row = (array) $db->get_row(sprintf(
             'SELECT * FROM owa_visitor_acquisition WHERE visitor_id = %d',
             (int) $rows['page_view']['visitor_id']));
@@ -1267,7 +1267,7 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertArrayHasKey('first_visit', $rows, 'the fixture is a landing');
 
-        $row = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT * FROM owa_visitor_acquisition WHERE visitor_id = %d',
             (int) $rows['page_view']['visitor_id']));
 
@@ -1298,7 +1298,7 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertArrayNotHasKey('first_visit', $rows, 'the fixture is not a landing');
 
-        $count = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $count = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT COUNT(*) AS n FROM owa_visitor_acquisition WHERE visitor_id = %d',
             (int) $rows['page_view']['visitor_id']));
 
@@ -1338,7 +1338,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->assertArrayNotHasKey('plan', $params, 'a user property is not an event param');
         $this->assertArrayNotHasKey('up_plan', $params);
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->load($visitor, 'visitor_id');
 
         $stored = json_decode((string) $entity->get('properties'), true);
@@ -1361,7 +1361,7 @@ final class EventRawIngestionTest extends IngestionTestCase
     {
         $visitor = $this->uniqueGuid();
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties([
             'visitor_id' => $visitor,
             'site_id'    => $this->site,
@@ -1373,7 +1373,7 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'older']);
 
-        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $check->load($visitor, 'visitor_id');
         $stored = json_decode((string) $check->get('properties'), true);
 
@@ -1389,7 +1389,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'pro']);
         $this->firePageView(['visitor_id' => $visitor, 'up_tier' => 'gold']);
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->load($visitor, 'visitor_id');
         $stored = json_decode((string) $entity->get('properties'), true);
 
@@ -1414,7 +1414,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         // database.
         $visitor = $this->uniqueGuid();
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties([
             'visitor_id' => $visitor,
             'site_id'    => $this->site,
@@ -1427,7 +1427,7 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertTrue($written, 'the write should fill rather than skip');
 
-        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $check->load($visitor, 'visitor_id');
 
         $this->assertNotEmpty($check->get('acq_ts'), 'the acquisition landed');
@@ -1439,7 +1439,7 @@ final class EventRawIngestionTest extends IngestionTestCase
     {
         $visitor = $this->uniqueGuid();
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties([
             'visitor_id' => $visitor,
             'site_id'    => $this->site,
@@ -1450,7 +1450,7 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->callWriteAcquisition($visitor);
 
-        $check = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $check = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $check->load($visitor, 'visitor_id');
 
         $this->assertSame('first-source', $check->get('acq_source'),

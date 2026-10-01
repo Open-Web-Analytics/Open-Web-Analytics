@@ -1039,14 +1039,8 @@ class Module extends \OWA\Core\Module {
             \OWA\Core\CoreAPI::anyTrackingEvent(),
             /*
              * Passed as an OBJECT, where every handler above is passed by name.
-             *
-             * A name goes through moduleGenericFactory(), which builds the
-             * legacy `owa_<name>` spelling and resolves it through
-             * owa_compat_aliases.php -- so registering this one by name would
-             * mean adding a bridge entry for a class that never had a legacy
-             * name, to a file whose stated purpose is holding the ones that
-             * did. registerEventHandler() already accepts an object; this costs
-             * the same instantiation the factory would have done.
+             * registerEventHandler() accepts either; this costs the same
+             * instantiation the factory would have done.
              */
             new \OWA\Module\Base\Handler\EventRawHandlers()
         );

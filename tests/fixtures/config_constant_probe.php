@@ -11,10 +11,10 @@ define( 'OWA_TIMEZONE', 'Pacific/Auckland' );
 
 require dirname( __DIR__ ) . '/bootstrap_owa.php';
 
-$db = owa_coreAPI::dbSingleton();
-$c  = owa_coreAPI::configSingleton();
+$db = \OWA\Core\CoreAPI::dbSingleton();
+$c  = \OWA\Core\CoreAPI::configSingleton();
 
-$entity = owa_coreAPI::entityFactory( 'base.setting' );
+$entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 $table  = $entity->getTableName();
 $id     = $db->prepare( (string) $entity->makeId( 'install', '1', 'base', 'timezone' ) );
 
@@ -26,7 +26,7 @@ $db->query( sprintf(
 
 $c->load( 1 );
 
-printf( "PROBE effective=%s\n", owa_coreAPI::getSetting( 'base', 'timezone' ) );
+printf( "PROBE effective=%s\n", \OWA\Core\CoreAPI::getSetting( 'base', 'timezone' ) );
 printf( "PROBE constant=%s\n",  (string) $c->configFileConstantFor( 'base', 'timezone' ) );
 printf( "PROBE persistable=%s\n", $c->mayPersistInstallWide( 'base', 'timezone' ) ? 'yes' : 'no' );
 

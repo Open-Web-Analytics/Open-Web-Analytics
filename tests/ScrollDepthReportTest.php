@@ -48,7 +48,7 @@ final class ScrollDepthReportTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory( 'base.property' );
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
         $property->setProperties( array(
             'id'            => self::PROPERTY,
             'name'          => 'Scroll depth report fixture',
@@ -61,7 +61,7 @@ final class ScrollDepthReportTest extends TestCase
             throw new \RuntimeException( 'seeding owa_property failed' );
         }
 
-        $site = owa_coreAPI::entityFactory( 'base.site' );
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site->setProperties( array(
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
@@ -145,7 +145,7 @@ final class ScrollDepthReportTest extends TestCase
                     if ( ! $event->create() ) {
                         throw new \RuntimeException( sprintf(
                             'seeding the fixture cube failed (%s): %s', $row[0],
-                            owa_coreAPI::dbSingleton()->lastQueryError() ) );
+                            \OWA\Core\CoreAPI::dbSingleton()->lastQueryError() ) );
                     }
 
                     $n++;
@@ -156,13 +156,13 @@ final class ScrollDepthReportTest extends TestCase
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query( sprintf( "DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory( 'base.site' )->getTableName(), $db->prepare( self::SITE ) ) );
+            \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName(), $db->prepare( self::SITE ) ) );
 
         $db->query( sprintf( 'DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory( 'base.property' )->getTableName(), self::PROPERTY ) );
+            \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName(), self::PROPERTY ) );
 
         foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
             $db->query( sprintf( 'DROP TABLE IF EXISTS %s%s', Cubes::tableFor( self::PROPERTY ), $suffix ) );

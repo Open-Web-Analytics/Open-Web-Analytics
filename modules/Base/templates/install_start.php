@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <p class="owa_publicIntro">The next few screens set up the framework: a check of this
 server, your database details, and an account to sign in with. If you need help, the
-<a href="<?php $view->out( $this->config['wiki_url'] );?>">documentation wiki</a> covers
+<a href="<?php $view->out( $view->owaTemplate()->config['wiki_url'] );?>">documentation wiki</a> covers
 each step.</p>
 
 <?php

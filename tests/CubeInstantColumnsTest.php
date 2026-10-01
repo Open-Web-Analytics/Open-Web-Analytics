@@ -34,7 +34,7 @@ final class CubeInstantColumnsTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Instant columns fixture',
@@ -70,10 +70,10 @@ final class CubeInstantColumnsTest extends TestCase
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         foreach ([Cubes::tableFor(self::PROPERTY), self::PROBE] as $table) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s', $table));
@@ -86,7 +86,7 @@ final class CubeInstantColumnsTest extends TestCase
 
     private function db()
     {
-        return owa_coreAPI::dbSingleton();
+        return \OWA\Core\CoreAPI::dbSingleton();
     }
 
     private function isMariaDb(): bool

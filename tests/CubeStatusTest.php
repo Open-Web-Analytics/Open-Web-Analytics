@@ -44,7 +44,7 @@ final class CubeStatusTest extends TestCase
         foreach ([self::PROPERTY => self::SITE, self::UNCUBED_PROPERTY => self::UNCUBED_SITE]
                  as $property_id => $site_id) {
 
-            $property = owa_coreAPI::entityFactory('base.property');
+            $property = \OWA\Core\CoreAPI::entityFactory('base.property');
             $property->setProperties([
                 'id'            => $property_id,
                 'name'          => 'Cube status fixture',
@@ -57,7 +57,7 @@ final class CubeStatusTest extends TestCase
                 throw new \RuntimeException('seeding owa_property failed');
             }
 
-            $site = owa_coreAPI::entityFactory('base.site');
+            $site = \OWA\Core\CoreAPI::entityFactory('base.site');
             $site->setProperties([
                 'id'          => $property_id * 10,
                 'site_id'     => $site_id,
@@ -75,7 +75,7 @@ final class CubeStatusTest extends TestCase
             throw new \RuntimeException('creating the fixture cube failed');
         }
 
-        owa_coreAPI::dbSingleton()->extendPartitionsBack(Cubes::tableFor(self::PROPERTY), self::day(20));
+        \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(Cubes::tableFor(self::PROPERTY), self::day(20));
 
         self::seedRaw(self::UNCUBED_SITE, self::day(5));
     }
@@ -96,9 +96,9 @@ final class CubeStatusTest extends TestCase
         }
 
         if (owa_test_db_available()) {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
+                \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
             $db->query(sprintf('DELETE FROM %s', Cubes::tableFor(self::PROPERTY)));
         }
     }
@@ -117,18 +117,18 @@ final class CubeStatusTest extends TestCase
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach ([self::SITE, self::UNCUBED_SITE] as $site) {
             foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
                 $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                    owa_coreAPI::entityFactory($entity)->getTableName(), $site));
+                    \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $site));
             }
         }
 
         foreach ([self::PROPERTY, self::UNCUBED_PROPERTY] as $property_id) {
             $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-                owa_coreAPI::entityFactory('base.property')->getTableName(), $property_id));
+                \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), $property_id));
 
             foreach (['', '_rebuild', '_computed'] as $suffix) {
                 $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor($property_id), $suffix));
@@ -147,7 +147,7 @@ final class CubeStatusTest extends TestCase
         $ts      = strtotime((string) $yyyymmdd . ' 12:00:00') * 1000000 + $n;
         $session = 8895000000000000 + $n;
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties([
             'id'            => \OWA\Module\Base\Classes\V2Event::id($site, self::VISITOR, $session, $ts, 'page_view'),
             'event_type'    => 'page_view',
@@ -276,7 +276,7 @@ final class CubeStatusTest extends TestCase
     {
         $day   = self::day(3);
         $table = Cubes::tableFor(self::PROPERTY);
-        $db    = owa_coreAPI::dbSingleton();
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
 
         self::seedRaw(self::SITE, $day);
         $this->build($day, $day);
@@ -314,7 +314,7 @@ final class CubeStatusTest extends TestCase
             $this->markTestSkipped("$day shares a partition with yesterday on this date");
         }
 
-        owa_coreAPI::dbSingleton()->query(sprintf(
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
             'UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
             $table, strtotime("$day 15:00:00") * 1000000, $day));
 

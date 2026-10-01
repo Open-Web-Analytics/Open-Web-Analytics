@@ -74,18 +74,20 @@ those with the old signature will need it added.
 
 ## Deprecated in 1.10.0, removed in v2.0
 
-### 1. Bare template variables and `$this` inside templates
+### 1. Bare template variables and `$this` inside templates — REMOVED in v2.0
 
-**What changed.** OWA's own templates now receive their view data through an
-explicit `$view` object instead of variables materialized by `extract()`, and
-reach the template helpers through `$view` rather than `$this`.
+**What changed.** A template receives its view data through an explicit `$view`
+object and reaches the template helpers through `$view`. In 1.10 through 1.x,
+`extract()` also made every view variable a bare local and the include made
+`$this` the Template. **v2.0 does neither**: `fetch()` extracts nothing, and it
+includes the template from a static closure, so `$this` does not exist there.
 
 ```php
-<!-- Deprecated -->
+<!-- 1.x, no longer works -->
 <?php $this->out( $headline ); ?>
 <?php foreach ($tabs as $tab): ?>
 
-<!-- Current -->
+<!-- v2.0 -->
 <?php $view->out( $view->headline ); ?>
 <?php foreach ($view->tabs as $tab): ?>
 ```
@@ -97,38 +99,42 @@ the controller that forgot the key. Nothing declared what a template required,
 so no tool could check it. Reading a never-set key through `$view` raises an
 `OutOfBoundsException` naming the key and the template instead.
 
-**What still works.** `extract()` is still called, so **bare variables and
-`$this` continue to work** in:
+**What breaks.** Any template still written the 1.x way:
 
 - third-party module templates (`modules/<Module>/templates/`)
 - site-owner overrides (`modules/<Module>/templates/local/`)
 - custom themes (`OWA_THEMES_DIR`)
 
-OWA ships none of those and cannot migrate them, which is why the old path
-remains for the full deprecation window.
+A `$this->` call fails with `Using $this when not in object context`. A bare
+variable read is undefined — a warning, `null`, or the `foreach` fatal above.
+**A bare variable inside `isset()` or `empty()` fails silently**: it is always
+unset, so the branch it guards never runs.
 
 **Migrating.** Replace each bare view variable with `$view-><name>` and each
-`$this->helper(...)` call with `$view->helper(...)`. Two things to know:
+`$this->helper(...)` call with `$view->helper(...)`. Three things to know:
 
-- **Property reads stay on `$this`.** `$this->config` is the *Template object's*
-  config, not a view variable of the same name. `$view` resolves view data only —
-  it deliberately does **not** fall back to template properties, because letting a
+- **Property reads go through `$view->owaTemplate()`.** `$this->config` becomes
+  `$view->owaTemplate()->config`. `$view-><name>` resolves view data only — it
+  deliberately does **not** fall back to template properties, because letting a
   view variable shadow a property is a silent wrong-value bug.
-- **`isset()` and `empty()` behave identically** on both paths — false for a null
-  value, false for a missing key, and never throwing. A read guarded by `isset()`
-  or by the `@` operator is safe to leave alone; the `@` form in particular is a
-  signal that the key may legitimately be absent, and `@` suppresses diagnostics
-  but **not** exceptions, so migrating such a read converts a tolerated absence
-  into a 500.
+- **`isset()` and `empty()` behave as they did on a bare variable** — false for a
+  null value, false for a missing key, and never throwing. A read guarded by
+  `isset()` or by the `@` operator is safe to convert inside the same guard; `@`
+  suppresses diagnostics but **not** exceptions, so dropping the guard converts a
+  tolerated absence into a 500.
+- **A partial included with `include` or `require` shares the including
+  template's scope**, so locals the including template assigns are still visible
+  to it, and `$view` is too.
 
 If a variable is only populated on some controller branches, initialize it
 unconditionally in the controller *before* migrating the template read.
 
-The contract on both paths is pinned by `tests/ViewScopeCompatTest.php`.
+The contract is pinned by `tests/ViewScopeCompatTest.php`, and
+`tests/TemplatesReadOnlyViewTest.php` checks OWA's own templates against it.
 
 ---
 
-### 2. Legacy `owa_*` class names
+### 2. Legacy `owa_*` class names — REMOVED in v2.0
 
 **What changed.** OWA's framework classes moved from the global namespace with an
 `owa_` prefix into real PSR-4 namespaces:
@@ -139,48 +145,56 @@ The contract on both paths is pinned by `tests/ViewScopeCompatTest.php`.
 | `owa_base` | `OWA\Core\Base` |
 | `owa_entity` | `OWA\Core\Entity` |
 | `owa_module` | `OWA\Core\Module` |
+| `owa_controller` | `OWA\Core\Controller` |
+| `owa_view` | `OWA\Core\View` |
 | `owa_lib` | `OWA\Core\Lib` |
 | `owa_db_mysql` | `OWA\Core\Db\Mysql` |
 
-**What still works in v2.** The alias bridge (`owa_compat_aliases.php`) resolves
-only the names a module builds on:
+In 1.x a compatibility bridge (`owa_compat_aliases.php`) kept the old names
+resolving through `class_alias()`. **v2.0 removes it**: no `owa_*` class name
+resolves, and a module that uses one gets "class not found". `extends owa_module`,
+`owa_coreAPI::getSetting(...)` and `instanceof owa_entity` all need the namespaced
+name. `tests/fixtures/legacy_class_names.json` lists all 406 retired names, and
+`tests/LegacyClassNameContractTest.php` checks none of them resolves.
 
-- the base classes it extends: `owa_base`, `owa_module`, `owa_observer`,
-  `owa_update`, `owa_controller`, `owa_adminController`, `owa_reportController`,
-  `owa_cliController`, `owa_view`, `owa_adminPageView`, `owa_restApiView`,
-  `owa_mailView`, `owa_cliView`, `owa_entity`, `owa_factTable`, `owa_metric`,
-  `owa_calculatedMetric`, `owa_validation`, `owa_cacheType`, `owa_eventQueue`;
-- the static API it calls: `owa_coreAPI`;
-- `owa_event`, which queued data written before the migration names.
+**Factories no longer `require` class files by name.** In 1.x, when a factory
+found no namespaced class it fell back to requiring a file such as
+`modules/<module>/<name>.php` declaring `owa_<name>`. v2.0 builds only PSR-4
+class names — `OWA\Module\<Module>\Entity\<Name>`, `...\Controller\<Name>`,
+`...\Metric\<Name>` — and raises an error naming the class it looked for when
+there is none.
 
-**Removed in v2.** Every other legacy name, including `owa_lib`, the service
-classes (`owa_siteManager`, `owa_userManager`, `owa_settings`, ...), the event
-handlers, the concrete validators, controllers and views, and `owa_db_mysql`.
-A module that used one gets "class not found" and must use the namespaced name.
-`tests/LegacyClassNameContractTest.php` lists every retired name.
+**Still works.**
 
-**Checking a module.** Define `OWA_DISABLE_COMPAT_BRIDGE = true` in your config
-before OWA boots. With it set, no legacy name resolves. OWA itself runs correctly
-that way; if your module does not, it still has legacy references to migrate.
+- **Queued events.** An event queued by 1.x is serialized as `owa_event`; the
+  queue reads it as `OWA\Module\Base\Classes\Event` without the old name
+  existing, so a queue drained after the upgrade loses nothing.
+- **Third-party database drivers.** A driver at `plugins/db/owa_db_<type>.php`
+  declaring `class owa_db_<type> extends \OWA\Core\Db` is still loaded for
+  `db_type = <type>`. The class name is the plugin's own; only its base class
+  changed.
 
 ---
 
-### 3. Lowercase module directories
+### 3. Lowercase module directories — REMOVED in v2.0
 
-**What changed.** Module directories are PascalCase and PSR-4 (`modules/Base/`,
-`modules/MemcachedCache/`), with one class per file.
+**What changed.** A module is a PascalCase directory (`modules/Base/`,
+`modules/MemcachedCache/`) holding an autoloadable `OWA\Module\<Dir>\Module`
+class, with one class per file in `Entity/`, `Controller/`, `View/`, `Classes/`
+and so on.
 
-**What still works.** A module shipped in the old convention — a lowercase
-directory plus an `owa_<name>Module` class in `module.php` — is still discovered
-and loaded. `Lib::moduleDirName()` resolves to the legacy lowercase directory
-when no PascalCase one exists, so the module's entities, controllers, views and
-classes all continue to resolve.
+1.x also loaded a module from a **lowercase** directory whose `module.php`
+declared a global `owa_<name>Module`. **v2.0 does not.** A directory under
+`modules/` without an `OWA\Module\<Dir>\Module` class is skipped, and a notice
+in the error log names it. An old module that was active simply stops loading;
+nothing else on the install is affected.
 
 **Migrating.** Rename the module directory to PascalCase and adopt the PSR-4
-layout (`Entity/`, `Controller/`, `View/`, `Classes/`), one class per file, with
-namespaced class names under `OWA\Module\<YourModule>\`.
+layout, with namespaced class names under `OWA\Module\<YourModule>\`. The
+module's runtime name — its settings key, the `<module>.` prefix of its actions
+and entities — stays lowercase.
 
-The shim is pinned by `tests/ThirdPartyModuleCompatTest.php`.
+Pinned by `tests/ThirdPartyModuleCompatTest.php`.
 
 ---
 

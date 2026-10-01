@@ -17,12 +17,12 @@ final class EventEntityTest extends TestCase
 {
     private function event()
     {
-        return owa_coreAPI::entityFactory('base.event');
+        return \OWA\Core\CoreAPI::entityFactory('base.event');
     }
 
     private function raw()
     {
-        return owa_coreAPI::entityFactory('base.event_raw');
+        return \OWA\Core\CoreAPI::entityFactory('base.event_raw');
     }
 
     public function testItLeadsWithRawsColumnsInRawsOrder(): void
@@ -205,7 +205,7 @@ final class EventEntityTest extends TestCase
     /** A table that is not partitioned needs nothing. */
     public function testAnUnpartitionedTableNeedsNoPartitions(): void
     {
-        $this->assertSame(0, owa_coreAPI::entityFactory('base.site')->partitionsNeeded('monthly'));
+        $this->assertSame(0, \OWA\Core\CoreAPI::entityFactory('base.site')->partitionsNeeded('monthly'));
     }
 
     public function testResolutionsAreNotNullAndCopiesAreNullable(): void

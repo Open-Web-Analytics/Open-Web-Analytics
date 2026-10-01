@@ -80,7 +80,7 @@ final class UpdateDiscoveryTest extends TestCase
      */
     public function testUpdateLoadsAndDeclaresMatchingSchemaVersion(string $module, string $class, int $seq): void
     {
-        $obj = owa_coreAPI::updateFactory(strtolower($module), $class);
+        $obj = \OWA\Core\CoreAPI::updateFactory(strtolower($module), $class);
 
         $this->assertIsObject($obj, "updateFactory could not build $module/$class");
         $this->assertInstanceOf(

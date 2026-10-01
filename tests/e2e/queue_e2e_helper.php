@@ -56,7 +56,7 @@ new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 // Refuse to run against anything but the scratch DB. Reading it from the booted
 // config (not the env) means a stray OWA_E2E_DB_NAME can't trick us into pointing
 // at the live DB: we compare the ACTUAL connected database name to the sentinel.
-$connected_db = (string) owa_coreAPI::getSetting('base', 'db_name');
+$connected_db = (string) \OWA\Core\CoreAPI::getSetting('base', 'db_name');
 $allowed_db = getenv('OWA_E2E_DB_NAME') ?: SCRATCH_DB_SENTINEL;
 if ($connected_db !== $allowed_db) {
     fwrite(STDERR, "[queue_e2e_helper] REFUSING to run: connected DB '$connected_db' "
@@ -102,7 +102,7 @@ function argSite(array $argv): string
  */
 function setQueue(bool $on): array
 {
-    $c = owa_coreAPI::configSingleton();
+    $c = \OWA\Core\CoreAPI::configSingleton();
     $c->persistSetting('base', 'queue_incoming_tracking_events', $on);
     $c->save();
 
@@ -127,7 +127,7 @@ function state(string $site_id): array
         // is a filesystem path derived from the install directory, not from the
         // database, so a scratch DB alone does not isolate the queue -- without
         // this the depth silently counts whatever else shares the directory.
-        'queue_dir'   => (string) owa_coreAPI::getSetting('base', 'async_log_dir'),
+        'queue_dir'   => (string) \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir'),
         'queue_depth' => fileQueueDepth(),
         'fact_rows'   => countSiteRequests($site_id),
     ];
@@ -141,7 +141,7 @@ function state(string $site_id): array
  */
 function fileQueueDepth(): int
 {
-    $dir = owa_coreAPI::getSetting('base', 'async_log_dir');
+    $dir = \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir');
     if (!$dir || !is_dir($dir)) {
         return 0;
     }
@@ -183,10 +183,10 @@ function fileQueueDepth(): int
  */
 function countSiteRequests(string $site_id): int
 {
-    $db  = owa_coreAPI::dbSingleton();
+    $db  = \OWA\Core\CoreAPI::dbSingleton();
     $db->connect();
 
-    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+    $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 
     $rows = $db->get_results(sprintf(
         "SELECT COUNT(*) AS c FROM %s WHERE site_id = '%s' AND event_type = 'page_view'",

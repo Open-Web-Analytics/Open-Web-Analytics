@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
  * Behavior tests for the database event queue and the processEventQueue drain.
  *
  * OWA can defer event handling by writing events to a queue and processing them
- * later (owa_coreAPI::logEvent -> sendMessage, drained by
+ * later (\OWA\Core\CoreAPI::logEvent -> sendMessage, drained by
  * owa_processEventQueueController). The `processing` db queue is also where the
  * event dispatcher parks any event a handler FAILED on, for a later retry
  * (owa_eventDispatch::notify re-queues on OWA_EHS_EVENT_FAILED).
@@ -42,7 +42,7 @@ final class EventQueueProcessingTest extends TestCase
     {
         foreach ($this->cleanup as $id) {
             try {
-                owa_coreAPI::entityFactory('base.queue_item')->delete($id, 'id');
+                \OWA\Core\CoreAPI::entityFactory('base.queue_item')->delete($id, 'id');
             } catch (\Throwable $ex) {
                 // best-effort
             }
@@ -52,7 +52,7 @@ final class EventQueueProcessingTest extends TestCase
         // Restore any settings a test overrode (in-memory only; setSetting with
         // persist=false does not touch the stored config).
         foreach ($this->settingsToRestore as [$module, $name, $value]) {
-            owa_coreAPI::setSetting($module, $name, $value);
+            \OWA\Core\CoreAPI::setSetting($module, $name, $value);
         }
         $this->settingsToRestore = [];
     }
@@ -66,7 +66,7 @@ final class EventQueueProcessingTest extends TestCase
         // The 'processing' named queue is the database-backed queue. connect()
         // wires up its db handle (the drain does this before receiving); it is
         // idempotent, so calling it per test is safe.
-        $q = owa_coreAPI::getEventQueue('processing');
+        $q = \OWA\Core\CoreAPI::getEventQueue('processing');
         $q->connect();
         return $q;
     }
@@ -77,7 +77,7 @@ final class EventQueueProcessingTest extends TestCase
      */
     private function makeEvent(string $type, array $props = []): object
     {
-        $event = owa_coreAPI::supportClassFactory('base', 'event');
+        $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $event->setEventType($type);
         $event->setProperties($props);
         $this->cleanup[] = $event->getGuid();
@@ -86,13 +86,13 @@ final class EventQueueProcessingTest extends TestCase
 
     private function overrideSetting(string $module, string $name, $value): void
     {
-        $this->settingsToRestore[] = [$module, $name, owa_coreAPI::getSetting($module, $name)];
-        owa_coreAPI::setSetting($module, $name, $value);
+        $this->settingsToRestore[] = [$module, $name, \OWA\Core\CoreAPI::getSetting($module, $name)];
+        \OWA\Core\CoreAPI::setSetting($module, $name, $value);
     }
 
     private function loadItem(string $id): object
     {
-        $qi = owa_coreAPI::entityFactory('base.queue_item');
+        $qi = \OWA\Core\CoreAPI::entityFactory('base.queue_item');
         $qi->load($id, 'id');
         return $qi;
     }

@@ -39,7 +39,7 @@ final class IngestAnnouncementsTest extends IngestionTestCase
 
     private function listen(array $types): void
     {
-        owa_coreAPI::getEventDispatch()->attach($types, array($this, 'record'));
+        \OWA\Core\CoreAPI::getEventDispatch()->attach($types, array($this, 'record'));
     }
 
     /** @param object $event */

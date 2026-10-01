@@ -9,7 +9,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * harness).
  *
  * Each subclass fires one synthetic tracker event through the real ingestion
- * pipeline exactly as log.php does — owa_coreAPI::logEvent() ->
+ * pipeline exactly as log.php does — \OWA\Core\CoreAPI::logEvent() ->
  * base.processRequest controller -> owa_eventDispatch -> the registered
  * handler -> entity ->create() — and then asserts the resulting fact/dimension
  * row. This locks the "event in -> correct row out" contract for each event
@@ -53,7 +53,7 @@ abstract class IngestionTestCase extends TestCase
         // Remove every row this test created, regardless of assertion outcome.
         foreach ($this->cleanup as [$entity, $pk, $col]) {
             try {
-                $e = owa_coreAPI::entityFactory($entity);
+                $e = \OWA\Core\CoreAPI::entityFactory($entity);
                 $e->delete($pk, $col);
             } catch (\Throwable $ex) {
                 // best-effort cleanup
@@ -65,8 +65,8 @@ abstract class IngestionTestCase extends TestCase
         // test (the browscap object is memoized on the service singleton for
         // the whole process — see setServerUserAgent).
         if ($this->serverUaOverridden) {
-            owa_coreAPI::requestContainerSingleton()->server['HTTP_USER_AGENT'] = $this->savedServerUa;
-            owa_coreAPI::serviceSingleton()->setBrowscap(null);
+            \OWA\Core\CoreAPI::requestContainerSingleton()->server['HTTP_USER_AGENT'] = $this->savedServerUa;
+            \OWA\Core\CoreAPI::serviceSingleton()->setBrowscap(null);
             $this->serverUaOverridden = false;
             $this->savedServerUa      = null;
         }
@@ -94,7 +94,7 @@ abstract class IngestionTestCase extends TestCase
             return;
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load($site->generateId($site_id));
 
         if (!$site->wasPersisted()) {
@@ -104,7 +104,7 @@ abstract class IngestionTestCase extends TestCase
             // to reproduce it; identifiers are now minted, so the fixture says
             // which one it wants. The value itself is an arbitrary constant
             // these tests share -- nothing derives it any more.
-            $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+            $sm = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
             $sm->createNewSite('owa-test-site', 'OWA ingestion test site', '', '', $site_id);
         }
 
@@ -112,7 +112,7 @@ abstract class IngestionTestCase extends TestCase
 
         // The gate memoises its answers, and it may have been asked about this
         // site before it existed.
-        owa_coreAPI::forgetRegisteredSites();
+        \OWA\Core\CoreAPI::forgetRegisteredSites();
     }
 
     /**
@@ -152,14 +152,14 @@ abstract class IngestionTestCase extends TestCase
      */
     protected function setServerUserAgent(string $ua): void
     {
-        $rc = owa_coreAPI::requestContainerSingleton();
+        $rc = \OWA\Core\CoreAPI::requestContainerSingleton();
         if (!$this->serverUaOverridden) {
             $this->savedServerUa      = $rc->server['HTTP_USER_AGENT'] ?? null;
             $this->serverUaOverridden = true;
         }
         $rc->server['HTTP_USER_AGENT'] = $ua;
         // Drop the memoized browscap so the next getBrowscap() re-parses this UA.
-        owa_coreAPI::serviceSingleton()->setBrowscap(null);
+        \OWA\Core\CoreAPI::serviceSingleton()->setBrowscap(null);
     }
 
     /**
@@ -212,7 +212,7 @@ abstract class IngestionTestCase extends TestCase
             $this->ensureSiteRegistered((string) $props['site_id']);
         }
 
-        $event = owa_coreAPI::supportClassFactory('base', 'event');
+        $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $event->setEventType($event_type);
         $event->setProperties($props);
 
@@ -222,7 +222,7 @@ abstract class IngestionTestCase extends TestCase
         // referrer) for content-based dimension lookups/cleanup.
         $this->lastEvent = $event;
 
-        return owa_coreAPI::logEvent($event_type, $event);
+        return \OWA\Core\CoreAPI::logEvent($event_type, $event);
     }
 
     /**
@@ -314,7 +314,7 @@ abstract class IngestionTestCase extends TestCase
      */
     protected function assertRowPersisted(string $entity, string $pk, string $col = 'id')
     {
-        $row = owa_coreAPI::entityFactory($entity);
+        $row = \OWA\Core\CoreAPI::entityFactory($entity);
         $row->load($pk, $col);
         $this->assertTrue(
             $row->wasPersisted(),
@@ -338,7 +338,7 @@ abstract class IngestionTestCase extends TestCase
      */
     protected function landingUrlWithTags(string $path, array $tags): string
     {
-        $ns    = (string) owa_coreAPI::getSetting('base', 'ns');
+        $ns    = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
         $query = [];
 
         foreach ($tags as $suffix => $value) {

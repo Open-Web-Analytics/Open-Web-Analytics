@@ -46,13 +46,13 @@ final class FunnelCubeCorrectnessTest extends TestCase
         if (!self::$ready) {
             self::tearDownAfterClass();
 
-            $property = owa_coreAPI::entityFactory('base.property');
+            $property = \OWA\Core\CoreAPI::entityFactory('base.property');
             $property->setProperties(['id' => self::PROPERTY, 'name' => 'Funnel correctness fixture',
                 'domain' => 'funnel-correctness.test',
                 'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB, 'creation_date' => time()]);
             $property->create();
 
-            $site = owa_coreAPI::entityFactory('base.site');
+            $site = \OWA\Core\CoreAPI::entityFactory('base.site');
             $site->setProperties(['id' => self::PROPERTY * 10, 'site_id' => self::SITE,
                 'property_id' => self::PROPERTY, 'name' => 'Funnel correctness fixture profile',
                 'domain' => 'funnel-correctness.test']);
@@ -65,15 +65,15 @@ final class FunnelCubeCorrectnessTest extends TestCase
             self::$ready = true;
         }
 
-        owa_coreAPI::dbSingleton()->query(sprintf('DELETE FROM %s WHERE site_id = ?',
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DELETE FROM %s WHERE site_id = ?',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY)), [self::SITE]);
     }
 
     protected function tearDown(): void
     {
         foreach ($this->goals as $goal) {
-            owa_coreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [$goal]);
-            owa_coreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE id = ?', [$goal]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [$goal]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE id = ?', [$goal]);
         }
     }
 
@@ -83,7 +83,7 @@ final class FunnelCubeCorrectnessTest extends TestCase
             return;
         }
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $cube = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
 
         foreach (['', '_rebuild', '_computed'] as $suffix) {
@@ -134,14 +134,14 @@ final class FunnelCubeCorrectnessTest extends TestCase
     /** A goal event on $trigger whose page_path is $path. */
     private function goal(string $trigger, string $path): string
     {
-        $goal = owa_coreAPI::entityFactory('base.goal_event');
+        $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
         $id = (string) (9200000000000003000 + count($this->goals));
         $goal->setProperties(['id' => $id, 'property_id' => self::PROPERTY, 'name' => 'Correctness goal',
             'trigger_event_type' => $trigger, 'condition_match' => \OWA\Module\Base\Entity\GoalEvent::MATCH_ALL,
             'is_active' => 1]);
         $goal->create();
 
-        $condition = owa_coreAPI::entityFactory('base.goal_event_condition');
+        $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
         $condition->setProperties(['id' => (string) ((int) $id + 500), 'goal_event_id' => $id,
             'condition_property' => 'page_path', 'condition_operator' => \OWA\Module\Base\Entity\GoalEvent::MATCH_EXACT,
             'condition_value' => $path]);
@@ -168,7 +168,7 @@ final class FunnelCubeCorrectnessTest extends TestCase
         $this->event(self::V1, '9200000000000001202', 'page_view', '/a', 0);
         $this->event(self::V1, '9200000000000001203', 'page_view', '/b', 10);
 
-        owa_coreAPI::dbSingleton()->query(sprintf('UPDATE %s SET visitor_id = NULL WHERE site_id = ?',
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('UPDATE %s SET visitor_id = NULL WHERE site_id = ?',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY)), [self::SITE]);
 
         $this->assertSame([1, 0], $this->funnel([['path' => '/a'], ['path' => '/b']], 'session'));

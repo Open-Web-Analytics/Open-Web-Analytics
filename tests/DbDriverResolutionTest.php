@@ -116,22 +116,10 @@ final class DbDriverResolutionTest extends TestCase {
                 $token = \OWA\Core\CoreAPI::resolveDbDriver( $configured, $pdo_available );
                 $legacy_class = 'owa_db_' . $token;
 
-                /*
-                 * Resolved the way production resolves it: by CONVENTION first
-                 * -- pdo_mysql -> OWA\Core\Db\PdoMysql -- and only then
-                 * through the compatibility map.
-                 *
-                 * Asking the map alone would be asking the wrong question. A
-                 * bundled driver needs no entry there, so a map-only check
-                 * fails for a driver that loads perfectly well, and passes for
-                 * one that is merely listed. What has teeth is whether the
-                 * token names a class that exists.
-                 */
+                // Resolved the way production resolves it: pdo_mysql -> OWA\Core\Db\PdoMysql.
                 $conventional = 'OWA\\Core\\Db\\' . str_replace( '_', '', ucwords( $token, '_' ) );
 
-                $resolved = class_exists( $conventional )
-                    ? $conventional
-                    : \OWA\Core\Lib::resolveNamespacedClass( $legacy_class );
+                $resolved = class_exists( $conventional ) ? $conventional : null;
 
                 $this->assertNotNull(
                     $resolved,

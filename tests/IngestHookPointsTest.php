@@ -128,7 +128,7 @@ final class IngestHookPointsTest extends TestCase
      */
     public function testTheValueIsChainedAndTheContextIsNot(): void
     {
-        owa_coreAPI::registerFilter( 'ingest.test.probe.context', 'owa_test_ingest_appends' );
+        \OWA\Core\CoreAPI::registerFilter( 'ingest.test.probe.context', 'owa_test_ingest_appends' );
 
         $row = Ingest::at( 'ingest.test.probe.context', array( 'a' => 1 ), 'the-context' );
 
@@ -144,8 +144,8 @@ final class IngestHookPointsTest extends TestCase
      */
     public function testListenersChainInPriorityOrder(): void
     {
-        owa_coreAPI::registerFilter( 'ingest.test.probe.chain', 'owa_test_ingest_first', 5 );
-        owa_coreAPI::registerFilter( 'ingest.test.probe.chain', 'owa_test_ingest_second', 10 );
+        \OWA\Core\CoreAPI::registerFilter( 'ingest.test.probe.chain', 'owa_test_ingest_first', 5 );
+        \OWA\Core\CoreAPI::registerFilter( 'ingest.test.probe.chain', 'owa_test_ingest_second', 10 );
 
         $this->assertSame( 'start|first|second', Ingest::at( 'ingest.test.probe.chain', 'start' ),
             'the second listener must see the first one\'s output' );

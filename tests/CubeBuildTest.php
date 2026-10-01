@@ -142,12 +142,12 @@ final class CubeBuildTest extends TestCase
     /** The fixture's rows in the two shared tables. */
     private static function clearRows(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach ([self::SITE, self::OTHER_SITE, self::FOREIGN_SITE] as $site) {
             foreach (['base.event_raw', 'base.visitor_acquisition'] as $entity) {
                 $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                    owa_coreAPI::entityFactory($entity)->getTableName(), $db->prepare($site)));
+                    \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $db->prepare($site)));
             }
         }
     }
@@ -160,18 +160,18 @@ final class CubeBuildTest extends TestCase
      */
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         self::clearRows();
 
         foreach ([self::SITE, self::OTHER_SITE, self::FOREIGN_SITE] as $site) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory('base.site')->getTableName(), $db->prepare($site)));
+                \OWA\Core\CoreAPI::entityFactory('base.site')->getTableName(), $db->prepare($site)));
         }
 
         foreach ([self::PROPERTY, self::FOREIGN_PROPERTY] as $property_id) {
             $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-                owa_coreAPI::entityFactory('base.property')->getTableName(), $property_id));
+                \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), $property_id));
 
             // The cube goes with the Property, and so do its working tables.
             // One per Property means a fixture that leaves its own behind
@@ -199,7 +199,7 @@ final class CubeBuildTest extends TestCase
             self::FOREIGN_PROPERTY => [self::FOREIGN_SITE],
         ] as $property_id => $sites) {
 
-            $property = owa_coreAPI::entityFactory('base.property');
+            $property = \OWA\Core\CoreAPI::entityFactory('base.property');
             $property->setProperties([
                 'id'            => $property_id,
                 'name'          => 'Cube build fixture',
@@ -213,7 +213,7 @@ final class CubeBuildTest extends TestCase
             }
 
             foreach ($sites as $i => $site_id) {
-                $site = owa_coreAPI::entityFactory('base.site');
+                $site = \OWA\Core\CoreAPI::entityFactory('base.site');
                 $site->setProperties([
                     // A profile's primary key is `id`; site_id is the string
                     // the beacon quotes. Derived from the Property's, and from
@@ -239,7 +239,7 @@ final class CubeBuildTest extends TestCase
 
     private function table(string $entity): string
     {
-        return owa_coreAPI::entityFactory($entity)->getTableName();
+        return \OWA\Core\CoreAPI::entityFactory($entity)->getTableName();
     }
 
     /** The fixture Property's cube. */
@@ -472,7 +472,7 @@ final class CubeBuildTest extends TestCase
             'is_goal_event' => 0,
         ];
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties($row);
 
         $this->assertTrue($entity->create(), 'seeding owa_event_raw');
@@ -486,7 +486,7 @@ final class CubeBuildTest extends TestCase
      */
     private function seedVisitorStore(): void
     {
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties([
             'visitor_id'   => self::VISITOR_TAGGED,
             'site_id'      => self::SITE,
@@ -522,7 +522,7 @@ final class CubeBuildTest extends TestCase
     {
         $id = \OWA\Module\Base\Classes\V2Event::id(self::SITE, $visitor, $session, $ts, $type);
 
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT * FROM %s WHERE id = %d AND yyyymmdd = %d',
             $this->cube(), $id, $this->yyyymmdd));
 
@@ -546,7 +546,7 @@ final class CubeBuildTest extends TestCase
      */
     public function testStagingIsBuiltFlatFromTheCubesOwnShape(): void
     {
-        $db      = owa_coreAPI::dbSingleton();
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
         $cube    = $this->cube();
         $staging = $cube . '_rebuild';
 
@@ -582,7 +582,7 @@ final class CubeBuildTest extends TestCase
     /** It copies a column the entity never declared, which is the point. */
     public function testStagingCopiesARuntimeAddedColumn(): void
     {
-        $db      = owa_coreAPI::dbSingleton();
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
         $cube    = $this->cube();
         $staging = $cube . '_rebuild';
 
@@ -616,7 +616,7 @@ final class CubeBuildTest extends TestCase
         // Only an UPGRADED install can fail this -- a fresh one never has an
         // ALTER in its history -- which is why CI alone would not have caught
         // the change that introduced it.
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $columns = $db->get_results(
             "SELECT COLUMN_NAME c FROM information_schema.COLUMNS
@@ -656,7 +656,7 @@ final class CubeBuildTest extends TestCase
         // ENTITY says so -- but an update that adds a column to raw and forgets
         // the cube leaves the two tables disagreeing, and the next build dies
         // on "Unknown column in field list". That has happened twice.
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $columns = function (string $table) use ($db): array {
             $names = [];
@@ -675,7 +675,7 @@ final class CubeBuildTest extends TestCase
         // Except what the cube entity deliberately leaves out: created_at, when
         // a row reached raw, which is ingest provenance and no report reads.
         // Anything else missing is an update that forgot the cubes.
-        $dropped = array_diff(owa_coreAPI::entityFactory('base.event_raw')->getColumns(),
+        $dropped = array_diff(\OWA\Core\CoreAPI::entityFactory('base.event_raw')->getColumns(),
                               \OWA\Module\Base\Classes\Cube\Cubes::entityFor(self::PROPERTY)->getColumns());
 
         $this->assertSame(['created_at'], array_values($dropped),
@@ -695,7 +695,7 @@ final class CubeBuildTest extends TestCase
      */
     public function testEveryProfileOfThePropertyIsInItsCube(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $row = $db->get_row(sprintf(
             "SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s'",
@@ -715,7 +715,7 @@ final class CubeBuildTest extends TestCase
      */
     public function testAnotherPropertysRowsStayOutOfThisCube(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $foreign = $db->get_row(sprintf(
             "SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
@@ -754,7 +754,7 @@ final class CubeBuildTest extends TestCase
      */
     public function testACubeWhoseProfilesAreGoneGetsNothingRatherThanEverything(): void
     {
-        $db   = owa_coreAPI::dbSingleton();
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
         $site = $this->table('base.site');
 
         $db->query(sprintf('UPDATE %s SET property_id = NULL WHERE property_id = %d',
@@ -776,7 +776,7 @@ final class CubeBuildTest extends TestCase
 
     public function testEveryRawRowBecomesExactlyOneEventRow(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $in = $db->get_row(sprintf("SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
             $this->table('base.event_raw'), $db->prepare(self::SITE), $this->yyyymmdd));
@@ -837,7 +837,7 @@ final class CubeBuildTest extends TestCase
      */
     public function testNewVsReturningHoldsOnlyTheThreeKnownValues(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $found = array();
 
@@ -1021,7 +1021,7 @@ final class CubeBuildTest extends TestCase
      */
     public function testEveryRowHasAChannelAndPlaceholdersMirrorTheMedium(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $row = (array) $db->get_row(sprintf(
             "SELECT COUNT(*) AS rows_built, SUM(channel = '') AS no_channel, SUM(acq_channel = '') AS no_acq_channel,"
@@ -1073,7 +1073,7 @@ final class CubeBuildTest extends TestCase
     {
         $visitor = 8881000000000009;
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties([
             'visitor_id'       => $visitor,
             'site_id'          => self::SITE,
@@ -1131,7 +1131,7 @@ final class CubeBuildTest extends TestCase
     {
         $visitor = 8881000000000011;
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties([
             'visitor_id' => $visitor,
             'site_id'    => self::SITE,
@@ -1430,7 +1430,7 @@ final class CubeBuildTest extends TestCase
 
     public function testLastSeenIsAdvancedForVisitorsInThePartition(): void
     {
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT last_seen FROM %s WHERE visitor_id = %d',
             $this->table('base.visitor_acquisition'), self::VISITOR_TAGGED));
 

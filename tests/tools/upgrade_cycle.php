@@ -90,8 +90,8 @@ if ( ! in_array( $phase, array( 'down', 'verify' ), true ) ) {
  */
 define( 'OWA_UPGRADE_CYCLE_STATE', sys_get_temp_dir() . '/owa_upgrade_cycle.json' );
 
-$db     = owa_coreAPI::dbSingleton();
-$dbName = (string) owa_coreAPI::getSetting( 'base', 'db_name' );
+$db     = \OWA\Core\CoreAPI::dbSingleton();
+$dbName = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_name' );
 
 require_once __DIR__ . '/scratch_guard.php';
 
@@ -123,7 +123,7 @@ $fail = array();
 
 if ( $phase === 'down' ) {
 
-    $installed = (int) owa_coreAPI::getSetting( 'base', 'schema_version' );
+    $installed = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
 
     $note( "--- schema as installed: $installed ---" );
 
@@ -143,7 +143,7 @@ if ( $phase === 'down' ) {
      */
     if ( ! \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) {
 
-        $property = owa_coreAPI::entityFactory( 'base.property' );
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
         $property->setProperties( array(
             'id'            => OWA_UPGRADE_CYCLE_PROPERTY,
             'name'          => 'Upgrade cycle',
@@ -245,7 +245,7 @@ if ( $phase === 'down' ) {
             $up_changed[ $v ]   ? ' (up changes schema)' : '' ) );
     }
 
-    $floor = (int) owa_coreAPI::getSetting( 'base', 'schema_version' );
+    $floor = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
 
     $note( sprintf( '--- rolled back %d update(s), down to schema %d ---',
         count( $rolled ), $floor ) );
@@ -288,7 +288,7 @@ $before    = $state['before'];
 // Read from a cold boot: this process did not write the version, so a value
 // that only exists in someone's config cache cannot be mistaken for a
 // persisted one.
-$reached = (int) owa_coreAPI::getSetting( 'base', 'schema_version' );
+$reached = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
 
 $note( sprintf( '--- rolled to %d, upgrade reached %d, installed at %d ---',
     $floor, $reached, $installed ) );
@@ -513,7 +513,7 @@ function owa_update_for( $v ) {
         return null;
     }
 
-    $update = owa_coreAPI::updateFactory( 'base', $class );
+    $update = \OWA\Core\CoreAPI::updateFactory( 'base', $class );
 
     $update->schema_version = (int) $v;
 

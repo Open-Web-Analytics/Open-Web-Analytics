@@ -94,7 +94,7 @@ final class NavigationSortTest extends TestCase
     {
         $this->useNav(['Reports' => ['A' => self::entry(1), 'B' => self::entry(2)]]);
 
-        owa_coreAPI::registerFilter('nav_reports', self::class . '::reverseWhenOn', 99);
+        \OWA\Core\CoreAPI::registerFilter('nav_reports', self::class . '::reverseWhenOn', 99);
         self::$reverse = true;
 
         try {

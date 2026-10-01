@@ -14,8 +14,8 @@
         <?php foreach ($view->tabs as $k => $tab): ?>
         <div id="tab_<?php $view->out($k); ?>">
 
-                <div id="<?php $view->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if(isset($pie)) {echo 'float:right';}?>"></div>
-                <?php if(isset($pie)): ?>
+                <div id="<?php $view->out($k); ?>_trend-metrics" style="height:auto;width:auto;<?php if(isset($view->pie)) {echo 'float:right';}?>"></div>
+                <?php if(isset($view->pie)): ?>
                 <div id="pie" style="min-width:300px;"></div>
                 <?php endif;?>
                 <div class="spacer" style="clear:both; height:20px;"></div>
