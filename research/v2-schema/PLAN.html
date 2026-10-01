@@ -3176,7 +3176,8 @@ parsed query to work on and should rebuild it from parts.</p>
 
 <h3 id="s230"><span class="num">2.29</span>Attributed source: the last non-direct touch <span class="chip c-dec">Decided</span></h3>
 
-<p class="note"><strong>DECIDED 1&nbsp;Oct.</strong> A third set of traffic-source columns on the
+<p class="note"><strong>DECIDED 1&nbsp;Oct</strong>, in the cube pass's terms: &ldquo;the pass&rdquo; below is the
+<code>rebuild-cube</code> build. A third set of traffic-source columns on the
 cube, beside the two that exist. The 21&nbsp;Aug decision recorded a return visit as
 <code>direct</code> and called that GA-consistent; it is not. GA's session scope is <em>non-direct
 last click</em> across sessions: its sessions page has a user arriving from organic search on
@@ -3266,7 +3267,31 @@ remove only the reads, the smaller share. If a site needs it: expiry deletes row
 clear the cache with them, and only a shared cache (memcached) is correct with more than one logging
 node.</p>
 
-<h4><span class="num">2.29.4</span>Rejected</h4>
+<h4><span class="num">2.29.4</span>The window, and which models ship <span class="chip c-dec">Decided</span></h4>
+<p><strong>The lookback is a setting: install-wide, default 90 days, overridable per property.</strong>
+Each cube belongs to one property, so the cube pass applies that property's window. It reaches history
+on rebuild, in both directions: the stamp is the visitor's <em>most recent</em> touch, so a touch outside
+the window means every earlier one is too, and <code>(direct)</code> is right.</p>
+<p><strong>Conversions take their session's <code>attributed*</code> values.</strong> No path is stored
+on a key event and there is no model setting; the stored-path design of 21&nbsp;Aug is superseded.</p>
+<div class="scroll"><table>
+<thead><tr><th>#</th><th>Model</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Very first &mdash; the visitor's first visit ever</td><td><strong>Ships</strong> as <code>first*</code>. Has no window</td></tr>
+<tr><td>3</td><td>Last in window &mdash; latest non-direct touch within the lookback</td><td><strong>Ships</strong> as <code>attributed*</code>. Rebuildable under any window change</td></tr>
+<tr><td>4</td><td>Very last &mdash; latest non-direct touch, however old</td><td><strong>Later, free.</strong> The same stamp with no window applied; equal to #3 inside the window. Needs columns, not collection</td></tr>
+<tr><td>2</td><td>First in window</td><td><strong>Deferred</strong>, see below</td></tr>
+<tr><td>5</td><td>Split between first and last in window, weights configurable</td><td><strong>Deferred</strong> with #2. A split between #1 and #3 needs nothing new</td></tr>
+</tbody></table></div>
+<p class="note"><strong>How #2 could be done, and why not yet.</strong> A second slot on the visitor row,
+<code>first_touch_*</code>, written only when empty or older than the window, beside
+<code>last_touch_*</code>; both guards fit the one upsert, so still no read. Two costs: it is
+<em>first since the slot last expired</em>, not first in window &mdash; touches on days 1, 50 and 100 with
+a 90-day window leave day 100 in the slot where the answer at day 120 is day 50, the drift 1.x's
+<code>original</code> mode had &mdash; and its window is applied at ingest, so a change reaches only new
+touches. Exact and rebuildable would need the visitor's whole touch history.</p>
+
+<h4><span class="num">2.29.5</span>Rejected</h4>
 <ul>
 <li><strong>A lookback over raw in the pass.</strong> Needs a visitor index on raw and a 90-day,
 visitor-keyed scan for every partition built. Order-safe, but the cost lands on every build to serve
@@ -3368,7 +3393,6 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>A decision on whether the API may return such a result set at all, and if it may, which of the two as-of times the envelope reports. Nothing has needed it yet, which is why it has not been forced.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s217">&sect;2.17</a>.</td></tr>
 <tr><td><strong>Ordering provenance</strong></td><td><code>ts</code> is stamped at edge receipt, so events order by arrival rather than by occurrence. A beacon that lands late &mdash; the unload beacon above &mdash; sorts after hits that happened later on the device, which puts <code>is_exit</code> on the wrong event and mis-orders any funnel spanning it.</td><td>Either a device-side sequence on the beacon, or a rule for how late an arrival may be before its order is distrusted. 1.x had the same problem at second resolution and v2 has so far only improved the resolution.</td></tr>
-<tr><td><strong>Attribution windows</strong></td><td>Whether the <code>attributed*</code> lookback (<a href="#s230">&sect;2.29</a>) is a fixed 90 days or a setting, and whether the key-event path keeps the 60&nbsp;days / 5 touchpoints carried over from the 1.x cookie or moves to GA's 30 days for acquisition events and 90 for the rest.</td><td>A decision. Both windows are applied in the pass, so either can change later and history follows.</td></tr>
 <tr><td><strong>Three dimensions have no v2 answer</strong></td><td><code>priorPagePath</code> needs the session chain walked; <code>daysToTransaction</code> and <code>visitsToTransaction</code> count backwards from a purchase to the acquiring visit.</td><td>Each needs a rule rather than a renderer. The other three &mdash; geo detail, <code>browserVersion</code>, last-seen &mdash; were closed by columns (<a href="#s21">&sect;2.1</a>).</td></tr>
 </tbody></table></div>
 
