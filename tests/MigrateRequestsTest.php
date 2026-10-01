@@ -359,6 +359,102 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame('search.example', $row['referer_host'], 'the evidence the cube classifies');
     }
 
+    /**
+     * A campaign link with no utm_medium and no referrer: v1 filled in its
+     * own default medium, `direct`. As a tag it would say the link was tagged
+     * direct, so it is dropped and only the campaign and ad are tags.
+     */
+    public function testACampaignWithV1sDefaultMediumKeepsOnlyTheCampaign(): void
+    {
+        $this->visit();
+        $this->campaignDims();
+        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_v1fx_referer');
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_request SET medium = 'direct', campaign_id = 701, ad_id = 801"
+            . " WHERE id = 1790000000000000101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $row = $this->tagged();
+
+        $this->assertNull($row['tagged_medium']);
+        $this->assertNull($row['tagged_source']);
+        $this->assertSame('spring-sale', $row['tagged_campaign']);
+        $this->assertSame('banner-a', $row['tagged_ad']);
+    }
+
+    /**
+     * A campaign link with a referrer and no utm_source or utm_medium: v1 read
+     * both off the referrer. Neither is a tag; the referrer is kept for the
+     * cube to read.
+     */
+    public function testACampaignWithV1sReadingOfTheReferrerKeepsOnlyTheCampaign(): void
+    {
+        $this->visit();
+        $this->campaignDims();
+        $this->insert('source_dim', ['id' => '602', 'source_domain' => 'search.example']);
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_request SET medium = 'organic-search', source_id = 602, campaign_id = 701"
+            . " WHERE id = 1790000000000000101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $row = $this->tagged();
+
+        $this->assertNull($row['tagged_medium']);
+        $this->assertNull($row['tagged_source'], 'the referring host, which the cube derives itself');
+        $this->assertSame('spring-sale', $row['tagged_campaign']);
+        $this->assertSame('search.example', $row['referer_host']);
+    }
+
+    /** Each of v1's own mediums is dropped; a medium a link named is kept. */
+    public function testOnlyV1sOwnMediumsAreDropped(): void
+    {
+        $this->visit();
+        $this->campaignDims();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach (['direct', 'organic-search', 'social-network', 'referral', 'Direct'] as $medium) {
+            $db->query('DELETE FROM ' . \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName()
+                . ' WHERE site_id = ?', [self::SITE]);
+            $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+            $db->query("UPDATE owa_v1fx_request SET medium = ?, source_id = 601, campaign_id = 701"
+                . " WHERE id = 1790000000000000101", [$medium]);
+
+            $this->migrator()->migrateSite(self::SITE);
+
+            $row = $this->tagged();
+
+            $this->assertNull($row['tagged_medium'], $medium);
+            $this->assertSame('newsletter', $row['tagged_source'], "$medium: a source the link named is kept");
+        }
+
+        $db->query('DELETE FROM ' . \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName()
+            . ' WHERE site_id = ?', [self::SITE]);
+        $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        $db->query("UPDATE owa_v1fx_request SET medium = 'cpc' WHERE id = 1790000000000000101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $this->assertSame('cpc', $this->tagged()['tagged_medium']);
+    }
+
+    /** v1's `(direct)` source is its own label, not a tag. */
+    public function testV1sDirectSourceIsNotATag(): void
+    {
+        $this->visit();
+        $this->campaignDims();
+        $this->insert('source_dim', ['id' => '603', 'source_domain' => '(direct)']);
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_request SET medium = 'email', source_id = 603, campaign_id = 701"
+            . " WHERE id = 1790000000000000101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $this->assertNull($this->tagged()['tagged_source']);
+        $this->assertSame('email', $this->tagged()['tagged_medium']);
+    }
+
     public function testACampaignOfNotSetIsNoCampaign(): void
     {
         $this->visit();
