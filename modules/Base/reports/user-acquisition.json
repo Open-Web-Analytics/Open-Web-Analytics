@@ -1,0 +1,43 @@
+{
+    "title": "User Acquisition",
+    "metrics": "newUsers,totalUsers,sessions",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "newUsers",
+            "query": {
+                "dimensions": "date",
+                "sort": "date",
+                "metrics": "newUsers,totalUsers"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "firstChannel",
+            "container": "first-channel",
+            "title": "First Channel",
+            "colspan": 6,
+            "query": {
+                "metrics": "newUsers,totalUsers,sessions",
+                "dimensions": "firstChannel",
+                "sort": "newUsers-",
+                "resultsPerPage": 30
+            }
+        },
+        {
+            "type": "grid",
+            "id": "firstSourceMedium",
+            "container": "first-source-medium",
+            "title": "First Source / Medium",
+            "colspan": 6,
+            "query": {
+                "metrics": "newUsers,totalUsers,sessions",
+                "dimensions": "firstSourceMedium",
+                "sort": "newUsers-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
+}

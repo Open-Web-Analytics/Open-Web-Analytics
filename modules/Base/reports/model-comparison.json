@@ -1,0 +1,32 @@
+{
+    "title": "Model Comparison",
+    "metrics": "goalConversions,transactions,transactionRevenue",
+    "widgets": [
+        {
+            "type": "grid",
+            "id": "firstChannel",
+            "container": "first-visit-model",
+            "title": "First Visit",
+            "colspan": 6,
+            "query": {
+                "metrics": "goalConversions,transactions,transactionRevenue",
+                "dimensions": "firstChannel",
+                "sort": "transactionRevenue-",
+                "resultsPerPage": 30
+            }
+        },
+        {
+            "type": "grid",
+            "id": "attributedChannel",
+            "container": "last-touch-model",
+            "title": "Last Touch in Window",
+            "colspan": 6,
+            "query": {
+                "metrics": "goalConversions,transactions,transactionRevenue",
+                "dimensions": "attributedChannel",
+                "sort": "transactionRevenue-",
+                "resultsPerPage": 30
+            }
+        }
+    ]
+}

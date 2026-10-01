@@ -99,6 +99,19 @@ return array(
         'cookie_domain' => array( 'default' => false ),
         'cookie_persistence' => array( 'default' => true ),
         'cube_rebuild_window_days' => array( 'default' => 7 ),
+        'attribution_lookback_days' => array(
+            'default'  => 90,
+            'storable' => true,
+            'autoload' => true,
+            // Per Property, not per Profile: one cube per Property applies it.
+            'scopes'   => array( 'install', 'property' ),
+            'type'     => 'text',
+            'label'    => 'Attribution lookback (days)',
+            'description' =>
+                'How far back a session that arrives directly takes the visitor&rsquo;s last '
+                . 'campaign, search or referral visit as its attributed source. A change reaches '
+                . 'past reports when their days are rebuilt (cube-rebuild).',
+        ),
         'currencyISO3' => array(
             'default'  => 'USD',
             'storable' => true,

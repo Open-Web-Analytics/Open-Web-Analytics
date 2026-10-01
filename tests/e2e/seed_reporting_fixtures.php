@@ -544,11 +544,22 @@ function seedCube(): array
         return array('status' => 'no raw rows to build from');
     }
 
-    if (! $db->tableExists(\OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id))
-        && ! \OWA\Module\Base\Classes\Cube\Cubes::create($property_id)) {
+    $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor($property_id);
+
+    if (! $db->tableExists($table) && ! \OWA\Module\Base\Classes\Cube\Cubes::create($property_id)) {
 
         return array('status' => 'could not create the cube');
     }
+
+    /*
+     * Back to the first seeded day, as a first scheduled build reads back
+     * (CubeRebuildCli::reachBackForFirstBuild). A cube's lead starts on the
+     * first of the current month, so on the 1st the fixture's last thirty days
+     * would otherwise have no partition to land in and the build writes nothing.
+     */
+    $db->extendPartitionsBack($table, (string) $span['lo'],
+        (int) \OWA\Core\CoreAPI::getSetting('base', 'partition_detail_months') ?: \OWA\Core\Db::PARTITION_DETAIL_MONTHS,
+        (int) \OWA\Core\CoreAPI::getSetting('base', 'partition_max_partitions') ?: \OWA\Core\Db::PARTITION_COUNT_LIMIT);
 
     $builder = new \OWA\Module\Base\Classes\Cube\Builder($property_id);
     $rows    = 0;

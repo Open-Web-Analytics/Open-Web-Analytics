@@ -15,7 +15,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "sessionChannel",
+                "dimensions": "attributedChannel",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }

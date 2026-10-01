@@ -1242,8 +1242,11 @@ test.describe('report freshness', () => {
     });
 
     test('a closed period has no as-of line', async ({ page }) => {
+        // A fixed week long past. last_month reaches yesterday on the 1st of
+        // every month, and then the line is rightly there.
         await page.goto(
-            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}&owa_period=last_month`,
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=date_range&owa_startDate=20100104&owa_endDate=20100110',
             { waitUntil: 'networkidle' });
 
         await expect(page.locator('.owa_reportTitle')).toBeVisible();

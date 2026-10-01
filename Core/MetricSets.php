@@ -81,6 +81,20 @@ class MetricSets {
             'chartMetric' => 'sessions',
         );
 
+        /*
+         * Goal conversions, when the site's Property has an active goal event to
+         * convert on. v2's goalConversions counts the is_goal_event rows the
+         * marking wrote, one flag per event however many goals it met.
+         */
+        if ( self::hasActiveGoalEvent( $siteId ) ) {
+
+            $sets['conversions'] = array(
+                'label'       => 'Conversions',
+                'metrics'     => 'sessions,goalConversions,goalConversionRatePerSession',
+                'chartMetric' => 'goalConversions',
+            );
+        }
+
         if ( \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'enableEcommerceReporting' ) ) {
 
             $sets['ecommerce'] = array(
@@ -91,6 +105,29 @@ class MetricSets {
         }
 
         return $sets;
+    }
+
+    /**
+     * Whether a site's Property has at least one active goal event.
+     *
+     * @param string|int $siteId
+     * @return bool
+     */
+    protected static function hasActiveGoalEvent( $siteId ) {
+
+        $property = \OWA\Module\Base\Entity\GoalEvent::propertyFor( (string) $siteId );
+
+        if ( ! $property ) {
+
+            return false;
+        }
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            sprintf( 'SELECT 1 AS present FROM %s WHERE property_id = ? AND is_active = 1 LIMIT 1',
+                \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName() ),
+            array( $property ) );
+
+        return ! empty( $row['present'] );
     }
 
     /**

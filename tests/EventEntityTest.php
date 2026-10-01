@@ -33,7 +33,9 @@ final class EventEntityTest extends TestCase
         // when a row reached raw, which no report reads (Entity\Event).
         $copied = array_values(array_intersect($this->raw()->getColumns(), $event));
 
-        $this->assertSame(['created_at'],
+        // And the stamped prior touch, which attributed_* is the reading of.
+        $this->assertSame(['created_at', 'prior_touch_source', 'prior_touch_medium', 'prior_touch_campaign',
+            'prior_touch_ad', 'prior_touch_referer_host', 'prior_touch_ts'],
             array_values(array_diff($this->raw()->getColumns(), $event)),
             'the cube leaves out exactly the raw columns it means to');
 
@@ -42,7 +44,7 @@ final class EventEntityTest extends TestCase
           . 'EXCHANGE PARTITION compares the two tables column by column.');
     }
 
-    public function testTheTwentyOneDerivedColumns(): void
+    public function testTheTwentySixDerivedColumns(): void
     {
         // By difference, not by skipping raw's column count: the cube does not
         // carry every raw column (created_at), so the count would be off.
@@ -58,6 +60,8 @@ final class EventEntityTest extends TestCase
             'acq_source', 'acq_medium', 'acq_campaign', 'acq_ad', 'acq_search_terms',
             'built_at', 'new_vs_returning', 'is_engaged_session', 'is_entrance',
             'channel', 'acq_channel',
+            'attributed_source', 'attributed_medium', 'attributed_campaign', 'attributed_channel',
+            'attributed_ad',
         ], $derived);
     }
 

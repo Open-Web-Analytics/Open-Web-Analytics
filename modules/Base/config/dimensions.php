@@ -183,6 +183,21 @@ return array(
                 'separator' => ' / ', 'label' => 'Source / Medium',
                 'family' => 'traffic source', 'description' => 'Where this session came from and how it arrived, as one value.' ),
 
+            // ---- the last non-direct touch within the lookback (PLAN 2.29) ----
+            'attributedSource' => array( 'column' => 'attributed_source', 'label' => 'Attributed Source',
+                'family' => 'traffic source', 'description' => "Where this session's credit goes: its own source if it arrived with tags or a referrer, otherwise the user's last campaign, search or referral visit within the attribution lookback, otherwise (direct)." ),
+            'attributedMedium' => array( 'column' => 'attributed_medium', 'label' => 'Attributed Medium',
+                'family' => 'traffic source', 'description' => 'The medium of the attributed source.' ),
+            'attributedCampaign' => array( 'column' => 'attributed_campaign', 'label' => 'Attributed Campaign',
+                'family' => 'traffic source', 'description' => 'The campaign of the attributed source, or the placeholder for an untagged one.' ),
+            'attributedChannel' => array( 'column' => 'attributed_channel', 'label' => 'Attributed Channel',
+                'family' => 'traffic source', 'description' => 'What kind of traffic the attributed source is, by the channel rules in conf/channels.php.' ),
+            'attributedAd' => array( 'column' => 'attributed_ad', 'label' => 'Attributed Ad',
+                'family' => 'traffic source', 'description' => 'The ad of the attributed source.' ),
+            'attributedSourceMedium' => array( 'parts' => array( 'attributed_source', 'attributed_medium' ),
+                'separator' => ' / ', 'label' => 'Attributed Source / Medium',
+                'family' => 'traffic source', 'description' => 'The attributed source and medium, as one value.' ),
+
             // ---- and at user scope, from the visit that acquired them ------
             'firstSource' => array( 'column' => 'acq_source', 'label' => 'First Source',
                 'family' => 'traffic source', 'description' => 'Where the user came from on the session that acquired them.' ),

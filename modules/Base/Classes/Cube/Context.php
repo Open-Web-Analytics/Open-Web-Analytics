@@ -44,6 +44,15 @@ class Context {
     public $candidates = array();
 
     /**
+     * How far back a direct session may take the visitor's last non-direct
+     * touch, in microseconds: the Property's attribution_lookback_days
+     * (AttributedStep, PLAN 2.29).
+     *
+     * @var int
+     */
+    public $lookback_usec;
+
+    /**
      * A page view's position in its session, as one string that sorts in order.
      *
      * Sequence first -- counted on the device, so a late beacon cannot reorder
@@ -70,13 +79,18 @@ class Context {
      * @param array $span
      * @param int   $built_at
      * @param int   $closed_before
+     * @param int   $lookback_days
      */
-    function __construct( array $span, $built_at, $closed_before ) {
+    function __construct( array $span, $built_at, $closed_before, $lookback_days = self::DEFAULT_LOOKBACK_DAYS ) {
 
         $this->span          = $span;
         $this->built_at      = (int) $built_at;
         $this->closed_before = (int) $closed_before;
+        $this->lookback_usec = max( 0, (int) $lookback_days ) * 86400 * 1000000;
     }
+
+    /** attribution_lookback_days where nothing says otherwise. */
+    const DEFAULT_LOOKBACK_DAYS = 90;
 
     /**
      * A quoted, escaped SQL string literal.

@@ -152,6 +152,47 @@ return array(
     // than falling back to a later event.
     'acq_search_terms' => array( 'kind' => 'copy', 'from' => 'visitor.acq_search_terms', 'text' => true ),
 
+    /*
+     * The last non-direct touch within the Property's lookback: the session's
+     * own reading if it arrived with tags or a referrer, else the visitor's
+     * last touch before it, stamped at ingest as prior_touch_* (PLAN 2.29).
+     * Each side is read exactly as `source`, `medium` and `campaign` are.
+     */
+    'attributed_source' => array(
+        'kind'  => 'attributed',
+        'own'   => array( 'kind' => 'source', 'tag' => 'session.tagged_source', 'host' => 'session.referer_host' ),
+        'prior' => array( 'kind' => 'source', 'tag' => 'session.prior_touch_source',
+            'host' => 'session.prior_touch_referer_host' ),
+    ),
+    'attributed_medium' => array(
+        'kind'  => 'attributed',
+        'own'   => array( 'kind' => 'medium', 'tag' => 'session.tagged_medium', 'host' => 'session.referer_host' ),
+        'prior' => array( 'kind' => 'medium', 'tag' => 'session.prior_touch_medium',
+            'host' => 'session.prior_touch_referer_host' ),
+    ),
+    'attributed_campaign' => array(
+        'kind'  => 'attributed',
+        'own'   => array(
+            'kind'   => 'campaign',
+            'tag'    => 'session.tagged_campaign',
+            'tags'   => array( 'session.tagged_source', 'session.tagged_medium', 'session.tagged_ad' ),
+            'medium' => array( 'tag' => 'session.tagged_medium', 'host' => 'session.referer_host' ),
+        ),
+        'prior' => array(
+            'kind'   => 'campaign',
+            'tag'    => 'session.prior_touch_campaign',
+            'tags'   => array( 'session.prior_touch_source', 'session.prior_touch_medium', 'session.prior_touch_ad' ),
+            'medium' => array( 'tag' => 'session.prior_touch_medium', 'host' => 'session.prior_touch_referer_host' ),
+        ),
+    ),
+    'attributed_channel' => array( 'kind' => 'channel', 'source' => 'attributed_source',
+        'medium' => 'attributed_medium', 'campaign' => 'attributed_campaign' ),
+    'attributed_ad' => array(
+        'kind'  => 'attributed',
+        'own'   => array( 'kind' => 'copy', 'from' => 'session.tagged_ad', 'text' => true ),
+        'prior' => array( 'kind' => 'copy', 'from' => 'session.prior_touch_ad', 'text' => true ),
+    ),
+
     // When the build wrote this partition, in microseconds. Constant within
     // one, which is what lets a report say how fresh its answer is.
     'built_at' => array( 'kind' => 'literal', 'value' => 'built_at' ),

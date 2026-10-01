@@ -149,6 +149,25 @@ class VisitorAcquisition extends \OWA\Core\Entity {
          * say what the value is and not whether it applied yet (2.26.5).
          */
         $this->setProperty( $this->column( 'properties', OWA_DTD_JSON ) );
+
+        /*
+         * THE LAST NON-DIRECT TOUCH: the most recent session that arrived with
+         * tags or a referrer -- the tags as collected, the referring host, and
+         * when (event ts, microseconds).
+         *
+         * A THIRD WRITE DISCIPLINE. Updated on every non-direct session, under a
+         * guard in the statement itself -- WHERE last_touch_ts IS NULL OR
+         * last_touch_ts < ? -- so a late beacon for an older session cannot
+         * displace a newer touch (EventRawHandlers::writeLastTouch()). A direct
+         * session of a returning visitor reads it and stamps it onto its raw
+         * rows as prior_touch_* (PLAN 2.29).
+         */
+        $this->setProperty( $this->column( 'last_touch_source', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'last_touch_medium', OWA_DTD_VARCHAR64 ) );
+        $this->setProperty( $this->column( 'last_touch_campaign', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'last_touch_ad', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'last_touch_referer_host', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'last_touch_ts', OWA_DTD_BIGINT ) );
     }
 
     /**

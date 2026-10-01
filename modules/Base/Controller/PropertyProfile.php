@@ -36,6 +36,13 @@ class PropertyProfile extends \OWA\Core\AdminController {
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
 
+        // This Property's own lookback, if it sets one, and what it inherits.
+        $this->set( 'lookback_override', $this->getParam( 'propertyId' )
+            ? \OWA\Core\CoreAPI::getScopedSettingRow( 'property', (string) $this->getParam( 'propertyId' ),
+                'base', 'attribution_lookback_days' )
+            : null );
+        $this->set( 'lookback_inherited', \OWA\Core\CoreAPI::getSetting( 'base', 'attribution_lookback_days' ) );
+
         /*
          * How many Profiles the delete would take with it, so the confirmation
          * can say a number rather than "and its Profiles". Counted live: a

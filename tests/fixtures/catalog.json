@@ -4,9 +4,9 @@
         "metricImplementations": 37,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 81,
-        "dimensionEntriesDenormalized": 81,
-        "accessorDimensionNames": 81
+        "dimensionNamesDenormalized": 87,
+        "dimensionEntriesDenormalized": 87,
+        "accessorDimensionNames": 87
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -1053,6 +1053,89 @@
     },
     "dimensionsNormalized": [],
     "dimensionsDenormalized": {
+        "attributedAd": {
+            "base.event": {
+                "name": "attributedAd",
+                "entity": "base.event",
+                "column": "attributed_ad",
+                "family": "traffic source",
+                "label": "Attributed Ad",
+                "description": "The ad of the attributed source.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "attributedCampaign": {
+            "base.event": {
+                "name": "attributedCampaign",
+                "entity": "base.event",
+                "column": "attributed_campaign",
+                "family": "traffic source",
+                "label": "Attributed Campaign",
+                "description": "The campaign of the attributed source, or the placeholder for an untagged one.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "attributedChannel": {
+            "base.event": {
+                "name": "attributedChannel",
+                "entity": "base.event",
+                "column": "attributed_channel",
+                "family": "traffic source",
+                "label": "Attributed Channel",
+                "description": "What kind of traffic the attributed source is, by the channel rules in conf/channels.php.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "attributedMedium": {
+            "base.event": {
+                "name": "attributedMedium",
+                "entity": "base.event",
+                "column": "attributed_medium",
+                "family": "traffic source",
+                "label": "Attributed Medium",
+                "description": "The medium of the attributed source.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "attributedSource": {
+            "base.event": {
+                "name": "attributedSource",
+                "entity": "base.event",
+                "column": "attributed_source",
+                "family": "traffic source",
+                "label": "Attributed Source",
+                "description": "Where this session's credit goes: its own source if it arrived with tags or a referrer, otherwise the user's last campaign, search or referral visit within the attribution lookback, otherwise (direct).",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "attributedSourceMedium": {
+            "base.event": {
+                "name": "attributedSourceMedium",
+                "entity": "base.event",
+                "column": "NULLIF(CONCAT(COALESCE(%1$s.attributed_source,''), IF(%1$s.attributed_medium IS NULL OR %1$s.attributed_medium = '', '', CONCAT(' / ', %1$s.attributed_medium))), '')",
+                "family": "traffic source",
+                "label": "Attributed Source / Medium",
+                "description": "The attributed source and medium, as one value.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true,
+                "expression": true,
+                "parts": [
+                    "attributed_source",
+                    "attributed_medium"
+                ]
+            }
+        },
         "browserType": {
             "base.event": {
                 "name": "browserType",
@@ -2159,6 +2242,77 @@
         }
     },
     "accessorGetAllDimensions": {
+        "attributedAd": {
+            "name": "attributedAd",
+            "entity": "base.event",
+            "column": "attributed_ad",
+            "family": "traffic source",
+            "label": "Attributed Ad",
+            "description": "The ad of the attributed source.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "attributedCampaign": {
+            "name": "attributedCampaign",
+            "entity": "base.event",
+            "column": "attributed_campaign",
+            "family": "traffic source",
+            "label": "Attributed Campaign",
+            "description": "The campaign of the attributed source, or the placeholder for an untagged one.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "attributedChannel": {
+            "name": "attributedChannel",
+            "entity": "base.event",
+            "column": "attributed_channel",
+            "family": "traffic source",
+            "label": "Attributed Channel",
+            "description": "What kind of traffic the attributed source is, by the channel rules in conf/channels.php.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "attributedMedium": {
+            "name": "attributedMedium",
+            "entity": "base.event",
+            "column": "attributed_medium",
+            "family": "traffic source",
+            "label": "Attributed Medium",
+            "description": "The medium of the attributed source.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "attributedSource": {
+            "name": "attributedSource",
+            "entity": "base.event",
+            "column": "attributed_source",
+            "family": "traffic source",
+            "label": "Attributed Source",
+            "description": "Where this session's credit goes: its own source if it arrived with tags or a referrer, otherwise the user's last campaign, search or referral visit within the attribution lookback, otherwise (direct).",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "attributedSourceMedium": {
+            "name": "attributedSourceMedium",
+            "entity": "base.event",
+            "column": "NULLIF(CONCAT(COALESCE(%1$s.attributed_source,''), IF(%1$s.attributed_medium IS NULL OR %1$s.attributed_medium = '', '', CONCAT(' / ', %1$s.attributed_medium))), '')",
+            "family": "traffic source",
+            "label": "Attributed Source / Medium",
+            "description": "The attributed source and medium, as one value.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true,
+            "expression": true,
+            "parts": [
+                "attributed_source",
+                "attributed_medium"
+            ]
+        },
         "browserType": {
             "name": "browserType",
             "entity": "base.event",
@@ -3176,6 +3330,12 @@
                 "yearMonth"
             ],
             "traffic source": [
+                "attributedAd",
+                "attributedCampaign",
+                "attributedChannel",
+                "attributedMedium",
+                "attributedSource",
+                "attributedSourceMedium",
                 "firstAd",
                 "firstCampaign",
                 "firstChannel",

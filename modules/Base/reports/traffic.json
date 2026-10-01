@@ -32,42 +32,42 @@
         },
         {
             "type": "pie",
-            "id": "sessionChannel",
+            "id": "attributedChannel",
             "container": "traffic-sources",
             "colspan": 4,
             "chartMetric": "sessions",
             "query": {
-                "dimensions": "sessionChannel",
+                "dimensions": "attributedChannel",
                 "sort": "sessions-"
             },
             "title": "Channels"
         },
         {
             "type": "pie",
-            "id": "sessionSource",
+            "id": "attributedSource",
             "container": "traffic-sources-source",
             "title": "Sources",
             "colspan": 4,
             "chartMetric": "sessions",
             "query": {
-                "dimensions": "sessionSource",
+                "dimensions": "attributedSource",
                 "sort": "sessions-"
             }
         },
         {
             "type": "pie",
-            "id": "sessionCampaign",
+            "id": "attributedCampaign",
             "container": "traffic-sources-campaign",
             "title": "Campaigns",
             "colspan": 4,
             "chartMetric": "sessions",
             "query": {
-                "dimensions": "sessionCampaign",
+                "dimensions": "attributedCampaign",
                 "sort": "sessions-"
             },
             "constraints": [
                 {
-                    "dimension": "sessionCampaign",
+                    "dimension": "attributedCampaign",
                     "operator": "notEmpty"
                 }
             ]
@@ -118,7 +118,7 @@
             "colspan": 6,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "sessionSourceMedium",
+                "dimensions": "attributedSourceMedium",
                 "sort": "sessions-",
                 "resultsPerPage": 25
             },

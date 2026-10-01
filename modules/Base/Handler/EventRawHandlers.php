@@ -348,6 +348,14 @@ class EventRawHandlers extends \OWA\Core\Observer {
              */
             'transaction_id' => $this->text( $event->get( 'ct_order_id' ) ),
 
+            // The visitor's last touch before this session; see priorTouch().
+            'prior_touch_source'       => $this->text( $event->get( 'prior_touch_source' ) ),
+            'prior_touch_medium'       => $this->text( $event->get( 'prior_touch_medium' ) ),
+            'prior_touch_campaign'     => $this->text( $event->get( 'prior_touch_campaign' ) ),
+            'prior_touch_ad'           => $this->text( $event->get( 'prior_touch_ad' ) ),
+            'prior_touch_referer_host' => $this->text( $event->get( 'prior_touch_referer_host' ) ),
+            'prior_touch_ts'           => $this->number( $event->get( 'prior_touch_ts' ) ),
+
             'raw_ua'      => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
             'remote_host' => $this->text( $event->get( 'REMOTE_HOST' ) ),
             'params' => $this->params( $event ),
@@ -649,6 +657,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return OWA_EHS_EVENT_FAILED;
         }
 
+        if ( ! $this->writeLastTouch( $event, $rows[0] ) ) {
+
+            $db->rollbackTransaction();
+
+            return OWA_EHS_EVENT_FAILED;
+        }
+
         $db->endTransaction();
 
         $this->announce( $event, $rows );
@@ -888,6 +903,98 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return true;
+    }
+
+    /**
+     * Record a session that arrived with tags or a referrer as the visitor's
+     * last non-direct touch (PLAN 2.29).
+     *
+     * ON THE LANDING BEACON ONLY: the one beacon carrying the session's tags.
+     * A direct arrival writes nothing; it is what reads the touch
+     * (TrackingEventHelpers::priorTouch()).
+     *
+     * THE GUARD IS IN THE STATEMENT. `last_touch_ts IS NULL OR last_touch_ts < ?`
+     * makes the comparison and the write one statement under the row lock, so
+     * two beacons for one visitor cannot both read the old value, and a late
+     * beacon for an older session cannot displace a newer touch. No read here.
+     *
+     * A visitor with no row yet gets one. The UPDATE changing nothing means the
+     * row is absent, or present and newer, or already holding this touch; the
+     * INSERT then either creates it or fails on the unique key, and in that
+     * case a racing insert may have just landed, so the UPDATE runs once more.
+     *
+     * @param object $event the incoming event
+     * @param array  $row   the primary row, already built
+     * @return bool
+     */
+    protected function writeLastTouch( $event, $row ) {
+
+        if ( ! $event->get( 'is_new_session_start' ) ) {
+
+            return true;
+        }
+
+        $touch = array(
+            'last_touch_source'       => $row['tagged_source'],
+            'last_touch_medium'       => $row['tagged_medium'],
+            'last_touch_campaign'     => $row['tagged_campaign'],
+            'last_touch_ad'           => $row['tagged_ad'],
+            'last_touch_referer_host' => $row['referer_host'],
+        );
+
+        if ( ! array_filter( $touch, function ( $v ) { return $v !== null && trim( (string) $v ) !== ''; } ) ) {
+
+            return true;
+        }
+
+        $touch['last_touch_ts'] = (int) $row['ts'];
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
+
+        $update = function () use ( $db, $table, $touch, $row ) {
+
+            $set = implode( ', ', array_map( function ( $c ) { return $c . ' = ?'; }, array_keys( $touch ) ) );
+
+            $ok = $db->query( sprintf(
+                'UPDATE %s SET %s WHERE visitor_id = ? AND (last_touch_ts IS NULL OR last_touch_ts < ?)',
+                $table, $set ),
+                array_merge( array_values( $touch ), array( $row['visitor_id'], $touch['last_touch_ts'] ) ) );
+
+            return $ok === false ? false : (int) $db->getAffectedRows();
+        };
+
+        $changed = $update();
+
+        if ( $changed === false ) {
+
+            \OWA\Core\CoreAPI::error( 'v2 ingest: writing the last touch failed.' );
+
+            return false;
+        }
+
+        if ( $changed > 0 ) {
+
+            return true;
+        }
+
+        $columns = array_merge( array(
+            'visitor_id' => $row['visitor_id'],
+            'site_id'    => $row['site_id'],
+            'last_seen'  => (int) substr( (string) $row['yyyymmdd'], 0, 6 ),
+        ), $touch );
+
+        $inserted = $db->query( sprintf( 'INSERT INTO %s (%s) VALUES (%s)',
+            $table, implode( ', ', array_keys( $columns ) ),
+            implode( ', ', array_fill( 0, count( $columns ), '?' ) ) ), array_values( $columns ) );
+
+        if ( $inserted !== false ) {
+
+            return true;
+        }
+
+        // The row exists: guarded out, unchanged, or inserted by a racing writer.
+        return $update() !== false;
     }
 
     /**
