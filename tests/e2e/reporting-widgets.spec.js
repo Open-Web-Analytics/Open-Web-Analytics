@@ -195,20 +195,17 @@ test.describe('every configured report renders in a browser', () => {
         /**
          * THREE pies, each into its own container.
          *
-         * The report splits its visits three ways -- by medium, by source, by
+         * The report splits its visits three ways -- by channel, by source, by
          * campaign -- and draws each split as its own chart. Three widgets of
          * one type on one report is the case that catches a template writing
          * them all into the first container, or into a container it names from
          * the type rather than from the widget: the traffic report used to
          * have three metric-boxes widgets and that is exactly the bug they
          * were guarding, so the guard follows the shape rather than the type.
-         *
-         * Campaign has no canvas ASSERTED and that is deliberate -- see the
-         * empty-pie test below.
          */
         test('each pie draws into its own container', async ({ page }) => {
             for (const [container, title] of [
-                ['traffic-sources',          'Mediums'],
+                ['traffic-sources',          'Channels'],
                 ['traffic-sources-source',   'Sources'],
                 ['traffic-sources-campaign', 'Campaigns'],
             ]) {
@@ -221,8 +218,8 @@ test.describe('every configured report renders in a browser', () => {
                     .toHaveText(title);
             }
 
-            // The two the fixture attributes traffic to actually paint.
-            for (const container of ['traffic-sources', 'traffic-sources-source']) {
+            // All three paint: an untagged visit's campaign is a placeholder, not empty.
+            for (const container of ['traffic-sources', 'traffic-sources-source', 'traffic-sources-campaign']) {
                 await expect(page.locator(`#${container} canvas`).first(),
                     `${container} painted no canvas`).toBeVisible({ timeout: 20_000 });
             }
@@ -231,14 +228,30 @@ test.describe('every configured report renders in a browser', () => {
         /**
          * A pie with nothing to draw says so, rather than drawing nothing.
          *
-         * The fixture attributes no campaign to any visit, so the campaign pie
-         * is the one shipped widget on a seeded report with an empty result
-         * set. An empty pie that painted a blank canvas -- or an empty panel
+         * Every pie on the report has slices for the fixture's own period, so
+         * the empty case is the same report over a week with no traffic at
+         * all. An empty pie that painted a blank canvas -- or an empty panel
          * with no message at all -- reads as a broken widget rather than as an
          * answer, and the two are indistinguishable from outside.
          */
         test('a pie with no data says so instead of drawing', async ({ page }) => {
-            const empty = page.locator('#traffic-sources-campaign');
+            const drawn = page.locator('#traffic-sources');
+
+            /*
+             * The fixture's period first, and what stops the rest from passing
+             * on a report where every pie is always empty: this pie has slices
+             * and does NOT carry the message.
+             */
+            await expect(drawn.locator('.legend tr').first()).toBeVisible({ timeout: 20_000 });
+            await expect(drawn).not.toContainText(/no data/i);
+
+            await openConfiguredReport(page, {
+                reportId: 'traffic',
+                period: 'date_range',
+                params: { startDate: '20100104', endDate: '20100110' },
+            });
+
+            const empty = page.locator('#traffic-sources');
 
             await expect(empty).toContainText(/no data/i, { timeout: 20_000 });
 
@@ -249,16 +262,6 @@ test.describe('every configured report renders in a browser', () => {
              * slice, and an empty pie has none.
              */
             await expect(empty.locator('.legend tr')).toHaveCount(0);
-
-            /*
-             * The other half of the same question, and what stops the above
-             * from passing on a report where every pie is empty: the pie next
-             * to it has slices and does NOT carry the message.
-             */
-            const drawn = page.locator('#traffic-sources');
-
-            await expect(drawn.locator('.legend tr').first()).toBeVisible({ timeout: 20_000 });
-            await expect(drawn).not.toContainText(/no data/i);
         });
 
         /**
@@ -899,17 +902,11 @@ test.describe('the report grid gives every widget a usable width', () => {
         expect(narrow.length).toBe(2);
 
         /*
-         * ...and Traffic's are a THIRD of one each, in wider containers.
-         *
-         * Two, not three: the report declares a third pie for campaigns, and
-         * the fixture runs none, so that one writes its no-data message and
-         * never builds a plot at all. A pie that drew an empty circle would
-         * turn up here as a third entry with a circle of 0 and fail the
-         * same-size assertion below, which is the right answer.
+         * ...and Traffic's three are a THIRD of one each, in wider containers.
          */
         const wide = await circles('traffic');
 
-        expect(wide.length).toBe(2);
+        expect(wide.length).toBe(3);
 
         /*
          * A quarter of a row against a third of one. Not the 1.5x this used to
@@ -922,7 +919,7 @@ test.describe('the report grid gives every widget a usable width', () => {
             'the wide pie is no longer in a wider widget, so this proves nothing')
             .toBeGreaterThan(narrow[0].widget * 1.2);
 
-        // Same circle in all four, within a pixel of rounding.
+        // Same circle in all five, within a pixel of rounding.
         const all = [...narrow, ...wide].map((p) => p.circle);
 
         expect(Math.min(...all)).toBeGreaterThan(0);
