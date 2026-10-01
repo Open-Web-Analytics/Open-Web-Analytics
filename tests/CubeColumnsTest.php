@@ -92,7 +92,7 @@ final class CubeColumnsTest extends TestCase
             $columns->sessionSources());
     }
 
-    public function testTheShippedConfigReferencesTenSessionValues(): void
+    public function testTheShippedConfigReferencesSeventeenSessionValues(): void
     {
         $columns = new Columns();
         $columns->steps($this->derived());
@@ -103,6 +103,10 @@ final class CubeColumnsTest extends TestCase
             'tagged_source', 'referer_host', 'tagged_medium', 'tagged_campaign',
             'tagged_ad', 'tagged_search_terms', 'page_location', 'page_path',
             'page_query', 'page_title',
+            // attributed_* (PLAN 2.29): the stamped prior touch, and the
+            // session's first ts that its window is measured from.
+            'prior_touch_source', 'prior_touch_referer_host', 'prior_touch_medium',
+            'prior_touch_campaign', 'prior_touch_ad', 'prior_touch_ts', 'ts',
         ], array_keys($columns->sessionSources()));
     }
 }

@@ -36,6 +36,30 @@ class Columns {
         'tagged_ad'           => 's_tagged_ad',
         'tagged_search_terms' => 's_tagged_search_terms',
         'referer_host'        => 's_referer_host',
+        'ts'                  => 's_ts',
+        'prior_touch_source'       => 'pt_source',
+        'prior_touch_medium'       => 'pt_medium',
+        'prior_touch_campaign'     => 'pt_campaign',
+        'prior_touch_ad'           => 'pt_ad',
+        'prior_touch_referer_host' => 'pt_referer_host',
+        'prior_touch_ts'           => 'pt_ts',
+    );
+
+    /**
+     * What an attributed column decides between: the session's own evidence and
+     * the visitor's last non-direct touch before it (AttributedStep).
+     *
+     * Fixed rather than configured. The definitions say how each side is READ;
+     * which values make a touch non-direct, and which clock the window runs on,
+     * are the definition of the model.
+     */
+    const ATTRIBUTION = array(
+        'own'   => array( 'session.tagged_source', 'session.tagged_medium', 'session.tagged_campaign',
+            'session.tagged_ad', 'session.referer_host' ),
+        'prior' => array( 'session.prior_touch_source', 'session.prior_touch_medium',
+            'session.prior_touch_campaign', 'session.prior_touch_ad', 'session.prior_touch_referer_host' ),
+        'prior_ts'   => 'session.prior_touch_ts',
+        'session_ts' => 'session.ts',
     );
 
     /**
@@ -172,6 +196,17 @@ class Columns {
                         $this->join( $definition['medium']['tag'] ) ),
                     $this->join( $definition['tag'] ),
                     $this->test( $definition ) );
+
+            // The session's own reading, or the visitor's last touch within the
+            // lookback; each side read by an ordinary step (PLAN 2.29).
+            case 'attributed':
+                return new AttributedStep( $column,
+                    $this->step( $column, (array) $definition['own'] ),
+                    $this->step( $column, (array) $definition['prior'] ),
+                    array_map( array( $this, 'resolve' ), self::ATTRIBUTION['own'] ),
+                    array_map( array( $this, 'resolve' ), self::ATTRIBUTION['prior'] ),
+                    $this->resolve( self::ATTRIBUTION['prior_ts'] ),
+                    $this->resolve( self::ATTRIBUTION['session_ts'] ) );
 
             // From the row's own columns, after the build statement.
             case 'channel':

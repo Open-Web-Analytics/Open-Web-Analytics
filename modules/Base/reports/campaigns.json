@@ -15,13 +15,13 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "sessionCampaign",
+                "dimensions": "attributedCampaign",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }
     ],
     "settings": {
-        "constraints": "sessionCampaign!=(not set)"
+        "constraints": "attributedCampaign!=(not set)"
     }
 }

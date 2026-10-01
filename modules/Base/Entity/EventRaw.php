@@ -389,6 +389,27 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'params', OWA_DTD_JSON ) );
 
         /*
+         * THE VISITOR'S LAST NON-DIRECT TOUCH BEFORE THIS SESSION, as evidence:
+         * the tags it was collected with, its referring host and when it was.
+         * Read from the visitor store at ingest, on the landing beacon of a
+         * returning visitor's session (TrackingEventHelpers::priorTouch()).
+         *
+         * Stamped rather than looked up later because the store holds only the
+         * LATEST touch: by the time a cube is built, or rebuilt a year on, the
+         * row may hold one that came after this session. The cube decides what
+         * it means -- classification and the lookback window are both applied
+         * there, so a change to either reaches history on rebuild (PLAN 2.29).
+         *
+         * Not on the cubes: the cube's attributed_* columns are the reading.
+         */
+        $this->setProperty( $this->column( 'prior_touch_source', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'prior_touch_medium', OWA_DTD_VARCHAR64 ) );
+        $this->setProperty( $this->column( 'prior_touch_campaign', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'prior_touch_ad', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'prior_touch_referer_host', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->column( 'prior_touch_ts', OWA_DTD_BIGINT ) );
+
+        /*
          * Indexes, as measured in the prototype. The two composites are the
          * report shapes: every query bounds site_id and a date range, and the
          * event-type one serves a breakdown of a single event over a period.

@@ -1810,6 +1810,19 @@ final class PartitionOperationsTest extends TestCase
         $this->assertSame(array(), $monthly,
             'no whole MONTH of the front has left the window');
 
+        /*
+         * The front starts on the 1st, its first quarter-month ends on the 8th,
+         * and a period merges only once it has left the rebuild window. So
+         * before the 15th no quarter of this month has left it either, and the
+         * honest assertion is that nothing is mergeable yet.
+         */
+        if ((int) date('j') < 8 + (int) \OWA\Core\CoreAPI::getSetting('base', 'cube_rebuild_window_days')) {
+
+            $this->assertSame(array(), $quarter, 'no quarter of this month has left the window yet');
+
+            return;
+        }
+
         $this->assertNotSame(array(), $quarter,
             'but a quarter has, and that is the unit the table is now on');
 

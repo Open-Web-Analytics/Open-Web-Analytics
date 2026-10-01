@@ -15,7 +15,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "sessionAd,landingPage",
+                "dimensions": "attributedAd,landingPage",
                 "sort": "sessions-",
                 "resultsPerPage": 25
             }

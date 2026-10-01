@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 65;
+        $this->required_schema_version = 66;
         return parent::__construct();
     }
 
@@ -652,7 +652,7 @@ class Module extends \OWA\Core\Module {
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.reporting',
             'legend'   => 'Reporting',
-            'settings' => array( 'timezone' ),
+            'settings' => array( 'timezone', 'attribution_lookback_days' ),
         ) );
 
 
@@ -787,6 +787,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'creative-performance', 'reports/creative-performance.json' );
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         // Not configuration: it reads raw, not the cube (Classes\Realtime).
+        $this->registerReport( 'model-comparison', 'reports/model-comparison.json' );
         $this->registerReport( 'realtime', array( 'controller' => 'base.reportRealtime' ) );
         $this->registerReport( 'document', 'reports/document.json' );
         /*
@@ -838,6 +839,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'sources', 'reports/sources.json' );
         $this->registerReport( 'traffic', 'reports/traffic.json' );
         $this->registerReport( 'transactions', 'reports/transactions.json' );
+        $this->registerReport( 'user-acquisition', 'reports/user-acquisition.json' );
         $this->registerReport( 'visitors', 'reports/visitors.json' );
         $this->registerReport( 'visitors-loyalty', 'reports/visitors-loyalty.json' );
     }
@@ -947,6 +949,8 @@ class Module extends \OWA\Core\Module {
         //Traffic
         $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 3, 'view_reports', 'Reports','fa fa-random');
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'channels' ), 'Channels', 0);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'user-acquisition' ), 'User Acquisition', 2);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'model-comparison' ), 'Model Comparison', 7);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
         $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);

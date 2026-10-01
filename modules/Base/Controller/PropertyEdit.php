@@ -55,6 +55,16 @@ class PropertyEdit extends \OWA\Core\AdminController {
                     . 'tracking request is accepted or refused on.' ) );
         }
 
+        // Empty inherits; otherwise a whole number of days, at most ten years.
+        $lookback = trim( (string) $this->getParam( 'attributionLookbackDays' ) );
+
+        if ( $lookback !== '' && ! ( ctype_digit( $lookback ) && (int) $lookback <= 3650 ) ) {
+
+            $this->addValidation( 'attributionLookbackDays', '', 'required',
+                array( 'errorMsg' => 'The attribution lookback is a whole number of days, 0 to 3650, '
+                    . 'or empty to use the install&rsquo;s.' ) );
+        }
+
         /*
          * Only checked when editing. An absent id means create, so requiring
          * the row to exist would make adding a Property impossible.
@@ -128,6 +138,19 @@ class PropertyEdit extends \OWA\Core\AdminController {
             $property->set( 'description', $description );
             $property->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
             $property->create();
+        }
+
+        // The Property's own lookback, or none so it inherits the install's.
+        $lookback = trim( (string) $this->getParam( 'attributionLookbackDays' ) );
+
+        if ( $lookback === '' ) {
+
+            \OWA\Core\CoreAPI::clearScopedSetting( 'property', (string) $propertyId, 'base', 'attribution_lookback_days' );
+
+        } else {
+
+            \OWA\Core\CoreAPI::setScopedSetting( 'property', (string) $propertyId, 'base',
+                'attribution_lookback_days', (int) $lookback );
         }
 
         $this->set( 'propertyId', $propertyId );

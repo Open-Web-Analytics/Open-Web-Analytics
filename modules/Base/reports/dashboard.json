@@ -67,7 +67,7 @@
             "chartMetric": "sessions",
             "query": {
                 "metrics": "sessions",
-                "dimensions": "sessionChannel",
+                "dimensions": "attributedChannel",
                 "sort": "sessions-"
             }
         },

@@ -452,6 +452,26 @@ class Builder {
      * @param bool  $dry_run compose the statement, run nothing
      * @return array ['ok','partition','rows','sql','after','steps','computed','failed']
      */
+    /**
+     * A Property's attribution lookback, in days: its own setting, else the
+     * install's, else 90. Read at build time, so a change reaches history when
+     * its partitions are rebuilt (PLAN 2.29).
+     *
+     * @param string $property_id
+     * @return int
+     */
+    public static function lookbackDays( $property_id ) {
+
+        $days = \OWA\Core\CoreAPI::getSetting( 'base', 'attribution_lookback_days', 'property', (string) $property_id );
+
+        if ( ! is_numeric( $days ) ) {
+
+            $days = \OWA\Core\CoreAPI::getSetting( 'base', 'attribution_lookback_days' );
+        }
+
+        return is_numeric( $days ) && (int) $days >= 0 ? (int) $days : Context::DEFAULT_LOOKBACK_DAYS;
+    }
+
     public function rebuild( array $span, $dry_run = false ) {
 
         $built_at = (int) round( microtime( true ) * 1000000 );
@@ -468,7 +488,8 @@ class Builder {
             'error'     => '',
         );
 
-        $context = new Context( $span, $built_at, $this->closedBefore( $built_at ) );
+        $context = new Context( $span, $built_at, $this->closedBefore( $built_at ),
+            self::lookbackDays( $this->property_id ) );
 
         try {
 

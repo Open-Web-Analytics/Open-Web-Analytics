@@ -14,24 +14,24 @@
         },
         {
             "type": "grid",
-            "id": "sessionSource",
+            "id": "attributedSource",
             "container": "sourceExplorer",
             "title": "Revenue by Source",
             "colspan": 6,
             "query": {
                 "metrics": "transactions,transactionRevenue",
-                "dimensions": "sessionSource",
+                "dimensions": "attributedSource",
                 "sort": "transactionRevenue-",
                 "resultsPerPage": 5
             },
             "link": {
-                "linkColumn": "sessionSource",
+                "linkColumn": "attributedSource",
                 "template": {
                     "do": "base.report",
                     "reportId": "sources",
-                    "sessionSource": "%s"
+                    "attributedSource": "%s"
                 },
-                "valueColumns": "sessionSource"
+                "valueColumns": "attributedSource"
             }
         }
     ]

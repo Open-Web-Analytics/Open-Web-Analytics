@@ -15,13 +15,13 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "sessionAd",
+                "dimensions": "attributedAd",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }
     ],
     "settings": {
-        "constraints": "sessionAd!=(not set)"
+        "constraints": "attributedAd!=(not set)"
     }
 }

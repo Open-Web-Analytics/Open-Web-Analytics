@@ -91,6 +91,13 @@ class Event extends EventRaw {
          */
         unset( $this->properties['created_at'] );
 
+        // NOR PRIOR_TOUCH_*. Evidence for attributed_* below, which is the
+        // cube's reading of it (PLAN 2.29).
+        foreach ( array( 'source', 'medium', 'campaign', 'ad', 'referer_host', 'ts' ) as $part ) {
+
+            unset( $this->properties[ 'prior_touch_' . $part ] );
+        }
+
         // NOR SITE_TS. It serves the realtime screen, which reads raw; on a
         // cube it would only slow every build's staging insert.
         unset( $this->_tableProperties['composite_indexes']['site_ts'] );
@@ -266,6 +273,21 @@ class Event extends EventRaw {
          */
         $this->setProperty( $this->resolved( 'channel', OWA_DTD_VARCHAR32 ) );
         $this->setProperty( $this->resolved( 'acq_channel', OWA_DTD_VARCHAR32 ) );
+
+        /*
+         * ATTRIBUTED SOURCE: the session's own source if it arrived with tags
+         * or a referrer; otherwise the visitor's last non-direct touch within
+         * the Property's lookback (attribution_lookback_days); otherwise
+         * (direct). From the session's own evidence and prior_touch_*, by the
+         * same steps as source, medium, campaign and channel (PLAN 2.29).
+         * Campaign is nullable like campaign -- a tagged touch with no campaign
+         * is (not set). LAST: Update066 ADDs them.
+         */
+        $this->setProperty( $this->resolved( 'attributed_source', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->resolved( 'attributed_medium', OWA_DTD_VARCHAR64 ) );
+        $this->setProperty( $this->column( 'attributed_campaign', OWA_DTD_VARCHAR255 ) );
+        $this->setProperty( $this->resolved( 'attributed_channel', OWA_DTD_VARCHAR32 ) );
+        $this->setProperty( $this->column( 'attributed_ad', OWA_DTD_VARCHAR255 ) );
     }
 
     /**

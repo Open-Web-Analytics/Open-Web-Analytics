@@ -1958,6 +1958,100 @@ class TrackingEventHelpers {
      * builder is handed a formed event and persists it, rather than computing
      * five values inside a helper of its own.
      */
+    /** Prior touches read this process, keyed by site, visitor and session. */
+    private static $priorTouches = array();
+
+    /**
+     * The visitor's last non-direct touch before this session, from the visitor
+     * store, as the evidence it was recorded as (PLAN 2.29).
+     *
+     * ON THE LANDING BEACON OF A RETURNING VISITOR'S SESSION ONLY -- the one
+     * beacon whose rows the cube reads a session's values from. A first visit
+     * has no earlier touch, and a later beacon of the session would only repeat
+     * the answer.
+     *
+     * STRICTLY BEFORE THE SESSION. The store holds the LATEST touch, and a queue
+     * drain can deliver this beacon after a later session's touch was written.
+     * That touch is not this session's to inherit, and the one it displaced is
+     * gone, so nothing is stamped rather than something wrong.
+     *
+     * One read per session, memoised: six properties ask.
+     *
+     * @param object $event
+     * @return array the last_touch_* values, or an empty array
+     */
+    static function priorTouch( $event ) {
+
+        if ( ! $event->get( 'is_new_session_start' )
+             || (int) $event->get( 'num_prior_sessions' ) < 1
+             || ! $event->get( 'visitor_id' ) ) {
+
+            return array();
+        }
+
+        $memo = $event->get( 'site_id' ) . '|' . $event->get( 'visitor_id' ) . '|' . $event->get( 'session_id' );
+
+        if ( isset( self::$priorTouches[ $memo ] ) ) {
+
+            return self::$priorTouches[ $memo ];
+        }
+
+        $touch = array();
+        $store = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
+        $store->load( $event->get( 'visitor_id' ), 'visitor_id' );
+
+        $ts = (int) $store->get( 'last_touch_ts' );
+
+        if ( $store->wasPersisted() && $ts > 0 && $ts < (int) $event->get( 'ts' ) ) {
+
+            foreach ( array( 'source', 'medium', 'campaign', 'ad', 'referer_host', 'ts' ) as $part ) {
+
+                $value = $store->get( 'last_touch_' . $part );
+                $touch[ $part ] = ( $value === false || $value === '' ) ? null : $value;
+            }
+        }
+
+        return self::$priorTouches[ $memo ] = $touch;
+    }
+
+    /** One part of priorTouch(), or null. */
+    private static function priorTouchPart( $event, $part ) {
+
+        $touch = self::priorTouch( $event );
+
+        return isset( $touch[ $part ] ) ? $touch[ $part ] : null;
+    }
+
+    static function resolvePriorTouchSource( $value, $event ) {
+
+        return self::priorTouchPart( $event, 'source' );
+    }
+
+    static function resolvePriorTouchMedium( $value, $event ) {
+
+        return self::priorTouchPart( $event, 'medium' );
+    }
+
+    static function resolvePriorTouchCampaign( $value, $event ) {
+
+        return self::priorTouchPart( $event, 'campaign' );
+    }
+
+    static function resolvePriorTouchAd( $value, $event ) {
+
+        return self::priorTouchPart( $event, 'ad' );
+    }
+
+    static function resolvePriorTouchRefererHost( $value, $event ) {
+
+        return self::priorTouchPart( $event, 'referer_host' );
+    }
+
+    static function resolvePriorTouchTs( $value, $event ) {
+
+        return self::priorTouchPart( $event, 'ts' );
+    }
+
     static function resolveTaggedSource( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_source' );
