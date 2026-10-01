@@ -165,7 +165,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   what can ship in 1.x first, and the order to build it in.</p>
 </header>
 <div class="meta">
-  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep · pass measured 21 Sep · built out 29 Sep · visitor store corrected 30 Sep</span>
+  <span>20 Aug 2026 · annotated 23 Aug · reconciled 28 Aug · groundwork 31 Aug · goal events 3 Sep · pass measured 21 Sep · built out 29 Sep · visitor store corrected 30 Sep · attribution and 2.0 removals 1 Oct</span>
   <span>Branch <code>research/v2-single-fact-table</code></span>
   <span>Detail: <code>research/v2-schema/README.md</code></span>
 </div>
@@ -2107,7 +2107,7 @@ rather than a later phase: un-migrated history is unreportable the moment metric
 <tr><td>14</td><td><strong>Drop v1</strong> &mdash; an optional command removing the 20 v1 tables by name (<a href="#s221b">&sect;2.21</a>), refusing until the migration has completed. The tables v2 keeps are untouched.</td><td><strong>Done</strong> 29&nbsp;Sep (#1141): <code>cmd=v1-drop</code> reports each v1 table, its rows and how many the migration read, and drops them only with <code>--drop</code>. Refused until Update062 has run; once it has dropped them, Update062&rsquo;s <code>down()</code> refuses.</td></tr>
 </tbody></table></div>
 
-<div class="flag"><strong>Status &mdash; 2026-09-29</strong>
+<div class="flag"><strong>Status &mdash; 2026-09-29, updated 1&nbsp;Oct</strong>
 <p><strong>All fourteen items are done</strong>, each recorded in its row above; the tables are the
 authority, and this note only dates them. Phases 5&ndash;9 landed between 21 and 29&nbsp;Sep, the last
 being the migration's reconciliation (#1144).</p>
@@ -2124,6 +2124,21 @@ reports say when their numbers were built, and Live View is removed (#1152, <a h
 <li>The visitor store is pruned with raw under <code>keep=</code>, with a 14-month floor, and has no TTL of its own (#1157, <a href="#s15">&sect;1.5.4</a>).</li>
 <li>v1 line items migrate onto their purchases (#1159).</li>
 <li>The realtime screen (#1160, <a href="#s16">&sect;1.6</a>).</li>
+<li>Direct first visits resolve as direct, and the report nav sorts by order (#1161).</li>
+<li>Source, medium and campaign take GA's generated values, and a <code>channel</code> column classifies
+each session by ordered rules in <code>conf/channels.php</code> (#1162).</li>
+</ul></p>
+<p><strong>And 1&nbsp;Oct:</strong>
+<ul>
+<li>The v1 migrator no longer tags the mediums and sources 1.x filled in itself (#1163).</li>
+<li>Removed, as UPGRADING.md promised for 2.0: template <code>extract()</code> and <code>$this</code>,
+the <code>owa_*</code> class bridge and the lowercase module layout (#1164). No <code>owa_*</code> name
+resolves; factories build PSR-4 names only; queued 1.x <code>owa_event</code> blobs still decode.</li>
+<li>Attributed source, the last non-direct touch within a per-Property lookback, with the User
+Acquisition and Model Comparison reports (#1165, <a href="#s230">&sect;2.29</a>). Schema 66.</li>
+<li>Three tests that failed on the first of a month, on <code>v2</code> as on the branch, fixed with
+it: the e2e seed's fresh cube had no partition for the previous month, a partition test assumed half
+the month had passed, and a freshness spec read <code>last_month</code> as closed.</li>
 </ul></p>
 <p><strong>Next:</strong> <code>v2</code> merges to master once reporting runs off v2, which it now
 does. What stands between is a readiness pass &mdash; the 1.14 upgrade on a copy of a real install, a
@@ -3174,9 +3189,9 @@ which matches a parameter name appearing anywhere &mdash; inside a path segment,
 inside another parameter's value &mdash; and takes everything after it. v2 has a
 parsed query to work on and should rebuild it from parts.</p>
 
-<h3 id="s230"><span class="num">2.29</span>Attributed source: the last non-direct touch <span class="chip c-dec">Decided</span></h3>
+<h3 id="s230"><span class="num">2.29</span>Attributed source: the last non-direct touch <span class="chip c-done">Shipped</span></h3>
 
-<p class="note"><strong>DECIDED 1&nbsp;Oct</strong>, in the cube pass's terms: &ldquo;the pass&rdquo; below is the
+<p class="note"><strong>Shipped 1&nbsp;Oct (#1165, Update066).</strong> <strong>DECIDED 1&nbsp;Oct</strong>, in the cube pass's terms: &ldquo;the pass&rdquo; below is the
 <code>rebuild-cube</code> build. A third set of traffic-source columns on the
 cube, beside the two that exist. The 21&nbsp;Aug decision recorded a return visit as
 <code>direct</code> and called that GA-consistent; it is not. GA's session scope is <em>non-direct
