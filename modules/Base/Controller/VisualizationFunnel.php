@@ -688,7 +688,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * refused the same way when a name does not exist.
          *
          * Deliberately not folded into the WHERE below. Constraining the funnel
-         * query itself would filter the ROWS -- `medium==organic-search` would
+         * query itself would filter the ROWS -- `medium==organic` would
          * drop every step the subject reached on some other medium and the
          * funnel would collapse for reasons that have nothing to do with the
          * funnel. So the segment picks the users and then counts all of their

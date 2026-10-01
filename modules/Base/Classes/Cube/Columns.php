@@ -161,6 +161,24 @@ class Columns {
                     $this->join( $definition['tag'] ),
                     $this->test( $definition ) );
 
+            case 'campaign':
+                return new CampaignStep( $column,
+                    $this->resolve( $definition['tag'] ),
+                    array_map( array( $this, 'resolve' ), (array) $definition['tags'] ),
+                    // The same medium as the column beside it, for the placeholder.
+                    new MediumStep( $column,
+                        $this->resolve( $definition['medium']['tag'] ),
+                        $this->resolve( $definition['medium']['host'] ),
+                        $this->join( $definition['medium']['tag'] ) ),
+                    $this->join( $definition['tag'] ),
+                    $this->test( $definition ) );
+
+            // From the row's own columns, after the build statement.
+            case 'channel':
+                return new ChannelStep( $column,
+                    (string) $definition['source'], (string) $definition['medium'],
+                    (string) $definition['campaign'] );
+
             case 'is_exit':
                 return new IsExitStep( $column );
 

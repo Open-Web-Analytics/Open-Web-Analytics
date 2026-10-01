@@ -995,16 +995,51 @@ final class CubeBuildTest extends TestCase
         $row = $this->built('page_view', self::VISITOR_REFERRED, 8881000000000002, $this->t0);
 
         $this->assertSame('google.com', $row['source'], 'the referring host, without www');
-        $this->assertSame('organic-search', $row['medium']);
-        $this->assertNull($row['campaign'], 'no tag means no campaign, which is an absence');
+        $this->assertSame('organic', $row['medium'], 'the medium of a recognised search engine');
+        $this->assertSame('(organic)', $row['campaign'], 'an untagged campaign mirrors the medium');
+        $this->assertSame('Organic Search', $row['channel']);
     }
 
     public function testNoReferrerAndNoTagsIsDirect(): void
     {
         $row = $this->built('page_view', self::VISITOR_DIRECT, 8881000000000003, $this->t0);
 
-        $this->assertSame('direct', $row['source']);
-        $this->assertSame('direct', $row['medium']);
+        // In parentheses because OWA generated them.
+        $this->assertSame('(direct)', $row['source']);
+        $this->assertSame('(none)', $row['medium']);
+        $this->assertSame('(direct)', $row['campaign']);
+        $this->assertSame('Direct', $row['channel']);
+    }
+
+    /**
+     * EVERY ROW HAS A CHANNEL, AND NO PLACEHOLDER DISAGREES WITH ITS MEDIUM.
+     *
+     * The channel is written by the statement after the build (Step::after()),
+     * so a row still holding the INSERT's placeholder would mean it never ran.
+     * An untagged campaign mirrors the medium from the same expression, so a
+     * campaign row and its medium row count the same sessions.
+     */
+    public function testEveryRowHasAChannelAndPlaceholdersMirrorTheMedium(): void
+    {
+        $db = owa_coreAPI::dbSingleton();
+
+        $row = (array) $db->get_row(sprintf(
+            "SELECT COUNT(*) AS rows_built, SUM(channel = '') AS no_channel, SUM(acq_channel = '') AS no_acq_channel,"
+          . " SUM((campaign = '(direct)' AND medium <> '(none)') OR (campaign = '(organic)' AND medium <> 'organic')"
+          . " OR (campaign = '(referral)' AND medium <> 'referral')"
+          . " OR (campaign = '(ai-agent)' AND medium <> 'ai-agent')) AS disagree"
+          . ' FROM %s WHERE yyyymmdd = %d', $this->cube(), $this->yyyymmdd));
+
+        $this->assertGreaterThan(0, (int) $row['rows_built']);
+        $this->assertSame(0, (int) $row['no_channel'], 'the channel statement ran');
+        $this->assertSame(0, (int) $row['no_acq_channel']);
+        $this->assertSame(0, (int) $row['disagree']);
+
+        $channels = array_column((array) $db->get_results(sprintf(
+            'SELECT DISTINCT channel FROM %s WHERE yyyymmdd = %d', $this->cube(), $this->yyyymmdd)), 'channel');
+
+        $this->assertSame([], array_values(array_diff($channels,
+            \OWA\Module\Base\Classes\Cube\ChannelStep::channels())), 'only channels the rules name');
     }
 
     public function testAcquisitionIsStampedFromTheVisitorStore(): void
@@ -1067,16 +1102,20 @@ final class CubeBuildTest extends TestCase
 
         $sentinel = \OWA\Module\Base\Classes\V2Event::UNRESOLVED;
 
-        $this->assertNull($row['acq_campaign'], 'recorded no campaign, which is not "unresolved"');
+        // Untagged, so the campaign is the placeholder for how it arrived --
+        // a value, not "unresolved" -- and the ad is an ordinary absence.
+        $this->assertSame('(direct)', $row['acq_campaign']);
         $this->assertNull($row['acq_ad']);
         $this->assertNotSame($sentinel, $row['acq_campaign']);
 
-        // The two that RESOLVE still do: no referring host is `direct`, which
-        // is a value, so they stay NOT NULL. This is the row a direct landing
-        // writes at ingest (EventRawHandlers::writeVisitorAcquisition), so it
-        // must read as direct, never as the sentinel.
-        $this->assertSame('direct', $row['acq_source']);
-        $this->assertSame('direct', $row['acq_medium']);
+        // The two that RESOLVE still do: no referring host is (direct) /
+        // (none), which are values, so they stay NOT NULL. This is the row a
+        // direct landing writes at ingest (EventRawHandlers::
+        // writeVisitorAcquisition), so it must read as direct, never as the
+        // sentinel.
+        $this->assertSame('(direct)', $row['acq_source']);
+        $this->assertSame('(none)', $row['acq_medium']);
+        $this->assertSame('Direct', $row['acq_channel']);
     }
 
     /**
@@ -1146,8 +1185,8 @@ final class CubeBuildTest extends TestCase
         // would fail before reaching this.
         $row = $this->built('page_view', self::VISITOR_LONG_REF, 8881000000000005, $this->t0);
 
-        $this->assertSame('direct', $row['source']);
-        $this->assertSame('direct', $row['medium']);
+        $this->assertSame('(direct)', $row['source']);
+        $this->assertSame('(none)', $row['medium']);
     }
 
     public function testAHostLongerThanADomainNameCanBeIsRefused(): void
@@ -1156,7 +1195,7 @@ final class CubeBuildTest extends TestCase
         // RFC 1035 allows a domain name to be, so it is not one.
         $row = $this->built('page_view', self::VISITOR_LONG_HOST, 8881000000000006, $this->t0);
 
-        $this->assertSame('direct', $row['source']);
+        $this->assertSame('(direct)', $row['source']);
     }
 
     public function testAComputeStepFillsWhatSqlCannot(): void

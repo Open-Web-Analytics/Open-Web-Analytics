@@ -42,14 +42,14 @@ final class EventEntityTest extends TestCase
           . 'EXCHANGE PARTITION compares the two tables column by column.');
     }
 
-    public function testTheNineteenDerivedColumns(): void
+    public function testTheTwentyOneDerivedColumns(): void
     {
         // By difference, not by skipping raw's column count: the cube does not
         // carry every raw column (created_at), so the count would be off.
         $derived = array_values(array_diff($this->event()->getColumns(), $this->raw()->getColumns()));
 
-        // new_vs_returning, is_engaged_session and is_entrance sit AFTER built_at
-        // because ADD COLUMN appends, so a cube that gained them and a fresh one
+        // new_vs_returning, is_engaged_session, is_entrance and the two channels
+        // sit AFTER built_at because ADD COLUMN appends, so a cube that gained them and a fresh one
         // have the same columns in the same order.
         $this->assertSame([
             'source', 'medium', 'campaign', 'ad', 'search_terms',
@@ -57,6 +57,7 @@ final class EventEntityTest extends TestCase
             'landing_page_title', 'is_exit',
             'acq_source', 'acq_medium', 'acq_campaign', 'acq_ad', 'acq_search_terms',
             'built_at', 'new_vs_returning', 'is_engaged_session', 'is_entrance',
+            'channel', 'acq_channel',
         ], $derived);
     }
 

@@ -450,7 +450,7 @@ class Builder {
      *
      * @param array $span    from partitions()
      * @param bool  $dry_run compose the statement, run nothing
-     * @return array ['ok','partition','rows','sql','steps','computed','failed']
+     * @return array ['ok','partition','rows','sql','after','steps','computed','failed']
      */
     public function rebuild( array $span, $dry_run = false ) {
 
@@ -490,6 +490,9 @@ class Builder {
         $result['computed'] = $this->countComputed();
         $result['sql']      = $this->statement( $span, $expressions );
 
+        // What runs after the build statement, so a dry run shows it too.
+        $result['after'] = $this->afterStatements( $context );
+
         if ( $dry_run ) {
 
             $result['ok'] = true;
@@ -524,6 +527,27 @@ class Builder {
             $this->dropWorkingTables();
 
             return $result;
+        }
+
+        /*
+         * The columns computed from other columns of the same row (Step::
+         * after()), now that the row holds them. Before the count and the
+         * swap, so a refused one publishes nothing.
+         */
+        foreach ( $this->afterStatements( $context ) as $column => $sql ) {
+
+            if ( $this->db->query( $sql ) === false ) {
+
+                \OWA\Core\CoreAPI::error( sprintf(
+                    'Cube build: computing %s for %s failed; %s is unchanged.',
+                    $column, $span['name'], $this->tables['target'] ) );
+
+                $result['error'] = sprintf( 'computing %s failed', $column );
+
+                $this->dropWorkingTables();
+
+                return $result;
+            }
         }
 
         $expected = $this->countRaw( $span );
@@ -1129,6 +1153,28 @@ class Builder {
         }
 
         return true;
+    }
+
+    /**
+     * Each step's statement over the staging table, by column.
+     *
+     * @return string[]
+     */
+    public function afterStatements( Context $context ) {
+
+        $out = array();
+
+        foreach ( $this->steps as $column => $step ) {
+
+            $sql = $step->after( $context, $this->tables['staging'] );
+
+            if ( $sql !== null ) {
+
+                $out[ $column ] = $sql;
+            }
+        }
+
+        return $out;
     }
 
     /** @return void */

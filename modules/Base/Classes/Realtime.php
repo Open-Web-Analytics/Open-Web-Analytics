@@ -30,7 +30,7 @@ class Realtime {
     const RECENT_MINUTES = 5;
 
     /**
-     * Rows per card, as GA caps its cards: the busiest, not all of them.
+     * Rows per card: the busiest, not all of them.
      * Every card orders ties by its key as well, so equal counts come back in
      * the same order on every server -- MySQL and MariaDB do not agree without.
      */
@@ -95,7 +95,7 @@ class Realtime {
     }
 
     /**
-     * One visitor's events in the window, newest first: GA's user snapshot.
+     * One visitor's events in the window, newest first.
      *
      * @param  string $visitor_id
      * @return array[]

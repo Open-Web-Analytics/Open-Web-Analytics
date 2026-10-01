@@ -9,7 +9,8 @@ namespace OWA\Module\Base\Classes\Cube;
 
 /**
  * source, and acq_source: the tag if there was one, else the referring host,
- * else direct.
+ * else (direct) -- in parentheses because OWA generated it: a visit tagged
+ * utm_source=direct stays `direct`.
  *
  * The reading, not the evidence. It lives in the cube rather than in raw
  * because the cube is rebuilt: a corrected classifier is re-applied by
@@ -57,7 +58,7 @@ class SourceStep extends Step {
 
     public function execute( Context $context ) {
 
-        $resolved = sprintf( "COALESCE(NULLIF(TRIM(LOWER(%s)), ''), NULLIF(%s, ''), 'direct')",
+        $resolved = sprintf( "COALESCE(NULLIF(TRIM(LOWER(%s)), ''), NULLIF(LOWER(%s), ''), '(direct)')",
             $this->tag, $this->host );
 
         if ( $this->absent === null ) {

@@ -22,6 +22,6 @@
         }
     ],
     "settings": {
-        "constraints": "sessionMedium==organic-search"
+        "constraints": "sessionChannel==Organic Search"
     }
 }

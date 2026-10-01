@@ -186,7 +186,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         ]);
 
         $event = $this->event([
-            'site_id'     => 'ga-keys-site',
+            'site_id'     => 'utm-keys-site',
             'page_location' => 'https://example.test/p?utm_source=newsletter&utm_medium=email'
                 . '&utm_campaign=spring&utm_term=shoes&utm_content=banner1'
                 . '&' . $this->ns() . 'source=ignored',

@@ -329,6 +329,20 @@ class CustomReportRewriter {
                 }
             }
 
+            if ( $name === 'medium' && in_array( $operator, array( '==', '!=' ), true ) ) {
+
+                $moved = V1Names::MEDIUM_VALUES[ strtolower( trim( $value ) ) ] ?? null;
+
+                if ( $moved !== null ) {
+
+                    $out[] = $moved[0] . $operator . $moved[1];
+                    $this->changes[] = sprintf( '%s constraint: %s -> %s%s%s',
+                        $where, $clause, $moved[0], $operator, $moved[1] );
+
+                    continue;
+                }
+            }
+
             $mapped = V1Names::dimension( $name );
 
             if ( ! $mapped['known'] ) {

@@ -73,13 +73,13 @@ const FIXTURE = {
     // these are the real pipeline's output, not values anyone wrote down.
     //
     // Chosen so each medium has a distinct count and nothing is ambiguous:
-    // organic-search 2, referral 1, direct 1.
+    // organic 2, referral 1, (none) 1; direct is (none).
     traffic: {
         sources: ['google.com', 'bing.com', 'news.ycombinator.com'],
         searchTerms: ['open web analytics', 'owa analytics'],
         refererUrl: 'https://news.ycombinator.com/item?id=e2e',
         refererHost: 'news.ycombinator.com',
-        mediums: { 'organic-search': 2, referral: 1, direct: 1 },
+        mediums: { organic: 2, referral: 1, '(none)': 1 },
     },
     // The goal event seeded by seed_reporting_fixtures.php. It has no funnel:
     // a funnel is not part of a goal any more, it is a visualization.
@@ -159,7 +159,7 @@ const FIXTURE = {
     domstreams: {
         recordings: 2,
         a: {
-            medium: 'organic-search',
+            medium: 'organic',
             page: '/pricing',
             lengthLabel: '0:01:35',
             wrongLengthLabels: ['0:00:12', '0:00:37', '0:02:27'],

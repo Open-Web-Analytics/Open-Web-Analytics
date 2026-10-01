@@ -172,6 +172,22 @@ class V1Names {
     );
 
     /**
+     * A v1 medium constraint whose meaning moved in v2, as [ dimension, value ].
+     *
+     * v1 put its classification in medium; v2's medium is organic,
+     * referral, (none) -- and puts the classification in the channel. So a v1
+     * report filtered on medium==organic-search filters on the Organic Search
+     * channel here rather than on a medium value nothing holds any more. A
+     * tagged medium (email, cpc) means the same in both and is left alone.
+     */
+    const MEDIUM_VALUES = array(
+        'organic-search' => array( 'sessionChannel', 'Organic Search' ),
+        'social-network' => array( 'sessionChannel', 'Organic Social' ),
+        'referral'       => array( 'sessionChannel', 'Referral' ),
+        'direct'         => array( 'sessionChannel', 'Direct' ),
+    );
+
+    /**
      * @param  string $name a 1.14 metric
      * @return array  [ 'known' => bool, 'to' => string|null ]
      */
