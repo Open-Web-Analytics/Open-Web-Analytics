@@ -3291,7 +3291,24 @@ a 90-day window leave day 100 in the slot where the answer at day 120 is day 50,
 <code>original</code> mode had &mdash; and its window is applied at ingest, so a change reaches only new
 touches. Exact and rebuildable would need the visitor's whole touch history.</p>
 
-<h4><span class="num">2.29.5</span>Rejected</h4>
+<h4><span class="num">2.29.5</span>Which report reads which <span class="chip c-dec">Decided</span></h4>
+<p><strong>Fixed per report, no scope toggle</strong> &mdash; as GA does: its Traffic acquisition report
+offers only &ldquo;Session &hellip;&rdquo; dimensions and its User acquisition report only &ldquo;First
+user &hellip;&rdquo;, and model-dependent credit lives in separate reports.</p>
+<div class="scroll"><table>
+<thead><tr><th>Report</th><th>Reads</th><th>Role</th></tr></thead>
+<tbody>
+<tr><td>Traffic, Channels, Sources, Campaigns, Ad Performance, Creative Performance, Ecommerce, the dashboard channel pie &mdash; <strong>with revenue and conversion columns</strong></td><td><code>attributed*</code></td><td>Traffic acquisition: which marketing brought the sessions and the money</td></tr>
+<tr><td><strong>User Acquisition</strong> <span class="chip c-dec">New</span></td><td><code>first*</code></td><td>Where new visitors come from: new users by first source and channel</td></tr>
+<tr><td><strong>Model Comparison</strong> <span class="chip c-dec">New</span></td><td><code>first*</code> and <code>attributed*</code></td><td>Revenue and conversions by channel under #1 and #3 side by side, with the difference &mdash; which channels start journeys and which close them</td></tr>
+<tr><td>Referring Web Sites, Search Engines, Search Terms, Latest Visits</td><td><code>session*</code></td><td>Arrival detail: the referrer a visit actually came from. GA has no report at this scope</td></tr>
+</tbody></table></div>
+<p class="note">Every dimension stays available to custom reports, so &ldquo;channels as arrived&rdquo; is a
+custom report away. A separate attributed-revenue report would repeat Traffic acquisition's numbers while
+#3 is the only last-touch model; GA's differs from its Traffic acquisition only because its model is
+data-driven.</p>
+
+<h4><span class="num">2.29.6</span>Rejected</h4>
 <ul>
 <li><strong>A lookback over raw in the pass.</strong> Needs a visitor index on raw and a 90-day,
 visitor-keyed scan for every partition built. Order-safe, but the cost lands on every build to serve
