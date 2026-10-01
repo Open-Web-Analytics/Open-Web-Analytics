@@ -35,6 +35,12 @@ namespace OWA\Module\Base\Classes\Migration;
  */
 abstract class FactMigrator {
 
+    /**
+     * The mediums v1 assigned itself rather than read from a link: its
+     * default, and its three readings of the referrer (resolveMedium()).
+     */
+    const GENERATED_MEDIUMS = array( 'direct', 'organic-search', 'social-network', 'referral' );
+
     /** The v1 table, unprefixed; each subclass names its own. */
     const SOURCE = '';
 
@@ -685,6 +691,16 @@ abstract class FactMigrator {
      * tags. Every other row carries none, and the cube classifies it from the
      * migrated referrer as it would a live beacon (PLAN.html 2.21).
      *
+     * EXCEPT WHAT v1 FILLED IN ITSELF. A campaign link without utm_medium or
+     * utm_source still got a medium and a source: v1 defaulted the medium to
+     * `direct` or classified the referrer (resolveMedium()), and took the
+     * source from the referring host (resolveSource()). Those are verdicts
+     * too, and as tags they would be read as what the link said -- `direct`
+     * matches no channel rule, so every such session was Unassigned. They are
+     * dropped, and the cube derives both from the referrer. A link that did
+     * say utm_medium=referral cannot be told from v1's reading and loses it;
+     * with a referrer the cube reads referral again.
+     *
      * @return array tracking properties
      */
     protected function attribution( array $r, array $refs ) {
@@ -697,9 +713,21 @@ abstract class FactMigrator {
             return array();
         }
 
+        $medium = strtolower( trim( (string) ( $r['medium'] ?? '' ) ) );
+        $source = strtolower( trim( (string) (
+            $refs['source_dim'][ (string) ( $r['source_id'] ?? '' ) ]['source_domain'] ?? '' ) ) );
+
+        $referer = $refs['referer'][ (string) ( $r['referer_id'] ?? '' ) ]['url'] ?? null;
+        $host    = strtolower( (string) ( \OWA\Module\Base\Classes\V2Event::parseUrl( $referer )['host'] ?? '' ) );
+
+        if ( $source === '(direct)' || ( $host !== '' && in_array( $source, array( $host, preg_replace( '/^www\./', '', $host ) ), true ) ) ) {
+
+            $source = '';
+        }
+
         return array(
-            'tagged_source'   => $refs['source_dim'][ (string) ( $r['source_id'] ?? '' ) ]['source_domain'] ?? null,
-            'tagged_medium'   => $r['medium'] ?? null,
+            'tagged_source'   => $source !== '' ? $source : null,
+            'tagged_medium'   => $medium !== '' && ! in_array( $medium, self::GENERATED_MEDIUMS, true ) ? $medium : null,
             'tagged_campaign' => $campaign,
             'tagged_ad'       => $ad,
             'tagged_terms'    => $refs['search_term_dim'][ (string) ( $r['referring_search_term_id'] ?? '' ) ]['terms'] ?? null,
