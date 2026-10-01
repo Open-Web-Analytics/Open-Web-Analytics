@@ -10,8 +10,8 @@ jQuery(document).ready(function() {
 </script>
 
 <table class="<?php echo $view->sort_table_class;?> <?php echo $view->table_class;?>" summary="" id="<?php echo $view->table_id;?>">
-    <?php if (!empty($caption)): ?>
-    <caption><?php echo $caption;?></caption>
+    <?php if (!empty($view->caption)): ?>
+    <caption><?php echo $view->caption;?></caption>
     <?php endif;?>
     <thead>
         <TR>

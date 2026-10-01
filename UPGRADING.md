@@ -74,18 +74,20 @@ those with the old signature will need it added.
 
 ## Deprecated in 1.10.0, removed in v2.0
 
-### 1. Bare template variables and `$this` inside templates
+### 1. Bare template variables and `$this` inside templates — REMOVED in v2.0
 
-**What changed.** OWA's own templates now receive their view data through an
-explicit `$view` object instead of variables materialized by `extract()`, and
-reach the template helpers through `$view` rather than `$this`.
+**What changed.** A template receives its view data through an explicit `$view`
+object and reaches the template helpers through `$view`. In 1.10 through 1.x,
+`extract()` also made every view variable a bare local and the include made
+`$this` the Template. **v2.0 does neither**: `fetch()` extracts nothing, and it
+includes the template from a static closure, so `$this` does not exist there.
 
 ```php
-<!-- Deprecated -->
+<!-- 1.x, no longer works -->
 <?php $this->out( $headline ); ?>
 <?php foreach ($tabs as $tab): ?>
 
-<!-- Current -->
+<!-- v2.0 -->
 <?php $view->out( $view->headline ); ?>
 <?php foreach ($view->tabs as $tab): ?>
 ```
@@ -97,34 +99,38 @@ the controller that forgot the key. Nothing declared what a template required,
 so no tool could check it. Reading a never-set key through `$view` raises an
 `OutOfBoundsException` naming the key and the template instead.
 
-**What still works.** `extract()` is still called, so **bare variables and
-`$this` continue to work** in:
+**What breaks.** Any template still written the 1.x way:
 
 - third-party module templates (`modules/<Module>/templates/`)
 - site-owner overrides (`modules/<Module>/templates/local/`)
 - custom themes (`OWA_THEMES_DIR`)
 
-OWA ships none of those and cannot migrate them, which is why the old path
-remains for the full deprecation window.
+A `$this->` call fails with `Using $this when not in object context`. A bare
+variable read is undefined — a warning, `null`, or the `foreach` fatal above.
+**A bare variable inside `isset()` or `empty()` fails silently**: it is always
+unset, so the branch it guards never runs.
 
 **Migrating.** Replace each bare view variable with `$view-><name>` and each
-`$this->helper(...)` call with `$view->helper(...)`. Two things to know:
+`$this->helper(...)` call with `$view->helper(...)`. Three things to know:
 
-- **Property reads stay on `$this`.** `$this->config` is the *Template object's*
-  config, not a view variable of the same name. `$view` resolves view data only —
-  it deliberately does **not** fall back to template properties, because letting a
+- **Property reads go through `$view->owaTemplate()`.** `$this->config` becomes
+  `$view->owaTemplate()->config`. `$view-><name>` resolves view data only — it
+  deliberately does **not** fall back to template properties, because letting a
   view variable shadow a property is a silent wrong-value bug.
-- **`isset()` and `empty()` behave identically** on both paths — false for a null
-  value, false for a missing key, and never throwing. A read guarded by `isset()`
-  or by the `@` operator is safe to leave alone; the `@` form in particular is a
-  signal that the key may legitimately be absent, and `@` suppresses diagnostics
-  but **not** exceptions, so migrating such a read converts a tolerated absence
-  into a 500.
+- **`isset()` and `empty()` behave as they did on a bare variable** — false for a
+  null value, false for a missing key, and never throwing. A read guarded by
+  `isset()` or by the `@` operator is safe to convert inside the same guard; `@`
+  suppresses diagnostics but **not** exceptions, so dropping the guard converts a
+  tolerated absence into a 500.
+- **A partial included with `include` or `require` shares the including
+  template's scope**, so locals the including template assigns are still visible
+  to it, and `$view` is too.
 
 If a variable is only populated on some controller branches, initialize it
 unconditionally in the controller *before* migrating the template read.
 
-The contract on both paths is pinned by `tests/ViewScopeCompatTest.php`.
+The contract is pinned by `tests/ViewScopeCompatTest.php`, and
+`tests/TemplatesReadOnlyViewTest.php` checks OWA's own templates against it.
 
 ---
 

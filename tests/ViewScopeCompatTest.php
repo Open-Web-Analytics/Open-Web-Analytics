@@ -5,35 +5,28 @@ use OWA\Core\ViewScope;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Locks the template render contract introduced when OWA's own templates moved
- * off the extract() bare-variable convention onto an explicit $view scope.
+ * Locks the template render contract: a template reads its data through $view,
+ * and through nothing else.
  *
- * TWO CONTRACTS ARE PINNED HERE, and they pull in opposite directions:
+ * TWO CONTRACTS ARE PINNED HERE:
  *
- *  1. The DEPRECATED bare-variable path must keep working. Template resolves
- *     templates from four roots (base, module, module-local, theme), so bare
- *     vars and $this are the contract for third-party module templates,
- *     site-owner templates/local/ overrides and custom themes -- none of which
- *     OWA ships or can migrate. Breaking extract() breaks those silently, with
- *     the same fatal-in-foreach the $view work exists to eliminate. Removal is
- *     a v2.0 task; until then this half of the test is the guard.
+ *  1. THE BARE-VARIABLE PATH IS GONE (v2.0). fetch() no longer extract()s the
+ *     view vars, and it includes the template from a static closure, so a
+ *     template sees neither a bare $headline nor $this. A template written for
+ *     1.x fails on its first such read instead of rendering with values
+ *     missing.
  *
- *  2. The NEW $view path must be strict about a key that was never set, and
- *     otherwise indistinguishable from an extracted local. That second half
- *     matters more than it looks: __isset has to match native isset() exactly
- *     (false for null, false for missing, NEVER throwing) because 54 isset()
- *     and 32 empty() call sites across the templates depend on it. A __isset
- *     that threw, or that reported true for a null value, would turn those into
- *     500s or silently flip their branches.
- *
- * Read together they say: migrated and un-migrated templates observe the same
- * values, and the only behavioral difference is that reading a never-set var
- * through $view raises instead of yielding false.
+ *  2. THE $view PATH is strict about a key that was never set, and otherwise
+ *     behaves as the extracted locals did. __isset has to match native isset()
+ *     exactly (false for null, false for missing, NEVER throwing) because the
+ *     isset() and empty() call sites across the templates depend on it. A
+ *     __isset that threw, or that reported true for a null value, would turn
+ *     those into 500s or silently flip their branches.
  *
  * The suite drives the real TemplateEngine::fetch() against temp template
  * files rather than unit-testing ViewScope in isolation -- fetch() is where
- * extract(), the $view construction order, and the include all interact, and
- * that interaction is the part that can regress.
+ * the $view construction and the include interact, and that interaction is
+ * the part that can regress.
  */
 final class ViewScopeCompatTest extends TestCase
 {
@@ -69,47 +62,58 @@ final class ViewScopeCompatTest extends TestCase
     }
 
     // ---------------------------------------------------------------- contract 1
-    // The deprecated bare-variable path (third-party / local / theme templates).
+    // No bare variables, no $this.
 
-    public function testExtractStillPopulatesBareVariables(): void
+    public function testAViewVarIsNotABareVariable(): void
     {
-        $out = $this->render('<?php echo $headline; ?>', ['headline' => 'Hello']);
+        $out = $this->render('<?php var_export(isset($headline)); ?>', ['headline' => 'Hello']);
 
-        $this->assertSame('Hello', $out, 'extract() must keep populating bare vars for un-migrated templates');
+        $this->assertSame('false', $out, 'view vars are not extracted into the template scope');
     }
 
-    public function testBareVariableForeachStillWorks(): void
+    public function testThisIsNotInScopeInsideATemplate(): void
     {
-        $out = $this->render('<?php foreach ($tabs as $tab) { echo $tab; } ?>', ['tabs' => ['a', 'b']]);
+        $this->assertSame('false', $this->render('<?php var_export(isset($this)); ?>'));
 
-        $this->assertSame('ab', $out);
-    }
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessageMatches('/\$this/');
 
-    public function testThisStillResolvesToTheTemplateInsideATemplate(): void
-    {
-        // Templates are included from inside fetch(), so $this is in scope. 69 of
-        // OWA's own templates used it before the migration and third-party ones
-        // still do -- including property reads like $this->config.
-        $out = $this->render('<?php echo get_class($this) . ":" . $this->vars["x"]; ?>', ['x' => 'ok']);
-
-        $this->assertSame(TemplateEngine::class . ':ok', $out);
+        $this->render('<?php echo $this->vars["x"]; ?>', ['x' => 'ok']);
     }
 
     /**
-     * fetch() renames its own locals because extract() defaults to
-     * EXTR_OVERWRITE: a payload key called 'file' would otherwise overwrite the
-     * include path mid-render and a 'contents' key would clobber the captured
-     * output. Nothing sets those keys today, which is exactly why a regression
-     * here would go unnoticed.
+     * The template sees fetch()'s include path and $view, and none of fetch()'s
+     * other locals, whatever the payload is called.
      */
-    public function testPayloadKeyCannotClobberFetchInternals(): void
+    public function testATemplateSeesOnlyViewAndTheIncludePath(): void
     {
         $out = $this->render(
-            '<?php echo "rendered:" . $file . "|" . $contents; ?>',
+            '<?php $v = get_defined_vars(); ksort($v); echo implode(",", array_keys($v)); ?>',
             ['file' => 'PAYLOAD_FILE', 'contents' => 'PAYLOAD_CONTENTS']
         );
 
-        $this->assertSame('rendered:PAYLOAD_FILE|PAYLOAD_CONTENTS', $out);
+        $this->assertSame('__owa_template_file,view', $out);
+    }
+
+    /** A partial included by a template shares its scope: $view and its locals. */
+    public function testAPartialSeesViewAndTheIncludersLocals(): void
+    {
+        $partial = $this->dir . '/partial_' . uniqid() . '.php';
+        file_put_contents($partial, '<?php echo $row . ":" . $view->headline; ?>');
+
+        $out = $this->render('<?php foreach (["a", "b"] as $row) { include ' . var_export($partial, true) . '; } ?>',
+            ['headline' => 'H']);
+
+        $this->assertSame('a:Hb:H', $out);
+    }
+
+    /** A template that has no $this still reaches the Template's own properties. */
+    public function testATemplateReachesTheTemplatesPropertiesThroughView(): void
+    {
+        $out = $this->render('<?php echo get_class($view->owaTemplate()) . ":" . $view->owaTemplate()->vars["x"]; ?>',
+            ['x' => 'ok']);
+
+        $this->assertSame(TemplateEngine::class . ':ok', $out);
     }
 
     // ---------------------------------------------------------------- contract 2
@@ -164,33 +168,27 @@ final class ViewScopeCompatTest extends TestCase
         $this->render('<?php foreach ($view->tabs as $t) { echo $t; } ?>');
     }
 
-    // --- isset()/empty() must be indistinguishable from an extracted local ---
+    // --- isset()/empty() match native isset()/empty() on a local ---
 
     /** @dataProvider issetCases */
-    public function testIssetOnViewMatchesIssetOnAnExtractedLocal(array $vars, string $expected): void
+    public function testIssetOnViewMatchesNativeIsset(array $vars, string $isset, string $empty): void
     {
-        $bare = $this->render('<?php var_export(isset($probe)); ?>', $vars);
-        $view = $this->render('<?php var_export(isset($view->probe)); ?>', $vars);
-
-        $this->assertSame($expected, $view, 'isset($view->probe) should match native isset()');
-        $this->assertSame($bare, $view, 'isset() must agree between the bare and $view paths');
+        $this->assertSame($isset, $this->render('<?php var_export(isset($view->probe)); ?>', $vars));
     }
 
     /** @dataProvider issetCases */
-    public function testEmptyOnViewMatchesEmptyOnAnExtractedLocal(array $vars, string $unused): void
+    public function testEmptyOnViewMatchesNativeEmpty(array $vars, string $isset, string $empty): void
     {
-        $bare = $this->render('<?php var_export(empty($probe)); ?>', $vars);
-        $view = $this->render('<?php var_export(empty($view->probe)); ?>', $vars);
-
-        $this->assertSame($bare, $view, 'empty() must agree between the bare and $view paths');
+        $this->assertSame($empty, $this->render('<?php var_export(empty($view->probe)); ?>', $vars));
     }
 
     public static function issetCases(): array
     {
         return [
-            'set to a value' => [['probe' => 'x'], 'true'],
-            'set to null'    => [['probe' => null], 'false'],
-            'never set'      => [[], 'false'],
+            'set to a value' => [['probe' => 'x'], 'true', 'false'],
+            'set to a falsy value' => [['probe' => '0'], 'true', 'true'],
+            'set to null'    => [['probe' => null], 'false', 'true'],
+            'never set'      => [[], 'false', 'true'],
         ];
     }
 
@@ -217,9 +215,8 @@ final class ViewScopeCompatTest extends TestCase
     }
 
     /**
-     * $view is built AFTER extract() so a payload key called 'view' cannot
-     * replace the scope object and silently break every migrated template in
-     * the file.
+     * A payload key called 'view' cannot replace the scope object and silently
+     * break every template in the file.
      */
     public function testPayloadKeyNamedViewCannotClobberTheScopeObject(): void
     {
@@ -230,9 +227,9 @@ final class ViewScopeCompatTest extends TestCase
 
     /**
      * View data resolves from the template's vars ONLY -- no fallback to a real
-     * property on the Template. The two are different things: a template's
-     * $this->config is the Template's own config, not a view var of the same
-     * name, and letting __get fall through to properties let a view var shadow
+     * property on the Template. The two are different things: the Template's
+     * own config (reached through $view->owaTemplate()) is not a view var of
+     * the same name, and letting __get fall through to properties let a view var shadow
      * the property. That conflation shipped a broken installer once (an emptied
      * db_supported_types loop rendering <select> with no options), so the
      * absence of the fallback is pinned deliberately.
@@ -276,18 +273,4 @@ final class ViewScopeCompatTest extends TestCase
         $this->render('<?php $view->headline = "no"; ?>', ['headline' => 'yes']);
     }
 
-    /**
-     * Both paths must observe the SAME values in the same render -- this is what
-     * makes the migration safe to do file-by-file rather than all at once, and
-     * what let 28 templates stay on bare vars without behaving differently.
-     */
-    public function testBareAndViewPathsAgreeInTheSameRender(): void
-    {
-        $out = $this->render(
-            '<?php echo ($headline === $view->headline) ? "agree" : "differ"; ?>',
-            ['headline' => 'Hello']
-        );
-
-        $this->assertSame('agree', $out);
-    }
 }

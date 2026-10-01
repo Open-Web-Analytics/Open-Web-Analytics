@@ -22,7 +22,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
             <label>Database Type</label>
             <span class="owa_installInput">
                 <select name="<?php echo $view->getNs();?>db_type">
-	                <?php foreach ( $this->config['db_supported_types'] as $db_type => $db_label ): ?>
+	                <?php foreach ( $view->owaTemplate()->config['db_supported_types'] as $db_type => $db_label ): ?>
                     <option value="<?php $view->out( $db_type );?>"><?php $view->out( $db_label );?></option>
                     <?php endforeach;?>
                 </select>

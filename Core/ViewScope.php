@@ -21,42 +21,27 @@ namespace OWA\Core;
  *
  * WHY THIS EXISTS
  * ---------------
- * Templates historically received their data as bare local variables, produced
- * by `extract($this->vars)` in TemplateEngine::fetch(), and reached the template
- * helpers through `$this` (the include happens inside that method, so `$this` is
- * in scope). That contract has two costs:
- *
- *   - A key the controller never set is simply an UNDEFINED VARIABLE. In scalar
- *     context that is a warning; in `foreach` it is a fatal ("must be of type
- *     array|object, bool given") because undefined coerces to false. The failure
- *     surfaces in the template, far from the controller that forgot the key.
- *   - Nothing declares what a template needs, so neither PHPStan nor an IDE can
- *     see the contract. Analysing the tree reported ~426 undefined template
- *     variables plus 562 `$this` false positives (templates are analysed as
- *     standalone files, where `$this` legitimately does not exist).
+ * Templates in 1.x received their data as bare local variables, produced by
+ * `extract($this->vars)` in TemplateEngine::fetch(), and reached the template
+ * helpers through `$this`. A key the controller never set was simply an
+ * UNDEFINED VARIABLE -- a warning in scalar context, a fatal in `foreach`
+ * ("must be of type array|object, bool given") -- raised in the template, far
+ * from the controller that forgot the key. Nothing declared what a template
+ * needed, so neither PHPStan nor an IDE could see the contract.
  *
  * `$view` replaces both: `$view->tabs` for data, `$view->out(...)` for helpers.
  * Reading a key that was never set throws instead of silently yielding false.
+ * Since v2.0 it is the ONLY way in: fetch() extracts nothing and includes the
+ * template from a static closure, so `$this` is not in scope either.
  *
- * SEMANTICS ARE DELIBERATELY IDENTICAL TO extract(), EXCEPT FOR THE THROW
- * ----------------------------------------------------------------------
+ * isset() AND empty() BEHAVE AS ON A LOCAL
+ * ----------------------------------------
  * __isset() uses isset() on the underlying value, so `isset($view->x)` and
  * `empty($view->x)` behave exactly as `isset($x)` / `empty($x)` did against an
  * extracted local -- false for a null value, false for a missing key, and NEVER
- * throwing. 54 isset() and 32 empty() call sites across the templates depend on
- * that. __get() uses array_key_exists(), so a key set to null returns null
- * rather than throwing; only a key that was NEVER set is an error. The result is
- * that the throw fires precisely on the case that used to be a silent fatal.
- *
- * BACKWARDS COMPATIBILITY
- * -----------------------
- * extract() REMAINS in fetch(). Third-party module templates, site-owner
- * templates/local/ overrides and custom themes are written against the bare-var
- * contract, and OWA neither ships nor can migrate them -- Template resolves
- * templates from four roots (base, module, module local, theme). Those keep
- * working untouched, and `$this` keeps working there too. Only OWA's own
- * templates use `$view`. The bare-var path is deprecated and goes away at v2.0,
- * on the same schedule as the owa_* class-name bridge.
+ * throwing. The guarded reads across the templates depend on that. __get() uses
+ * array_key_exists(), so a key set to null returns null rather than throwing;
+ * only a key that was NEVER set is an error.
  *
  * The @method list below is the TEMPLATE-FACING API surface -- every helper OWA's
  * own templates actually call, forwarded by __call to the Template. It is declared
@@ -112,10 +97,10 @@ class ViewScope {
      * Read a view var.
      *
      * View data ONLY -- deliberately no fallback to a property on the Template. The
-     * two are different things: a template's `$this->config` is the Template's own
-     * config, which is not the same as a view var that happens to be called
-     * 'config'. Conflating them let a view var shadow the property and silently
-     * return the wrong value. Property reads stay as `$this->` in templates.
+     * two are different things: the Template's own config is not the same as a
+     * view var that happens to be called 'config'. Conflating them let a view var
+     * shadow the property and silently return the wrong value. A template reads a
+     * property through owaTemplate(): `$view->owaTemplate()->config`.
      */
     public function __get(string $name): mixed {
 
@@ -169,7 +154,8 @@ class ViewScope {
     }
 
     /**
-     * Escape hatch for the rare case a template needs the Template object itself.
+     * The Template object itself, for the rare read of one of its properties --
+     * a template has no `$this`.
      */
     public function owaTemplate(): TemplateEngine {
 

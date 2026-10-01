@@ -109,19 +109,9 @@ class TemplateEngine {
             $__owa_template_file = $this->template_dir.$file;
         endif;
 
-        // DEPRECATED bare-variable contract, kept for compatibility. Third-party
-        // module templates, site-owner templates/local/ overrides and custom themes
-        // are written against extracted locals ($foo) and $this, and OWA neither
-        // ships nor can migrate them. They keep working; removed at v2.0, alongside
-        // the owa_* class-name bridge. OWA's own templates use $view instead.
-        //
-        // The locals above/below are underscore-prefixed because extract() defaults
-        // to EXTR_OVERWRITE: a template payload with a 'file' or 'contents' key
-        // would otherwise clobber the include path or the captured output.
-        extract($this->vars);
-
-        // The modern, analysable scope: $view->foo for data, $view->out() for
-        // helpers. Built AFTER extract() so a stray 'view' key cannot clobber it.
+        // A template reads its data through $view and nothing else. There is no
+        // extract() -- the bare-variable contract was removed at v2.0 -- and the
+        // include runs in a static closure, so $this is not in scope either.
         $view = new ViewScope($this);
 
         // try/finally so the buffer is always discarded, even when the template
@@ -133,7 +123,10 @@ class TemplateEngine {
         // returns unrelated markup.
         ob_start();
         try {
-            include($__owa_template_file);
+            ( static function ( $__owa_template_file, $view ) {
+                include $__owa_template_file;
+            } )( $__owa_template_file, $view );
+
             return ob_get_contents();
         } finally {
             ob_end_clean();

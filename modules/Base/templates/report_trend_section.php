@@ -5,7 +5,7 @@
 
 
     <div id="trend-title" class="owa_reportHeadline"></div>
-    <div id="trend-metrics" style="height:auto;width:auto;<?php if( isset( $pie ) ) {echo 'float:right';}?>"></div>
+    <div id="trend-metrics" style="height:auto;width:auto;<?php if( isset( $view->pie ) ) {echo 'float:right';}?>"></div>
     <div style="clear:both;"></div>
     <script>
 
