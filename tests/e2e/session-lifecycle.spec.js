@@ -73,11 +73,11 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
 
     /** Wait until log.php has been hit for the given event type. */
     // Takes the event type and anchors it to a param boundary. A plain substring
-    // ('event_type=x') also matches the namespaced spelling ('owa_event_type=x'),
+    // ('e_t=x') also matches a namespaced spelling ('owa_e_t=x'),
     // so it would poll green whichever the tracker emitted and prove nothing
     // about the beacon's param naming.
     async function awaitBeacon(beacons, eventType) {
-        const re = new RegExp('[?&]event_type=' + eventType.replace(/\./g, '\\.'));
+        const re = new RegExp('[?&]e_t=' + eventType.replace(/\./g, '\\.'));
         await expect
             .poll(() => beacons.filter((u) => re.test(u)).length, { timeout: 20_000 })
             .toBeGreaterThan(0);
@@ -162,7 +162,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         expect(state.dangling_total).toBe(0);
 
         // The second hit continues the session -- it must NOT re-declare a new one.
-        const second = beacons.filter((u) => /[?&]event_type=page_view/.test(u))[1];
+        const second = beacons.filter((u) => /[?&]e_t=page_view/.test(u))[1];
         expect(second).toBeTruthy();
         /*
          * is_new_session_start, the REQUEST-scoped flag, which is the only one
@@ -173,7 +173,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
          * there is no pair left to conflate and the assertion is on the flag that
          * exists.
          */
-        expect(second).not.toMatch(/[?&]is_new_session_start=/);
+        expect(second).not.toMatch(/[?&]s_new=/);
     });
 
     test('3 - a lost first page view does not strand the session', async ({ page }) => {
@@ -222,7 +222,7 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
          * case, not this one's.
          */
         const fromPageA = (url) => {
-            const location = new URL(url).searchParams.get('page_location') || '';
+            const location = new URL(url).searchParams.get('p_l') || '';
             return /[?&]p=a(&|$)/.test(location);
         };
         await page.route('**/log.php*', (route) =>
@@ -248,8 +248,8 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         expect(state.dangling_total).toBe(0);
 
         // B had to declare a NEW session, because A's identity was never persisted.
-        const pageviews = beacons.filter((u) => /[?&]event_type=page_view/.test(u));
-        expect(pageviews[pageviews.length - 1]).toMatch(/[?&]is_new_session_start=/);
+        const pageviews = beacons.filter((u) => /[?&]e_t=page_view/.test(u));
+        expect(pageviews[pageviews.length - 1]).toMatch(/[?&]s_new=/);
 
         /*
          * A'S CAMPAIGN IS LOST WITH A'S BEACON, and that is the design, not a

@@ -96,14 +96,80 @@ return array(
      *   legacy what an OLDER tracker sent. Deletable once beacon_version shows
      *          nothing is still sending it.
      *
-     * beacon_version deliberately has no short name: the tracker sends the
-     * canonical one. Ten bytes a beacon against a split that has to be
-     * remembered forever is not a trade worth making, and a new field was the
-     * one chance not to make it.
+     * The `wire` entries are generated from the tracker's own table,
+     * modules/Base/src/tracker/WireNames.js, and BeaconWireNamesTest holds the
+     * two to each other in both directions. The convention behind the codes is
+     * documented there.
      */
     'renames' => array(
 
-        array( 'role' => 'wire',   'from' => 'nps',  'to' => 'num_prior_sessions' ),
+        /*
+         * THE CURRENT TRACKER'S SHORT KEYS, one per property it sends. A beacon
+         * that has to fit one packet cannot spend 40 bytes on
+         * is_new_visitor_created, and the server keeps the long names because
+         * the registry, the columns and every reader already use them.
+         */
+        array( 'role' => 'wire',   'from' => '_v',      'to' => 'beacon_version' ),
+        array( 'role' => 'wire',   'from' => 'e_t',     'to' => 'event_type' ),
+        array( 'role' => 'wire',   'from' => 'e_sq',    'to' => 'event_seq' ),
+        array( 'role' => 'wire',   'from' => 'e_ems',   'to' => 'engagement_msec' ),
+        array( 'role' => 'wire',   'from' => 'site',    'to' => 'site_id' ),
+        array( 'role' => 'wire',   'from' => 'v_id',    'to' => 'visitor_id' ),
+        array( 'role' => 'wire',   'from' => 'v_fts',   'to' => 'fsts' ),
+        array( 'role' => 'wire',   'from' => 'v_nps',   'to' => 'num_prior_sessions' ),
+        array( 'role' => 'wire',   'from' => 'v_new',   'to' => 'is_new_visitor_created' ),
+        array( 'role' => 'wire',   'from' => 'v_cs',    'to' => 'consent_state' ),
+        array( 'role' => 'wire',   'from' => 'u_id',    'to' => 'user_id' ),
+        array( 'role' => 'wire',   'from' => 's_id',    'to' => 'session_id' ),
+        array( 'role' => 'wire',   'from' => 's_sts',   'to' => 'sts' ),
+        array( 'role' => 'wire',   'from' => 's_pts',   'to' => 'psts' ),
+        array( 'role' => 'wire',   'from' => 's_new',   'to' => 'is_new_session_start' ),
+        array( 'role' => 'wire',   'from' => 'p_l',     'to' => 'page_location' ),
+        array( 'role' => 'wire',   'from' => 'p_t',     'to' => 'page_title' ),
+        array( 'role' => 'wire',   'from' => 'p_r',     'to' => 'HTTP_REFERER' ),
+        array( 'role' => 'wire',   'from' => 'p_cg',    'to' => 'content_group' ),
+        array( 'role' => 'wire',   'from' => 'p_w',     'to' => 'page_width' ),
+        array( 'role' => 'wire',   'from' => 'p_h',     'to' => 'page_height' ),
+        array( 'role' => 'wire',   'from' => 'p_q',     'to' => 'search_term' ),
+        array( 'role' => 'wire',   'from' => 'd_sr',    'to' => 'screen_resolution' ),
+        array( 'role' => 'wire',   'from' => 'el_tg',   'to' => 'dom_element_tag' ),
+        array( 'role' => 'wire',   'from' => 'el_id',   'to' => 'dom_element_id' ),
+        array( 'role' => 'wire',   'from' => 'el_cl',   'to' => 'dom_element_class' ),
+        array( 'role' => 'wire',   'from' => 'el_nm',   'to' => 'dom_element_name' ),
+        array( 'role' => 'wire',   'from' => 'el_tx',   'to' => 'dom_element_text' ),
+        array( 'role' => 'wire',   'from' => 'el_lu',   'to' => 'target_url' ),
+        array( 'role' => 'wire',   'from' => 'el_lo',   'to' => 'is_outbound' ),
+        array( 'role' => 'wire',   'from' => 'c_x',     'to' => 'click_x' ),
+        array( 'role' => 'wire',   'from' => 'c_y',     'to' => 'click_y' ),
+        array( 'role' => 'wire',   'from' => 'sc_d',    'to' => 'scroll_depth' ),
+        array( 'role' => 'wire',   'from' => 'f_nm',    'to' => 'file_name' ),
+        array( 'role' => 'wire',   'from' => 'f_ext',   'to' => 'file_extension' ),
+        array( 'role' => 'wire',   'from' => 'fm_id',   'to' => 'form_id' ),
+        array( 'role' => 'wire',   'from' => 'fm_nm',   'to' => 'form_name' ),
+        array( 'role' => 'wire',   'from' => 'fm_len',  'to' => 'form_length' ),
+        array( 'role' => 'wire',   'from' => 'fm_dst',  'to' => 'form_destination' ),
+        array( 'role' => 'wire',   'from' => 'fm_stx',  'to' => 'form_submit_text' ),
+        array( 'role' => 'wire',   'from' => 'fm_ffid', 'to' => 'first_field_id' ),
+        array( 'role' => 'wire',   'from' => 'fm_ffnm', 'to' => 'first_field_name' ),
+        array( 'role' => 'wire',   'from' => 'fm_fft',  'to' => 'first_field_type' ),
+        array( 'role' => 'wire',   'from' => 'fm_ffp',  'to' => 'first_field_position' ),
+        array( 'role' => 'wire',   'from' => 'o_id',    'to' => 'ct_order_id' ),
+        array( 'role' => 'wire',   'from' => 'o_tot',   'to' => 'ct_total' ),
+        array( 'role' => 'wire',   'from' => 'o_tax',   'to' => 'ct_tax' ),
+        array( 'role' => 'wire',   'from' => 'o_shp',   'to' => 'ct_shipping' ),
+        array( 'role' => 'wire',   'from' => 'o_val',   'to' => 'ct_value' ),
+        array( 'role' => 'wire',   'from' => 'o_cur',   'to' => 'currency' ),
+        array( 'role' => 'wire',   'from' => 'o_cpn',   'to' => 'coupon' ),
+        array( 'role' => 'wire',   'from' => 'o_gw',    'to' => 'ct_gateway' ),
+        array( 'role' => 'wire',   'from' => 'o_src',   'to' => 'ct_order_source' ),
+        array( 'role' => 'wire',   'from' => 'o_items', 'to' => 'ct_line_items' ),
+
+        /*
+         * `nps` is what 1.x and the v2 tracker before the scoped keys sent for
+         * num_prior_sessions. Every other property they sent went on the wire
+         * under its own name, which the gate admits as it is.
+         */
+        array( 'role' => 'legacy', 'from' => 'nps',  'to' => 'num_prior_sessions' ),
 
         /*
          * page_url is v1's name for the page's URL, and v1's server CANONICALISED
@@ -131,19 +197,19 @@ return array(
          * vocabulary; they are not any more (PLAN.html §2.26.1 -- two scopes, and
          * a value describing the person is the user one). So a beacon carrying
          * either under its bare name names nothing, and admitRequestParams()
-         * would drop it: the bare spellings are not registered and carry no `up_`
+         * would drop it: the bare spellings are not registered and carry no `vps_`
          * prefix to be admitted by.
          *
          * Renamed onto the prefix instead, which puts them exactly where a site
          * calling setUserProperty() puts them today. `user_name` is LEGACY rather
          * than wire: the current tracker's setUserName() writes the PAGE store
-         * under the up_ prefix, so the beacon already carries up_user_name and
+         * under the vps_ prefix, so the beacon already carries vps_user_name and
          * never reaches this. `email_address` was already legacy -- its rename used
          * to point at the declared user_email property and now points at the
          * prefix.
          */
-        array( 'role' => 'legacy', 'from' => 'user_name',     'to' => 'up_user_name' ),
-        array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'up_user_email' ),
+        array( 'role' => 'legacy', 'from' => 'user_name',     'to' => 'vps_user_name' ),
+        array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'vps_user_email' ),
 
         /*
          * dsfs -> days_since_first_session and dsps -> days_since_prior_session

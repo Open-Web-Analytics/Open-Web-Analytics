@@ -1789,8 +1789,8 @@ function seedActions(): array
                 'page_title'       => 'E2E Home',
                 'HTTP_USER_AGENT'  => $_SERVER['HTTP_USER_AGENT'] ?? 'owa-e2e-seeder',
                 'ip_address'       => '203.0.113.31',
-                'ep_group'         => $action['group'],
-                'ep_label'         => $action['label'],
+                'eps_group'        => $action['group'],
+                'eps_label'        => $action['label'],
                 'epn_value'        => $action['value'],
             ]);
 

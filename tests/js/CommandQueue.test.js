@@ -93,12 +93,12 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             expect(spy.sent).toHaveLength(1);
             const url = spy.sent[0];
             expect(url).toContain(BASE_URL + 'log.php?');
-            expect(url).toMatch(/[?&]event_type=page_view/);
+            expect(url).toMatch(/[?&]e_t=page_view/);
             // Proves the setSiteId command's argument survived the queue indirection
             // all the way onto the wire.
-            expect(url).toMatch(/[?&]site_id=queue-site/);
+            expect(url).toMatch(/[?&]site=queue-site/);
             // Values are url-encoded on the wire (the ':' / '/' become %3A / %2F).
-            expect(url).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://site.example/queued'))));
+            expect(url).toMatch(new RegExp('[?&]p_l=' + escapeRe(encodeURIComponent('https://site.example/queued'))));
         } finally {
             spy.restore();
         }
@@ -145,15 +145,15 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             // its own page url -- proving the routing kept the two streams separate.
             expect(spy.sent).toHaveLength(2);
 
-            const beaconA = spy.sent.find(u => u.match(/[?&]site_id=site-A/));
-            const beaconB = spy.sent.find(u => u.match(/[?&]site_id=site-B/));
+            const beaconA = spy.sent.find(u => u.match(/[?&]site=site-A/));
+            const beaconB = spy.sent.find(u => u.match(/[?&]site=site-B/));
             expect(beaconA).toBeDefined();
             expect(beaconB).toBeDefined();
             // The default tracker's beacon carries the default tracker's url (and
             // NOT site-B), and vice versa -- no cross-routing between trackers.
-            expect(beaconA).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://a.example/on-default'))));
+            expect(beaconA).toMatch(new RegExp('[?&]p_l=' + escapeRe(encodeURIComponent('https://a.example/on-default'))));
             expect(beaconA).not.toContain('site-B');
-            expect(beaconB).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://b.example/on-2'))));
+            expect(beaconB).toMatch(new RegExp('[?&]p_l=' + escapeRe(encodeURIComponent('https://b.example/on-2'))));
             expect(beaconB).not.toContain('site-A');
         } finally {
             spy.restore();

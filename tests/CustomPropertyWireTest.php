@@ -10,8 +10,8 @@ use OWA\Module\Base\Handler\EventRawHandlers;
 /**
  * How a site's own values cross the wire, and what the endpoint admits.
  *
- * THREE THINGS MEET HERE. Scope is in the name (`ep_` / `up_`), type is in the
- * name (`epn_` / `upn_`), and a cap bounds how many ride each beacon. Together
+ * THREE THINGS MEET HERE. Scope is in the name (`eps_` / `vps_`), type is in the
+ * name (`epn_` / `vpn_`), and a cap bounds how many ride each beacon. Together
  * they are what lets the endpoint run an ALLOWLIST: a namespace can be
  * admitted without knowing one of a site's keys.
  *
@@ -53,8 +53,8 @@ final class CustomPropertyWireTest extends TestCase
     /** A site's own values are admitted, without the gate knowing its keys. */
     public function testCustomValuesAreAdmittedByPrefix(): void
     {
-        $params = ['ep_plan' => 'pro', 'epn_seats' => '12',
-                   'up_tier' => 'gold', 'upn_ltv' => '400'];
+        $params = ['eps_plan' => 'pro', 'epn_seats' => '12',
+                   'vps_tier' => 'gold', 'vpn_ltv' => '400'];
 
         $this->assertSame($params, Helpers::admitRequestParams($params));
     }
@@ -62,13 +62,13 @@ final class CustomPropertyWireTest extends TestCase
     public static function illegalNameProvider(): array
     {
         return [
-            'starts with a digit' => ['ep_9bad'],
-            'empty name'          => ['ep_'],
+            'starts with a digit' => ['eps_9bad'],
+            'empty name'          => ['eps_'],
             'numeric, empty'      => ['epn_'],
-            'a dot'               => ['ep_a.b'],
-            'a dash'              => ['up_a-b'],
-            'over forty'          => ['ep_' . str_repeat('a', 41)],
-            'prefix alone'        => ['upn_'],
+            'a dot'               => ['eps_a.b'],
+            'a dash'              => ['vps_a-b'],
+            'over forty'          => ['eps_' . str_repeat('a', 41)],
+            'prefix alone'        => ['vpn_'],
         ];
     }
 
@@ -133,11 +133,8 @@ final class CustomPropertyWireTest extends TestCase
     }
 
     /**
-     * The longest prefix wins.
-     *
-     * `ep_` is not a prefix of `epn_`, but a shorter-first test reads
-     * `epn_plan` as an event property named `n_plan` -- a real value under a
-     * name nobody set, and no error anywhere.
+     * A numeric property keeps its whole name: `epn_seats` is `seats`, not a
+     * text property under some other name.
      */
     public function testTheNumericPrefixIsNotReadAsTheTextOne(): void
     {
@@ -150,7 +147,7 @@ final class CustomPropertyWireTest extends TestCase
 
     public function testADeclaredNumberIsStoredAsANumber(): void
     {
-        $params = $this->paramsFor(['epn_seats' => '12', 'epn_ratio' => '1.5', 'ep_plan' => 'pro']);
+        $params = $this->paramsFor(['epn_seats' => '12', 'epn_ratio' => '1.5', 'eps_plan' => 'pro']);
 
         $this->assertSame(12, $params['seats']);
         $this->assertSame(1.5, $params['ratio']);
@@ -166,7 +163,7 @@ final class CustomPropertyWireTest extends TestCase
      */
     public function testADeclaredNumberThatIsNotOneIsDropped(): void
     {
-        $params = $this->paramsFor(['epn_seats' => 'lots', 'ep_plan' => 'pro']);
+        $params = $this->paramsFor(['epn_seats' => 'lots', 'eps_plan' => 'pro']);
 
         $this->assertArrayNotHasKey('seats', $params);
         $this->assertSame('pro', $params['plan'], 'the good one still lands');
@@ -183,7 +180,7 @@ final class CustomPropertyWireTest extends TestCase
         $set = [];
 
         for ($i = 0; $i < EventRawHandlers::MAX_CUSTOM_PROPERTIES + 10; $i++) {
-            $set['ep_k' . $i] = 'v' . $i;
+            $set['eps_k' . $i] = 'v' . $i;
         }
 
         $params = $this->paramsFor($set);

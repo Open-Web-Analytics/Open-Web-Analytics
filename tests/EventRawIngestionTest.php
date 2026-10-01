@@ -610,7 +610,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      * and the gate moved to user_id, which is the identity field that still has a
      * column.
      *
-     * So the path under test is the `up_` one, which is the same path any other
+     * So the path under test is the `vps_` one, which is the same path any other
      * user property takes -- the point being that a name needs no special case
      * once it stops being special.
      */
@@ -619,8 +619,8 @@ final class EventRawIngestionTest extends IngestionTestCase
         $visitor = $this->uniqueGuid();
 
         $this->firePageView([
-            'visitor_id'   => $visitor,
-            'up_user_name' => 'Alice',
+            'visitor_id'    => $visitor,
+            'vps_user_name' => 'Alice',
         ]);
 
         $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
@@ -643,7 +643,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      * setUserName() wrote the visitor cookie and the value rode every beacon as
      * `user_name`, with no prefix. That name now declares nothing, so without a
      * bridge admitRequestParams() would drop it -- conf/beacon_compat.php renames
-     * it onto up_user_name, which is the shape the current tracker sends directly.
+     * it onto vps_user_name, which is the shape the current tracker sends directly.
      */
     public function testAnOlderTrackersBareUserNameIsBridged(): void
     {
@@ -1306,7 +1306,7 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * An `ep_` property lands in params, by name, with the prefix stripped.
+     * An `eps_` property lands in params, by name, with the prefix stripped.
      *
      * The prefix is how the beacon says which scope a value belongs to, so this
      * needs no allowlist -- unlike the per-event-type params, which are names
@@ -1314,29 +1314,29 @@ final class EventRawIngestionTest extends IngestionTestCase
      */
     public function testAnEventPropertyLandsInParamsUnderItsBareName(): void
     {
-        $rows = $this->firePageView(['ep_coupon_code' => 'SPRING']);
+        $rows = $this->firePageView(['eps_coupon_code' => 'SPRING']);
 
         $params = json_decode($rows['page_view']['params'], true);
 
         $this->assertSame('SPRING', $params['coupon_code'] ?? null);
-        $this->assertArrayNotHasKey('ep_coupon_code', $params,
+        $this->assertArrayNotHasKey('eps_coupon_code', $params,
             'the prefix is routing, not part of the name');
     }
 
-    /** A `up_` property goes to the visitor store, not to params. */
+    /** A `vps_` property goes to the visitor store, not to params. */
     public function testAUserPropertyGoesToTheVisitorStoreAndNotToParams(): void
     {
         $visitor = $this->uniqueGuid();
 
         $rows = $this->firePageView([
             'visitor_id' => $visitor,
-            'up_plan'    => 'enterprise',
+            'vps_plan'   => 'enterprise',
         ]);
 
         $params = json_decode((string) $rows['page_view']['params'], true) ?: [];
 
         $this->assertArrayNotHasKey('plan', $params, 'a user property is not an event param');
-        $this->assertArrayNotHasKey('up_plan', $params);
+        $this->assertArrayNotHasKey('vps_plan', $params);
 
         $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->load($visitor, 'visitor_id');
@@ -1371,7 +1371,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         ]);
         $this->assertTrue($entity->create());
 
-        $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'older']);
+        $this->firePageView(['visitor_id' => $visitor, 'vps_plan' => 'older']);
 
         $check = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $check->load($visitor, 'visitor_id');
@@ -1386,8 +1386,8 @@ final class EventRawIngestionTest extends IngestionTestCase
     {
         $visitor = $this->uniqueGuid();
 
-        $this->firePageView(['visitor_id' => $visitor, 'up_plan' => 'pro']);
-        $this->firePageView(['visitor_id' => $visitor, 'up_tier' => 'gold']);
+        $this->firePageView(['visitor_id' => $visitor, 'vps_plan' => 'pro']);
+        $this->firePageView(['visitor_id' => $visitor, 'vps_tier' => 'gold']);
 
         $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->load($visitor, 'visitor_id');

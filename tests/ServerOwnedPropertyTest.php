@@ -120,8 +120,8 @@ final class ServerOwnedPropertyTest extends TestCase
         ) ), 'the gate is an allowlist; an undeclared name has no way in' );
 
         $this->assertSame(
-            array( 'ep_plan' => 'pro', 'cv1' => 'k|v' ),
-            Helpers::admitRequestParams( array( 'ep_plan' => 'pro', 'cv1' => 'k|v' ) ),
+            array( 'eps_plan' => 'pro', 'cv1' => 'k|v' ),
+            Helpers::admitRequestParams( array( 'eps_plan' => 'pro', 'cv1' => 'k|v' ) ),
             'a custom value and an older generation\'s slot are both still admitted' );
     }
 

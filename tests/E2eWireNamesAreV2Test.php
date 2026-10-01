@@ -110,7 +110,7 @@ final class E2eWireNamesAreV2Test extends TestCase
                      * logEvent('base.page_request') is correct and is not what this
                      * looks at.
                      */
-                    $pattern = '#event_type=' . preg_quote( $name, '#' )
+                    $pattern = '#(?:e_t|event_type)=' . preg_quote( $name, '#' )
                              . '|awaitBeacon\([^,]+,\s*[\'"]' . preg_quote( $name, '#' ) . '[\'"]#';
 
                     if ( preg_match( str_replace( '\\.', '\\\\?\\.', $pattern ), $line ) ) {
@@ -159,5 +159,45 @@ final class E2eWireNamesAreV2Test extends TestCase
         $this->assertSame( array(), $unknown,
             "A spec waits for an event name no beacon contract carries:\n  "
             . implode( "\n  ", $unknown ) );
+    }
+    /**
+     * And no spec matches a property's long name in a beacon's query string.
+     *
+     * The tracker sends each property under its short key (WireNames.js), so a
+     * spec polling for `[?&]event_type=page_view` waits out its timeout for a
+     * beacon that did arrive, as `e_t=page_view`.
+     */
+    public function testNoSpecMatchesALongNameOnTheWire(): void
+    {
+        $long = array();
+
+        foreach ( (array) ( require OWA_DIR . 'conf/beacon_compat.php' )['renames'] as $entry ) {
+
+            if ( $entry['role'] === 'wire' ) {
+
+                $long[] = $entry['to'];
+            }
+        }
+
+        $this->assertNotEmpty( $long, 'the compat index has no wire entries; this would pass vacuously' );
+
+        $pattern = '#\[\?&\](' . implode( '|', array_map( fn ( $n ) => preg_quote( $n, '#' ), $long ) ) . ')=#';
+
+        $offenders = array();
+
+        foreach ( (array) glob( OWA_DIR . 'tests/e2e/*.spec.js' ) as $file ) {
+
+            foreach ( explode( "\n", (string) file_get_contents( $file ) ) as $n => $line ) {
+
+                if ( ! preg_match( self::PROSE, $line ) && preg_match( $pattern, $line, $m ) ) {
+
+                    $offenders[] = sprintf( '%s:%d  %s', basename( $file ), $n + 1, $m[1] );
+                }
+            }
+        }
+
+        $this->assertSame( array(), $offenders,
+            "A spec matches a property's long name in a beacon URL; the wire carries its short key:\n  "
+            . implode( "\n  ", $offenders ) );
     }
 }

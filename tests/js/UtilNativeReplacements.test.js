@@ -188,7 +188,7 @@ describe('beacon param names are built by concatenation, not a format string', (
             // The namespace arrives verbatim. Under sprintf the leading '%s'
             // would have consumed the first argument and the param name would
             // have come out as the param's own name repeated.
-            expect(sent[0]).toContain('%s_site_id=sprintf-site');
+            expect(sent[0]).toContain('%s_site=sprintf-site');
         } finally {
             global.Image = Orig;
             OWA.setSetting('app_ns', '');

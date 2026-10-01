@@ -53,7 +53,7 @@ test.describe('a recording lands @selfhost-only', () => {
         await page.goto(url, { waitUntil: 'load' });
 
         // The tracker is running once its page view has left.
-        await expect.poll(() => beacons.filter((u) => /[?&]event_type=page_view/.test(u)).length,
+        await expect.poll(() => beacons.filter((u) => /[?&]e_t=page_view/.test(u)).length,
             { timeout: 20_000 }).toBeGreaterThan(0);
 
         for (const [x, y] of [[40, 40], [120, 80], [200, 160]]) {

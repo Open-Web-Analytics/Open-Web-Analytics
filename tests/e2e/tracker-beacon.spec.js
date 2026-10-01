@@ -69,13 +69,13 @@ test.describe('the built tracker fires beacons on the wire', () => {
     test('the page_request beacon is sent to log.php with the site id', async ({ page }) => {
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(0);
 
-        const pageview = beacons.find((u) => /[?&]event_type=page_view/.test(u));
+        const pageview = beacons.find((u) => /[?&]e_t=page_view/.test(u));
         expect(pageview, 'no page_view beacon was sent').toBeTruthy();
         expect(pageview).toContain('/log.php?');
-        expect(pageview).toMatch(/[?&]site_id=e2e-tracker-harness/);
+        expect(pageview).toMatch(/[?&]site=e2e-tracker-harness/);
         // Session/visitor identity the server needs to attribute the hit.
-        expect(pageview).toMatch(/[?&]visitor_id=\d+/);
-        expect(pageview).toMatch(/[?&]session_id=\d+/);
+        expect(pageview).toMatch(/[?&]v_id=\d+/);
+        expect(pageview).toMatch(/[?&]s_id=\d+/);
     });
 
     test('a click drives a click beacon with the clicked element + site id', async ({ page }) => {
@@ -88,16 +88,16 @@ test.describe('the built tracker fires beacons on the wire', () => {
         await page.locator('#tracked-btn').click();
 
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(before);
-        const click = beacons.find((u) => /[?&]event_type=click/.test(u));
+        const click = beacons.find((u) => /[?&]e_t=click/.test(u));
         expect(click, 'no click beacon was sent').toBeTruthy();
         // The clicked element's identity + the full state pipeline (site/session)
         // must ride the click beacon -- these appear AFTER target_url in the query
         // string, so their presence also proves the beacon wasn't truncated.
-        expect(click).toMatch(/[?&]dom_element_id=tracked-btn/);
+        expect(click).toMatch(/[?&]el_id=tracked-btn/);
         // dom_element_tag is stored lower-cased for consistency.
-        expect(click).toMatch(/[?&]dom_element_tag=button/);
-        expect(click).toMatch(/[?&]site_id=e2e-tracker-harness/);
-        expect(click).toMatch(/[?&]click_x=\d+/);
+        expect(click).toMatch(/[?&]el_tg=button/);
+        expect(click).toMatch(/[?&]site=e2e-tracker-harness/);
+        expect(click).toMatch(/[?&]c_x=\d+/);
     });
 
     test("a clicked link whose href has '#' and '&' still sends a complete beacon", async ({ page }) => {
@@ -114,7 +114,7 @@ test.describe('the built tracker fires beacons on the wire', () => {
         await page.locator('#tracked-link').click();
 
         await expect.poll(() => beacons.length, { timeout: 20_000 }).toBeGreaterThan(before);
-        const click = beacons.slice(before).find((u) => /[?&]event_type=click/.test(u));
+        const click = beacons.slice(before).find((u) => /[?&]e_t=click/.test(u));
         expect(click, 'no click beacon was sent for the fragment link').toBeTruthy();
 
         // The browser resolves the href to an absolute URL, so target_url ends in
@@ -126,9 +126,9 @@ test.describe('the built tracker fires beacons on the wire', () => {
         expect(new URL(click).hash, 'beacon URL was truncated at a fragment').toBe('');
         // Params assembled AFTER target_url still made it onto the wire -- the proof
         // the beacon was not truncated at the href's '#'.
-        expect(click).toMatch(/[?&]dom_element_id=tracked-link/);
-        expect(click).toMatch(/[?&]site_id=e2e-tracker-harness/);
-        expect(click).toMatch(/[?&]click_x=\d+/);
+        expect(click).toMatch(/[?&]el_id=tracked-link/);
+        expect(click).toMatch(/[?&]site=e2e-tracker-harness/);
+        expect(click).toMatch(/[?&]c_x=\d+/);
     });
 
     /*
@@ -152,17 +152,17 @@ test.describe('the built tracker fires beacons on the wire', () => {
         });
 
         const clicks = () => beacons
-            .filter((u) => /[?&]event_type=click/.test(u))
+            .filter((u) => /[?&]e_t=click/.test(u))
             .map((u) => new URL(u).searchParams)
-            .filter((q) => q.get('dom_element_id') === 'outbound-link');
+            .filter((q) => q.get('el_id') === 'outbound-link');
 
         await page.locator('#outbound-inner b').click();
         await expect.poll(() => clicks().length, { timeout: 20_000 }).toBe(1);
 
         const click = clicks()[0];
-        expect(click.get('dom_element_tag')).toBe('a');
-        expect(click.get('target_url')).toBe('https://elsewhere.example/out');
-        expect(click.get('is_outbound')).toBe('1');
+        expect(click.get('el_tg')).toBe('a');
+        expect(click.get('el_lu')).toBe('https://elsewhere.example/out');
+        expect(click.get('el_lo')).toBe('1');
 
         await page.locator('#outbound-inner b').click({ button: 'middle' });
         await expect.poll(() => clicks().length, { timeout: 20_000 }).toBe(2);
@@ -183,26 +183,26 @@ test.describe('the built tracker fires beacons on the wire', () => {
         });
 
         const downloads = () => beacons
-            .filter((u) => /[?&]event_type=file_download/.test(u))
+            .filter((u) => /[?&]e_t=file_download/.test(u))
             .map((u) => new URL(u).searchParams);
 
         await page.locator('#report-inner').click();
         await expect.poll(() => downloads().length, { timeout: 20_000 }).toBe(1);
 
         const download = downloads()[0];
-        expect(download.get('dom_element_id')).toBe('report-link');
-        expect(download.get('dom_element_text')).toBe('Annual Report 2025');
-        expect(download.get('file_name')).toBe('/files/annual-report.pdf');
-        expect(download.get('file_extension')).toBe('pdf');
+        expect(download.get('el_id')).toBe('report-link');
+        expect(download.get('el_tx')).toBe('Annual Report 2025');
+        expect(download.get('f_nm')).toBe('/files/annual-report.pdf');
+        expect(download.get('f_ext')).toBe('pdf');
     });
 
     test('the page_view beacon carries the screen as WIDTHxHEIGHT', async () => {
-        await expect.poll(() => beacons.find((u) => /[?&]event_type=page_view/.test(u)),
+        await expect.poll(() => beacons.find((u) => /[?&]e_t=page_view/.test(u)),
             { timeout: 20_000 }).toBeTruthy();
 
-        const pageview = new URL(beacons.find((u) => /[?&]event_type=page_view/.test(u)));
+        const pageview = new URL(beacons.find((u) => /[?&]e_t=page_view/.test(u)));
 
-        expect(pageview.searchParams.get('screen_resolution')).toMatch(/^[1-9]\d*x[1-9]\d*$/);
+        expect(pageview.searchParams.get('d_sr')).toMatch(/^[1-9]\d*x[1-9]\d*$/);
     });
 
     test('the tracker boots without uncaught page errors', async ({ page }) => {
@@ -237,11 +237,11 @@ test.describe('a results URL raises view_search_results', () => {
         await page.goto(harness, { waitUntil: 'load' });
 
         const searches = () => beacons
-            .filter((u) => /[?&]event_type=view_search_results/.test(u))
+            .filter((u) => /[?&]e_t=view_search_results/.test(u))
             .map((u) => new URL(u).searchParams);
 
         await expect.poll(() => searches().length, { timeout: 20_000 }).toBe(1);
-        expect(searches()[0].get('search_term')).toBe('Red Shoes');
+        expect(searches()[0].get('p_q')).toBe('Red Shoes');
     });
 });
 
@@ -271,7 +271,7 @@ test.describe('route changes become page views once they settle', () => {
         await page.goto(harness, { waitUntil: 'load' });
 
         const pageViews = () => beacons
-            .filter((u) => /[?&]event_type=page_view/.test(u))
+            .filter((u) => /[?&]e_t=page_view/.test(u))
             .map((u) => new URL(u).searchParams);
 
         await expect.poll(() => pageViews().length, { timeout: 20_000 }).toBe(1);
@@ -290,9 +290,9 @@ test.describe('route changes become page views once they settle', () => {
 
         const route = pageViews()[1];
 
-        expect(route.get('page_location')).toContain('screen=settings');
-        expect(route.get('page_title')).toBe('Settings');
-        expect(route.get('HTTP_REFERER')).toBe(harness);
+        expect(route.get('p_l')).toContain('screen=settings');
+        expect(route.get('p_t')).toBe('Settings');
+        expect(route.get('p_r')).toBe(harness);
     });
 });
 

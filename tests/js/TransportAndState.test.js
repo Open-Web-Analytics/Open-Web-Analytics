@@ -102,7 +102,7 @@ describe('prepareRequestData: param naming and array flattening', () => {
     test('emits every param key un-namespaced', () => {
         const t = newTracker();
         const data = t.prepareRequestData({ event_type: 'page_view', foo: 'bar' });
-        expect(Object.keys(data)).toEqual(['event_type', 'foo']);
+        expect(Object.keys(data)).toEqual(['e_t', 'foo']);
     });
 
     test('flattens arrays to key[i] and arrays of objects to key[i][subkey]', () => {
@@ -138,7 +138,7 @@ describe('logEvent: GET pixel vs POST fallback', () => {
 
         expect(beacons.length).toBe(1);
         expect(beacons[0]).toContain('https://track.example/owa/log.php?');
-        expect(beacons[0]).toMatch(/[?&]event_type=page_view/);
+        expect(beacons[0]).toMatch(/[?&]e_t=page_view/);
     });
 
     test('posts a form body when the url exceeds the character limit', () => {
@@ -152,7 +152,7 @@ describe('logEvent: GET pixel vs POST fallback', () => {
         // No pixel; the data went out as a body instead.
         expect(beacons.length).toBe(0);
         expect(posted).toBeTruthy();
-        expect(posted['event_type']).toBe('page_view');
+        expect(posted['e_t']).toBe('page_view');
     });
 
     test('sends nothing while the tracker is inactive', () => {
@@ -248,10 +248,10 @@ describe('trackEvent: end-to-end orchestration', () => {
         expect(beacons.length).toBe(1);
         const url = beacons[0];
         // manageState minted identity; addDefaults stamped site_id; all rode out.
-        expect(url).toMatch(/site_id=/);
-        expect(url).toMatch(/visitor_id=/);
-        expect(url).toMatch(/session_id=/);
-        expect(url).toMatch(/event_type=page_view/);
+        expect(url).toMatch(/[?&]site=/);
+        expect(url).toMatch(/[?&]v_id=/);
+        expect(url).toMatch(/[?&]s_id=/);
+        expect(url).toMatch(/[?&]e_t=page_view/);
     });
 
 });

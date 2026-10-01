@@ -4,8 +4,8 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 /**
  * setEventProperty / setUserProperty, and what setCustomVar became.
  *
- * Two scopes, and scope lives in the NAME -- `ep_` for a value describing the
- * event, `up_` for one describing the visitor. Nothing downstream has to infer
+ * Two scopes, and scope lives in the NAME -- `eps_` for a value describing the
+ * event, `vps_` for one describing the visitor. Nothing downstream has to infer
  * which bag a value belongs to, and the same name in two scopes is two
  * different things all the way to the column.
  *
@@ -30,17 +30,17 @@ describe('custom property setters', () => {
         tracker = new OWATracker({ cookie_domain_set: true, site_id: 'prop-site' });
     });
 
-    test('setEventProperty prefixes the name with ep_', () => {
+    test('setEventProperty prefixes the name with eps_', () => {
         tracker.setEventProperty('coupon_code', 'SPRING');
 
-        expect(tracker.getGlobalEventProperty('ep_coupon_code')).toBe('SPRING');
+        expect(tracker.getGlobalEventProperty('eps_coupon_code')).toBe('SPRING');
         expect(tracker.getGlobalEventProperty('coupon_code')).toBeUndefined();
     });
 
-    test('setUserProperty prefixes the name with up_', () => {
+    test('setUserProperty prefixes the name with vps_', () => {
         tracker.setUserProperty('plan', 'enterprise');
 
-        expect(tracker.getGlobalEventProperty('up_plan')).toBe('enterprise');
+        expect(tracker.getGlobalEventProperty('vps_plan')).toBe('enterprise');
         expect(tracker.getGlobalEventProperty('plan')).toBeUndefined();
     });
 
@@ -48,16 +48,16 @@ describe('custom property setters', () => {
         tracker.setEventProperty('tier', 'event-value');
         tracker.setUserProperty('tier', 'user-value');
 
-        expect(tracker.getGlobalEventProperty('ep_tier')).toBe('event-value');
-        expect(tracker.getGlobalEventProperty('up_tier')).toBe('user-value');
+        expect(tracker.getGlobalEventProperty('eps_tier')).toBe('event-value');
+        expect(tracker.getGlobalEventProperty('vps_tier')).toBe('user-value');
     });
 
     test('neither writes a cookie: both are page-lifetime', () => {
         tracker.setEventProperty('a', '1');
         tracker.setUserProperty('b', '2');
 
-        expect(OWA.getPersistedState('v', 'up_b')).toBeFalsy();
-        expect(OWA.getPersistedState('s', 'ep_a')).toBeFalsy();
+        expect(OWA.getPersistedState('v', 'vps_b')).toBeFalsy();
+        expect(OWA.getPersistedState('s', 'eps_a')).toBeFalsy();
         expect(OWA.getPersistedState('v', 'b')).toBeFalsy();
     });
 
@@ -67,14 +67,14 @@ describe('custom property setters', () => {
         tracker.setEventProperty('has-hyphen', 'x');
         tracker.setUserProperty('a'.repeat(41), 'x');
 
-        expect(tracker.getGlobalEventProperty('ep_has space')).toBeUndefined();
-        expect(tracker.getGlobalEventProperty('ep_9leading')).toBeUndefined();
-        expect(tracker.getGlobalEventProperty('ep_has-hyphen')).toBeUndefined();
-        expect(tracker.getGlobalEventProperty('up_' + 'a'.repeat(41))).toBeUndefined();
+        expect(tracker.getGlobalEventProperty('eps_has space')).toBeUndefined();
+        expect(tracker.getGlobalEventProperty('eps_9leading')).toBeUndefined();
+        expect(tracker.getGlobalEventProperty('eps_has-hyphen')).toBeUndefined();
+        expect(tracker.getGlobalEventProperty('vps_' + 'a'.repeat(41))).toBeUndefined();
 
         // And the boundary is allowed, so the guard is a limit not a ban.
         tracker.setUserProperty('a'.repeat(40), 'ok');
-        expect(tracker.getGlobalEventProperty('up_' + 'a'.repeat(40))).toBe('ok');
+        expect(tracker.getGlobalEventProperty('vps_' + 'a'.repeat(40))).toBe('ok');
     });
 
     describe('setCustomVar maps onto the two', () => {
@@ -82,38 +82,38 @@ describe('custom property setters', () => {
         test('page scope becomes an event property', () => {
             tracker.setCustomVar(1, 'colour', 'blue', 'page');
 
-            expect(tracker.getGlobalEventProperty('ep_colour')).toBe('blue');
+            expect(tracker.getGlobalEventProperty('eps_colour')).toBe('blue');
         });
 
         test('SESSION scope becomes an event property, not a session one', () => {
             tracker.setCustomVar(2, 'plan', 'pro', 'session');
 
-            expect(tracker.getGlobalEventProperty('ep_plan')).toBe('pro');
-            expect(tracker.getGlobalEventProperty('up_plan')).toBeUndefined();
+            expect(tracker.getGlobalEventProperty('eps_plan')).toBe('pro');
+            expect(tracker.getGlobalEventProperty('vps_plan')).toBeUndefined();
             expect(OWA.getPersistedState('s', 'cv2')).toBeFalsy();
         });
 
         test('visitor scope becomes a user property', () => {
             tracker.setCustomVar(3, 'cohort', 'beta', 'visitor');
 
-            expect(tracker.getGlobalEventProperty('up_cohort')).toBe('beta');
-            expect(tracker.getGlobalEventProperty('ep_cohort')).toBeUndefined();
+            expect(tracker.getGlobalEventProperty('vps_cohort')).toBe('beta');
+            expect(tracker.getGlobalEventProperty('eps_cohort')).toBeUndefined();
         });
 
         test('an absent or unknown scope is an event property, as page was the default', () => {
             tracker.setCustomVar(4, 'x', '1');
             tracker.setCustomVar(5, 'y', '2', 'nonsense');
 
-            expect(tracker.getGlobalEventProperty('ep_x')).toBe('1');
-            expect(tracker.getGlobalEventProperty('ep_y')).toBe('2');
+            expect(tracker.getGlobalEventProperty('eps_x')).toBe('1');
+            expect(tracker.getGlobalEventProperty('eps_y')).toBe('2');
         });
 
         test('the slot is ignored: the same name is the same property', () => {
             tracker.setCustomVar(1, 'plan', 'first', 'page');
             tracker.setCustomVar(4, 'plan', 'second', 'page');
 
-            expect(tracker.getGlobalEventProperty('ep_plan')).toBe('second');
-            expect(tracker.getGlobalEventProperty('ep_plan_4')).toBeUndefined();
+            expect(tracker.getGlobalEventProperty('eps_plan')).toBe('second');
+            expect(tracker.getGlobalEventProperty('eps_plan_4')).toBeUndefined();
         });
     });
 });

@@ -60,7 +60,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
         }
     });
 
-    test('the beacon carries the namespaced event_type + site_id + page_url', () => {
+    test('the beacon carries e_t + site + p_l', () => {
         const spy = installImageSpy();
         try {
             newTracker().trackPageView('https://site.example/p');
@@ -71,9 +71,9 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             // not -- see the encoding regression test below). event_type/site_id
             // contain no structural chars so they ride verbatim; the page url's
             // ':' and '/' become %3A / %2F.
-            expect(url).toMatch(/[?&]event_type=page_view/);
-            expect(url).toMatch(/[?&]site_id=transport-site/);
-            expect(url).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://site.example/p'))));
+            expect(url).toMatch(/[?&]e_t=page_view/);
+            expect(url).toMatch(/[?&]site=transport-site/);
+            expect(url).toMatch(new RegExp('[?&]p_l=' + escapeRe(encodeURIComponent('https://site.example/p'))));
         } finally {
             spy.restore();
         }
@@ -101,11 +101,11 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             expect(spy.sent).toHaveLength(1);
             const url = spy.sent[0];
-            expect(url).toMatch(/[?&]event_type=purchase/);
+            expect(url).toMatch(/[?&]e_t=purchase/);
             // prepareRequestData flattens an array-of-objects to
             // <param>[<i>][<key>]=value -- brackets ride the wire verbatim.
-            expect(url).toContain('ct_line_items[0][item_id]=SKU-1');
-            expect(url).toContain('ct_line_items[0][item_name]=Widget');
+            expect(url).toContain('o_items[0][item_id]=SKU-1');
+            expect(url).toContain('o_items[0][item_name]=Widget');
         } finally {
             spy.restore();
         }
@@ -116,7 +116,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
         // characters used to ride the wire raw, so a '#' started a fragment (the
         // browser dropped everything after it) and a '&'/'=' forged a new pair.
         // A clicked link whose href held a '#' or '&' thus lost every param that
-        // came after page_url (click_x, site_id, session_id). Assert the value is
+        // came after the page URL (c_x, site, s_id). Assert the value is
         // percent-encoded AND that params queued after it still appear intact.
         const spy = installImageSpy();
         try {
@@ -126,14 +126,14 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             const url = spy.sent[0];
             // The raw value must NOT appear (that would mean an unencoded '#'/'&').
-            expect(url).not.toContain('page_url=' + dirty);
-            expect(url).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent(dirty))));
+            expect(url).not.toContain('p_l=' + dirty);
+            expect(url).toMatch(new RegExp('[?&]p_l=' + escapeRe(encodeURIComponent(dirty))));
             // No literal fragment or stray delimiters survive from the value.
             expect(url).not.toContain('#frag');
             expect(url).not.toContain('a=1&b=2');
-            // A param assembled after page_url still reaches the wire (proves the
+            // A param assembled after the page URL still reaches the wire (proves the
             // beacon wasn't truncated at the first structural char in a value).
-            expect(url).toMatch(/[?&]site_id=transport-site/);
+            expect(url).toMatch(/[?&]site=transport-site/);
         } finally {
             spy.restore();
         }
@@ -251,7 +251,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             t.trackPageView('https://site.example/p');
 
             expect(calls).toHaveLength(1);
-            expect(calls[0].url).toMatch(/log\.php\?.*event_type=page_view/);
+            expect(calls[0].url).toMatch(/log\.php\?.*[?&]e_t=page_view/);
             expect(calls[0].init).toMatchObject({ method: 'POST', keepalive: true, credentials: 'omit', mode: 'no-cors' });
             expect(beacons).toHaveLength(0);
             expect(accepted).toBe(1);
@@ -292,7 +292,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             newTracker().trackPageView('https://site.example/p');
 
             expect(beacons).toHaveLength(1);
-            expect(beacons[0]).toMatch(/[?&]event_type=page_view/);
+            expect(beacons[0]).toMatch(/[?&]e_t=page_view/);
         });
 
         test('without keepalive support it falls back to sendBeacon', () => {
@@ -307,13 +307,14 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             expect(beacons).toHaveLength(1);
         });
 
-        test('the URL rides once, as page_location', () => {
+        test('the URL rides once, as p_l', () => {
             global.fetch = (url, init) => { calls.push({ url, init }); return Promise.resolve({}); };
 
             newTracker().trackPageView('https://site.example/p');
 
-            expect(calls[0].url).toMatch(/[?&]page_location=https%3A%2F%2Fsite\.example%2Fp/);
+            expect(calls[0].url).toMatch(/[?&]p_l=https%3A%2F%2Fsite\.example%2Fp/);
             expect(calls[0].url).not.toMatch(/[?&]page_url=/);
+            expect(calls[0].url).not.toMatch(/[?&]page_location=/);
         });
     });
 
@@ -345,7 +346,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
 
             expect(spy.sent).toHaveLength(1);            // small blob -> GET pixel
             const url = spy.sent[0];
-            expect(url).toMatch(/[?&]event_type=domstream/);
+            expect(url).toMatch(/[?&]e_t=domstream/);
             // The raw JSON must NOT appear -- it would mean unencoded structural chars.
             expect(url).not.toContain('samples=[[');
             expect(url).toMatch(new RegExp('[?&]samples=' + escapeRe(encodeURIComponent('[['))));
@@ -374,7 +375,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             expect(spy.sent).toHaveLength(0);            // never took the pixel path
             expect(posted).toHaveLength(1);              // went out as a body
             const data = posted[0];
-            expect(data['event_type']).toBe('domstream');
+            expect(data['e_t']).toBe('domstream');
             // Not GET-encoded -- the '[' '"' ',' ride verbatim into the body builder.
             expect(data['samples']).toContain('[10,"c",0,0,"a","x&y=#0",""]');
             expect(data['seq']).toBe(12);

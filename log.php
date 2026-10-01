@@ -95,7 +95,10 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $service = \OWA\Core\CoreAPI::serviceSingleton();
     $service->request->decodeRequestParams();
     $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
-    $event->setEventType(\OWA\Core\CoreAPI::getRequestParam('event_type'));
+    // e_t from the current tracker, event_type from an older one.
+    $event_type = \OWA\Core\CoreAPI::getRequestParam('e_t');
+    $event->setEventType( $event_type !== false && $event_type !== ''
+        ? $event_type : \OWA\Core\CoreAPI::getRequestParam('event_type') );
     /*
      * Only parameters a request is ALLOWED to set reach the event.
      *
@@ -107,7 +110,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
      *
      * Two things are admitted now and nothing else: a name some event declares
      * it carries, which the tracking property registry states; and a custom
-     * value under one of the four scope/type prefixes -- ep_, epn_, up_, upn_
+     * value under one of the four scope/type prefixes -- eps_, epn_, vps_, vpn_
      * -- with a legal name. A site's own keys stay unrestricted, because the
      * prefix is a namespace rather than a list, so admitting them needs no
      * knowledge of a site's keys.
