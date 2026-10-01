@@ -3190,7 +3190,7 @@ day&nbsp;1 and returning directly on day&nbsp;68, and &ldquo;session is also att
 <tbody>
 <tr><td><code>session*</code></td><td><code>source</code>, <code>medium</code>, <code>campaign</code>, <code>channel</code></td><td>What this visit arrived with</td></tr>
 <tr><td><code>first*</code></td><td><code>acq_*</code></td><td>What brought the visitor the first time; never changes</td></tr>
-<tr><td><code>attributed*</code> <span class="chip c-dec">New</span></td><td><code>attributed_source</code>, <code>_medium</code>, <code>_campaign</code>, <code>_channel</code></td><td>The session's own source if it arrived non-direct; otherwise the visitor's most recent non-direct touch within 90 days; otherwise <code>(direct)</code></td></tr>
+<tr><td><code>attributed*</code> <span class="chip c-dec">New</span></td><td><code>attributed_source</code>, <code>_medium</code>, <code>_campaign</code>, <code>_channel</code>, <code>_ad</code></td><td>The session's own source if it arrived non-direct; otherwise the visitor's most recent non-direct touch within 90 days; otherwise <code>(direct)</code></td></tr>
 </tbody></table></div>
 
 <div class="scroll"><table>
@@ -3214,8 +3214,11 @@ last non-direct touch as <em>evidence</em> &mdash; <code>last_touch_source</code
 that starts a session:</p>
 <ul>
 <li><strong>A non-direct session</strong> writes its own touch to the row. No read.</li>
-<li><strong>A direct session of a returning visitor</strong> reads the row and stamps that touch onto
-its raw rows, in new <code>prior_touch_*</code> columns beside its own tags. No write.</li>
+<li><strong>Any session of a returning visitor</strong> reads the row on its landing beacon and stamps
+that touch onto the beacon's raw rows, in new <code>prior_touch_*</code> columns beside its own tags.
+Built that way rather than on direct sessions only: whether a session is direct is the cube's call, so
+ingest records the evidence for every return and the cube ignores it for one that arrived non-direct.
+A touch the row holds from AFTER the session (a late beacon) is not stamped.</li>
 <li><strong>A direct first visit</strong> does neither: there is no earlier touch.</li>
 </ul>
 <p><strong>The pass decides.</strong> It classifies the stamped evidence with the same source, medium,
@@ -3236,10 +3239,10 @@ read-compare-write in PHP would add a read to every non-direct session and race:
 visitor both read the old value and the older touch can land last. In SQL the comparison and the write
 are one statement under InnoDB's row lock, and a late beacon for an older session cannot overwrite a
 newer touch.</p>
-<p><strong>A visitor with no row needs an insert.</strong> A returning visitor whose first session was
-direct and untagged has no row (&sect;2.9), so the first non-direct touch must create one:
-<code>INSERT &hellip; ON DUPLICATE KEY UPDATE</code>, each column guarded on <code>last_touch_ts</code>.
-That is MySQL and MariaDB syntax, so it sits behind the dialect as a driver upsert, not in the handler.</p>
+<p><strong>A visitor with no row needs an insert.</strong> A returning visitor the store has no row for
+gets one from their first non-direct touch. Built as plain SQL rather than a dialect upsert: the guarded
+<code>UPDATE</code> first; if it changed nothing, an <code>INSERT</code>; if that fails on the unique key,
+the row exists, so the <code>UPDATE</code> runs once more for a racing writer.</p>
 <p><strong>The write rule narrows.</strong> &ldquo;Insert-if-absent, never update&rdquo; (&sect;2.9) now
 covers the acquisition columns only. <code>last_touch_*</code> updates, monotonically on its timestamp;
 <code>last_seen</code> stays the pass's maintenance column.</p>
@@ -3247,7 +3250,12 @@ covers the acquisition columns only. <code>last_touch_*</code> updates, monotoni
 columnar engine does worst. If OWA ever offers a columnar backend, it is for the cubes only; raw is
 append-only and could follow, the visitor store cannot.</p>
 
-<h4><span class="num">2.29.3</span>What it costs <span class="chip c-meas">Measured</span></h4>
+<h4><span class="num">2.29.3</span>History, and what it costs <span class="chip c-meas">Measured</span></h4>
+<p><strong>History is backfilled by Update066</strong> (<code>Classes\TouchBackfill</code>), which is
+therefore CLI-only: each <code>session_start</code> in raw gets the visitor's last non-direct landing
+before it, by a running <code>MAX</code> over a window, and each visitor's latest goes on the store. That
+covers v1's history, migrated by Update062 before these columns existed, and any earlier v2 traffic.
+Update066 adds each table's columns in one ALTER and rebuilds each cube once for all five.</p>
 <p>From peteradamsphoto's 1.x <code>owa_session</code>, 30&nbsp;Sep&nbsp;2025 to 29&nbsp;Sep&nbsp;2026,
 &ldquo;direct&rdquo; meaning no campaign, ad or recorded referrer:</p>
 <div class="scroll"><table>
@@ -3303,6 +3311,11 @@ user &hellip;&rdquo;, and model-dependent credit lives in separate reports.</p>
 <tr><td><strong>Model Comparison</strong> <span class="chip c-dec">New</span></td><td><code>first*</code> and <code>attributed*</code></td><td>Revenue and conversions by channel under #1 and #3 side by side, with the difference &mdash; which channels start journeys and which close them</td></tr>
 <tr><td>Referring Web Sites, Search Engines, Search Terms, Latest Visits</td><td><code>session*</code></td><td>Arrival detail: the referrer a visit actually came from. GA has no report at this scope</td></tr>
 </tbody></table></div>
+<p><strong>Conversion columns come from a Conversions metric set</strong> &mdash; sessions, goal
+conversions and the conversion rate &mdash; offered on every report when the site's Property has an active
+goal event, as the e-commerce set is offered when e-commerce reporting is on. Model Comparison is two
+grids side by side; a difference column needs a query that joins two group-bys, which the report engine
+does not do.</p>
 <p class="note">Every dimension stays available to custom reports, so &ldquo;channels as arrived&rdquo; is a
 custom report away. A separate attributed-revenue report would repeat Traffic acquisition's numbers while
 #3 is the only last-touch model; GA's differs from its Traffic acquisition only because its model is
