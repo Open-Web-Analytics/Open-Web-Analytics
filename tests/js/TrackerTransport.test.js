@@ -8,8 +8,8 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
  * deeper and pins that logEvent actually TURNS those properties into a real
  * request: the 1x1 pixel GET to log.php with the event's properties as params, the
  * logger-endpoint URL construction, the nested-array bracket encoding, and the
- * two guard rails (inactive tracker sends nothing; an over-long URL falls back
- * to the cdPost iframe instead of the pixel). No browser -- we stub Image and
+ * two guard rails (inactive tracker sends nothing; an over-long URL goes as a
+ * form body instead of the pixel). No browser -- we stub Image and
  * capture the src the tracker assigns.
  */
 
@@ -73,7 +73,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             // ':' and '/' become %3A / %2F.
             expect(url).toMatch(/[?&]event_type=page_view/);
             expect(url).toMatch(/[?&]site_id=transport-site/);
-            expect(url).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://site.example/p'))));
+            expect(url).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://site.example/p'))));
         } finally {
             spy.restore();
         }
@@ -127,7 +127,7 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             const url = spy.sent[0];
             // The raw value must NOT appear (that would mean an unencoded '#'/'&').
             expect(url).not.toContain('page_url=' + dirty);
-            expect(url).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent(dirty))));
+            expect(url).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent(dirty))));
             // No literal fragment or stray delimiters survive from the value.
             expect(url).not.toContain('#frag');
             expect(url).not.toContain('a=1&b=2');
@@ -152,17 +152,12 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
     });
 
     /**
-     * A payload too large for the query string goes by sendBeacon WITH A BODY,
-     * and cdPost is only the fallback.
+     * A payload too large for the query string goes by sendBeacon WITH A BODY.
      *
-     * This path used to be the odd one out: the hidden-iframe POST yields no
-     * delivery signal, so it committed the session optimistically -- the only
-     * transport that asserted a session on disk without knowing anything had
-     * arrived. Withholding instead was not an option either, because a site
-     * whose payloads always exceed the limit would then never persist a session
-     * at all. sendBeacon returns whether the browser queued the payload, which
-     * is the same signal the query-string path already uses, so the dilemma is
-     * removed rather than decided.
+     * There is no iframe fallback any more: every browser that runs this
+     * tracker has sendBeacon, and the largest payload OWA makes is a domstream
+     * chunk well inside its limit. A payload the browser refuses is dropped, and
+     * the session is not persisted on it -- acceptance is what persists one.
      */
     describe('a payload too large for the query string', () => {
 
@@ -172,20 +167,17 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             return t;
         }
 
-        test('goes by sendBeacon with a body, not the iframe and not the pixel', () => {
+        test('goes by sendBeacon with a body, not the pixel', () => {
             const spy = installImageSpy();
             const sent = [];
             const origBeacon = navigator.sendBeacon;
             navigator.sendBeacon = (url, body) => { sent.push({ url, body }); return true; };
             try {
                 const t = overTheLimit();
-                const posted = [];
-                t.cdPost = (data) => { posted.push(data); };
 
                 t.trackPageView('https://site.example/p');
 
                 expect(spy.sent).toHaveLength(0);   // no pixel
-                expect(posted).toHaveLength(0);     // no iframe
                 expect(sent).toHaveLength(1);
                 expect(sent[0].body).toBeInstanceOf(Blob);
                 expect(sent[0].body.type).toBe('application/x-www-form-urlencoded');
@@ -195,61 +187,120 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             }
         });
 
-        test('the session is persisted only because the browser ACCEPTED it', () => {
+        test.each([
+            ['refused', () => false],
+            ['throwing', () => { throw new Error('too big'); }],
+            ['missing', undefined],
+        ])('a %s sendBeacon sends nothing and persists no session', (_, beacon) => {
             const spy = installImageSpy();
             const origBeacon = navigator.sendBeacon;
             try {
-                // Refused: no acceptance from the beacon, so the fallback runs.
-                navigator.sendBeacon = () => false;
+                if (beacon) {
+                    navigator.sendBeacon = beacon;
+                } else {
+                    delete navigator.sendBeacon;
+                }
                 const t = overTheLimit();
-                const posted = [];
-                t.cdPost = (data) => { posted.push(data); };
-
-                t.trackPageView('https://site.example/p');
-
-                expect(posted).toHaveLength(1);   // cdPost is still the fallback
-            } finally {
-                navigator.sendBeacon = origBeacon;
-                spy.restore();
-            }
-        });
-
-        test('a browser without sendBeacon still gets the iframe', () => {
-            const spy = installImageSpy();
-            const origBeacon = navigator.sendBeacon;
-            try {
-                delete navigator.sendBeacon;
-                const t = overTheLimit();
-                const posted = [];
-                t.cdPost = (data) => { posted.push(data); };
-
-                t.trackPageView('https://site.example/p');
-
-                expect(posted).toHaveLength(1);
-                expect(posted[0]['event_type']).toBe('page_view');
-            } finally {
-                navigator.sendBeacon = origBeacon;
-                spy.restore();
-            }
-        });
-
-        test('a throwing sendBeacon is treated as a refusal, not an error', () => {
-            const spy = installImageSpy();
-            const origBeacon = navigator.sendBeacon;
-            try {
-                // Some browsers throw on an oversized payload rather than
-                // returning false.
-                navigator.sendBeacon = () => { throw new Error('too big'); };
-                const t = overTheLimit();
-                const posted = [];
-                t.cdPost = (data) => { posted.push(data); };
+                let accepted = 0;
+                t.sendAccepted = () => { accepted++; };
 
                 expect(() => t.trackPageView('https://site.example/p')).not.toThrow();
-                expect(posted).toHaveLength(1);
+                expect(accepted).toBe(0);
+                expect(spy.sent).toHaveLength(0);
             } finally {
                 navigator.sendBeacon = origBeacon;
                 spy.restore();
             }
+        });
+    });
+
+    /**
+     * WITHOUT COOKIES, where the browser can. A collector on the site's own
+     * domain gets every cookie set for it, OWA's state cookies included, on every
+     * beacon; ingest reads none of them. fetch with keepalive survives unload as
+     * sendBeacon does, and credentials: 'omit' leaves them off.
+     */
+    describe('the cookie-less transport', () => {
+
+        let calls, origFetch, origRequest, origBeacon;
+
+        beforeEach(() => {
+            calls = [];
+            origFetch = global.fetch;
+            origRequest = global.Request;
+            origBeacon = navigator.sendBeacon;
+            global.Request = function () {};
+            global.Request.prototype.keepalive = false;
+        });
+
+        afterEach(() => {
+            global.fetch = origFetch;
+            global.Request = origRequest;
+            navigator.sendBeacon = origBeacon;
+        });
+
+        test('a beacon goes by fetch, keepalive, credentials omitted, and is accepted at once', () => {
+            const beacons = [];
+            navigator.sendBeacon = (url) => { beacons.push(url); return true; };
+            global.fetch = (url, init) => { calls.push({ url, init }); return Promise.resolve({}); };
+
+            const t = newTracker();
+            let accepted = 0;
+            t.sendAccepted = () => { accepted++; };
+
+            t.trackPageView('https://site.example/p');
+
+            expect(calls).toHaveLength(1);
+            expect(calls[0].url).toMatch(/log\.php\?.*event_type=page_view/);
+            expect(calls[0].init).toMatchObject({ method: 'POST', keepalive: true, credentials: 'omit', mode: 'no-cors' });
+            expect(beacons).toHaveLength(0);
+            expect(accepted).toBe(1);
+        });
+
+        test('a large payload goes by fetch with its form body', () => {
+            global.fetch = (url, init) => { calls.push({ url, init }); return Promise.resolve({}); };
+
+            const t = newTracker();
+            t.setOption('getRequestCharacterLimit', 10);
+            t.trackPageView('https://site.example/p');
+
+            expect(calls).toHaveLength(1);
+            expect(calls[0].init.body).toBeInstanceOf(Blob);
+            expect(calls[0].init.body.type).toBe('application/x-www-form-urlencoded');
+            expect(calls[0].init.credentials).toBe('omit');
+        });
+
+        test('a rejected fetch is re-sent by sendBeacon rather than lost', async () => {
+            const beacons = [];
+            navigator.sendBeacon = (url) => { beacons.push(url); return true; };
+            global.fetch = () => Promise.reject(new TypeError('keepalive quota'));
+
+            newTracker().trackPageView('https://site.example/p');
+            await new Promise((r) => setTimeout(r, 0));
+
+            expect(beacons).toHaveLength(1);
+            expect(beacons[0]).toMatch(/event_type=page_view/);
+        });
+
+        test('without keepalive support it falls back to sendBeacon', () => {
+            delete global.Request.prototype.keepalive;
+            const beacons = [];
+            navigator.sendBeacon = (url) => { beacons.push(url); return true; };
+            global.fetch = (url, init) => { calls.push({ url, init }); return Promise.resolve({}); };
+
+            newTracker().trackPageView('https://site.example/p');
+
+            expect(calls).toHaveLength(0);
+            expect(beacons).toHaveLength(1);
+        });
+
+        test('the URL rides once, as page_location', () => {
+            global.fetch = (url, init) => { calls.push({ url, init }); return Promise.resolve({}); };
+
+            newTracker().trackPageView('https://site.example/p');
+
+            expect(calls[0].url).toMatch(/[?&]page_location=https%3A%2F%2Fsite\.example%2Fp/);
+            expect(calls[0].url).not.toMatch(/[?&]page_url=/);
         });
     });
 
@@ -292,145 +343,30 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
         }
     });
 
-    test('a large chunk falls to cdPost with the RAW blob (POST path untouched)', () => {
-        // A queue big enough to blow past the limit routes to cdPost (POST iframe),
-        // which uses prepareRequestData -- NOT prepareRequestDataForGet -- and lets
-        // the browser encode on form submit. This path is byte-for-byte unchanged by
-        // the GET fix: the blob reaches cdPost verbatim, structural chars intact.
+    test('a large chunk goes as a form body with the RAW blob', () => {
+        // A queue big enough to blow past the limit routes to sendLargeRequest,
+        // which uses prepareRequestData -- NOT prepareRequestDataForGet -- and
+        // encodes once when it builds the body. The blob reaches it verbatim,
+        // structural characters intact.
         const spy = installImageSpy();
         try {
             const t = newTracker();
             // Force the POST branch deterministically regardless of blob size.
             t.setOption('getRequestCharacterLimit', 200);
             const posted = [];
-            t.cdPost = (data) => { posted.push(data); };
+            t.sendLargeRequest = (data) => { posted.push(data); };
 
             sendChunk(t, 12);
 
             expect(spy.sent).toHaveLength(0);            // never took the pixel path
-            expect(posted).toHaveLength(1);              // went out via cdPost (POST)
+            expect(posted).toHaveLength(1);              // went out as a body
             const data = posted[0];
             expect(data['event_type']).toBe('domstream');
-            // cdPost does NOT encode -- the '[' '"' ',' ride verbatim in the form value.
+            // Not GET-encoded -- the '[' '"' ',' ride verbatim into the body builder.
             expect(data['samples']).toContain('[10,"c",0,0,"a","x&y=#0",""]');
             expect(data['seq']).toBe(12);
         } finally {
             spy.restore();
         }
-    });
-});
-
-/**
- * The iframe POST fallback, now that nothing branches on Internet Explorer.
- *
- * This transport carries anything too big for a pixel GET whenever sendBeacon is
- * unavailable or refuses the payload. It used to build its iframe, form and
- * inputs twice: once through document.createElement('<tag name="...">'), an IE
- * quirk that returns a parsed element rather than a tag name, and once through
- * the standard DOM. The IE half was guarded by a user-agent sniff for version
- * below 9.
- *
- * That branch was unreachable and provably so. The shipped tracker bundle is
- * emitted by webpack with no transpilation step -- webpack.config.js loads only
- * css-loader, and @babel/* is a devDependency that babel-jest uses for THESE
- * tests -- so public/base/dist/owa.tracker.js contains class, let and arrow
- * functions. Internet Explorer cannot parse that file at all, which means it
- * never runs the sniff that asks whether it is Internet Explorer. Code that
- * decides what to do in a browser that cannot load the file containing the
- * decision is not compatibility; it is a comment that costs bytes on every page
- * view.
- *
- * With the branch gone the standard DOM path is unconditional, so it is worth
- * pinning what it actually builds -- these assertions are what would have
- * failed if the wrong half had been deleted.
- */
-describe('iframe POST fallback builds its form through the standard DOM', () => {
-
-    /*
-     * getIframeDocument() calls doc.open(); doc.close() on the iframe's
-     * document. A real browser answers that with a fresh
-     * <html><head></head><body></body>; jsdom answers with a document whose
-     * documentElement is null, so nothing downstream has a body to append to.
-     *
-     * Stubbed rather than worked around, and stubbed at exactly that seam: the
-     * code under test here is the form and input construction, which is what
-     * the IE branch removal touched. Handing it a real, populated document is
-     * closer to a browser than the one jsdom would have produced.
-     */
-    function trackerWithWritableIframeDocument() {
-        const t = newTracker();
-        const doc = document.implementation.createHTMLDocument('post');
-
-        // The form is submitted and then removed on the next line, so it is
-        // gone by the time the test could query for it. Capture it as it goes
-        // in -- which is also the moment the browser would act on it.
-        const appended = [];
-        const realAppend = doc.body.appendChild.bind(doc.body);
-        doc.body.appendChild = (node) => { appended.push(node); return realAppend(node); };
-
-        t.getIframeDocument = () => doc;
-        return { tracker: t, doc, appended };
-    }
-
-    test('the form carries every param as a named hidden input', () => {
-        const { tracker, doc, appended } = trackerWithWritableIframeDocument();
-
-        tracker.postFromIframe(document.createElement('iframe'), {
-            event_type: 'domstream',
-            site_id: 'transport-site',
-            seq: 12,
-        });
-
-
-        const form = appended[0];
-
-        expect(form).toBeDefined();
-        expect(form.tagName).toBe('FORM');
-        expect(form.getAttribute('method')).toBe('POST');
-        expect(form.getAttribute('action')).toBe(tracker.getLoggerEndpoint());
-
-        // The NAME attribute is the whole reason the IE branch existed -- the
-        // quirk it worked around was that name could not be set with
-        // setAttribute on an already-created element. If the surviving branch
-        // had been the wrong one, every input here would be nameless and the
-        // POST would arrive empty.
-        const named = {};
-        form.querySelectorAll('input').forEach((i) => {
-            named[i.getAttribute('name')] = i.getAttribute('value');
-        });
-
-        expect(named['event_type']).toBe('domstream');
-        expect(named['site_id']).toBe('transport-site');
-        expect(named['seq']).toBe('12');
-        expect(Object.keys(named)).not.toContain('null');
-    });
-
-    test('the form itself is named, which is how the iframe finds it to submit', () => {
-        const { tracker, doc, appended } = trackerWithWritableIframeDocument();
-
-        tracker.postFromIframe(document.createElement('iframe'), { event_type: 'domstream' });
-
-        const form = appended[0];
-
-        // Looked up as doc.forms[form_name] on the line that submits it, so an
-        // unnamed form is a silently dropped beacon.
-        expect(form.getAttribute('name')).toBeTruthy();
-        expect(form.getAttribute('id')).toBe(form.getAttribute('name'));
-    });
-
-    test('the hidden iframe is 1x1 and named for the form to target', () => {
-        const t = newTracker();
-
-        t.generateHiddenIframe(document.body, { event_type: 'domstream' });
-
-        const ifr = document.querySelector('iframe.owa-tracker-post-iframe');
-
-        expect(ifr).not.toBeNull();
-        expect(ifr.getAttribute('name')).toBe('owa-tracker-post-iframe');
-        expect(ifr.getAttribute('width')).toBe('1');
-        expect(ifr.getAttribute('height')).toBe('1');
-        // 'scr' was the typo in the IE branch. The surviving branch sets src.
-        expect(ifr.getAttribute('src')).toBe('about:blank');
-        expect(ifr.getAttribute('scr')).toBeNull();
     });
 });

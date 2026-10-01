@@ -384,7 +384,7 @@ describe('SPA route changes', () => {
 
         const views = sent.filter(e => e.event_type === 'page_view');
         expect(views).toHaveLength(1);
-        expect(views[0].page_url).toContain('/route-b');
+        expect(views[0].page_location).toContain('/route-b');
     });
 
     test('a replaceState that does not change the URL is not a route change', () => {
@@ -478,7 +478,7 @@ describe('SPA route changes', () => {
 
         const views = sent.filter(e => e.event_type === 'page_view');
         expect(views).toHaveLength(1);
-        expect(views[0].page_url).toContain('/destination');
+        expect(views[0].page_location).toContain('/destination');
         expect(sent.filter(e => e.event_type === 'user_engagement').length).toBeLessThanOrEqual(1,
             'the page left is left once');
     });
@@ -632,7 +632,7 @@ describe('SPA route changes', () => {
 
         const views = sent.filter(e => e.event_type === 'page_view');
         expect(views).toHaveLength(1);
-        expect(views[0].page_url).toContain('/hidden-soon');
+        expect(views[0].page_location).toContain('/hidden-soon');
 
         settle();
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(1,

@@ -73,7 +73,7 @@ describe('OWATracker event assembly', () => {
         expect(captured).toHaveLength(1);
         const e = captured[0];
         expect(e.get('event_type')).toBe('page_view');
-        expect(e.get('page_url')).toBe('https://example.com/page');
+        expect(e.get('page_location')).toBe('https://example.com/page');
     });
 
     test('trackPageView without a url still sets the event_type', () => {

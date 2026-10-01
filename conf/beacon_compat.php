@@ -113,8 +113,8 @@ return array(
          * arrived and derives page_path and page_query from it, so there is
          * nothing left for the duplicate to protect against.
          *
-         * WIRE, not legacy: the current tracker still sends both. It becomes
-         * deletable when the tracker sends only page_location.
+         * LEGACY since the tracker stopped sending it (it sends page_location
+         * alone). Deletable once beacon_version shows nothing still does.
          *
          * apply() leaves page_location alone whenever the beacon carries it, so a
          * tracker sending both is unaffected and one sending only the old name
@@ -122,7 +122,7 @@ return array(
          * has claimed happens since the property registry stopped declaring
          * page_url.
          */
-        array( 'role' => 'wire',   'from' => 'page_url', 'to' => 'page_location' ),
+        array( 'role' => 'legacy', 'from' => 'page_url', 'to' => 'page_location' ),
 
         /*
          * The two identity fields that became CUSTOM USER PROPERTIES.
