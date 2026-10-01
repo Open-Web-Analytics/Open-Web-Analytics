@@ -24,10 +24,10 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *     in a value would otherwise truncate or corrupt the beacon.)
  *
  *   - logEvent(): the transport switch. Under getRequestCharacterLimit it fires
- *     a GET pixel (new Image().src = url); over the limit it falls back to a
- *     cross-domain POST (cdPost). An inactive tracker sends nothing.
+ *     a GET pixel (new Image().src = url); over the limit it posts a form body
+ *     (sendLargeRequest). An inactive tracker sends nothing.
  *
- *   - addDefaultsToEvent(): backfills site_id, page_url, HTTP_REFERER,
+ *   - addDefaultsToEvent(): backfills site_id, page_location, HTTP_REFERER,
  *     page_title, and timestamp only when the event/global doesn't already
  *     carry them.
  *
@@ -141,15 +141,15 @@ describe('logEvent: GET pixel vs POST fallback', () => {
         expect(beacons[0]).toMatch(/[?&]event_type=page_view/);
     });
 
-    test('falls back to a cross-domain POST when the url exceeds the character limit', () => {
+    test('posts a form body when the url exceeds the character limit', () => {
         const t = newTracker();
         t.setOption('getRequestCharacterLimit', 10);
         let posted = null;
-        t.cdPost = (data) => { posted = data; };
+        t.sendLargeRequest = (data) => { posted = data; };
 
         t.logEvent({ event_type: 'page_view', big: 'x'.repeat(50) });
 
-        // No pixel; the data went out via POST instead.
+        // No pixel; the data went out as a body instead.
         expect(beacons.length).toBe(0);
         expect(posted).toBeTruthy();
         expect(posted['event_type']).toBe('page_view');
@@ -167,7 +167,7 @@ describe('logEvent: GET pixel vs POST fallback', () => {
 
 describe('addDefaultsToEvent', () => {
 
-    test('backfills site_id, page_url and page_title', () => {
+    test('backfills site_id, page_location and page_title', () => {
         const t = newTracker();
         const event = new OwaEvent();
 
@@ -175,7 +175,7 @@ describe('addDefaultsToEvent', () => {
         const p = event.getProperties();
 
         expect(p.site_id).toBe('transport-site');
-        expect(p.page_url).toBeTruthy();
+        expect(p.page_location).toBeTruthy();
         expect(p.hasOwnProperty('page_title')).toBe(true);
     });
 
@@ -203,11 +203,11 @@ describe('addDefaultsToEvent', () => {
     test('does not overwrite a value the event already carries', () => {
         const t = newTracker();
         const event = new OwaEvent();
-        event.set('page_url', 'http://cv.example/explicit');
+        event.set('page_location', 'http://cv.example/explicit');
 
         t.addDefaultsToEvent(event, null);
 
-        expect(event.get('page_url')).toBe('http://cv.example/explicit');
+        expect(event.get('page_location')).toBe('http://cv.example/explicit');
     });
 });
 
@@ -241,7 +241,7 @@ describe('trackEvent: end-to-end orchestration', () => {
         const t = newTracker();
         const event = new OwaEvent();
         event.setEventType('page_view');
-        event.set('page_url', 'http://cv.example/page');
+        event.set('page_location', 'http://cv.example/page');
 
         t.trackEvent(event);
 

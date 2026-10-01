@@ -98,7 +98,7 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             // all the way onto the wire.
             expect(url).toMatch(/[?&]site_id=queue-site/);
             // Values are url-encoded on the wire (the ':' / '/' become %3A / %2F).
-            expect(url).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://site.example/queued'))));
+            expect(url).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://site.example/queued'))));
         } finally {
             spy.restore();
         }
@@ -151,9 +151,9 @@ describe('CommandQueue (owa_cmds) invocation', () => {
             expect(beaconB).toBeDefined();
             // The default tracker's beacon carries the default tracker's url (and
             // NOT site-B), and vice versa -- no cross-routing between trackers.
-            expect(beaconA).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://a.example/on-default'))));
+            expect(beaconA).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://a.example/on-default'))));
             expect(beaconA).not.toContain('site-B');
-            expect(beaconB).toMatch(new RegExp('[?&]page_url=' + escapeRe(encodeURIComponent('https://b.example/on-2'))));
+            expect(beaconB).toMatch(new RegExp('[?&]page_location=' + escapeRe(encodeURIComponent('https://b.example/on-2'))));
             expect(beaconB).not.toContain('site-A');
         } finally {
             spy.restore();

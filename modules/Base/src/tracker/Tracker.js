@@ -129,7 +129,7 @@ class OWATracker  {
 
 		    // Rewritten every page load.
 		    last_req:                { scope: 'page',    permanent: false },
-		    page_url:                { scope: 'page',    permanent: false },
+		    page_location:           { scope: 'page',    permanent: false },
 		    page_title:              { scope: 'page',    permanent: false },
 		    page_type:               { scope: 'page',    permanent: false },
 		    HTTP_REFERER:            { scope: 'page',    permanent: false },
@@ -1364,6 +1364,23 @@ class OWATracker  {
 			
 			properties = OWA.applyFilters('tracker.log_event_properties', properties);
 
+            /*
+             * page_url was this tracker's name for the page's URL until it took
+             * the server's, page_location. A site that still sets page_url itself
+             * -- an override through setGlobalEventProperty, say -- has it sent
+             * under the current name rather than as a second copy of the URL.
+             */
+            if ( properties && properties.page_url !== undefined ) {
+
+                properties = Object.assign( {}, properties );
+
+                if ( ! properties.page_location ) {
+                    properties.page_location = properties.page_url;
+                }
+
+                delete properties.page_url;
+            }
+
             var url = this._assembleRequestUrl(properties);
             var limit = this.getOption('getRequestCharacterLimit');
             if ( url.length > limit ) {
@@ -1438,17 +1455,21 @@ class OWATracker  {
      * cross-origin beacon does not trigger a preflight the browser would not
      * wait around to complete on unload.
      *
-     * cdPost remains the fallback for browsers without sendBeacon, or when it
-     * refuses the payload -- and keeps its optimistic commit, because the
-     * reasoning above still applies to it.
+     * NO IFRAME FALLBACK. Every browser that can run this tracker -- it ships
+     * untranspiled ES6 -- has fetch and sendBeacon, and the largest payload OWA
+     * makes is capped at 24,000 characters, inside the 64KB both allow. A
+     * payload both refuse is dropped, with a debug line.
      */
     sendLargeRequest( data, event_type ) {
 
         var that = this;
-        var queued = false;
         var body = Util.buildPostBody( data );
+        var queued = typeof Blob === 'function'
+            && this.queueWithoutCookies( this.getLoggerEndpoint(),
+                new Blob( [ body ], { type: 'application/x-www-form-urlencoded' } ) );
 
-        if ( typeof navigator !== 'undefined'
+        if ( ! queued
+             && typeof navigator !== 'undefined'
              && typeof navigator.sendBeacon === 'function'
              && typeof Blob === 'function' ) {
 
@@ -1471,22 +1492,72 @@ class OWATracker  {
             return true;
         }
 
-        OWA.debug( 'sendBeacon unavailable or refused; falling back to iframe POST for %s', event_type );
-        this.cdPost( data );
-
-        // No delivery signal from the iframe, so commit optimistically -- the
-        // historical behaviour of this path, kept only for the fallback.
-        this.sendAccepted();
+        OWA.debug( 'The browser refused the %s beacon (%d characters); it is not sent.', event_type, body.length );
 
         return false;
+    }
+
+    /**
+     * Queue a request WITHOUT the browser's cookies for the collector.
+     *
+     * A collector on the site's own domain -- stats.example.com beside
+     * www.example.com -- receives every cookie set for that domain, OWA's own
+     * state cookies included, on every beacon: hundreds of bytes repeating what
+     * the query already carries. Ingest reads none of them; the beacon's
+     * parameters are its whole input. fetch() with keepalive survives unload as
+     * sendBeacon does, and credentials: 'omit' leaves the cookies off.
+     *
+     * ACCEPTANCE STAYS SYNCHRONOUS. sendBeacon says at once whether the browser
+     * queued the request, and the session is persisted on that answer before the
+     * page can unload. A fetch resolves later, possibly after the page is gone,
+     * so it counts as queued when issued without throwing -- the same
+     * optimistic answer sendBeacon gives. Only a synchronous throw falls back to
+     * sendBeacon.
+     *
+     * A REJECTION IS NOT RE-SENT. It does not say the request failed to arrive:
+     * a keepalive fetch still in flight when the page navigates away rejects in
+     * the departing document while the browser completes the request. Re-sending
+     * on it delivered the landing page view twice, and so two session starts,
+     * whenever the collector was still answering at navigation. The other
+     * rejection, the keepalive quota, is one sendBeacon shares -- the Beacon spec
+     * defines it as a keepalive fetch -- so a re-send could not have rescued it.
+     *
+     * @param {string}      url
+     * @param {Blob|null}   body  a form-urlencoded body, or null for the query-string beacon
+     * @return {bool} whether the request was queued
+     */
+    queueWithoutCookies( url, body ) {
+
+        if ( typeof fetch !== 'function' || typeof Request !== 'function'
+             || ! ( 'keepalive' in Request.prototype ) ) {
+
+            return false;
+        }
+
+        try {
+
+            var init = { method: 'POST', keepalive: true, credentials: 'omit', mode: 'no-cors' };
+
+            if ( body ) {
+                init.body = body;
+            }
+
+            fetch( url, init ).catch( function () {} );
+
+            return true;
+
+        } catch ( e ) {
+
+            return false;
+        }
     }
 
     sendRequest( url, event_type ) {
 
         var that = this;
-        var queued = false;
+        var queued = this.queueWithoutCookies( url, null );
 
-        if ( typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function' ) {
+        if ( ! queued && typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function' ) {
 
             try {
                 queued = navigator.sendBeacon( url );
@@ -1627,168 +1698,6 @@ class OWATracker  {
         }
 
         return get;
-    }
-
-    /** 
-     * Issues a cross-domain http post
-     *
-     * This method generates a 1x1 iframe with a form in it that is
-     * populated by whatever data is passed to it. The http response cannot be evaluated
-     * So this is really only to be used as an alternative to the GET tracking request
-     */
-    cdPost( data ) {
-
-        var container_id = "owa-tracker-post-container";
-        var post_url = this.getLoggerEndpoint();
-
-        var iframe_container = document.getElementById( container_id );
-
-        // create iframe container if necessary
-        if ( ! iframe_container ) {
-
-            // create post frame container
-            var div = document.createElement( 'div' );
-            div.setAttribute( 'id', container_id );
-            div.setAttribute('height', '0px');
-            div.setAttribute('width','0px');
-            div.setAttribute('style', 'border: none; overflow-x: hidden; overflow-y: hidden; display: none;');
-            document.body.appendChild( div );
-            iframe_container = document.getElementById( container_id );
-        }
-
-        // create iframe and post data once its fully loaded.
-        this.generateHiddenIframe( iframe_container, data );
-    }
-
-    /**
-     * Generates a hidden 1x1 pixel iframe
-     */
-    generateHiddenIframe( parentElement, data ) {
-
-        var iframe_name = 'owa-tracker-post-iframe';
-
-        var iframe = document.createElement("iframe");
-        iframe.setAttribute('name', iframe_name);
-        iframe.setAttribute('src', 'about:blank');
-        iframe.setAttribute('width', 1);
-        iframe.setAttribute('height', 1);
-
-        iframe.setAttribute('class', iframe_name);
-        iframe.setAttribute('style', 'border: none; overflow: hidden; ');
-        iframe.setAttribute('scrolling', 'no');
-        //iframe.onload = function () { this.postFromIframe( data );};
-
-        var that = this;
-
-        // If no parent element is specified then use body as the parent element
-        if ( parentElement == null ) {
-            parentElement = document.body;
-         }
-        // This is necessary in order to initialize the document inside the iframe
-        parentElement.appendChild( iframe );
-
-        // set a timer to check and see if the iframe is fully loaded.
-        // without this there is a race condition in IE8
-        var timer = setInterval( function() {
-
-            var doc = that.getIframeDocument( iframe );
-            
-            if ( doc ) {
-            clearInterval(timer); //clear the interval before submitting data, race condition could occur otherwise resulting in duplicate tracked events
-                that.postFromIframe(iframe, data);
-
-            }
-
-
-            
-        }, 1 );
-        
-        // needed to cleanup history items in browsers like Firefox
-       
-        var cleanuptimer = setInterval( function() {
-
-
-             parentElement.removeChild(iframe);
-             clearInterval(cleanuptimer);
-            
-        }, 1000 );
-        
-    }
-
-    postFromIframe( ifr, data ) {
-
-        var post_url = this.getLoggerEndpoint();
-        var doc = this.getIframeDocument(ifr);
-        // create form
-        //var frm = this.createPostForm();
-        var form_name = 'post_form' + Math.random();
-
-        var frm = doc.createElement('form');
-        frm.setAttribute( 'name', form_name );
-        frm.setAttribute( 'id', form_name );
-        frm.setAttribute("action", post_url);
-        frm.setAttribute("method", "POST");
-
-        // create hidden inputs, add them to form
-        for ( var param in data ) {
-
-            if (data.hasOwnProperty(param)) {
-
-                // Created from the IFRAME's document, like the form it joins.
-                // The old code created the form with doc.createElement and the
-                // inputs with document.createElement, an asymmetry left behind
-                // when the IE branch was written. Consistency only, not a fix:
-                // appendChild adopts a node from another document, and adoption
-                // leaves nothing behind to distinguish the two afterwards --
-                // which is also why no test can tell them apart.
-                var input = doc.createElement( "input" );
-                input.setAttribute( "name", param );
-                input.setAttribute( "type", "hidden" );
-                input.setAttribute( "value", data[param] );
-
-                frm.appendChild( input );
-
-            }
-        }
-
-        // add form to iframe
-        doc.body.appendChild( frm );
-
-        //submit the form inside the iframe
-        doc.forms[form_name].submit();
-
-         // remove the form from iframe to clean things up
-          doc.body.removeChild( frm );
-    }
-
-    getIframeDocument( iframe ) {
-
-        // Initiate the iframe's document to null
-        var doc = null;
-
-        // Depending on browser platform get the iframe's document, this is only
-        // available if the iframe has already been appended to an element which
-        // has been added to the document
-        if( iframe.contentDocument ) {
-            // Firefox, Opera
-            doc = iframe.contentDocument;
-        } else if( iframe.contentWindow && iframe.contentWindow.document ) {
-            // Internet Explorer
-            doc = iframe.contentWindow.document;
-        } else if(iframe.document) {
-            // Others?
-            doc = iframe.document;
-        }
-
-        // If we did not succeed in finding the document then throw an exception
-        if( doc == null ) {
-            OWA.debug("Document not found, append the parent element to the DOM before creating the IFrame");
-        }
-
-        doc.open();
-        doc.close();
-
-        return doc;
     }
 
     getViewportDimensions() {
@@ -2178,7 +2087,7 @@ class OWATracker  {
 
         // dom_element_tag is set (lower-cased) by getDomElementProperties() below,
         // whose merge() would overwrite anything set here -- so no duplicate set.
-        click.set("page_url", window.location.href);
+        click.set("page_location", window.location.href);
         // view port dimensions - needed for calculating relative position
         var viewport = this.getViewportDimensions();
         click.set("page_width", viewport.width);
@@ -2914,7 +2823,7 @@ class OWATracker  {
         this.ecommerce_transaction.set( 'ct_tax', tax );
         this.ecommerce_transaction.set( 'ct_shipping', shipping );
         this.ecommerce_transaction.set( 'ct_gateway', gateway );
-        this.ecommerce_transaction.set( 'page_url', this.getCurrentUrl() );
+        this.ecommerce_transaction.set( 'page_location', this.getCurrentUrl() );
 
         /*
          * THE BILLING ADDRESS IS NOT COLLECTED.
@@ -3008,7 +2917,7 @@ class OWATracker  {
         var event = new OwaEvent();
         event.setEventType( 'purchase' );
         event.set( 'ct_order_id', id );
-        event.set( 'page_url', this.getCurrentUrl() );
+        event.set( 'page_location', this.getCurrentUrl() );
 
         var money = { ct_value: p.value, ct_tax: p.tax, ct_shipping: p.shipping };
 
@@ -3088,7 +2997,7 @@ class OWATracker  {
         var event = new OwaEvent();
         event.setEventType( 'refund' );
         event.set( 'ct_order_id', id );
-        event.set( 'page_url', this.getCurrentUrl() );
+        event.set( 'page_location', this.getCurrentUrl() );
 
         var money = { ct_value: r.value, ct_tax: r.tax, ct_shipping: r.shipping };
 
@@ -3884,7 +3793,7 @@ class OWATracker  {
          * stays because it is also reachable on its own.
          */
         var collected = {
-            'page_url':     this.getCurrentUrl(),
+            'page_location': this.getCurrentUrl(),
             'page_title':   String( document.title ).trim(),
             'HTTP_REFERER': this.getPageReferrer()
         };
@@ -3918,9 +3827,9 @@ class OWATracker  {
 
         event.set( 'site_id', this.getSiteId() );
 
-        if ( ! event.get( 'page_url') && ! this.getGlobalEventProperty('page_url') ) {
+        if ( ! event.get( 'page_location') && ! this.getGlobalEventProperty('page_location') ) {
 
-            event.set('page_url', this.getCurrentUrl() );
+            event.set('page_location', this.getCurrentUrl() );
         }
 
         if ( ! event.get( 'HTTP_REFERER') && ! this.getGlobalEventProperty('HTTP_REFERER')) {
@@ -3946,22 +3855,6 @@ class OWATracker  {
         if ( ! event.get( 'timestamp') ) {
 
             event.set('timestamp', this.getTimestamp() );
-        }
-
-        /*
-         * The COMPLETE URL, query and all.
-         *
-         * page_url is the one the server canonicalises -- it strips the
-         * campaign parameters and whatever the site put in query_string_filters
-         * -- which is right for v1, where page_url IS the page's identity.
-         * page_location is the evidence the campaign tags are parsed back out
-         * of, and a URL whose query has already been removed cannot answer that
-         * a second time. Sent rather than reconstructed, because by the time a
-         * handler runs the only copy left is the filtered one.
-         */
-        if ( ! event.get( 'page_location' ) ) {
-
-            event.set( 'page_location', event.get( 'page_url' ) || this.getCurrentUrl() );
         }
 
         /*
@@ -4508,7 +4401,7 @@ class OWATracker  {
         var event = new OwaEvent;
 
         if (url) {
-            event.set('page_url', url);
+            event.set('page_location', url);
         }
 
         event.setEventType( 'page_view' );

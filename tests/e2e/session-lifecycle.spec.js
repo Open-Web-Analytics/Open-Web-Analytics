@@ -192,18 +192,19 @@ test.describe('a session lands, extends, and survives a lost first beacon @selfh
         /*
          * Force the pixel transport for this scenario.
          *
-         * route.abort() kills the request at the NETWORK layer, but
-         * navigator.sendBeacon() has already returned true by then -- it reports
-         * "the browser accepted this for delivery", not "it arrived". So under
-         * sendBeacon an aborted request still commits session identity, and the
-         * loss is undetectable client-side. That is a real limitation of the
-         * transport, not of this test.
+         * route.abort() kills the request at the NETWORK layer, but a keepalive
+         * fetch and navigator.sendBeacon() have both been counted as accepted by
+         * then -- each reports "the browser took this for delivery", not "it
+         * arrived". So under either an aborted request still commits session
+         * identity, and the loss is undetectable client-side. That is a real
+         * limitation of the transports, not of this test.
          *
          * The pixel path is the one where failure IS observable (onerror), so it
-         * is what this asserts. Removing sendBeacon also mirrors the browsers
-         * that fall back to it for real.
+         * is what this asserts. Removing keepalive and sendBeacon also mirrors
+         * the browsers that fall back to it for real.
          */
         await page.addInitScript(() => {
+            try { delete Request.prototype.keepalive; } catch (e) { /* ignore */ }
             try { delete Object.getPrototypeOf(navigator).sendBeacon; } catch (e) { /* ignore */ }
             try { delete navigator.sendBeacon; } catch (e) { /* ignore */ }
             Object.defineProperty(navigator, 'sendBeacon', {
