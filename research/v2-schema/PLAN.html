@@ -148,6 +148,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s227">2.26 Custom dimensions</a>
   <a href="#s228">2.27 A cube per property</a>
   <a href="#s229">2.28 URL canonicalisation</a>
+  <a href="#s230">2.29 Attributed source: the last non-direct touch</a>
   <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
@@ -1646,9 +1647,10 @@ twelve months of lead at daily &mdash; ~365 partitions, silently. <code>daily</c
 PR&nbsp;#1113.</p>
 
 <h3 id="s29"><span class="num">2.9</span>The visitor store <span class="chip c-dec">Decided</span></h3>
-<p><strong>This is not a fact table. It is a lookup with one job: stamping first
-attribution.</strong> It holds acquisition &mdash; source, medium, campaign, ad, search terms
-as collected &mdash; write-once from the visitor's first session, plus <code>last_seen</code>, which
+<p><strong>This is not a fact table. It is a lookup with two jobs: stamping first
+attribution, and carrying the last non-direct touch.</strong> It holds acquisition &mdash; source,
+medium, campaign, ad, search terms as collected &mdash; write-once from the visitor's first session;
+the last non-direct touch, updated (<a href="#s230">&sect;2.29</a>); and <code>last_seen</code>, which
 exists only to decide when a row may go (<a href="#s15">&sect;1.5.4</a>). Nothing else.</p>
 <p><strong>A visitor with no known acquisition has no row.</strong> A row carrying nothing to stamp would answer no question. So the store is not a
 census of visitors: it holds the ones whose first attribution is known, and the pass writes the sentinel
@@ -1686,8 +1688,9 @@ counter the client maintains and sends on every beacon, so &ldquo;how many sessi
 visitor had&rdquo; is <code>MAX(nps)</code> in a group-by rather than a lookup &mdash; the same
 argument that removed the session table (<a href="#s15">&sect;1.5.1</a>). Only values that cannot
 be on the event, because they originate in one event that may be years old, earn a row.</p>
-<p><strong>Ingest makes exactly one keyed write, and only for a visitor&rsquo;s first
-session.</strong> That is the one departure from the pure-append path
+<p><strong>Ingest makes one keyed write for a visitor&rsquo;s first session</strong>, and since
+<a href="#s230">&sect;2.29</a> one keyed write or read on the beacon that starts any later session
+&mdash; a write if it arrived non-direct, a read if it arrived direct. That is the one departure from the pure-append path
 <a href="#s11">&sect;1.1</a> describes, and it is bounded: on the measured install the visitor
 store holds 6,761 rows against 445,055 requests. Every other event is still a straight insert with
 no lookup.</p>
@@ -1700,10 +1703,11 @@ and the common case is a write that changes nothing;</li>
 <li><code>GREATEST(last_seen, &lt;partition max&gt;)</code> is monotonic, so rebuilding a partition
 twice is a no-op and the column cannot go backwards when partitions are rebuilt out of order.</li>
 </ul>
-<p><strong>The write rule is insert-if-absent, never update</strong>, so a rerun cannot corrupt it:
+<p><strong>The write rule for the acquisition columns is insert-if-absent, never update</strong>, so a rerun cannot corrupt it:
 every event eligible to write the row resolves the same acquisition, so a second write can only
 carry the value already there. The rule applies to the <em>acquisition columns</em>, not to the row
-&mdash; <code>last_seen</code> is the maintenance exception above. A full rebuild from raw must
+&mdash; <code>last_seen</code> is the maintenance exception above, and <code>last_touch_*</code> updates
+under a timestamp guard (<a href="#s230">&sect;2.29.2</a>). A full rebuild from raw must
 break ties deterministically, ordering by <code>(timestamp, event_id)</code> rather than timestamp
 alone, or two rebuilds can disagree.</p>
 <p class="note">Two things here are open &mdash; the rebuild set, and what partitioning on
@@ -3170,6 +3174,113 @@ which matches a parameter name appearing anywhere &mdash; inside a path segment,
 inside another parameter's value &mdash; and takes everything after it. v2 has a
 parsed query to work on and should rebuild it from parts.</p>
 
+<h3 id="s230"><span class="num">2.29</span>Attributed source: the last non-direct touch <span class="chip c-dec">Decided</span></h3>
+
+<p class="note"><strong>DECIDED 1&nbsp;Oct.</strong> A third set of traffic-source columns on the
+cube, beside the two that exist. The 21&nbsp;Aug decision recorded a return visit as
+<code>direct</code> and called that GA-consistent; it is not. GA's session scope is <em>non-direct
+last click</em> across sessions: its sessions page has a user arriving from organic search on
+day&nbsp;1 and returning directly on day&nbsp;68, and &ldquo;session is also attributed to
+'google / organic'&rdquo;. Direct wins only when nothing else is found within the lookback.</p>
+
+<p><strong>Three answers to &ldquo;where did this session come from&rdquo;, three column sets:</strong></p>
+<div class="scroll"><table>
+<thead><tr><th>Dimensions</th><th>Columns</th><th>Holds</th></tr></thead>
+<tbody>
+<tr><td><code>session*</code></td><td><code>source</code>, <code>medium</code>, <code>campaign</code>, <code>channel</code></td><td>What this visit arrived with</td></tr>
+<tr><td><code>first*</code></td><td><code>acq_*</code></td><td>What brought the visitor the first time; never changes</td></tr>
+<tr><td><code>attributed*</code> <span class="chip c-dec">New</span></td><td><code>attributed_source</code>, <code>_medium</code>, <code>_campaign</code>, <code>_channel</code></td><td>The session's own source if it arrived non-direct; otherwise the visitor's most recent non-direct touch within 90 days; otherwise <code>(direct)</code></td></tr>
+</tbody></table></div>
+
+<div class="scroll"><table>
+<thead><tr><th>Alice</th><th>Arrived</th><th><code>session*</code></th><th><code>first*</code></th><th><code>attributed*</code></th></tr></thead>
+<tbody>
+<tr><td>Day 1</td><td>Google search</td><td>organic</td><td>organic</td><td>organic</td></tr>
+<tr><td>Day 5</td><td>Newsletter link</td><td>email / spring</td><td>organic</td><td>email / spring</td></tr>
+<tr><td>Day 10</td><td>Typed the URL</td><td>(direct)</td><td>organic</td><td><strong>email / spring</strong></td></tr>
+</tbody></table></div>
+
+<p><strong>Named <code>attributed*</code>, not after GA.</strong> GA calls this one &ldquo;Session
+source&rdquo; and has no name for what OWA's <code>session*</code> holds; taking its names would have
+meant renaming the existing set. &ldquo;Non-direct&rdquo; means any arrival with tags <em>or</em> a
+referrer &mdash; organic search and plain referrals are touches, as in GA's own example.</p>
+
+<h4><span class="num">2.29.1</span>Decided at ingest, on the visitor store</h4>
+<p><strong>No new table.</strong> The visitor store (<a href="#s29">&sect;2.9</a>) gains the visitor's
+last non-direct touch as <em>evidence</em> &mdash; <code>last_touch_source</code>,
+<code>_medium</code>, <code>_campaign</code>, <code>_ad</code> (the tags as collected),
+<code>last_touch_referer_host</code> and <code>last_touch_ts</code>. Work happens only on the beacon
+that starts a session:</p>
+<ul>
+<li><strong>A non-direct session</strong> writes its own touch to the row. No read.</li>
+<li><strong>A direct session of a returning visitor</strong> reads the row and stamps that touch onto
+its raw rows, in new <code>prior_touch_*</code> columns beside its own tags. No write.</li>
+<li><strong>A direct first visit</strong> does neither: there is no earlier touch.</li>
+</ul>
+<p><strong>The pass decides.</strong> It classifies the stamped evidence with the same source, medium,
+campaign and channel steps as everything else, and applies the window by comparing
+<code>prior_touch_ts</code> with the session's own time. So a change to the site lists or the channel
+rules reaches history on rebuild, and <strong>so does a change to the window</strong> &mdash; which GA
+cannot do; its lookback applies only going forward.</p>
+<p class="note"><strong>Why stamp raw at all.</strong> The row holds the <em>latest</em> touch, and the
+pass needs the touch <em>as of each session</em>. Once a later touch is written the earlier one is
+gone: a direct session at 09:00 followed by an ad click at 15:00 is built at 15:05 with only the ad
+click on the row, and every rebuild of an older day sees whatever came last. The stamp freezes the
+evidence the session actually had.</p>
+
+<h4><span class="num">2.29.2</span>The write is a conditional upsert, in SQL</h4>
+<p><strong>The guard is in the statement, not in PHP:</strong>
+<code>&hellip; WHERE visitor_id = ? AND (last_touch_ts IS NULL OR last_touch_ts &lt; ?)</code>. A
+read-compare-write in PHP would add a read to every non-direct session and race: two beacons for one
+visitor both read the old value and the older touch can land last. In SQL the comparison and the write
+are one statement under InnoDB's row lock, and a late beacon for an older session cannot overwrite a
+newer touch.</p>
+<p><strong>A visitor with no row needs an insert.</strong> A returning visitor whose first session was
+direct and untagged has no row (&sect;2.9), so the first non-direct touch must create one:
+<code>INSERT &hellip; ON DUPLICATE KEY UPDATE</code>, each column guarded on <code>last_touch_ts</code>.
+That is MySQL and MariaDB syntax, so it sits behind the dialect as a driver upsert, not in the handler.</p>
+<p><strong>The write rule narrows.</strong> &ldquo;Insert-if-absent, never update&rdquo; (&sect;2.9) now
+covers the acquisition columns only. <code>last_touch_*</code> updates, monotonically on its timestamp;
+<code>last_seen</code> stays the pass's maintenance column.</p>
+<p><strong>The store must stay a row store.</strong> Point upserts are what a row store does and what a
+columnar engine does worst. If OWA ever offers a columnar backend, it is for the cubes only; raw is
+append-only and could follow, the visitor store cannot.</p>
+
+<h4><span class="num">2.29.3</span>What it costs <span class="chip c-meas">Measured</span></h4>
+<p>From peteradamsphoto's 1.x <code>owa_session</code>, 30&nbsp;Sep&nbsp;2025 to 29&nbsp;Sep&nbsp;2026,
+&ldquo;direct&rdquo; meaning no campaign, ad or recorded referrer:</p>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Per year</th><th>Per day</th><th>Ingest work</th></tr></thead>
+<tbody>
+<tr><td>Sessions</td><td>14,578</td><td>~40</td><td></td></tr>
+<tr><td>Non-direct (8 tagged, 3,156 by referrer)</td><td>3,164</td><td>~8.7</td><td>one conditional upsert</td></tr>
+<tr><td>Direct, returning visitor</td><td>215</td><td>~0.6</td><td>one indexed read</td></tr>
+<tr><td>&hellip; with a non-direct touch in the prior 90 days</td><td>143</td><td>~0.4</td><td>moves from Direct</td></tr>
+<tr><td>Direct, first visit</td><td>11,199</td><td>~31</td><td>none</td></tr>
+</tbody></table></div>
+<p><strong>Writes outnumber reads about fifteen to one, and referrers drive them</strong> &mdash; 98% of
+the touches are untagged. The visible effect is small on this site: about 1% of sessions move from
+Direct.</p>
+<p class="note"><strong>No cache, for now.</strong> The entity cache (<code>setCachable()</code>) would
+remove only the reads, the smaller share. If a site needs it: expiry deletes rows with plain SQL and must
+clear the cache with them, and only a shared cache (memcached) is correct with more than one logging
+node.</p>
+
+<h4><span class="num">2.29.4</span>Rejected</h4>
+<ul>
+<li><strong>A lookback over raw in the pass.</strong> Needs a visitor index on raw and a 90-day,
+visitor-keyed scan for every partition built. Order-safe, but the cost lands on every build to serve
+about one session in a hundred.</li>
+<li><strong>A touch table, read by the pass.</strong> Order-safe and cheap, but a new state table.
+Declined: no more state tables.</li>
+<li><strong>The visitor row alone, read by the pass.</strong> Holds only the latest touch; wrong for any
+session built after a later touch (&sect;2.29.1).</li>
+</ul>
+<p class="note"><strong>Known limits.</strong> A direct session processed before a late-arriving beacon
+for an <em>earlier</em> non-direct session stamps the older touch, and nothing corrects it. A visitor whose
+row has expired starts with no touch. The v1 migrator must keep <code>last_touch_*</code> as it goes,
+so it processes each visitor's sessions oldest first.</p>
+
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
 <p class="note"><strong>ONE RELEASE, NOT A STAGED ROLLOUT. Decided 22&nbsp;Sep.</strong>
@@ -3257,6 +3368,7 @@ answers is in <a href="#sa1">the appendix</a>.</p>
 <tr><td><strong>Mixed-tier reports</strong></td><td>Whether one table may carry event-grain and session-grain columns together — one object with two as-of times, which no single freshness marker describes honestly.</td><td>A decision on whether the API may return such a result set at all, and if it may, which of the two as-of times the envelope reports. Nothing has needed it yet, which is why it has not been forced.</td></tr>
 <tr><td><strong>Multi-site partitioning</strong></td><td>Partitioning on <code>yyyymmdd</code> alone means one partition holds every site, so a large site's rebuild cost lands in every site's freshness.</td><td>Subpartitioning by site multiplies partition count by site count, straight into the open-file budget. See <a href="#s217">&sect;2.17</a>.</td></tr>
 <tr><td><strong>Ordering provenance</strong></td><td><code>ts</code> is stamped at edge receipt, so events order by arrival rather than by occurrence. A beacon that lands late &mdash; the unload beacon above &mdash; sorts after hits that happened later on the device, which puts <code>is_exit</code> on the wrong event and mis-orders any funnel spanning it.</td><td>Either a device-side sequence on the beacon, or a rule for how late an arrival may be before its order is distrusted. 1.x had the same problem at second resolution and v2 has so far only improved the resolution.</td></tr>
+<tr><td><strong>Attribution windows</strong></td><td>Whether the <code>attributed*</code> lookback (<a href="#s230">&sect;2.29</a>) is a fixed 90 days or a setting, and whether the key-event path keeps the 60&nbsp;days / 5 touchpoints carried over from the 1.x cookie or moves to GA's 30 days for acquisition events and 90 for the rest.</td><td>A decision. Both windows are applied in the pass, so either can change later and history follows.</td></tr>
 <tr><td><strong>Three dimensions have no v2 answer</strong></td><td><code>priorPagePath</code> needs the session chain walked; <code>daysToTransaction</code> and <code>visitsToTransaction</code> count backwards from a purchase to the acquiring visit.</td><td>Each needs a rule rather than a renderer. The other three &mdash; geo detail, <code>browserVersion</code>, last-seen &mdash; were closed by columns (<a href="#s21">&sect;2.1</a>).</td></tr>
 </tbody></table></div>
 
