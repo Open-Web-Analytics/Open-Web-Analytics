@@ -86,7 +86,7 @@ final class CubesTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('There is no owa_event');
 
-        owa_coreAPI::entityFactory('base.event')->getTableName();
+        \OWA\Core\CoreAPI::entityFactory('base.event')->getTableName();
     }
 
     /** Every cube is the same shape, whichever Property it belongs to. */
@@ -111,7 +111,7 @@ final class CubesTest extends TestCase
      */
     public function testTheShapesColumnsCanBeReadWithoutATable(): void
     {
-        $columns = owa_coreAPI::entityFactory('base.event')->getColumns();
+        $columns = \OWA\Core\CoreAPI::entityFactory('base.event')->getColumns();
 
         $this->assertContains('is_exit', $columns);
         $this->assertContains('acq_source', $columns);
@@ -200,7 +200,7 @@ final class CubesTest extends TestCase
 
         // What the partition commands maintain is the tables that are there,
         // which after a Property is deleted is not the set of Properties.
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (Cubes::existing() as $property_id => $table) {
             $this->assertTrue($db->tableExists($table), "$table was listed but does not exist");

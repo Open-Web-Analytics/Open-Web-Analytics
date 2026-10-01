@@ -51,11 +51,11 @@ final class DbDriverSqlParityTest extends TestCase
     private function driver(string $class): \OWA\Core\Db
     {
         $db = new $class(
-            owa_coreAPI::getSetting('base', 'db_host'),
-            owa_coreAPI::getSetting('base', 'db_port'),
-            owa_coreAPI::getSetting('base', 'db_name'),
-            owa_coreAPI::getSetting('base', 'db_user'),
-            owa_coreAPI::getSetting('base', 'db_password'),
+            \OWA\Core\CoreAPI::getSetting('base', 'db_host'),
+            \OWA\Core\CoreAPI::getSetting('base', 'db_port'),
+            \OWA\Core\CoreAPI::getSetting('base', 'db_name'),
+            \OWA\Core\CoreAPI::getSetting('base', 'db_user'),
+            \OWA\Core\CoreAPI::getSetting('base', 'db_password'),
             true,
             false
         );
@@ -237,7 +237,7 @@ final class DbDriverSqlParityTest extends TestCase
         // declared in config, so there is no class of the metric's own name.
         $metrics = ['bounceRate', 'pageViewsPerSession', 'revenuePerSession', 'ecommerceConversionRate'];
         $checked = 0;
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
 
         foreach ($metrics as $name) {
 
@@ -250,7 +250,7 @@ final class DbDriverSqlParityTest extends TestCase
                 continue;
             }
 
-            $metric = owa_coreAPI::metricFactory($implementation['class'], $implementation['params'] ?? []);
+            $metric = \OWA\Core\CoreAPI::metricFactory($implementation['class'], $implementation['params'] ?? []);
 
             if ( ! is_object($metric) || ! method_exists($metric, 'getSelect') ) {
                 continue;

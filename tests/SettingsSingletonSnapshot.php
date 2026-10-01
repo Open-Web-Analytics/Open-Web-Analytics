@@ -94,6 +94,6 @@ trait SettingsSingletonSnapshot
 
     protected function settings(): object
     {
-        return owa_coreAPI::configSingleton();
+        return \OWA\Core\CoreAPI::configSingleton();
     }
 }

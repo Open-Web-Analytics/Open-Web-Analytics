@@ -37,7 +37,7 @@ final class CubeCatchUpTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Cube catch-up fixture',
@@ -50,7 +50,7 @@ final class CubeCatchUpTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties([
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
@@ -68,7 +68,7 @@ final class CubeCatchUpTest extends TestCase
         }
 
         // Dated partitions reaching back past every day these tests use.
-        owa_coreAPI::dbSingleton()->extendPartitionsBack(
+        \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(
             Cubes::tableFor(self::PROPERTY), self::day(20));
     }
 
@@ -87,25 +87,25 @@ final class CubeCatchUpTest extends TestCase
             $this->markTestSkipped('OWA database not reachable; this builds a cube.');
         }
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         // Every test starts from an empty cube and no raw rows of ours.
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
         $db->query(sprintf('DELETE FROM %s', Cubes::tableFor(self::PROPERTY)));
     }
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory($entity)->getTableName(), self::SITE));
+                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), self::SITE));
         }
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         foreach (['', '_rebuild', '_computed'] as $suffix) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor(self::PROPERTY), $suffix));
@@ -123,7 +123,7 @@ final class CubeCatchUpTest extends TestCase
         $ts      = strtotime((string) $yyyymmdd . ' 12:00:00') * 1000000 + $n;
         $session = 8893000000000000 + $n;
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties([
             'id'            => \OWA\Module\Base\Classes\V2Event::id(
                                    self::SITE, self::VISITOR, $session, $ts, 'page_view'),
@@ -183,14 +183,14 @@ final class CubeCatchUpTest extends TestCase
     /** Pretend a partition was last built at a given moment. */
     private function setBuiltAt(array $span, int $usec): void
     {
-        owa_coreAPI::dbSingleton()->query(sprintf(
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
             'UPDATE %s SET built_at = %d WHERE yyyymmdd >= %d AND yyyymmdd < %d',
             Cubes::tableFor(self::PROPERTY), $usec, (int) $span['start'], (int) $span['less_than']));
     }
 
     private function cubeRowsOn(int $yyyymmdd): int
     {
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT COUNT(*) AS n FROM %s WHERE yyyymmdd = %d',
             Cubes::tableFor(self::PROPERTY), $yyyymmdd));
 
@@ -209,7 +209,7 @@ final class CubeCatchUpTest extends TestCase
     {
         $span    = ['name' => 'p', 'start' => '20260901', 'less_than' => '20260902'];
         $ended   = strtotime('20260902') * 1000000;
-        $session = ((int) owa_coreAPI::getSetting('base', 'session_length') ?: 1800) * 1000000;
+        $session = ((int) \OWA\Core\CoreAPI::getSetting('base', 'session_length') ?: 1800) * 1000000;
         $builder = new Builder(self::PROPERTY);
 
         $this->assertFalse($builder->isSettled($span, null), 'never built');
@@ -362,7 +362,7 @@ final class CubeCatchUpTest extends TestCase
         $this->setBuiltAt($this->spanFor($a), strtotime("$a 15:00:00") * 1000000);
         $this->setBuiltAt($this->spanFor($b), $was);
 
-        $db    = owa_coreAPI::dbSingleton();
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = Cubes::tableFor(self::PROPERTY);
 
         $this->assertStringContainsString('STRICT_ALL_TABLES',

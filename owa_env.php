@@ -93,11 +93,5 @@ if ( file_exists( OWA_VENDOR_DIR . 'autoload.php' ) ) {
 	} );
 }
 
-// Backward-compat bridge for the PSR-4 namespace migration. Registers a LAZY
-// forward-alias autoloader AFTER Composer's so migrated classes keep resolving
-// by their legacy owa_* names. The renames are complete and its map is
-// populated; the bridge stays until the v2.0 deprecation window closes. See
-// owa_compat_aliases.php for the full rationale.
-require_once ( OWA_DIR . 'owa_compat_aliases.php' );
 
 ?>

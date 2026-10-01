@@ -41,7 +41,7 @@ final class EntityUnsetColumnWriteTest extends TestCase
 
     private function row()
     {
-        return owa_coreAPI::entityFactory('base.event_raw');
+        return \OWA\Core\CoreAPI::entityFactory('base.event_raw');
     }
 
     /** writeValue() is protected; it is the seam, so reach it directly. */
@@ -172,7 +172,7 @@ final class EntityUnsetColumnWriteTest extends TestCase
 
         foreach (['base.event_raw', 'base.visitor_acquisition'] as $name) {
 
-            $entity = owa_coreAPI::entityFactory($name);
+            $entity = \OWA\Core\CoreAPI::entityFactory($name);
 
             foreach ($entity->getColumns() as $column) {
 
@@ -204,7 +204,7 @@ final class EntityUnsetColumnWriteTest extends TestCase
             $this->markTestSkipped('No database available.');
         }
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $id = '9111222333444555778';
         $db->query('DELETE FROM owa_event_raw WHERE id = ?', [$id]);
 

@@ -89,11 +89,10 @@ class CoreAPI {
      * THIRD-PARTY DB-DRIVER SEAM
      * --------------------------
      * OWA's bundled drivers (e.g. "mysql") live in the OWA\Core\Db namespace
-     * and autoload via Composer; their legacy `owa_db_<type>` names resolve
-     * through the compat bridge (owa_compat_aliases.php). A third party can add
+     * and autoload via Composer. A third party can add
      * support for another database WITHOUT patching OWA core: drop a class file
      * at `plugins/db/owa_db_<type>.php` declaring `class owa_db_<type> extends
-     * \owa_db`, then set the `db_type` config to `<type>`.
+     * \OWA\Core\Db`, then set the `db_type` config to `<type>`.
      *
      * The `plugins/` directory is NOT shipped in the repo — it is a convention
      * location that a driver author creates in their own install. Because this
@@ -155,10 +154,8 @@ class CoreAPI {
 
         /*
          * 'pdo' is a CONFIGURATION alias for the PDO driver, whose token is
-         * pdo_mysql. Normalised here rather than left to be turned into the
-         * class owa_db_pdo and resolved through the compatibility bridge --
-         * a config value someone may set is not a legacy class name, and the
-         * bridge is not where an installation's accepted spellings belong.
+         * pdo_mysql. Normalised here rather than left to be turned into a
+         * class owa_db_pdo that does not exist.
          */
         if ( $type === 'pdo' ) {
 
@@ -177,25 +174,12 @@ class CoreAPI {
 		if ( $type ) {
         	$connection_class = "owa_db_" . $type;
 
-            // NAMESPACE-FIRST: a bundled driver (owa_db_mysql) maps to a PSR-4
-            // class (OWA\Core\Db\Mysql) that Composer autoloads -- referencing
-            // it triggers the file's define() of the OWA_DTD_* column-type
-            // constants. resolveNamespacedClass() returns null for a
-            // third-party owa_db_<type>, which falls through to the plugins/
-            // seam below. class_exists() on the resolved name forces autoload.
             /*
-             * Convention first, bridge second. A bundled driver's class name
-             * follows from its token -- pdo_mysql -> OWA\Core\Db\PdoMysql --
-             * so it needs no entry in a compatibility map, which is a file for
-             * names third parties once called, not a lookup table OWA reads to
-             * find its own classes.
+             * A bundled driver's class follows from its token -- pdo_mysql ->
+             * OWA\Core\Db\PdoMysql -- and Composer autoloads it, which runs the
+             * file's define() of the OWA_DTD_* column-type constants.
              */
             $nsClass = self::namespacedClass( 'OWA\\Core\\Db', $type );
-
-            if ( $nsClass === null ) {
-
-                $nsClass = \OWA\Core\Lib::resolveNamespacedClass( $connection_class );
-            }
 
             if ( $nsClass === null && ! class_exists( $connection_class ) ) {
 
@@ -252,13 +236,12 @@ class CoreAPI {
              return;
         } else {
             /*
-             * CONVENTION FIRST, then the map, then the legacy name.
+             * CONVENTION FIRST, then the plugin's name.
              *
              * A bundled driver's class follows from its token -- pdo_mysql ->
-             * OWA\Core\Db\PdoMysql -- so it needs nothing registered. The map
-             * is still consulted for anything that does not follow the
-             * convention, and a third-party owa_db_<type> from the plugins/
-             * seam keeps its legacy name (setupStorageEngine required it in).
+             * OWA\Core\Db\PdoMysql -- so it needs nothing registered. A
+             * third-party owa_db_<type> from the plugins/ seam keeps its own
+             * name (setupStorageEngine required it in).
              *
              * The same resolution as setupStorageEngine(), which runs first and
              * is what loaded the class. The two must agree: if this one picked
@@ -268,7 +251,6 @@ class CoreAPI {
             $driver = self::resolveDbDriver($db_type);
             $connection_class = 'owa_db_'.$driver;
             $connection_class = self::namespacedClass('OWA\\Core\\Db', $driver)
-                ?? \OWA\Core\Lib::resolveNamespacedClass($connection_class)
                 ?? $connection_class;
             $db = new $connection_class(
                 \OWA\Core\CoreAPI::getSetting('base','db_host'),
@@ -1214,33 +1196,12 @@ class CoreAPI {
 
     }
 
-    public static function moduleRequireOnce($module, $class_dir, $file) {
-
-        if (!empty($class_dir)) {
-
-            $class_dir .= '/';
-
-        }
-
-        // runtime module name is lowercase; on-disk dir is PascalCase (PSR-4)
-        $full_file_path = OWA_BASE_DIR.'/modules/'.\OWA\Core\Lib::moduleDirName($module).'/'.$class_dir.$file.'.php';
-
-        if (file_exists($full_file_path)) {
-            return require_once($full_file_path);
-        } else {
-            \OWA\Core\CoreAPI::debug("moduleRequireOnce says no file found at: $full_file_path");
-            return false;
-        }
-    }
-
     public static function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
         /*
-         * Both halves are used to build a filesystem path -- moduleRequireOnce()
-         * builds modules/<dir>/<file>.php and Lib::factory() builds
-         * <dir>/owa_<file><suffix>.php -- and both then require_once() it. This
-         * is the legacy resolution path, reached when an action is not in the
-         * action registry (i.e. third-party modules). The value is request
-         * supplied, so it is validated here rather than trusted.
+         * Both halves name a class -- OWA\Module\<Module>\<Suffix>\<Action> --
+         * and class_exists() hands that name to the autoloader, which maps it
+         * onto a file path. The value can be request supplied (an action not
+         * in the action registry), so it is validated here rather than trusted.
          *
          * RequestContainer sanitizes params through Sanitize::cleanInput(), but
          * that is HTML/encoding oriented and does not constrain a path.
@@ -1273,28 +1234,6 @@ class CoreAPI {
             }
         }
 
-        /*
-         * PSR-4 FIRST, then the compat map.
-         *
-         * This used to run second, so that adding it could not re-point any
-         * name that already resolved. That was the right way to LAND it and the
-         * wrong way to leave it, because of what this factory builds:
-         *
-         *     $class = $class_ns . $file . $class_suffix;
-         *
-         * The MODULE is not in there. It picks the directory and nothing else,
-         * so base.report and acme.report both synthesize owa_reportController
-         * -- which the map sends to OWA\Core\ReportController, OWA's own base
-         * class, rather than to the caller's controller.
-         *
-         * OWA never meets that: base.report is a REGISTERED action and never
-         * reaches this legacy path. The only callers who can are unregistered
-         * ones -- third-party modules, exactly who the cautious ordering was
-         * meant to protect, and exactly who it was wrong for.
-         *
-         * Measured across the whole map: owa_reportController is the ONLY name
-         * the two orders disagree about. Everywhere else this is a no-op.
-         */
         $psr4 = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
               . '\\' . $class_suffix . '\\' . ucfirst( $file );
 
@@ -1321,21 +1260,9 @@ class CoreAPI {
             return $obj;
         }
 
-        $class = $class_ns.$file.$class_suffix;
-        //print $class;
-        // Require class file if class does not already exist
-        if(!class_exists($class)):
-            \OWA\Core\CoreAPI::moduleRequireOnce($module, '', $file);
-        endif;
-
-
-        $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/modules/'.\OWA\Core\Lib::moduleDirName($module), '', $class, $params);
-
-        //if (isset($obj->module)):
-            $obj->module = $module;
-        //endif;
-
-        return $obj;
+        throw new \Exception( sprintf(
+            'No %s class for %s.%s. A class must be PSR-4 autoloadable; the pre-PSR-4 '
+          . 'owa_* file convention was removed in v2.0 (UPGRADING.md).', $class_suffix, $module, $file ) );
     }
 
     public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '', $class_ns = 'owa_') {
@@ -1357,16 +1284,9 @@ class CoreAPI {
             return new $nsClass( $params );
         }
 
-        $class = $class_ns.$file.$class_suffix;
-
-        // Require class file if class does not already exist
-        if(!class_exists($class)):
-            \OWA\Core\CoreAPI::moduleRequireOnce($module, $sub_directory, $file);
-        endif;
-
-        $obj = \OWA\Core\Lib::factory(OWA_DIR.'modules'.'/'.\OWA\Core\Lib::moduleDirName($module).'/'.$sub_directory, '', $class, $params);
-
-        return $obj;
+        throw new \Exception( sprintf(
+            'No class %s in module %s (%s). A class must be PSR-4 autoloadable; the pre-PSR-4 '
+          . 'owa_* file convention was removed in v2.0 (UPGRADING.md).', $file, $module, $dir ) );
     }
 
     /**
@@ -1388,27 +1308,10 @@ class CoreAPI {
             return \OWA\Core\Lib::factory( OWA_BASE_CLASSES_DIR . $seg, '', $class );
         }
 
-        // BACKWARDS COMPAT (third-party modules): a pre-PSR-4 module ships its
-        // registry class the old way -- a global-namespace `owa_<name>Module`
-        // declared in modules/<dir>/module.php, not an autoloadable
-        // OWA\Module\<Seg>\Module. Fall back to the legacy require + instantiate
-        // so such a module still loads through a full major-version deprecation
-        // window. OWA's own modules never reach here (their PSR-4 class exists).
-        \OWA\Core\CoreAPI::notice(
-            "Module '{$module}' loaded via the DEPRECATED pre-PSR-4 path "
-            . "(modules/{$seg}/module.php declaring owa_{$module}Module). Migrate it "
-            . "to a PascalCase directory with an OWA\\Module\\" . \OWA\Core\Lib::moduleDirName( $module )
-            . "\\Module class; the legacy layout will be removed in a future major version."
-        );
-
-        $legacy_file  = OWA_MODULES_DIR . $seg . '/module.php';
-        $legacy_class = 'owa_' . $module . 'Module';
-
-        if ( ! class_exists( $legacy_class ) && file_exists( $legacy_file ) ) {
-            require_once( $legacy_file );
-        }
-
-        return \OWA\Core\Lib::factory( OWA_MODULES_DIR . $seg, 'owa_', $module . 'Module' );
+        throw new \Exception( sprintf(
+            'Module %s has no %s class. A module is a PascalCase directory with a PSR-4 '
+          . 'Module class; the pre-PSR-4 layout (a lowercase directory and module.php) was '
+          . 'removed in v2.0 (UPGRADING.md).', $module, $class ) );
     }
 
 
@@ -1433,23 +1336,14 @@ class CoreAPI {
         $namespaced = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
                     . '\\Update\\' . $basename;
 
-        if ( class_exists( $namespaced ) ) {
+        if ( ! class_exists( $namespaced ) ) {
 
-            $obj = new $namespaced();
-
-        } else {
-
-            // Legacy fallback: a pre-PSR-4 third-party module shipping
-            // updates/<seq>.php with an owa_*_update class.
-            $class = $class_ns.$module.'_'.$filename.'_update';
-
-            // Require class file if class does not already exist
-            if(!class_exists($class)):
-                \OWA\Core\CoreAPI::moduleRequireOnce($module, 'updates', $filename);
-            endif;
-
-            $obj = \OWA\Core\Lib::factory(OWA_DIR.'modules'.'/'.\OWA\Core\Lib::moduleDirName($module).'/'.'Update', '', $class);
+            throw new \Exception( sprintf(
+                'No update %s in module %s. An update is a PSR-4 class; the pre-PSR-4 '
+              . 'updates/<seq>.php convention was removed in v2.0 (UPGRADING.md).', $basename, $module ) );
         }
+
+        $obj = new $namespaced();
 
         $obj->module_name = $module;
         if (!$obj->schema_version) {
@@ -1522,27 +1416,10 @@ class CoreAPI {
 
 
         /*
-         * PSR-4 FIRST, by convention, so a new entity needs nothing registered.
-         *
-         * Without this an entity name is turned into a legacy `owa_*` class
-         * name by moduleSpecificFactory() and resolved through
-         * owa_compat_class_map() -- which means OWA's OWN entity resolution
-         * depends on the compatibility bridge, a file whose stated purpose is
-         * third-party callers of the old names and which is removed at 2.0.
-         * Every entity added since the PSR-4 migration has had to be listed
-         * there, and the failure when it is not is
-         *
-         *     Class File modules/entities/Base/owa_<name>.php not existend!
-         *
-         * naming a directory layout that has not existed since the migration.
-         *
-         * The convention is the same one moduleDirName() uses for module
+         * BY CONVENTION, so a new entity needs nothing registered. The
+         * convention is the same one moduleDirName() uses for module
          * directories: snake_case to PascalCase, under the module's own Entity
          * namespace. base.custom_report -> OWA\Module\Base\Entity\CustomReport.
-         *
-         * Tried FIRST rather than as a fallback, so a mapped entity and an
-         * unmapped one resolve by the same route -- if the two disagreed, the
-         * map would quietly win for some entities and not others.
          */
         $nsClass = self::namespacedEntityClass($entity_name);
 
@@ -1554,16 +1431,9 @@ class CoreAPI {
             return $entity;
         }
 
-        /*
-         * LEGACY FALLBACK: the compat map, and then a pre-PSR-4 file on disk.
-         * Reached now only by an entity that does not follow the convention --
-         * third-party code, or one whose class name genuinely differs from its
-         * registered name.
-         */
-        $entity = \OWA\Core\CoreAPI::moduleSpecificFactory($entity_name, 'entities', '', '', false);
-        $entity->name = $entity_name;
-        return $entity;
-        //return owa_coreAPI::supportClassFactory('base', 'entityManager', $entity_name);
+        throw new \Exception( sprintf(
+            'No entity class for %s. An entity is OWA\\Module\\<Module>\\Entity\\<Name>; the '
+          . 'pre-PSR-4 owa_* file convention was removed in v2.0 (UPGRADING.md).', $entity_name ) );
 
     }
 
@@ -1668,36 +1538,6 @@ class CoreAPI {
 
     }
 
-    /**
-     * Factory for generating module specific classes
-     *
-     * @param string $modulefile
-     * @param string $class_dir
-     * @param string $class_suffix
-     * @param mixed $params
-     * @return mixed
-     */
-    public static function moduleSpecificFactory($modulefile, $class_dir, $class_suffix = null, $params = '', $add_module_name = true, $class_ns = 'owa_') {
-
-        list($module, $file) = explode(".", $modulefile);
-        $class = $class_ns.$file.$class_suffix;
-
-        // Require class file if class does not already exist
-        if(!class_exists($class)):
-            \OWA\Core\CoreAPI::moduleRequireOnce($module, $class_dir, $file);
-        endif;
-
-        $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.$class_dir.'/'.\OWA\Core\Lib::moduleDirName($module), '', $class, $params);
-
-        if ($add_module_name == true):
-            $obj->module = $module;
-        endif;
-
-        return $obj;
-
-
-    }
-
     public static function executeApiCommand($map) {
 		
 		// carve out for REST API backwards compatability during migration
@@ -1796,7 +1636,9 @@ class CoreAPI {
             }
         }
 
-        return \OWA\Core\CoreAPI::moduleSpecificFactory($metric_name, 'metrics', '', $params, false);
+        throw new \Exception( sprintf(
+            'No metric class for %s. A metric is OWA\\Module\\<Module>\\Metric\\<Name>; the '
+          . 'pre-PSR-4 owa_* file convention was removed in v2.0 (UPGRADING.md).', $metric_name ) );
     }
 
     /**
@@ -2116,19 +1958,55 @@ class CoreAPI {
 
     }
     
+    /**
+     * The module directories: each one under modules/ that holds a PSR-4
+     * OWA\Module\<Dir>\Module class.
+     *
+     * Anything else there is skipped with a notice naming it, once per
+     * process -- a module still in the pre-PSR-4 layout (a lowercase directory
+     * and module.php) loads nothing since v2.0, and saying so is how an
+     * administrator learns why it vanished.
+     *
+     * @return string[] directory names
+     */
     public static function getPresentModules() {
-	    $path = OWA_DIR.'modules';
-	    // Check directory exists or not
-		if( file_exists($path) && is_dir($path)) {
-        	// Scan the files in this directory
-			$result = scandir($path);
-        
-			// Filter out the current (.) and parent (..) directories
-			$files = array_diff($result, array('.', '..', 'index.php'));
-			\OWA\Core\CoreAPI::debug( 'Modules present: ' . implode( ', ', $files ) );
-			
-			return $files;
-		}
+
+        static $warned = array();
+
+        $path = OWA_DIR . 'modules';
+
+        if ( ! is_dir( $path ) ) {
+
+            return array();
+        }
+
+        $modules = array();
+
+        foreach ( scandir( $path ) as $dir ) {
+
+            if ( $dir[0] === '.' || ! is_dir( $path . '/' . $dir ) ) {
+
+                continue;
+            }
+
+            if ( preg_match( '/^[A-Za-z0-9_]+$/', $dir ) && class_exists( 'OWA\\Module\\' . $dir . '\\Module' ) ) {
+
+                $modules[] = $dir;
+
+            } elseif ( ! isset( $warned[ $dir ] ) ) {
+
+                $warned[ $dir ] = true;
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'modules/%s is not loaded: a module is a PascalCase directory with an '
+                  . 'OWA\\Module\\<Dir>\\Module class. The pre-PSR-4 layout was removed in v2.0 '
+                  . '(UPGRADING.md).', $dir ) );
+            }
+        }
+
+        \OWA\Core\CoreAPI::debug( 'Modules present: ' . implode( ', ', $modules ) );
+
+        return $modules;
     }
 
     public static function getModulesNeedingUpdates() {

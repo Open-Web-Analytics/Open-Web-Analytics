@@ -43,7 +43,7 @@ require_once($owa_root . 'owa.php');
 require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
-$connected_db = (string) owa_coreAPI::getSetting('base', 'db_name');
+$connected_db = (string) \OWA\Core\CoreAPI::getSetting('base', 'db_name');
 $allowed_db   = getenv('OWA_E2E_DB_NAME') ?: SCRATCH_DB_SENTINEL;
 
 if ($connected_db !== $allowed_db) {
@@ -83,7 +83,7 @@ function argSite(array $argv): string
 
 function db()
 {
-    return owa_coreAPI::dbSingleton();
+    return \OWA\Core\CoreAPI::dbSingleton();
 }
 
 /*
@@ -114,7 +114,7 @@ function db()
 /** The raw table, asked for rather than spelled out. */
 function rawTable(): string
 {
-    return owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+    return \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 }
 
 /** Escaped, because these come from the query string. */
@@ -277,7 +277,7 @@ function recordings(string $site_id): array
 {
     DomstreamFixtures::ensure();
 
-    $table = owa_coreAPI::entityFactory('domstream.domstream_chunk')->getTableName();
+    $table = \OWA\Core\CoreAPI::entityFactory('domstream.domstream_chunk')->getTableName();
 
     $chunks = (array) db()->get_results(
         "SELECT recording_id, seq, page_view_seq, page_path, sample_count, click_count, keypress_count,"

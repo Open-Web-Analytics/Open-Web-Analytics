@@ -221,13 +221,10 @@ final class EventQueueHardeningTest extends TestCase
     /**
      * Messages queued BEFORE the PSR-4 relocation name the pre-namespace class.
      *
-     * allowed_classes matches the name as written in the blob, not what that
-     * name resolves to -- so although class_alias() makes 'owa_event' the very
-     * same class as Base\Classes\Event, an allowlist naming only the new
-     * spelling rejects the old one. Every event queued before the upgrade then
-     * became permanently undecodable, and (see above) took the drain down with
-     * it. Found by e2e: the file queue stopped draining and grew by one file per
-     * run.
+     * No class named owa_event exists, and allowed_classes matches the name as
+     * written in the blob, so such a message would decode to
+     * __PHP_Incomplete_Class and (see above) take the drain down with it. The
+     * queue renames it to the class it holds before decoding.
      */
     public function testAnEventQueuedUnderTheLegacyClassNameStillDecodes(): void
     {
@@ -255,10 +252,10 @@ final class EventQueueHardeningTest extends TestCase
     }
 
     /**
-     * Admitting the legacy spelling must not admit anything else: the aliases
-     * added are only other names for classes already on the list.
+     * Reading the legacy spelling must not admit anything else: only the exact
+     * top-level `O:9:"owa_event":` is renamed.
      */
-    public function testTheLegacyAliasDoesNotWidenTheAllowlist(): void
+    public function testTheLegacyNameDoesNotWidenTheAllowlist(): void
     {
         $q = $this->queue();
 
@@ -266,6 +263,8 @@ final class EventQueueHardeningTest extends TestCase
             'O:8:"stdClass":0:{}',
             'O:10:"owa_lookup":0:{}',
             'O:16:"owa_dbEventQueue":0:{}',
+            'O:9:"OWA_EVENT":0:{}',
+            'a:1:{i:0;O:9:"owa_event":0:{}}',
         ] as $blob) {
             $this->assertFalse($q->decodeMessage($blob),
                 "an unrelated class must stay refused: $blob");

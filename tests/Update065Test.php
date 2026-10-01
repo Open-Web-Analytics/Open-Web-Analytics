@@ -32,14 +32,14 @@ final class Update065Test extends TestCase
 
     private static function dropCube(): void
     {
-        owa_coreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s',
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY)));
     }
 
     /** @return string[] which of the two columns the table has, in the table's order */
     private function channels(string $table): array
     {
-        $columns = owa_coreAPI::dbSingleton()->listColumns($table);
+        $columns = \OWA\Core\CoreAPI::dbSingleton()->listColumns($table);
 
         return array_values(array_intersect($columns, ['channel', 'acq_channel']));
     }
@@ -49,11 +49,11 @@ final class Update065Test extends TestCase
     {
         $this->assertSame(65, (new \OWA\Module\Base\Update\Update065())->schema_version);
 
-        $columns = owa_coreAPI::entityFactory('base.event')->getColumns();
+        $columns = \OWA\Core\CoreAPI::entityFactory('base.event')->getColumns();
 
         $this->assertSame(\OWA\Module\Base\Update\Update065::COLUMNS,
             array_values(array_intersect($columns, \OWA\Module\Base\Update\Update065::COLUMNS)));
-        $this->assertNotContains('channel', owa_coreAPI::entityFactory('base.event_raw')->getColumns(),
+        $this->assertNotContains('channel', \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getColumns(),
             'a reading, so the cube only');
     }
 
@@ -73,7 +73,7 @@ final class Update065Test extends TestCase
         $this->assertTrue($update->up());
         $this->assertSame(['channel', 'acq_channel'], $this->channels($table));
 
-        $db      = owa_coreAPI::dbSingleton();
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
         $mariadb = stripos((string) ($db->get_row('SELECT VERSION() AS v')['v'] ?? ''), 'mariadb') !== false;
 
         // MariaDB reports no instant-column state (CubeInstantColumnsTest), so there it is unknown.

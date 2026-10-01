@@ -31,7 +31,7 @@ final class EntityUndeclaredColumnTest extends TestCase
 
     public function testAnUndeclaredColumnIsRefusedByName(): void
     {
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessageMatches('/does not declare a column called "no_such_column"/');
@@ -42,7 +42,7 @@ final class EntityUndeclaredColumnTest extends TestCase
     /** And the message says what to do, because the fix is always the same. */
     public function testTheMessageNamesTheFix(): void
     {
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         try {
             $entity->getColumn('no_such_column');
@@ -58,7 +58,7 @@ final class EntityUndeclaredColumnTest extends TestCase
      */
     public function testADeclaredColumnStillResolves(): void
     {
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $this->assertInstanceOf(
             \OWA\Module\Base\Classes\DbColumn::class,

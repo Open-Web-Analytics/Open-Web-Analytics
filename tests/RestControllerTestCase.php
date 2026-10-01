@@ -56,14 +56,14 @@ abstract class RestControllerTestCase extends TestCase
             ]);
         }
 
-        owa_coreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
 
         // The new-account email observer fires when POST /users creates a user.
         // The default derived mailer-from ("owa@localhost") is rejected by
         // PHPMailer (no dot in the domain), which would abort the request path
         // with an exception unrelated to what we're testing. Pin a valid,
         // clearly non-deliverable from-address for the test process.
-        owa_coreAPI::setSetting('base', 'mailer-from', 'owa@owatest.example.com');
+        \OWA\Core\CoreAPI::setSetting('base', 'mailer-from', 'owa@owatest.example.com');
     }
 
     protected function setUp(): void
@@ -81,7 +81,7 @@ abstract class RestControllerTestCase extends TestCase
         // Delete in LIFO order so relations go before the rows they reference.
         foreach (array_reverse($this->cleanup) as $row) {
             try {
-                owa_coreAPI::entityFactory($row['entity'])->delete($row['value'], $row['col']);
+                \OWA\Core\CoreAPI::entityFactory($row['entity'])->delete($row['value'], $row['col']);
             } catch (\Throwable $ex) {
                 // best-effort
             }
@@ -102,7 +102,7 @@ abstract class RestControllerTestCase extends TestCase
     protected function makeUser(string $role, string $label = 'u'): array
     {
         $user_id = $role . '-' . $label . '-' . $this->tok . '@owatest.example.com';
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->createNewUser($user_id, $role, 'pw' . $this->tok, $user_id, 'OWA Test ' . $role);
         $u->load($user_id, 'user_id');
         $this->assertNotEmpty($u->get('id'), "Failed to create {$role} user fixture.");
@@ -124,7 +124,7 @@ abstract class RestControllerTestCase extends TestCase
     protected function makeSite(string $label = 's'): array
     {
         $domain = 'https://owatest-' . $label . '-' . $this->tok . '.example.com';
-        $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+        $sm = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
         $site = $sm->createNewSite($domain, 'OWA Test Site ' . $label . ' ' . $this->tok);
         $this->assertNotEmpty($site, 'Failed to create site fixture.');
 
@@ -172,10 +172,10 @@ abstract class RestControllerTestCase extends TestCase
     {
         $fixture = $this->makeUser($role, 'auth');
 
-        $entity = owa_coreAPI::entityFactory('base.user');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.user');
         $entity->load($fixture['id'], 'id');
 
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->loadNewUserByObject($entity);
         $cu->setAuthStatus(true);
 
@@ -184,11 +184,11 @@ abstract class RestControllerTestCase extends TestCase
 
     protected function resetCurrentUser(): void
     {
-        $anon = owa_coreAPI::entityFactory('base.user');
+        $anon = \OWA\Core\CoreAPI::entityFactory('base.user');
         $anon->set('user_id', '');
         $anon->set('role', 'everyone');
 
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->loadNewUserByObject($anon);
 
         // Force the authenticated flag off (setAuthStatus has no "false" path,
@@ -244,7 +244,7 @@ abstract class RestControllerTestCase extends TestCase
         $raw = '';
         if (!empty($data['view'])) {
             ob_start();
-            $returned = owa_coreAPI::displayView($data);
+            $returned = \OWA\Core\CoreAPI::displayView($data);
             $captured = ob_get_clean();
             $raw = ($returned !== null && $returned !== '') ? $returned : $captured;
         }
@@ -289,7 +289,7 @@ abstract class RestControllerTestCase extends TestCase
 
     protected function countSiteUserRows($siteNumericId): int
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom('owa_site_user');
         $db->selectColumn('*');
         $db->where('site_id', $siteNumericId);
@@ -299,7 +299,7 @@ abstract class RestControllerTestCase extends TestCase
 
     protected function userExists(string $user_id): bool
     {
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->load($user_id, 'user_id');
         return !empty($u->get('id'));
     }
@@ -307,7 +307,7 @@ abstract class RestControllerTestCase extends TestCase
     private function dbAvailable(): bool
     {
         try {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $row = $db->get_row('SELECT 1 AS ok');
             return is_array($row) && isset($row['ok']) && $row['ok'] == 1;
         } catch (\Throwable $e) {

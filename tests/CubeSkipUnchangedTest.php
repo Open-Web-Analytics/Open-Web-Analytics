@@ -36,7 +36,7 @@ final class CubeSkipUnchangedTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'Cube skip fixture',
@@ -49,7 +49,7 @@ final class CubeSkipUnchangedTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties([
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
@@ -82,22 +82,22 @@ final class CubeSkipUnchangedTest extends TestCase
             $this->markTestSkipped('OWA database not reachable; this builds a cube.');
         }
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'", $this->raw(), self::SITE));
         $db->query(sprintf('DELETE FROM %s', Cubes::tableFor(self::PROPERTY)));
     }
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory($entity)->getTableName(), self::SITE));
+                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), self::SITE));
         }
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         foreach (['', '_rebuild', '_computed'] as $suffix) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor(self::PROPERTY), $suffix));
@@ -106,7 +106,7 @@ final class CubeSkipUnchangedTest extends TestCase
 
     private function raw(): string
     {
-        return owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+        return \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
     }
 
     private function today(): int
@@ -121,7 +121,7 @@ final class CubeSkipUnchangedTest extends TestCase
 
     private function session(): int
     {
-        return ((int) owa_coreAPI::getSetting('base', 'session_length') ?: 1800) * 1000000;
+        return ((int) \OWA\Core\CoreAPI::getSetting('base', 'session_length') ?: 1800) * 1000000;
     }
 
     /** One page view today, written the way ingest writes it. */
@@ -131,7 +131,7 @@ final class CubeSkipUnchangedTest extends TestCase
         $ts = (time() - 7200) * 1000000 + $n;
         $id = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::VISITOR, 8898000000000000 + $n, $ts, 'page_view');
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties([
             'id'            => $id,
             'event_type'    => 'page_view',
@@ -152,19 +152,19 @@ final class CubeSkipUnchangedTest extends TestCase
 
     private function setArrival(int $usec): void
     {
-        owa_coreAPI::dbSingleton()->query(sprintf("UPDATE %s SET created_at = %s WHERE site_id = '%s'",
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("UPDATE %s SET created_at = %s WHERE site_id = '%s'",
             $this->raw(), $usec ? (string) $usec : 'NULL', self::SITE));
     }
 
     private function setBuiltAt(int $usec): void
     {
-        owa_coreAPI::dbSingleton()->query(sprintf('UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
             Cubes::tableFor(self::PROPERTY), $usec, $this->today()));
     }
 
     private function cubeRows(): int
     {
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf('SELECT COUNT(*) AS n FROM %s WHERE yyyymmdd = %d',
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf('SELECT COUNT(*) AS n FROM %s WHERE yyyymmdd = %d',
             Cubes::tableFor(self::PROPERTY), $this->today()));
 
         return (int) ($row['n'] ?? 0);
@@ -191,7 +191,7 @@ final class CubeSkipUnchangedTest extends TestCase
         $id     = $this->seedRaw();
         $after  = (int) round(microtime(true) * 1000000);
 
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT created_at FROM %s WHERE id = %s AND yyyymmdd = %d', $this->raw(), $id, $this->today()));
 
         $this->assertGreaterThanOrEqual($before, (int) $row['created_at']);
@@ -201,7 +201,7 @@ final class CubeSkipUnchangedTest extends TestCase
     /** It is ingest provenance: no cube carries it. */
     public function testTheCubeDoesNotCarryIt(): void
     {
-        $this->assertContains('created_at', owa_coreAPI::entityFactory('base.event_raw')->getColumns());
+        $this->assertContains('created_at', \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getColumns());
         $this->assertNotContains('created_at', Cubes::entityFor(self::PROPERTY)->getColumns());
     }
 
@@ -300,7 +300,7 @@ final class CubeSkipUnchangedTest extends TestCase
             $this->markTestSkipped('FactMigrator::write needs a constructed migrator here: ' . $e->getMessage());
         }
 
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT created_at FROM %s WHERE id = %s AND yyyymmdd = %d', $this->raw(), $id, $this->today()));
 
         $this->assertNotEmpty($row['created_at'] ?? null);

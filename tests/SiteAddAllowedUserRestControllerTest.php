@@ -64,7 +64,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
             ]);
         }
 
-        owa_coreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
     }
 
     protected function setUp(): void
@@ -231,7 +231,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     private function createSiteFixture(): void
     {
         $domain = 'https://owatest-' . $this->tok . '.example.com';
-        $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+        $sm = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
         $site = $sm->createNewSite($domain, 'OWA Test Site ' . $this->tok);
         $this->assertNotEmpty($site, 'Failed to create site fixture.');
 
@@ -255,11 +255,11 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     {
         $this->admin = $this->createUser('admin');
 
-        $adminEntity = owa_coreAPI::entityFactory('base.user');
+        $adminEntity = \OWA\Core\CoreAPI::entityFactory('base.user');
         $adminEntity->load($this->admin['id'], 'id');
 
         // Mirror owa_auth::authByApiKey()'s success path.
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->loadNewUserByObject($adminEntity);
         $cu->setAuthStatus(true);
     }
@@ -268,7 +268,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     private function createUser(string $role): array
     {
         $user_id = $role . '-' . $this->tok . '@owatest.example.com';
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->createNewUser($user_id, $role, 'x' . $this->tok, $user_id, 'OWA Test ' . $role);
         // Reload to get the assigned primary key.
         $u->load($user_id, 'user_id');
@@ -279,10 +279,10 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
 
     private function resetCurrentUser(): void
     {
-        $anon = owa_coreAPI::entityFactory('base.user');
+        $anon = \OWA\Core\CoreAPI::entityFactory('base.user');
         $anon->set('user_id', '');
         $anon->set('role', 'everyone');
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->loadNewUserByObject($anon);
         // Leave auth status false (anonymous).
         if (method_exists($cu, 'setAuthStatus')) {
@@ -299,7 +299,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
 
     private function assertRelationRowCount(int $expected, string $msg): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom('owa_site_user');
         $db->selectColumn('*');
         $db->where('site_id', $this->site['id']);
@@ -313,7 +313,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
         if (empty($this->targetUser['id'])) {
             return;
         }
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom('owa_site_user');
         $db->selectColumn('*');
         $db->where('user_id', $this->targetUser['id']);
@@ -325,7 +325,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     private function safeDelete(string $entity, $value, string $col): void
     {
         try {
-            $e = owa_coreAPI::entityFactory($entity);
+            $e = \OWA\Core\CoreAPI::entityFactory($entity);
             $e->delete($value, $col);
         } catch (\Throwable $ex) {
             // best-effort cleanup
@@ -335,7 +335,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     private function dbAvailable(): bool
     {
         try {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $row = $db->get_row('SELECT 1 AS ok');
             return is_array($row) && isset($row['ok']) && $row['ok'] == 1;
         } catch (\Throwable $e) {

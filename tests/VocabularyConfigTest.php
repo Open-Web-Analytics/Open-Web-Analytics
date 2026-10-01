@@ -92,7 +92,7 @@ final class VocabularyConfigTest extends TestCase
     {
         $declared = (array) (include OWA_DIR . 'modules/Base/config/dimensions.php')['dimensions'];
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
 
         $r = new ReflectionObject($service);
         $p = $r->getProperty('denormalizedDimensions');

@@ -43,7 +43,7 @@ final class TrackingPropertyDefaultsTest extends TestCase
 
     private function event()
     {
-        $e = owa_coreAPI::supportClassFactory('base', 'event');
+        $e = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $e->setEventType('base.page_request');
 
         return $e;

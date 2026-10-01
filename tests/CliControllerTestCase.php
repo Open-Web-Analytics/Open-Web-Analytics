@@ -53,7 +53,7 @@ abstract class CliControllerTestCase extends TestCase
             ]);
         }
 
-        owa_coreAPI::setSetting('base', 'request_mode', 'cli');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'cli');
     }
 
     protected function setUp(): void
@@ -67,7 +67,7 @@ abstract class CliControllerTestCase extends TestCase
         // it as a side effect, which means any case that reads the map without
         // calling that helper passes or fails depending on whether an EARLIER
         // case in the process happened to. Warm it once, for every subclass.
-        owa_coreAPI::serviceSingleton()->loadCliCommands();
+        \OWA\Core\CoreAPI::serviceSingleton()->loadCliCommands();
 
         $this->tok = substr(md5(uniqid('owacli', true)), 0, 12);
         // Start every test as an authenticated admin, matching cli.php's
@@ -81,7 +81,7 @@ abstract class CliControllerTestCase extends TestCase
         // Delete in LIFO order so relations go before the rows they reference.
         foreach (array_reverse($this->cleanup) as $row) {
             try {
-                owa_coreAPI::entityFactory($row['entity'])->delete($row['value'], $row['col']);
+                \OWA\Core\CoreAPI::entityFactory($row['entity'])->delete($row['value'], $row['col']);
             } catch (\Throwable $ex) {
                 // best-effort
             }
@@ -99,7 +99,7 @@ abstract class CliControllerTestCase extends TestCase
      */
     protected function authenticateAs(string $role): void
     {
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->setRole($role);
         $cu->setAuthStatus(true);
     }
@@ -117,7 +117,7 @@ abstract class CliControllerTestCase extends TestCase
     {
         $user_id  = $role . '-' . $label . '-' . $this->tok . '@owatest.example.com';
         $password = $password ?? ('pw' . $this->tok);
-        $u = owa_coreAPI::entityFactory('base.user');
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->createNewUser($user_id, $role, $password, $user_id, 'OWA CLI Test ' . $role);
         $u->load($user_id, 'user_id');
         $this->assertNotEmpty($u->get('id'), "Failed to create {$role} user fixture.");
@@ -146,7 +146,7 @@ abstract class CliControllerTestCase extends TestCase
      */
     protected function commandClass(string $cmd): ?string
     {
-        $s = owa_coreAPI::serviceSingleton();
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
         $s->loadCliCommands();
         $module_class = $s->getCliCommandClass($cmd); // e.g. 'base.flushCacheCli'
         return $module_class ?: null;
@@ -205,7 +205,7 @@ abstract class CliControllerTestCase extends TestCase
     private function dbAvailable(): bool
     {
         try {
-            $db = owa_coreAPI::dbSingleton();
+            $db = \OWA\Core\CoreAPI::dbSingleton();
             $row = $db->get_row('SELECT 1 AS ok');
             return is_array($row) && isset($row['ok']) && $row['ok'] == 1;
         } catch (\Throwable $e) {

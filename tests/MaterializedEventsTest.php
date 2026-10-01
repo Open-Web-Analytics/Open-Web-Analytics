@@ -193,7 +193,7 @@ final class MaterializedEventsTest extends IngestionTestCase
 
         self::$appendUnwritable = false;
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach ((array) $db->get_results(sprintf(
             "SELECT id FROM owa_event_raw WHERE site_id = '%s' AND visitor_id = %d AND session_id = %d",

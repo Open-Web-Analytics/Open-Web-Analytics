@@ -16,8 +16,8 @@ final class CubeColumnsTest extends TestCase
 {
     private function derived(): array
     {
-        $raw  = owa_coreAPI::entityFactory('base.event_raw')->getColumns();
-        $cube = owa_coreAPI::entityFactory('base.event')->getColumns();
+        $raw  = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getColumns();
+        $cube = \OWA\Core\CoreAPI::entityFactory('base.event')->getColumns();
 
         return array_values(array_diff($cube, $raw));
     }

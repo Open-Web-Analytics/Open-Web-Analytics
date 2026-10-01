@@ -35,7 +35,7 @@ final class ReportingReadinessTest extends TestCase
         foreach ([self::READY_PROPERTY => self::READY_SITE, self::WAITING_PROPERTY => self::WAITING_SITE]
                  as $property_id => $site_id) {
 
-            $property = owa_coreAPI::entityFactory('base.property');
+            $property = \OWA\Core\CoreAPI::entityFactory('base.property');
             $property->setProperties([
                 'id'            => $property_id,
                 'name'          => 'Readiness fixture',
@@ -48,7 +48,7 @@ final class ReportingReadinessTest extends TestCase
                 throw new \RuntimeException('seeding owa_property failed');
             }
 
-            $site = owa_coreAPI::entityFactory('base.site');
+            $site = \OWA\Core\CoreAPI::entityFactory('base.site');
             $site->setProperties([
                 'id'          => $property_id * 10,
                 'site_id'     => $site_id,
@@ -68,7 +68,7 @@ final class ReportingReadinessTest extends TestCase
 
         $ts = strtotime('-2 days 12:00:00') * 1000000;
 
-        $raw = owa_coreAPI::entityFactory('base.event_raw');
+        $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $raw->setProperties([
             'id'            => \OWA\Module\Base\Classes\V2Event::id(self::WAITING_SITE, 1, 1, $ts, 'page_view'),
             'event_type'    => 'page_view',
@@ -98,18 +98,18 @@ final class ReportingReadinessTest extends TestCase
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach ([self::READY_SITE, self::WAITING_SITE] as $site) {
             foreach (['base.event_raw', 'base.site'] as $entity) {
                 $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                    owa_coreAPI::entityFactory($entity)->getTableName(), $site));
+                    \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $site));
             }
         }
 
         foreach ([self::READY_PROPERTY, self::WAITING_PROPERTY] as $property_id) {
             $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-                owa_coreAPI::entityFactory('base.property')->getTableName(), $property_id));
+                \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), $property_id));
 
             foreach (['', '_rebuild', '_computed'] as $suffix) {
                 $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor($property_id), $suffix));
@@ -189,7 +189,7 @@ final class ReportingReadinessTest extends TestCase
             $this->assertTrue(Cubes::exists(self::WAITING_PROPERTY), 'and the next request sees the cube');
         } finally {
             foreach (['', '_rebuild', '_computed'] as $suffix) {
-                owa_coreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s%s',
+                \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s%s',
                     Cubes::tableFor(self::WAITING_PROPERTY), $suffix));
             }
 
@@ -245,7 +245,7 @@ final class ReportingReadinessTest extends TestCase
         $this->requireDatabase();
         Cubes::forgetExistence();
 
-        $db     = owa_coreAPI::dbSingleton();
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
         $before = $db->lastQueryError();
 
         // Records whether the route built a result set at all: answering "not

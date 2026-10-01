@@ -5,7 +5,7 @@
  * OwaLibTest do NOT use this — they load owa_lib standalone.
  *
  * Boots OWA once in the same 'logger' role that log.php uses, so
- * owa_coreAPI::logEvent() runs the real ingestion pipeline synchronously
+ * \OWA\Core\CoreAPI::logEvent() runs the real ingestion pipeline synchronously
  * (queue_events defaults to false) down to the fact-table INSERT.
  *
  * These tests write to the configured OWA database (the dev/test schema in
@@ -112,7 +112,7 @@ function owa_test_db_available(): bool
     set_error_handler(static function () { return true; });
 
     try {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $row = $db->get_row('SELECT 1 AS ok');
         return is_array($row) && isset($row['ok']) && $row['ok'] == 1;
     } catch (\Throwable $e) {

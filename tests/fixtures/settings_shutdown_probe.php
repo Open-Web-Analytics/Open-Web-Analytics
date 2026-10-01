@@ -35,13 +35,13 @@ $key    = $argv[3] ?? 'owa_settings_shutdown_probe';
 
 if ($mode === 'read') {
 
-    echo json_encode(['value' => owa_coreAPI::getSetting($module, $key)]) . "\n";
+    echo json_encode(['value' => \OWA\Core\CoreAPI::getSetting($module, $key)]) . "\n";
     return;
 }
 
 // persistSetting() marks the settings dirty WITHOUT writing them; the
 // write is exactly what shutdown is supposed to do.
-owa_coreAPI::persistSetting($module, $key, $argv[4] ?? 'unset');
+\OWA\Core\CoreAPI::persistSetting($module, $key, $argv[4] ?? 'unset');
 
 echo json_encode(['dirtied' => true]) . "\n";
 
@@ -52,7 +52,7 @@ echo json_encode(['dirtied' => true]) . "\n";
 register_shutdown_function(static function () {
 
     echo json_encode([
-        'dirty_at_shutdown' => (bool) owa_coreAPI::configSingleton()->is_dirty,
+        'dirty_at_shutdown' => (bool) \OWA\Core\CoreAPI::configSingleton()->is_dirty,
     ]) . "\n";
 });
 
@@ -67,7 +67,7 @@ register_shutdown_function(static function () {
 // destructor-only implementation finds it gone.
 register_shutdown_function(static function () {
 
-    owa_coreAPI::dbSingleton()->close();
+    \OWA\Core\CoreAPI::dbSingleton()->close();
 });
 
 // Deliberately no save(). Everything that matters happens after this line.

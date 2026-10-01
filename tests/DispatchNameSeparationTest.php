@@ -62,7 +62,7 @@ final class DispatchNameSeparationTest extends TestCase
         $this->assertNotEmpty( $listeners,
             'install_complete reaches no listener at all' );
 
-        $ingest = $dispatch->listenersFor( owa_coreAPI::anyTrackingEvent() );
+        $ingest = $dispatch->listenersFor( \OWA\Core\CoreAPI::anyTrackingEvent() );
 
         $this->assertNotEmpty( $ingest, 'nothing is registered for the tracking namespace' );
 
@@ -74,14 +74,14 @@ final class DispatchNameSeparationTest extends TestCase
     public function testATrackingEventRoutesUnderTheNamespace(): void
     {
         $event = $this->event( 'page_view' );
-        $event->setDispatchName( owa_coreAPI::TRACKING_DISPATCH_NAMESPACE . '.page_view' );
+        $event->setDispatchName( \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.page_view' );
 
         $this->assertTrue( $event->isTrackingEvent() );
         $this->assertSame( 'tracking.page_view', $event->getDispatchName() );
 
         // A site-named event routes the same way; nothing enumerates it.
         $custom = $this->event( 'my_site_signup' );
-        $custom->setDispatchName( owa_coreAPI::TRACKING_DISPATCH_NAMESPACE . '.my_site_signup' );
+        $custom->setDispatchName( \OWA\Core\CoreAPI::TRACKING_DISPATCH_NAMESPACE . '.my_site_signup' );
 
         $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
 
@@ -202,7 +202,7 @@ final class DispatchNameSeparationTest extends TestCase
      */
     public function testNoRegistrationUsesABareTrackingEventName(): void
     {
-        $names = owa_coreAPI::trackingEventTypes();
+        $names = \OWA\Core\CoreAPI::trackingEventTypes();
 
         $this->assertContains( 'page_view', $names,
             'the registered names were not read -- this asserts nothing without them' );

@@ -42,7 +42,7 @@ class Cli extends \OWA\Core\AdminController {
      * Constructor
      *
      * @param array $params
-     * @return \owa_controller
+     * @return \OWA\Core\Controller
      */
     function __construct($params) {
 

@@ -57,14 +57,14 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
 
         // The nonce check only engages for the web app; the REST base sets
         // 'rest_api', which takes a different branch entirely.
-        owa_coreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
 
         UpdatesApplyGateProbe::reset();
     }
 
     protected function tearDown(): void
     {
-        owa_coreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
 
         parent::tearDown();
     }
@@ -80,10 +80,10 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
     {
         $fixture = $this->makeUser($role, $label);
 
-        $entity = owa_coreAPI::entityFactory('base.user');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.user');
         $entity->load($fixture['id'], 'id');
 
-        $cu = owa_coreAPI::getCurrentUser();
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->loadNewUserByObject($entity);
         $cu->setAuthStatus(true);
 

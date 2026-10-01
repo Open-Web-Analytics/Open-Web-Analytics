@@ -18,7 +18,7 @@ final class EventRawEntityTest extends TestCase
 {
     private function raw()
     {
-        return owa_coreAPI::entityFactory('base.event_raw');
+        return \OWA\Core\CoreAPI::entityFactory('base.event_raw');
     }
 
     public function testItCarriesNoForeignKeys(): void
@@ -204,7 +204,7 @@ final class EventRawEntityTest extends TestCase
 
     public function testTheVisitorStoreIsUniqueOnTheVisitorAndNotPartitioned(): void
     {
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
 
         $this->assertSame(['visitor_id_unique' => ['visitor_id']], $entity->getUniqueIndexes(),
             'Insert-if-absent depends on uniqueness on visitor_id ALONE.');

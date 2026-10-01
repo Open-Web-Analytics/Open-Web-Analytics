@@ -38,7 +38,7 @@ final class VisitorExpiryTest extends TestCase
 
     private function clear(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach ([VisitorExpiry::table(), VisitorExpiry::rawTable()] as $table) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'", $table, self::SITE));
@@ -49,7 +49,7 @@ final class VisitorExpiryTest extends TestCase
     {
         $visitor = self::VISITOR + (++self::$seq);
 
-        $entity = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $entity->setProperties([
             'visitor_id' => $visitor,
             'site_id'    => self::SITE,
@@ -59,7 +59,7 @@ final class VisitorExpiryTest extends TestCase
 
         $this->assertTrue($entity->create(), 'seeding owa_visitor_acquisition');
 
-        owa_coreAPI::dbSingleton()->query(sprintf('UPDATE %s SET last_seen = %s WHERE visitor_id = %d',
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('UPDATE %s SET last_seen = %s WHERE visitor_id = %d',
             VisitorExpiry::table(), $last_seen === null ? 'NULL' : (string) $last_seen, $visitor));
 
         return $visitor;
@@ -71,7 +71,7 @@ final class VisitorExpiryTest extends TestCase
         $n  = ++self::$seq;
         $ts = (time() - 3600) * 1000000 + $n;
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties([
             'id'            => \OWA\Module\Base\Classes\V2Event::id(self::SITE, $visitor, 8899200000000000 + $n, $ts, 'page_view'),
             'event_type'    => 'page_view',
@@ -93,7 +93,7 @@ final class VisitorExpiryTest extends TestCase
     {
         $ids = [];
 
-        foreach ((array) owa_coreAPI::dbSingleton()->get_results(sprintf(
+        foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
                 "SELECT visitor_id FROM %s WHERE site_id = '%s' ORDER BY visitor_id",
                 VisitorExpiry::table(), self::SITE)) as $row) {
             $ids[] = (int) $row['visitor_id'];
@@ -185,7 +185,7 @@ final class VisitorExpiryTest extends TestCase
     /** The oldest month raw holds, read from the data, as the plain MIN would give it. */
     public function testTheOldestRawMonthIsReadFromTheData(): void
     {
-        $row = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT MIN(yyyymmdd) AS m FROM %s', VisitorExpiry::rawTable()));
 
         $this->assertSame(empty($row['m']) ? null : intdiv((int) $row['m'], 100),

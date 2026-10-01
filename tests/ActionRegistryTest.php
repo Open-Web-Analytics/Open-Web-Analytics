@@ -128,11 +128,6 @@ final class ActionRegistryTest extends TestCase
         foreach ($this->actionMap() as $action => $meta) {
             $class = $meta['class_name'];
 
-            // Legacy owa_* names resolve through the compat bridge, not autoload.
-            if (strncmp($class, 'owa_', 4) === 0) {
-                $class = \OWA\Core\Lib::resolveNamespacedClass($class) ?? $class;
-            }
-
             if (! class_exists($class)) {
                 $broken[] = $action . ' -> ' . $meta['class_name'];
             }
@@ -174,10 +169,6 @@ final class ActionRegistryTest extends TestCase
                         $where = sprintf('%s %s/%s/%s', $method, $module, $version, $name);
 
                         $class = $meta['class_name'] ?? '';
-
-                        if (strncmp($class, 'owa_', 4) === 0) {
-                            $class = \OWA\Core\Lib::resolveNamespacedClass($class) ?? $class;
-                        }
 
                         if (! $class || ! class_exists($class)) {
                             $broken[] = $where . ' -> class ' . ($meta['class_name'] ?? '(none)');

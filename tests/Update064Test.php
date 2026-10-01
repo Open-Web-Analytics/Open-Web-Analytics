@@ -27,7 +27,7 @@ final class Update064Test extends TestCase
             $this->update->up();
         }
 
-        owa_coreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s',
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::PROPERTY ) ) );
     }
 
@@ -46,14 +46,14 @@ final class Update064Test extends TestCase
     public function testTheEntityDeclaresTheSameIndex(): void
     {
         $this->assertSame( [ 'site_id', 'ts' ],
-            owa_coreAPI::entityFactory( 'base.event_raw' )->getCompositeIndexes()['site_ts'] ?? null );
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getCompositeIndexes()['site_ts'] ?? null );
     }
 
     /** Nothing reads a cube by time, so a cube -- fresh or not -- has no site_ts. */
     public function testACubeHasNoSiteTs(): void
     {
         $this->assertArrayNotHasKey( 'site_ts',
-            owa_coreAPI::entityFactory( 'base.event' )->getCompositeIndexes() );
+            \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getCompositeIndexes() );
 
         $this->assertTrue( \OWA\Module\Base\Classes\Cube\Cubes::create( self::PROPERTY ) );
         $this->assertSame( [], $this->indexColumns( \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::PROPERTY ) ) );
@@ -61,10 +61,10 @@ final class Update064Test extends TestCase
 
     private function indexColumns( ?string $table = null ): array
     {
-        $rows = (array) owa_coreAPI::dbSingleton()->get_results( sprintf(
+        $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
             "SELECT COLUMN_NAME c FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()"
           . " AND TABLE_NAME = '%s' AND INDEX_NAME = 'site_ts' ORDER BY SEQ_IN_INDEX",
-            $table ?? owa_coreAPI::entityFactory( 'base.event_raw' )->getTableName() ) );
+            $table ?? \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ) );
 
         return array_map( fn( $r ) => ( (array) $r )['c'], $rows );
     }

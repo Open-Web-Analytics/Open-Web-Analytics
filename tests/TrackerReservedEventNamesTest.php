@@ -125,12 +125,12 @@ final class TrackerReservedEventNamesTest extends TestCase
     /** And the server admits it, because the namespace has already separated it. */
     public function testTheServerDoesNotRefuseThePrefix(): void
     {
-        $this->assertTrue( owa_coreAPI::isTrackingEventType( 'owa_future_event' ),
+        $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( 'owa_future_event' ),
             'the server must not refuse a prefixed name: tracking.<name> cannot '
             . 'collide, and refusing it only loses data from an older tracker' );
 
-        $this->assertTrue( owa_coreAPI::isTrackingEventType( 'owa' ) );
-        $this->assertTrue( owa_coreAPI::isTrackingEventType( 'my_owa_event' ) );
+        $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( 'owa' ) );
+        $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( 'my_owa_event' ) );
     }
 
     /**
@@ -143,7 +143,7 @@ final class TrackerReservedEventNamesTest extends TestCase
     {
         foreach ( array( 'my_site_signup', 'newsletter_opt_in', 'A', 'a_b_9' ) as $legal ) {
 
-            $this->assertTrue( owa_coreAPI::isTrackingEventType( $legal ),
+            $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( $legal ),
                 $legal . ' is a legal custom event name and must be admitted' );
         }
 
@@ -157,11 +157,11 @@ final class TrackerReservedEventNamesTest extends TestCase
             str_repeat( 'a', 41 ),
         ) as $illegal ) {
 
-            $this->assertFalse( owa_coreAPI::isTrackingEventType( $illegal ),
+            $this->assertFalse( \OWA\Core\CoreAPI::isTrackingEventType( $illegal ),
                 var_export( $illegal, true ) . ' must not be admitted as an event name' );
         }
 
         // 40 is the cap, so 40 passes and 41 does not.
-        $this->assertTrue( owa_coreAPI::isTrackingEventType( str_repeat( 'a', 40 ) ) );
+        $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( str_repeat( 'a', 40 ) ) );
     }
 }

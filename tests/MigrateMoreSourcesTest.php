@@ -293,7 +293,7 @@ final class MigrateMoreSourcesTest extends TestCase
 
         $items = json_decode($this->rows('purchase')[0]['params'], true)['items'];
 
-        $refund = owa_coreAPI::supportClassFactory('base', 'event');
+        $refund = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $refund->setEventType('refund');
         $refund->set('ct_line_items', json_encode($items));
         $refund->set('currency', 'USD');

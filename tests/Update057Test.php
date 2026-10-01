@@ -37,7 +37,7 @@ final class Update057Test extends TestCase
 
     private static function dropCube(): void
     {
-        owa_coreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s',
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::PROPERTY ) ) );
     }
 
@@ -104,7 +104,7 @@ final class Update057Test extends TestCase
      */
     public function testARollbackThroughTheColumnDropRestoresTheWholeIndex(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $this->assertTrue( $this->update->down() );
 
@@ -120,15 +120,15 @@ final class Update057Test extends TestCase
     public function testTheEntityDeclaresTheSameIndex(): void
     {
         $this->assertSame( [ 'site_id', 'transaction_id' ],
-            owa_coreAPI::entityFactory( 'base.event_raw' )->getCompositeIndexes()['site_transaction'] ?? null );
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getCompositeIndexes()['site_transaction'] ?? null );
     }
 
     private function indexColumns( ?string $table = null ): array
     {
-        $rows = (array) owa_coreAPI::dbSingleton()->get_results( sprintf(
+        $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
             "SELECT COLUMN_NAME c FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()"
           . " AND TABLE_NAME = '%s' AND INDEX_NAME = 'site_transaction' ORDER BY SEQ_IN_INDEX",
-            $table ?? owa_coreAPI::entityFactory( 'base.event_raw' )->getTableName() ) );
+            $table ?? \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ) );
 
         return array_map( fn( $r ) => ( (array) $r )['c'], $rows );
     }

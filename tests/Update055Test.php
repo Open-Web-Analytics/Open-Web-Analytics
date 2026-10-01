@@ -50,7 +50,7 @@ final class Update055Test extends IngestionTestCase
         if ( $this->createdCube ) {
 
             foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
-                owa_coreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s%s',
+                \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s%s',
                     \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::FIXTURE_PROPERTY ), $suffix ) );
             }
         }
@@ -89,7 +89,7 @@ final class Update055Test extends IngestionTestCase
 
         $name = 'checkout_step_completed_payment_method_x';
         $this->assertSame(40, strlen($name));
-        $this->assertTrue(owa_coreAPI::isTrackingEventType($name), 'the fixture must be a legal name');
+        $this->assertTrue(\OWA\Core\CoreAPI::isTrackingEventType($name), 'the fixture must be a legal name');
 
         $visitor = $this->uniqueGuid();
         $session = $this->uniqueSessionId();
@@ -102,7 +102,7 @@ final class Update055Test extends IngestionTestCase
             'page_location' => 'https://owa-test-site/v2/long-name',
         ]);
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $rows = (array) $db->get_results(sprintf(
             "SELECT id, event_type FROM %s WHERE site_id = '%s' AND visitor_id = %d AND session_id = %d",
             $this->rawTable(), $this->site, (int) $visitor, (int) $session));
@@ -117,7 +117,7 @@ final class Update055Test extends IngestionTestCase
     /** The entity refuses to trim it: a trimmed name is a different event. */
     public function testTheColumnIsNotTruncatable(): void
     {
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $name = str_repeat('x', 70);
 
         $entity->set('event_type', $name);
@@ -142,7 +142,7 @@ final class Update055Test extends IngestionTestCase
 
     private function rawTable(): string
     {
-        return owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+        return \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
     }
 
     /** @return string[] raw and every cube table that exists */
@@ -158,7 +158,7 @@ final class Update055Test extends IngestionTestCase
 
     private function nullable(string $table): bool
     {
-        $row = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             "SELECT IS_NULLABLE AS n FROM information_schema.COLUMNS
               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' AND COLUMN_NAME = 'event_type'",
             $table));
@@ -168,7 +168,7 @@ final class Update055Test extends IngestionTestCase
 
     private function width(string $table): int
     {
-        $row = (array) owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             "SELECT CHARACTER_MAXIMUM_LENGTH AS w FROM information_schema.COLUMNS
               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s' AND COLUMN_NAME = 'event_type'",
             $table));

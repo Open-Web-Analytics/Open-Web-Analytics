@@ -67,7 +67,7 @@ final class BeaconCompatEventNamesTest extends TestCase
             $this->markTestSkipped('the processor map is built from the booted modules');
         }
 
-        $this->assertContains($current, owa_coreAPI::trackingEventTypes());
+        $this->assertContains($current, \OWA\Core\CoreAPI::trackingEventTypes());
     }
 
     /**
@@ -78,7 +78,7 @@ final class BeaconCompatEventNamesTest extends TestCase
     {
         foreach (['dom.stream', 'base.feed_request', 'track.action', 'dom.keypress'] as $old) {
             $this->assertSame($old, Compat::eventName($old), "$old has no rename");
-            $this->assertFalse(owa_coreAPI::isTrackingEventType($old), "$old must be refused");
+            $this->assertFalse(\OWA\Core\CoreAPI::isTrackingEventType($old), "$old must be refused");
         }
     }
 
@@ -92,14 +92,14 @@ final class BeaconCompatEventNamesTest extends TestCase
             $this->markTestSkipped('the processor map is built from the booted modules');
         }
 
-        $registered = owa_coreAPI::trackingEventTypes();
+        $registered = \OWA\Core\CoreAPI::trackingEventTypes();
 
         foreach (array_keys(Compat::eventNames()) as $old) {
             $this->assertNotContains($old, $registered);
         }
 
         $this->assertContains('page_view', $registered);
-        $this->assertSame('base.processRequest', owa_coreAPI::getEventProcessor('tracking.page_view'));
+        $this->assertSame('base.processRequest', \OWA\Core\CoreAPI::getEventProcessor('tracking.page_view'));
     }
 
     /**
@@ -112,19 +112,19 @@ final class BeaconCompatEventNamesTest extends TestCase
             $this->markTestSkipped('the processor map is built from the booted modules');
         }
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
         $before  = $service->getMap('event_processors');
 
         $this->assertSame('base.processRequest',
-            owa_coreAPI::getEventProcessor('tracking.acme_recording'),
+            \OWA\Core\CoreAPI::getEventProcessor('tracking.acme_recording'),
             'an unregistered legal name is a custom event, for Base');
 
         $service->setMapValue('event_processors', 'tracking.acme_recording', 'acme.processRecording');
 
         try {
             $this->assertSame('acme.processRecording',
-                owa_coreAPI::getEventProcessor('tracking.acme_recording'));
-            $this->assertContains('acme_recording', owa_coreAPI::trackingEventTypes());
+                \OWA\Core\CoreAPI::getEventProcessor('tracking.acme_recording'));
+            $this->assertContains('acme_recording', \OWA\Core\CoreAPI::trackingEventTypes());
         } finally {
             $service->setMap('event_processors', $before);
         }

@@ -84,7 +84,7 @@ final class CliCommandsTest extends CliControllerTestCase
             'A valid add-site should route to the sitesAddCli success view.');
 
         // Verify the row landed, then schedule it for cleanup.
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load($domain, 'domain');
         $this->assertNotEmpty($site->get('id'),
             'add-site should have persisted a site row keyed by domain.');
@@ -150,7 +150,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertNotCapable($result, 'add-site requires edit_sites.');
 
         // And nothing was written.
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load('https://owatest-cli-denied-' . $this->tok . '.example.com', 'domain');
         $this->assertEmpty($site->get('id'),
             'A denied add-site must not create a site row.');
@@ -164,7 +164,7 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         $user = $this->makeUser('viewer', 'pw', 'oldpass' . $this->tok);
 
-        $before = owa_coreAPI::entityFactory('base.user');
+        $before = \OWA\Core\CoreAPI::entityFactory('base.user');
         $before->load($user['user_id'], 'user_id');
         $oldHash = $before->get('password');
 
@@ -177,7 +177,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertNull($result['view'],
             'A successful change-password runs the action with no error view.');
 
-        $after = owa_coreAPI::entityFactory('base.user');
+        $after = \OWA\Core\CoreAPI::entityFactory('base.user');
         $after->load($user['user_id'], 'user_id');
         $this->assertNotSame($oldHash, $after->get('password'),
             'change-password should have rotated the stored password hash.');
@@ -204,7 +204,7 @@ final class CliCommandsTest extends CliControllerTestCase
         // non-empty password through; assert a 5-char password is now rejected.
         $user = $this->makeUser('viewer', 'pwshort', 'oldpass' . $this->tok);
 
-        $before = owa_coreAPI::entityFactory('base.user');
+        $before = \OWA\Core\CoreAPI::entityFactory('base.user');
         $before->load($user['user_id'], 'user_id');
         $oldHash = $before->get('password');
 
@@ -217,7 +217,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertSame('base.changeUserPasswordCli', $result['view'],
             'A password shorter than 6 characters should fail validation.');
 
-        $after = owa_coreAPI::entityFactory('base.user');
+        $after = \OWA\Core\CoreAPI::entityFactory('base.user');
         $after->load($user['user_id'], 'user_id');
         $this->assertSame($oldHash, $after->get('password'),
             'A rejected short password must not rotate the stored hash.');
@@ -268,7 +268,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $restore = $this->snapshotHelloActive();
         try {
             // Start from deactivated so activation is observable.
-            owa_coreAPI::deactivateModule('hello');
+            \OWA\Core\CoreAPI::deactivateModule('hello');
 
             $result = $this->runCommand(
                 \OWA\Module\Base\Controller\ModuleActivateCli::class,
@@ -277,7 +277,7 @@ final class CliCommandsTest extends CliControllerTestCase
             );
 
             $this->assertNull($result['view'], 'activate should run cleanly.');
-            $this->assertTrue((bool) owa_coreAPI::getSetting('hello', 'is_active'),
+            $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active'),
                 "activate module=hello should set hello's is_active to true.");
         } finally {
             $restore();
@@ -288,7 +288,7 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         $restore = $this->snapshotHelloActive();
         try {
-            owa_coreAPI::activateModule('hello');
+            \OWA\Core\CoreAPI::activateModule('hello');
 
             $result = $this->runCommand(
                 \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
@@ -297,7 +297,7 @@ final class CliCommandsTest extends CliControllerTestCase
             );
 
             $this->assertNull($result['view'], 'deactivate should run cleanly.');
-            $this->assertFalse((bool) owa_coreAPI::getSetting('hello', 'is_active'),
+            $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active'),
                 "deactivate module=hello should set hello's is_active to false.");
         } finally {
             $restore();
@@ -313,7 +313,7 @@ final class CliCommandsTest extends CliControllerTestCase
         // fresh instance via moduleClassFactory() like activate/install do.
         // 'fileCache' ships inactive, so this is a harmless no-op to drive.
         $module = 'fileCache';
-        if ((bool) owa_coreAPI::getSetting($module, 'is_active')) {
+        if ((bool) \OWA\Core\CoreAPI::getSetting($module, 'is_active')) {
             $this->markTestSkipped("Expected {$module} to be inactive for this regression.");
         }
 
@@ -321,8 +321,8 @@ final class CliCommandsTest extends CliControllerTestCase
         // caching on for the rest of the process. A CLI run exits straight
         // after; this process goes on to run every later test, so it is put
         // back.
-        $caching = owa_coreAPI::getSetting('base', 'cache_objects');
-        $type    = owa_coreAPI::getSetting('base', 'cacheType');
+        $caching = \OWA\Core\CoreAPI::getSetting('base', 'cache_objects');
+        $type    = \OWA\Core\CoreAPI::getSetting('base', 'cacheType');
 
         try {
             $result = $this->runCommand(
@@ -331,13 +331,13 @@ final class CliCommandsTest extends CliControllerTestCase
                 ['module' => $module]
             );
         } finally {
-            owa_coreAPI::setSetting('base', 'cache_objects', $caching);
-            owa_coreAPI::setSetting('base', 'cacheType', $type);
+            \OWA\Core\CoreAPI::setSetting('base', 'cache_objects', $caching);
+            \OWA\Core\CoreAPI::setSetting('base', 'cacheType', $type);
         }
 
         $this->assertNull($result['view'],
             'Deactivating a not-boot-loaded module should run cleanly, not fatal.');
-        $this->assertFalse((bool) owa_coreAPI::getSetting($module, 'is_active'),
+        $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting($module, 'is_active'),
             "{$module} should remain inactive after a no-op deactivate.");
     }
 
@@ -345,7 +345,7 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         $restore = $this->snapshotHelloActive();
         try {
-            owa_coreAPI::deactivateModule('hello');
+            \OWA\Core\CoreAPI::deactivateModule('hello');
 
             // hello has no entities, so install-module just persists the schema
             // version and activates -- no tables are created.
@@ -356,7 +356,7 @@ final class CliCommandsTest extends CliControllerTestCase
             );
 
             $this->assertNull($result['view'], 'install-module should run cleanly.');
-            $this->assertTrue((bool) owa_coreAPI::getSetting('hello', 'is_active'),
+            $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active'),
                 'install-module module=hello should leave hello active.');
         } finally {
             $restore();
@@ -546,13 +546,13 @@ final class CliCommandsTest extends CliControllerTestCase
      */
     private function snapshotHelloActive(): callable
     {
-        $wasActive = (bool) owa_coreAPI::getSetting('hello', 'is_active');
+        $wasActive = (bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active');
 
         return function () use ($wasActive): void {
             if ($wasActive) {
-                owa_coreAPI::activateModule('hello');
+                \OWA\Core\CoreAPI::activateModule('hello');
             } else {
-                owa_coreAPI::deactivateModule('hello');
+                \OWA\Core\CoreAPI::deactivateModule('hello');
             }
         };
     }

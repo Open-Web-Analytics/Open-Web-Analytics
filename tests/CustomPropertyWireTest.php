@@ -210,14 +210,14 @@ final class CustomPropertyWireTest extends TestCase
      */
     public function testTheCompatLayerContributesTheV1SlotsThroughTheFilter(): void
     {
-        owa_coreAPI::serviceSingleton()->initializeFramework();
+        \OWA\Core\CoreAPI::serviceSingleton()->initializeFramework();
 
-        $service = owa_coreAPI::serviceSingleton();
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
 
         $regular = (array) $service->getMap( 'tracking_properties_regular' );
         $derived = (array) $service->getMap( 'tracking_properties_derived' );
 
-        $max = (int) owa_coreAPI::getSetting( 'base', 'maxCustomVars' );
+        $max = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
 
         $this->assertGreaterThan( 0, $max );
 
@@ -237,7 +237,7 @@ final class CustomPropertyWireTest extends TestCase
     /** And the slot is still ADMITTED from the wire, which is the point of it. */
     public function testAnOlderBeaconsSlotIsStillAdmitted(): void
     {
-        owa_coreAPI::serviceSingleton()->initializeFramework();
+        \OWA\Core\CoreAPI::serviceSingleton()->initializeFramework();
 
         $this->assertSame( [ 'cv1' => 'plan|pro' ],
             Helpers::admitRequestParams( [ 'cv1' => 'plan|pro' ] ),

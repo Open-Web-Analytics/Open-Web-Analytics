@@ -50,7 +50,7 @@ final class JsonValueDialectTest extends TestCase
 
     private function read(string $constant, string $json)
     {
-        $db  = owa_coreAPI::dbSingleton();
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
         $doc = "'" . $db->prepare('{"a": ' . $json . '}') . "'";
 
         $row = $db->get_row('SELECT ' . sprintf(constant($constant), $doc, '$.a') . ' AS v');
@@ -75,7 +75,7 @@ final class JsonValueDialectTest extends TestCase
 
     public function testAMissingKeyIsNull(): void
     {
-        $db  = owa_coreAPI::dbSingleton();
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
         $row = $db->get_row('SELECT ' . sprintf(OWA_SQL_JSON_VALUE_SIGNED, "'{\"b\": 1}'", '$.a') . ' AS v');
 
         $this->assertNull($row['v']);

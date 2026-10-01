@@ -134,7 +134,7 @@ The contract is pinned by `tests/ViewScopeCompatTest.php`, and
 
 ---
 
-### 2. Legacy `owa_*` class names
+### 2. Legacy `owa_*` class names — REMOVED in v2.0
 
 **What changed.** OWA's framework classes moved from the global namespace with an
 `owa_` prefix into real PSR-4 namespaces:
@@ -145,48 +145,56 @@ The contract is pinned by `tests/ViewScopeCompatTest.php`, and
 | `owa_base` | `OWA\Core\Base` |
 | `owa_entity` | `OWA\Core\Entity` |
 | `owa_module` | `OWA\Core\Module` |
+| `owa_controller` | `OWA\Core\Controller` |
+| `owa_view` | `OWA\Core\View` |
 | `owa_lib` | `OWA\Core\Lib` |
 | `owa_db_mysql` | `OWA\Core\Db\Mysql` |
 
-**What still works in v2.** The alias bridge (`owa_compat_aliases.php`) resolves
-only the names a module builds on:
+In 1.x a compatibility bridge (`owa_compat_aliases.php`) kept the old names
+resolving through `class_alias()`. **v2.0 removes it**: no `owa_*` class name
+resolves, and a module that uses one gets "class not found". `extends owa_module`,
+`owa_coreAPI::getSetting(...)` and `instanceof owa_entity` all need the namespaced
+name. `tests/fixtures/legacy_class_names.json` lists all 406 retired names, and
+`tests/LegacyClassNameContractTest.php` checks none of them resolves.
 
-- the base classes it extends: `owa_base`, `owa_module`, `owa_observer`,
-  `owa_update`, `owa_controller`, `owa_adminController`, `owa_reportController`,
-  `owa_cliController`, `owa_view`, `owa_adminPageView`, `owa_restApiView`,
-  `owa_mailView`, `owa_cliView`, `owa_entity`, `owa_factTable`, `owa_metric`,
-  `owa_calculatedMetric`, `owa_validation`, `owa_cacheType`, `owa_eventQueue`;
-- the static API it calls: `owa_coreAPI`;
-- `owa_event`, which queued data written before the migration names.
+**Factories no longer `require` class files by name.** In 1.x, when a factory
+found no namespaced class it fell back to requiring a file such as
+`modules/<module>/<name>.php` declaring `owa_<name>`. v2.0 builds only PSR-4
+class names — `OWA\Module\<Module>\Entity\<Name>`, `...\Controller\<Name>`,
+`...\Metric\<Name>` — and raises an error naming the class it looked for when
+there is none.
 
-**Removed in v2.** Every other legacy name, including `owa_lib`, the service
-classes (`owa_siteManager`, `owa_userManager`, `owa_settings`, ...), the event
-handlers, the concrete validators, controllers and views, and `owa_db_mysql`.
-A module that used one gets "class not found" and must use the namespaced name.
-`tests/LegacyClassNameContractTest.php` lists every retired name.
+**Still works.**
 
-**Checking a module.** Define `OWA_DISABLE_COMPAT_BRIDGE = true` in your config
-before OWA boots. With it set, no legacy name resolves. OWA itself runs correctly
-that way; if your module does not, it still has legacy references to migrate.
+- **Queued events.** An event queued by 1.x is serialized as `owa_event`; the
+  queue reads it as `OWA\Module\Base\Classes\Event` without the old name
+  existing, so a queue drained after the upgrade loses nothing.
+- **Third-party database drivers.** A driver at `plugins/db/owa_db_<type>.php`
+  declaring `class owa_db_<type> extends \OWA\Core\Db` is still loaded for
+  `db_type = <type>`. The class name is the plugin's own; only its base class
+  changed.
 
 ---
 
-### 3. Lowercase module directories
+### 3. Lowercase module directories — REMOVED in v2.0
 
-**What changed.** Module directories are PascalCase and PSR-4 (`modules/Base/`,
-`modules/MemcachedCache/`), with one class per file.
+**What changed.** A module is a PascalCase directory (`modules/Base/`,
+`modules/MemcachedCache/`) holding an autoloadable `OWA\Module\<Dir>\Module`
+class, with one class per file in `Entity/`, `Controller/`, `View/`, `Classes/`
+and so on.
 
-**What still works.** A module shipped in the old convention — a lowercase
-directory plus an `owa_<name>Module` class in `module.php` — is still discovered
-and loaded. `Lib::moduleDirName()` resolves to the legacy lowercase directory
-when no PascalCase one exists, so the module's entities, controllers, views and
-classes all continue to resolve.
+1.x also loaded a module from a **lowercase** directory whose `module.php`
+declared a global `owa_<name>Module`. **v2.0 does not.** A directory under
+`modules/` without an `OWA\Module\<Dir>\Module` class is skipped, and a notice
+in the error log names it. An old module that was active simply stops loading;
+nothing else on the install is affected.
 
 **Migrating.** Rename the module directory to PascalCase and adopt the PSR-4
-layout (`Entity/`, `Controller/`, `View/`, `Classes/`), one class per file, with
-namespaced class names under `OWA\Module\<YourModule>\`.
+layout, with namespaced class names under `OWA\Module\<YourModule>\`. The
+module's runtime name — its settings key, the `<module>.` prefix of its actions
+and entities — stays lowercase.
 
-The shim is pinned by `tests/ThirdPartyModuleCompatTest.php`.
+Pinned by `tests/ThirdPartyModuleCompatTest.php`.
 
 ---
 

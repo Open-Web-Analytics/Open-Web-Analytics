@@ -3,12 +3,12 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * The action name reaches a filesystem path, so it must be a bare identifier.
+ * The action name reaches a class name, so it must be a bare identifier.
  *
  * owa_do / owa_action arrives on the request and, when the action is NOT in the
- * action registry, is split on '.' and both halves are used to build the path
- * that is then require_once'd -- moduleRequireOnce() builds
- * modules/<dir>/<file>.php and Lib::factory() builds <dir>/owa_<file><suffix>.php.
+ * action registry, is split on '.' and both halves build a class name --
+ * OWA\Module\<Module>\Controller\<Action> -- that class_exists() hands to the
+ * autoloader, which maps it onto a file path.
  *
  * These assert the positive match in moduleFactory(), which requires each half
  * to be a bare identifier.

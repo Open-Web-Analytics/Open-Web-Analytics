@@ -186,7 +186,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
      */
     private function trackPropertyOf(string $domain): void
     {
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load($domain, 'domain');
 
         $property = $site->get('property_id');
@@ -198,7 +198,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
 
     private function siteDomainExists(string $domain): bool
     {
-        $s = owa_coreAPI::entityFactory('base.site');
+        $s = \OWA\Core\CoreAPI::entityFactory('base.site');
         $s->load($domain, 'domain');
         return !empty($s->get('id'));
     }

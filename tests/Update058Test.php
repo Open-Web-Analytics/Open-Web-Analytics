@@ -37,7 +37,7 @@ final class Update058Test extends IngestionTestCase
 
         if ( $this->createdCube ) {
             foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
-                owa_coreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s%s',
+                \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s%s',
                     \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::FIXTURE_PROPERTY ), $suffix ) );
             }
         }
@@ -49,7 +49,7 @@ final class Update058Test extends IngestionTestCase
     {
         $this->assertSame( 58, $this->update->schema_version );
         $this->assertContains( 'screen_resolution',
-            owa_coreAPI::entityFactory( 'base.event_raw' )->getColumns() );
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getColumns() );
     }
 
     public function testUpAddsTheColumnToRawAndEveryCube(): void
@@ -100,7 +100,7 @@ final class Update058Test extends IngestionTestCase
             'screen_resolution' => $sent,
         ] );
 
-        $rows = array_map( fn( $r ) => (array) $r, (array) owa_coreAPI::dbSingleton()->get_results( sprintf(
+        $rows = array_map( fn( $r ) => (array) $r, (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
             "SELECT id, screen_resolution FROM %s WHERE site_id = '%s' AND visitor_id = %d AND session_id = %d AND event_type = 'page_view'",
             $this->rawTable(), $this->site, (int) $visitor, (int) $session ) ) );
 
@@ -128,7 +128,7 @@ final class Update058Test extends IngestionTestCase
 
     private function rawTable(): string
     {
-        return owa_coreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        return \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
     }
 
     /** @return string[] raw and every cube table that exists */
@@ -144,7 +144,7 @@ final class Update058Test extends IngestionTestCase
 
     private function hasColumn( string $table ): bool
     {
-        return (bool) owa_coreAPI::dbSingleton()->get_results( sprintf(
+        return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
             "SHOW COLUMNS FROM %s LIKE 'screen_resolution'", $table ) );
     }
 }

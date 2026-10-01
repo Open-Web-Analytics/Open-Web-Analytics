@@ -69,7 +69,7 @@ $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
-$connected_db = (string) owa_coreAPI::getSetting('base', 'db_name');
+$connected_db = (string) \OWA\Core\CoreAPI::getSetting('base', 'db_name');
 $allowed_db   = getenv('OWA_E2E_DB_NAME') ?: SCRATCH_DB_SENTINEL;
 
 if ($connected_db !== $allowed_db) {
@@ -95,7 +95,7 @@ function out(array $r): void
 
 function db()
 {
-    return owa_coreAPI::dbSingleton();
+    return \OWA\Core\CoreAPI::dbSingleton();
 }
 
 function provision(): array
@@ -109,7 +109,7 @@ function provision(): array
      * property_id has no cube to build -- which is how this fixture came to
      * report "cube not built" on every run.
      */
-    $p = owa_coreAPI::entityFactory('base.property');
+    $p = \OWA\Core\CoreAPI::entityFactory('base.property');
     $p->set('id', fixturePropertyId());
     $p->set('name', 'OWA reporting facets fixture');
     $p->set('domain', FIXTURE_DOMAIN);
@@ -117,7 +117,7 @@ function provision(): array
     $p->set('creation_date', time());
     $p->create();
 
-    $s = owa_coreAPI::entityFactory('base.site');
+    $s = \OWA\Core\CoreAPI::entityFactory('base.site');
     $s->set('id', $s->generateId($site_id));
     $s->set('site_id', $site_id);
     $s->set('property_id', fixturePropertyId());
@@ -127,7 +127,7 @@ function provision(): array
     $s->create();
 
     $user_id = FIXTURE_TAG . '-analyst@owatest.example.com';
-    $u = owa_coreAPI::entityFactory('base.user');
+    $u = \OWA\Core\CoreAPI::entityFactory('base.user');
     $u->createNewUser($user_id, 'admin', 'pw-' . FIXTURE_TAG, $user_id, 'OWA facets analyst');
     $u->load($u->generateId($user_id), 'user_id');
 
@@ -139,8 +139,8 @@ function provision(): array
     $byMedium = [];
     $pairs    = [];
 
-    $rc = owa_coreAPI::requestContainerSingleton();
-    $ns = (string) owa_coreAPI::getSetting('base', 'ns');
+    $rc = \OWA\Core\CoreAPI::requestContainerSingleton();
+    $ns = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
 
     foreach (DISTRIBUTION as $source => $mediums) {
 
@@ -181,7 +181,7 @@ function provision(): array
 
                 $rc->setTimestamp($now - $n);
 
-                $event = owa_coreAPI::supportClassFactory('base', 'event');
+                $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
                 $event->setEventType('base.page_request');
                 $event->setProperties([
                     'site_id'                => $site_id,
@@ -201,7 +201,7 @@ function provision(): array
                     'fsts'                   => $now - $n,
                 ]);
 
-                owa_coreAPI::logEvent('base.page_request', $event);
+                \OWA\Core\CoreAPI::logEvent('base.page_request', $event);
             }
 
             $bySource[$source] = ($bySource[$source] ?? 0) + $count;
@@ -276,7 +276,7 @@ function provision(): array
 /** The fixture Property's id: derived, so provision and cleanup agree across runs. */
 function fixturePropertyId(): string
 {
-    return (string) owa_coreAPI::entityFactory('base.property')->generateId('property:' . FIXTURE_TAG);
+    return (string) \OWA\Core\CoreAPI::entityFactory('base.property')->generateId('property:' . FIXTURE_TAG);
 }
 
 /** Numeric GUID in the tracker's format (BIGINT-safe). */
@@ -290,7 +290,7 @@ function fixtureGuid(): string
 /** Build the fixture Property's cube over whatever raw rows exist. */
 function buildFixtureCube(string $site_id): array
 {
-    $site = owa_coreAPI::entityFactory('base.site');
+    $site = \OWA\Core\CoreAPI::entityFactory('base.site');
     $site->load($site_id, 'site_id');
 
     $property_id = (string) $site->get('property_id');
@@ -300,7 +300,7 @@ function buildFixtureCube(string $site_id): array
     }
 
     $db  = db();
-    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+    $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 
     $span = $db->get_row(sprintf(
         "SELECT MIN(yyyymmdd) AS lo, MAX(yyyymmdd) AS hi FROM %s WHERE site_id = '%s'",
@@ -340,7 +340,7 @@ function buildFixtureCube(string $site_id): array
  */
 function cubeDistribution(string $site_id): array
 {
-    $site = owa_coreAPI::entityFactory('base.site');
+    $site = \OWA\Core\CoreAPI::entityFactory('base.site');
     $site->load($site_id, 'site_id');
 
     $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor((string) $site->get('property_id'));
@@ -377,7 +377,7 @@ function cleanup(): array
      * The cube first, because dropping it needs the Property the site row carries
      * and the site row goes below.
      */
-    $site = owa_coreAPI::entityFactory('base.site');
+    $site = \OWA\Core\CoreAPI::entityFactory('base.site');
     $site->load($site_id, 'site_id');
 
     if ($site->get('property_id')) {
@@ -385,7 +385,7 @@ function cleanup(): array
         try { db()->query('DROP TABLE IF EXISTS ' . $table); } catch (\Throwable $e) {}
     }
 
-    foreach ([owa_coreAPI::entityFactory('base.event_raw')->getTableName()] as $table) {
+    foreach ([\OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName()] as $table) {
         $db = db();
         $db->deleteFrom($table);
         $db->where('site_id', $site_id);
@@ -398,11 +398,11 @@ function cleanup(): array
     $db->executeQuery();
 
     $db = db();
-    $db->deleteFrom(owa_coreAPI::entityFactory('base.property')->getTableName());
+    $db->deleteFrom(\OWA\Core\CoreAPI::entityFactory('base.property')->getTableName());
     $db->where('id', fixturePropertyId());
     $db->executeQuery();
 
-    $u = owa_coreAPI::entityFactory('base.user');
+    $u = \OWA\Core\CoreAPI::entityFactory('base.user');
     $u->delete(FIXTURE_TAG . '-analyst@owatest.example.com', 'user_id');
 
     return ['status' => 'cleaned'];

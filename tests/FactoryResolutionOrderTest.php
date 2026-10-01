@@ -5,45 +5,37 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Every factory resolves PSR-4 first, and the compat map only after.
- *
- * The map exists for names third parties once called. It is not a lookup table
- * OWA reads to find its own classes, and while it was one, a class added after
- * the namespace migration could not be constructed without an entry in a file
- * that is deleted at 2.0.
- *
- * These assert the ORDER, not merely that resolution works: with the map still
- * present both routes answer for most names, so a test that only checked the
- * result would pass either way.
+ * The factories resolve a class by PSR-4 convention, from the module and the
+ * directory, and by nothing else since v2.0.
  */
 final class FactoryResolutionOrderTest extends TestCase
 {
     /**
-     * The one name the two orders disagree about.
-     *
-     * moduleFactory() builds its class name as $class_ns . $file . $suffix --
-     * WITHOUT the module -- so any module with an action named 'report'
-     * synthesizes owa_reportController. The map sends that to OWA's own base
-     * class; the convention sends it to the module's controller.
-     *
-     * base.report is a registered action, so OWA never reaches this path. The
-     * callers who do are third-party modules, and for them the module's own
-     * controller is the right answer.
+     * moduleFactory() resolves the module's own class. It once synthesized
+     * owa_<action>Controller without the module, so acme.report could reach
+     * OWA's Core\ReportController.
      */
-    public function testTheNameTheTwoOrdersDisagreeAboutResolvesByConvention(): void
+    public function testAnActionResolvesToItsModulesController(): void
     {
-        $this->assertSame(
-            'OWA\\Core\\ReportController',
-            \OWA\Core\Lib::resolveNamespacedClass( 'owa_reportController' ),
-            'the map still says what it always said; this test is about which one wins' );
+        $this->assertInstanceOf(\OWA\Module\Base\Controller\Report::class,
+            \OWA\Core\CoreAPI::moduleFactory( 'base.report', 'Controller', array() ) );
+    }
 
-        $obj = \OWA\Core\CoreAPI::moduleFactory( 'base.report', 'Controller', array() );
+    /** A name with no PSR-4 class is refused; no file is required in by name. */
+    public function testAnActionWithNoClassIsRefused(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/pre-PSR-4/');
 
-        $this->assertInstanceOf(
-            \OWA\Module\Base\Controller\Report::class,
-            $obj,
-            'PSR-4 must win: resolving to Core\\ReportController would hand a module '
-          . "OWA's base class instead of the controller it named" );
+        \OWA\Core\CoreAPI::moduleFactory( 'base.noSuchThing', 'Controller', array() );
+    }
+
+    public function testLibFactoryRefusesAClassThatIsNotThere(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/pre-PSR-4/');
+
+        \OWA\Core\Lib::factory( OWA_BASE_DIR . '/modules/Base/Classes', 'owa_', 'no_such_class' );
     }
 
     /** Lib::factory derives the namespace from the directory it was given. */

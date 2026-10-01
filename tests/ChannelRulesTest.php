@@ -33,12 +33,12 @@ final class ChannelRulesTest extends TestCase
 
     private static function lit(?string $value): string
     {
-        return $value === null ? 'NULL' : "'" . owa_coreAPI::dbSingleton()->prepare($value) . "'";
+        return $value === null ? 'NULL' : "'" . \OWA\Core\CoreAPI::dbSingleton()->prepare($value) . "'";
     }
 
     private function value(string $sql): ?string
     {
-        $db  = owa_coreAPI::dbSingleton();
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
         $row = $db->get_row('SELECT ' . $sql . ' AS v');
 
         $this->assertIsArray($row, 'the server refused it: ' . $db->lastQueryError());

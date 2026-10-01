@@ -38,14 +38,14 @@ class Module extends \OWA\Core\Module {
 /*
 	    $this->registerImplementation('object_cache_types', 'memcached', 'owa_memcachedCache', 'classes/memcachedCache.php');
 	    
-	    if ( owa_coreAPI::getSetting( 'memcachedCache', 'memcachedServers' ) ) {
+	    if ( \OWA\Core\CoreAPI::getSetting( 'memcachedCache', 'memcachedServers' ) ) {
 		    
-			owa_coreAPI::setSetting('base', 'cache_objects', true);
-			owa_coreAPI::setSetting('base', 'cacheType', 'memcached');
+			\OWA\Core\CoreAPI::setSetting('base', 'cache_objects', true);
+			\OWA\Core\CoreAPI::setSetting('base', 'cacheType', 'memcached');
 			   
 	    } else {
 		    
-		    owa_coreAPI::notice('No memcached servers found in configuration settings.');
+		    \OWA\Core\CoreAPI::notice('No memcached servers found in configuration settings.');
 	    }
 */
     }

@@ -83,7 +83,7 @@ require_once($owa_root . 'owa.php');
 require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
-$connected_db = (string) owa_coreAPI::getSetting('base', 'db_name');
+$connected_db = (string) \OWA\Core\CoreAPI::getSetting('base', 'db_name');
 $allowed_db   = getenv('OWA_E2E_DB_NAME') ?: SCRATCH_DB_SENTINEL;
 
 if ($connected_db !== $allowed_db) {
@@ -110,7 +110,7 @@ function out(array $result): void
 
 function db()
 {
-    return owa_coreAPI::dbSingleton();
+    return \OWA\Core\CoreAPI::dbSingleton();
 }
 
 /**
@@ -136,14 +136,14 @@ function provision(): array
      * Idempotent, and it recognises an existing site, so cleanup() having run
      * first is not a precondition.
      */
-    $sm = owa_coreAPI::supportClassFactory('base', 'siteManager');
+    $sm = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
     $sm->createNewSite(OVERLAY_DOMAIN, 'OWA overlay cross-origin e2e site',
         FIXTURE_TAG, '', $site_id);
 
     // A user for the token to name. The token carries this user's privileges,
     // scoped to one action and one resource.
     $user_id = FIXTURE_TAG . '-admin@owatest.example.com';
-    $u = owa_coreAPI::entityFactory('base.user');
+    $u = \OWA\Core\CoreAPI::entityFactory('base.user');
     $u->createNewUser($user_id, 'admin', 'pw-' . FIXTURE_TAG, $user_id, 'OWA overlay e2e admin');
     $u->load($u->generateId($user_id), 'user_id');
 
@@ -188,10 +188,10 @@ function provision(): array
     //
     // INSTALLED, not merely activated: activation flips is_active and creates
     // no tables, which is what the admin UI and cmd=activate both avoid.
-    $domstream_was_active = (bool) owa_coreAPI::getSetting('domstream', 'is_active');
+    $domstream_was_active = (bool) \OWA\Core\CoreAPI::getSetting('domstream', 'is_active');
 
     if (!$domstream_was_active) {
-        owa_coreAPI::installModule('domstream');
+        \OWA\Core\CoreAPI::installModule('domstream');
     }
 
     seedRecording($site_id, $recording_id);
@@ -249,7 +249,7 @@ function provision(): array
  */
 function seedClicks(string $site_id): void
 {
-    $rc  = owa_coreAPI::requestContainerSingleton();
+    $rc  = \OWA\Core\CoreAPI::requestContainerSingleton();
     $now = time();
     $i   = 0;
 
@@ -261,7 +261,7 @@ function seedClicks(string $site_id): void
 
             $url = OVERLAY_DOMAIN . OVERLAY_PAGE_PATH;
 
-            $event = owa_coreAPI::supportClassFactory('base', 'event');
+            $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
             $event->setEventType('dom.click');
             $event->setProperties([
                 'site_id'         => $site_id,
@@ -282,7 +282,7 @@ function seedClicks(string $site_id): void
                 'dom_element_tag' => 'a',
             ]);
 
-            owa_coreAPI::logEvent('dom.click', $event);
+            \OWA\Core\CoreAPI::logEvent('dom.click', $event);
 
             $i++;
         }
@@ -295,7 +295,7 @@ function seedClicks(string $site_id): void
 function countClickEvents(string $site_id): int
 {
     $db  = db();
-    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+    $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 
     $rows = $db->get_results(sprintf(
         "SELECT COUNT(*) AS c FROM %s WHERE site_id = '%s' AND event_type = 'click'",
@@ -322,7 +322,7 @@ function overlayGuid(): string
  */
 function buildOverlayCube(string $site_id): array
 {
-    $site = owa_coreAPI::entityFactory('base.site');
+    $site = \OWA\Core\CoreAPI::entityFactory('base.site');
     $site->load($site_id, 'site_id');
 
     $property_id = (string) $site->get('property_id');
@@ -332,7 +332,7 @@ function buildOverlayCube(string $site_id): array
     }
 
     $db  = db();
-    $raw = owa_coreAPI::entityFactory('base.event_raw')->getTableName();
+    $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 
     $span = $db->get_row(sprintf(
         "SELECT MIN(yyyymmdd) AS lo, MAX(yyyymmdd) AS hi FROM %s WHERE site_id = '%s'",
@@ -390,7 +390,7 @@ function cleanup(bool $deactivate_domstream = false): array
     $site_id = md5(OVERLAY_DOMAIN);
     $removed = [];
 
-    $site = owa_coreAPI::entityFactory('base.site');
+    $site = \OWA\Core\CoreAPI::entityFactory('base.site');
     $site->load($site_id, 'site_id');
 
     if ($site->get('property_id')) {
@@ -401,7 +401,7 @@ function cleanup(bool $deactivate_domstream = false): array
     DomstreamFixtures::deleteSite($site_id);
     $removed['recordings'] = 'cleared';
 
-    foreach ([owa_coreAPI::entityFactory('base.event_raw')->getTableName(),
+    foreach ([\OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(),
               'owa_click'] as $table) {
         $db = db();
         $db->deleteFrom($table);
@@ -416,7 +416,7 @@ function cleanup(bool $deactivate_domstream = false): array
     $db->executeQuery();
     $removed['owa_site'] = 'cleared';
 
-    $u = owa_coreAPI::entityFactory('base.user');
+    $u = \OWA\Core\CoreAPI::entityFactory('base.user');
     $u->delete(FIXTURE_TAG . '-admin@owatest.example.com', 'user_id');
     $removed['owa_user'] = 'cleared';
 
@@ -427,7 +427,7 @@ function cleanup(bool $deactivate_domstream = false): array
     // than storing a false, which is exactly the state an unactivated module is
     // in -- see the settings-blob falsy-write behaviour.
     if ($deactivate_domstream) {
-        owa_coreAPI::deactivateModule('domstream');
+        \OWA\Core\CoreAPI::deactivateModule('domstream');
         $removed['domstream_module'] = 'deactivated';
     }
 

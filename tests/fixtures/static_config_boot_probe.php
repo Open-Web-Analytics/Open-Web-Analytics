@@ -53,7 +53,7 @@ require_once($owa_root . 'owa.php');
 
 new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
 
-$db = owa_coreAPI::dbSingleton();
+$db = \OWA\Core\CoreAPI::dbSingleton();
 
 echo json_encode([
     'connected' => (bool) $db->isConnectionEstablished(),

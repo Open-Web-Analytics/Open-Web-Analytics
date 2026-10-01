@@ -30,7 +30,7 @@ final class ReportAsOfTest extends TestCase
 
         self::dropFixture();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id'            => self::PROPERTY,
             'name'          => 'As-of fixture',
@@ -43,7 +43,7 @@ final class ReportAsOfTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties([
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
@@ -60,7 +60,7 @@ final class ReportAsOfTest extends TestCase
             throw new \RuntimeException('creating the fixture cube failed');
         }
 
-        owa_coreAPI::dbSingleton()->extendPartitionsBack(Cubes::tableFor(self::PROPERTY), self::day(10));
+        \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(Cubes::tableFor(self::PROPERTY), self::day(10));
 
         foreach ([self::day(3), self::day(2)] as $day) {
             self::seedRaw($day);
@@ -70,9 +70,9 @@ final class ReportAsOfTest extends TestCase
 
         // Two partitions, two build times: the older day built longer ago.
         $table = Cubes::tableFor(self::PROPERTY);
-        owa_coreAPI::dbSingleton()->query(sprintf('UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
             $table, 1790000000 * 1000000, self::day(3)));
-        owa_coreAPI::dbSingleton()->query(sprintf('UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
             $table, 1790100000 * 1000000, self::day(2)));
 
         Cubes::forgetExistence();
@@ -89,15 +89,15 @@ final class ReportAsOfTest extends TestCase
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory($entity)->getTableName(), self::SITE));
+                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), self::SITE));
         }
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         foreach (['', '_rebuild', '_computed'] as $suffix) {
             $db->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor(self::PROPERTY), $suffix));
@@ -116,7 +116,7 @@ final class ReportAsOfTest extends TestCase
         $n  = ++self::$seq;
         $ts = strtotime((string) $yyyymmdd . ' 12:00:00') * 1000000 + $n;
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties([
             'id'            => \OWA\Module\Base\Classes\V2Event::id(self::SITE, 1, 8896000000000000 + $n, $ts, 'page_view'),
             'event_type'    => 'page_view',

@@ -27,7 +27,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
 {
     private function ns(): string
     {
-        $ns = (string) owa_coreAPI::getSetting('base', 'ns');
+        $ns = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
 
         $this->assertNotSame('', $ns,
             'the campaign parameter names are ns + suffix, so an empty ns would make '
@@ -43,7 +43,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
      */
     private function event(array $properties)
     {
-        $event = owa_coreAPI::supportClassFactory('base', 'event');
+        $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $event->setEventType('base.page_request');
         $event->setProperties($properties + ['is_new_session_start' => true]);
 
@@ -177,7 +177,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     {
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
-        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', [
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', [
             'source'       => 'utm_source',
             'medium'       => 'utm_medium',
             'campaign'     => 'utm_campaign',
@@ -226,14 +226,14 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $ns  = $this->ns();
         $url = 'https://example.test/shared?' . $ns . 'source=owa_answer&utm_source=utm_answer';
 
-        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', []);
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
 
         $first = $this->event([ 'site_id' => 'memo-site-one', 'page_location' => $url ]);
 
         $this->assertSame('owa_answer', $H::taggedValue($first, 'tagged_source'),
             'the default map reads the ns-prefixed parameter');
 
-        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', [ 'source' => 'utm_source' ]);
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', [ 'source' => 'utm_source' ]);
 
         $second = $this->event([ 'site_id' => 'memo-site-two', 'page_location' => $url ]);
 
@@ -248,7 +248,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $H  = '\OWA\Module\Base\Classes\TrackingEventHelpers';
         $ns = $this->ns();
 
-        owa_coreAPI::configSingleton()->set('base', 'campaignKeys', [
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', [
             'source' => 'utm_source',
         ]);
 

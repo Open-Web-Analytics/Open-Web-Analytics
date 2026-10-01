@@ -58,7 +58,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
             self::OLD_ONLY_PROPERTY => self::OLD_ONLY_SITE,
         ] as $property_id => $site_id) {
 
-            $property = owa_coreAPI::entityFactory('base.property');
+            $property = \OWA\Core\CoreAPI::entityFactory('base.property');
             $property->setProperties([
                 'id'            => $property_id,
                 'name'          => 'Cube backfill fixture',
@@ -71,7 +71,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
                 throw new \RuntimeException('seeding owa_property failed');
             }
 
-            $site = owa_coreAPI::entityFactory('base.site');
+            $site = \OWA\Core\CoreAPI::entityFactory('base.site');
             $site->setProperties([
                 'id'          => $property_id * 10,
                 'site_id'     => $site_id,
@@ -113,19 +113,19 @@ final class CubeFirstBuildBackfillTest extends TestCase
 
     private static function dropFixture(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach ([self::SITE, self::CUBED_SITE, self::EMPTY_SITE, self::OLD_ONLY_SITE] as $site) {
             foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
                 $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                    owa_coreAPI::entityFactory($entity)->getTableName(), $db->prepare($site)));
+                    \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $db->prepare($site)));
             }
         }
 
         foreach ([self::PROPERTY, self::CUBED_PROPERTY, self::EMPTY_PROPERTY,
                   self::OLD_ONLY_PROPERTY] as $property_id) {
             $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-                owa_coreAPI::entityFactory('base.property')->getTableName(), $property_id));
+                \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), $property_id));
 
             $cube = Cubes::tableFor($property_id);
 
@@ -141,7 +141,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
         $ts      = strtotime((string) $yyyymmdd . ' 12:00:00') * 1000000 + $n;
         $session = 8891000000000000 + $n;
 
-        $entity = owa_coreAPI::entityFactory('base.event_raw');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
         $entity->setProperties([
             'id'            => \OWA\Module\Base\Classes\V2Event::id(
                                    $site, self::VISITOR, $session, $ts, 'page_view'),
@@ -175,7 +175,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
 
     private function cubeRowsOn(int $property_id, int $yyyymmdd): int
     {
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT COUNT(*) AS n FROM %s WHERE yyyymmdd = %d',
             Cubes::tableFor($property_id), $yyyymmdd));
 
@@ -237,7 +237,7 @@ final class CubeFirstBuildBackfillTest extends TestCase
     public function testTheFirstBuildBackfillsAndARoutineBuildDoesNot(): void
     {
         $table = Cubes::tableFor(self::PROPERTY);
-        $db    = owa_coreAPI::dbSingleton();
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
 
         $this->assertFalse($db->tableExists($table), 'the fixture starts with no cube');
 

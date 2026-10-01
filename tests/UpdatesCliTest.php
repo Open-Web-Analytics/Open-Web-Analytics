@@ -62,7 +62,7 @@ final class UpdatesCliTest extends CliControllerTestCase
 
     private function currentSchemaVersion(): int
     {
-        return (int) owa_coreAPI::getSetting('base', 'schema_version');
+        return (int) \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
     }
 
     private function makeProbe(int $schemaVersion): UpdateGuardProbe
@@ -211,7 +211,7 @@ final class UpdatesCliTest extends CliControllerTestCase
 
         // Restore: apply() persists schema_version on success. Value is
         // unchanged here (we forced the CURRENT version), but be explicit.
-        owa_coreAPI::setSetting('base', 'schema_version', $current);
+        \OWA\Core\CoreAPI::setSetting('base', 'schema_version', $current);
         $this->assertSame($current, $this->currentSchemaVersion());
     }
 

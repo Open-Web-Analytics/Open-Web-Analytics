@@ -42,7 +42,7 @@ class AdminController extends \OWA\Core\Controller {
      * Constructor
      *
      * @param array $params
-     * @return \owa_controller
+     * @return \OWA\Core\Controller
      */
     function __construct($params) {
     

@@ -1787,7 +1787,7 @@ abstract class Module {
      * Example:
      *
      *         'REMOTE_HOST'        => array(
-     *            'default_value'        => array( 'owa_trackingEventHelpers::remoteHostDefault' ),
+     *            'default_value'        => array( '\\OWA\\Module\\Base\\Classes\\TrackingEventHelpers::remoteHostDefault' ),
      *            'required'            => true,
      *            'data_type'            => 'string',
      *            'filter'            => true
