@@ -2621,6 +2621,8 @@ namespace OWA\Module\Base\Classes;
                  * its own. See TrackingEventHelpers::campaignKeysFor().
                  */
                 'campaignKeys'                      => array(),
+                // utm_* read beside the ns-prefixed names; owa_ wins on a URL with both.
+                'campaignUtmParams'                 => true,
                 'feed_subscription_param'            => 'sid',
                 'source_param'                        => 'source',
                 'site_id'                            => '',

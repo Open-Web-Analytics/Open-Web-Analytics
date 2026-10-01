@@ -272,6 +272,17 @@ return array(
          * Keyed by ROLE, not by parameter name, so the two ends cannot disagree
          * about which tag is the medium.
          */
+        'campaignUtmParams' => array(
+            'default'  => true,
+            'storable' => true,
+            'scopes'   => array( 'install', 'property' ),
+            'type'     => 'boolean',
+            'label'    => 'Read utm_ Campaign Parameters',
+            'description' =>
+                'Reads utm_source, utm_medium, utm_campaign, utm_term and utm_content from a '
+                . 'landing URL as well as OWA&rsquo;s own owa_ parameters. When a URL carries '
+                . 'both, the owa_ value is used. Applies to visits recorded after the change.',
+        ),
         'campaignKeys' => array(
             'default'  => array(),
             'storable' => true,

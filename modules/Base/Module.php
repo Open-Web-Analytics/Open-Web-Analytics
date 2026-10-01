@@ -300,7 +300,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.propertyAttribution',
-            'settings' => array( 'attribution_lookback_days' ),
+            'settings' => array( 'attribution_lookback_days', 'campaignUtmParams' ),
         ) );
     }
 
@@ -669,6 +669,7 @@ class Module extends \OWA\Core\Module {
                 'excluded_ips',
                 'anonymize_ips',
                 'query_string_filters',
+                'campaignUtmParams',
             ),
         ) );
 
