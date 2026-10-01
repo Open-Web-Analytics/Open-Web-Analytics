@@ -1457,8 +1457,8 @@ class OWATracker  {
      *
      * NO IFRAME FALLBACK. Every browser that can run this tracker -- it ships
      * untranspiled ES6 -- has fetch and sendBeacon, and the largest payload OWA
-     * makes is a domstream chunk capped at 24,000 characters, inside the 64KB
-     * both allow. A payload both refuse is dropped, with a debug line.
+     * makes is capped at 24,000 characters, inside the 64KB both allow. A
+     * payload both refuse is dropped, with a debug line.
      */
     sendLargeRequest( data, event_type ) {
 
@@ -1511,9 +1511,16 @@ class OWATracker  {
      * queued the request, and the session is persisted on that answer before the
      * page can unload. A fetch resolves later, possibly after the page is gone,
      * so it counts as queued when issued without throwing -- the same
-     * optimistic answer sendBeacon gives -- and a rejection (a keepalive quota,
-     * an old engine) re-sends through sendBeacon, cookies and all, rather than
-     * losing the hit.
+     * optimistic answer sendBeacon gives. Only a synchronous throw falls back to
+     * sendBeacon.
+     *
+     * A REJECTION IS NOT RE-SENT. It does not say the request failed to arrive:
+     * a keepalive fetch still in flight when the page navigates away rejects in
+     * the departing document while the browser completes the request. Re-sending
+     * on it delivered the landing page view twice, and so two session starts,
+     * whenever the collector was still answering at navigation. The other
+     * rejection, the keepalive quota, is one sendBeacon shares -- the Beacon spec
+     * defines it as a keepalive fetch -- so a re-send could not have rescued it.
      *
      * @param {string}      url
      * @param {Blob|null}   body  a form-urlencoded body, or null for the query-string beacon
@@ -1535,16 +1542,7 @@ class OWATracker  {
                 init.body = body;
             }
 
-            fetch( url, init ).catch( function () {
-
-                if ( typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function' ) {
-                    try {
-                        body ? navigator.sendBeacon( url, body ) : navigator.sendBeacon( url );
-                    } catch ( e ) {
-                        // Nothing further to fall back to off the main path.
-                    }
-                }
-            } );
+            fetch( url, init ).catch( function () {} );
 
             return true;
 

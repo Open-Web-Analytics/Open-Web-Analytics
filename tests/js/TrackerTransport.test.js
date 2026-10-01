@@ -270,16 +270,29 @@ describe('tracker GET transport (1x1 pixel beacon)', () => {
             expect(calls[0].init.credentials).toBe('omit');
         });
 
-        test('a rejected fetch is re-sent by sendBeacon rather than lost', async () => {
+        // A keepalive fetch in flight at navigation rejects in the departing
+        // page while the browser still delivers it; a re-send was a duplicate.
+        test('a rejected fetch is not re-sent', async () => {
             const beacons = [];
             navigator.sendBeacon = (url) => { beacons.push(url); return true; };
-            global.fetch = () => Promise.reject(new TypeError('keepalive quota'));
+            global.fetch = (url, init) => { calls.push({ url, init }); return Promise.reject(new TypeError('Failed to fetch')); };
 
             newTracker().trackPageView('https://site.example/p');
             await new Promise((r) => setTimeout(r, 0));
 
+            expect(calls).toHaveLength(1);
+            expect(beacons).toHaveLength(0);
+        });
+
+        test('a fetch that throws falls back to sendBeacon', () => {
+            const beacons = [];
+            navigator.sendBeacon = (url) => { beacons.push(url); return true; };
+            global.fetch = () => { throw new TypeError('blocked'); };
+
+            newTracker().trackPageView('https://site.example/p');
+
             expect(beacons).toHaveLength(1);
-            expect(beacons[0]).toMatch(/event_type=page_view/);
+            expect(beacons[0]).toMatch(/[?&]event_type=page_view/);
         });
 
         test('without keepalive support it falls back to sendBeacon', () => {
