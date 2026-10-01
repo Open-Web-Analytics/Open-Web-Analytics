@@ -30,7 +30,7 @@ final class Update066Test extends TestCase
             $this->update->up();
         }
 
-        owa_coreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s',
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DROP TABLE IF EXISTS %s',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::PROPERTY ) ) );
     }
 
@@ -39,7 +39,7 @@ final class Update066Test extends TestCase
     {
         $out = [];
 
-        foreach ( (array) owa_coreAPI::dbSingleton()->get_results( "SHOW COLUMNS FROM $table" ) as $row ) {
+        foreach ( (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( "SHOW COLUMNS FROM $table" ) as $row ) {
             if ( strpos( $row['Field'], $prefix ) === 0 ) {
                 $out[] = $row['Field'];
             }
@@ -54,13 +54,13 @@ final class Update066Test extends TestCase
         $this->assertTrue( $this->update->is_cli_mode_required, 'it backfills historical raw rows' );
 
         $this->assertSame( array_keys( \OWA\Module\Base\Update\Update066::RAW ),
-            array_values( array_filter( owa_coreAPI::entityFactory( 'base.event_raw' )->getColumns(),
+            array_values( array_filter( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getColumns(),
                 fn ( $c ) => strpos( $c, 'prior_touch_' ) === 0 ) ) );
         $this->assertSame( array_keys( \OWA\Module\Base\Update\Update066::VISITOR ),
-            array_values( array_filter( owa_coreAPI::entityFactory( 'base.visitor_acquisition' )->getColumns(),
+            array_values( array_filter( \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getColumns(),
                 fn ( $c ) => strpos( $c, 'last_touch_' ) === 0 ) ) );
         $this->assertSame( \OWA\Module\Base\Update\Update066::CUBE,
-            array_values( array_filter( owa_coreAPI::entityFactory( 'base.event' )->getColumns(),
+            array_values( array_filter( \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getColumns(),
                 fn ( $c ) => strpos( $c, 'attributed_' ) === 0 ) ) );
     }
 
@@ -68,8 +68,8 @@ final class Update066Test extends TestCase
     {
         $this->assertTrue( \OWA\Module\Base\Classes\Cube\Cubes::create( self::PROPERTY ) );
 
-        $raw   = owa_coreAPI::entityFactory( 'base.event_raw' )->getTableName();
-        $store = owa_coreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
+        $raw   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $store = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
         $cube  = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( self::PROPERTY );
 
         $this->assertTrue( $this->update->down() );
@@ -86,7 +86,7 @@ final class Update066Test extends TestCase
         $this->assertSame( array_keys( \OWA\Module\Base\Update\Update066::VISITOR ), $this->columns( $store, 'last_touch_' ) );
         $this->assertSame( \OWA\Module\Base\Update\Update066::CUBE, $this->columns( $cube, 'attributed_' ) );
 
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $mariadb = stripos( (string) ( $db->get_row( 'SELECT VERSION() AS v' )['v'] ?? '' ), 'mariadb' ) !== false;
 
         // MariaDB reports no instant-column state (CubeInstantColumnsTest), so there it is unknown.

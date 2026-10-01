@@ -558,8 +558,8 @@ function seedCube(): array
      * would otherwise have no partition to land in and the build writes nothing.
      */
     $db->extendPartitionsBack($table, (string) $span['lo'],
-        (int) owa_coreAPI::getSetting('base', 'partition_detail_months') ?: \OWA\Core\Db::PARTITION_DETAIL_MONTHS,
-        (int) owa_coreAPI::getSetting('base', 'partition_max_partitions') ?: \OWA\Core\Db::PARTITION_COUNT_LIMIT);
+        (int) \OWA\Core\CoreAPI::getSetting('base', 'partition_detail_months') ?: \OWA\Core\Db::PARTITION_DETAIL_MONTHS,
+        (int) \OWA\Core\CoreAPI::getSetting('base', 'partition_max_partitions') ?: \OWA\Core\Db::PARTITION_COUNT_LIMIT);
 
     $builder = new \OWA\Module\Base\Classes\Cube\Builder($property_id);
     $rows    = 0;

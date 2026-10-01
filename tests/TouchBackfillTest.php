@@ -40,18 +40,18 @@ final class TouchBackfillTest extends TestCase
 
     private function clean(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
         $db->query(sprintf('DELETE FROM %s WHERE visitor_id IN (%d, %d)',
-            owa_coreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::VISITOR, self::LONER));
+            \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::VISITOR, self::LONER));
     }
 
     /** A landing beacon: its session_start and page_view rows. */
     private function landing(int $visitor, int $session, int $ts, array $evidence): void
     {
         foreach (['session_start', 'page_view'] as $type) {
-            $raw = owa_coreAPI::entityFactory('base.event_raw');
+            $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
             $raw->setProperties($evidence + [
                 'id'         => \OWA\Module\Base\Classes\V2Event::id(self::SITE, $visitor, $session, $ts, $type),
                 'event_type' => $type,
@@ -71,10 +71,10 @@ final class TouchBackfillTest extends TestCase
     {
         $out = [];
 
-        foreach ((array) owa_coreAPI::dbSingleton()->get_results(sprintf(
+        foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
             "SELECT session_id, event_type, prior_touch_source, prior_touch_referer_host, prior_touch_ts FROM %s
               WHERE site_id = '%s' ORDER BY session_id, event_type",
-            owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE)) as $row) {
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE)) as $row) {
             $out[(int) $row['session_id']][$row['event_type']] =
                 [$row['prior_touch_source'], $row['prior_touch_referer_host'], $row['prior_touch_ts']];
         }
@@ -106,9 +106,9 @@ final class TouchBackfillTest extends TestCase
             $this->assertSame([null, 'www.google.com', (string) ($this->t0 + 2 * $h)], $stamps[4][$type], "session 4 $type");
         }
 
-        $store = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $store = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT last_touch_source, last_touch_referer_host, last_touch_ts, acq_ts FROM %s WHERE visitor_id = %d',
-            owa_coreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::VISITOR));
+            \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::VISITOR));
 
         $this->assertSame([null, 'www.google.com', (string) ($this->t0 + 2 * $h), null], array_values($store),
             'the latest non-direct landing, and no acquisition invented');
@@ -124,15 +124,15 @@ final class TouchBackfillTest extends TestCase
         $this->landing(self::LONER, 9, $this->t0, ['tagged_source' => 'old']);
 
         $future = $this->t0 + 86400 * 1000000;
-        $store = owa_coreAPI::entityFactory('base.visitor_acquisition');
+        $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $store->setProperties(['visitor_id' => self::LONER, 'site_id' => self::SITE,
             'last_touch_source' => 'newer', 'last_touch_ts' => $future, 'last_seen' => 202601]);
         $this->assertTrue($store->create());
 
         $this->assertTrue((new \OWA\Module\Base\Classes\TouchBackfill())->site(self::SITE));
 
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf('SELECT last_touch_source FROM %s WHERE visitor_id = %d',
-            owa_coreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::LONER));
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf('SELECT last_touch_source FROM %s WHERE visitor_id = %d',
+            \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::LONER));
 
         $this->assertSame('newer', $row['last_touch_source']);
     }

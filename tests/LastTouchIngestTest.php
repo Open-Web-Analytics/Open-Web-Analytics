@@ -62,13 +62,13 @@ final class LastTouchIngestTest extends IngestionTestCase
         // One beacon is one request in production, each with its own receipt
         // time; in one test process they would otherwise all share one.
         $now = $this->clock++;
-        owa_coreAPI::requestContainerSingleton()->setTimestamp($now);
+        \OWA\Core\CoreAPI::requestContainerSingleton()->setTimestamp($now);
 
         $this->fireEvent('base.page_request', $props);
 
         $rows = [];
 
-        foreach ((array) owa_coreAPI::dbSingleton()->get_results(sprintf(
+        foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
             'SELECT * FROM owa_event_raw WHERE site_id = %s AND visitor_id = %d AND session_id = %d AND ts = %d',
             "'" . $this->site . "'", (int) $visitor, (int) $session, $now * 1000000)) as $row) {
             $row = (array) $row;
@@ -84,7 +84,7 @@ final class LastTouchIngestTest extends IngestionTestCase
     /** @return array|null the visitor's store row */
     private function store(string $visitor): ?array
     {
-        $row = owa_coreAPI::dbSingleton()->get_row(sprintf(
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
             'SELECT * FROM owa_visitor_acquisition WHERE visitor_id = %d', (int) $visitor));
 
         return $row ? (array) $row : null;
@@ -181,7 +181,7 @@ final class LastTouchIngestTest extends IngestionTestCase
         $this->beacon($visitor, $this->uniqueSessionId(), 0, true, ['tags' => ['source' => 'newsletter', 'medium' => 'email']]);
 
         $future = (int) ((microtime(true) + 86400) * 1000000);
-        owa_coreAPI::dbSingleton()->query(
+        \OWA\Core\CoreAPI::dbSingleton()->query(
             "UPDATE owa_visitor_acquisition SET last_touch_source = 'later', last_touch_ts = ? WHERE visitor_id = ?",
             [$future, $visitor]);
 

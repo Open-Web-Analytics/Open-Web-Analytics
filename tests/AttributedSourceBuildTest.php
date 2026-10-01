@@ -38,14 +38,14 @@ final class AttributedSourceBuildTest extends TestCase
 
         self::drop();
 
-        $property = owa_coreAPI::entityFactory('base.property');
+        $property = \OWA\Core\CoreAPI::entityFactory('base.property');
         $property->setProperties([
             'id' => self::PROPERTY, 'name' => 'Attributed fixture', 'domain' => 'example.test',
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB, 'creation_date' => time(),
         ]);
         $property->create();
 
-        $site = owa_coreAPI::entityFactory('base.site');
+        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->setProperties([
             'id' => self::PROPERTY * 10, 'site_id' => self::SITE, 'property_id' => self::PROPERTY,
             'name' => 'Attributed fixture profile', 'domain' => 'example.test',
@@ -64,14 +64,14 @@ final class AttributedSourceBuildTest extends TestCase
 
     private static function drop(): void
     {
-        $db = owa_coreAPI::dbSingleton();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory('base.site')->getTableName(), self::SITE));
+            \OWA\Core\CoreAPI::entityFactory('base.site')->getTableName(), self::SITE));
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
-            owa_coreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
+            \OWA\Core\CoreAPI::entityFactory('base.property')->getTableName(), self::PROPERTY));
 
         \OWA\Core\CoreAPI::clearScopedSetting('property', (string) self::PROPERTY, 'base', 'attribution_lookback_days');
 
@@ -91,8 +91,8 @@ final class AttributedSourceBuildTest extends TestCase
         $this->yyyymmdd = (int) date('Ymd');
         $this->t0       = (time() - 7200) * 1000000;
 
-        owa_coreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
         \OWA\Core\CoreAPI::clearScopedSetting('property', (string) self::PROPERTY, 'base', 'attribution_lookback_days');
 
         $days = 86400 * 1000000;
@@ -125,8 +125,8 @@ final class AttributedSourceBuildTest extends TestCase
     protected function tearDown(): void
     {
         if (owa_test_db_available()) {
-            owa_coreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                owa_coreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
+            \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
+                \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
             $this->rebuild();
         }
     }
@@ -138,7 +138,7 @@ final class AttributedSourceBuildTest extends TestCase
 
         foreach ([[$this->t0, $row, 1], [$this->t0 + 60 * 1000000, [], 2]] as [$ts, $extra, $seq]) {
 
-            $entity = owa_coreAPI::entityFactory('base.event_raw');
+            $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
             $entity->setProperties($extra + [
                 'id'            => \OWA\Module\Base\Classes\V2Event::id(self::SITE, $visitor, $session, $ts, 'page_view'),
                 'event_type'    => 'page_view',
@@ -171,7 +171,7 @@ final class AttributedSourceBuildTest extends TestCase
     /** @return array[] visitor => [source, medium, campaign, channel] for both page views */
     private function attributed(): array
     {
-        $rows = owa_coreAPI::dbSingleton()->get_results(sprintf(
+        $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
             'SELECT visitor_id, event_seq, source, attributed_source, attributed_medium, attributed_campaign,'
           . ' attributed_channel FROM %s WHERE yyyymmdd = %d ORDER BY visitor_id, event_seq',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY), $this->yyyymmdd));
