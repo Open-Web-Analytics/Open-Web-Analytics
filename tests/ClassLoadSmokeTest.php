@@ -101,6 +101,30 @@ final class ClassLoadSmokeTest extends TestCase
     }
 
     /**
+     * A class file prints nothing when it loads.
+     *
+     * Text outside the PHP tags is output on every include -- a second `?>` at
+     * the end of CustomDimensionListCli.php printed one into every process that
+     * autoloaded it. Read statically, because most of these files are already
+     * loaded by the bootstrap and a require_once now would print nothing.
+     */
+    public function testNoClassFilePrintsOnLoad(): void
+    {
+        $printing = [];
+
+        foreach (array_keys($this->discoverClassFiles()) as $path) {
+            foreach (token_get_all((string) file_get_contents($path)) as $token) {
+                if (is_array($token) && $token[0] === T_INLINE_HTML && trim($token[1]) !== '') {
+                    $printing[] = $this->rel($path) . ': ' . json_encode(substr(trim($token[1]), 0, 40));
+                    break;
+                }
+            }
+        }
+
+        $this->assertSame([], $printing, "Class file(s) print text when loaded:\n" . implode("\n", $printing));
+    }
+
+    /**
      * Discover OWA-owned class files: any *.php that declares a class,
      * interface, or trait, excluding vendored/third-party trees, tests, build
      * output, and the front-controller/bootstrap entry points (which are not
