@@ -3757,7 +3757,9 @@ Profile&rsquo;s save (and its creation) publishes it synchronously; a save above
 Property&rsquo;s or the install&rsquo;s tag settings &mdash; queues one deduplicated
 <code>publish-trackers</code> job. A new release is applied with <code>cmd=update</code>, <strong>every
 release</strong>: <code>base.code_version</code> records the <code>OWA_VERSION</code> that last updated, a
-different one is an update pending, and Base&rsquo;s update publishes every live Profile&rsquo;s bundle
+different one is an update pending &mdash; for the admin screens, not the scheduler: only a schema behind
+stops jobs, so a deploy does not pause the drain, the cube and the job queue &mdash; and Base&rsquo;s update
+publishes every live Profile&rsquo;s bundle
 that is stale or missing &mdash; which is how Profiles from 1.x get theirs on the upgrade. In the
 run from the command line; from the update screen, as one queued <code>publish-trackers</code> job, since
 a bundle per Profile is not work for a web request. Not on a
