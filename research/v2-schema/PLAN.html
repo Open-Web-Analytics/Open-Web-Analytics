@@ -3560,20 +3560,99 @@ message. <code>cli.php cmd=drain-tracker-ingest</code> runs it by hand.</li>
 </ul>
 
 <h4><span class="num">2.30.5</span>The admin job queue</h4>
+<p class="note"><strong>Reviewed against Laravel&rsquo;s database queue</strong> (12.66 source, read
+2 Oct): what it does for reservation, recovery, retries, failures and uniqueness, and which of it
+fits a queue drained by a once-a-minute <code>schedule-run</code> with a 240&nbsp;s budget, no worker
+daemon and no shared cache. Adopted and declined are both listed below.</p>
+
+<p><strong>The table</strong>, <code>owa_job_queue</code>:</p>
+<div class="scroll"><table>
+<thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>BIGINT; kept for the job&rsquo;s life, through retries</td></tr>
+<tr><td><code>command</code>, <code>params</code></td><td>a registered CLI command, and its arguments as JSON. No serialized PHP</td></tr>
+<tr><td><code>dedupe_key</code></td><td>unique, nullable; released when the job is claimed</td></tr>
+<tr><td><code>status</code></td><td><code>pending</code>, <code>running</code>, <code>done</code>, <code>failed</code></td></tr>
+<tr><td><code>run_after</code>, <code>lease_until</code></td><td>unix seconds</td></tr>
+<tr><td><code>attempts</code>, <code>max_attempts</code>, <code>backoff</code>, <code>lease_seconds</code></td><td>policy, snapshotted at enqueue from the command&rsquo;s declaration</td></tr>
+<tr><td><code>last_error</code></td><td>bounded to 1,000 characters: STRICT mode refuses longer</td></tr>
+<tr><td><code>created_at</code>, <code>started_at</code>, <code>finished_at</code></td><td>unix seconds</td></tr>
+</tbody></table></div>
+<p>Indexed on <code>(status, run_after)</code> and <code>(status, lease_until)</code>: Laravel&rsquo;s claim
+ORs the two conditions and its table indexes neither, so its claim scans.</p>
+
+<p><strong>Claiming</strong></p>
 <ul>
-<li><strong><code>owa_job_queue</code></strong>: <code>id</code>, <code>command</code> (a registered CLI
-command), <code>params</code> (JSON), <code>dedupe_key</code> (unique), <code>status</code>,
-<code>run_after</code>, <code>lease_until</code>, <code>attempts</code>, <code>last_error</code>, and
-created, started and finished times.</li>
-<li><strong><code>CoreAPI::enqueueJob( command, params, key )</code></strong>. With the same key still
-pending it updates that row, so repeats coalesce.</li>
-<li><strong><code>schedule-run</code> drains it</strong> after its recurring jobs, through the same
-command path, lease and failure recording, within a time budget; a job that keeps failing is parked
-with its error on the health screen.</li>
-<li><strong>First users:</strong> <code>publish-trackers</code> for a Property, install or module change
-(a Profile&rsquo;s own save publishes synchronously); <code>custom-dimension-apply</code> on registration,
-replacing its 15-minute poll; a Property&rsquo;s <code>cube-rebuild</code> when its lookback changes.</li>
+<li><strong>A lease taken in one transaction</strong>: <code>SELECT &hellip; FOR UPDATE SKIP LOCKED</code>,
+then <code>status='running'</code>, <code>lease_until = now + lease_seconds</code>,
+<code>attempts = attempts + 1</code>. Every supported database has <code>SKIP LOCKED</code> (MySQL 8,
+MariaDB 10.11+), so two overlapping ticks claim different jobs rather than queueing on one row.</li>
+<li><strong>Two claim queries, not one OR</strong>: due pending jobs first, then running jobs whose lease
+has expired. The second is how a job whose runner died is recovered &mdash; a fatal, an out-of-memory
+kill, the CloudWatch reboot &mdash; with no reaper process.</li>
+<li><strong>A deadlock on the claim is retried</strong>, up to three times. Laravel&rsquo;s claim is not.</li>
+<li><strong>The attempt is counted at claim, and checked before running.</strong> A job already past
+<code>max_attempts</code> when claimed is marked failed (&ldquo;did not finish in N attempts&rdquo;)
+without running. This is the only way a job that kills its own runner ever stops being retried.</li>
+<li><strong><code>lease_seconds</code> must exceed the job&rsquo;s longest run</strong>, or a second tick
+claims it while the first still runs. Declared by the command, defaulting to the 240&nbsp;s budget plus
+a margin.</li>
 </ul>
+
+<p><strong>Running, and what happens after</strong></p>
+<ul>
+<li><strong>Through the scheduler&rsquo;s own path</strong>: <code>makeController()</code>,
+<code>doAction()</code>, <code>readOutcome()</code>, a throw caught as a failure.</li>
+<li><strong>The budget is checked before each claim, against the job&rsquo;s lease.</strong> Laravel checks
+<code>max-time</code> only between jobs, so a long job overruns it. A drain claims a job only when the
+budget left covers its <code>lease_seconds</code>, except as the first job of a run, so a job longer
+than the budget still runs.</li>
+<li><strong>Success</strong> marks it <code>done</code>. <strong>Failure</strong> puts it back as
+<code>pending</code> in place &mdash; same id, <code>run_after = now + backoff[attempts&minus;1]</code>,
+reusing the last step &mdash; until <code>max_attempts</code>, then <code>failed</code> with its error.
+Laravel releases by deleting the row and inserting a copy, which changes the id and would collide with
+the job&rsquo;s own dedupe key.</li>
+<li><strong>A lost database connection</strong> (&ldquo;server has gone away&rdquo; and its kin) stops
+the drain; the lease expires and the next tick recovers the job.</li>
+</ul>
+
+<p><strong>Enqueueing and uniqueness</strong></p>
+<ul>
+<li><strong><code>CoreAPI::enqueueJob( command, params, key )</code></strong>. Uniqueness is the
+<code>dedupe_key</code> unique index, enforced by the same insert, so it cannot leak the way
+Laravel&rsquo;s cache lock can when its row is lost.</li>
+<li><strong>Unique until claimed</strong>, Laravel&rsquo;s <code>ShouldBeUniqueUntilProcessing</code>: a
+second enqueue while one is pending updates that row; once claimed, the key is released, so a save
+made while a publish runs queues a fresh one that picks up the newer settings.</li>
+<li><strong>Not inside the caller&rsquo;s transaction</strong>, unless the job should vanish on
+rollback.</li>
+</ul>
+
+<p><strong>Managing it</strong></p>
+<ul>
+<li><code>cli.php cmd=jobs</code> lists pending, running and failed; <code>cmd=jobs-retry id=&lt;id&gt;|all</code>
+resets attempts and error and makes it due now; <code>cmd=jobs-forget id=&lt;id&gt;</code> deletes one.</li>
+<li><strong>Pruned daily</strong>, 1,000 rows at a time: <code>done</code> after 7 days, <code>failed</code>
+after 30.</li>
+<li><strong>On the health screen</strong>: pending, delayed, running and failed counts, and the age of the
+oldest due job &mdash; a due job minutes old means the scheduler is not draining.</li>
+</ul>
+
+<p><strong>Not adopted</strong></p>
+<ul>
+<li><strong><code>pcntl</code> alarms for timeouts</strong>: often unavailable on shared hosts, and
+Laravel&rsquo;s kills the whole worker. The lease is the timeout.</li>
+<li><strong>Cache locks</strong> for uniqueness, overlap and restarts: OWA has no guaranteed shared cache.
+The unique index and the scheduler&rsquo;s existing job lease cover both.</li>
+<li><strong>A separate failed-jobs table</strong>: one table with <code>status = 'failed'</code> and its
+error is simpler to retry from.</li>
+<li><strong>Batches and chains</strong>: nothing needs them yet.</li>
+<li><strong>Serialized PHP payloads</strong>: the reason the old queue stalled on renamed classes.</li>
+</ul>
+
+<p><strong>First users:</strong> <code>publish-trackers</code> for a Property, install or module change (a
+Profile&rsquo;s own save publishes synchronously); <code>custom-dimension-apply</code> on registration,
+replacing its 15-minute poll; a Property&rsquo;s <code>cube-rebuild</code> when its lookback changes.</p>
 
 <h4><span class="num">2.30.6</span>What goes</h4>
 <p><code>owa_queue_item</code> and its entity, <code>DbEventQueue</code>, the <code>processing</code>
