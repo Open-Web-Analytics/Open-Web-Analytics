@@ -7,7 +7,8 @@ namespace OWA\Module\Base\Controller;
  *
  * Every fieldset in the `tracking_tag` group, at Profile scope: Base's, and
  * each active module's. Each field's Override switch decides what is stored,
- * through SettingsForm::saveScoped().
+ * through SettingsForm::saveScoped(), and the Profile's bundle is published
+ * at once.
  */
 class SitesEditTagSettings extends \OWA\Core\AdminController {
 
@@ -57,6 +58,9 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
 
             $this->setStatusCode( 3201 );
         }
+
+        // Visitors get the new settings on their next page view, not tomorrow (PLAN 2.30.7).
+        \OWA\Module\Base\Classes\TrackerBundle::publishNow( $site_id );
 
         $this->set( 'siteId', $site_id );
         $this->setRedirectAction( 'base.sitesInvocation' );

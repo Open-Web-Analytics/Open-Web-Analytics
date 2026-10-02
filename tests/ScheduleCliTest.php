@@ -122,8 +122,11 @@ final class ScheduleCliTest extends CliControllerTestCase
     public function testTheShippedDailyJobsDoNotCollide()
     {
         $jobs      = $this->callProtected($this->runner(), 'jobs');
-        $schedules = array_column($jobs, 'schedule');
+        // The daily ones: an every-minute job shares its minute with every job.
+        $schedules = array_values(array_filter(array_column($jobs, 'schedule'),
+            fn ($c) => (bool) preg_match('/^\d+ \d+ \* \* \*$/', $c)));
 
+        $this->assertGreaterThanOrEqual(5, count($schedules));
         $this->assertSame(
             count($schedules),
             count(array_unique($schedules)),
@@ -204,31 +207,33 @@ final class ScheduleCliTest extends CliControllerTestCase
         // with no site collecting into v2, apply-custom-dimensions joined
         // them because registering a dimension cannot do its own ALTER -- that
         // is a full table rebuild, past every request timeout there is -- and
-        // publish-trackers because no web request writes a Profile's tracking
-        // bundle under public/ (PLAN 2.24.5). prune-job-queue deletes
+        // publish-trackers as the daily catch-all for bundles and
+        // tracker-build-check for a new build, since saves publish their own
+        // (PLAN 2.30.7). prune-job-queue deletes
         // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
         // drain-tracker-ingest is the only thing that ingests a queued beacon
         // and replay-tracker-ingest the only thing that brings a dead letter
         // back without someone running it by hand (PLAN 2.30.4).
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'tracker-build-check', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
     }
 
     /**
-     * publish-trackers runs every minute: how long a saved tag setting takes to
-     * reach visitors. Affordable because a run with nothing to do reads the
-     * first line of each bundle.
+     * The bundles' jobs (PLAN 2.30.7): saves publish their own, so the full
+     * publish-trackers run is daily, and only tracker-build-check -- two file
+     * reads -- runs every minute, for a new build.
      */
-    public function testTheTrackerPublishJobRunsEveryMinute()
+    public function testTheBundleJobsAreADailyRunAndAMinutelyBuildCheck()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
         $this->assertSame('publish-trackers', $jobs['publish-trackers']['command']);
-        $this->assertSame(
-            implode(',', range(0, 59)) . ' * * * *',
-            $jobs['publish-trackers']['schedule']);
+        $this->assertMatchesRegularExpression('/^\d+ \d+ \* \* \*$/', $jobs['publish-trackers']['schedule']);
+
+        $this->assertSame('tracker-build-check', $jobs['tracker-build-check']['command']);
+        $this->assertSame('* * * * *', $jobs['tracker-build-check']['schedule']);
     }
 
     /**

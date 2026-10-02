@@ -192,17 +192,21 @@ class TrackerBundle {
      */
     public static function header( array $config, array $manifest ) {
 
-        $build = array( $manifest['core']['sha256'] ?? '' );
-
-        foreach ( $config['plugins'] as $plugin ) {
-
-            $build[] = $plugin . ':' . ( $manifest['plugins'][ $plugin ]['sha256'] ?? '' );
-        }
-
         return sprintf( '/* owa-bundle %d config=%s build=%s */',
             self::FORMAT,
             hash( 'sha256', json_encode( array( $config, (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ) ) ),
-            hash( 'sha256', implode( '|', $build ) ) );
+            self::manifestHash( $manifest ) );
+    }
+
+    /**
+     * The build's identity, as a bundle's header records it: a hash of the
+     * manifest, which names every built file by its content. The whole
+     * manifest, not just the files a bundle uses, so tracker-build-check can
+     * read it off a bundle without knowing its Profile's settings.
+     */
+    private static function manifestHash( array $manifest ) {
+
+        return hash( 'sha256', json_encode( $manifest ) );
     }
 
     /**
@@ -523,6 +527,110 @@ class TrackerBundle {
         }
 
         return $removed;
+    }
+
+    /**
+     * Take down one Profile's bundle: it was deleted, archived, or stopped
+     * being a web stream.
+     *
+     * @param  string $site_id
+     * @return bool whether there was one
+     */
+    public static function remove( $site_id ) {
+
+        $path = self::path( $site_id );
+
+        return $path && is_file( $path ) && @unlink( $path );
+    }
+
+    /**
+     * Publish one Profile's bundle now, as a save of its settings does
+     * (PLAN 2.30.7); if that cannot be done, queue it rather than leave the
+     * Profile on its old settings until the daily check.
+     *
+     * @param  string $site_id
+     * @return bool whether it was published now
+     */
+    public static function publishNow( $site_id ) {
+
+        if ( self::publish( $site_id ) ) {
+
+            return true;
+        }
+
+        \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', array( 'site' => (string) $site_id ),
+            'publish-trackers:' . $site_id );
+
+        return false;
+    }
+
+    /**
+     * Queue one publish-trackers run for every Profile (PLAN 2.30.7): what a
+     * change above a single Profile asks for -- a Property's or the install's
+     * tag settings, a module turned on or off. Saves within the minute leave
+     * one job, and a run rewrites only the bundles that are stale.
+     *
+     * Before the job queue exists -- an install mid-upgrade -- there is
+     * nothing to queue on, and the daily publish-trackers covers it.
+     *
+     * @return string|false the job's id
+     */
+    public static function scheduleFullPublish() {
+
+        try {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+
+            if ( ! $db->tableExists( \OWA\Module\Base\Classes\JobQueue::table() ) ) {
+
+                return false;
+            }
+
+            return \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', array(), 'publish-trackers:all' );
+
+        } catch ( \Throwable $t ) {
+
+            return false;
+        }
+    }
+
+    /**
+     * Whether every bundle on disk is from this build (tracker-build-check):
+     * each bundle's first line names its build, so this reads the manifest
+     * and one line per bundle, and nothing from the database. True with no
+     * build, and with no bundles: a Profile without one gets it when it is
+     * created, saved, or its Tracking Tag screen opened, or at the daily run.
+     *
+     * @return bool
+     */
+    public static function buildIsPublished() {
+
+        $manifest = self::buildManifest();
+
+        if ( ! $manifest ) {
+
+            return true;
+        }
+
+        $want = 'build=' . self::manifestHash( $manifest ) . ' ';
+
+        foreach ( (array) glob( rtrim( self::outDir(), '/' ) . '/*.js' ) as $file ) {
+
+            $handle = @fopen( $file, 'r' );
+            $first  = $handle ? (string) fgets( $handle ) : '';
+
+            if ( $handle ) {
+
+                fclose( $handle );
+            }
+
+            if ( strpos( $first, '/* owa-bundle ' ) === 0 && strpos( $first, $want ) === false ) {
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -374,6 +374,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesEditAllowedUsers',         'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',        'Controller/SitesEditAllowedUsers.php' );
         $this->registerAction( 'base.sitesEditSettings',             'OWA\\Module\\Base\\Controller\\SitesEditSettings',            'Controller/SitesEditSettings.php' );
         $this->registerAction( 'base.trackerPublishCli',             'OWA\\Module\\Base\\Controller\\TrackerPublishCli',            'Controller/TrackerPublishCli.php' );
+        $this->registerAction( 'base.trackerBuildCheckCli',          'OWA\\Module\\Base\\Controller\\TrackerBuildCheckCli',         'Controller/TrackerBuildCheckCli.php' );
         $this->registerAction( 'base.jobsCli',                       'OWA\\Module\\Base\\Controller\\JobsCli',                      'Controller/JobsCli.php' );
         $this->registerAction( 'base.jobsRetryCli',                  'OWA\\Module\\Base\\Controller\\JobsRetryCli',                 'Controller/JobsRetryCli.php' );
         $this->registerAction( 'base.jobsForgetCli',                 'OWA\\Module\\Base\\Controller\\JobsForgetCli',                'Controller/JobsForgetCli.php' );
@@ -443,6 +444,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('jobs-forget', 'base.jobsForgetCli');
         $this->registerCliCommand('jobs-prune', 'base.jobsPruneCli');
         $this->registerCliCommand('publish-trackers', 'base.trackerPublishCli');
+        $this->registerCliCommand('tracker-build-check', 'base.trackerBuildCheckCli');
         $this->registerCliCommand('custom-dimension-list', 'base.customDimensionListCli');
         $this->registerCliCommand('custom-dimension-apply', 'base.customDimensionApplyCli');
         $this->registerCliCommand('custom-dimension-register', 'base.customDimensionRegisterCli');
@@ -563,14 +565,18 @@ class Module extends \OWA\Core\Module {
             \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array() );
 
         /*
-         * Profiles' tracking bundles (PLAN 2.24.5), EVERY MINUTE: how long a saved
-         * tag setting, a new Profile or an OWA update takes to reach visitors.
-         * A run with nothing to do reads one line of each bundle; saving a
-         * setting writes no file -- no web request writes under public/.
+         * Profiles' tracking bundles (PLAN 2.30.7). A save publishes its own:
+         * a Profile's at once, anything wider as a queued publish-trackers job.
+         * What is left is a new build, checked every minute without the
+         * database, and anything nothing announced -- a config-file
+         * constant, a Profile deleted from the shell -- which the daily full
+         * run catches.
          */
+        $this->registerJob( 'tracker-build-check', 'tracker-build-check', '* * * * *', array() );
+
         $this->registerJob(
             'publish-trackers', 'publish-trackers',
-            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'publish-trackers' ), 1 ), array() );
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'publish-trackers' ) ), array() );
 
         /*
          * Putting registered custom-dimension columns on the cubes.
@@ -1097,6 +1103,8 @@ class Module extends \OWA\Core\Module {
 
         // install complete handler
         $this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
+        // Install-level tag settings saved: every Profile's bundle may change.
+        $this->registerEventHandler('base.install_settings_saved', $this, 'tagSettingsSavedHandler');
         // User management
         $this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
     }
@@ -1169,6 +1177,30 @@ class Module extends \OWA\Core\Module {
                 'migration_progress')
             );
 
+    }
+
+    /**
+     * Queue one publish of every bundle when a save at install level touched
+     * a tag setting -- Base's or an active module's, anything in a
+     * `tracking_tag` fieldset (PLAN 2.30.7).
+     */
+    function tagSettingsSavedHandler( $event ) {
+
+        $module = (string) $event->get( 'module' );
+        $keys   = (array) $event->get( 'keys' );
+
+        foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
+
+            if ( ( $set['module'] ?? '' ) === $module
+                 && array_intersect( $keys, (array) ( $set['settings'] ?? array() ) ) ) {
+
+                \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
+
+                break;
+            }
+        }
+
+        return OWA_EHS_EVENT_HANDLED;
     }
 
     function installCompleteHandler($event) {

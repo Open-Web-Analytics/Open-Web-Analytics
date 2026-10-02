@@ -9,10 +9,12 @@ namespace OWA\Module\Base\Controller;
  *   cli.php cmd=publish-trackers force=1       every bundle
  *   cli.php cmd=publish-trackers site=<id>     one Profile's
  *
- * Run every minute by the scheduler, so a saved setting, a new Profile and an
- * OWA update reach visitors within a minute. A bundle is current when its first
- * line matches what it would be written with now, so a run with nothing to do
- * reads one line per Profile.
+ * What starts it (PLAN 2.30.7): a Profile's save publishes that Profile at
+ * once; a change above one Profile queues one run of this on the job queue;
+ * tracker-build-check runs it when a new build lands; and the scheduler runs
+ * it daily for anything else -- a config-file constant, a Profile deleted from
+ * the shell. A bundle is current when its first line matches what it would be
+ * written with now, so a run with nothing to do reads one line per Profile.
  *
  * After anything is published, and otherwise once a day, it fetches one bundle
  * and reads back the cache header it is served with.

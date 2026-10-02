@@ -20,6 +20,7 @@ final class TrackerBundleTest extends TestCase
 
     private string $dist;
     private string $out;
+    private ?string $suiteOut = null;
 
     protected function setUp(): void
     {
@@ -30,6 +31,8 @@ final class TrackerBundleTest extends TestCase
 
         $this->build('/*core*/', '/*chunk*/');
 
+        $this->suiteOut = TrackerBundle::$outDir;
+
         TrackerBundle::$distDir = $this->dist;
         TrackerBundle::$outDir  = $this->out;
     }
@@ -37,7 +40,7 @@ final class TrackerBundleTest extends TestCase
     protected function tearDown(): void
     {
         TrackerBundle::$distDir = null;
-        TrackerBundle::$outDir  = null;
+        TrackerBundle::$outDir  = $this->suiteOut;
 
         if (owa_test_db_available()) {
             foreach (array('tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments') as $key) {
@@ -315,5 +318,125 @@ final class TrackerBundleTest extends TestCase
     {
         $this->assertSame(array('q', 's', 'term'), TrackerBundle::listOf(' q, s,, term ,'));
         $this->assertSame(array(), TrackerBundle::listOf(''));
+    }
+
+    // ---------------------------------------------------------------------
+    // What starts a publish (PLAN 2.30.7)
+    // ---------------------------------------------------------------------
+
+    /** A new build is seen from the bundles' own first lines, without the database. */
+    public function testANewBuildIsSeenFromTheBundlesThemselves(): void
+    {
+        $this->assertTrue(TrackerBundle::buildIsPublished(), 'no bundles: nothing is stale');
+
+        TrackerBundle::publish(self::SITE);
+        file_put_contents($this->out . 'not-a-bundle.js', "// someone else's file\n");
+        $this->assertTrue(TrackerBundle::buildIsPublished(), 'a file this class did not write is not read as a bundle');
+
+        $this->build('/*core v2*/', '/*chunk*/');
+        $this->assertFalse(TrackerBundle::buildIsPublished(), 'a new build');
+
+        TrackerBundle::publishStale(false, array(self::SITE));
+        $this->assertTrue(TrackerBundle::buildIsPublished());
+        $this->assertFileDoesNotExist($this->out . '.build', 'no marker file');
+    }
+
+    public function testWithoutABuildThereIsNothingToPublish(): void
+    {
+        TrackerBundle::publish(self::SITE);
+        unlink($this->dist . 'owa.tracker.manifest.json');
+
+        $this->assertTrue(TrackerBundle::buildIsPublished());
+    }
+
+    public function testRemoveTakesDownOneBundle(): void
+    {
+        TrackerBundle::publish(self::SITE);
+
+        $this->assertTrue(TrackerBundle::remove(self::SITE));
+        $this->assertFileDoesNotExist($this->out . self::SITE . '.js');
+        $this->assertFalse(TrackerBundle::remove(self::SITE), 'nothing left to remove');
+    }
+
+    /** @return string the scratch job table, set for this test */
+    private function scratchJobQueue(): string
+    {
+        $this->requireDb();
+
+        $table = 'owa_job_queue_phpunit_bundles';
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query('DROP TABLE IF EXISTS ' . $table);
+        $db->query('CREATE TABLE ' . $table . ' LIKE owa_job_queue');
+        \OWA\Module\Base\Classes\JobQueue::$table = $table;
+
+        return $table;
+    }
+
+    private function dropScratchJobQueue(string $table): void
+    {
+        \OWA\Module\Base\Classes\JobQueue::$table = null;
+        \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . $table);
+    }
+
+    /** A Profile's save publishes it now; one that cannot be written now is queued, not left. */
+    public function testPublishNowQueuesWhatItCannotWrite(): void
+    {
+        $table = $this->scratchJobQueue();
+
+        try {
+            $this->assertTrue(TrackerBundle::publishNow(self::SITE));
+            $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers'));
+
+            unlink($this->dist . 'owa.tracker.manifest.json');
+
+            $this->assertFalse(TrackerBundle::publishNow(self::SITE));
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . self::SITE));
+
+            $job = \OWA\Module\Base\Classes\JobQueue::listJobs('pending')[0];
+            $this->assertSame(array('site' => self::SITE), json_decode($job['params'], true));
+        } finally {
+            $this->dropScratchJobQueue($table);
+        }
+    }
+
+    /** A change above one Profile is one queued run, however many saves. */
+    public function testWiderChangesQueueOneFullPublish(): void
+    {
+        $table = $this->scratchJobQueue();
+
+        try {
+            $first = TrackerBundle::scheduleFullPublish();
+            $this->assertNotFalse($first);
+            $this->assertSame($first, TrackerBundle::scheduleFullPublish());
+            $this->assertCount(1, \OWA\Module\Base\Classes\JobQueue::listJobs('pending'));
+        } finally {
+            $this->dropScratchJobQueue($table);
+        }
+    }
+
+    /** An install-level save queues a publish when it touched a tag setting, and not otherwise. */
+    public function testAnInstallLevelTagSettingSaveQueuesAFullPublish(): void
+    {
+        $table = $this->scratchJobQueue();
+        $base  = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $d     = \OWA\Core\CoreAPI::getEventDispatch();
+        $saved = function (string $module, array $keys) use ($d) {
+            $e = $d->makeEvent('base.install_settings_saved');
+            $e->set('module', $module);
+            $e->set('keys', $keys);
+            return $e;
+        };
+
+        try {
+            $base->tagSettingsSavedHandler($saved('base', array('announce_visitors')));
+            $base->tagSettingsSavedHandler($saved('domstream', array('tracker_clicks')));
+            $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers'),
+                'not a tag setting, or not that module\'s');
+
+            $base->tagSettingsSavedHandler($saved('base', array('announce_visitors', 'tracker_clicks')));
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
+        } finally {
+            $this->dropScratchJobQueue($table);
+        }
     }
 }

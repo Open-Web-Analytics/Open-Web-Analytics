@@ -1153,7 +1153,10 @@ abstract class Module {
 	
 		$ret = \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', true );
         \OWA\Core\CoreAPI::notice("Module $this->name activated");
-        
+
+        // A module may add to every Profile's tracking bundle (PLAN 2.30.7).
+        \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
+
         return $ret;
     }
 
@@ -1167,6 +1170,9 @@ abstract class Module {
         if ($this->name != 'base') {
 
             \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', false );
+
+            // And what it added to them goes.
+            \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
     	}
     }
 

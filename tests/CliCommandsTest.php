@@ -55,6 +55,7 @@ final class CliCommandsTest extends CliControllerTestCase
             'drain-tracker-ingest'       => ['drain-tracker-ingest',       'base.drainTrackerIngestCli'],
             'tracker-ingest-replay'      => ['tracker-ingest-replay',      'base.trackerIngestReplayCli'],
             'tracker-ingest-provision'   => ['tracker-ingest-provision',   'base.trackerIngestProvisionCli'],
+            'tracker-build-check'        => ['tracker-build-check',        'base.trackerBuildCheckCli'],
             'install'                    => ['install',                    'base.installCli'],
             'activate'                   => ['activate',                   'base.moduleActivateCli'],
             'deactivate'                 => ['deactivate',                 'base.moduleDeactivateCli'],

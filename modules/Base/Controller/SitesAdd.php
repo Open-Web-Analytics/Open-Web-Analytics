@@ -77,6 +77,12 @@ class SitesAdd extends \OWA\Core\AdminController {
         if ( $site ) {
 	        
 	    	\OWA\Core\CoreAPI::debug( "Site added successfully. site_id: " . $site->get('site_id') );
+
+            // A web Profile's bundle is there when its snippet is first pasted (PLAN 2.30.7).
+            if ( $site->get( 'stream_type' ) === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
+
+                \OWA\Module\Base\Classes\TrackerBundle::publishNow( (string) $site->get( 'site_id' ) );
+            }
         }
         
         $this->set( 'site', $site->_getProperties() );

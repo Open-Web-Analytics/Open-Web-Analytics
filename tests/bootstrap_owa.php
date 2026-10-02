@@ -40,6 +40,19 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
     ]);
 
     owa_test_pause_scheduler();
+
+    /*
+     * Tracking bundles go to a directory of the suite's own. Creating a
+     * Profile or saving its tag settings publishes its bundle (PLAN 2.30.7),
+     * and a test doing either would otherwise leave files under the
+     * install's public/tracker/ for Profiles it then deletes.
+     */
+    if (defined('PHPUNIT_COMPOSER_INSTALL')) {
+        \OWA\Module\Base\Classes\TrackerBundle::$outDir = sys_get_temp_dir() . '/owa-test-bundles-' . getmypid() . '/';
+        register_shutdown_function(static function () {
+            exec('rm -rf ' . escapeshellarg(sys_get_temp_dir() . '/owa-test-bundles-' . getmypid()));
+        });
+    }
 }
 
 /**
