@@ -106,12 +106,15 @@ class Module extends \OWA\Core\Module {
         $this->registerImplementation('event_queue_types', 'database', \OWA\Module\Base\Classes\DbEventQueue::class, 'Classes/DbEventQueue.php');
         $this->registerImplementation('event_queue_types', 'http', \OWA\Module\Base\Classes\HttpEventQueue::class, 'Classes/HttpEventQueue.php');
         
-        // register named queues
-        $this->registerEventQueue( 'incoming_tracking_events', array(
+        /*
+         * The tracking intake (PLAN 2.30.3). Its type is written here and
+         * tracker_ingest_queue_type is the only plug: a type a module registers
+         * serves its own queues, and the setting points this one at it.
+         */
+        $this->registerEventQueue( \OWA\Module\Base\Classes\TrackerIngest::QUEUE, array(
 
-            'queue_type'            =>     'file',
-            'path'                    =>    \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir'),
-            'rotation_interval'        => 3600
+            'queue_type' => 'file',
+            'path'       => \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ),
         ));
 
         $this->registerEventQueue( 'processing', array(
@@ -337,6 +340,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.passwordResetForm',             'OWA\\Module\\Base\\Controller\\PasswordResetForm',            'Controller/PasswordResetForm.php' );
         $this->registerAction( 'base.passwordResetRequest',          'OWA\\Module\\Base\\Controller\\PasswordResetRequest',         'Controller/PasswordResetRequest.php' );
         $this->registerAction( 'base.processEvent',                  'OWA\\Module\\Base\\Controller\\ProcessEvent',                 'Controller/ProcessEvent.php' );
+        $this->registerAction( 'base.drainTrackerIngestCli',         'OWA\\Module\\Base\\Controller\\DrainTrackerIngestCli',        'Controller/DrainTrackerIngestCli.php' );
         $this->registerAction( 'base.processEventQueue',             'OWA\\Module\\Base\\Controller\\ProcessEventQueue',            'Controller/ProcessEventQueue.php' );
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
@@ -427,6 +431,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');
         $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
         $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
+        $this->registerCliCommand('drain-tracker-ingest', 'base.drainTrackerIngestCli');
         $this->registerCliCommand('install', 'base.installCli');
         $this->registerCliCommand('activate', 'base.moduleActivateCli');
         $this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
@@ -529,6 +534,14 @@ class Module extends \OWA\Core\Module {
         $this->registerJob(
             'rotate-partitions', 'partition-rotate',
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array() );
+
+        /*
+         * The tracking intake's drain (PLAN 2.30.4), every minute. A minute
+         * with nothing queued costs a few stat() calls (isProbablyEmpty()).
+         * With tracker_ingest_drain = external it refuses, and whatever
+         * consumes the module's backend ingests instead.
+         */
+        $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', array( 'scheduled' => 1 ) );
 
         // Finished one-off jobs (PLAN 2.30.5): done after 7 days, failed after 30.
         $this->registerJob(

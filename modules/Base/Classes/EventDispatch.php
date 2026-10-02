@@ -334,8 +334,12 @@ class EventDispatch {
 
         if ( in_array( OWA_EHS_EVENT_FAILED, $responses, true ) ) {
             \OWA\Core\CoreAPI::debug("EHS: Event was not handled successfully by some handlers.");
-            $q = $this->getEventQueue( 'processing' );
-            $q->sendMessage( $event );
+            /*
+             * Marked, not re-queued (PLAN 2.30.6). Whoever raised the event
+             * decides what a failure means: a tracking event goes back to the
+             * tracker-ingest intake to be retried (Classes\TrackerIngest).
+             */
+            $event->setStatusAsFailed();
             return OWA_EHS_EVENT_FAILED;
         } else {
             $event->setStatusAsHandled();

@@ -145,9 +145,11 @@ final class ScheduleCliTest extends CliControllerTestCase
         // is a full table rebuild, past every request timeout there is -- and
         // publish-trackers because no web request writes a Profile's tracking
         // bundle under public/ (PLAN 2.24.5). prune-job-queue deletes
-        // finished one-off jobs, which nothing else would (PLAN 2.30.5).
+        // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
+        // drain-tracker-ingest is the only thing that ingests a queued beacon
+        // (PLAN 2.30.4).
         $this->assertSame(
-            ['rotate-partitions', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
     }

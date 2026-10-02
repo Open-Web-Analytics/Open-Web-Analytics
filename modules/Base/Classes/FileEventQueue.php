@@ -1,7 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-
 //
 // Open Web Analytics - An Open Source Web Analytics Framework
 //
@@ -15,386 +14,605 @@ namespace OWA\Module\Base\Classes;
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// $Id$
-//
-
-
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Formatter\LineFormatter;
 
 /**
- * File based Event Queue Implementation
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
+ * The file-backed tracking intake (PLAN 2.30.3), and the default one.
+ *
+ * Under the queue's directory (async_log_dir):
+ *
+ *   events.txt     what log.php appends to, one JSON line per beacon
+ *   unprocessed/   batches rotated out of events.txt, oldest name first
+ *   processing/    a batch a consumer holds, and its .state sidecar
+ *   delayed/       released messages, one file per due minute
+ *   dead/          dead letters, one file per day
+ *   archive/       finished batches, when archive_old_events is on
+ *
+ * A LINE is {"r": times received before, "e": envelope}.
+ *
+ * WRITERS append under flock(LOCK_EX) and, holding it, check that the file
+ * they opened is still the one at that path. A consumer rotates by renaming
+ * the file and then taking the same lock, which waits out any writer
+ * mid-line; a writer that opened the old file and locks after the rename sees
+ * a different inode and writes to the new one. No line is lost to a rotation
+ * and none is read half-written.
+ *
+ * VISIBILITY IS A LOCK. A consumer claims a batch by renaming it into
+ * processing/ and holding flock(LOCK_EX | LOCK_NB) on it for as long as this
+ * object lives, so the visibility argument to receive() is not needed: a
+ * consumer that dies releases its lock with its process, and the next one
+ * claims the batch again from the last point everything before was settled.
+ * The .state sidecar records that point, how far the batch had been handed
+ * out, and how many times it has been claimed, which is what a receive count
+ * is made from.
+ *
+ * No Monolog, no PID file, and no shelling out to ps to check one.
  */
+class FileEventQueue implements \OWA\Core\IntakeQueue {
 
-class FileEventQueue extends \OWA\Core\EventQueue {
+    /** @var string */
+    var $queue_name = 'tracker-ingest';
 
-    var $queue;
+    /** @var string the queue's directory, with a trailing slash */
     var $queue_dir;
+
     var $event_file;
-    var $date_format;
     var $unprocessed_path;
+    var $processing_path;
+    var $delayed_path;
+    var $dead_path;
     var $archive_path;
-    var $rotation_size;
-    var $lock_file;
-    var $rotation_interval = 3600;
-    var $currentProcessingFileHandle;
+
+    /** @var resource|null the batch this consumer holds */
+    private $handle;
+
+    /** @var string|null its path */
+    private $batch;
+
+    /** @var array its .state: claims, settled (byte offset), delivered (byte offset) */
+    private $state;
+
+    /** @var int how far the batch had been handed out before this claim */
+    private $delivered_before = 0;
+
+    /** @var array<int,int> offset => end of each message received and not yet settled */
+    private $outstanding = array();
+
+    /** @var bool the batch has been read to its end */
+    private $at_end = false;
 
     function __construct( $map = array() ) {
 
-        parent::__construct( $map );
+        if ( isset( $map['queue_name'] ) ) {
 
-        // set event file
-        if ( ! isset( $map['path'] ) ) {
-            $this->queue_dir = \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir');
-        } else {
-            $this->queue_dir = $map['path'];
-
+            $this->queue_name = (string) $map['queue_name'];
         }
 
-        // set directory where unprocessed, rotated files reside
-        if ( ! isset( $map['unprocessed_path'] ) ) {
+        $dir = isset( $map['path'] ) && $map['path'] !== ''
+            ? $map['path'] : \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' );
 
-            $this->unprocessed_path = $this->queue_dir . 'unprocessed/';
+        $this->queue_dir        = rtrim( (string) $dir, '/' ) . '/';
+        $this->event_file       = $this->queue_dir . 'events.txt';
+        $this->unprocessed_path = $this->queue_dir . 'unprocessed/';
+        $this->processing_path  = $this->queue_dir . 'processing/';
+        $this->delayed_path     = $this->queue_dir . 'delayed/';
+        $this->dead_path        = $this->queue_dir . 'dead/';
+        $this->archive_path     = $this->queue_dir . 'archive/';
 
-        } else {
-            $this->unprocessed_path = $map['unprocessed_path'];
-        }
+        foreach ( array( $this->queue_dir, $this->unprocessed_path, $this->processing_path,
+                         $this->delayed_path, $this->dead_path, $this->archive_path ) as $d ) {
 
-        // test or make dir
-        if ( ! is_dir( $this->unprocessed_path ) && ! mkdir( $this->unprocessed_path, 0755 ) ) {
+            if ( ! is_dir( $d ) && ! @mkdir( $d, 0755, true ) && ! is_dir( $d ) ) {
 
-            throw new \Exception("Cannot make unprocessed directory.");
-        }
-
-        // set directory where processed files will be archived.
-        if ( ! isset( $map['archive_path'] ) ) {
-            $this->archive_path = $this->queue_dir . 'archive/';
-        } else {
-            $this->archive_path = $map['archive_path'];
-        }
-
-        // test or make dir
-        if ( ! is_dir( $this->archive_path ) && ! mkdir( $this->archive_path, 0755 ) ) {
-
-            throw new \Exception("Cannot make archive directory.");
-        }
-
-        if ( ! isset( $map['date_format'] ) ) {
-            $this->date_format = "Y-m-d-H-is";
-        }
-
-        if ( isset( $map['rotation_interval'] ) ) {
-            $this->rotation_interval = $map['rotation_interval'];
-        }
-
-        $this->event_file = $this->queue_dir. 'events.txt';
-        $this->lock_file = $this->queue_dir.'lock.txt';
-
-        return parent::__construct( $map );
-    }
-
-    function makeQueue() {
-
-        //make file queue
-        //$conf = array('mode' => 0600, 'timeFormat' => '%X %x');
-        
-        //$this->queue = Log::singleton('file', $this->event_file, $this->queue_name, $conf);
-        //$this->queue->_lineFormat = '%1$s|*|%2$s|*|[%3$s]|*|%4$s';
-        // not sure why this is needed but it is.
-        //$this->queue->_filename    = $this->event_file;
-        
-        
-        
-        //////
-        $this->queue = new Logger( $this->queue_name );
-        
-        $pid = getmypid();
-        $dt = "H:i:s Y-m-d";
-        $template = "%datetime%|*|$this->queue_name|*|$pid|*|%message%\n";
-        
-        $formatter = new LineFormatter($template, $dt, true, true);
-        
-        $stream = new StreamHandler( $this->event_file, Logger::NOTICE );
-        
-		$stream->setFormatter($formatter);
-		
-		// add stream handler to logger
-		$this->queue->pushHandler($stream);
-        
-        
-        
-        
-    }
-
-    function openFile( $file ) {
-
-        // check to see if event log file exisits
-        if ( file_exists( $file ) && is_readable( $file ) ) {
-            //create lock file
-            $this->create_lock_file();
-            return @fopen($file, "r");
-        } else {
-            throw new \Exception("Cannot open queue file at ".$file);
+                throw new \Exception( "Cannot make queue directory $d." );
+            }
         }
     }
 
-    function closeFile( $handle ) {
+    function __destruct() {
 
-        fclose( $handle );
+        $this->letGo();
     }
 
-    function isLocked() {
+    // ---------------------------------------------------------------------
+    // The contract
+    // ---------------------------------------------------------------------
 
-        if ( file_exists( $this->lock_file ) ) {
-            //read contents of lock file for last PID
-            $lock = fopen( $this->lock_file, "r" ) or die ("Could not read lock file");
-            if ($lock) {
-                while (!feof($lock)) {
-                    $former_pid = fgets($lock, 4096);
-                }
-                fclose($lock);
+    public function send( array $envelope, $delay = 0 ) {
+
+        $line = self::encodeLine( 0, $envelope );
+
+        if ( $line === null ) {
+
+            return false;
+        }
+
+        $delay = (int) $delay;
+
+        return $delay > 0
+            ? $this->append( $this->delayedFile( time() + $delay ), $line )
+            : $this->append( $this->event_file, $line );
+    }
+
+    public function receive( $max, $visibility = 0 ) {
+
+        $max      = max( 1, (int) $max );
+        $messages = array();
+
+        $this->promoteDue();
+        $this->rotate();
+
+        while ( count( $messages ) < $max ) {
+
+            if ( ! $this->handle && ! $this->claimNext() ) {
+
+                break;
             }
 
-            //check to see if former process is still running
-            $ps_check = $this->isRunning($former_pid);
-            //if the process is still running, exit.
-            if ($ps_check) {
-                \OWA\Core\CoreAPI::notice(sprintf('Previous Process (%d) still active. Terminating Run.', $former_pid));
-                return true;
-            //if it's not running remove the lock file and proceead.
-            } else {
-                \OWA\Core\CoreAPI::debug(sprintf('Process %d is no longer running. Deleting old Lock file. \n', $former_pid));
-                unlink ($this->lock_file);
+            $offset = ftell( $this->handle );
+            $line   = fgets( $this->handle );
+
+            if ( $line === false ) {
+
+                $this->at_end = true;
+
+                if ( $this->outstanding ) {
+
+                    // The rest of this batch is in someone's hands: settle first.
+                    break;
+                }
+
+                $this->finishBatch();
+
+                continue;
+            }
+
+            $end = ftell( $this->handle );
+
+            if ( trim( $line ) === '' ) {
+
+                continue;
+            }
+
+            [ $before, $envelope ] = self::decodeLine( $line );
+
+            // Handed out by a consumer that died: received once more for each claim since.
+            $redelivered = $offset < $this->delivered_before ? max( 0, $this->state['claims'] - 1 ) : 0;
+
+            $this->outstanding[ $offset ] = $end;
+
+            $messages[] = new \OWA\Core\IntakeMessage(
+                array( 'batch' => $this->batch, 'offset' => $offset, 'end' => $end ),
+                $envelope, $before + 1 + $redelivered, rtrim( $line, "\n" ) );
+        }
+
+        if ( $this->handle ) {
+
+            $this->state['delivered'] = max( (int) $this->state['delivered'], (int) ftell( $this->handle ) );
+            $this->writeState();
+        }
+
+        return $messages;
+    }
+
+    public function ack( \OWA\Core\IntakeMessage $message ) {
+
+        return $this->settle( $message );
+    }
+
+    public function release( \OWA\Core\IntakeMessage $message, $delay ) {
+
+        $ok = $message->envelope === null ? false
+            : $this->append( $this->delayedFile( time() + max( 0, (int) $delay ) ),
+                             self::encodeLine( $message->receive_count, $message->envelope ) );
+
+        if ( ! $ok ) {
+
+            // Not written anywhere: leave it outstanding so it is delivered again.
+            return false;
+        }
+
+        return $this->settle( $message );
+    }
+
+    public function deadLetter( \OWA\Core\IntakeMessage $message, $reason ) {
+
+        $letter = array(
+            'at'     => time(),
+            'reason' => (string) $reason,
+            'r'      => $message->receive_count,
+        );
+
+        if ( $message->envelope !== null ) {
+
+            $letter['e'] = $message->envelope;
+
+        } else {
+
+            $letter['raw'] = $message->raw;
+        }
+
+        $line = json_encode( $letter, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+
+        if ( $line === false || ! $this->append( $this->dead_path . date( 'Y-m-d' ) . '.txt', $line ) ) {
+
+            return false;
+        }
+
+        return $this->settle( $message );
+    }
+
+    public function isProbablyEmpty() {
+
+        clearstatcache();
+
+        if ( is_file( $this->event_file ) && filesize( $this->event_file ) > 0 ) {
+
+            return false;
+        }
+
+        if ( self::files( $this->unprocessed_path ) || self::files( $this->processing_path, '.txt' ) ) {
+
+            return false;
+        }
+
+        foreach ( self::files( $this->delayed_path ) as $name ) {
+
+            if ( (int) $name <= time() ) {
+
                 return false;
             }
-
-        } else {
-            return false;
         }
+
+        return true;
     }
 
-    function isRunning($pid) {
+    // ---------------------------------------------------------------------
+    // Housekeeping
+    // ---------------------------------------------------------------------
 
-        $process_state = '';
-      
-           exec("ps $pid", $process_state);
-           //print $pid;
-           //print_r($process_state);
-   
-        if (count($process_state) >= 2) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    function sendMessage($event) {
-
-        if ( ! $this->queue ) {
-	        
-            $this->makeQueue();
-        }
-
-        $this->queue->notice( urlencode( serialize( $event ) ) );
-    }
-
-
-    function receiveMessage() {
-        \OWA\Core\CoreAPI::notice("receive event.");
-        $qfile = $this->getNextUnprocessedQueueFile();
-
-        if ( ! $this->currentProcessingFileHandle ) {
-
-            if ( $qfile ) {
-                // set current processing file handle to
-                \OWA\Core\CoreAPI::notice("Opening queue file $qfile to process.");
-
-                $this->currentProcessingFileHandle = $this->openFile( $qfile );
-            } else {
-
-                \OWA\Core\CoreAPI::notice('No queue file to process.');
-                return false;
-            }
-        }
-
-        if ( $this->currentProcessingFileHandle ) {
-
-            $buffer = fgets( $this->currentProcessingFileHandle );
-
-            if ( ! feof( $this->currentProcessingFileHandle ) ) {
-
-                // Parse the row
-                \OWA\Core\CoreAPI::debug( 'returning buffer:', $buffer );
-               
-                $event = $this->parse_log_row( $buffer );
-                //owa_coreAPI::debug('returning event: '. print_r( $event, true));
-
-                if ( ! $event ) {
-
-                    // One unreadable row must not strand the rest of the file,
-                    // nor the files queued after it. The handle has already moved
-                    // past this row, so this advances rather than repeating.
-                    return $this->receiveMessage();
-                }
-
-                $event->wasReceived();
-                return $event;
-
-            } else {
-                // if it is the end of file then, close, archive and move onto the next file.
-                \OWA\Core\CoreAPI::notice('EOF reached.');
-                $this->closeFile( $this->currentProcessingFileHandle );
-                $this->currentProcessingFileHandle = '';
-
-                if ( \OWA\Core\CoreAPI::getSetting( 'base', 'archive_old_events' ) ) {
-
-                    $this->archiveProcessedFile( $qfile );
-
-                } else {
-
-                    $this->deleteFile( $qfile );
-                }
-
-                \OWA\Core\CoreAPI::notice('Moving on to next queue file.');
-
-                return $this->receiveMessage();
-
-            }
-
-        } else {
-            \OWA\Core\CoreAPI::notice('still no queue to process.');
-            return false;
-        }
-    }
-
-    function getNextUnprocessedQueueFile() {
-
-        // get a list of all unprocesed queue files
-        $qfiles = $this->getUnprocessedFileList();
-        \OWA\Core\CoreAPI::notice('queue files to process: '.print_r($qfiles, true));
-        // get earliest queue file based on creation time so we can process them in order
-        if ( $qfiles && is_array( $qfiles ) ) {
-
-            return array_shift( $qfiles );
-
-        } else {
-
-            return \OWA\Core\CoreAPI::notice('No unprocessed queue files to process.');
-        }
-    }
-
-    function getUnprocessedFileList() {
-
-        $files = array();
-
-        $this->rotateEventFile();
-
-        if ( is_dir( $this->unprocessed_path ) ) {
-            foreach ( new \DirectoryIterator( $this->unprocessed_path ) as $item ) {
-                if ( $item->isFile() && ! $item->isDot() ) {
-                    $files[ $item->getMTime() ] = $item->getPathname();
-                }
-            }
-
-            // sort by key ascending
-            ksort( $files );
-        }
-
-        return $files;
-    }
-
+    /**
+     * Delete archived batches and dead letters older than $interval seconds.
+     *
+     * @param  int $interval
+     * @return int how many files
+     */
     function pruneArchive( $interval ) {
 
-        if ( is_dir( $this->archive_path ) ) {
+        $removed = 0;
 
-            foreach ( new \DirectoryIterator( $this->archive_path ) as $item ) {
+        foreach ( array( $this->archive_path, $this->dead_path ) as $dir ) {
 
-                if ( $item->isFile() &&
-                    ! $item->isDot() &&
-                    $item->getMTime() < ( time() - $interval ) )
-                {
-                        \OWA\Core\CoreAPI::notice('about to unlink' . $item->getRealPath());
-                        $this->deleteFile( $item->getRealPath() );
+            foreach ( self::files( $dir ) as $name ) {
+
+                $path = $dir . $name;
+
+                if ( filemtime( $path ) < time() - (int) $interval && @unlink( $path ) ) {
+
+                    $removed++;
                 }
             }
         }
+
+        return $removed;
     }
 
-    function deleteFile( $path ) {
-	    
-		\OWA\Core\CoreAPI::debug('About to deleting file: ' . $path);
-        return unlink( $path );
-    }
+    /**
+     * Lines waiting, for diagnostics and tests: events.txt, the batches and
+     * the delayed files. Reads every file, so not for a hot path.
+     *
+     * @return int
+     */
+    function depth() {
 
-    function rotateEventFile() {
+        $n = 0;
 
-        if ( file_exists( $this->event_file ) ) {
+        foreach ( array_merge(
+            array( $this->event_file ),
+            array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path ) ),
+            array_map( fn ( $f ) => $this->processing_path . $f, self::files( $this->processing_path, '.txt' ) ),
+            array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path ) )
+        ) as $path ) {
 
-            // Create a new log file name
-            $new_file_path = sprintf("%s-eventfile-%s.txt", $this->unprocessed_path . $this->queue_name, date( $this->date_format ) );
-            $ret = \OWA\Core\Lib::moveFile( $this->event_file, $new_file_path );
+            if ( is_file( $path ) ) {
 
-            if ( $ret ) {
-                \OWA\Core\CoreAPI::debug('Rotated event file.');
-            } else {
-                \OWA\Core\CoreAPI::debug('Could not rotate event file.');
+                $n += count( array_filter( (array) file( $path ), fn ( $l ) => trim( $l ) !== '' ) );
             }
         }
+
+        return $n;
     }
 
-    function archiveProcessedFile( $file ) {
-		
-		\OWA\Core\CoreAPI::debug('Archiving file: ' . $file);
-        $new_file_path = $this->archive_path . basename( $file );
-        $ret = \OWA\Core\Lib::moveFile( $file, $new_file_path );
+    // ---------------------------------------------------------------------
+    // Lines
+    // ---------------------------------------------------------------------
+
+    /** @return string|null one line, without its newline */
+    private static function encodeLine( $received, array $envelope ) {
+
+        $json = json_encode( array( 'r' => (int) $received, 'e' => $envelope ),
+            JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+
+        return $json === false ? null : $json;
     }
 
+    /** @return array [ times received before, envelope or null ] */
+    private static function decodeLine( $line ) {
 
-    function parse_log_row( $row ) {
+        $row = json_decode( $line, true );
 
-        if ($row) {
-            $raw_event = explode("|*|", $row);
-            $row_array = array( 'timestamp' => $raw_event[0], 'event_obj' => $raw_event[3]);
-            // Same allowlist as the db queue -- a log file anyone can append to
-            // must not be able to name the class that gets instantiated here.
-            // A queue file is a log anyone with write access can append to, and
-            // a half-written row survives a crash, so a malformed blob is an
-            // expected input rather than an exceptional one. decodeBlob() keeps
-            // unserialize()'s diagnostics from escaping a routine drain; the
-            // failure is handled right below.
-            $event = self::decodeBlob( urldecode( $row_array['event_obj'] ) );
+        if ( ! is_array( $row ) || ! isset( $row['e'] ) || ! is_array( $row['e'] ) ) {
 
-            if ( ! self::isUsableEvent( $event ) ) {
+            return array( 0, null );
+        }
 
-                \OWA\Core\CoreAPI::notice(
-                    'Skipping a queue file row that did not decode to a usable event.'
-                );
+        return array( max( 0, (int) ( $row['r'] ?? 0 ) ), $row['e'] );
+    }
+
+    /**
+     * Append one line to $path, safe against a rotation renaming it.
+     *
+     * @return bool
+     */
+    private function append( $path, $line ) {
+
+        for ( $try = 0; $try < 5; $try++ ) {
+
+            $fh = @fopen( $path, 'a' );
+
+            if ( ! $fh ) {
+
+                \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot open $path for writing." );
 
                 return false;
             }
 
-            return $event;
+            flock( $fh, LOCK_EX );
+
+            clearstatcache( true, $path );
+            $mine = fstat( $fh );
+            $now  = @stat( $path );
+
+            if ( $now && $mine && $now['ino'] === $mine['ino'] && $now['dev'] === $mine['dev'] ) {
+
+                $ok = fwrite( $fh, $line . "\n" ) === strlen( $line ) + 1;
+                fflush( $fh );
+                flock( $fh, LOCK_UN );
+                fclose( $fh );
+
+                return $ok;
+            }
+
+            // Renamed between our open and our lock: write to the file now at $path.
+            flock( $fh, LOCK_UN );
+            fclose( $fh );
+        }
+
+        return false;
+    }
+
+    /** The delayed file for a due time: one per minute, named for when all of it is due. */
+    private function delayedFile( $due ) {
+
+        return $this->delayed_path . (string) ( (int) ceil( $due / 60 ) * 60 ) . '.txt';
+    }
+
+    // ---------------------------------------------------------------------
+    // Batches
+    // ---------------------------------------------------------------------
+
+    /** Move events.txt into unprocessed/, when it holds anything. */
+    private function rotate() {
+
+        clearstatcache( true, $this->event_file );
+
+        if ( is_file( $this->event_file ) && filesize( $this->event_file ) > 0 ) {
+
+            $this->moveIntoBatches( $this->event_file, 'events' );
         }
     }
 
-    function create_lock_file() {
+    /** Move delayed files that are due into unprocessed/. */
+    private function promoteDue() {
 
-        $lock_file = fopen($this->lock_file, "w+") or die ("Could not create lock file at: ".$this->lock_file);
+        foreach ( self::files( $this->delayed_path ) as $name ) {
 
-        // Write PID to lock file
-           if (fwrite($lock_file, getmypid()) === FALSE) {
-               \OWA\Core\CoreAPI::debug('Cannot write to lock file. Terminating Run.');
-               exit;
-           }
+            if ( (int) $name <= time() ) {
+
+                $this->moveIntoBatches( $this->delayed_path . $name, 'delayed-' . (int) $name );
+            }
+        }
+    }
+
+    /**
+     * Rename a written-to file into unprocessed/, then wait out any writer
+     * still holding its lock.
+     */
+    private function moveIntoBatches( $path, $label ) {
+
+        $target = sprintf( '%s%s-%s-%s-%s.txt', $this->unprocessed_path,
+            date( 'YmdHis' ), $label, getmypid(), bin2hex( random_bytes( 3 ) ) );
+
+        if ( ! @rename( $path, $target ) ) {
+
+            return;
+        }
+
+        $fh = @fopen( $target, 'r' );
+
+        if ( $fh ) {
+
+            flock( $fh, LOCK_EX );
+            flock( $fh, LOCK_UN );
+            fclose( $fh );
+        }
+    }
+
+    /**
+     * Hold the next batch: one a dead consumer left in processing/, else the
+     * oldest in unprocessed/.
+     *
+     * @return bool
+     */
+    private function claimNext() {
+
+        foreach ( self::files( $this->processing_path, '.txt' ) as $name ) {
+
+            if ( $this->hold( $this->processing_path . $name ) ) {
+
+                return true;
+            }
+        }
+
+        foreach ( self::files( $this->unprocessed_path ) as $name ) {
+
+            $target = $this->processing_path . $name;
+
+            if ( @rename( $this->unprocessed_path . $name, $target ) && $this->hold( $target ) ) {
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Lock a batch in processing/ and resume it where it was last settled. */
+    private function hold( $path ) {
+
+        $fh = @fopen( $path, 'r' );
+
+        if ( ! $fh ) {
+
+            return false;
+        }
+
+        if ( ! flock( $fh, LOCK_EX | LOCK_NB ) ) {
+
+            fclose( $fh );
+
+            return false;
+        }
+
+        $state = is_file( $path . '.state' ) ? json_decode( (string) file_get_contents( $path . '.state' ), true ) : null;
+        $state = is_array( $state ) ? $state : array();
+
+        $this->handle           = $fh;
+        $this->batch            = $path;
+        $this->outstanding      = array();
+        $this->at_end           = false;
+        $this->state            = array(
+            'claims'    => (int) ( $state['claims'] ?? 0 ) + 1,
+            'settled'   => (int) ( $state['settled'] ?? 0 ),
+            'delivered' => (int) ( $state['delivered'] ?? 0 ),
+        );
+        $this->delivered_before = $this->state['delivered'];
+
+        fseek( $fh, $this->state['settled'] );
+        $this->writeState();
+
+        return true;
+    }
+
+    /** One message is dealt with; a batch with nothing left is finished. */
+    private function settle( \OWA\Core\IntakeMessage $message ) {
+
+        $r = (array) $message->receipt;
+
+        if ( ( $r['batch'] ?? null ) !== $this->batch || ! isset( $this->outstanding[ $r['offset'] ] ) ) {
+
+            return false;
+        }
+
+        unset( $this->outstanding[ $r['offset'] ] );
+
+        $this->state['settled'] = $this->outstanding
+            ? min( array_keys( $this->outstanding ) )
+            : (int) ftell( $this->handle );
+
+        if ( $this->at_end && ! $this->outstanding ) {
+
+            $this->finishBatch();
+        }
+
+        return true;
+    }
+
+    /** Every line of the batch is settled: archive or delete it. */
+    private function finishBatch() {
+
+        $path = $this->batch;
+
+        flock( $this->handle, LOCK_UN );
+        fclose( $this->handle );
+
+        $this->handle = null;
+        $this->batch  = null;
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'archive_old_events' ) ) {
+
+            @rename( $path, $this->archive_path . basename( $path ) );
+
+        } else {
+
+            @unlink( $path );
+        }
+
+        @unlink( $path . '.state' );
+    }
+
+    /** Record where the batch is, and release it to the next consumer. */
+    private function letGo() {
+
+        if ( ! $this->handle ) {
+
+            return;
+        }
+
+        $this->writeState();
+        flock( $this->handle, LOCK_UN );
+        fclose( $this->handle );
+
+        $this->handle = null;
+        $this->batch  = null;
+    }
+
+    private function writeState() {
+
+        if ( $this->batch ) {
+
+            @file_put_contents( $this->batch . '.state', json_encode( $this->state ), LOCK_EX );
+        }
+    }
+
+    /**
+     * File names in a directory, sorted.
+     *
+     * @param  string      $dir
+     * @param  string|null $suffix  only names ending in it
+     * @return string[]
+     */
+    private static function files( $dir, $suffix = null ) {
+
+        $names = array();
+
+        foreach ( (array) @scandir( $dir ) as $name ) {
+
+            if ( $name === '.' || $name === '..' || ! is_file( $dir . $name ) ) {
+
+                continue;
+            }
+
+            if ( $suffix !== null && substr( $name, -strlen( $suffix ) ) !== $suffix ) {
+
+                continue;
+            }
+
+            $names[] = $name;
+        }
+
+        sort( $names, SORT_STRING );
+
+        return $names;
     }
 }
 

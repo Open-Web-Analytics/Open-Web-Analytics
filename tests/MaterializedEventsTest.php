@@ -175,6 +175,11 @@ final class MaterializedEventsTest extends IngestionTestCase
 
         self::$appendUnwritable = true;
 
+        // The retry goes to the tracker-ingest intake: a scratch one, so no drain sees it.
+        $dir = sys_get_temp_dir() . '/owa-rollback-intake-' . bin2hex(random_bytes(4)) . '/';
+        \OWA\Module\Base\Classes\TrackerIngest::$queue =
+            new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+
         $visitor = $this->uniqueGuid();
         $session = $this->uniqueSessionId();
 
@@ -206,25 +211,27 @@ final class MaterializedEventsTest extends IngestionTestCase
             $this->site, (int) $visitor, (int) $session));
 
         /*
-         * The failed handler puts the incoming event on the retry queue, under
-         * its current name -- logEvent() renamed the v1 spelling this fixture
-         * fires. Assert it went there, then remove it: a later drain, with the probe inert,
-         * would write the rows this test just proved were not written.
+         * The failed write is sent to the intake to be retried, as the beacon
+         * arrived (PLAN 2.30.3): one message, delayed by the first back-off step.
          */
-        $queued = (array) $db->get_results(sprintf(
-            "SELECT id FROM owa_queue_item WHERE event_type = 'page_view' "
-            . "AND status = 'unhandled' AND LOCATE('%d', event) > 0", (int) $visitor));
+        $intake = \OWA\Module\Base\Classes\TrackerIngest::$queue;
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
 
-        foreach ($queued as $item) {
-            $db->query(sprintf("DELETE FROM owa_queue_item WHERE id = '%s'",
-                $db->prepare((string) ((array) $item)['id'])));
-        }
+        $queued = array_merge(...array_map(
+            fn ($f) => array_map(fn ($l) => json_decode($l, true), file($f, FILE_IGNORE_NEW_LINES)),
+            glob($dir . 'delayed/*.txt') ?: [[]]));
+        $depth = $intake->depth();
+
+        unset($intake);
+        exec('rm -rf ' . escapeshellarg($dir));
 
         $this->assertSame([], $rows,
             'part of the set was written although one of its inserts failed');
 
-        $this->assertCount(1, $queued,
-            'a failed write is retried from the queue with the incoming event');
+        $this->assertSame(1, $depth, 'a failed write is queued once to be retried');
+        $this->assertCount(1, $queued, 'and waits out the back-off rather than retrying at once');
+        $this->assertSame((string) $visitor, (string) $queued[0]['e']['properties']['visitor_id'],
+            'the retry is the incoming event');
     }
 
     /**

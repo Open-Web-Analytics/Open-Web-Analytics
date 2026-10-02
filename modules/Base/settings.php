@@ -348,6 +348,15 @@ return array(
          * instead of the queue.
          */
         'queue_incoming_tracking_events' => array( 'storable' => true, 'autoload' => true ),
+
+        /*
+         * The tracking intake (PLAN 2.30.3). queue_tracker_ingest defaults to
+         * NULL, not false: null is "not set", which is when the 1.x names
+         * above are read (Classes\TrackerIngest::isQueued()).
+         */
+        'queue_tracker_ingest' => array( 'default' => null, 'storable' => true, 'autoload' => true ),
+        'tracker_ingest_queue_type' => array( 'default' => 'file' ),
+        'tracker_ingest_drain' => array( 'default' => 'scheduler' ),
         'queue_max_retry_age' => array( 'default' => 86400 ),
         'queue_max_retry_count' => array( 'default' => 25 ),
         'remote_event_queue_endpoint' => array( 'default' => '' ),

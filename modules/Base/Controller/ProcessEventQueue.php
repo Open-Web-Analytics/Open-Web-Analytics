@@ -47,7 +47,7 @@ class ProcessEventQueue extends \OWA\Core\Controller\Cli {
 
         } else {
 
-            $queues = 'incoming_tracking_events,processing';
+            $queues = 'processing';
         }
 
         \OWA\Core\CoreAPI::notice( "About to process event queues: $queues");
@@ -69,6 +69,13 @@ class ProcessEventQueue extends \OWA\Core\Controller\Cli {
         if ( $queues ) {
 
             foreach ( $queues as $queue_name ) {
+
+                if ( $queue_name === \OWA\Module\Base\Classes\TrackerIngest::QUEUE ) {
+
+                    \OWA\Core\CoreAPI::notice( 'The tracker-ingest intake is drained by cmd=drain-tracker-ingest.' );
+
+                    continue;
+                }
 
                 $q = \OWA\Core\CoreAPI::getEventQueue( $queue_name );
 

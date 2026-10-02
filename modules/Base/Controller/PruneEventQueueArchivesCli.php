@@ -47,7 +47,7 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
 
         } else {
 
-            $queues = 'incoming_tracking_events,processing';
+            $queues = 'tracker-ingest,processing';
         }
 
         if ( $this->getParam( 'interval' ) ) {
@@ -79,9 +79,18 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
 
                 \OWA\Core\CoreAPI::notice( "About to prune archive of event queue: $queue_name");
 
-                $q = \OWA\Core\CoreAPI::getEventQueue($queue_name);
+                // The intake is built from its setting, not its registration.
+                $q = $queue_name === \OWA\Module\Base\Classes\TrackerIngest::QUEUE
+                    ? \OWA\Module\Base\Classes\TrackerIngest::queue()
+                    : \OWA\Core\CoreAPI::getEventQueue($queue_name);
 
-                if ( $q->connect() ) {
+                if ( $q instanceof \OWA\Core\IntakeQueue ) {
+
+                    if ( method_exists( $q, 'pruneArchive' ) ) {
+                        $q->pruneArchive( $interval );
+                    }
+
+                } elseif ( $q->connect() ) {
                     $q->pruneArchive( $interval );
                 }
             }

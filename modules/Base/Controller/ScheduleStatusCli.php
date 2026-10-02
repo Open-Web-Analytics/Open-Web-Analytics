@@ -264,16 +264,16 @@ class ScheduleStatusCli extends SchedulerCli {
             count( $jobs ), $this->readable( $last_activity )
         );
 
-        // A hint about a job that could exist, rather than a report about one
-        // that does: queue processing is not shipped registered, because whether
-        // to drain at all depends on the installation.
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'queue_events' ) ) {
+        // Queued beacons are ingested only by drain-tracker-ingest, or by
+        // whatever consumes the queue when tracker_ingest_drain is external.
+        if ( \OWA\Module\Base\Classes\TrackerIngest::isQueued()
+             && ! \OWA\Module\Base\Classes\TrackerIngest::isDrainedExternally() ) {
 
             $drains = false;
 
             foreach ( $jobs as $job ) {
 
-                if ( stripos( $job['command'], 'queue' ) !== false ) {
+                if ( $job['command'] === 'drain-tracker-ingest' && ! $this->isDisabled( $job ) ) {
 
                     $drains = true;
                 }
@@ -281,8 +281,8 @@ class ScheduleStatusCli extends SchedulerCli {
 
             if ( ! $drains ) {
 
-                $lines[] = 'NOTE: event queueing is enabled but no job drains the queue. If nothing else '
-                         . 'processes it, add one -- see OWA_SCHEDULED_JOBS in owa-config.php.';
+                $lines[] = 'NOTE: beacons are queued (queue_tracker_ingest) but no job runs drain-tracker-ingest, '
+                         . 'so nothing ingests them. See OWA_SCHEDULED_JOBS in owa-config.php.';
             }
         }
 

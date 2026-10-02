@@ -140,6 +140,8 @@ class Event {
     const handled = 'handled';
     const unhandled = 'unhandled';
     const broken = 'broken';
+    /** A handler returned OWA_EHS_EVENT_FAILED: not ingested, worth retrying. */
+    const failed = 'failed';
 
     /**
      * Constructor
@@ -166,6 +168,11 @@ class Event {
     function setStatusAsBroken() {
 
         $this->status = self::broken;
+    }
+
+    function setStatusAsFailed() {
+
+        $this->status = self::failed;
     }
 
     function getTimestamp() {

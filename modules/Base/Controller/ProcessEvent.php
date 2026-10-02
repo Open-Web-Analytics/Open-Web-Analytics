@@ -165,7 +165,17 @@ class ProcessEvent extends \OWA\Core\Controller {
             $this->event = $this->eq->filter( 'post_processed_tracking_event', $this->event );
 
             \OWA\Core\CoreAPI::debug( 'Dispatching', $this->event );
-            $this->eq->notify( $this->event );
+
+            /*
+             * A failure is reported on the object the caller passed in, which
+             * the filters above may have replaced: the tracker-ingest intake
+             * reads it to decide on a retry (Classes\TrackerIngest::ingest()).
+             */
+            if ( $this->eq->notify( $this->event ) === OWA_EHS_EVENT_FAILED
+                 && is_object( $this->getParam( 'event' ) ) ) {
+
+                $this->getParam( 'event' )->setStatusAsFailed();
+            }
 
         } else {
 
