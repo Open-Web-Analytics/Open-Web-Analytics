@@ -3539,8 +3539,16 @@ ingest. It was <code>incoming_tracking_events</code>. Its on/off setting,
 the old name, some in <code>owa-config.php</code>, so the old name is still read when the new one is
 absent.</li>
 <li><strong>A JSON envelope, not a PHP object</strong>: <code>{v, type, properties, queued_at}</code>.
-Readable by another system, and nothing is unserialized. The file implementation is rewritten to the
-contract and keeps its lines, locks and rotation.</li>
+Readable by another system, and nothing is unserialized.</li>
+<li><strong>The file implementation</strong> keeps one line per beacon, now
+<code>{"r": times received, "e": envelope}</code>, and drops Monolog, the PID lock file and its
+<code>exec('ps')</code>. Writers append under <code>flock</code> and check, holding it, that the file
+is still the one at its path; the drain rotates <code>events.txt</code> by renaming it and taking the
+same lock, so no line is lost to a rotation or read half-written. A drain holds a batch with
+<code>flock(LOCK_NB)</code> for its lifetime: that lock is the visibility timeout, and a drain that dies
+releases it. A <code>.state</code> sidecar records how far the batch was settled and handed out, and
+how many times it was claimed, which is where a receive count comes from. Released messages wait in
+one file per due minute; dead letters in one file per day, pruned with the archive.</li>
 <li><strong>The producer</strong> is <code>log.php</code>&rsquo;s existing switch: queued mode sends
 every beacon; direct mode ingests, and a failed ingest write sends the beacon to the intake as a retry
 in either mode.</li>
@@ -3668,10 +3676,11 @@ their lines are serialized objects the v2 file queue does not read. The v1 migra
 <ol>
 <li><strong>Admin job queue</strong>: the table, <code>enqueueJob</code>, the drain in
 <code>schedule-run</code>, the health screen.</li>
-<li><strong>Intake contract</strong>: the interface, the JSON envelope, the file implementation
-rewritten to it, <code>tracker_ingest_queue_type</code>, the <code>drain-tracker-ingest</code> job and
-<code>tracker_ingest_drain</code>.</li>
-<li><strong>Ingest retry</strong> through the intake.</li>
+<li><strong>Intake contract and ingest retry</strong>, in one change: the interface, the JSON
+envelope, the file implementation rewritten to it, <code>tracker_ingest_queue_type</code>, the
+<code>drain-tracker-ingest</code> job and <code>tracker_ingest_drain</code>; and <code>notify()</code>
+marks a failed event instead of re-queueing it, which a drain that releases on failure needs, so a
+failed write is retried from the intake in both modes.</li>
 <li><strong>Remove</strong> <code>owa_queue_item</code> and its code.</li>
 <li><strong>Tracking bundles on the job queue</strong>: #1177&rsquo;s minutely check becomes a Profile
 save&rsquo;s synchronous publish, a job for wider changes, a build-hash check for new versions, and a
