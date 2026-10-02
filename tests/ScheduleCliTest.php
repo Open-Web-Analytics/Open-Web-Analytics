@@ -195,27 +195,27 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * A new release not yet applied leaves the schema as the jobs expect, so
-     * they run; a schema behind stops them (PLAN 2.30.7). Without the split,
-     * every deploy would pause the drain, the cube and the job queue until
-     * someone applied the update.
+     * A new tracker not yet applied leaves the schema as the jobs expect, so
+     * they run; a schema behind stops them (PLAN 2.30.7). Without the split, a
+     * release with a new tracker would pause the drain, the cube and the job
+     * queue until someone applied the update.
      */
     public function testOnlyASchemaBehindStopsTheJobs()
     {
         $s    = \OWA\Core\CoreAPI::serviceSingleton();
         $c    = \OWA\Core\CoreAPI::configSingleton();
         $base = $s->getModule('base');
-        $was  = array('version' => $c->get('base', 'code_version'), 'schema' => $c->get('base', 'schema_version'));
+        $was  = array('version' => $c->get('base', 'tracker_version'), 'schema' => $c->get('base', 'schema_version'));
 
         try {
-            $c->set('base', 'code_version', 'an-older-release');
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
             $this->assertFalse($base->isUpToDate());
-            $this->assertFalse($s->isSchemaUpdateRequired(), 'a release alone is not a schema behind');
+            $this->assertFalse($s->isSchemaUpdateRequired(), 'a new tracker alone is not a schema behind');
 
             $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
             $this->assertTrue($s->isSchemaUpdateRequired());
         } finally {
-            $c->set('base', 'code_version', $was['version']);
+            $c->set('base', 'tracker_version', $was['version']);
             $c->set('base', 'schema_version', $was['schema']);
         }
 

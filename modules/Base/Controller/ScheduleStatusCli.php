@@ -62,8 +62,8 @@ class ScheduleStatusCli extends SchedulerCli {
         if ( ! $pending && \OWA\Core\CoreAPI::isUpdateRequired() ) {
 
             $lines[] = '';
-            $lines[] = 'NOTE: this release has not been applied yet. Jobs still run; the admin screens wait for '
-                     . 'the update, and Profiles\' tracking bundles are from the last one. Apply it with cmd=update.';
+            $lines[] = 'NOTE: an update is pending that changes no schema -- a new tracker. Jobs still run; the admin '
+                     . 'screens wait for the update, and Profiles\' tracking bundles are from the last one. Apply it with cmd=update.';
         }
 
         // Any state row is proof the dispatcher has run at least once, because

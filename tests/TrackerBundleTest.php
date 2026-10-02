@@ -324,19 +324,30 @@ final class TrackerBundleTest extends TestCase
     // What starts a publish (PLAN 2.30.7)
     // ---------------------------------------------------------------------
 
+    /** The file the tracker build keeps, committed like a lock file: a version and the hash of what it was built from. */
+    public function testTheTrackerVersionFileIsTheBuildsLockFile(): void
+    {
+        $info = include dirname(__DIR__) . '/modules/Base/tracker-version.php';
+
+        $this->assertIsInt($info['version']);
+        $this->assertGreaterThanOrEqual(1, $info['version']);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $info['sources']);
+        $this->assertSame($info['version'], \OWA\Module\Base\Module::requiredTrackerVersion());
+    }
+
     /**
-     * Every release is applied with cmd=update (PLAN 2.30.7): a version other
-     * than the one that last updated is an update pending, and the update
-     * publishes every live Profile's bundle that is stale or missing -- which
-     * is how Profiles from 1.x, which have none, get theirs on the upgrade.
+     * A new tracker is an update (PLAN 2.30.7): a recorded tracker version
+     * lower than the build's is an update pending, and the update publishes
+     * every live Profile's bundle that is stale or missing -- which is how
+     * Profiles from 1.x, which have none, get theirs on the upgrade.
      */
-    public function testANewVersionIsAnUpdateThatRepublishesStaleBundles(): void
+    public function testANewTrackerIsAnUpdateThatRepublishesStaleBundles(): void
     {
         $this->requireDb();
 
         $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
         $c    = \OWA\Core\CoreAPI::configSingleton();
-        $was  = $c->get('base', 'code_version');
+        $was  = $c->get('base', 'tracker_version');
 
         // The install's own live Profiles, published into this test's directory.
         $live = TrackerBundle::siteIds();
@@ -354,15 +365,15 @@ final class TrackerBundleTest extends TestCase
             $this->build('/*core of the new release*/', '/*chunk*/');
             $this->assertFalse(TrackerBundle::isCurrent($live[0]), 'the new build makes it stale');
 
-            $c->set('base', 'code_version', 'an-older-release');
-            $this->assertFalse($base->isUpToDate(), 'another version is an update pending');
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $this->assertFalse($base->isUpToDate(), 'an older tracker is an update pending');
             $this->assertTrue($base->isSchemaCurrent(), 'and only that: the schema is current');
 
             // cmd=update: published in the run.
             \OWA\Module\Base\Module::$publish_inline = true;
             $this->assertTrue($base->update());
 
-            $this->assertSame((string) OWA_VERSION, (string) $c->get('base', 'code_version'));
+            $this->assertSame(\OWA\Module\Base\Module::requiredTrackerVersion(), (int) $c->get('base', 'tracker_version'));
             $this->assertTrue($base->isUpToDate());
 
             foreach ($live as $site_id) {
@@ -370,8 +381,8 @@ final class TrackerBundleTest extends TestCase
             }
         } finally {
             \OWA\Module\Base\Module::$publish_inline = null;
-            if ((string) $c->get('base', 'code_version') !== (string) $was) {
-                $c->set('base', 'code_version', $was);
+            if ($c->get('base', 'tracker_version') !== $was) {
+                $c->set('base', 'tracker_version', $was);
             }
         }
     }
@@ -382,11 +393,11 @@ final class TrackerBundleTest extends TestCase
         $table = $this->scratchJobQueue();
         $base  = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
         $c     = \OWA\Core\CoreAPI::configSingleton();
-        $was   = $c->get('base', 'code_version');
+        $was   = $c->get('base', 'tracker_version');
         $live  = TrackerBundle::siteIds();
 
         try {
-            $c->set('base', 'code_version', 'an-older-release');
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
             \OWA\Module\Base\Module::$publish_inline = false;
 
             $this->assertTrue($base->update());
@@ -395,12 +406,12 @@ final class TrackerBundleTest extends TestCase
             foreach ($live as $site_id) {
                 $this->assertFileDoesNotExist($this->out . $site_id . '.js', 'nothing written in the request');
             }
-            $this->assertSame((string) OWA_VERSION, (string) $c->get('base', 'code_version'), 'the update is still recorded');
+            $this->assertSame(\OWA\Module\Base\Module::requiredTrackerVersion(), (int) $c->get('base', 'tracker_version'), 'the update is still recorded');
         } finally {
             \OWA\Module\Base\Module::$publish_inline = null;
             $this->dropScratchJobQueue($table);
-            if ((string) $c->get('base', 'code_version') !== (string) $was) {
-                $c->set('base', 'code_version', $was);
+            if ($c->get('base', 'tracker_version') !== $was) {
+                $c->set('base', 'tracker_version', $was);
             }
         }
     }

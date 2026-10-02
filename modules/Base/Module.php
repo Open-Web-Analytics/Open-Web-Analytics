@@ -126,7 +126,7 @@ class Module extends \OWA\Core\Module {
             \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
         }
 
-        return $this->recordCodeVersion();
+        return $this->recordTrackerVersion();
     }
 
     /** @var bool|null whether update() publishes in the run; null to decide by OWA_CLI. TESTS ONLY. */
@@ -139,31 +139,46 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Up to date when the schema is, AND this code's version is the one that
-     * last applied an update: every release is applied as an update, whether
-     * or not it changes the schema, so what a release needs -- its bundles,
-     * for one -- is done once, there, rather than watched for on a timer.
+     * Up to date when the schema is, AND the tracker this code builds is the
+     * one that last applied an update (PLAN 2.30.7). The tracker build keeps
+     * tracker-version.php, committed like a lock file: its version goes up
+     * when anything the tracker is built from changes. A release that leaves
+     * the tracker alone leaves the version alone and asks for no update.
      *
      * The schema alone is still isSchemaCurrent(), which is what the
-     * scheduler asks: a release that changes no schema is no reason to stop
-     * its jobs.
+     * scheduler asks: a new tracker is no reason to stop its jobs.
      */
     function isUpToDate() {
 
         return parent::isUpToDate()
-            && (string) \OWA\Core\CoreAPI::getSetting( $this->name, 'code_version' ) === (string) OWA_VERSION;
+            && (int) \OWA\Core\CoreAPI::getSetting( $this->name, 'tracker_version' ) >= self::requiredTrackerVersion();
+    }
+
+    /** The tracker version this code builds, from the file the build keeps; 0 with none. */
+    public static function requiredTrackerVersion() {
+
+        static $version = null;
+
+        if ( $version === null ) {
+
+            $file    = __DIR__ . '/tracker-version.php';
+            $info    = is_file( $file ) ? include $file : array();
+            $version = (int) ( $info['version'] ?? 0 );
+        }
+
+        return $version;
     }
 
     function install() {
 
-        return parent::install() && $this->recordCodeVersion();
+        return parent::install() && $this->recordTrackerVersion();
     }
 
-    /** This code's version, as the one the install is updated to. */
-    private function recordCodeVersion() {
+    /** The tracker version as the one the install is updated to. */
+    private function recordTrackerVersion() {
 
         $c = \OWA\Core\CoreAPI::configSingleton();
-        $c->persistSetting( $this->name, 'code_version', (string) OWA_VERSION );
+        $c->persistSetting( $this->name, 'tracker_version', self::requiredTrackerVersion() );
         $c->save();
 
         return true;
