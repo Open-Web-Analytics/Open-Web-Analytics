@@ -144,7 +144,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s221">2.21 Early cutover, per feature</a>
   <a href="#s222">2.22 Validating the migration</a>
   <a href="#s223">2.23 The v2 reporting UI is a separate path</a>
-  <a href="#s225">2.24 Publishing the tracker</a>
+  <a href="#s225">2.24 Profile tracking bundles</a>
   <a href="#s227">2.26 Custom dimensions</a>
   <a href="#s228">2.27 A cube per property</a>
   <a href="#s229">2.28 URL canonicalisation</a>
@@ -2066,7 +2066,7 @@ One site collecting into v2 and coming out the far side as a report is the accep
 <tr><td>6</td><td><strong>Chunk <code>seq</code></strong>, shipping with the domstream re-encode (<a href="#s221">&sect;2.21</a>). Engagement carries no counter of its own: its residue is delivered once (<a href="#s12">&sect;1.2.1</a>).</td><td><strong>Done</strong> 28&nbsp;Sep, with the Domstream module: each chunk carries its <code>seq</code> within the recording, and the server derives the chunk&rsquo;s id from the recording id and seq, so a chunk delivered twice is stored once.</td></tr>
 <tr><td>7</td><td><strong>New collection surfaces</strong> &mdash; download, form-submit and site-search events, feeding <code>downloads</code>, <code>formSubmissions</code>, <code>siteSearches</code> and the <code>fileName</code> / <code>fileExtension</code> / <code>searchTerm</code> param paths (<a href="#s23">&sect;2.3.2</a>). Site search needs its query-param list as a profile setting. <strong>And a scroll throttle:</strong> <code>scrollEventHandler</code> queues on every scroll event, <code>last_scroll</code> is assigned and never read, and there is no <code>scrollInterval</code> beside <code>movementInterval</code>.</td><td><strong>Done</strong> 21&nbsp;Sep. Scroll is now one event per depth threshold, not one per scroll tick</td></tr>
 <tr><td>8</td><td><strong>New values the client must send</strong> &mdash; content group, consent state, user id and currency, for <code>content_group</code>, <code>consent_state</code>, <code>user_id</code> and <code>currency</code> (<a href="#s21">&sect;2.1</a>). None exists: the tracker has <code>setUserName</code> and no <code>setUserId</code>, and no consent API at all.</td><td><strong>Done</strong> 21&nbsp;Sep. <code>setUserId</code>, <code>setContentGroup</code>, <code>setConsentState</code>, <code>setCurrency</code></td></tr>
-<tr><td>9</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24.4</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops collecting at Phase&nbsp;8. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td><strong>Done.</strong> logMovement, thirdParty and campaignAttributionWindow went 21&nbsp;Sep; attribs and trafficAttributionMode went with v1&rsquo;s collection, and only comments name them now.</td></tr>
+<tr><td>9</td><td><strong>Removals</strong> &mdash; delete three options that control nothing: <code>logMovement</code>, <code>thirdParty</code>, <code>campaignAttributionWindow</code> (<a href="#s225">&sect;2.24</a>). <strong>Stopping <code>attribs</code> is not additive</strong> (<a href="#s15">&sect;1.5.3</a>): <code>SessionHandlers</code> writes it to <code>owa_session.latest_attributions</code> and a dimension reads it, so it cannot go until v1 stops collecting at Phase&nbsp;8. <code>trafficAttributionMode</code> goes with it, for the same reason &mdash; it selects the model that produces the verdict.</td><td><strong>Done.</strong> logMovement, thirdParty and campaignAttributionWindow went 21&nbsp;Sep; attribs and trafficAttributionMode went with v1&rsquo;s collection, and only comments name them now.</td></tr>
 </tbody></table></div>
 
 <h4><span class="num">2.19.4</span>Phase 7 &mdash; the denormalised table and the pass</h4>
@@ -2502,49 +2502,128 @@ collapsing <code>www.mydomain.com</code> and <code>mydomain.com</code>; a genera
 much larger thing to reason about than the help text implies.</li>
 </ul>
 
-<h3 id="s225"><span class="num">2.24</span>Publishing the tracker <span class="chip c-open">Deferred</span></h3>
-<p class="note"><strong>Deferred, and not tracker work.</strong> Nothing in v2&rsquo;s schema waits
-on it: the tracker keeps taking its site config from <code>owa_cmds</code> until this lands, and
-the only thing that changes when it does is where that config travels. It is build, serving and
-admin work, which is why it is not in Phase&nbsp;5 (<a href="#s219">&sect;2.19.2</a>) with the
-collection changes.</p>
-<p><strong>The tracker stops being one file for every site.</strong> Publish writes one static
-JavaScript file per site with that site&rsquo;s configuration baked in. Apache serves it, or a CDN
-does. No PHP runs on that request.</p>
+<h3 id="s225"><span class="num">2.24</span>Profile tracking bundles <span class="chip c-dec">Decided</span></h3>
+<p class="note"><strong>Decided 2 Oct, replacing the deferred &ldquo;Publishing the tracker&rdquo;.</strong>
+It was written while site settings lived in <code>owa_site.settings</code> and the tracker took its
+config from <code>owa_cmds</code> only. Scoped settings with the Override switch (#1169) and a single
+build pipeline change how it is built, not what it is.</p>
+<p><strong>A tag manager for OWA&rsquo;s own tag.</strong> The tracker is configured per
+Observation Profile on the server, and OWA publishes each Profile&rsquo;s tracking bundle: one
+static file holding the tracker, the Profile&rsquo;s options and the Profile&rsquo;s commands. The
+site owner embeds a snippet that only loads it, so a change made on a settings screen reaches every
+page without anyone re-pasting a tag.</p>
 
+<h4><span class="num">2.24.1</span>What exists today</h4>
+<ul>
+<li><strong>The snippet configures nothing.</strong> <code>js_log_tag.php</code> pushes
+<code>setSiteId</code> and the <code>tracker_tag_cmds</code> filter&rsquo;s commands. Base adds
+<code>trackPageView</code>, <code>trackClicks</code>, <code>trackForms</code>,
+<code>trackScroll</code> and <code>trackSiteSearch</code> for every site; Domstream adds
+<code>trackDomStream</code> whenever the module is active. No setting controls any of them.</li>
+<li><strong>Two values the server and tracker each hold.</strong> The cube&rsquo;s session window
+reads <code>session_length</code> and the tracker its own <code>sessionLength</code>; both are 1800
+by default and nothing keeps them equal. <code>cookie_domain</code> is read by the server and never
+reaches the tracker.</li>
+<li><strong>Every site downloads the recorder.</strong> Domstream contributes
+<code>Recorder.js</code> into the main tracker build, whether or not the site records.</li>
+<li>The tracker is served with no <code>Cache-Control</code> (&sect;2.24.6).</li>
+</ul>
+
+<h4><span class="num">2.24.2</span>The bundle, and the snippet</h4>
+<p><strong>One file per Profile, at <code>public/tracker/&lt;site_id&gt;.js</code></strong>, a URL
+that never changes for the life of the Profile: a pasted snippet outlives every setting it was
+pasted beside, so versioned filenames are ruled out. Revalidation makes that affordable &mdash; a
+client re-checking gets a 304 with no body unless a publish changed the file.</p>
+<pre><code>&lt;script async src="https://stats.example.com/owa/public/tracker/1a2b3c.js"&gt;&lt;/script&gt;</code></pre>
+<p>A page that needs a page-level call &mdash; title, content group, user id, consent, a custom
+property, a purchase &mdash; pushes it onto <code>owa_cmds</code> before that line, as today. The
+snippet keeps nothing else.</p>
 <div class="scroll"><table>
-<thead><tr><th>Piece</th><th>Where it is decided</th><th>What serves it</th></tr></thead>
+<thead><tr><th>In the bundle</th><th>From</th></tr></thead>
 <tbody>
-<tr><td>tracker file</td><td>publish, from the resolved settings</td><td>Apache, or a CDN the site owner names</td></tr>
-<tr><td>beacon</td><td><code>public_url</code>, overridable per page by <code>setApiEndpoint()</code></td><td>the install, or a logging node running <code>OWA_USE_STATIC_CONFIG_ONLY</code></td></tr>
-<tr><td>reporting</td><td>the install</td><td>the install</td></tr>
+<tr><td>options</td><td>the Profile&rsquo;s resolved settings: endpoints, cookie domain, URL fragments, scroll thresholds, search parameters, download extensions, domstream sample rate</td></tr>
+<tr><td>commands</td><td>the feature switches the Profile has on: <code>trackPageView</code>, <code>trackClicks</code>, <code>trackForms</code>, <code>trackScroll</code>, <code>trackSiteSearch</code>, <code>trackExceptions</code>, <code>trackRouteChanges</code>, <code>trackEngagement</code>, <code>trackDomStream</code></td></tr>
+<tr><td><code>session_length</code></td><td>the install&rsquo;s value, baked in so the tracker and the cube agree. <strong>Not a setting on any screen.</strong></td></tr>
 </tbody></table></div>
-<p class="note">Three endpoints that move independently. The beacon cannot follow the tracker to a
-CDN &mdash; beacons are writes &mdash; which is why the tracker URL becomes a setting of its own
-rather than another use of <code>owa_baseUrl</code>.</p>
+<p><strong>Order.</strong> The page&rsquo;s queued commands run first, then the bundle&rsquo;s, so a
+<code>setPageTitle</code> lands before the baked <code>trackPageView</code>. A page that queues its
+own <code>trackPageView</code> &mdash; a custom URL, a single-page app &mdash; suppresses the
+bundle&rsquo;s, so a view is never counted twice.</p>
+<p><strong>Old snippets keep working.</strong> They load the generic
+<code>public/base/dist/owa.tracker.js</code> and push their own commands, which is what they do
+today.</p>
 
-<h4><span class="num">2.24.1</span>One file, at a URL that never changes</h4>
-<p><strong>The bundle and the config ship as one file, not two.</strong> And its URL is fixed for
-the life of the site, because the snippet cannot be updated &mdash; a pasted tag outlives every
-setting it was pasted beside. That rules out versioned filenames, which in turn rules out
-invalidation-by-renaming.</p>
-<p><strong>What makes that affordable is conditional requests.</strong> Apache already sends
-<code>ETag</code> and <code>Last-Modified</code> on the tracker, so a client re-checking after its
-freshness expires gets a 304 with no body unless a publish actually changed the file. The payload
-moves when there is something to move.</p>
+<h4><span class="num">2.24.3</span>Composed from the build, never compiled per site <span class="chip c-meas">Measured</span></h4>
+<p><strong>PHP never runs webpack.</strong> Webpack runs once per OWA build, in the release package
+and on deploy, as now; installs have no Node. Publishing joins files the build already wrote:</p>
+<pre><code>public/tracker/&lt;site_id&gt;.js =
+    config preamble              (generated: options + commands)
+  + &lt;domstream chunk&gt;.js         (only when the Profile records)
+  + owa.tracker.js               (as built)</code></pre>
+<p><strong>Domstream becomes a separate webpack chunk</strong>, loaded by the core with
+<code>import()</code> only when the config turns it on, the mechanism the heatmap and player
+already use. A Profile that records gets the chunk inlined; one that does not never downloads
+it.</p>
+<p><strong>The chunk goes BEFORE the core.</strong> Measured in Chromium with webpack 5.108 and the
+tracker&rsquo;s output settings (shared <code>webpackChunkowa</code> array, IIFE): appended after
+the core, the chunk is fetched anyway, because the core calls <code>import()</code> while it is
+still executing; placed before it, the chunk is on the shared array when the runtime starts and is
+used with no request. A bundle without the chunk still records, by fetching it from
+<code>public/base/dist/</code>.</p>
+<div class="scroll"><table>
+<thead><tr><th>Bundle</th><th>Recorder ran</th><th>Chunk requests</th></tr></thead>
+<tbody>
+<tr><td>config + core + chunk</td><td>yes</td><td>1</td></tr>
+<tr><td>config + chunk + core</td><td>yes</td><td><strong>0</strong></td></tr>
+<tr><td>config + core (recording on)</td><td>yes</td><td>1</td></tr>
+<tr><td>config + chunk + core (recording off)</td><td>no</td><td>0</td></tr>
+</tbody></table></div>
+<p>Webpack&rsquo;s one change is to emit the Domstream chunk under a stable name and a manifest of
+the files a bundle is joined from, with their hashes. Publishing reads the manifest rather than
+hard-coding names, and a changed hash marks every bundle stale.</p>
+<p class="note">Still to establish: whether <code>owa.tracker.js</code> needs
+<code>owa.vendors.js</code> at load. The tracker build splits <code>node_modules</code> into it with
+<code>chunks: 'all'</code>; if any vendor code is on the core&rsquo;s initial path, the bundle
+joins it too, before the core like the Domstream chunk.</p>
 
-<h4><span class="num">2.24.2</span>Cache lifetime, and what happens without one</h4>
+<h4><span class="num">2.24.4</span>Settings, screen and scope</h4>
+<p><strong>Configured per Observation Profile</strong>, which is what a Profile is &mdash; one way of
+observing a Property. Each switch and option is a declared setting with scopes install, Property and
+Profile, so the Tag Settings screen under the Profile is built by the scoped renderer and a level
+inherits until its Override switch is on. A module declares its own: Domstream declares
+<code>trackDomStream</code> and its sample rate, and contributes them through a
+<code>tracker_config</code> filter that replaces <code>tracker_tag_cmds</code> for anything a site
+sets.</p>
+<p>Publish resolves the walk once and bakes the winner, so the tracker never learns there were
+tiers.</p>
+
+<h4><span class="num">2.24.5</span>Publishing</h4>
+<ul>
+<li><strong>Saving marks bundles stale; the scheduler rebuilds them.</strong> A setting saved at any
+level marks every Profile beneath it stale. The scheduler job, already running every minute,
+rebuilds stale bundles as the files&rsquo; owner, so no web request writes under
+<code>public/</code>.</li>
+<li><strong>Written atomically</strong>: to a temporary file, then renamed into place.</li>
+<li><strong>Also on</strong> Profile creation, and on every update: <code>cli.php cmd=update</code>
+republishes all of them, because the core lives inside every bundle.
+<code>cli.php cmd=publish-trackers</code> does it on demand.</li>
+<li><strong>The Tracking Tag screen says which</strong>: Published, with the time, or Waiting to
+publish. A stale or missing file is also caught by the job comparing each bundle&rsquo;s recorded
+config and build hashes with the current ones.</li>
+</ul>
+
+<h4><span class="num">2.24.6</span>Cache lifetime, and what happens without one</h4>
 <p><strong>The header goes in the <code>.htaccess</code> OWA already ships</strong>, guarded like
 everything else in it:</p>
 <pre><code>&lt;IfModule mod_headers.c&gt;
-    &lt;If "%{REQUEST_URI} =~ m#/public/base/t/#"&gt;
+    &lt;If "%{REQUEST_URI} =~ m#/public/(tracker|base/dist)/#"&gt;
         Header set Cache-Control "public, max-age=900"
     &lt;/If&gt;
 &lt;/IfModule&gt;</code></pre>
 <p>Root <code>.htaccess</code> rather than one beside the files, because <code>public/</code> is
 gitignored and would not ship. Today the tracker is served with <strong>no</strong>
-<code>Cache-Control</code> at all, so caching is whatever each client decides heuristically &mdash;
-worth fixing whether or not per-site trackers happen.</p>
+<code>Cache-Control</code> at all, so caching is whatever each client decides heuristically. The
+same header covers the generic tracker that old snippets keep loading.</p>
 <p><strong>That header cannot be relied on.</strong> OWA installs onto nginx, LiteSpeed and IIS
 where <code>.htaccess</code> is inert, onto Apache without <code>mod_headers</code> where the guard
 silently skips it, and behind proxies that rewrite it. The failure is invisible: publish succeeds,
@@ -2556,52 +2635,13 @@ never heard of gets a clear message instead of a wrong one.</p>
 <code>Last-Modified</code>: short right after a publish, longer as the file sits unchanged. Crude,
 client-dependent, and it fails in the useful direction.</p>
 
-<h4><span class="num">2.24.3</span>Moving it to a CDN</h4>
-<p><strong>A site owner can name an alternate domain for the tracker</strong>, publish the file
-there, and control expiry with the CDN&rsquo;s own tools. OWA then owns none of it, which is the
-point: cache headers depend on a web server OWA does not run.</p>
-<p>Deploying to a particular CDN is a module&rsquo;s job, and the hooks exist &mdash;
-<code>registerEventHandler</code> and <code>registerFilter</code>, the latter already used next
-door as <code>tracker_tag_cmds</code>. The module uploads and expires the object; OWA passes it the
-file and the site id. Config changes are rare enough that this needs no reconciliation machinery
-beyond that.</p>
-<p class="note">Two consequences to state where the domain is entered, not in documentation: OWA
-can no longer say when a change reaches visitors, and an unpublished or un-uploaded site 404s its
-tracker on every page with nothing to fall back to. Publish on site creation, and have setup fetch
-the URL once before calling the site configured.</p>
+<h4><span class="num">2.24.7</span>A CDN, later</h4>
+<p>Moving bundles to a CDN is a module&rsquo;s job, after this ships. Publishing raises an event
+with the file and the site id so a module can upload and expire the object; nothing else is
+built for it now. Where a CDN domain is entered, the screen must say that OWA can no longer tell
+when a change reaches visitors.</p>
 
-<h4><span class="num">2.24.4</span>What the snippet keeps</h4>
-<p><strong>Only what the server cannot know when it publishes.</strong> Page title, content group, user
-id, custom variables, and the <code>trackPageView</code> call. <code>setPageType</code> goes with the dimension it fed (<a href="#s24">&sect;2.4</a>). Everything else &mdash;
-<code>logClicks</code>, <code>logPage</code>, <code>movementInterval</code>, the three
-<code>domstream*</code> options, <code>sessionLength</code>, <code>cookie_domain</code>,
-<code>campaignKeys</code>, <code>maxCustomVars</code>, <code>getRequestCharacterLimit</code>,
-<code>encodeProperties</code>, the site id and the endpoints &mdash; bakes in.</p>
-<p>Today&rsquo;s tag pushes six commands, of which two are site config that lives in the page only
-because there was nowhere else to put it.</p>
-<p class="note"><strong>Three options would be publishing a control that does nothing.</strong>
-<code>logMovement</code> appears once in <code>Tracker.js</code> &mdash; its own declaration;
-<code>bindMovementEvents()</code> never reads it. <code>thirdParty</code> sets a flag no server
-code consumes. <code>campaignAttributionWindow</code> is passed to <code>setState</code> as an
-expiry that <code>StateManager</code> drops. <strong><code>trafficAttributionMode</code> is not
-one of them</strong>: it is inert <em>server-side</em>, but <code>Tracker.js</code> switches on it
-to choose between the direct and original models, so the verdict the event carries depends on it.
-Decide what these are before giving any of them a screen.</p>
-
-<h4><span class="num">2.24.5</span>Which tier a setting comes from</h4>
-<p><strong>Both, with the site winning.</strong> The two tiers already exist:</p>
-<div class="scroll"><table>
-<thead><tr><th>Tier</th><th>Storage</th><th>Read by</th><th>Screen</th></tr></thead>
-<tbody>
-<tr><td>instance</td><td><code>owa_configuration</code></td><td><code>CoreAPI::getSetting()</code></td><td>Main Configuration</td></tr>
-<tr><td>profile</td><td><code>owa_site.settings</code></td><td><code>Site::getSiteSetting()</code></td><td><code>base.sitesProfile</code></td></tr>
-</tbody></table></div>
-<p>Five keys use the profile tier today &mdash; <code>default_page</code>,
-<code>domain_aliases</code>, <code>goal_groups</code>, <code>goals</code>,
-<code>query_string_filters</code>. <strong>Publish resolves the walk once and bakes the winner</strong>,
-so the tracker never learns there were tiers and the walk stops running per request.</p>
-
-<h4><span class="num">2.24.6</span>What this does to the snippet-command route</h4>
+<h4><span class="num">2.24.8</span>What this does to the snippet-command route</h4>
 <p>PR&nbsp;#1098 answered the same question the other way: reach the tracker by adding snippet
 commands. Its own rationale is the argument against doing more of it &mdash; the snippet is
 rendered server-side and changes the moment PHP is upgraded, while the tracker is a long-cached
@@ -2614,12 +2654,17 @@ worth having &mdash; an unknown command should never take the queue down &mdash;
 contortion it was protecting, emitting a command only when a value differs from its default so
 pasted snippets stay byte-identical, stops being necessary.</p>
 
-<h4><span class="num">2.24.7</span>What it costs the deploy</h4>
-<p><code>public/</code> is gitignored, so published trackers do not arrive with a pull &mdash; the
-same reason the runbook already requires a build. <strong>A republish becomes a deploy step</strong>,
-and because the bundle lives inside every per-site file, an OWA upgrade republishes all of them.
-<code>webpack.config.js</code> sets no <code>clean</code>, so published files under
-<code>public/</code> survive a rebuild.</p>
+<h4><span class="num">2.24.9</span>Build sequence</h4>
+<ol>
+<li><strong>Settings and screen.</strong> Declare the switches and options with their scopes; the
+Tag Settings screen under the Profile.</li>
+<li><strong>Domstream as a chunk.</strong> The core loads it with <code>import()</code> when
+configured; the manifest; the vendors question in &sect;2.24.3 answered.</li>
+<li><strong>Publish and serve.</strong> The composer, the stale marking, the scheduler job, the CLI
+command, the update hook, the <code>.htaccess</code> header and its read-back, the screen status.</li>
+<li><strong>Snippet and modules.</strong> The new snippet on the Tracking Tag screen, the command-order
+rule in the tracker, <code>tracker_config</code> replacing <code>tracker_tag_cmds</code>.</li>
+</ol>
 
 <h3 id="s227"><span class="num">2.26</span>Custom dimensions <span class="chip c-dec">Decided</span></h3>
 
