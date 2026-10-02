@@ -2622,10 +2622,15 @@ session cookie (<code>owa_s_&lt;siteId&gt;</code>) is per Profile.</li>
 claims something no browser honours. Not #1098&rsquo;s 3650.</li>
 <li><strong>Two lifetimes, not #1098&rsquo;s three</strong>: v2&rsquo;s tracker registers no campaign
 (<code>c</code>) store.</li>
-<li><strong>Visitor expiry follows the longest.</strong> <code>VisitorExpiry</code> keeps a row while
-its visitor could still return with their cookie, fixed today at 14 months. The visitor store is
-keyed by <code>visitor_id</code> alone, so the floor becomes the longest
-<code>tracker_visitor_cookie_days</code> any level sets.</li>
+<li><strong>Visitor expiry stays at a fixed 14 months.</strong> <code>VisitorExpiry</code> keeps a
+row while its visitor could still return with their cookie; 14 months outlasts the 400-day cap, so it
+is right for every value the setting allows, and it only acts under an operator&rsquo;s shorter
+<code>keep=</code> &mdash; with raw kept, a row always has a raw event and stays.</li>
+<li><strong>At 0 days every browser session is a new visitor.</strong> The visitor store still gets
+its row: a session cookie lives until the browser closes, often days with session restore, and
+within that span first-visit acquisition and the last-touch lookback are correct. Reports change
+meaning &mdash; visitors approach sessions, most are new, attribution across visits is mostly
+lost &mdash; and the screen says so beside the field.</li>
 </ul>
 <p><strong><code>cookiePersistence</code> is deprecated in 2.0.</strong> It shipped in 1.14.0, so it
 keeps working: <code>false</code> is read as 0 days for every store, with a debug notice naming the
