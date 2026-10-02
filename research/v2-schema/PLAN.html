@@ -3617,9 +3617,16 @@ credentials resolve, when an install-level save changes them or the region, and 
 <code>cmd=tracker-ingest-provision</code>. Synchronous, so the admin sees at once whether the
 credentials work. A settings-saved hook is added for this; the bundle publishing in step 5 needs the
 same hook.</li>
-<li><strong>Open: where credentials come from.</strong> Proposed: the SDK&rsquo;s default chain
-(environment, <code>~/.aws</code>, instance or task role) plus optional config-file constants, rather
-than a stored setting in the shared database.</li>
+<li><strong>Credentials are never stored</strong> (decided 2 Oct): the SDK&rsquo;s default chain
+(environment, <code>~/.aws</code>, instance or task role), or <code>OWA_SQS_KEY</code> /
+<code>OWA_SQS_SECRET</code> in <code>owa-config.php</code>.</li>
+<li><strong>A logging node is configured in <code>owa-config.php</code> alone</strong>:
+<code>OWA_ACTIVE_MODULES</code> (a general constant: named modules are active whatever is stored, for
+a node with <code>OWA_USE_STATIC_CONFIG_ONLY</code>, which never reads <code>is_active</code>) and
+<code>OWA_SQS_QUEUE_URL</code>, the URL the drain install&rsquo;s settings screen shows once
+provisioned. The dead-letter queue is that URL with <code>-dlq</code> and the region is in its host, so
+a beacon needs no lookup. The drain install reads the URL from its provisioning record; only an install
+with neither asks <code>GetQueueUrl</code>, once per process.</li>
 </ul>
 
 <h4><span class="num">2.30.5</span>The admin job queue</h4>
