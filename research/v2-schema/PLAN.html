@@ -2541,7 +2541,7 @@ snippet keeps nothing else.</p>
 <div class="scroll"><table>
 <thead><tr><th>In the bundle</th><th>From</th></tr></thead>
 <tbody>
-<tr><td>options</td><td>the Profile&rsquo;s resolved settings: endpoints, cookie domain, URL fragments, scroll thresholds, search parameters, download extensions, domstream sample rate</td></tr>
+<tr><td>options</td><td>the Profile&rsquo;s resolved settings: endpoints, the tracker&rsquo;s cookie domain, lifetimes and persistence, URL fragments, scroll thresholds, search parameters, download extensions, domstream sample rate</td></tr>
 <tr><td>commands</td><td>the feature switches the Profile has on: <code>trackPageView</code>, <code>trackClicks</code>, <code>trackForms</code>, <code>trackScroll</code>, <code>trackSiteSearch</code>, <code>trackExceptions</code>, <code>trackRouteChanges</code>, <code>trackEngagement</code>, <code>trackDomStream</code></td></tr>
 <tr><td><code>session_length</code></td><td>the install&rsquo;s value, baked in so the tracker and the cube agree. <strong>Not a setting on any screen.</strong></td></tr>
 </tbody></table></div>
@@ -2605,14 +2605,18 @@ request, to arrive with this feature.</p>
 <div class="scroll"><table>
 <thead><tr><th>Setting</th><th>Type</th><th>Default</th><th>Bakes into</th></tr></thead>
 <tbody>
-<tr><td>visitor cookie lifetime</td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.v</code></td></tr>
-<tr><td>session cookie lifetime</td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.s</code></td></tr>
-<tr><td><code>cookie_persistence</code></td><td>boolean</td><td>on</td><td><code>cookiePersistence</code>; off writes every store with no <code>expires</code></td></tr>
+<tr><td><code>tracker_visitor_cookie_days</code></td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.v</code></td></tr>
+<tr><td><code>tracker_session_cookie_days</code></td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.s</code></td></tr>
+<tr><td><code>tracker_cookie_persistence</code></td><td>boolean</td><td>on</td><td><code>cookiePersistence</code>; off writes every tracker cookie with no <code>expires</code></td></tr>
+<tr><td><code>tracker_cookie_domain</code></td><td>text</td><td>none: the page&rsquo;s domain</td><td><code>cookie_domain</code></td></tr>
 </tbody></table></div>
+<p><strong>The tracker&rsquo;s cookies only.</strong> These are new settings rather than the existing
+<code>cookie_persistence</code> and <code>cookie_domain</code>, which govern the cookies the
+<em>server</em> sets &mdash; admin cookies (<code>u</code>/<code>p</code> sign-in, the last
+Profile), read by <code>CoreAPI::setCookie()</code> and <code>State.php</code>. Those two stay
+install-only and unchanged; a tag setting never reaches an admin cookie.</p>
 <p class="note">Two lifetimes, not #1098&rsquo;s three: v2&rsquo;s tracker registers no campaign
-(<code>c</code>) store. <code>cookie_persistence</code> exists today, unscoped, and is read by
-<code>CoreAPI::setCookie()</code> for server-set cookies; it gains Profile scope and its first
-reader in the tracker. The 1&ndash;3650 range is #1098&rsquo;s, enforced by the declaration like the
+(<code>c</code>) store. The 1&ndash;3650 range is #1098&rsquo;s, enforced by the declaration like the
 lookback (#1173).</p>
 <p>Publish resolves the walk once and bakes the winner, so the tracker never learns there were
 tiers.</p>
