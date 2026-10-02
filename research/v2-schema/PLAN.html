@@ -3535,7 +3535,7 @@ written into its registration, so nothing outside Base can change what it runs o
 that plug.</li>
 <li><strong>Named <code>tracker-ingest</code></strong>, for what it carries: beacons on their way into
 ingest. It was <code>incoming_tracking_events</code>. Its on/off setting,
-<code>queue_incoming_tracking_events</code>, becomes <code>tracker_ingest_queued</code>; 1.x installs set
+<code>queue_incoming_tracking_events</code>, becomes <code>queue_tracker_ingest</code>; 1.x installs set
 the old name, some in <code>owa-config.php</code>, so the old name is still read when the new one is
 absent.</li>
 <li><strong>A JSON envelope, not a PHP object</strong>: <code>{v, type, properties, queued_at}</code>.
