@@ -1267,8 +1267,9 @@ namespace OWA\Module\Base\Classes;
       * Why a value cannot be stored for a setting, or null when it can.
       *
       * The declaration states the rule. `integer` takes a whole number, inside
-      * `min` and `max` where it declares them. Other types and undeclared
-      * settings check nothing.
+      * `min` and `max` where it declares them; `text` matches its `pattern`,
+      * when it declares one, and says `pattern_problem` when it does not.
+      * Other types and undeclared settings check nothing.
       *
       * Read at both write chokepoints, persistSetting() and
       * CoreAPI::setScopedSetting(), so no screen, CLI or post can store a value
@@ -1284,7 +1285,21 @@ namespace OWA\Module\Base\Classes;
 
          $args = $this->registeredField( $module, $key );
 
-         if ( ! $args || ( $args['type'] ?? '' ) !== 'integer' ) {
+         if ( ! $args ) {
+
+             return null;
+         }
+
+         // A text setting may declare the shape it takes, and the words for it.
+         if ( ( $args['type'] ?? 'text' ) === 'text' && isset( $args['pattern'] ) ) {
+
+             return preg_match( $args['pattern'], trim( (string) $value ) )
+                 ? null
+                 : (string) ( $args['pattern_problem'] ?? sprintf( '%s is not in the expected form.',
+                       $args['label'] ?? $key ) );
+         }
+
+         if ( ( $args['type'] ?? '' ) !== 'integer' ) {
 
              return null;
          }
@@ -2695,6 +2710,21 @@ namespace OWA\Module\Base\Classes;
                 'campaignKeys'                      => array(),
                 // utm_* read beside the ns-prefixed names; owa_ wins on a URL with both.
                 'campaignUtmParams'                 => true,
+                // The tracking tag (PLAN 2.24.4), baked into a Profile's tracking bundle.
+                'tracker_page_views'                => true,
+                'tracker_clicks'                    => true,
+                'tracker_forms'                     => true,
+                'tracker_scroll'                    => true,
+                'tracker_site_search'               => true,
+                'tracker_exceptions'                => false,
+                'tracker_route_changes'             => false,
+                'tracker_url_fragments'             => false,
+                'tracker_scroll_thresholds'         => '25, 50, 75, 90',
+                'tracker_site_search_params'        => 'q, s, search, query, keyword',
+                'tracker_download_extensions'       => 'pdf, doc, docx, xls, xlsx, ppt, pptx, csv, txt, rtf, zip, gz, tar, rar, 7z, dmg, pkg, exe, mp3, wav, mp4, mov, avi, wmv, epub, mobi',
+                'tracker_visitor_cookie_days'       => 364,
+                'tracker_session_cookie_days'       => 364,
+                'tracker_cookie_domain'             => '',
                 'feed_subscription_param'            => 'sid',
                 'source_param'                        => 'source',
                 'site_id'                            => '',

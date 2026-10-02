@@ -86,3 +86,52 @@ test('a Profile setting inherits until its Override switch is on', async ({ page
     await expect(c.field).toBeDisabled();
     await expect(c.field).toHaveValue(inherited);
 });
+
+/**
+ * The Tracking Tag screen (PLAN 2.24.4): Base's tag fieldset first, a module's
+ * after it, and a setting saved through its switch at Profile scope.
+ */
+test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
+    const TAG = `?owa_do=base.sitesInvocation&owa_siteId=${FIXTURE.siteId}`;
+    const field = () => page.locator('select[name="config[base.tracker_clicks]"]');
+    const sw = () => page.locator('input[name="override[base.tracker_clicks]"]');
+    const saveTag = () => Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle' }),
+        page.locator('input[type="submit"][value="Save Tag Settings"]').click(),
+    ]);
+
+    await adminLogin(page);
+    await page.goto(TAG, { waitUntil: 'networkidle' });
+
+    const legends = await page.locator('form[name="owa_tag_settings"] legend').allInnerTexts();
+    expect(legends[0].toLowerCase()).toBe('tracking tag');
+
+    // The visitor cookie is set per Property, so the Profile screen does not offer it.
+    await expect(page.locator('[name="config[base.tracker_visitor_cookie_days]"]')).toHaveCount(0);
+
+    if (await sw().isChecked()) {
+        await sw().uncheck();
+        await saveTag();
+        await page.goto(TAG, { waitUntil: 'networkidle' });
+    }
+
+    try {
+        await sw().check();
+        await field().selectOption('0');
+        await saveTag();
+
+        await page.goto(TAG, { waitUntil: 'networkidle' });
+        await expect(sw()).toBeChecked();
+        await expect(field()).toHaveValue('0');
+    } finally {
+        await page.goto(TAG, { waitUntil: 'networkidle' });
+        if (await sw().isChecked()) {
+            await sw().uncheck();
+            await saveTag();
+        }
+    }
+
+    await page.goto(TAG, { waitUntil: 'networkidle' });
+    await expect(sw()).not.toBeChecked();
+    await expect(field()).toBeDisabled();
+});

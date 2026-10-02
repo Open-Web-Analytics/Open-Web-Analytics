@@ -89,6 +89,14 @@ class Module extends \OWA\Core\Module {
      */
     function registerActions() {
 
+        // Its tag settings, beside Base's on every Tracking Tag screen (PLAN 2.24.4).
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'trackingTag',
+            'group'    => 'tracking_tag',
+            'legend'   => 'Page Interaction Recording',
+            'settings' => array( 'record', 'sample_rate' ),
+        ) );
+
         $this->registerAction( 'domstream.processEvent',
             'OWA\\Module\\Domstream\\Controller\\ProcessEvent', '' );
         $this->registerAction( 'domstream.reportDomstreams',

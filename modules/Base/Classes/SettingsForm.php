@@ -89,7 +89,50 @@ class SettingsForm {
             }
         }
 
+        // And every fieldset in a group the page names, which is how a module's
+        // fieldset reaches a page another module owns.
+        foreach ( (array) ( $page['fieldset_groups'] ?? array() ) as $group ) {
+
+            foreach ( self::groupFieldSets( $group ) as $set ) {
+
+                $sets[] = $set;
+            }
+        }
+
         return $sets;
+    }
+
+    /**
+     * Every registered fieldset in a group, by its declared `order` (default
+     * 50), then the order they registered -- which follows module load order,
+     * so it cannot be what puts the screen's own fieldset first.
+     *
+     * A group lets a screen show fieldsets it does not know by name: Base owns
+     * the tracking tag screens, and an active module adds its own fieldset to
+     * them without Base naming it.
+     *
+     * @param  string $group
+     * @return array
+     */
+    public static function groupFieldSets( $group ) {
+
+        $out = array();
+
+        foreach ( (array) \OWA\Core\CoreAPI::configSingleton()->registeredFieldSets() as $set ) {
+
+            if ( (string) ( $set['group'] ?? '' ) === (string) $group ) {
+
+                $out[] = $set;
+            }
+        }
+
+        // usort is stable from PHP 8.0, so equal orders keep registration order.
+        usort( $out, function ( $a, $b ) {
+
+            return (int) ( $a['order'] ?? 50 ) <=> (int) ( $b['order'] ?? 50 );
+        } );
+
+        return $out;
     }
 
     /**

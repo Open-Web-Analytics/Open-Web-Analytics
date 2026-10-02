@@ -56,12 +56,14 @@ class PropertyEdit extends \OWA\Core\AdminController {
         }
 
         // Each setting the screen would store, checked against its declaration.
-        foreach ( \OWA\Module\Base\Classes\SettingsForm::scopedProblems(
-                      \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
-                      'property', (string) $this->getParam( 'propertyId' ),
-                      $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
+        foreach ( self::scopedFieldSets() as $set ) {
 
-            $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+            foreach ( \OWA\Module\Base\Classes\SettingsForm::scopedProblems(
+                          $set, 'property', (string) $this->getParam( 'propertyId' ),
+                          $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
+
+                $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+            }
         }
 
         /*
@@ -140,14 +142,24 @@ class PropertyEdit extends \OWA\Core\AdminController {
         }
 
         // Each setting the screen shows, stored here or not by its Override switch.
-        \OWA\Module\Base\Classes\SettingsForm::saveScoped(
-            \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
-            'property', (string) $propertyId,
-            (array) $this->getParam( 'config' ), (array) $this->getParam( 'override' ) );
+        foreach ( self::scopedFieldSets() as $set ) {
+
+            \OWA\Module\Base\Classes\SettingsForm::saveScoped(
+                $set, 'property', (string) $propertyId,
+                (array) $this->getParam( 'config' ), (array) $this->getParam( 'override' ) );
+        }
 
         $this->set( 'propertyId', $propertyId );
         $this->setRedirectAction( 'base.propertyProfile' );
         $this->set( 'status_code', 3201 );
+    }
+
+    /** The fieldsets the Property screen shows below its own fields. */
+    private static function scopedFieldSets() {
+
+        return array_merge(
+            array( \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ) ),
+            \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) );
     }
 
     /**

@@ -136,7 +136,6 @@ describe('the configured lifetime is what the registry answers with', () => {
     });
 
     test.each([
-        ['zero', 0],
         ['negative', -30],
         ['fractional', 90.5],
         ['not a number', 'ninety'],
@@ -181,6 +180,58 @@ describe('the configured lifetime is what the registry answers with', () => {
         tracker.setSiteId('other-site');
 
         expect(OWA.state.getExpirationDays('s_other-site')).toBe(30);
+    });
+});
+
+describe('a lifetime of 0 days ends the cookie with the browser', () => {
+
+    test('0 is a configured lifetime, not an absent one', () => {
+
+        const tracker = new OWATracker({ cookie_domain_set: true, site_id: 'exp-site' });
+
+        tracker.setOption('stateStoreExpirations', { v: 0 });
+
+        expect(OWA.state.getExpirationDays('v')).toBe(0);
+    });
+
+    test('the store set to 0 is written with no expiry, and only that store', () => {
+
+        const cookies = captureCookies();
+        const tracker = new OWATracker({ cookie_domain_set: true, site_id: 'exp-site' });
+
+        tracker.setOption('stateStoreExpirations', { v: 0 });
+
+        OWA.setState('v', 'visitor_id', '123', true);
+        OWA.state.persist('v', true);
+
+        const v = persistedWrites(cookies, 'owa_v');
+
+        expect(v[v.length - 1].days).toBe(0);
+
+        // The session store keeps its own lifetime.
+        expect(OWA.state.isSessionOnly(tracker.storeName('s'))).toBe(false);
+        expect(OWA.state.getExpirationDays(tracker.storeName('s'))).toBe(364);
+    });
+
+    test('the deprecated cookiePersistence false still makes every store session-only, and says so', () => {
+
+        const cookies = captureCookies();
+        const debug = jest.spyOn(OWA, 'debug').mockImplementation(() => {});
+        const tracker = new OWATracker({ cookie_domain_set: true, site_id: 'exp-site' });
+
+        tracker.setOption('stateStoreExpirations', { v: 90 });
+        tracker.setOption('cookiePersistence', false);
+
+        OWA.setState('v', 'visitor_id', '123', true);
+        OWA.state.persist('v', true);
+        OWA.state.persist('v', true);
+
+        const v = persistedWrites(cookies, 'owa_v');
+
+        expect(v[v.length - 1].days).toBe(0);
+
+        const notices = debug.mock.calls.filter((c) => String(c[0]).includes('cookiePersistence is deprecated'));
+        expect(notices).toHaveLength(1);
     });
 });
 
