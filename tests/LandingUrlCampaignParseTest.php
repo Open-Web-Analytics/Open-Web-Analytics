@@ -263,4 +263,128 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
             'an unnamed role keeps its ns-prefixed name; a partial override must not '
           . 'silently disable the roles it does not mention');
     }
+
+    /** On by default: a utm_* link is read with no setting named. */
+    public function testUtmParametersAreReadByDefault(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
+
+        $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting('base', 'campaignUtmParams'));
+
+        $event = $this->event([
+            'site_id'       => 'utm-default-site',
+            'page_location' => 'https://example.test/p?utm_source=newsletter&utm_medium=email'
+                . '&utm_campaign=spring&utm_term=shoes&utm_content=banner1',
+        ]);
+
+        $this->assertSame('newsletter', $H::taggedValue($event, 'tagged_source'));
+        $this->assertSame('email',      $H::taggedValue($event, 'tagged_medium'));
+        $this->assertSame('spring',     $H::taggedValue($event, 'tagged_campaign'));
+        $this->assertSame('shoes',      $H::taggedValue($event, 'tagged_terms'));
+        $this->assertSame('banner1',    $H::taggedValue($event, 'tagged_ad'));
+    }
+
+    /** Both conventions on one URL: OWA's own parameter is the one used. */
+    public function testTheOwaParameterWinsOverItsUtmTwin(): void
+    {
+        $H  = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $ns = $this->ns();
+
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
+
+        $event = $this->event([
+            'site_id'       => 'utm-both-site',
+            'page_location' => 'https://example.test/p?utm_source=from_utm&' . $ns . 'source=from_owa'
+                . '&utm_medium=email',
+        ]);
+
+        $this->assertSame('from_owa', $H::taggedValue($event, 'tagged_source'));
+        $this->assertSame('email', $H::taggedValue($event, 'tagged_medium'),
+            'a role only utm_* names is still read');
+    }
+
+    /** Switched off, utm_* is not read. */
+    public function testUtmParametersCanBeSwitchedOff(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        $c->set('base', 'campaignKeys', []);
+        $c->set('base', 'campaignUtmParams', false);
+
+        try {
+            $event = $this->event([
+                'site_id'       => 'utm-off-site',
+                'page_location' => 'https://example.test/p?utm_source=newsletter&utm_medium=email',
+            ]);
+
+            $this->assertNull($H::taggedValue($event, 'tagged_source'));
+            $this->assertNull($H::taggedValue($event, 'tagged_medium'));
+
+        } finally {
+            $c->set('base', 'campaignUtmParams', true);
+        }
+    }
+
+    /**
+     * An ad network's click id on an untagged URL is the network's paid
+     * traffic; with the switch off as well, since it is not a utm_ parameter.
+     *
+     * @dataProvider clickIds
+     */
+    public function testAClickIdOnAnUntaggedUrlIsPaidTraffic(string $param, string $source): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+
+        $event = $this->event([
+            'site_id'       => 'click-id-site-' . $param,
+            'page_location' => 'https://example.test/p?' . $param . '=Cj0KCQjw',
+        ]);
+
+        $this->assertSame($source, $H::taggedValue($event, 'tagged_source'));
+        $this->assertSame('cpc', $H::taggedValue($event, 'tagged_medium'));
+        $this->assertNull($H::taggedValue($event, 'tagged_campaign'),
+            'the click id names no campaign');
+    }
+
+    public static function clickIds(): array
+    {
+        return [
+            'gclid'   => ['gclid', 'google'],
+            'gbraid'  => ['gbraid', 'google'],
+            'wbraid'  => ['wbraid', 'google'],
+            'msclkid' => ['msclkid', 'bing'],
+        ];
+    }
+
+    /** A tagged link keeps its tags; the click id beside them adds nothing. */
+    public function testAClickIdDoesNotOverrideTags(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
+
+        $event = $this->event([
+            'site_id'       => 'click-id-tagged-site',
+            'page_location' => 'https://example.test/p?utm_campaign=spring&gclid=Cj0KCQjw',
+        ]);
+
+        $this->assertSame('spring', $H::taggedValue($event, 'tagged_campaign'));
+        $this->assertNull($H::taggedValue($event, 'tagged_source'));
+        $this->assertNull($H::taggedValue($event, 'tagged_medium'));
+    }
+
+    public function testAnEmptyClickIdIsNothing(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+
+        $event = $this->event([
+            'site_id'       => 'click-id-empty-site',
+            'page_location' => 'https://example.test/p?gclid=',
+        ]);
+
+        $this->assertNull($H::taggedValue($event, 'tagged_source'));
+    }
 }

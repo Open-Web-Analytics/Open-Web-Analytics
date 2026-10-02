@@ -1865,6 +1865,31 @@ class TrackingEventHelpers {
         'ad_type'      => 'tagged_ad_type',
     );
 
+    /**
+     * The utm_* parameters, read alongside OWA's own when the Property's
+     * campaignUtmParams setting is on. utm_term is the search terms and
+     * utm_content tells one ad or link from another, which is OWA's ad.
+     */
+    const UTM_KEYS = array(
+        'utm_source'   => 'tagged_source',
+        'utm_medium'   => 'tagged_medium',
+        'utm_campaign' => 'tagged_campaign',
+        'utm_term'     => 'tagged_terms',
+        'utm_content'  => 'tagged_ad',
+    );
+
+    /**
+     * Click ids an ad network appends to the landing URL, and the source and
+     * medium each one stands for. Read only when the URL carries no source,
+     * medium or campaign of its own, so a tagged link keeps its tags.
+     */
+    const CLICK_IDS = array(
+        'gclid'   => array( 'google', 'cpc' ),
+        'gbraid'  => array( 'google', 'cpc' ),
+        'wbraid'  => array( 'google', 'cpc' ),
+        'msclkid' => array( 'bing', 'cpc' ),
+    );
+
     /** Parsed landing URLs, keyed by site and URL. */
     private static $landingTags = array();
 
@@ -2094,6 +2119,8 @@ class TrackingEventHelpers {
      * what honours a custom `ns`. A site that sets it names the parameters
      * explicitly instead -- utm_source, utm_medium, utm_campaign, utm_term,
      * utm_content -- so a Property whose links already carry utm_* keeps them.
+     * campaignUtmParams (on by default) reads utm_* beside the ns-prefixed
+     * names without either being named here.
      *
      * Read at PROFILE scope so the chain walks Profile -> Property -> Install:
      * the install default covers one convention everywhere, and a Property
@@ -2121,6 +2148,15 @@ class TrackingEventHelpers {
 
         $ns  = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
         $map = array();
+
+        /*
+         * utm_* FIRST. A later key overwrites an earlier one in the parse, so
+         * on a URL carrying both conventions OWA's own parameter wins.
+         */
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'campaignUtmParams', 'profile', $site_id ) ) {
+
+            $map = self::UTM_KEYS;
+        }
 
         foreach ( self::CAMPAIGN_KEYS as $role => $property ) {
 
@@ -2167,6 +2203,22 @@ class TrackingEventHelpers {
             }
 
             $tags[ $property ] = $value;
+        }
+
+        if ( ! isset( $tags['tagged_source'] ) && ! isset( $tags['tagged_medium'] )
+             && ! isset( $tags['tagged_campaign'] ) ) {
+
+            foreach ( self::CLICK_IDS as $param => $claim ) {
+
+                if ( isset( $params[ $param ] ) && is_string( $params[ $param ] )
+                     && trim( $params[ $param ] ) !== '' ) {
+
+                    $tags['tagged_source'] = $claim[0];
+                    $tags['tagged_medium'] = $claim[1];
+
+                    break;
+                }
+            }
         }
 
         return $tags;
