@@ -3758,7 +3758,9 @@ Property&rsquo;s or the install&rsquo;s tag settings &mdash; queues one deduplic
 <code>publish-trackers</code> job. A new release is applied with <code>cmd=update</code>, <strong>every
 release</strong>: <code>base.code_version</code> records the <code>OWA_VERSION</code> that last updated, a
 different one is an update pending, and Base&rsquo;s update publishes every live Profile&rsquo;s bundle
-that is stale or missing &mdash; which is how Profiles from 1.x get theirs on the upgrade. Not on a
+that is stale or missing &mdash; which is how Profiles from 1.x get theirs on the upgrade. In the
+run from the command line; from the update screen, as one queued <code>publish-trackers</code> job, since
+a bundle per Profile is not work for a web request. Not on a
 module turned on or off, nor on a screen opening; anything else is <code>cmd=publish-trackers</code> by
 hand.</li>
 </ol>
