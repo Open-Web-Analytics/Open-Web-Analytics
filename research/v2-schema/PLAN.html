@@ -3512,16 +3512,24 @@ failure.</p>
 
 <h4><span class="num">2.30.3</span>The tracking intake: pluggable, shaped like SQS</h4>
 <p><strong>A contract any implementation meets</strong>, written to the strictest likely backend, AWS
-SQS: at-least-once delivery, a visibility timeout, no ordering guarantee.</p>
+SQS: at-least-once delivery, a visibility timeout, no ordering guarantee. <strong>Every implementation
+mirrors SQS</strong> (decided 2 Oct): a main queue with a <strong>dead-letter queue</strong> of its own,
+and a <strong>receive limit the queue enforces itself</strong>, as a redrive policy does &mdash; a
+message about to be received more than <code>max_receives</code> (6) times is moved to the dead-letter
+queue instead of being handed out. That is the only thing that stops a message that kills its
+consumer, since no consumer code survives to dead-letter it.</p>
 <div class="scroll"><table>
 <thead><tr><th>Method</th><th>Meaning</th></tr></thead>
 <tbody>
-<tr><td><code>send( envelope, delay = 0 )</code></td><td>queue one beacon, not visible before the delay</td></tr>
+<tr><td><code>provision()</code></td><td>create the queue and its dead-letter queue, or find them; idempotent</td></tr>
+<tr><td><code>send( envelope, delay = 0, replayed = false )</code></td><td>queue one beacon, not visible before the delay; <code>replayed</code> marks one sent back from the dead-letter queue</td></tr>
 <tr><td><code>receive( max, visibility )</code></td><td>up to max messages, each with a receipt and its receive count, hidden from other consumers for the visibility timeout</td></tr>
 <tr><td><code>ack( receipt )</code></td><td>done; remove it</td></tr>
 <tr><td><code>release( receipt, delay )</code></td><td>failed; visible again after the delay</td></tr>
-<tr><td><code>deadLetter( receipt, reason )</code></td><td>give up after the receive limit; keep it for inspection (SQS: its own DLQ)</td></tr>
+<tr><td><code>deadLetter( receipt, reason )</code></td><td>given up on: moved to the dead-letter queue with the reason</td></tr>
+<tr><td><code>deadLetterQueue()</code></td><td>the dead-letter queue, itself an intake queue; a dead-letter queue has none and no receive limit</td></tr>
 <tr><td><code>isProbablyEmpty()</code></td><td>a cheap check for a quiet minute: a <code>stat()</code> for files, one attribute call for SQS</td></tr>
+<tr><td><code>stats()</code></td><td>messages waiting, and the age of the oldest that is due, for <code>schedule-status</code></td></tr>
 </tbody></table></div>
 <ul>
 <li><strong>Chosen by a setting</strong>, <code>tracker_ingest_queue_type</code>, install scope and
@@ -3546,9 +3554,18 @@ Readable by another system, and nothing is unserialized.</li>
 is still the one at its path; the drain rotates <code>events.txt</code> by renaming it and taking the
 same lock, so no line is lost to a rotation or read half-written. A drain holds a batch with
 <code>flock(LOCK_NB)</code> for its lifetime: that lock is the visibility timeout, and a drain that dies
-releases it. A <code>.state</code> sidecar records how far the batch was settled and handed out, and
-how many times it was claimed, which is where a receive count comes from. Released messages wait in
-one file per due minute; dead letters in one file per day, pruned with the archive.</li>
+releases it. A <code>.state</code> sidecar, rewritten as each line is settled, records where the
+batch is settled to, whether the line there is in a drain&rsquo;s hands, how many drains have died with
+it in hand, and who holds the batch now (pid, host, since). A drain that dies is charged only to the
+line it had in hand; one that hangs is reported by <code>schedule-status</code> after ten minutes.
+Released messages wait in one file per due minute, the file&rsquo;s stand-in for SQS hiding a message
+in place. The dead-letter queue is a second file queue, <code>dead-letter/</code> inside the first,
+with the same layout; a line that never decoded is kept there as it arrived.</li>
+<li><strong>Retention: unlimited for the file queue</strong>, in both queues: a beacon not yet ingested
+is kept until it is ingested, replayed or removed by hand. SQS cannot match it &mdash; 14 days is the
+longest <code>MessageRetentionPeriod</code> &mdash; so the SQS queues are set to 14 days, and
+<code>schedule-status</code> warns long before: a main-queue backlog older than ten minutes, and any
+dead letter at all.</li>
 <li><strong>The producer</strong> is <code>log.php</code>&rsquo;s existing switch: queued mode sends
 every beacon; direct mode ingests, and a failed ingest write sends the beacon to the intake as a retry
 in either mode.</li>
@@ -3558,13 +3575,51 @@ in either mode.</li>
 <ul>
 <li><strong>A scheduled job</strong>, <code>drain-tracker-ingest</code>, every minute, generic over the
 contract: <code>isProbablyEmpty()</code> and stop, or receive batches until empty or a time budget
-runs out, ingest each, <code>ack</code> on success, <code>release</code> with back-off on failure,
-<code>deadLetter</code> past the receive limit. <code>alreadyIngested()</code> makes a redelivery
-harmless.</li>
-<li><strong>Or not the scheduler at all.</strong> <code>tracker_ingest_drain</code> is
+runs out, ingest each, <code>ack</code> on success, <code>release</code> on failure after the back-off
+for its attempt &mdash; 60&nbsp;s, 5&nbsp;min, 15&nbsp;min, 1&nbsp;h, 6&nbsp;h, about 7.3&nbsp;hours in
+all, so a database outage shorter than that sends nothing to the dead-letter queue. A failure on the
+sixth attempt is dead-lettered at once rather than released for another wait; an envelope this version
+cannot read is dead-lettered at once. No step passes 12&nbsp;h, SQS&rsquo;s longest visibility timeout.
+<code>alreadyIngested()</code> makes a redelivery harmless.</li>
+<li><strong>Replay is a separate daily job</strong>, <code>replay-tracker-ingest</code>: each dead letter
+is sent back to the main queue <strong>once</strong>, marked replayed, with its attempts reset, so a
+beacon that died in a long outage gets another round with no one involved. One already replayed stays,
+which keeps a beacon that fails for good from going round forever; one that never decoded is never
+replayed. <code>cli.php cmd=tracker-ingest-replay</code> replays everything that decodes, by hand, once
+its cause is fixed &mdash; the counterpart of the SQS console&rsquo;s redrive. The drain never reads the
+dead-letter queue.</li><li><strong>Or not the scheduler at all.</strong> <code>tracker_ingest_drain</code> is
 <code>scheduler</code> (default) or <code>external</code>: a module whose backend has its own consumer
 &mdash; an SQS-triggered worker or Lambda &mdash; turns the job off and calls the same ingest step per
 message. <code>cli.php cmd=drain-tracker-ingest</code> runs it by hand.</li>
+</ul>
+
+<h4><span class="num">2.30.4a</span>The SQS module</h4>
+<p>Replaces the RemoteQueue module (decided 2 Oct). RemoteQueue forwarded beacons from a logging node to
+a central install&rsquo;s <code>queue.php</code> over HTTP; with the node sending to SQS instead, nothing
+needs <code>queue.php</code>, and it is removed with <code>HttpEventQueue</code> in the removal step.</p>
+<ul>
+<li><strong>Registers an <code>sqs</code> queue type</strong> meeting the contract; a node selects it with
+<code>OWA_TRACKER_INGEST_QUEUE_TYPE</code>. <code>release</code> is
+<code>ChangeMessageVisibility</code>; the receive count is SQS&rsquo;s
+<code>ApproximateReceiveCount</code>; <code>deadLetter</code> sends to the dead-letter queue and deletes;
+the receive limit is the redrive policy, <code>maxReceiveCount</code> 6.</li>
+<li><strong>The AWS SDK for PHP</strong>, trimmed to SQS with its
+<code>removeUnusedServices</code> Composer script. Loaded only when the type is <code>sqs</code>, so
+it is not on Base&rsquo;s boot path (#1081).</li>
+<li><strong>Two queues, names derived, not a setting</strong>:
+<code>owa-tracker-ingest-&lt;hash&gt;</code> and <code>&hellip;-dlq</code>, the hash of DB host, DB name
+and table prefix &mdash; what identifies where the beacons land, so a logging node computes the same
+name from its own <code>owa-config.php</code>. Not <code>generateInstanceSpecificHash()</code>, which is
+the same on installs that share credentials. Only the main queue is polled.</li>
+<li><strong>Provisioned by the module</strong>: <code>provision()</code> &mdash;
+<code>CreateQueue</code> twice, the redrive policy, 14-day retention &mdash; runs on activation when
+credentials resolve, when an install-level save changes them or the region, and from
+<code>cmd=tracker-ingest-provision</code>. Synchronous, so the admin sees at once whether the
+credentials work. A settings-saved hook is added for this; the bundle publishing in step 5 needs the
+same hook.</li>
+<li><strong>Open: where credentials come from.</strong> Proposed: the SDK&rsquo;s default chain
+(environment, <code>~/.aws</code>, instance or task role) plus optional config-file constants, rather
+than a stored setting in the shared database.</li>
 </ul>
 
 <h4><span class="num">2.30.5</span>The admin job queue</h4>
