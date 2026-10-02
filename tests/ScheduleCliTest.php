@@ -126,7 +126,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $schedules = array_values(array_filter(array_column($jobs, 'schedule'),
             fn ($c) => (bool) preg_match('/^\d+ \d+ \* \* \*$/', $c)));
 
-        $this->assertGreaterThanOrEqual(5, count($schedules));
+        $this->assertGreaterThanOrEqual(3, count($schedules));
         $this->assertSame(
             count($schedules),
             count(array_unique($schedules)),
@@ -207,33 +207,33 @@ final class ScheduleCliTest extends CliControllerTestCase
         // with no site collecting into v2, apply-custom-dimensions joined
         // them because registering a dimension cannot do its own ALTER -- that
         // is a full table rebuild, past every request timeout there is -- and
-        // publish-trackers as the daily catch-all for bundles and
-        // tracker-build-check for a new build, since saves publish their own
-        // (PLAN 2.30.7). prune-job-queue deletes
+        // (No bundle job: saves publish their own and cmd=update republishes
+        // what a release changed, PLAN 2.30.7.) prune-job-queue deletes
         // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
         // drain-tracker-ingest is the only thing that ingests a queued beacon
         // and replay-tracker-ingest the only thing that brings a dead letter
         // back without someone running it by hand (PLAN 2.30.4).
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'tracker-build-check', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
     }
 
     /**
-     * The bundles' jobs (PLAN 2.30.7): saves publish their own, so the full
-     * publish-trackers run is daily, and only tracker-build-check -- two file
-     * reads -- runs every minute, for a new build.
+     * No bundle job ships (PLAN 2.30.7): a save publishes its own, and a
+     * release is applied with cmd=update, which republishes what it changed.
+     * publish-trackers stays a command, and the job queue runs it for a
+     * change above one Profile.
      */
-    public function testTheBundleJobsAreADailyRunAndAMinutelyBuildCheck()
+    public function testNoTrackerBundleJobShips()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertSame('publish-trackers', $jobs['publish-trackers']['command']);
-        $this->assertMatchesRegularExpression('/^\d+ \d+ \* \* \*$/', $jobs['publish-trackers']['schedule']);
-
-        $this->assertSame('tracker-build-check', $jobs['tracker-build-check']['command']);
-        $this->assertSame('* * * * *', $jobs['tracker-build-check']['schedule']);
+        $this->assertSame([], array_values(array_filter(array_column($jobs, 'command'),
+            fn ($c) => in_array($c, ['publish-trackers', 'tracker-build-check'], true))));
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
+        $this->assertSame('base.trackerPublishCli', $s->getCliCommandClass('publish-trackers'));
     }
 
     /**

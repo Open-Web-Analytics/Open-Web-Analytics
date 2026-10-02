@@ -52,7 +52,7 @@ class ScheduleRunCli extends SchedulerCli {
         if ( \OWA\Core\CoreAPI::isUpdateRequired() ) {
 
             return $this->refuse(
-                'Schema updates are pending, so no job can run. Apply them with cmd=update.'
+                'Updates are pending -- a schema change or a new release -- so no job can run. Apply them with cmd=update.'
             );
         }
 

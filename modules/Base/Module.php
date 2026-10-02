@@ -94,7 +94,53 @@ class Module extends \OWA\Core\Module {
             return false;
         }
 
-        return parent::update();
+        if ( ! parent::update() ) {
+
+            return false;
+        }
+
+        /*
+         * What a new version needs beyond its schema (PLAN 2.30.7): the
+         * Profiles' tracking bundles made from its tracker. Only those that are
+         * not current are rewritten -- each one's first line names the build
+         * and settings it was made from.
+         */
+        $failed = array_keys( \OWA\Module\Base\Classes\TrackerBundle::publishStale(), 'failed', true );
+
+        if ( $failed ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Tracker bundles not published for %s; see the log, then run'
+                . ' php cli.php cmd=publish-trackers.', implode( ', ', $failed ) ) );
+        }
+
+        return $this->recordCodeVersion();
+    }
+
+    /**
+     * Current when the schema is, AND this code's version is the one that last
+     * ran cmd=update: every release is applied with cmd=update, whether or
+     * not it changes the schema, so what a release needs -- its bundles, for
+     * one -- is done once, there, rather than watched for on a timer.
+     */
+    function isSchemaCurrent() {
+
+        return parent::isSchemaCurrent()
+            && (string) \OWA\Core\CoreAPI::getSetting( $this->name, 'code_version' ) === (string) OWA_VERSION;
+    }
+
+    function install() {
+
+        return parent::install() && $this->recordCodeVersion();
+    }
+
+    /** This code's version, as the one the install is updated to. */
+    private function recordCodeVersion() {
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+        $c->persistSetting( $this->name, 'code_version', (string) OWA_VERSION );
+        $c->save();
+
+        return true;
     }
 
     function init() {
@@ -374,7 +420,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesEditAllowedUsers',         'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',        'Controller/SitesEditAllowedUsers.php' );
         $this->registerAction( 'base.sitesEditSettings',             'OWA\\Module\\Base\\Controller\\SitesEditSettings',            'Controller/SitesEditSettings.php' );
         $this->registerAction( 'base.trackerPublishCli',             'OWA\\Module\\Base\\Controller\\TrackerPublishCli',            'Controller/TrackerPublishCli.php' );
-        $this->registerAction( 'base.trackerBuildCheckCli',          'OWA\\Module\\Base\\Controller\\TrackerBuildCheckCli',         'Controller/TrackerBuildCheckCli.php' );
         $this->registerAction( 'base.jobsCli',                       'OWA\\Module\\Base\\Controller\\JobsCli',                      'Controller/JobsCli.php' );
         $this->registerAction( 'base.jobsRetryCli',                  'OWA\\Module\\Base\\Controller\\JobsRetryCli',                 'Controller/JobsRetryCli.php' );
         $this->registerAction( 'base.jobsForgetCli',                 'OWA\\Module\\Base\\Controller\\JobsForgetCli',                'Controller/JobsForgetCli.php' );
@@ -444,7 +489,6 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('jobs-forget', 'base.jobsForgetCli');
         $this->registerCliCommand('jobs-prune', 'base.jobsPruneCli');
         $this->registerCliCommand('publish-trackers', 'base.trackerPublishCli');
-        $this->registerCliCommand('tracker-build-check', 'base.trackerBuildCheckCli');
         $this->registerCliCommand('custom-dimension-list', 'base.customDimensionListCli');
         $this->registerCliCommand('custom-dimension-apply', 'base.customDimensionApplyCli');
         $this->registerCliCommand('custom-dimension-register', 'base.customDimensionRegisterCli');
@@ -565,18 +609,11 @@ class Module extends \OWA\Core\Module {
             \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array() );
 
         /*
-         * Profiles' tracking bundles (PLAN 2.30.7). A save publishes its own:
-         * a Profile's at once, anything wider as a queued publish-trackers job.
-         * What is left is a new build, checked every minute without the
-         * database, and anything nothing announced -- a config-file
-         * constant, a Profile deleted from the shell -- which the daily full
-         * run catches.
+         * No job for Profiles' tracking bundles (PLAN 2.30.7). A save publishes
+         * its own -- a Profile's at once, anything wider as a queued
+         * publish-trackers job -- and a new release is applied with
+         * cmd=update, which republishes what it changed (update()).
          */
-        $this->registerJob( 'tracker-build-check', 'tracker-build-check', '* * * * *', array() );
-
-        $this->registerJob(
-            'publish-trackers', 'publish-trackers',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'publish-trackers' ) ), array() );
 
         /*
          * Putting registered custom-dimension columns on the cubes.

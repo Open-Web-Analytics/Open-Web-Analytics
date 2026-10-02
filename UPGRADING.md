@@ -16,8 +16,16 @@ overrides, and anyone maintaining a custom theme.
 
 ## Behaviour changes in this release
 
-These are not deprecations — they change what happens on upgrade, and each has a
-one-line way back.
+These are not deprecations — they change what happens on upgrade. Those with a
+way back say what it is.
+
+### Every release is applied with `cmd=update`
+
+`php cli.php cmd=update` is now part of installing every release, not only
+releases that change the schema. Until it runs, the admin screens show the
+update notice and the scheduler runs no jobs; tracking is unaffected. The
+update records the release (`base.code_version`) and republishes the
+Profiles' tracking bundles that the release changed.
 
 ### Strict SQL mode is now the default
 

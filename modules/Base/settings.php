@@ -354,6 +354,14 @@ return array(
          * above are read (Classes\TrackerIngest::isQueued()).
          */
         'queue_tracker_ingest' => array( 'default' => null, 'storable' => true, 'autoload' => true ),
+
+        /*
+         * The OWA_VERSION that last ran cmd=update (Module::isSchemaCurrent()):
+         * a different one is an update pending, so every release is applied
+         * with cmd=update. No default, like schema_version: a default would let
+         * the prune drop it, and the install would look un-updated.
+         */
+        'code_version' => array( 'storable' => true, 'autoload' => true ),
         'tracker_ingest_queue_type' => array( 'default' => 'file' ),
         'tracker_ingest_drain' => array( 'default' => 'scheduler' ),
         'report_wrapper' => array( 'default' => 'wrapper_default.php' ),

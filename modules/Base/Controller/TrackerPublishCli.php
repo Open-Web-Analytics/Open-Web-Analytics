@@ -11,10 +11,11 @@ namespace OWA\Module\Base\Controller;
  *
  * What starts it (PLAN 2.30.7): a Profile's save publishes that Profile at
  * once; a change above one Profile queues one run of this on the job queue;
- * tracker-build-check runs it when a new build lands; and the scheduler runs
- * it daily for anything else -- a config-file constant, a Profile deleted from
- * the shell. A bundle is current when its first line matches what it would be
- * written with now, so a run with nothing to do reads one line per Profile.
+ * cmd=update republishes what a new release changed. Run it by hand after
+ * anything none of those see -- a config-file constant such as
+ * OWA_PUBLIC_URL, a rebuilt tracker on a development checkout. A bundle is
+ * current when its first line matches what it would be written with now, so
+ * a run with nothing to do reads one line per Profile.
  *
  * After anything is published, and otherwise once a day, it fetches one bundle
  * and reads back the cache header it is served with.

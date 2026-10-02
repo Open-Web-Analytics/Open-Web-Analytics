@@ -324,29 +324,47 @@ final class TrackerBundleTest extends TestCase
     // What starts a publish (PLAN 2.30.7)
     // ---------------------------------------------------------------------
 
-    /** A new build is seen from the bundles' own first lines, without the database. */
-    public function testANewBuildIsSeenFromTheBundlesThemselves(): void
+    /**
+     * Every release is applied with cmd=update (PLAN 2.30.7): a version other
+     * than the one that last updated is an update pending, and the update
+     * republishes the bundles the release made stale.
+     */
+    public function testANewVersionIsAnUpdateThatRepublishesStaleBundles(): void
     {
-        $this->assertTrue(TrackerBundle::buildIsPublished(), 'no bundles: nothing is stale');
+        $this->requireDb();
 
-        TrackerBundle::publish(self::SITE);
-        file_put_contents($this->out . 'not-a-bundle.js', "// someone else's file\n");
-        $this->assertTrue(TrackerBundle::buildIsPublished(), 'a file this class did not write is not read as a bundle');
+        $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $c    = \OWA\Core\CoreAPI::configSingleton();
+        $was  = $c->get('base', 'code_version');
 
-        $this->build('/*core v2*/', '/*chunk*/');
-        $this->assertFalse(TrackerBundle::buildIsPublished(), 'a new build');
+        // The install's own live Profiles, published into this test's directory.
+        $live = TrackerBundle::siteIds();
 
-        TrackerBundle::publishStale(false, array(self::SITE));
-        $this->assertTrue(TrackerBundle::buildIsPublished());
-        $this->assertFileDoesNotExist($this->out . '.build', 'no marker file');
-    }
+        if (!$live) {
+            $this->markTestSkipped('needs a live web Profile');
+        }
 
-    public function testWithoutABuildThereIsNothingToPublish(): void
-    {
-        TrackerBundle::publish(self::SITE);
-        unlink($this->dist . 'owa.tracker.manifest.json');
+        try {
+            TrackerBundle::publish($live[0]);
+            $this->build('/*core of the new release*/', '/*chunk*/');
+            $this->assertFalse(TrackerBundle::isCurrent($live[0]), 'the new build makes it stale');
 
-        $this->assertTrue(TrackerBundle::buildIsPublished());
+            $c->set('base', 'code_version', 'an-older-release');
+            $this->assertFalse($base->isSchemaCurrent(), 'another version is an update pending');
+
+            $this->assertTrue($base->update());
+
+            $this->assertSame((string) OWA_VERSION, (string) $c->get('base', 'code_version'));
+            $this->assertTrue($base->isSchemaCurrent());
+
+            foreach ($live as $site_id) {
+                $this->assertTrue(TrackerBundle::isCurrent($site_id), "$site_id's bundle was republished");
+            }
+        } finally {
+            if ((string) $c->get('base', 'code_version') !== (string) $was) {
+                $c->set('base', 'code_version', $was);
+            }
+        }
     }
 
     public function testRemoveTakesDownOneBundle(): void

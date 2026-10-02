@@ -200,9 +200,7 @@ class TrackerBundle {
 
     /**
      * The build's identity, as a bundle's header records it: a hash of the
-     * manifest, which names every built file by its content. The whole
-     * manifest, not just the files a bundle uses, so tracker-build-check can
-     * read it off a bundle without knowing its Profile's settings.
+     * manifest, which names every built file by its content.
      */
     private static function manifestHash( array $manifest ) {
 
@@ -592,45 +590,6 @@ class TrackerBundle {
 
             return false;
         }
-    }
-
-    /**
-     * Whether every bundle on disk is from this build (tracker-build-check):
-     * each bundle's first line names its build, so this reads the manifest
-     * and one line per bundle, and nothing from the database. True with no
-     * build, and with no bundles: a Profile without one gets it when it is
-     * created, saved, or its Tracking Tag screen opened, or at the daily run.
-     *
-     * @return bool
-     */
-    public static function buildIsPublished() {
-
-        $manifest = self::buildManifest();
-
-        if ( ! $manifest ) {
-
-            return true;
-        }
-
-        $want = 'build=' . self::manifestHash( $manifest ) . ' ';
-
-        foreach ( (array) glob( rtrim( self::outDir(), '/' ) . '/*.js' ) as $file ) {
-
-            $handle = @fopen( $file, 'r' );
-            $first  = $handle ? (string) fgets( $handle ) : '';
-
-            if ( $handle ) {
-
-                fclose( $handle );
-            }
-
-            if ( strpos( $first, '/* owa-bundle ' ) === 0 && strpos( $first, $want ) === false ) {
-
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
