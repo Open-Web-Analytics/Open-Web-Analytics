@@ -3526,7 +3526,13 @@ SQS: at-least-once delivery, a visibility timeout, no ordering guarantee.</p>
 <ul>
 <li><strong>Chosen by a setting</strong>, <code>tracking_queue_type</code>, install scope and
 config-file friendly so a static-config logging node can name it. Default <code>file</code>. A module
-registers its type under <code>event_queue_types</code>, as Base registers <code>file</code> today.</li>
+registers its type under <code>event_queue_types</code>, as Base registers <code>file</code> today, and
+the setting points the existing queue at it.</li>
+<li><strong>Plugging an existing queue is not adding one.</strong> <code>registerEventQueue()</code> lets
+a module create a new named queue, and a type it registers serves only its own queues:
+<code>incoming_tracking_events</code> is registered with <code>'queue_type' =&gt; 'file'</code>
+written into its registration, so nothing outside Base can change what it runs on. The setting is
+that plug.</li>
 <li><strong>A JSON envelope, not a PHP object</strong>: <code>{v, type, properties, queued_at}</code>.
 Readable by another system, and nothing is unserialized. The file implementation is rewritten to the
 contract and keeps its lines, locks and rotation.</li>
