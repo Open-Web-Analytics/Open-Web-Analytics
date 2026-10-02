@@ -2540,7 +2540,7 @@ snippet keeps nothing else.</p>
 <div class="scroll"><table>
 <thead><tr><th>In the bundle</th><th>From</th></tr></thead>
 <tbody>
-<tr><td>options</td><td>the Profile&rsquo;s resolved settings: endpoints, the tracker&rsquo;s cookie domain, lifetimes and persistence, URL fragments, scroll thresholds, search parameters, download extensions, domstream sample rate</td></tr>
+<tr><td>options</td><td>the Profile&rsquo;s resolved settings: endpoints, the tracker&rsquo;s cookie domain and lifetimes, URL fragments, scroll thresholds, search parameters, download extensions, domstream sample rate</td></tr>
 <tr><td>commands</td><td>the feature switches the Profile has on: <code>trackPageView</code>, <code>trackClicks</code>, <code>trackForms</code>, <code>trackScroll</code>, <code>trackSiteSearch</code>, <code>trackExceptions</code>, <code>trackRouteChanges</code>, <code>trackEngagement</code>, <code>trackDomStream</code></td></tr>
 <tr><td><code>session_length</code></td><td>the install&rsquo;s value, baked in so the tracker and the cube agree. <strong>Not a setting on any screen.</strong></td></tr>
 </tbody></table></div>
@@ -2597,26 +2597,44 @@ inherits until its Override switch is on. A module declares its own: Domstream d
 <code>trackDomStream</code> and its sample rate, and contributes them through a
 <code>tracker_config</code> filter that replaces <code>tracker_tag_cmds</code> for anything a site
 sets.</p>
-<p><strong>Cookie lifetimes are tag settings</strong>, at install and Profile scope. They are the
-server half of PR&nbsp;#1098 (digikwal, for #941): its tracker half merged 18&nbsp;Sep and reads
-them through <code>setOption</code>; its settings and Privacy screens were taken out of that PR at our
-request, to arrive with this feature.</p>
+<p><strong>The bundle configures the tracker only as a snippet can</strong>: through its public
+options and commands, nothing private to publishing. A bundle is a pre-written snippet, so anything
+it does a page owner can do by hand, and one set of tests covers both.</p>
+<p><strong>Cookie lifetimes are tag settings.</strong> They are the server half of PR&nbsp;#1098
+(digikwal, for #941): its tracker half merged 18&nbsp;Sep and shipped in 1.14.0; its settings and
+Privacy screens were taken out of that PR at our request, to arrive with this feature.</p>
 <div class="scroll"><table>
-<thead><tr><th>Setting</th><th>Type</th><th>Default</th><th>Bakes into</th></tr></thead>
+<thead><tr><th>Setting</th><th>Type</th><th>Default</th><th>Levels</th><th>Bakes in as</th></tr></thead>
 <tbody>
-<tr><td><code>tracker_visitor_cookie_days</code></td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.v</code></td></tr>
-<tr><td><code>tracker_session_cookie_days</code></td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.s</code></td></tr>
-<tr><td><code>tracker_cookie_persistence</code></td><td>boolean</td><td>on</td><td><code>cookiePersistence</code>; off writes every tracker cookie with no <code>expires</code></td></tr>
-<tr><td><code>tracker_cookie_domain</code></td><td>text</td><td>none: the page&rsquo;s domain</td><td><code>cookie_domain</code></td></tr>
+<tr><td><code>tracker_visitor_cookie_days</code></td><td>integer days, 0&ndash;400</td><td>364</td><td>install, Property</td><td><code>setOption('stateStoreExpirations', {v: &hellip;})</code></td></tr>
+<tr><td><code>tracker_session_cookie_days</code></td><td>integer days, 0&ndash;400</td><td>364</td><td>install, Property, Profile</td><td><code>&hellip; {s: &hellip;}</code>, in the same call</td></tr>
+<tr><td><code>tracker_cookie_domain</code></td><td>text</td><td>none: the page&rsquo;s domain</td><td>install, Property</td><td><code>cookie_domain</code></td></tr>
 </tbody></table></div>
+<ul>
+<li><strong>0 days means the cookie ends when the browser closes</strong>, written with no
+<code>expires</code>. Today <code>configuredExpiration()</code> refuses anything below 1 and falls
+back to 364, so a 0 silently became a year; it accepts 0 now, per cookie.</li>
+<li><strong>The visitor cookie is set per Property</strong> because it is shared: the tracker
+registers <code>v</code> once per page, not per site, so every Profile on the same pages writes the
+same <code>owa_v</code>, and two Profiles with different lifetimes would rewrite it alternately. The
+session cookie (<code>owa_s_&lt;siteId&gt;</code>) is per Profile.</li>
+<li><strong>At most 400 days</strong>, Chrome&rsquo;s cap on a first-party cookie; a longer value
+claims something no browser honours. Not #1098&rsquo;s 3650.</li>
+<li><strong>Two lifetimes, not #1098&rsquo;s three</strong>: v2&rsquo;s tracker registers no campaign
+(<code>c</code>) store.</li>
+<li><strong>Visitor expiry follows the longest.</strong> <code>VisitorExpiry</code> keeps a row while
+its visitor could still return with their cookie, fixed today at 14 months. The visitor store is
+keyed by <code>visitor_id</code> alone, so the floor becomes the longest
+<code>tracker_visitor_cookie_days</code> any level sets.</li>
+</ul>
+<p><strong><code>cookiePersistence</code> is deprecated in 2.0.</strong> It shipped in 1.14.0, so it
+keeps working: <code>false</code> is read as 0 days for every store, with a debug notice naming the
+replacement. UPGRADING.md lists it, removal in a later release. No tag setting maps to it.</p>
 <p><strong>The tracker&rsquo;s cookies only.</strong> These are new settings rather than the existing
 <code>cookie_persistence</code> and <code>cookie_domain</code>, which govern the cookies the
 <em>server</em> sets &mdash; admin cookies (<code>u</code>/<code>p</code> sign-in, the last
 Profile), read by <code>CoreAPI::setCookie()</code> and <code>State.php</code>. Those two stay
 install-only and unchanged; a tag setting never reaches an admin cookie.</p>
-<p class="note">Two lifetimes, not #1098&rsquo;s three: v2&rsquo;s tracker registers no campaign
-(<code>c</code>) store. The 1&ndash;3650 range is #1098&rsquo;s, enforced by the declaration like the
-lookback (#1173).</p>
 <p>Publish resolves the walk once and bakes the winner, so the tracker never learns there were
 tiers.</p>
 
