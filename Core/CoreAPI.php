@@ -3017,6 +3017,12 @@ class CoreAPI {
 	    }
     }
 
+    /** A module's schema is behind (Service::isSchemaUpdateRequired()). */
+    public static function isSchemaUpdateRequired() {
+
+        return \OWA\Core\CoreAPI::serviceSingleton()->isSchemaUpdateRequired();
+    }
+
     public static function isUpdateRequired() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();

@@ -355,14 +355,15 @@ final class TrackerBundleTest extends TestCase
             $this->assertFalse(TrackerBundle::isCurrent($live[0]), 'the new build makes it stale');
 
             $c->set('base', 'code_version', 'an-older-release');
-            $this->assertFalse($base->isSchemaCurrent(), 'another version is an update pending');
+            $this->assertFalse($base->isUpToDate(), 'another version is an update pending');
+            $this->assertTrue($base->isSchemaCurrent(), 'and only that: the schema is current');
 
             // cmd=update: published in the run.
             \OWA\Module\Base\Module::$publish_inline = true;
             $this->assertTrue($base->update());
 
             $this->assertSame((string) OWA_VERSION, (string) $c->get('base', 'code_version'));
-            $this->assertTrue($base->isSchemaCurrent());
+            $this->assertTrue($base->isUpToDate());
 
             foreach ($live as $site_id) {
                 $this->assertTrue(TrackerBundle::isCurrent($site_id), "$site_id's bundle was republished");

@@ -139,14 +139,18 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Current when the schema is, AND this code's version is the one that last
-     * ran cmd=update: every release is applied with cmd=update, whether or
-     * not it changes the schema, so what a release needs -- its bundles, for
-     * one -- is done once, there, rather than watched for on a timer.
+     * Up to date when the schema is, AND this code's version is the one that
+     * last applied an update: every release is applied as an update, whether
+     * or not it changes the schema, so what a release needs -- its bundles,
+     * for one -- is done once, there, rather than watched for on a timer.
+     *
+     * The schema alone is still isSchemaCurrent(), which is what the
+     * scheduler asks: a release that changes no schema is no reason to stop
+     * its jobs.
      */
-    function isSchemaCurrent() {
+    function isUpToDate() {
 
-        return parent::isSchemaCurrent()
+        return parent::isUpToDate()
             && (string) \OWA\Core\CoreAPI::getSetting( $this->name, 'code_version' ) === (string) OWA_VERSION;
     }
 

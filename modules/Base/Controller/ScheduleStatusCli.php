@@ -33,7 +33,7 @@ class ScheduleStatusCli extends SchedulerCli {
         $jobs    = $this->jobs();
         $state   = $this->allState();
         $enabled = (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'scheduler_enabled' );
-        $pending = \OWA\Core\CoreAPI::isUpdateRequired();
+        $pending = \OWA\Core\CoreAPI::isSchemaUpdateRequired();
 
         $lines = array( sprintf(
             'Scheduler status, %s (%s). %d job(s) registered.',
@@ -57,6 +57,13 @@ class ScheduleStatusCli extends SchedulerCli {
             $lines[] = '';
             $lines[] = 'ACTION: schema updates are pending, so the dispatcher refuses every job. '
                      . 'Apply them with cmd=update. Nothing below will run until you do.';
+        }
+
+        if ( ! $pending && \OWA\Core\CoreAPI::isUpdateRequired() ) {
+
+            $lines[] = '';
+            $lines[] = 'NOTE: this release has not been applied yet. Jobs still run; the admin screens wait for '
+                     . 'the update, and Profiles\' tracking bundles are from the last one. Apply it with cmd=update.';
         }
 
         // Any state row is proof the dispatcher has run at least once, because

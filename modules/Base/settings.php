@@ -356,9 +356,10 @@ return array(
         'queue_tracker_ingest' => array( 'default' => null, 'storable' => true, 'autoload' => true ),
 
         /*
-         * The OWA_VERSION that last ran cmd=update (Module::isSchemaCurrent()):
+         * The OWA_VERSION that last applied an update (Module::isUpToDate()):
          * a different one is an update pending, so every release is applied
-         * with cmd=update. No default, like schema_version: a default would let
+         * as an update. The scheduler keeps running meanwhile; only a schema
+         * behind stops it. No default, like schema_version: a default would let
          * the prune drop it, and the install would look un-updated.
          */
         'code_version' => array( 'storable' => true, 'autoload' => true ),

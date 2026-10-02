@@ -24,7 +24,8 @@ way back say what it is.
 Applying the update -- `php cli.php cmd=update`, or Apply on the update notice
 in the admin screens -- is now part of installing every release, not only
 releases that change the schema. Until it is applied, the admin screens show the
-update notice and the scheduler runs no jobs; tracking is unaffected. The
+update notice. Tracking is unaffected, and so are scheduled jobs unless the
+release changes the schema, which stops them until it is applied. The
 update records the release (`base.code_version`) and publishes the Profiles'
 tracking bundles that are stale or missing: in the run from the command line,
 or as a job for the scheduler's next minute when applied from the screen.

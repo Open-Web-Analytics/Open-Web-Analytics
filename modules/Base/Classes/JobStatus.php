@@ -79,7 +79,7 @@ class JobStatus {
 
         $out['reason'] = self::diagnose( $name, $job, $row, $lock, $parsed, $now,
             (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'scheduler_enabled' ),
-            \OWA\Core\CoreAPI::isUpdateRequired(), (bool) $state, $last_activity );
+            \OWA\Core\CoreAPI::isSchemaUpdateRequired(), (bool) $state, $last_activity );
 
         return $out;
     }
