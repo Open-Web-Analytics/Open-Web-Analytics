@@ -1263,6 +1263,67 @@ namespace OWA\Module\Base\Classes;
       * @param string $value the configuration value
       * @return
       */
+     /**
+      * Why a value cannot be stored for a setting, or null when it can.
+      *
+      * The declaration states the rule. `integer` takes a whole number, inside
+      * `min` and `max` where it declares them. Other types and undeclared
+      * settings check nothing.
+      *
+      * Read at both write chokepoints, persistSetting() and
+      * CoreAPI::setScopedSetting(), so no screen, CLI or post can store a value
+      * the declaration refuses. Controllers ask it too, to report the problem
+      * on the form.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @param  mixed  $value
+      * @return string|null
+      */
+     public function valueProblem( $module, $key, $value ) {
+
+         $args = $this->registeredField( $module, $key );
+
+         if ( ! $args || ( $args['type'] ?? '' ) !== 'integer' ) {
+
+             return null;
+         }
+
+         $text  = is_int( $value ) ? (string) $value : trim( (string) $value );
+         $label = isset( $args['label'] ) && $args['label'] !== '' ? $args['label'] : $key;
+         $min   = $args['min'] ?? null;
+         $max   = $args['max'] ?? null;
+
+         $range = $min !== null && $max !== null ? sprintf( ' from %d to %d', $min, $max )
+                : ( $min !== null ? sprintf( ' of at least %d', $min )
+                : ( $max !== null ? sprintf( ' of at most %d', $max ) : '' ) );
+
+         if ( ! preg_match( '/^-?\d+$/', $text )
+              || ( $min !== null && (int) $text < $min )
+              || ( $max !== null && (int) $text > $max ) ) {
+
+             return sprintf( '%s is a whole number%s.', $label, $range );
+         }
+
+         return null;
+     }
+
+     /**
+      * A value as it is stored: an `integer` setting as an int, whatever the
+      * form posted.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @param  mixed  $value
+      * @return mixed
+      */
+     public function normalizedValue( $module, $key, $value ) {
+
+         $args = $this->registeredField( $module, $key );
+
+         return $args && ( $args['type'] ?? '' ) === 'integer' ? (int) trim( (string) $value ) : $value;
+     }
+
      public function persistSetting($module, $key, $value) {
 
          /*
@@ -1305,6 +1366,17 @@ namespace OWA\Module\Base\Classes;
 
              return;
          }
+
+         $problem = $this->valueProblem( $module, $key, $value );
+
+         if ( $problem !== null ) {
+
+             \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to persist %s.%s: %s', $module, $key, $problem ) );
+
+             return;
+         }
+
+         $value = $this->normalizedValue( $module, $key, $value );
 
          $this->set($module, $key, $value);
 

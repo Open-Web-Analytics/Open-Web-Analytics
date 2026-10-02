@@ -53,6 +53,15 @@ class SitesEditSettings extends \OWA\Core\AdminController {
         ];
 
         $this->addValidation('siteId', $this->getParam('siteId'), 'entityExists', $siteEntityConf);
+
+        // Each setting the screen would store, checked against its declaration.
+        foreach ( \OWA\Module\Base\Classes\SettingsForm::scopedProblems(
+                      \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.profileObservation' ),
+                      'profile', (string) $this->getParam( 'siteId' ),
+                      $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
+
+            $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+        }
     }
 
     function action() {

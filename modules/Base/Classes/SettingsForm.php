@@ -553,6 +553,56 @@ class SettingsForm {
     }
 
     /**
+     * What a scoped post would store that its declarations refuse, by field.
+     *
+     * The fields saveScoped() would write: an override switched on, or a plain
+     * field given a value. A controller adds these as validation errors so the
+     * form says what was wrong; the write chokepoint refuses them regardless.
+     *
+     * @param  array  $set
+     * @param  string $scopeType
+     * @param  string $scopeId
+     * @param  array  $config
+     * @param  array  $override
+     * @return array  module.key => message
+     */
+    public static function scopedProblems( array $set, $scopeType, $scopeId, $config, $override ) {
+
+        $c        = \OWA\Core\CoreAPI::configSingleton();
+        $module   = (string) ( $set['module'] ?? '' );
+        $config   = (array) $config;
+        $override = (array) $override;
+        $out      = array();
+
+        foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+
+            $key  = (string) $key;
+            $name = $module . '.' . $key;
+
+            if ( ! array_key_exists( $name, $config ) ) {
+
+                continue;
+            }
+
+            $plain = self::hasNoValue( self::inheritance( $module, $key, $scopeType, $scopeId )['inherited'] );
+
+            if ( $plain ? self::hasNoValue( $config[ $name ] ) : empty( $override[ $name ] ) ) {
+
+                continue;
+            }
+
+            $problem = $c->valueProblem( $module, $key, $config[ $name ] );
+
+            if ( $problem !== null ) {
+
+                $out[ $name ] = $problem;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * A value as the screen names it: a boolean as On or Off, a select by its
      * option's label. Empty stays empty, and then there is nothing to override.
      *
@@ -639,6 +689,13 @@ class SettingsForm {
             case 'text':
 
                 return sprintf( '<input type="text" size="50" name="%s" value="%s"%s>',
+                    self::esc( $name ), self::esc( (string) $value ), $off );
+
+            case 'integer':
+
+                return sprintf( '<input type="number" step="1"%s%s name="%s" value="%s"%s>',
+                    isset( $args['min'] ) ? sprintf( ' min="%d"', $args['min'] ) : '',
+                    isset( $args['max'] ) ? sprintf( ' max="%d"', $args['max'] ) : '',
                     self::esc( $name ), self::esc( (string) $value ), $off );
         }
 
