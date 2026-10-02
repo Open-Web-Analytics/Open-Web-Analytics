@@ -97,7 +97,7 @@ final class SettingsFormScopedTest extends TestCase
         $this->assertStringContainsString('data-owa-inherited="abc"', $html);
         $this->assertMatchesRegularExpression('#<input type="checkbox" role="switch" name="owa_override\[zz_scoped_form_test\.words\]" value="1" data-owa-override="[^"]+"> Override#', $html,
             'the switch is beside the field, off');
-        $this->assertMatchesRegularExpression('#data-owa-note-inherit="[^"]+">Set at the install level\.</div>#', $html,
+        $this->assertMatchesRegularExpression('#data-owa-note-inherit="[^"]+">Currently set at the install level\.</div>#', $html,
             'the note beneath names the level that sets it, and shows');
         $this->assertMatchesRegularExpression('#data-owa-note-override="[^"]+" hidden>#', $html);
     }
@@ -116,7 +116,92 @@ final class SettingsFormScopedTest extends TestCase
             'switching off puts back what it would inherit');
         $this->assertStringContainsString('value="1" data-owa-override="owa-setting-zz_scoped_form_test-words" checked="checked"', $html);
         $this->assertMatchesRegularExpression('#data-owa-note-inherit="[^"]+" hidden>#', $html);
-        $this->assertStringContainsString('>Overrides the install level&rsquo;s abc.</div>', $html);
+        $this->assertStringContainsString('>Overrides the install level value of <code>abc</code>.</div>', $html);
+    }
+
+    private function registerBlank(): void
+    {
+        $this->config()->registerField(self::MODULE, 'blank', array(
+            'default' => '', 'storable' => true, 'type' => 'text', 'label' => 'Blank',
+            'scopes'  => array('install', 'profile')));
+    }
+
+    /** With nothing set above there is nothing to override: a plain field. */
+    public function testWithNothingAboveTheFieldIsPlain(): void
+    {
+        $this->requireDb();
+        $this->registerBlank();
+
+        try {
+            $html = $this->field('blank');
+
+            $this->assertStringContainsString('name="owa_config[zz_scoped_form_test.blank]" value="" id=', $html,
+                'editable, not disabled');
+            $this->assertStringNotContainsString('override[', $html, 'no switch');
+            $this->assertStringNotContainsString('owa-inherit-note', $html, 'no note');
+
+            \OWA\Core\CoreAPI::setScopedSetting('profile', self::PROFILE, self::MODULE, 'blank', 'mine');
+
+            $html = $this->field('blank');
+
+            $this->assertStringContainsString('value="mine" id=', $html);
+            $this->assertStringNotContainsString('override[', $html);
+
+        } finally {
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', self::PROFILE, self::MODULE, 'blank');
+        }
+    }
+
+    /**
+     * The mode is read from what is set now. A value saved here while nothing
+     * was set above becomes an override once something is.
+     */
+    public function testAValueSetAboveLaterTurnsThisLevelsValueIntoAnOverride(): void
+    {
+        $this->requireDb();
+        $this->registerBlank();
+
+        \OWA\Core\CoreAPI::setScopedSetting('profile', self::PROFILE, self::MODULE, 'blank', 'mine');
+
+        try {
+            $this->assertStringNotContainsString('override[', $this->field('blank'));
+
+            $this->config()->set(self::MODULE, 'blank', 'above');
+
+            $html = $this->field('blank');
+
+            $this->assertStringContainsString('value="mine" id=', $html);
+            $this->assertMatchesRegularExpression('#name="owa_override\[zz_scoped_form_test\.blank\]" value="1" data-owa-override="[^"]+" checked="checked"#', $html);
+            $this->assertStringContainsString('>Overrides the install level value of <code>above</code>.</div>', $html);
+
+        } finally {
+            $this->config()->set(self::MODULE, 'blank', '');
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', self::PROFILE, self::MODULE, 'blank');
+        }
+    }
+
+    /** A plain field saves by its value: something stores it, empty removes it. */
+    public function testAPlainFieldIsSavedByItsValue(): void
+    {
+        $this->requireDb();
+        $this->registerBlank();
+
+        $set = array('id' => self::MODULE . '.blankset', 'module' => self::MODULE, 'settings' => array('blank'));
+        $row = fn () => \OWA\Core\CoreAPI::getScopedSettingRow('profile', self::PROFILE, self::MODULE, 'blank');
+
+        try {
+            SettingsForm::saveScoped($set, 'profile', self::PROFILE, array(self::MODULE . '.blank' => 'mine'), array());
+            $this->assertSame('mine', $row(), 'no switch is needed to store it');
+
+            SettingsForm::saveScoped($set, 'profile', self::PROFILE, array(), array());
+            $this->assertSame('mine', $row(), 'a post without the field leaves it alone');
+
+            SettingsForm::saveScoped($set, 'profile', self::PROFILE, array(self::MODULE . '.blank' => '  '), array());
+            $this->assertNull($row(), 'saved empty, the level holds nothing');
+
+        } finally {
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', self::PROFILE, self::MODULE, 'blank');
+        }
     }
 
     public function testABooleanSaysOnOrOff(): void
@@ -134,7 +219,7 @@ final class SettingsFormScopedTest extends TestCase
 
         $this->assertStringContainsString('<option value="0" selected="selected">Off</option>', $html,
             'a stored false is this level\'s value');
-        $this->assertStringContainsString('>Overrides the install level&rsquo;s On.</div>', $html);
+        $this->assertStringContainsString('>Overrides the install level value of <code>On</code>.</div>', $html);
     }
 
     /** The level named is the one actually supplying the value. */
@@ -165,7 +250,7 @@ final class SettingsFormScopedTest extends TestCase
             $html = SettingsForm::scopedField(self::MODULE, 'words', 'profile', $siteId, 'owa_');
 
             $this->assertStringContainsString('value="from the property" disabled="disabled"', $html);
-            $this->assertStringContainsString('>Set at the Property level.</div>', $html);
+            $this->assertStringContainsString('>Currently set at the Property level.</div>', $html);
 
         } finally {
             \OWA\Core\CoreAPI::clearScopedSetting('property', $propertyId, self::MODULE, 'words');
@@ -178,7 +263,7 @@ final class SettingsFormScopedTest extends TestCase
         $html = SettingsForm::scopedField(self::MODULE, 'property_only', 'property', '', 'owa_');
 
         $this->assertStringContainsString('value="p" disabled="disabled"', $html);
-        $this->assertStringContainsString('>Set at the install level.</div>', $html);
+        $this->assertStringContainsString('>Currently set at the install level.</div>', $html);
     }
 
     public function testALevelTheSettingDoesNotDeclareRendersNothing(): void

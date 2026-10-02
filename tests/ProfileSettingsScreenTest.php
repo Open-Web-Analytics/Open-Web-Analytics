@@ -137,11 +137,13 @@ final class ProfileSettingsScreenTest extends TestCase
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
-        $key     = 'default_page';
+        $key     = 'p3p_policy';
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
 
         $inherited = \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'];
+
+        $this->assertNotSame( '', (string) $inherited, 'p3p_policy has a default, so it has a switch' );
 
         $save = function ( array $params ) use ( $site_id ) {
 
@@ -151,8 +153,8 @@ final class ProfileSettingsScreenTest extends TestCase
 
         try {
             $save( array(
-                'config'   => array( 'base.default_page' => (string) $inherited ),
-                'override' => array( 'base.default_page' => '1' ),
+                'config'   => array( 'base.p3p_policy' => (string) $inherited ),
+                'override' => array( 'base.p3p_policy' => '1' ),
             ) );
 
             $this->assertSame( (string) $inherited,
@@ -168,6 +170,39 @@ final class ProfileSettingsScreenTest extends TestCase
 
         } finally {
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
+        }
+    }
+
+    /** default_page has nothing above it: a plain field, saved by its value. */
+    public function testAFieldWithNothingAboveIsSavedByItsValue(): void
+    {
+        $this->requireDb();
+        $site_id = $this->aSiteId();
+
+        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'default_page' );
+
+        if ( (string) \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', 'default_page', 'profile', $site_id )['inherited'] !== '' ) {
+            $this->markTestSkipped( 'this install sets default_page above the Profile' );
+        }
+
+        $save = function ( $value ) use ( $site_id ) {
+
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+                'siteId' => $site_id, 'config' => array( 'base.default_page' => $value ) ) );
+            $c->action();
+        };
+
+        try {
+            $save( 'index.html' );
+            $this->assertSame( 'index.html',
+                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'default_page' ) );
+
+            $save( '' );
+            $this->assertNull(
+                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'default_page' ) );
+
+        } finally {
+            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'default_page' );
         }
     }
 

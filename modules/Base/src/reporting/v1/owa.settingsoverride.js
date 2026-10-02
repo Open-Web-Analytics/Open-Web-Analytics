@@ -10,8 +10,8 @@
  *
  *   <select id="owa-setting-base-x" data-owa-inherited="1" disabled>...</select>
  *   <input type="checkbox" data-owa-override="owa-setting-base-x">
- *   <div data-owa-note-inherit="owa-setting-base-x">Set at the install level.</div>
- *   <div data-owa-note-override="owa-setting-base-x" hidden>Overrides the install level's On.</div>
+ *   <div data-owa-note-inherit="owa-setting-base-x">Currently set at the install level.</div>
+ *   <div data-owa-note-override="owa-setting-base-x" hidden>Overrides the install level value of <code>On</code>.</div>
  *
  * Delegated from the document, so a screen rendered after load is covered.
  */
