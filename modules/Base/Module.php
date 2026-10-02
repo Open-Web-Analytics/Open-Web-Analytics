@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 66;
+        $this->required_schema_version = 67;
         return parent::__construct();
     }
 
@@ -382,6 +382,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesEditAllowedUsers',         'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',        'Controller/SitesEditAllowedUsers.php' );
         $this->registerAction( 'base.sitesEditSettings',             'OWA\\Module\\Base\\Controller\\SitesEditSettings',            'Controller/SitesEditSettings.php' );
         $this->registerAction( 'base.trackerPublishCli',             'OWA\\Module\\Base\\Controller\\TrackerPublishCli',            'Controller/TrackerPublishCli.php' );
+        $this->registerAction( 'base.jobsCli',                       'OWA\\Module\\Base\\Controller\\JobsCli',                      'Controller/JobsCli.php' );
+        $this->registerAction( 'base.jobsRetryCli',                  'OWA\\Module\\Base\\Controller\\JobsRetryCli',                 'Controller/JobsRetryCli.php' );
+        $this->registerAction( 'base.jobsForgetCli',                 'OWA\\Module\\Base\\Controller\\JobsForgetCli',                'Controller/JobsForgetCli.php' );
+        $this->registerAction( 'base.jobsPruneCli',                  'OWA\\Module\\Base\\Controller\\JobsPruneCli',                 'Controller/JobsPruneCli.php' );
         $this->registerAction( 'base.sitesEditTagSettings',          'OWA\\Module\\Base\\Controller\\SitesEditTagSettings',         'Controller/SitesEditTagSettings.php' );
         $this->registerAction( 'base.sitesInvocation',               'OWA\\Module\\Base\\Controller\\SitesInvocation',              'Controller/SitesInvocation.php' );
         $this->registerAction( 'base.sitesProfile',                  'OWA\\Module\\Base\\Controller\\SitesProfile',                 'Controller/SitesProfile.php' );
@@ -441,6 +445,10 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
         $this->registerCliCommand('cube-rebuild', 'base.cubeRebuildCli');
+        $this->registerCliCommand('jobs', 'base.jobsCli');
+        $this->registerCliCommand('jobs-retry', 'base.jobsRetryCli');
+        $this->registerCliCommand('jobs-forget', 'base.jobsForgetCli');
+        $this->registerCliCommand('jobs-prune', 'base.jobsPruneCli');
         $this->registerCliCommand('publish-trackers', 'base.trackerPublishCli');
         $this->registerCliCommand('custom-dimension-list', 'base.customDimensionListCli');
         $this->registerCliCommand('custom-dimension-apply', 'base.customDimensionApplyCli');
@@ -521,6 +529,11 @@ class Module extends \OWA\Core\Module {
         $this->registerJob(
             'rotate-partitions', 'partition-rotate',
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array() );
+
+        // Finished one-off jobs (PLAN 2.30.5): done after 7 days, failed after 30.
+        $this->registerJob(
+            'prune-job-queue', 'jobs-prune',
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-job-queue' ) ), array() );
 
         /*
          * The reporting cube's build, EVERY FIVE MINUTES. Reports read the
@@ -1128,6 +1141,8 @@ class Module extends \OWA\Core\Module {
                 'custom_report',
                 'custom_report_favorite',
                 'job_lock',
+                // One-off admin jobs, run by the scheduler (PLAN 2.30.5).
+                'job_queue',
                 'site_user',
                 /*
                  * v2. Registered unconditionally so cmd=update creates them and

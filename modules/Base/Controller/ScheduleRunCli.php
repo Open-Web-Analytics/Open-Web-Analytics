@@ -102,6 +102,51 @@ class ScheduleRunCli extends SchedulerCli {
 
             $this->considerJob( $name, $job, $force, $dry_run );
         }
+
+        // Then the one-off jobs, in what is left of the budget (PLAN 2.30.5).
+        // Not when asked to run one named job, and not on a dry run.
+        if ( ! $only && ! $dry_run ) {
+
+            $this->drainQueue( $started + self::MAX_RUNTIME );
+        }
+    }
+
+    /**
+     * Run queued one-off jobs until the queue is empty or the deadline.
+     *
+     * Each through the same path as a scheduled job -- its controller built
+     * directly, its outcome read the same way -- with a JobQueueLease so its
+     * heartbeat() extends the job's own claim.
+     *
+     * @param  int $deadline
+     * @return void
+     */
+    protected function drainQueue( $deadline ) {
+
+        $counts = \OWA\Module\Base\Classes\JobQueue::drain( $deadline,
+            function ( $command, array $params, array $row ) {
+
+                $controller = $this->makeController( array( 'command' => $command, 'params' => $params ) );
+
+                if ( ! $controller ) {
+
+                    return array( 'outcome' => 'failed', 'message' => 'controller could not be constructed' );
+                }
+
+                $controller->setJobLease(
+                    new \OWA\Module\Base\Classes\JobQueueLease( $row['id'], $row['lease_seconds'] ) );
+
+                \OWA\Core\CoreAPI::notice( sprintf( 'Running queued job %s (%s), attempt %d of %d.',
+                    $row['id'], $command, $row['attempts'], $row['max_attempts'] ) );
+
+                return $this->readOutcome( $controller, $controller->doAction() );
+            } );
+
+        if ( array_sum( $counts ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Queued jobs: %d done, %d to retry, %d failed, %d gave up after dying.',
+                $counts['done'], $counts['retried'], $counts['failed'], $counts['exhausted'] ) );
+        }
     }
 
     /**

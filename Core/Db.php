@@ -213,6 +213,20 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * How many statements have been refused in this process.
+     *
+     * A read that answers no row and a read that failed both come back empty;
+     * comparing this before and after the call is how a caller tells them
+     * apart without a second query.
+     *
+     * @return int
+     */
+    function queryErrorCount() {
+
+        return self::$query_error_count;
+    }
+
+    /**
      * Report a statement the database refused.
      *
      * This used to be $this->e->debug(), which under the production error

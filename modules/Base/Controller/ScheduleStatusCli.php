@@ -79,9 +79,38 @@ class ScheduleStatusCli extends SchedulerCli {
         }
 
         $lines = array_merge( $lines, $this->describeOrphans( $jobs, $state ) );
+        $lines = array_merge( $lines, $this->describeQueue() );
         $lines = array_merge( $lines, $this->summarise( $jobs, $state, $ever, $last_activity, $now ) );
 
         $this->write( $lines );
+    }
+
+    /**
+     * The one-off job queue (PLAN 2.30.5), drained after the recurring jobs.
+     *
+     * @return string[]
+     */
+    protected function describeQueue() {
+
+        $q = \OWA\Module\Base\Classes\JobQueue::stats();
+
+        $lines = array( '', 'Queued jobs' );
+
+        $lines[] = sprintf( '  due %d, delayed %d, running %d, failed %d, done %d',
+            $q['due'], $q['delayed'], $q['running'], $q['failed'], $q['done'] );
+
+        if ( $q['oldest_due_age'] !== null && $q['oldest_due_age'] > 300 ) {
+
+            $lines[] = sprintf( '  WARNING: a job has been due for %d minutes; the scheduler is not draining the queue.',
+                intdiv( $q['oldest_due_age'], 60 ) );
+        }
+
+        if ( $q['failed'] ) {
+
+            $lines[] = '  See them with cmd=jobs status=failed; retry with cmd=jobs-retry id=<id>|all.';
+        }
+
+        return $lines;
     }
 
     /**
