@@ -2502,7 +2502,7 @@ collapsing <code>www.mydomain.com</code> and <code>mydomain.com</code>; a genera
 much larger thing to reason about than the help text implies.</li>
 </ul>
 
-<h3 id="s225"><span class="num">2.24</span>Profile tracking bundles <span class="chip c-dec">Decided</span></h3>
+<h3 id="s225"><span class="num">2.24</span>Profile tracking bundles <span class="chip c-done">Shipped</span></h3>
 <p class="note"><strong>Decided 2 Oct, replacing the deferred &ldquo;Publishing the tracker&rdquo;.</strong>
 It was written while site settings lived in <code>owa_site.settings</code> and the tracker took its
 config from <code>owa_cmds</code> only. Scoped settings with the Override switch (#1169) and a single
@@ -2643,19 +2643,24 @@ install-only and unchanged; a tag setting never reaches an admin cookie.</p>
 <p>Publish resolves the walk once and bakes the winner, so the tracker never learns there were
 tiers.</p>
 
-<h4><span class="num">2.24.5</span>Publishing</h4>
+<h4><span class="num">2.24.5</span>Publishing <span class="chip c-done">Shipped</span></h4>
 <ul>
-<li><strong>Saving marks bundles stale; the scheduler rebuilds them.</strong> A setting saved at any
-level marks every Profile beneath it stale. The scheduler job, already running every minute,
-rebuilds stale bundles as the files&rsquo; owner, so no web request writes under
-<code>public/</code>.</li>
-<li><strong>Written atomically</strong>: to a temporary file, then renamed into place.</li>
-<li><strong>Also on</strong> Profile creation, and on every update: <code>cli.php cmd=update</code>
-republishes all of them, because the core lives inside every bundle.
-<code>cli.php cmd=publish-trackers</code> does it on demand.</li>
-<li><strong>The Tracking Tag screen says which</strong>: Published, with the time, or Waiting to
-publish. A stale or missing file is also caught by the job comparing each bundle&rsquo;s recorded
-config and build hashes with the current ones.</li>
+<li><strong>The file is its own record.</strong> A bundle&rsquo;s first line hashes its config and the
+build files it was made from. <code>cli.php cmd=publish-trackers</code> rewrites every bundle whose
+line no longer matches, so a saved setting, a new Profile and an OWA update are all a header that
+differs &mdash; nothing marks a bundle stale and nothing stores publish state.</li>
+<li><strong>The scheduler runs it every minute</strong> (<code>publish-trackers</code>), as the
+files&rsquo; owner, so no web request writes under <code>public/</code>. A run with nothing to do
+reads one line per Profile; on dev, 10 Profiles take about a second. A full run also removes the
+bundle of a Profile that is gone.</li>
+<li><strong>Written atomically</strong>, to a temporary file renamed into place, from built files
+each checked against the manifest&rsquo;s SHA-256, so a half-finished deploy is refused rather
+than published.</li>
+<li><strong>The Tracking Tag screen says which</strong>: Published, with the time, Waiting to
+publish, or not built, and what the last cache-header read-back found.</li>
+<li><strong>The ordering rule is the preamble&rsquo;s</strong>, not the tracker&rsquo;s: it queues
+the bundle&rsquo;s options, the page&rsquo;s own commands, then the bundle&rsquo;s features, and
+drops the bundle&rsquo;s <code>trackPageView</code> when the page queued its own.</li>
 </ul>
 
 <h4><span class="num">2.24.6</span>Cache headers, and what a stock Apache can do <span class="chip c-meas">Measured</span></h4>
@@ -2728,16 +2733,14 @@ contortion it was protecting, emitting a command only when a value differs from 
 pasted snippets stay byte-identical, stops being necessary.</p>
 
 <h4><span class="num">2.24.9</span>Build sequence</h4>
-<ol>
-<li><strong>Settings and screen.</strong> Declare the switches and options with their scopes; the
-Tag Settings screen under the Profile.</li>
-<li><strong>Domstream as a chunk.</strong> The core loads it with <code>import()</code> when
-configured; the manifest.</li>
-<li><strong>Publish and serve.</strong> The composer, the stale marking, the scheduler job, the CLI
-command, the update hook, the <code>.htaccess</code> header and its read-back, the screen status.</li>
-<li><strong>Snippet and modules.</strong> The new snippet on the Tracking Tag screen, the command-order
-rule in the tracker, <code>tracker_config</code> replacing <code>tracker_tag_cmds</code>.</li>
-</ol>
+<div class="scroll"><table>
+<thead><tr><th>Step</th><th>PR</th><th>What</th></tr></thead>
+<tbody>
+<tr><td>1. Settings and screen</td><td>#1175</td><td>the tag settings with their scopes; the Tracking Tag screen saves them at Profile level; fieldset groups and order; 0-day cookies; <code>cookiePersistence</code> deprecated</td></tr>
+<tr><td>2. Domstream as a chunk</td><td>#1176</td><td><code>contributes_lazy</code>: a generated stub registers the commands, the chunk loads on first call; <code>owa.tracker.manifest.json</code> with SHA-256s. Core 68.8 KB &rarr; 63.4 KB, recorder 5.9 KB</td></tr>
+<tr><td>3. Publish and serve</td><td>#1177</td><td><code>TrackerBundle</code>, the CLI command and the every-minute job, <code>tracker_bundle_config</code>, the <code>.htaccess</code> header and its read-back, the screen&rsquo;s status. Measured: <code>no-cache</code> through Varnish and the ALB, 304 with no body</td></tr>
+<tr><td>4. Snippet and modules</td><td>#1178</td><td>the bundle tag on the Tracking Tag screen; the classic tag built from the same config; Base&rsquo;s and Domstream&rsquo;s hard-coded tag commands removed</td></tr>
+</tbody></table></div>
 
 <h3 id="s227"><span class="num">2.26</span>Custom dimensions <span class="chip c-dec">Decided</span></h3>
 
