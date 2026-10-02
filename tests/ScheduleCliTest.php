@@ -140,13 +140,30 @@ final class ScheduleCliTest extends CliControllerTestCase
         // a detail. fetch-notifications joined rotate-partitions when the OWA
         // News panel stopped calling api.github.com during page renders,
         // rebuild-cube joined them once it could refuse cheaply on an install
-        // with no site collecting into v2, and apply-custom-dimensions joined
+        // with no site collecting into v2, apply-custom-dimensions joined
         // them because registering a dimension cannot do its own ALTER -- that
-        // is a full table rebuild, past every request timeout there is.
+        // is a full table rebuild, past every request timeout there is -- and
+        // publish-trackers because no web request writes a Profile's tracking
+        // bundle under public/ (PLAN 2.24.5).
         $this->assertSame(
-            ['rotate-partitions', 'rebuild-cube', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
+    }
+
+    /**
+     * publish-trackers runs every minute: how long a saved tag setting takes to
+     * reach visitors. Affordable because a run with nothing to do reads the
+     * first line of each bundle.
+     */
+    public function testTheTrackerPublishJobRunsEveryMinute()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertSame('publish-trackers', $jobs['publish-trackers']['command']);
+        $this->assertSame(
+            implode(',', range(0, 59)) . ' * * * *',
+            $jobs['publish-trackers']['schedule']);
     }
 
     /**

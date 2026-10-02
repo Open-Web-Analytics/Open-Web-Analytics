@@ -406,6 +406,8 @@ return array(
          * cookie_persistence and cookie_domain, above, are for OWA's own admin
          * cookies and are not read here.
          */
+        // Publishing's last read-back of the cache header a bundle is served with. No screen edits it.
+        'tracker_cache_headers' => array( 'default' => array(), 'storable' => true ),
         'tracker_page_views' => array(
             'default'  => true,
             'storable' => true,

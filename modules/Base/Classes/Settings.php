@@ -2711,6 +2711,7 @@ namespace OWA\Module\Base\Classes;
                 // utm_* read beside the ns-prefixed names; owa_ wins on a URL with both.
                 'campaignUtmParams'                 => true,
                 // The tracking tag (PLAN 2.24.4), baked into a Profile's tracking bundle.
+                'tracker_cache_headers'             => array(),
                 'tracker_page_views'                => true,
                 'tracker_clicks'                    => true,
                 'tracker_forms'                     => true,

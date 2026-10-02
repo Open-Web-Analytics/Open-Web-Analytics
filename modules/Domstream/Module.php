@@ -119,7 +119,36 @@ class Module extends \OWA\Core\Module {
     function registerFilters() {
 
         $this->registerFilter( 'tracker_tag_cmds', $this, 'addToTracker', 99 );
+        $this->registerFilter( 'tracker_bundle_config', $this, 'addToBundle', 99 );
         $this->registerFilter( 'report_links', $this, 'addReportLinks', 10 );
+    }
+
+    /**
+     * A Profile's tracking bundle records when the Profile says so (PLAN 2.24):
+     * the sample rate among its options, trackDomStream among its features, and
+     * the recorder's chunk inlined.
+     *
+     * @param  array  $config  options, features, plugins
+     * @param  string $site_id
+     * @return array
+     */
+    function addToBundle( $config, $site_id = '' ) {
+
+        $setting = function ( $key ) use ( $site_id ) {
+
+            return \OWA\Core\CoreAPI::getSetting( 'domstream', $key, 'profile', (string) $site_id );
+        };
+
+        if ( ! $setting( 'record' ) ) {
+
+            return $config;
+        }
+
+        $config['options'][]  = array( 'setDomstreamSampleRate', (int) $setting( 'sample_rate' ) );
+        $config['features'][] = array( 'trackDomStream' );
+        $config['plugins'][]  = 'domstream';
+
+        return $config;
     }
 
     /** The snippet starts the recorder. */
