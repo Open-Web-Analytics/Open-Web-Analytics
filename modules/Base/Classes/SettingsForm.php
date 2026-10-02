@@ -263,6 +263,10 @@ class SettingsForm {
      * The switch is the whole decision -- a value equal to the inherited one is
      * still an override when the switch says so.
      *
+     * With nothing set above -- no stored value and no default -- there is
+     * nothing to override, so the field is plain: editable, with no switch and
+     * no note.
+     *
      * Renders nothing for a setting this level may not hold. A setting a config
      * constant governs renders as it does on the install screen, read-only and
      * naming the constant, with no switch: no level can override it.
@@ -298,6 +302,27 @@ class SettingsForm {
 
         $state = self::inheritance( $module, $key, $scopeType, $scopeId );
         $name  = $module . '.' . $key;
+        $id    = 'owa-setting-' . preg_replace( '/[^A-Za-z0-9_-]/', '-', $name );
+
+        /*
+         * NOTHING ABOVE TO OVERRIDE -- no stored value and no default -- so a
+         * plain field: no switch and no note. A value saved in it is this
+         * level's, and saving it empty removes it (saveScoped()).
+         */
+        if ( self::hasNoValue( $state['inherited'] ) ) {
+
+            $value = $state['own'] ? $state['value'] : '';
+
+            if ( is_array( $posted ) && array_key_exists( $name, (array) ( $posted['config'] ?? array() ) ) ) {
+
+                $value = $posted['config'][ $name ];
+            }
+
+            $control = self::control( $module, $key, $args, $ns, false, $value,
+                sprintf( ' id="%s"', self::esc( $id ) ) );
+
+            return $control === '' ? '' : self::settingBlock( $key, $args, $control, '' );
+        }
 
         $overriding = $state['own'];
         $value      = $overriding ? $state['value'] : $state['inherited'];
@@ -315,8 +340,6 @@ class SettingsForm {
                 $value = $posted['config'][ $name ];
             }
         }
-
-        $id = 'owa-setting-' . preg_replace( '/[^A-Za-z0-9_-]/', '-', $name );
 
         $type = isset( $args['type'] ) ? (string) $args['type'] : 'text';
 
@@ -352,33 +375,55 @@ class SettingsForm {
             $overriding ? ' hidden' : '',
             self::esc( $level ) );
 
-        // Nothing is overridden when nothing is set above, so that case has no note.
-        if ( $shown !== '' ) {
+        $notes .= sprintf(
+            '<div class="owa-inherit-note" data-owa-note-override="%1$s"%2$s>Overrides the %3$s '
+          . 'level value of <code>%4$s</code>.</div>',
+            self::esc( $id ),
+            $overriding ? '' : ' hidden',
+            self::esc( $level ),
+            self::esc( $shown ) );
 
-            $notes .= sprintf(
-                '<div class="owa-inherit-note" data-owa-note-override="%1$s"%2$s>Overrides the %3$s '
-              . 'level value of <code>%4$s</code>.</div>',
-                self::esc( $id ),
-                $overriding ? '' : ' hidden',
-                self::esc( $level ),
-                self::esc( $shown ) );
-        }
+        return self::settingBlock( $key, $args, $control . $switch, $notes, 'owa-overridable' );
+    }
 
-        $description = isset( $args['description'] ) ? (string) $args['description'] : '';
+    /**
+     * Whether a value is no value at all: null, an empty string or an empty
+     * list. False and 0 are values.
+     *
+     * @param  mixed $value
+     * @return bool
+     */
+    protected static function hasNoValue( $value ) {
+
+        return $value === null || $value === array()
+            || ( is_string( $value ) && trim( $value ) === '' );
+    }
+
+    /**
+     * A scoped setting's .setting block.
+     *
+     * @param  string $key
+     * @param  array  $args
+     * @param  string $field  the control, and its switch when it has one
+     * @param  string $notes
+     * @param  string $class  a further class for the field row
+     * @return string
+     */
+    protected static function settingBlock( $key, array $args, $field, $notes, $class = '' ) {
 
         return sprintf(
             "    <div class=\"setting\" id=\"%s\">\n"
           . "        <div class=\"title\">%s</div>\n"
           . "        <div class=\"description\">%s</div>\n"
-          . "        <div class=\"field owa-overridable\">%s%s</div>\n"
-          . "        %s\n"
+          . "        <div class=\"field%s\">%s</div>\n"
+          . "%s"
           . "    </div>\n",
             self::esc( $key ),
             self::esc( self::label( $key, $args ) ),
-            $description,
-            $control,
-            $switch,
-            $notes );
+            isset( $args['description'] ) ? (string) $args['description'] : '',
+            $class !== '' ? ' ' . $class : '',
+            $field,
+            $notes !== '' ? '        ' . $notes . "\n" : '' );
     }
 
     /**
@@ -426,7 +471,8 @@ class SettingsForm {
     }
 
     /**
-     * Save a scoped fieldset from a post: each field's switch decides.
+     * Save a scoped fieldset from a post: each field's switch decides, or, for
+     * a plain field with nothing above it, its value (empty removes it).
      *
      * On, the posted value is stored at this level -- or, when none arrived
      * (the control stays disabled without script), the value it was showing,
@@ -463,13 +509,32 @@ class SettingsForm {
                 continue;
             }
 
-            $name = $module . '.' . $key;
+            $name  = $module . '.' . $key;
+            $state = self::inheritance( $module, $key, $scopeType, $scopeId );
+
+            // A plain field, with nothing above to override: its value decides.
+            if ( self::hasNoValue( $state['inherited'] ) ) {
+
+                if ( ! array_key_exists( $name, $config ) ) {
+
+                    continue;
+                }
+
+                if ( ! self::hasNoValue( $config[ $name ] ) ) {
+
+                    $ok = \OWA\Core\CoreAPI::setScopedSetting( $scopeType, (string) $scopeId, $module, $key, $config[ $name ] ) && $ok;
+
+                } elseif ( $state['own'] ) {
+
+                    $ok = \OWA\Core\CoreAPI::clearScopedSetting( $scopeType, (string) $scopeId, $module, $key ) && $ok;
+                }
+
+                continue;
+            }
 
             if ( ! empty( $override[ $name ] ) ) {
 
-                $value = array_key_exists( $name, $config )
-                    ? $config[ $name ]
-                    : self::inheritance( $module, $key, $scopeType, $scopeId )['inherited'];
+                $value = array_key_exists( $name, $config ) ? $config[ $name ] : $state['inherited'];
 
                 if ( ( $args['type'] ?? '' ) === 'boolean' ) {
 
