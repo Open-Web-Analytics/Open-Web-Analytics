@@ -46,7 +46,7 @@ test('a Profile setting inherits until its Override switch is on', async ({ page
     await expect(c.field).toBeDisabled();
     await expect(c.sw).not.toBeChecked();
     await expect(c.inheritNote).toBeVisible();
-    await expect(c.inheritNote).toHaveText(/^Set at the (install|Organization|Property) level\.$/);
+    await expect(c.inheritNote).toHaveText(/^Currently set at the (install|Organization|Property) level\.$/);
     await expect(c.overrideNote).toBeHidden();
 
     try {

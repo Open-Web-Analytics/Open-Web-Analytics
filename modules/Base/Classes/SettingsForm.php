@@ -347,7 +347,7 @@ class SettingsForm {
             $overriding ? ' checked="checked"' : '' );
 
         $notes = sprintf(
-            '<div class="owa-inherit-note" data-owa-note-inherit="%1$s"%2$s>Set at the %3$s level.</div>'
+            '<div class="owa-inherit-note" data-owa-note-inherit="%1$s"%2$s>Currently set at the %3$s level.</div>'
           . '<div class="owa-inherit-note" data-owa-note-override="%1$s"%4$s>Overrides the %3$s '
           . 'level&rsquo;s %5$s.</div>',
             self::esc( $id ),

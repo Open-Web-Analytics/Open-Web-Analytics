@@ -13,7 +13,7 @@ function render(checked) {
             <option value="1"${checked ? '' : ' selected'}>On</option>
         </select>
         <label><input type="checkbox" data-owa-override="owa-setting-base-flag"${checked ? ' checked' : ''}> Override</label>
-        <div data-owa-note-inherit="owa-setting-base-flag"${checked ? ' hidden' : ''}>Set at the install level.</div>
+        <div data-owa-note-inherit="owa-setting-base-flag"${checked ? ' hidden' : ''}>Currently set at the install level.</div>
         <div data-owa-note-override="owa-setting-base-flag"${checked ? '' : ' hidden'}>Overrides the install level's On.</div>`;
 
     return {

@@ -97,7 +97,7 @@ final class SettingsFormScopedTest extends TestCase
         $this->assertStringContainsString('data-owa-inherited="abc"', $html);
         $this->assertMatchesRegularExpression('#<input type="checkbox" role="switch" name="owa_override\[zz_scoped_form_test\.words\]" value="1" data-owa-override="[^"]+"> Override#', $html,
             'the switch is beside the field, off');
-        $this->assertMatchesRegularExpression('#data-owa-note-inherit="[^"]+">Set at the install level\.</div>#', $html,
+        $this->assertMatchesRegularExpression('#data-owa-note-inherit="[^"]+">Currently set at the install level\.</div>#', $html,
             'the note beneath names the level that sets it, and shows');
         $this->assertMatchesRegularExpression('#data-owa-note-override="[^"]+" hidden>#', $html);
     }
@@ -165,7 +165,7 @@ final class SettingsFormScopedTest extends TestCase
             $html = SettingsForm::scopedField(self::MODULE, 'words', 'profile', $siteId, 'owa_');
 
             $this->assertStringContainsString('value="from the property" disabled="disabled"', $html);
-            $this->assertStringContainsString('>Set at the Property level.</div>', $html);
+            $this->assertStringContainsString('>Currently set at the Property level.</div>', $html);
 
         } finally {
             \OWA\Core\CoreAPI::clearScopedSetting('property', $propertyId, self::MODULE, 'words');
@@ -178,7 +178,7 @@ final class SettingsFormScopedTest extends TestCase
         $html = SettingsForm::scopedField(self::MODULE, 'property_only', 'property', '', 'owa_');
 
         $this->assertStringContainsString('value="p" disabled="disabled"', $html);
-        $this->assertStringContainsString('>Set at the install level.</div>', $html);
+        $this->assertStringContainsString('>Currently set at the install level.</div>', $html);
     }
 
     public function testALevelTheSettingDoesNotDeclareRendersNothing(): void
