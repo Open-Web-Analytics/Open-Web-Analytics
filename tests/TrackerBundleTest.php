@@ -357,6 +357,8 @@ final class TrackerBundleTest extends TestCase
             $c->set('base', 'code_version', 'an-older-release');
             $this->assertFalse($base->isSchemaCurrent(), 'another version is an update pending');
 
+            // cmd=update: published in the run.
+            \OWA\Module\Base\Module::$publish_inline = true;
             $this->assertTrue($base->update());
 
             $this->assertSame((string) OWA_VERSION, (string) $c->get('base', 'code_version'));
@@ -366,6 +368,36 @@ final class TrackerBundleTest extends TestCase
                 $this->assertTrue(TrackerBundle::isCurrent($site_id), "$site_id's bundle was republished");
             }
         } finally {
+            \OWA\Module\Base\Module::$publish_inline = null;
+            if ((string) $c->get('base', 'code_version') !== (string) $was) {
+                $c->set('base', 'code_version', $was);
+            }
+        }
+    }
+
+    /** The same update from the update screen queues the publish: a bundle per Profile is not work for a web request. */
+    public function testAnUpdateFromTheScreenQueuesThePublish(): void
+    {
+        $table = $this->scratchJobQueue();
+        $base  = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $was   = $c->get('base', 'code_version');
+        $live  = TrackerBundle::siteIds();
+
+        try {
+            $c->set('base', 'code_version', 'an-older-release');
+            \OWA\Module\Base\Module::$publish_inline = false;
+
+            $this->assertTrue($base->update());
+
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
+            foreach ($live as $site_id) {
+                $this->assertFileDoesNotExist($this->out . $site_id . '.js', 'nothing written in the request');
+            }
+            $this->assertSame((string) OWA_VERSION, (string) $c->get('base', 'code_version'), 'the update is still recorded');
+        } finally {
+            \OWA\Module\Base\Module::$publish_inline = null;
+            $this->dropScratchJobQueue($table);
             if ((string) $c->get('base', 'code_version') !== (string) $was) {
                 $c->set('base', 'code_version', $was);
             }

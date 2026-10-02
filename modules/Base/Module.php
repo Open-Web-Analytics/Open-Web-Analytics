@@ -101,19 +101,41 @@ class Module extends \OWA\Core\Module {
 
         /*
          * What a new version needs beyond its schema (PLAN 2.30.7): the
-         * Profiles' tracking bundles made from its tracker. Only those that are
-         * not current are rewritten -- each one's first line names the build
-         * and settings it was made from.
+         * Profiles' tracking bundles made from its tracker, and a bundle for
+         * every Profile from 1.x, which has none. Only those not current are
+         * rewritten -- each one's first line names the build and settings it
+         * was made from.
+         *
+         * From the command line, now. From the update screen, as one queued
+         * publish-trackers job for the next scheduler tick: a bundle per
+         * Profile is not work for a web request, the same rule as a save
+         * above one Profile.
          */
-        $failed = array_keys( \OWA\Module\Base\Classes\TrackerBundle::publishStale(), 'failed', true );
+        if ( self::publishesInline() ) {
 
-        if ( $failed ) {
+            $failed = array_keys( \OWA\Module\Base\Classes\TrackerBundle::publishStale(), 'failed', true );
 
-            \OWA\Core\CoreAPI::notice( sprintf( 'Tracker bundles not published for %s; see the log, then run'
-                . ' php cli.php cmd=publish-trackers.', implode( ', ', $failed ) ) );
+            if ( $failed ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf( 'Tracker bundles not published for %s; see the log, then run'
+                    . ' php cli.php cmd=publish-trackers.', implode( ', ', $failed ) ) );
+            }
+
+        } else {
+
+            \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
         }
 
         return $this->recordCodeVersion();
+    }
+
+    /** @var bool|null whether update() publishes in the run; null to decide by OWA_CLI. TESTS ONLY. */
+    public static $publish_inline = null;
+
+    /** The command line publishes in the run; the update screen queues it. */
+    private static function publishesInline() {
+
+        return self::$publish_inline ?? ( defined( 'OWA_CLI' ) && OWA_CLI );
     }
 
     /**
