@@ -3752,8 +3752,11 @@ marks a failed event instead of re-queueing it, which a drain that releases on f
 failed write is retried from the intake in both modes.</li>
 <li><strong>Remove</strong> <code>owa_queue_item</code> and its code.</li>
 <li><strong>Tracking bundles on the job queue</strong>: #1177&rsquo;s minutely check becomes a Profile
-save&rsquo;s synchronous publish, a job for wider changes, a build-hash check for new versions, and a
-daily full check.</li>
+save&rsquo;s synchronous publish (and a Profile&rsquo;s creation, and its Tracking Tag screen when it has
+no bundle), one deduplicated job for wider changes (a Property&rsquo;s or the install&rsquo;s tag
+settings, a module turned on or off), <code>tracker-build-check</code> every minute for a new build
+&mdash; each bundle&rsquo;s first line names its build as a hash of the whole manifest, so the check
+reads files and no database, with no marker &mdash; and a daily full check.</li>
 </ol>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
