@@ -3617,6 +3617,23 @@ credentials resolve, when an install-level save changes them or the region, and 
 <code>cmd=tracker-ingest-provision</code>. Synchronous, so the admin sees at once whether the
 credentials work. A settings-saved hook is added for this; the bundle publishing in step 5 needs the
 same hook.</li>
+<li><strong>SQS, not S3, is the intake</strong> (decided 2 Oct). The intake buffers, delivers, takes an
+ack, retries and dead-letters per message, which SQS does natively and S3 does not at all &mdash; no
+visibility timeout, no per-message ack, no redrive. One object per beacon would also cost about $5 per
+million in PUTs against about $0.84 for SQS as built (AWS list prices, unverified). S3 has two later
+uses below; Kinesis Data Firehose &rarr; S3, AWS&rsquo;s high-volume clickstream path, is a raw archive
+beside the intake, not a replacement for it, since it gives up per-message retry and buffers for one to
+fifteen minutes.</li>
+<li><strong>Later: batched deletes in the drain.</strong> The drain acks each message with its own
+<code>DeleteMessage</code>; <code>DeleteMessageBatch</code> ten at a time takes a beacon from about 2.1 to
+about 1.2 requests. Needs the contract to settle in batches, or the SQS queue to buffer acks until the
+receive batch is done.</li>
+<li><strong>Later: dead letters past SQS&rsquo;s retention go to S3.</strong> SQS keeps a dead letter 14
+days at most, against the file queue&rsquo;s no limit. The daily replay job moves one that is not
+replayed and is near the limit to an S3 object, kept until removed and replayable from there, so an
+unprocessed beacon is never deleted for its age on SQS either.</li>
+<li><strong>Optional, when a site asks: a raw archive</strong> of every beacon through Firehose to S3,
+alongside the intake.</li>
 <li><strong>Credentials are never stored</strong> (decided 2 Oct): the SDK&rsquo;s default chain
 (environment, <code>~/.aws</code>, instance or task role), or <code>OWA_SQS_KEY</code> /
 <code>OWA_SQS_SECRET</code> in <code>owa-config.php</code>.</li>
