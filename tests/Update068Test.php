@@ -80,9 +80,10 @@ final class Update068Test extends TestCase
 
         $create = (string) \OWA\Core\CoreAPI::dbSingleton()->get_row('SHOW CREATE TABLE ' . self::TABLE)['Create Table'];
 
-        foreach (array('`id` bigint NOT NULL', '`event` blob', '`insertion_datestamp` timestamp NULL',
-                       '`not_before_timestamp` int', '`is_assigned` tinyint(1)', 'PRIMARY KEY (`id`)') as $piece) {
-            $this->assertStringContainsString($piece, $create);
+        // MariaDB prints display widths (int(11), bigint(20)); MySQL 8 does not.
+        foreach (array('/`id` bigint(\(\d+\))? NOT NULL/', '/`event` blob/', '/`insertion_datestamp` timestamp NULL/',
+                       '/`not_before_timestamp` int(\(\d+\))?/', '/`is_assigned` tinyint\(1\)/', '/PRIMARY KEY \(`id`\)/') as $piece) {
+            $this->assertMatchesRegularExpression($piece, $create);
         }
     }
 }

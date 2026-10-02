@@ -58,12 +58,13 @@ class JobQueue {
     const PRUNE_BATCH = 1000;
 
     /**
-     * Seconds added to the queue's clock. TESTS ONLY: lets a test pass a lease
-     * or a back-off step without waiting.
+     * The queue's clock, stopped at this unix time. TESTS ONLY: a test moves
+     * it on to pass a lease or a back-off step, and a second ticking over
+     * mid-assertion cannot make it fail.
      *
-     * @var int
+     * @var int|null
      */
-    public static $clock_offset = 0;
+    public static $frozen_at = null;
 
     /**
      * A table to use instead of the entity's. TESTS ONLY: a scratch copy, so a
@@ -76,7 +77,7 @@ class JobQueue {
     /** The queue's clock. */
     public static function now() {
 
-        return time() + self::$clock_offset;
+        return self::$frozen_at ?? time();
     }
 
     /** Set by claim() when the database connection was lost; drain() stops. */
