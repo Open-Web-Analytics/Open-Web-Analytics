@@ -2581,10 +2581,11 @@ used with no request. A bundle without the chunk still records, by fetching it f
 <p>Webpack&rsquo;s one change is to emit the Domstream chunk under a stable name and a manifest of
 the files a bundle is joined from, with their hashes. Publishing reads the manifest rather than
 hard-coding names, and a changed hash marks every bundle stale.</p>
-<p class="note">Still to establish: whether <code>owa.tracker.js</code> needs
-<code>owa.vendors.js</code> at load. The tracker build splits <code>node_modules</code> into it with
-<code>chunks: 'all'</code>; if any vendor code is on the core&rsquo;s initial path, the bundle
-joins it too, before the core like the Domstream chunk.</p>
+<p class="note"><strong>The core needs nothing else at load</strong> <span class="chip c-meas">Measured</span>.
+The tracker build splits <code>node_modules</code> into <code>owa.vendors.js</code> with
+<code>chunks: 'all'</code>, but the built <code>owa.tracker.js</code>, loaded alone in Chromium with
+and without <code>trackDomStream</code>, requests only itself and <code>log.php</code>. The vendors
+chunk serves the heatmap and player, so a bundle does not join it.</p>
 
 <h4><span class="num">2.24.4</span>Settings, screen and scope</h4>
 <p><strong>Configured per Observation Profile</strong>, which is what a Profile is &mdash; one way of
@@ -2659,7 +2660,7 @@ pasted snippets stay byte-identical, stops being necessary.</p>
 <li><strong>Settings and screen.</strong> Declare the switches and options with their scopes; the
 Tag Settings screen under the Profile.</li>
 <li><strong>Domstream as a chunk.</strong> The core loads it with <code>import()</code> when
-configured; the manifest; the vendors question in &sect;2.24.3 answered.</li>
+configured; the manifest.</li>
 <li><strong>Publish and serve.</strong> The composer, the stale marking, the scheduler job, the CLI
 command, the update hook, the <code>.htaccess</code> header and its read-back, the screen status.</li>
 <li><strong>Snippet and modules.</strong> The new snippet on the Tracking Tag screen, the command-order
