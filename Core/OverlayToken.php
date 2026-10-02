@@ -40,7 +40,7 @@ namespace OWA\Core;
  * The token names an action and a resource, so it looks as though the overlay
  * could build its own request URL and the fragment could carry the token alone.
  * It cannot: the tracker's base URL is where it *logs*, and OWA supports split
- * deployment on purpose (independent logger/API endpoints, RemoteQueue,
+ * deployment on purpose (independent logger/API endpoints, the SQS intake,
  * OWA_USE_STATIC_CONFIG_ONLY for a logging-only node). The reporting origin is
  * the only party that knows where reporting lives. See the note on
  * Template::makeOverlayApiLink().

@@ -1,0 +1,8 @@
+{
+    "name": "open-web-analytics/sqs-module",
+    "description": "An AWS SQS tracking intake for Open Web Analytics.",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "aws/aws-sdk-php": "^3.300"
+    }
+}

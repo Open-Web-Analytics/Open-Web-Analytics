@@ -48,7 +48,8 @@
         "test:isolation": "bash tests/tools/isolation_sweep.sh",
         "test:scratch": "bash tests/tools/scratch_db_run.sh",
         "test:configless": "bash tests/tools/configless_run.sh",
-        "test:upgrade": "bash tests/tools/upgrade_cycle_run.sh"
+        "test:upgrade": "bash tests/tools/upgrade_cycle_run.sh",
+        "pre-autoload-dump": "Aws\\Script\\Composer\\Composer::removeUnusedServices"
     },
     "extra": {
         "merge-plugin": {
@@ -61,6 +62,9 @@
             "merge-extra": false,
             "merge-extra-deep": false,
             "merge-scripts": true
-        }
+        },
+        "aws/aws-sdk-php": [
+            "Sqs"
+        ]
     }
 }
