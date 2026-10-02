@@ -309,7 +309,7 @@ class SettingsForm {
          * plain field: no switch and no note. A value saved in it is this
          * level's, and saving it empty removes it (saveScoped()).
          */
-        if ( self::hasNoValue( $state['inherited'] ) ) {
+        if ( self::hasNoValue( $state['inherited'], $args ) ) {
 
             $value = $state['own'] ? $state['value'] : '';
 
@@ -388,12 +388,19 @@ class SettingsForm {
 
     /**
      * Whether a value is no value at all: null, an empty string or an empty
-     * list. False and 0 are values.
+     * list, and false for anything but a boolean -- a setting with no default
+     * answers false. 0 is a value, and so is a boolean's false.
      *
      * @param  mixed $value
+     * @param  array $args  the declaration
      * @return bool
      */
-    protected static function hasNoValue( $value ) {
+    protected static function hasNoValue( $value, array $args = array() ) {
+
+        if ( $value === false ) {
+
+            return ( $args['type'] ?? '' ) !== 'boolean';
+        }
 
         return $value === null || $value === array()
             || ( is_string( $value ) && trim( $value ) === '' );
@@ -513,14 +520,14 @@ class SettingsForm {
             $state = self::inheritance( $module, $key, $scopeType, $scopeId );
 
             // A plain field, with nothing above to override: its value decides.
-            if ( self::hasNoValue( $state['inherited'] ) ) {
+            if ( self::hasNoValue( $state['inherited'], $args ) ) {
 
                 if ( ! array_key_exists( $name, $config ) ) {
 
                     continue;
                 }
 
-                if ( ! self::hasNoValue( $config[ $name ] ) ) {
+                if ( ! self::hasNoValue( $config[ $name ], $args ) ) {
 
                     $ok = \OWA\Core\CoreAPI::setScopedSetting( $scopeType, (string) $scopeId, $module, $key, $config[ $name ] ) && $ok;
 
@@ -584,9 +591,10 @@ class SettingsForm {
                 continue;
             }
 
-            $plain = self::hasNoValue( self::inheritance( $module, $key, $scopeType, $scopeId )['inherited'] );
+            $args  = (array) $c->registeredField( $module, $key );
+            $plain = self::hasNoValue( self::inheritance( $module, $key, $scopeType, $scopeId )['inherited'], $args );
 
-            if ( $plain ? self::hasNoValue( $config[ $name ] ) : empty( $override[ $name ] ) ) {
+            if ( $plain ? self::hasNoValue( $config[ $name ], $args ) : empty( $override[ $name ] ) ) {
 
                 continue;
             }

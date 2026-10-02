@@ -180,6 +180,21 @@ final class SettingsFormScopedTest extends TestCase
         }
     }
 
+    /** A setting that declares no default answers false: nothing is set, so it is plain. */
+    public function testASettingWithNoDefaultIsPlain(): void
+    {
+        $this->requireDb();
+
+        $this->config()->registerField(self::MODULE, 'no_default', array(
+            'storable' => true, 'type' => 'text', 'label' => 'No default',
+            'scopes'   => array('install', 'profile')));
+
+        $html = $this->field('no_default');
+
+        $this->assertStringContainsString('value="" id=', $html);
+        $this->assertStringNotContainsString('override[', $html);
+    }
+
     /** A plain field saves by its value: something stores it, empty removes it. */
     public function testAPlainFieldIsSavedByItsValue(): void
     {
