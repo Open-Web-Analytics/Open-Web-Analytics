@@ -2598,6 +2598,22 @@ inherits until its Override switch is on. A module declares its own: Domstream d
 <code>trackDomStream</code> and its sample rate, and contributes them through a
 <code>tracker_config</code> filter that replaces <code>tracker_tag_cmds</code> for anything a site
 sets.</p>
+<p><strong>Cookie lifetimes are tag settings</strong>, at install and Profile scope. They are the
+server half of PR&nbsp;#1098 (digikwal, for #941): its tracker half merged 18&nbsp;Sep and reads
+them through <code>setOption</code>; its settings and Privacy screens were taken out of that PR at our
+request, to arrive with this feature.</p>
+<div class="scroll"><table>
+<thead><tr><th>Setting</th><th>Type</th><th>Default</th><th>Bakes into</th></tr></thead>
+<tbody>
+<tr><td>visitor cookie lifetime</td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.v</code></td></tr>
+<tr><td>session cookie lifetime</td><td>integer days, 1&ndash;3650</td><td>364</td><td><code>stateStoreExpirations.s</code></td></tr>
+<tr><td><code>cookie_persistence</code></td><td>boolean</td><td>on</td><td><code>cookiePersistence</code>; off writes every store with no <code>expires</code></td></tr>
+</tbody></table></div>
+<p class="note">Two lifetimes, not #1098&rsquo;s three: v2&rsquo;s tracker registers no campaign
+(<code>c</code>) store. <code>cookie_persistence</code> exists today, unscoped, and is read by
+<code>CoreAPI::setCookie()</code> for server-set cookies; it gains Profile scope and its first
+reader in the tracker. The 1&ndash;3650 range is #1098&rsquo;s, enforced by the declaration like the
+lookback (#1173).</p>
 <p>Publish resolves the walk once and bakes the winner, so the tracker never learns there were
 tiers.</p>
 
