@@ -119,8 +119,8 @@ final class SettingsFormScopedTest extends TestCase
         $this->assertStringContainsString('>Overrides the install level value of <code>abc</code>.</div>', $html);
     }
 
-    /** An empty inherited value is said in words, not shown as an empty code box. */
-    public function testAnEmptyInheritedValueIsSaidInWords(): void
+    /** With nothing set above, an override overrides nothing, so it gets no note. */
+    public function testOverridingAnEmptyValueHasNoNote(): void
     {
         $this->requireDb();
 
@@ -131,8 +131,11 @@ final class SettingsFormScopedTest extends TestCase
         \OWA\Core\CoreAPI::setScopedSetting('profile', self::PROFILE, self::MODULE, 'blank', 'mine');
 
         try {
-            $this->assertStringContainsString('>Overrides the install level value of (empty).</div>',
-                $this->field('blank'));
+            $html = $this->field('blank');
+
+            $this->assertStringContainsString('value="mine" id=', $html);
+            $this->assertStringNotContainsString('data-owa-note-override', $html);
+            $this->assertStringNotContainsString('Overrides', $html);
         } finally {
             \OWA\Core\CoreAPI::clearScopedSetting('profile', self::PROFILE, self::MODULE, 'blank');
         }

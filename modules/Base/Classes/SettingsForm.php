@@ -347,14 +347,22 @@ class SettingsForm {
             $overriding ? ' checked="checked"' : '' );
 
         $notes = sprintf(
-            '<div class="owa-inherit-note" data-owa-note-inherit="%1$s"%2$s>Currently set at the %3$s level.</div>'
-          . '<div class="owa-inherit-note" data-owa-note-override="%1$s"%4$s>Overrides the %3$s '
-          . 'level value of %5$s.</div>',
+            '<div class="owa-inherit-note" data-owa-note-inherit="%1$s"%2$s>Currently set at the %3$s level.</div>',
             self::esc( $id ),
             $overriding ? ' hidden' : '',
-            self::esc( $level ),
-            $overriding ? '' : ' hidden',
-            $shown === '' ? '(empty)' : '<code>' . self::esc( $shown ) . '</code>' );
+            self::esc( $level ) );
+
+        // Nothing is overridden when nothing is set above, so that case has no note.
+        if ( $shown !== '' ) {
+
+            $notes .= sprintf(
+                '<div class="owa-inherit-note" data-owa-note-override="%1$s"%2$s>Overrides the %3$s '
+              . 'level value of <code>%4$s</code>.</div>',
+                self::esc( $id ),
+                $overriding ? '' : ' hidden',
+                self::esc( $level ),
+                self::esc( $shown ) );
+        }
 
         $description = isset( $args['description'] ) ? (string) $args['description'] : '';
 
@@ -481,7 +489,7 @@ class SettingsForm {
 
     /**
      * A value as the screen names it: a boolean as On or Off, a select by its
-     * option's label. Empty stays empty; the note says "(empty)" for it.
+     * option's label. Empty stays empty, and then there is nothing to override.
      *
      * @param  array $args
      * @param  mixed $value
