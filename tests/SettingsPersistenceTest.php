@@ -374,12 +374,12 @@ final class SettingsPersistenceTest extends TestCase
         $c = $this->settings();
 
         $this->assertArrayNotHasKey(
-            'domstream',
+            'hello',
             $c->default_config,
-            'domstream declares nothing, so its defaults must stay unknown'
+            'hello declares nothing, so its defaults must stay unknown'
         );
 
-        $c->db_settings['domstream']     = ['schema_version' => 1, 'is_active' => true];
+        $c->db_settings['hello']         = ['schema_version' => 1, 'is_active' => true];
         $c->db_settings['fileCache']     = ['is_active' => false];
         $c->db_settings['maxmind_geoip'] = ['schema_version' => 1, 'is_active' => false];
 
@@ -392,7 +392,7 @@ final class SettingsPersistenceTest extends TestCase
                 "prune removed $entry; schema_version is database state and must never be dropped");
         }
 
-        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['domstream'],
+        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['hello'],
             'a module that declares nothing is left alone entirely');
         $this->assertSame(['is_active' => false], $c->db_settings['fileCache']);
         $this->assertSame(['schema_version' => 1, 'is_active' => false], $c->db_settings['maxmind_geoip'],
