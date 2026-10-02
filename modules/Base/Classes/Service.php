@@ -158,6 +158,13 @@ class Service extends \OWA\Core\Base {
         $present_modules = \OWA\Core\CoreAPI::getPresentModules();
         $am = \OWA\Core\CoreAPI::getActiveModules();
 
+        /*
+         * Not asked on the tracking path (log.php boots with tracking_mode):
+         * a pending update stops nothing there -- only admin screens and the
+         * scheduler act on one -- so the answer would be thrown away.
+         */
+        $check_updates = ! \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_mode' );
+
         foreach ($am as $k => $v) {
 			
 			// active-module names are lowercase runtime names; getPresentModules()
@@ -168,10 +175,8 @@ class Service extends \OWA\Core\Base {
 	
 	            $this->addModule($m);
 	
-	            // check for schema updates
-	            $check = $m->isUpToDate();
-	
-	            if ($check != true) {
+	            if ( $check_updates && ! $m->isUpToDate() ) {
+
 	                $this->markModuleAsNeedingUpdate($m->name);
 	            }
 			}
