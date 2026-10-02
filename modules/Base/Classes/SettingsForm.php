@@ -354,7 +354,7 @@ class SettingsForm {
             $overriding ? ' hidden' : '',
             self::esc( $level ),
             $overriding ? '' : ' hidden',
-            self::esc( $shown ) );
+            $shown === '' ? '(empty)' : '<code>' . self::esc( $shown ) . '</code>' );
 
         $description = isset( $args['description'] ) ? (string) $args['description'] : '';
 
@@ -480,8 +480,8 @@ class SettingsForm {
     }
 
     /**
-     * A value as the screen says it in prose: a boolean as On or Off, a select
-     * by its option's label, an empty value as "(empty)".
+     * A value as the screen names it: a boolean as On or Off, a select by its
+     * option's label. Empty stays empty; the note says "(empty)" for it.
      *
      * @param  array $args
      * @param  mixed $value
@@ -511,7 +511,7 @@ class SettingsForm {
             $value = implode( ', ', $value );
         }
 
-        return (string) $value === '' ? '(empty)' : (string) $value;
+        return (string) $value;
     }
 
     /**

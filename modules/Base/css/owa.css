@@ -270,6 +270,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa-override input:checked::after {left:16px;}
 .owa-override input:focus-visible {outline:2px solid #2a7ae2; outline-offset:2px;}
 .setting .owa-inherit-note {font-size:12px; color:#666666; padding:2px 0;}
+.setting .owa-inherit-note code {font-size:inherit; background:#f2f2f2; padding:0 3px; border-radius:2px;}
 
 /* LAYOUT */
 #admin_nav{font-size:12px;}

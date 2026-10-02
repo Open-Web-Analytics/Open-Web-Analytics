@@ -14,7 +14,7 @@ function render(checked) {
         </select>
         <label><input type="checkbox" data-owa-override="owa-setting-base-flag"${checked ? ' checked' : ''}> Override</label>
         <div data-owa-note-inherit="owa-setting-base-flag"${checked ? ' hidden' : ''}>Currently set at the install level.</div>
-        <div data-owa-note-override="owa-setting-base-flag"${checked ? '' : ' hidden'}>Overrides the install level value of On.</div>`;
+        <div data-owa-note-override="owa-setting-base-flag"${checked ? '' : ' hidden'}>Overrides the install level value of <code>On</code>.</div>`;
 
     return {
         control: document.getElementById('owa-setting-base-flag'),

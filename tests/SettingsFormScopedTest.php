@@ -116,7 +116,26 @@ final class SettingsFormScopedTest extends TestCase
             'switching off puts back what it would inherit');
         $this->assertStringContainsString('value="1" data-owa-override="owa-setting-zz_scoped_form_test-words" checked="checked"', $html);
         $this->assertMatchesRegularExpression('#data-owa-note-inherit="[^"]+" hidden>#', $html);
-        $this->assertStringContainsString('>Overrides the install level value of abc.</div>', $html);
+        $this->assertStringContainsString('>Overrides the install level value of <code>abc</code>.</div>', $html);
+    }
+
+    /** An empty inherited value is said in words, not shown as an empty code box. */
+    public function testAnEmptyInheritedValueIsSaidInWords(): void
+    {
+        $this->requireDb();
+
+        $this->config()->registerField(self::MODULE, 'blank', array(
+            'default' => '', 'storable' => true, 'type' => 'text', 'label' => 'Blank',
+            'scopes'  => array('install', 'profile')));
+
+        \OWA\Core\CoreAPI::setScopedSetting('profile', self::PROFILE, self::MODULE, 'blank', 'mine');
+
+        try {
+            $this->assertStringContainsString('>Overrides the install level value of (empty).</div>',
+                $this->field('blank'));
+        } finally {
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', self::PROFILE, self::MODULE, 'blank');
+        }
     }
 
     public function testABooleanSaysOnOrOff(): void
@@ -134,7 +153,7 @@ final class SettingsFormScopedTest extends TestCase
 
         $this->assertStringContainsString('<option value="0" selected="selected">Off</option>', $html,
             'a stored false is this level\'s value');
-        $this->assertStringContainsString('>Overrides the install level value of On.</div>', $html);
+        $this->assertStringContainsString('>Overrides the install level value of <code>On</code>.</div>', $html);
     }
 
     /** The level named is the one actually supplying the value. */
