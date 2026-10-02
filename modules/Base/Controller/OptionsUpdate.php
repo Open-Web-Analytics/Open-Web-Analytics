@@ -78,6 +78,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
         $config_values = $this->get('config');
+        $saved = array();
 
         if (!empty($config_values)) {
 
@@ -148,13 +149,31 @@ class OptionsUpdate extends \OWA\Core\AdminController {
                         continue;
                     }
 
-                    $c->persistSetting($module, $name, $v);
+                    if ( $c->persistSetting($module, $name, $v) !== false ) {
+
+                        $saved[ $module ][] = $name;
+                    }
                 }
             }
 
             $c->save();
             \OWA\Core\CoreAPI::notice("Configuration changes saved to database.");
             $this->setStatusCode(2500);
+
+            /*
+             * Each module whose install-level settings were saved hears which
+             * (PLAN 2.30.4a): the SQS module creates its queues when its region
+             * is saved. After save(), so a handler reads what was stored.
+             */
+            $d = \OWA\Core\CoreAPI::getEventDispatch();
+
+            foreach ( $saved as $module => $keys ) {
+
+                $event = $d->makeEvent( 'base.install_settings_saved' );
+                $event->set( 'module', $module );
+                $event->set( 'keys', $keys );
+                $d->notify( $event );
+            }
         }
 
         $this->setRedirectAction( $this->returnAction() );

@@ -156,6 +156,33 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //define('OWA_TRACKER_INGEST_DRAIN', 'scheduler');
 
 /**
+ * MODULES ACTIVE FROM THIS FILE
+ *
+ * For a node with OWA_USE_STATIC_CONFIG_ONLY, which never reads which modules
+ * are active from the database. Named modules are active whatever is stored,
+ * and the Modules screen cannot turn them off.
+ */
+
+//define('OWA_ACTIVE_MODULES', array('sqs'));
+
+/**
+ * AWS SQS TRACKING INTAKE (the sqs module)
+ *
+ * The region the queues are in, for a logging node that cannot read the drain
+ * install's settings. The queue names are derived from the database settings
+ * above, so a node with the same ones finds the queues the drain install made.
+ *
+ * Credentials come from the AWS SDK's default chain -- environment, ~/.aws,
+ * then the instance or task role -- unless set here. OWA never stores them.
+ * Credentials that carry their account id (AWS_ACCOUNT_ID, or aws_account_id
+ * in an AWS profile) save one request per beacon.
+ */
+
+//define('OWA_SQS_REGION', 'us-east-1');
+//define('OWA_SQS_KEY', '');
+//define('OWA_SQS_SECRET', '');
+
+/**
  * SCHEDULED JOBS
  *
  * OWA runs its periodic maintenance from a SINGLE cron entry:

@@ -525,6 +525,32 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'queue_events', OWA_QUEUE_EVENTS, 'OWA_QUEUE_EVENTS');
         }
 
+        /*
+         * MODULES ACTIVE BY CONFIG FILE, for a node that never reads the
+         * database (OWA_USE_STATIC_CONFIG_ONLY): a logging node putting
+         * beacons on SQS needs the sqs module, and stored is_active rows are
+         * exactly what it does not read.
+         *
+         *   define('OWA_ACTIVE_MODULES', array('sqs'));
+         *
+         * Each named module's is_active is governed by the constant, as any
+         * constant governs its key: stored values are ignored and the
+         * Modules screen cannot turn it off. It only adds; a module not
+         * named keeps whatever is stored. A name with no module directory is
+         * skipped, so a typo cannot take boot down.
+         */
+        if (defined('OWA_ACTIVE_MODULES')) {
+
+            foreach ((array) OWA_ACTIVE_MODULES as $active) {
+
+                $active = (string) $active;
+
+                if ($active !== '' && is_dir(OWA_MODULES_DIR . \OWA\Core\Lib::moduleDirName($active))) {
+                    $this->setFromConfigConstant( $active, 'is_active', true, 'OWA_ACTIVE_MODULES' );
+                }
+            }
+        }
+
         /* THE TRACKING INTAKE (PLAN 2.30.3) */
         foreach (array(
             'OWA_QUEUE_TRACKER_INGEST'      => 'queue_tracker_ingest',
@@ -680,6 +706,25 @@ namespace OWA\Module\Base\Classes;
              * for years, which is not a change to make alongside a storage
              * migration.
              */
+            /*
+             * Except what a constant set. A constant wins over the database, so
+             * it cannot be what loses here: a module named in
+             * OWA_ACTIVE_MODULES with nothing stored had its is_active dropped
+             * with it, and never loaded. Only the constant-governed keys are
+             * carried over, so nothing else a module once held comes back.
+             */
+            foreach ( $this->configConstants() as $module => $keys ) {
+
+                foreach ( array_keys( $keys ) as $key ) {
+
+                    if ( isset( $default[ $module ] ) && array_key_exists( $key, $default[ $module ] )
+                         && ! isset( $new_config[ $module ][ $key ] ) ) {
+
+                        $new_config[ $module ][ $key ] = $default[ $module ][ $key ];
+                    }
+                }
+            }
+
             $this->config->set('settings', $new_config);
         }
 

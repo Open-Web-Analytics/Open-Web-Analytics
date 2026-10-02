@@ -31,7 +31,7 @@ class Lib {
      *   fileCache     -> FileCache      (already camel; ucwords leaves it, _ strip is a no-op)
      *   maxmind_geoip -> MaxmindGeoip
      *   memcachedCache-> MemcachedCache
-     *   remoteQueue   -> RemoteQueue
+     *   sqs           -> Sqs
      *
      * The transform is idempotent on its own output ('Base' -> 'Base'). Only the
      * PascalCase directory is read: the pre-PSR-4 lowercase layout was removed

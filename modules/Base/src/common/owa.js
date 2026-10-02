@@ -275,7 +275,7 @@ class OWA {
      * The fallback below is a trap and has never executed: on a tracked page
      * `baseUrl` is where the tracker *logs*, which need not be where reporting
      * lives. OWA supports split deployment on purpose -- separate logger and
-     * API endpoints, the RemoteQueue module, and OWA_USE_STATIC_CONFIG_ONLY for
+     * API endpoints, the SQS intake module, and OWA_USE_STATIC_CONFIG_ONLY for
      * a logging-only node that never touches the reporting database -- so the
      * admin interface can be on a different domain entirely.
      *
