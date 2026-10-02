@@ -198,6 +198,31 @@ Pinned by `tests/ThirdPartyModuleCompatTest.php`.
 
 ---
 
+## Deprecated in 2.0
+
+### Tracker option `cookiePersistence`
+
+`owa_cmds.push(['setOption', 'cookiePersistence', false])`, added in 1.14.0,
+makes every tracker cookie a session cookie. It still works in 2.0 and writes a
+debug notice naming the replacement.
+
+**Replace with** a lifetime of 0 days for each cookie:
+
+```js
+owa_cmds.push(['setOption', 'stateStoreExpirations', {"v": 0, "s": 0}]);
+```
+
+0 days is per cookie, so a site can end the visitor cookie with the browser and
+keep a session cookie, or the other way round. A Profile's tracking bundle sets
+it from the Tag Settings screen.
+
+It does not touch the server's `cookie_persistence` setting, which governs only
+the cookies OWA's own admin screens set.
+
+Pinned by `tests/js/StateStoreExpirations.test.js`.
+
+---
+
 ## Reporting a problem
 
 If something in your module breaks on upgrade and it is not covered above, that

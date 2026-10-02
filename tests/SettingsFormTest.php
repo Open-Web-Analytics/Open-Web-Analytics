@@ -98,10 +98,46 @@ final class SettingsFormTest extends TestCase
     {
         $sets = \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral');
 
+        // The page's own, in order, then its group's: Base's tag fieldset first,
+        // then any an active module added.
         $this->assertSame(
-            array('Tracking Request Processing', 'Visitor Announcements', 'Reporting'),
-            array_column($sets, 'legend'),
+            array('Tracking Request Processing', 'Visitor Announcements', 'Reporting', 'Tracking Tag'),
+            array_slice(array_column($sets, 'legend'), 0, 4),
             'the page renders its fieldsets in the order it registered them');
+    }
+
+    /** A fieldset reaches a page through a group the page names. */
+    public function testAGroupBringsAModulesFieldSetToAPage(): void
+    {
+        $this->config()->registerField(self::MODULE, 'grouped',
+            array('default' => 'x', 'storable' => true, 'type' => 'text', 'label' => 'Grouped'));
+        $this->config()->registerFieldSet(array(
+            'id' => self::MODULE . '.grouped', 'module' => self::MODULE, 'group' => 'tracking_tag',
+            'legend' => 'A Module\'s Tag Settings', 'settings' => array('grouped'),
+        ));
+
+        $legends = array_column(
+            \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), 'legend');
+
+        $this->assertContains("A Module's Tag Settings", $legends);
+        $this->assertSame('Tracking Tag', $legends[3], 'after the fieldset of the module that owns the screen');
+    }
+
+    /** A group is ordered by its fieldsets' declared order, not by when they registered. */
+    public function testAGroupIsOrderedByDeclaredOrder(): void
+    {
+        foreach (array(array('late', 60), array('early', 10)) as [$id, $order]) {
+            $this->config()->registerFieldSet(array(
+                'id' => self::MODULE . '.' . $id, 'module' => self::MODULE, 'group' => 'zz_group',
+                'order' => $order, 'legend' => $id, 'settings' => array(),
+            ));
+        }
+
+        $this->assertSame(array('early', 'late'),
+            array_column(\OWA\Module\Base\Classes\SettingsForm::groupFieldSets('zz_group'), 'legend'));
+
+        $tag = \OWA\Module\Base\Classes\SettingsForm::groupFieldSets('tracking_tag');
+        $this->assertSame('base.trackingTag', $tag[0]['id'], "Base's tag fieldset leads its own screen");
     }
 
     /** A page that names a fieldset nobody registered renders what it can. */

@@ -301,6 +301,34 @@ class Module extends \OWA\Core\Module {
             'id'       => 'base.propertyAttribution',
             'settings' => array( 'attribution_lookback_days', 'campaignUtmParams' ),
         ) );
+
+        /*
+         * The tracking tag (PLAN 2.24.4), in the `tracking_tag` group so an active
+         * module adds its own fieldset beside it. One fieldset for every level:
+         * each screen shows the settings that level may hold.
+         */
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.trackingTag',
+            'group'    => 'tracking_tag',
+            'order'    => 0,
+            'legend'   => 'Tracking Tag',
+            'settings' => array(
+                'tracker_page_views',
+                'tracker_clicks',
+                'tracker_forms',
+                'tracker_scroll',
+                'tracker_scroll_thresholds',
+                'tracker_site_search',
+                'tracker_site_search_params',
+                'tracker_download_extensions',
+                'tracker_exceptions',
+                'tracker_route_changes',
+                'tracker_url_fragments',
+                'tracker_visitor_cookie_days',
+                'tracker_session_cookie_days',
+                'tracker_cookie_domain',
+            ),
+        ) );
     }
 
     function registerActions() {
@@ -396,6 +424,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesEdit',                     'OWA\\Module\\Base\\Controller\\SitesEdit',                    'Controller/SitesEdit.php' );
         $this->registerAction( 'base.sitesEditAllowedUsers',         'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',        'Controller/SitesEditAllowedUsers.php' );
         $this->registerAction( 'base.sitesEditSettings',             'OWA\\Module\\Base\\Controller\\SitesEditSettings',            'Controller/SitesEditSettings.php' );
+        $this->registerAction( 'base.sitesEditTagSettings',          'OWA\\Module\\Base\\Controller\\SitesEditTagSettings',         'Controller/SitesEditTagSettings.php' );
         $this->registerAction( 'base.sitesInvocation',               'OWA\\Module\\Base\\Controller\\SitesInvocation',              'Controller/SitesInvocation.php' );
         $this->registerAction( 'base.sitesProfile',                  'OWA\\Module\\Base\\Controller\\SitesProfile',                 'Controller/SitesProfile.php' );
         $this->registerAction( 'base.sitesRest',                     'OWA\\Module\\Base\\Controller\\SitesRest',                    'Controller/SitesRest.php' );
@@ -647,7 +676,8 @@ class Module extends \OWA\Core\Module {
                 'group'          => 'General',
                 'order'          => 1,
                 'fieldsets'      => array(
-                    'base.tracking', 'base.announcements', 'base.reporting' ) )
+                    'base.tracking', 'base.announcements', 'base.reporting' ),
+                'fieldset_groups' => array( 'tracking_tag' ) )
         );
 
         /*

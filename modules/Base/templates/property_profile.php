@@ -95,6 +95,13 @@
             echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
                 \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
                 'property', (string) ( $view->property['id'] ?? '' ), $view->getNs() );
+
+            // The tracking tag defaults for this Property's Profiles (PLAN 2.24.4).
+            foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
+
+                echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+                    $set, 'property', (string) ( $view->property['id'] ?? '' ), $view->getNs() );
+            }
         ?>
 
         <input class="owa-button" type="submit" value="Save Property">

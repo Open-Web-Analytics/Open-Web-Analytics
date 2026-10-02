@@ -33,7 +33,7 @@ Upgrading, or maintaining a third-party module, local template override, or cust
 ## Tracker cookie options
 
 The tracker's cookies have fixed lifetimes by default: 364 days for the visitor id
-(`owa_v`), 60 for the campaign store (`owa_c`), and 364 for the session store. A
+(`owa_v`) and 364 for the session store (`owa_s_<site id>`). A
 year-long identifier is longer than some sites want or can justify, so the snippet
 can ask for something shorter.
 
@@ -42,19 +42,19 @@ These are ordinary tracker options, set from the snippet the same way
 
 ```js
 owa_cmds.push(['setOption', 'stateStoreExpirations', {"v": 90, "s": 7}]);
-owa_cmds.push(['setOption', 'cookiePersistence', false]);
 ```
 
-`stateStoreExpirations` is keyed by store: `v` for the visitor id, `c` for the
-campaign store, `s` for the session store. Stores you leave out keep their
-defaults. Values are whole days, one or more; anything else is ignored rather
-than guessed at.
+`stateStoreExpirations` is keyed by store: `v` for the visitor id, `s` for the
+session store. Stores you leave out keep their defaults. Values are whole days,
+zero or more; anything else is ignored rather than guessed at.
 
-`cookiePersistence: false` makes every one of them a *session* cookie instead: no
-expiry date, discarded when the browser closes, and a returning visitor counted
-as new. It overrides the lifetimes, so setting both means session cookies. This is
-the tracker-side counterpart of the `cookie_persistence` setting, which has
-governed server-set cookies since 2016 but was never read by the tracker.
+**0 days makes that cookie a *session* cookie**: no expiry date, discarded when
+the browser closes, and a returning visitor counted as new.
+`{"v": 0, "s": 0}` does it for both.
+
+`setOption('cookiePersistence', false)`, from 1.14.0, does the same for every
+cookie the tracker writes and still works, but is **deprecated in 2.0** in favour
+of 0 days; see [UPGRADING.md](UPGRADING.md).
 
 Put them before `trackPageView`, as in the snippet above. The command queue is
 drained in push order, and `trackPageView` is what writes the first cookie.

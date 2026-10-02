@@ -649,7 +649,8 @@ class StateManager {
         var meta = this.storeMeta[ store_name ];
         var configured = this.configuredExpiration( meta );
 
-        if ( configured ) {
+        // 0 is a configured lifetime -- until the browser closes -- not an absent one.
+        if ( configured !== undefined ) {
 
             return configured;
         }
@@ -685,7 +686,9 @@ class StateManager {
         // was never a number should not be half-read as one.
         var days = typeof raw === 'number' ? raw : Number( String( raw ).trim() );
 
-        if ( ! isFinite( days ) || Math.floor( days ) !== days || days < 1 ) {
+        // 0 is allowed: the cookie ends when the browser closes (isSessionOnly()).
+        if ( raw === null || String( raw ).trim() === ''
+             || ! isFinite( days ) || Math.floor( days ) !== days || days < 0 ) {
 
             OWA.debug( 'Ignoring unusable expiration for state store (%s): %s',
                 meta.logical, raw );
@@ -696,11 +699,14 @@ class StateManager {
     }
 
     /**
-     * May this store's cookie outlive the browser session at all?
+     * Whether this store's cookie ends when the browser closes.
      *
-     * The tracker-side half of cookie_persistence, which has governed
-     * server-set cookies since 2016 and which this tracker never read. Set from
-     * the snippet:
+     * A lifetime of 0 days says so for one store:
+     *
+     *     owa_cmds.push(['setOption', 'stateStoreExpirations', {v: 0, s: 0}]);
+     *
+     * DEPRECATED in 2.0: cookiePersistence false, which shipped in 1.14.0, says
+     * it for every store this tracker writes, and is still honoured.
      *
      *     owa_cmds.push(['setOption', 'cookiePersistence', false]);
      *
@@ -709,16 +715,33 @@ class StateManager {
      * parse loses data, and "unchanged" is the safe reading of something
      * unparseable.
      */
-    cookiePersistenceFor( store_name ) {
+    isSessionOnly( store_name ) {
 
         var meta = this.storeMeta[ store_name ];
 
         if ( ! meta || ! meta.owner ) {
 
+            return false;
+        }
+
+        if ( this.configuredExpiration( meta ) === 0 ) {
+
             return true;
         }
 
-        return meta.owner.getOption( 'cookiePersistence' ) !== false;
+        if ( meta.owner.getOption( 'cookiePersistence' ) === false ) {
+
+            if ( ! meta.owner.cookiePersistenceNoticed ) {
+
+                meta.owner.cookiePersistenceNoticed = true;
+                OWA.debug( "cookiePersistence is deprecated: use setOption('stateStoreExpirations', "
+                    + "{v: 0, s: 0}) for cookies that end when the browser closes." );
+            }
+
+            return true;
+        }
+
+        return false;
     }
     
     getFormat( store_name ) {
@@ -854,7 +877,7 @@ class StateManager {
         }
 
         /*
-         * Persistence is decided LAST, so it beats every lifetime above,
+         * A session-only cookie is decided LAST, so it beats every lifetime above,
          * including the 364-day fallback -- which is the one that would
          * otherwise keep the visitor id alive for a year on a page that asked
          * for session cookies.
@@ -865,7 +888,7 @@ class StateManager {
          * with -1 and -2 to expire a cookie in the past, and a blanket rule
          * there would strip the attribute that makes deletion work.
          */
-        if ( ! this.cookiePersistenceFor( store_name ) ) {
+        if ( this.isSessionOnly( store_name ) ) {
 
             expiration_days = 0;
         }

@@ -6,9 +6,9 @@
  * Read from disk before any module object exists -- see
  * Core\Module::settingsRegistry() for why that is forced rather than chosen.
  *
- * The only setting it reads is its own is_active. What gets recorded is
- * decided by the tracker and by Base's settings, not by anything stored under
- * 'domstream'.
+ * Two tag settings (PLAN 2.24.4): whether a Profile records, and what share
+ * of page loads. They reach the tracker only through a Profile's tracking
+ * bundle, as trackDomStream and setDomstreamSampleRate.
  *
  * Declaring nothing is not the same as saying nothing. Without this file the
  * module is undeclared, and the boot query falls back to loading EVERY row it
@@ -23,5 +23,25 @@ return array(
 
     'module' => 'domstream',
 
-    'settings' => array(),
+    'settings' => array(
+        'record' => array(
+            // On, as the snippet has always recorded wherever the module is active.
+            'default'  => true,
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'Record Page Interactions',
+            'description' => 'Records pointer movement, clicks and key presses (never the keys) so a visit can be played back.',
+        ),
+        'sample_rate' => array(
+            'default'  => 100,
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'integer',
+            'min'      => 0,
+            'max'      => 100,
+            'label'    => 'Recording Sample Rate (%)',
+            'description' => 'The share of page loads recorded, from 0 to 100.',
+        ),
+    ),
 );
