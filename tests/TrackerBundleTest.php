@@ -115,26 +115,39 @@ final class TrackerBundleTest extends TestCase
         $this->assertContains(array('setTrackUrlFragments', true), $config['options']);
     }
 
-    /** Domstream adds its recorder when the Profile records, and nothing when it does not. */
+    /**
+     * Domstream adds its recorder when the Profile records, and nothing when it
+     * does not.
+     *
+     * Both set on the Profile rather than read from the default: run on its own
+     * in a fresh install the module is not active, so its declared defaults have
+     * not been loaded, and a test leaning on them passed only after another
+     * test had loaded them.
+     */
     public function testDomstreamContributesItsRecorder(): void
     {
+        $this->requireDb();
+
         $module = new \OWA\Module\Domstream\Module();
         $empty  = array('options' => array(), 'features' => array(), 'plugins' => array());
 
-        $on = $module->addToBundle($empty, self::SITE);
+        try {
+            \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'domstream', 'record', true);
+            \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'domstream', 'sample_rate', 40);
 
-        $this->assertSame(array('domstream'), $on['plugins']);
-        $this->assertSame(array(array('trackDomStream')), $on['features']);
-        $this->assertSame(array(array('setDomstreamSampleRate', 100)), $on['options']);
+            $on = $module->addToBundle($empty, self::SITE);
 
-        if (owa_test_db_available()) {
+            $this->assertSame(array('domstream'), $on['plugins']);
+            $this->assertSame(array(array('trackDomStream')), $on['features']);
+            $this->assertSame(array(array('setDomstreamSampleRate', 40)), $on['options']);
+
             \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'domstream', 'record', false);
 
-            try {
-                $this->assertSame($empty, $module->addToBundle($empty, self::SITE));
-            } finally {
-                \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'domstream', 'record');
-            }
+            $this->assertSame($empty, $module->addToBundle($empty, self::SITE));
+
+        } finally {
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'domstream', 'record');
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'domstream', 'sample_rate');
         }
     }
 
