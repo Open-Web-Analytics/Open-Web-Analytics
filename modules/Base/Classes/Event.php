@@ -97,49 +97,10 @@ class Event {
      */
     var $timestamp;
 
-    /**
-     * Last error msg set by handler
-     *
-     * @var string
-     */
-    var $last_error_msg;
-
-    /**
-     * Number of times event was received from message quque
-     *
-     * @var integer
-     */
-    var $receive_count = 0;
-
-    /**
-     * Timestamp of last receipt from message queue
-     *
-     * @var string
-     */
-    var $last_receive_timestamp;
-
-    /**
-     * Timestamp of first receipt from message queue
-     *
-     * @var string
-     */
-    var $first_receive_timestamp;
-
-    /**
-     * Timestamp not to handled event before
-     *
-     * @var string
-     */
-    var $do_not_receive_before_timestamp;
-
     var $status;
-
-    // backwards compat. remove soon.
-    var $old_queue_id;
 
     const handled = 'handled';
     const unhandled = 'unhandled';
-    const broken = 'broken';
     /** A handler returned OWA_EHS_EVENT_FAILED: not ingested, worth retrying. */
     const failed = 'failed';
 
@@ -161,13 +122,6 @@ class Event {
     function setStatusAsHandled() {
 
         $this->status = self::handled;
-        //clear any error
-        $this->last_error_msg = '';
-    }
-
-    function setStatusAsBroken() {
-
-        $this->status = self::broken;
     }
 
     function setStatusAsFailed() {
@@ -284,29 +238,13 @@ class Event {
      }
 
     /**
-     * Properties a remote sender is allowed to set on an incoming event.
+     * What loadFromArray() may set, and nothing else.
      *
-     * This is an ALLOWLIST because loadFromArray()'s only caller is queue.php,
-     * which is fed straight from an unauthenticated HTTP request. Everything
-     * absent from this list is queue bookkeeping that belongs to the RECEIVING
-     * instance, not to whoever posted the event.
-     *
-     * Letting a sender set those was a real (if narrow) problem. sendMessage()
-     * uses the event's guid as the queue-item PRIMARY KEY, and the retry
-     * machinery reads receive_count / do_not_receive_before_timestamp. A caller
-     * that could set them could collide with an existing queue item, park an
-     * event arbitrarily far in the future, or arrive pre-loaded with a receive
-     * count that trips the retry limits.
-     *
-     * Dropping them is also more correct on the merits: a freshly received
-     * event SHOULD start with fresh queue state, which is exactly what the
-     * constructor already gives it.
-     *
-     * guid and timestamp stay settable on purpose -- the remote-queue forwarder
-     * (HttpEventQueue) relays both, the guid is what makes a retried forward
-     * idempotent rather than duplicating the queue item, and the timestamp is
-     * the real event time from the upstream instance rather than the moment the
-     * forward happened to arrive. Both are validated below instead.
+     * Its caller is the tracker-ingest drain rebuilding an event from a queued
+     * envelope (TrackerIngest::event()), and a queue's contents are only as
+     * trustworthy as whatever can write to it. So it sets the event's name,
+     * properties, guid and time -- the last two validated below -- and none
+     * of the object's other state.
      *
      * @var string[]
      */
@@ -342,10 +280,9 @@ class Event {
 
             $value = $vars[ $name ];
 
-            // guid and timestamp are numeric by construction -- generateRandomUid()
-            // returns time().rand(6).serverId(3) and the guid column is a BIGINT.
-            // A non-numeric value here is not a valid event identifier, and the
-            // guid reaches the queue item's primary key.
+            // guid and timestamp are numeric by construction: the guid is
+            // Lib::generateRandomUid()'s digits and the time is unix seconds.
+            // Anything else is not an event this install made.
             if ( ( $name === 'guid' || $name === 'timestamp' )
                  && ! ( is_int( $value ) || is_string( $value ) && ctype_digit( $value ) ) ) {
                 continue;
@@ -503,75 +440,6 @@ class Event {
         return $this->status;
     }
 
-    function setDoNotReceiveBeforeTimestamp( $time ) {
-
-        $this->do_not_receive_before_timestamp = $time;
-    }
-
-    function wasReceived() {
-
-        $time = time();
-
-        $this->last_receive_timestamp = $time;
-
-        if ( $this->receive_count === 0 ) {
-
-            $this->first_receive_timestamp = $time;
-        }
-
-        $this->incrementReceiveCount();
-    }
-
-    function incrementReceiveCount() {
-
-        $this->receive_count++;
-    }
-
-    function getReceiveCount() {
-
-        return $this->receive_count;
-    }
-
-    function setErrorMeg( $error_msg ) {
-
-        $this->last_error_msg = $error_msg;
-    }
-
-    function getErrorMsg() {
-
-        return $this->last_error_msg;
-    }
-
-    function getLastReceiveTimestamp() {
-
-        return $this->last_receive_timestamp;
-    }
-
-    function getDoNotReceiveBeforeTimestamp() {
-
-        return $this->do_not_receive_before_timestamp;
-    }
-
-    // backwards compat for dbEventQueue. remove_soon.
-    function setOldQueueId( $id ) {
-
-        if ( $id != $this->getGuid() ) {
-
-            $this->old_queue_id = $id;
-        }
-    }
-
-    function getQueueGuid() {
-
-        if ( $this->old_queue_id ) {
-
-            return $this->old_queue_id;
-
-        } else {
-
-            return $this->getGuid();
-        }
-    }
 }
 
 ?>

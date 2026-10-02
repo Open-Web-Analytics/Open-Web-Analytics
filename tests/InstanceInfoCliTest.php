@@ -120,7 +120,7 @@ final class InstanceInfoCliTest extends TestCase
             'the report must not fatal: ' . substr($out, 0, 500));
 
         foreach (['ENVIRONMENT', 'MODULES', 'SCHEMA', 'SCHEDULER',
-                  'FACT TABLES', 'FRESHNESS', 'EVENT QUEUE', 'SETTINGS',
+                  'FACT TABLES', 'FRESHNESS', 'TRACKER INGEST', 'SETTINGS',
                   'CONTENTS'] as $section) {
 
             $this->assertStringContainsString($section, $out,

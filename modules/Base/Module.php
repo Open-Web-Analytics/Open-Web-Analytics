@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 67;
+        $this->required_schema_version = 68;
         return parent::__construct();
     }
 
@@ -99,13 +99,9 @@ class Module extends \OWA\Core\Module {
 
     function init() {
 
-	    // create event queues
-
-        // register queue type implementations
+        // The one queue type Base ships; a module adds its own (the sqs module).
         $this->registerImplementation('event_queue_types', 'file', \OWA\Module\Base\Classes\FileEventQueue::class, 'Classes/FileEventQueue.php');
-        $this->registerImplementation('event_queue_types', 'database', \OWA\Module\Base\Classes\DbEventQueue::class, 'Classes/DbEventQueue.php');
-        $this->registerImplementation('event_queue_types', 'http', \OWA\Module\Base\Classes\HttpEventQueue::class, 'Classes/HttpEventQueue.php');
-        
+
         /*
          * The tracking intake (PLAN 2.30.3). Its type is written here and
          * tracker_ingest_queue_type is the only plug: a type a module registers
@@ -116,15 +112,6 @@ class Module extends \OWA\Core\Module {
             'queue_type'   => 'file',
             'path'         => \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ),
             'max_receives' => \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES,
-        ));
-
-        $this->registerEventQueue( 'processing', array(
-
-            'queue_type'            => 'database',
-            'server'                => \OWA\Core\CoreAPI::getSetting('base', 'db_host'),
-            'port'                    => \OWA\Core\CoreAPI::getSetting('base', 'db_port'),
-            'username'                => \OWA\Core\CoreAPI::getSetting('base', 'db_user'),
-            'password'                => \OWA\Core\CoreAPI::getSetting('base', 'db_password')
         ));
 
         $this->setupTrackingProperties();
@@ -307,7 +294,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.v1DropCli',                     'OWA\\Module\\Base\\Controller\\V1DropCli',                   'Controller/V1DropCli.php' );
         $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
         $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
-        $this->registerAction( 'base.flushProcessedEventsCli',       'OWA\\Module\\Base\\Controller\\FlushProcessedEventsCli',      'Controller/FlushProcessedEventsCli.php' );
         $this->registerAction( 'base.installBase',                   'OWA\\Module\\Base\\Controller\\InstallBase',                  'Controller/InstallBase.php' );
         $this->registerAction( 'base.installCheckEnv',               'OWA\\Module\\Base\\Controller\\InstallCheckEnv',              'Controller/InstallCheckEnv.php' );
         $this->registerAction( 'base.installCli',                    'OWA\\Module\\Base\\Controller\\InstallCli',                   'Controller/InstallCli.php' );
@@ -344,7 +330,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.trackerIngestReplayCli',        'OWA\\Module\\Base\\Controller\\TrackerIngestReplayCli',       'Controller/TrackerIngestReplayCli.php' );
         $this->registerAction( 'base.trackerIngestProvisionCli',     'OWA\\Module\\Base\\Controller\\TrackerIngestProvisionCli',    'Controller/TrackerIngestProvisionCli.php' );
         $this->registerAction( 'base.drainTrackerIngestCli',         'OWA\\Module\\Base\\Controller\\DrainTrackerIngestCli',        'Controller/DrainTrackerIngestCli.php' );
-        $this->registerAction( 'base.processEventQueue',             'OWA\\Module\\Base\\Controller\\ProcessEventQueue',            'Controller/ProcessEventQueue.php' );
         $this->registerAction( 'base.processRequest',                'OWA\\Module\\Base\\Controller\\ProcessRequest',               'Controller/ProcessRequest.php' );
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
@@ -433,7 +418,6 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('v1-drop', 'base.v1DropCli');
         $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');
         $this->registerCliCommand('update-ua-regexes', 'base.updateUaRegexesCli');
-        $this->registerCliCommand('processEventQueue', 'base.processEventQueue');
         $this->registerCliCommand('drain-tracker-ingest', 'base.drainTrackerIngestCli');
         $this->registerCliCommand('tracker-ingest-replay', 'base.trackerIngestReplayCli');
         $this->registerCliCommand('tracker-ingest-provision', 'base.trackerIngestProvisionCli');
@@ -442,7 +426,6 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('deactivate', 'base.moduleDeactivateCli');
         $this->registerCliCommand('install-module', 'base.moduleInstallCli');
         $this->registerCliCommand('add-site', 'base.sitesAddCli');
-        $this->registerCliCommand('flush-processed-events', 'base.flushProcessedEventsCli');
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
         $this->registerCliCommand('partition-status', 'base.partitionStatusCli');
         $this->registerCliCommand('partition-init', 'base.partitionInitCli');
@@ -473,15 +456,10 @@ class Module extends \OWA\Core\Module {
      *
      *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
      *
-     * Only partition-rotate ships registered. It is the one whose absence fails
-     * silently and slowly on every installation -- the partition lead expires,
-     * rows pile into the catch-all, reports keep working, and nobody notices
-     * until a rotate has to rewrite a year of data with writes blocked.
-     *
-     * Queue processing is deliberately NOT shipped: whether to drain the queue
-     * at all, and how often, depends on an installation's traffic and on whether
-     * it queues in the first place. It is added in OWA_SCHEDULED_JOBS when
-     * wanted -- see owa_settings::applyConfigConstants().
+     * Each job below says why it ships; ScheduleCliTest names the list
+     * exactly, so adding one is a decision rather than a detail. An
+     * installation retunes or turns one off in OWA_SCHEDULED_JOBS -- see
+     * Settings::applyConfigConstants().
      */
     /**
      * A stable seed for spreading one daily job, per install and per job.
@@ -1160,7 +1138,6 @@ class Module extends \OWA\Core\Module {
             'goal_event',
             'goal_event_condition',
                 'user',
-                'queue_item',
                 'scheduled_job',
                 'notification',
                 'notification_state',

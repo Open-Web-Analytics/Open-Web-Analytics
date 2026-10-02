@@ -36,63 +36,34 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
     function __construct($params) {
 
         $this->setRequiredCapability('edit_modules');
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
+    /**
+     *   cli.php cmd=prune-event-queue-archives [queues=a,b] [interval=<seconds>]
+     *
+     * Archived batches older than interval (a day by default), of every
+     * registered queue that keeps an archive, or of those named.
+     */
     function action() {
 
-        if ( $this->getParam( 'queues' ) ) {
+        $interval = (int) ( $this->getParam( 'interval' ) ?: 86400 );
 
-            $queues = $this->getParam( 'queues' );
+        $queues = $this->getParam( 'queues' )
+            ? explode( ',', (string) $this->getParam( 'queues' ) )
+            : array_keys( (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap( 'event_queues' ) );
 
-        } else {
+        foreach ( $queues as $queue_name ) {
 
-            $queues = 'tracker-ingest,processing';
-        }
+            // The intake is built from its setting, not its registration.
+            $q = $queue_name === \OWA\Module\Base\Classes\TrackerIngest::QUEUE
+                ? \OWA\Module\Base\Classes\TrackerIngest::queue()
+                : \OWA\Core\CoreAPI::getEventQueue( $queue_name );
 
-        if ( $this->getParam( 'interval' ) ) {
+            if ( method_exists( $q, 'pruneArchive' ) ) {
 
-            $interval = $this->getParam( 'interval' );
-
-        } else {
-
-            $interval = 3600*24;
-        }
-
-        // pull list of event queues to process from command line
-        $queues = $this->getParam( 'queues' );
-
-        if ( $queues ) {
-            // parse command line
-            $queues = explode( ',', (string) $this->getParam( 'queues' ) );
-
-        } else {
-
-            // get whatever queues are registered by modules
-            $s = \OWA\Core\CoreAPI::serviceSingleton();
-            $queues = array_keys( $s->getMap('event_queues') );
-        }
-
-        if ( $queues ) {
-
-            foreach ( $queues as $queue_name ) {
-
-                \OWA\Core\CoreAPI::notice( "About to prune archive of event queue: $queue_name");
-
-                // The intake is built from its setting, not its registration.
-                $q = $queue_name === \OWA\Module\Base\Classes\TrackerIngest::QUEUE
-                    ? \OWA\Module\Base\Classes\TrackerIngest::queue()
-                    : \OWA\Core\CoreAPI::getEventQueue($queue_name);
-
-                if ( $q instanceof \OWA\Core\IntakeQueue ) {
-
-                    if ( method_exists( $q, 'pruneArchive' ) ) {
-                        $q->pruneArchive( $interval );
-                    }
-
-                } elseif ( $q->connect() ) {
-                    $q->pruneArchive( $interval );
-                }
+                \OWA\Core\CoreAPI::notice( sprintf( 'Pruned %d archived file(s) of event queue %s.',
+                    (int) $q->pruneArchive( $interval ), $queue_name ) );
             }
         }
     }

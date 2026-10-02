@@ -436,27 +436,8 @@ class EventDispatch {
             $event = $event_params;
         }
 
-        $this->asyncNotify($event);
+        $this->notify($event);
 
-    }
-
-    /**
-     * Async Notify
-     *
-     * Adds event to async notiication queue for notification by another process.
-     *
-     * @param    $event    array
-     * @return bool
-     * @depricated
-     */
-    function asyncNotify( $event ) {
-
-        return $this->notify( $event );
-    }
-
-    function getEventQueue( $name ) {
-
-        return \OWA\Core\CoreAPI::getEventQueue( $name );
     }
 
     function eventFactory() {

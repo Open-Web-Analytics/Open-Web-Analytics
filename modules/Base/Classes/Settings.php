@@ -401,8 +401,7 @@ namespace OWA\Module\Base\Classes;
         //
         //   define('OWA_SCHEDULED_JOBS', array(
         //       'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
-        //       'drain-queue'      => array( 'command'  => 'processEventQueue',
-        //                                    'schedule' => '*/2 * * * *' ),
+        //       'drain-tracker-ingest' => array( 'schedule' => '*/5 * * * *' ),
         //   ));
         //
         // Keyed by job name; see owa_service::applyConfiguredJobs() for how an
@@ -563,9 +562,6 @@ namespace OWA\Module\Base\Classes;
             }
         }
 
-        if (defined('OWA_REMOTE_EVENT_QUEUE_ENDPOINT')) {
-            $this->setFromConfigConstant( 'base', 'remote_event_queue_endpoint', OWA_REMOTE_EVENT_QUEUE_ENDPOINT, 'OWA_REMOTE_EVENT_QUEUE_ENDPOINT');
-        }
 
      }
       
@@ -2870,16 +2866,6 @@ namespace OWA\Module\Base\Classes;
                 'queue_tracker_ingest'                => null, // unset: the 1.x names decide (TrackerIngest::isQueued())
                 'tracker_ingest_queue_type'           => 'file',
                 'tracker_ingest_drain'                => 'scheduler',
-                // Retry-exhaustion caps for the processing queue. A queued event
-                // that keeps failing (e.g. a session_update whose session never
-                // persists, or an event for an unregistered site) is retried on
-                // each processEventQueue run until it exceeds EITHER of these,
-                // then marked 'broken' and retained for inspection rather than
-                // retried forever. Set either to 0 to disable that check.
-                'queue_max_retry_count'                => 25,          // attempts before giving up
-                'queue_max_retry_age'                => 86400,       // seconds (24h) since first queued
-                'remote_event_queue_endpoint'        => '',
-                'allowed_queued_event_types'        => [],
                 'cookie_domain'                        => false,
                 'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
                 'is_active'                            => true,
@@ -2955,7 +2941,7 @@ namespace OWA\Module\Base\Classes;
                 'memcachedServers'                    => array(),
                 'memcachedPersistantConnections'    => true,
                 'cacheType'                            => '', // file, memory, memcache
-                'disabledEndpoints'                    => array('queue.php'),
+                'disabledEndpoints'                    => array(),
                 'disableAllEndpoints'                => false,
                 // Scheduler. Jobs themselves are registered in code by each
                 // module; this holds only what OWA_SCHEDULED_JOBS overlays on

@@ -57,7 +57,6 @@ return array(
 
         'action_url' => array( 'default' => '' ),
         'allow_slowly_changing_dimensions' => array( 'default' => true ),
-        'allowed_queued_event_types' => array( 'default' => array() ),
         'announce_visitors' => array(
             'default'  => false,
             'storable' => true,
@@ -158,7 +157,7 @@ return array(
         ),
         'default_reporting_period' => array( 'default' => 'last_seven_days' ),
         'disableAllEndpoints' => array( 'default' => false ),
-        'disabledEndpoints' => array( 'default' => array( 'queue.php' ) ),
+        'disabledEndpoints' => array( 'default' => array() ),
         'domain_aliases' => array(
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
@@ -357,9 +356,6 @@ return array(
         'queue_tracker_ingest' => array( 'default' => null, 'storable' => true, 'autoload' => true ),
         'tracker_ingest_queue_type' => array( 'default' => 'file' ),
         'tracker_ingest_drain' => array( 'default' => 'scheduler' ),
-        'queue_max_retry_age' => array( 'default' => 86400 ),
-        'queue_max_retry_count' => array( 'default' => 25 ),
-        'remote_event_queue_endpoint' => array( 'default' => '' ),
         'report_wrapper' => array( 'default' => 'wrapper_default.php' ),
         'request_mode' => array( 'default' => 'web_app' ),
         'reserved_words' => array( 'default' => array( 'do' => 'action' ) ),

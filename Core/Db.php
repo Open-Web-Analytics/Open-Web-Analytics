@@ -381,10 +381,7 @@ class Db extends \OWA\Core\Base {
         // remove -- under STRICT_ALL_TABLES the same write is rejected outright
         // with "Incorrect integer value: '' for column ...".
         //
-        // Writing NULL means callers must stop relying on the coercion. The one
-        // that did is owa_queue_item.not_before_timestamp, whose due check now
-        // reads a missing value as "due now" rather than depending on '' having
-        // silently become 0. See DbEventQueue::getNextItems().
+        // Writing NULL means callers must stop relying on the coercion.
         $this->_bindings[] = $value;
 
         return '?';
