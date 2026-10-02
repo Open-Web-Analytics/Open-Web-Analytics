@@ -23,8 +23,10 @@ namespace OWA\Module\Sqs\Classes;
  * fourteen days, and both queues are set to that; the file queue keeps one
  * until it is ingested. schedule-status warns long before it matters.
  *
- * A queue's URL holds the account id, so it is looked up once and kept in a
- * small file under the cache directory: a beacon costs one request, not two.
+ * A queue's URL holds the account id, so it is never looked up per beacon: a
+ * logging node names it in owa-config.php (OWA_SQS_QUEUE_URL), and the install
+ * that provisioned it has it in the sqs.provisioned setting. Only an install
+ * with neither asks GetQueueUrl, once per process.
  */
 class SqsQueue implements \OWA\Core\IntakeQueue {
 
@@ -61,7 +63,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     function __construct( $map = array() ) {
 
         $this->is_dead_letter = ! empty( $map['is_dead_letter'] );
-        $this->name           = (string) ( $map['name'] ?? Sqs::queueName() );
+        $this->name           = (string) ( $map['name'] ?? ( Sqs::configuredName() ?? Sqs::queueName() ) );
         $this->max_receives   = $this->is_dead_letter ? null
             : max( 1, (int) ( $map['max_receives'] ?? \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES ) );
     }
@@ -286,9 +288,10 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     // ---------------------------------------------------------------------
 
     /**
-     * The queue's URL: from this object, else the file it was kept in, else
-     * GetQueueUrl. A queue that does not exist yet is provisioned, when
-     * $provision allows, as the file queue makes its directories on first use.
+     * The queue's URL: OWA_SQS_QUEUE_URL (its dead-letter queue's is that
+     * with -dlq), else what provisioning recorded, else GetQueueUrl. A queue
+     * that does not exist yet is provisioned, when $provision allows, as the
+     * file queue makes its directories on first use.
      *
      * @param  bool $provision
      * @return string|null
@@ -300,21 +303,16 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
             return $this->url;
         }
 
-        $file = $this->urlFile();
+        $known = $this->knownUrl();
 
-        if ( $file && is_file( $file ) ) {
+        if ( $known ) {
 
-            $url = trim( (string) @file_get_contents( $file ) );
-
-            if ( $url !== '' ) {
-
-                return $this->url = $url;
-            }
+            return $this->url = $known;
         }
 
         try {
 
-            $url = Sqs::client()->getQueueUrl( array( 'QueueName' => $this->name ) )['QueueUrl'];
+            $this->url = Sqs::client()->getQueueUrl( array( 'QueueName' => $this->name ) )['QueueUrl'];
 
         } catch ( \Aws\Sqs\Exception\SqsException $e ) {
 
@@ -329,32 +327,49 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
             $this->last_error = $e->getAwsErrorMessage() ?: $e->getMessage();
 
             return null;
-        }
 
-        $this->remember( $url );
+        } catch ( \Throwable $t ) {
+
+            // The network, the credential chain: anything, on log.php's path, is a failed lookup.
+            $this->last_error = $t->getMessage();
+
+            return null;
+        }
 
         return $this->url;
     }
 
-    /** Keep the URL, for this process and the next. */
+    /** The URL without asking SQS: the constant, or the provisioning record, when it names this queue. */
+    private function knownUrl() {
+
+        $main = Sqs::configuredUrl();
+
+        if ( ! $main ) {
+
+            $record = (array) \OWA\Core\CoreAPI::getSetting( 'sqs', 'provisioned' );
+            $main   = ! empty( $record['ok'] ) ? ( $record['main'] ?? null ) : null;
+        }
+
+        if ( ! $main ) {
+
+            return null;
+        }
+
+        foreach ( array( $main, $main . '-dlq' ) as $url ) {
+
+            if ( basename( (string) parse_url( $url, PHP_URL_PATH ) ) === $this->name ) {
+
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
+    /** Keep the URL provisioning returned, for this object. */
     private function remember( $url ) {
 
         $this->url = (string) $url;
-
-        $file = $this->urlFile();
-
-        if ( $file && ( is_dir( dirname( $file ) ) || @mkdir( dirname( $file ), 0755, true ) ) ) {
-
-            @file_put_contents( $file . '.tmp', $this->url, LOCK_EX ) && @rename( $file . '.tmp', $file );
-        }
-    }
-
-    /** @return string|null */
-    private function urlFile() {
-
-        $dir = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'cache_dir' );
-
-        return $dir !== '' ? rtrim( $dir, '/' ) . '/sqs/' . $this->name . '.url' : null;
     }
 
     /** @return array|null */
@@ -370,7 +385,6 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     private function sendBody( $body, $delay, array $attributes ) {
 
         $args = array(
-            'QueueUrl'     => $this->url(),
             'MessageBody'  => (string) $body,
             'DelaySeconds' => min( self::MAX_DELAY, max( 0, (int) $delay ) ),
         );
@@ -380,7 +394,8 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
             $args['MessageAttributes'][ $k ] = array( 'DataType' => 'String', 'StringValue' => (string) $v );
         }
 
-        return (bool) $this->call( fn ( $c ) => $c->sendMessage( $args ) );
+        // The URL inside the call, which has already resolved it or given up.
+        return (bool) $this->call( fn ( $c ) => $c->sendMessage( array( 'QueueUrl' => $this->url ) + $args ) );
     }
 
     /** A received SQS message as the contract's. */

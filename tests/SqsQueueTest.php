@@ -190,16 +190,42 @@ final class SqsQueueTest extends TestCase
         $this->assertSame('AccessDenied', $q->lastError());
     }
 
-    /** The URL is looked up once and kept, so a beacon costs one request. */
-    public function testTheUrlIsLookedUpOnceAndKept(): void
+    /** Without the constant or a provisioning record, GetQueueUrl once per queue object, and no file anywhere. */
+    public function testTheUrlIsLookedUpOnceWhenNothingNamesIt(): void
     {
         $this->answers(array('QueueUrl' => self::MAIN), array(), array());
 
-        (new SqsQueue(array('name' => 'owa-tracker-ingest-test')))->send(self::envelope('a'));
-        (new SqsQueue(array('name' => 'owa-tracker-ingest-test')))->send(self::envelope('b'));
+        $q = new SqsQueue(array('name' => 'owa-tracker-ingest-test'));
+        $q->send(self::envelope('a'));
+        $q->send(self::envelope('b'));
 
         $this->assertSame(array('GetQueueUrl', 'SendMessage', 'SendMessage'), array_column($this->sent, 0));
-        $this->assertFileExists($this->cache . 'sqs/owa-tracker-ingest-test.url');
+        $this->assertDirectoryDoesNotExist($this->cache . 'sqs', 'the URL is not kept in a file');
+    }
+
+    /** What provisioning recorded names both queues: no lookup at all. */
+    public function testTheProvisioningRecordNamesTheUrls(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting('sqs', 'provisioned');
+        \OWA\Core\CoreAPI::setSetting('sqs', 'provisioned', array('ok' => true, 'main' => self::MAIN, 'dlq' => self::DLQ));
+
+        try {
+            $this->answers(array(), array());
+
+            $q = new SqsQueue(array('name' => 'owa-tracker-ingest-test'));
+            $q->send(self::envelope('a'));
+            $q->deadLetterQueue()->send(self::envelope('b'));
+
+            $this->assertSame(array('SendMessage', 'SendMessage'), array_column($this->sent, 0));
+            $this->assertSame(self::DLQ, $this->sent[1][1]['QueueUrl']);
+
+            // A record for another queue -- the database moved -- is not used for this one.
+            $this->answers(array('QueueUrl' => self::MAIN . '-other'));
+            $this->assertSame(self::MAIN . '-other', (new SqsQueue(array('name' => 'owa-tracker-ingest-other')))->url(false));
+            $this->assertSame('GetQueueUrl', $this->sent[2][0]);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('sqs', 'provisioned', $was);
+        }
     }
 
     /** A queue that does not exist yet is created on first use, as the file queue makes its directories. */
@@ -236,6 +262,17 @@ final class SqsQueueTest extends TestCase
 
         $this->assertSame(900, $this->sent[1][1]['DelaySeconds'], 'SQS\'s longest delay');
         $this->assertSame('1', $this->sent[1][1]['MessageAttributes']['owa_replayed']['StringValue']);
+    }
+
+    /** A lookup that fails any way at all -- not only an SQS error -- is a failed send, never a throw on log.php's path. */
+    public function testAnyLookupFailureIsReportedNotThrown(): void
+    {
+        $this->answers(new \RuntimeException('connection refused'));
+
+        $q = new SqsQueue(array('name' => 'owa-tracker-ingest-test'));
+
+        $this->assertFalse($q->send(self::envelope('a')));
+        $this->assertSame('connection refused', $q->lastError());
     }
 
     public function testAFailedSendReturnsFalse(): void

@@ -10,12 +10,17 @@ namespace OWA\Module\Sqs;
 /**
  * The tracking intake on AWS SQS (PLAN 2.30.4a).
  *
- * Registers the sqs queue type. An install, or a logging node, puts beacons
- * on it with:
+ * Registers the sqs queue type. The install that drains it is given a region
+ * on this module's screen, which provisions the queues; a logging node that
+ * reads no database is configured entirely in owa-config.php:
  *
+ *   define('OWA_ACTIVE_MODULES', array('sqs'));
  *   define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'sqs');
  *   define('OWA_QUEUE_TRACKER_INGEST', true);
- *   define('OWA_SQS_REGION', 'us-east-1');      // or the setting on this module's screen
+ *   define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/<account>/owa-tracker-ingest-<hash>');
+ *
+ * The URL is the one the settings screen shows once provisioned; the region
+ * is read from it.
  *
  * The queues -- the main one and its dead-letter queue -- are created by the
  * module: on activation, when the region is saved, by
