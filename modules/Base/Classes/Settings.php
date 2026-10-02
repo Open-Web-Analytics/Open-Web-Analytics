@@ -2664,7 +2664,6 @@ namespace OWA\Module\Base\Classes;
                 'action_url'                        => '',
                 'images_url'                        => '',
                 'assets_url'                        => '',
-                'p3p_policy'                        => 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
                 'link_template'                        => '%s?%s', // main_url?key=value....
                 'owa_user_agent'                    => 'Open Web Analytics Bot '.OWA_VERSION,
                 'owa_news_url'                        => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5',
