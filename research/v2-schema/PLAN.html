@@ -3755,16 +3755,16 @@ failed write is retried from the intake in both modes.</li>
 bundle job ships (decided 2 Oct). Bundles are published <strong>on save and on update only</strong>. A
 Profile&rsquo;s save (and its creation) publishes it synchronously; a save above one Profile &mdash; a
 Property&rsquo;s or the install&rsquo;s tag settings &mdash; queues one deduplicated
-<code>publish-trackers</code> job. A new release is applied with <code>cmd=update</code>, <strong>every
-release</strong>: <code>base.code_version</code> records the <code>OWA_VERSION</code> that last updated, a
-different one is an update pending &mdash; for the admin screens, not the scheduler: only a schema behind
-stops jobs, so a deploy does not pause the drain, the cube and the job queue &mdash; and Base&rsquo;s update
-publishes every live Profile&rsquo;s bundle
-that is stale or missing &mdash; which is how Profiles from 1.x get theirs on the upgrade. In the
-run from the command line; from the update screen, as one queued <code>publish-trackers</code> job, since
-a bundle per Profile is not work for a web request. Not on a
-module turned on or off, nor on a screen opening; anything else is <code>cmd=publish-trackers</code> by
-hand.</li>
+<code>publish-trackers</code> job. <strong>A new tracker is an update</strong>, gated like the schema:
+the tracker build keeps <code>modules/Base/tracker-version.php</code>, committed like a lock file &mdash;
+its version goes up when anything the tracker is built from changes (the files webpack read outside
+<code>node_modules</code>, <code>package-lock.json</code>, the config and the build manifests) &mdash; and
+CI fails a change committed without it. An install whose <code>base.tracker_version</code> is lower has
+an update pending: the admin notice, not the scheduler, since only a schema behind stops jobs. Base&rsquo;s
+update publishes every live Profile&rsquo;s bundle that is stale or missing &mdash; which is how Profiles
+from 1.x get theirs on the upgrade &mdash; in the run from the command line, or as one queued job from the
+update screen. A release that changes neither the tracker nor the schema asks for nothing. Not on a module
+turned on or off, nor on a screen opening; anything else is <code>cmd=publish-trackers</code> by hand.</li>
 </ol>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
