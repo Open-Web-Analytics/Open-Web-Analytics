@@ -28,7 +28,7 @@ final class EntryPointBootstrapTest extends TestCase
 {
     /** Every PHP entry point in the OWA root that bootstraps the environment. */
     private const ENTRY_POINTS = [
-        'cli.php', 'index.php', 'install.php', 'log.php', 'owa.php', 'queue.php',
+        'cli.php', 'index.php', 'install.php', 'log.php', 'owa.php',
     ];
 
     private function root(): string

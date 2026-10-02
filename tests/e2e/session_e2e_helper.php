@@ -224,17 +224,10 @@ function sessionState(string $site_id): array
     }
 
     // Queue depth is global: the scratch install runs one spec at a time, and a
-    // spec that starts with a dirty queue cannot assert queue_depth == 0.
-    $db2 = db();
-    $db2->selectFrom('owa_queue_item');
-    $db2->selectColumn('event_type, COUNT(*) AS c');
-    $db2->groupBy('event_type');
-    $qrows = $db2->getAllRows();
-
-    $queued_types = [];
-    foreach ((array) $qrows as $q) {
-        $queued_types[$q['event_type']] = (int) $q['c'];
-    }
+    // spec that starts with a dirty queue cannot assert queue_depth == 0. A
+    // failed write is retried through the tracker-ingest intake, so its depth
+    // -- waiting, retrying and dead-lettered -- is what a spec asserts is 0.
+    $queued_types = intakeTypes();
 
     /*
      * Events belonging to a session that was never started.
@@ -317,9 +310,46 @@ function resetSite(string $site_id): array
         $deleted[] = $t;
     }
 
-    $db = db();
-    $db->deleteFrom('owa_queue_item');
-    $db->executeQuery();
+    clearIntake();
 
     return ['site_id' => $site_id, 'reset' => $deleted, 'queue_cleared' => true];
+}
+
+
+/** The tracker-ingest file queue's lines, main and dead-letter, by event type. */
+function intakeTypes(): array
+{
+    $types = [];
+
+    foreach (intakeFiles() as $file) {
+        foreach ((array) file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            $row  = json_decode((string) $line, true);
+            $type = (string) ($row['e']['type'] ?? '(unreadable)');
+            $types[$type] = ($types[$type] ?? 0) + 1;
+        }
+    }
+
+    return $types;
+}
+
+/** Empty the scratch run's intake, both queues. */
+function clearIntake(): void
+{
+    foreach (intakeFiles() as $file) {
+        @unlink($file);
+    }
+}
+
+/** @return string[] every file holding waiting lines, in the main queue and its dead-letter queue */
+function intakeFiles(): array
+{
+    $dir   = rtrim((string) \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir'), '/') . '/';
+    $files = [];
+
+    foreach (array($dir, $dir . 'dead-letter/') as $q) {
+        $files = array_merge($files, array($q . 'events.txt'),
+            (array) glob($q . 'unprocessed/*.txt'), (array) glob($q . 'processing/*.txt'), (array) glob($q . 'delayed/*.txt'));
+    }
+
+    return array_values(array_filter($files, 'is_file'));
 }

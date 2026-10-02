@@ -52,7 +52,6 @@ final class CliCommandsTest extends CliControllerTestCase
         return [
             'update'                     => ['update',                     'base.updatesApplyCli'],
             'flush-cache'                => ['flush-cache',                'base.flushCacheCli'],
-            'processEventQueue'          => ['processEventQueue',          'base.processEventQueue'],
             'drain-tracker-ingest'       => ['drain-tracker-ingest',       'base.drainTrackerIngestCli'],
             'tracker-ingest-replay'      => ['tracker-ingest-replay',      'base.trackerIngestReplayCli'],
             'tracker-ingest-provision'   => ['tracker-ingest-provision',   'base.trackerIngestProvisionCli'],
@@ -61,7 +60,6 @@ final class CliCommandsTest extends CliControllerTestCase
             'deactivate'                 => ['deactivate',                 'base.moduleDeactivateCli'],
             'install-module'             => ['install-module',             'base.moduleInstallCli'],
             'add-site'                   => ['add-site',                   'base.sitesAddCli'],
-            'flush-processed-events'     => ['flush-processed-events',     'base.flushProcessedEventsCli'],
             'prune-event-queue-archives' => ['prune-event-queue-archives', 'base.pruneEventQueueArchivesCli'],
             'change-password'            => ['change-password',            'base.changeUserPasswordCli'],
             'reset-secrets'              => ['reset-secrets',              'base.resetSecretsCli'],
@@ -406,40 +404,9 @@ final class CliCommandsTest extends CliControllerTestCase
     }
 
     // =================================================================
-    // Event-queue maintenance: processEventQueue / flush-processed-events /
-    // prune-event-queue-archives (cap: edit_modules).
+    // Event-queue maintenance: prune-event-queue-archives (cap: edit_modules).
+    // The intake's drain and replay are covered by TrackerIngestTest.
     // =================================================================
-
-    public function testFlushProcessedEventsRunsForAdmin(): void
-    {
-        // Regression guard: this command used to fatal on every invocation
-        // (owa_eventDispatch::getAsyncEventQueue() does not exist). It now
-        // resolves the 'processing' database queue, connects, and deletes
-        // handled rows. On an empty queue that is a clean no-op.
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\FlushProcessedEventsCli::class,
-            'flushProcessedEventsCli.php',
-            []
-        );
-
-        $this->assertNull($result['view'],
-            'flush-processed-events should run cleanly for an admin.');
-    }
-
-    public function testFlushProcessedEventsRejectsUnprivilegedUser(): void
-    {
-        // Regression guard: this command previously set NO required capability,
-        // so any authenticated user could run it. It now requires edit_modules.
-        $this->authenticateAs('viewer');
-
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\FlushProcessedEventsCli::class,
-            'flushProcessedEventsCli.php',
-            []
-        );
-
-        $this->assertNotCapable($result, 'flush-processed-events requires edit_modules.');
-    }
 
     public function testPruneEventQueueArchivesRejectsUnprivilegedUser(): void
     {
@@ -454,46 +421,29 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertNotCapable($result, 'prune-event-queue-archives requires edit_modules.');
     }
 
-    public function testProcessEventQueueRejectsUnprivilegedUser(): void
-    {
-        $this->authenticateAs('viewer');
-
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\ProcessEventQueue::class,
-            'processEventQueue.php',
-            []
-        );
-
-        $this->assertNotCapable($result, 'processEventQueue requires edit_modules.');
-    }
-
-    public function testProcessEventQueueRunsForAdmin(): void
-    {
-        // Target the registered 'processing' queue explicitly. Draining an
-        // empty queue is a clean no-op -- the contract is that the command
-        // connects and returns without error, not that it processes events.
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\ProcessEventQueue::class,
-            'processEventQueue.php',
-            ['queues' => 'processing']
-        );
-
-        $this->assertNull($result['view'],
-            'processEventQueue should drain the queue and run cleanly for an admin.');
-    }
-
+    /** Against a scratch intake: the install's own archive is not this test's to prune. */
     public function testPruneEventQueueArchivesRunsForAdmin(): void
     {
-        // pruneArchive() is a no-op stub for the database queue, so this is
-        // safe to run for real; assert the command connects and completes.
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\PruneEventQueueArchivesCli::class,
-            'pruneEventQueueArchivesCli.php',
-            ['queues' => 'processing']
-        );
+        $dir = sys_get_temp_dir() . '/owa-prune-' . bin2hex(random_bytes(4)) . '/';
+        $q   = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+        $q->provision();
+        file_put_contents($dir . 'archive/old.txt', "x\n");
+        touch($dir . 'archive/old.txt', time() - 2 * 86400);
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = $q;
 
-        $this->assertNull($result['view'],
-            'prune-event-queue-archives should run cleanly for an admin.');
+        try {
+            $result = $this->runCommand(
+                \OWA\Module\Base\Controller\PruneEventQueueArchivesCli::class,
+                'pruneEventQueueArchivesCli.php',
+                ['queues' => 'tracker-ingest']
+            );
+
+            $this->assertNull($result['view'], 'prune-event-queue-archives should run cleanly for an admin.');
+            $this->assertFileDoesNotExist($dir . 'archive/old.txt');
+        } finally {
+            \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
     }
 
     // =================================================================

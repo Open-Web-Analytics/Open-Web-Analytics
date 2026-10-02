@@ -80,9 +80,7 @@ class NotifyHandlers extends \OWA\Core\Observer {
                 // no one to send the new-session announcement to. This is a
                 // permanent condition (an unknown/unregistered site never
                 // becomes registered by retrying), so treat it as handled --
-                // returning FAILED would re-queue the event onto the processing
-                // queue for a retry that can never succeed, piling up
-                // undeliverable poison-pill rows in owa_queue_item.
+                // returning FAILED would report a failure no retry can fix.
                 \OWA\Core\CoreAPI::debug( 'New session notify handled with no action: no persisted site found for site_id: ' . $event->getSiteId() );
 
                 return OWA_EHS_EVENT_HANDLED;

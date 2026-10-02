@@ -166,9 +166,6 @@ there is none.
 
 **Still works.**
 
-- **Queued events.** An event queued by 1.x is serialized as `owa_event`; the
-  queue reads it as `OWA\Module\Base\Classes\Event` without the old name
-  existing, so a queue drained after the upgrade loses nothing.
 - **Third-party database drivers.** A driver at `plugins/db/owa_db_<type>.php`
   declaring `class owa_db_<type> extends \OWA\Core\Db` is still loaded for
   `db_type = <type>`. The class name is the plugin's own; only its base class
@@ -195,6 +192,33 @@ module's runtime name — its settings key, the `<module>.` prefix of its action
 and entities — stays lowercase.
 
 Pinned by `tests/ThirdPartyModuleCompatTest.php`.
+
+---
+
+### 4. The event queues, `queue.php` and the RemoteQueue module — REMOVED in v2.0
+
+**Process queued events on 1.x before upgrading.** 1.x queued events as
+serialized PHP objects, in the file queue under `owa-data/logs/` and in
+`owa_queue_item`. v2.0 reads neither: its tracking intake holds one JSON line
+per beacon. Run `php cli.php cmd=processEventQueue` on 1.x until both are
+empty. The upgrade refuses to run while either holds an unprocessed event.
+
+**What replaces them.**
+
+- **The tracking intake**, `tracker-ingest`. Turn queueing on with
+  `define('OWA_QUEUE_TRACKER_INGEST', true);` (`OWA_QUEUE_EVENTS` and the
+  stored `queue_incoming_tracking_events` are still read while it is unset).
+  The shipped `drain-tracker-ingest` job ingests what is queued every minute;
+  `cmd=processEventQueue` and `cmd=flush-processed-events` are gone.
+- **Failed writes are retried** through the intake in either mode, then kept in
+  its dead-letter queue: `cmd=tracker-ingest-replay` sends them back.
+- **`queue.php` and the RemoteQueue module**, which forwarded beacons to
+  another install over HTTP, are replaced by the **SQS module**: a logging node
+  queues beacons on AWS SQS and the reporting install drains them. Remove
+  `queue.php` from any web server allowlist, and `OWA_REMOTE_EVENT_QUEUE_ENDPOINT`
+  from `owa-config.php`.
+- **Removed settings:** `queue_max_retry_count`, `queue_max_retry_age`,
+  `remote_event_queue_endpoint`, `allowed_queued_event_types`.
 
 ---
 

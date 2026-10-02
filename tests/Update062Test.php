@@ -46,7 +46,13 @@ final class Update062Test extends TestCase
             \OWA\Core\CoreAPI::setRequestParam($name, null);
         }
 
+        if (isset($this->savedLogDir)) {
+            \OWA\Core\CoreAPI::setSetting('base', 'async_log_dir', $this->savedLogDir);
+            exec('rm -rf ' . escapeshellarg($this->logDir));
+        }
+
         if (owa_test_db_available()) {
+            \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . V1Schema::PREFIX . 'queue_item');
             $this->clean();
             V1Schema::drop();
         }
@@ -335,5 +341,65 @@ final class Update062Test extends TestCase
 
         $this->assertTrue($this->update->up());
         $this->assertTrue($this->update->down());
+    }
+
+    private ?string $savedLogDir = null;
+    private string $logDir = '';
+
+    /** A file queue of the test's own, so the install's is not read. */
+    private function queueDir(): string
+    {
+        $this->savedLogDir = (string) \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir');
+        $this->logDir = sys_get_temp_dir() . '/owa-v1q-' . bin2hex(random_bytes(4)) . '/';
+        mkdir($this->logDir . 'unprocessed', 0700, true);
+        \OWA\Core\CoreAPI::setSetting('base', 'async_log_dir', $this->logDir);
+
+        return $this->logDir;
+    }
+
+    /** 1.x events still queued -- in its file queue or owa_queue_item -- stop the migration (PLAN 2.30.6). */
+    public function testEventsTheOneXQueueNeverProcessedStopTheMigration(): void
+    {
+        $dir = $this->queueDir();
+        file_put_contents($dir . 'unprocessed/incoming_tracking_events-eventfile-2026.txt',
+            "12:00:00 2026-01-01|*|incoming_tracking_events|*|1|*|O%3A9%3A%22owa_event%22\n");
+        file_put_contents($dir . 'events.txt', '{"r":0,"e":{"v":1}}' . "\n");
+
+        $q = new \OWA\Module\Base\Update\Update068();
+        $q->table = V1Schema::PREFIX . 'queue_item';
+        $q->down();
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
+            "INSERT INTO %s (id, status) VALUES (1, 'unhandled'), (2, 'broken')", $q->table));
+
+        $this->assertSame(array('file_lines' => 1, 'queue_rows' => 1), $this->update->undrainedV1Queue(),
+            'v2\'s own JSON lines and broken rows are not 1.x work left undone');
+
+        \OWA\Core\CoreAPI::setRequestParam('all', true);
+        $this->assertFalse($this->update->up());
+        $this->assertSame(0, (int) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT COUNT(*) AS n FROM owa_event_raw WHERE site_id = ?', [self::SITE])['n'], 'nothing migrated');
+
+        // Processed on 1.x, the upgrade goes ahead.
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("UPDATE %s SET status = 'handled'", $q->table));
+        unlink($dir . 'unprocessed/incoming_tracking_events-eventfile-2026.txt');
+        $this->assertTrue($this->update->up());
+    }
+
+    /** Checked before anything else, so an install whose v1 tables are empty is stopped too. */
+    public function testTheCheckComesBeforeTheNothingToMigrateAnswer(): void
+    {
+        $dir = $this->queueDir();
+        file_put_contents($dir . 'events.txt', "12:00:00 2026-01-01|*|incoming_tracking_events|*|1|*|x\n");
+
+        $this->update->prefix = 'owa_nov1_';
+
+        $this->assertFalse($this->update->up());
+    }
+
+    public function testAnEmptyOneXQueueDoesNotStopIt(): void
+    {
+        $this->queueDir();
+
+        $this->assertSame(array('file_lines' => 0, 'queue_rows' => 0), $this->update->undrainedV1Queue());
     }
 }

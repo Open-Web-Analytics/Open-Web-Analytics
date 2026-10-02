@@ -163,10 +163,16 @@ final class TrackerIngestTest extends TestCase
     /** A registered type that does not meet the contract is refused, not used. */
     public function testATypeThatIsNotAnIntakeIsAnError(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'tracker_ingest_queue_type', 'database');
+        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue('event_queue_types', 'zz-not-an-intake',
+            array(NotAnIntake::class, __FILE__, array()));
+        \OWA\Core\CoreAPI::setSetting('base', 'tracker_ingest_queue_type', 'zz-not-an-intake');
 
-        $this->expectExceptionMessage('does not implement the tracking intake contract');
-        TrackerIngest::queue();
+        try {
+            $this->expectExceptionMessage('does not implement the tracking intake contract');
+            TrackerIngest::queue();
+        } finally {
+            \OWA\Core\CoreAPI::serviceSingleton()->setMapValue('event_queue_types', 'zz-not-an-intake', null);
+        }
     }
 
     // ---------------------------------------------------------------------
@@ -474,5 +480,13 @@ class MemoryIntake implements IntakeQueue
     public function stats()
     {
         return array('messages' => count($this->pending), 'oldest_age' => null);
+    }
+}
+
+/** A registered queue type that does not meet the intake contract. */
+class NotAnIntake
+{
+    public function __construct($map = array())
+    {
     }
 }

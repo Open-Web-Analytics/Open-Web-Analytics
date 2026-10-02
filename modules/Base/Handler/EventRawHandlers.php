@@ -677,12 +677,10 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * SYNCHRONOUS, and it needs nothing else. EventDispatch::notify() calls the
      * listeners in-process and logs "no listeners registered" when there are
      * none, so an event nobody wants costs a array_key_exists and stops.
-     * asyncNotify() is a deprecated alias for exactly this.
      *
-     * NOTHING ACCUMULATES. The queue is a RETRY queue, not a dispatch queue:
-     * notify() only calls sendMessage() when a handler returns EVENT_FAILED.
-     * So these raise no rows unless a listener actually fails, which is what
-     * the queue is for.
+     * NOTHING IS QUEUED. A listener that fails marks the event failed
+     * (notify()); a failed announcement is not retried, since the raw rows it
+     * announces are already written.
      *
      * WHY HERE AND NOT FROM v1. base.new_session used to be raised by v1's
      * SessionHandlers, two hops downstream of the beacon -- page_request to

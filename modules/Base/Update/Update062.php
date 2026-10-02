@@ -50,6 +50,24 @@ class Update062 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
+        /*
+         * First, whatever v1 holds: events 1.x queued and never processed are
+         * in a format v2 does not read, and Update068 drops owa_queue_item.
+         * They are processed on 1.x before the upgrade (PLAN 2.30.6).
+         */
+        $queued = $this->undrainedV1Queue();
+
+        if ( array_sum( $queued ) ) {
+
+            $this->e->notice( sprintf(
+                'OWA 1.x queued events that were never processed: %d line(s) in its file queue, %d row(s) in '
+              . '%squeue_item. v2 cannot read them. Process them on 1.x (php cli.php cmd=processEventQueue) '
+              . 'until both are empty, then upgrade.',
+                $queued['file_lines'], $queued['queue_rows'], $this->prefix ) );
+
+            return false;
+        }
+
         if ( ! $this->hasV1() ) {
 
             $this->e->notice( 'No v1 tables: nothing to migrate.' );
@@ -263,6 +281,48 @@ class Update062 extends \OWA\Core\Update {
         }
 
         return true;
+    }
+
+    /**
+     * Events OWA 1.x queued and never processed (PLAN 2.30.6): lines in its
+     * file queue that are not v2's JSON, and owa_queue_item rows still
+     * unhandled. v2 reads neither, so they are processed on 1.x first.
+     *
+     * @return array file_lines, queue_rows
+     */
+    public function undrainedV1Queue() {
+
+        $dir   = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ), '/' ) . '/';
+        $lines = 0;
+
+        foreach ( array_merge( array( $dir . 'events.txt' ), (array) glob( $dir . 'unprocessed/*' ) ) as $file ) {
+
+            if ( ! is_file( $file ) ) {
+
+                continue;
+            }
+
+            foreach ( (array) file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) as $line ) {
+
+                // 1.x wrote "<time>|*|<queue>|*|<pid>|*|<urlencoded blob>"; v2 writes JSON.
+                if ( strpos( (string) $line, '|*|' ) !== false ) {
+
+                    $lines++;
+                }
+            }
+        }
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = $this->prefix . 'queue_item';
+        $rows  = 0;
+
+        if ( $db->tableExists( $table ) ) {
+
+            $row  = $db->get_row( sprintf( 'SELECT COUNT(*) AS n FROM %s WHERE status = ?', $table ), array( 'unhandled' ) );
+            $rows = (int) ( $row['n'] ?? 0 );
+        }
+
+        return array( 'file_lines' => $lines, 'queue_rows' => $rows );
     }
 
     /**

@@ -76,7 +76,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         $lines = array_merge( $lines, $this->section( 'Scheduler',    $this->scheduler() ) );
         $lines = array_merge( $lines, $this->section( 'Fact tables',  $this->factTables() ) );
         $lines = array_merge( $lines, $this->section( 'Freshness',    $this->freshness() ) );
-        $lines = array_merge( $lines, $this->section( 'Event queue',  $this->queue() ) );
+        $lines = array_merge( $lines, $this->section( 'Tracker ingest', $this->queue() ) );
         $lines = array_merge( $lines, $this->section( 'Settings',     $this->settings() ) );
         $lines = array_merge( $lines, $this->section( 'Contents',     $this->contents() ) );
         $lines = array_merge( $lines, $this->summary() );
@@ -422,34 +422,38 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * A queue that stops draining accumulates in silence.
+     * The tracker-ingest intake (PLAN 2.30.3): a queue that stops draining
+     * accumulates in silence, and a dead letter is a beacon not yet in a
+     * report.
      */
     private function queue() {
 
-        $rows = array();
+        try {
 
-        $item = \OWA\Core\CoreAPI::entityFactory( 'base.queue_item' );
-        $table = $item->getTableName();
+            $intake = \OWA\Module\Base\Classes\TrackerIngest::queue();
+            $main   = $intake->stats();
+            $dlq    = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
 
-        $total = $this->countOf( sprintf( 'SELECT COUNT(*) AS n FROM %s', $table ) );
+        } catch ( \Throwable $t ) {
 
-        if ( $total === null ) {
-
-            return array( $this->fact( 'Queued events', 'table not present' ) );
+            return array( $this->row( self::WARN, 'Tracker ingest', 'unavailable', $t->getMessage() ) );
         }
 
-        $rows[] = $this->row(
-            $total > 10000 ? self::WARN : self::OK,
-            'Queued events', (string) $total,
-            'A queue this size usually means the drain stopped. Check '
-          . "'php cli.php cmd=processEventQueue' and the error log." );
+        $rows   = array();
+        $rows[] = $this->fact( 'Queue type', (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_ingest_queue_type' ) ?: 'file' ) );
+        $rows[] = $this->fact( 'Queueing', \OWA\Module\Base\Classes\TrackerIngest::isQueued() ? 'on' : 'off (direct; failed writes retried)' );
 
-        $oldest = $this->countOf( sprintf(
-            'SELECT MIN(not_before_timestamp) AS n FROM %s', $table ) );
+        $behind = $main['oldest_age'] !== null && $main['oldest_age'] > 600;
 
-        if ( $total && $oldest ) {
+        $rows[] = $this->row( $behind ? self::WARN : self::OK,
+            'Waiting', $main['messages'] === null ? 'unknown' : (string) $main['messages'],
+            "The oldest has waited over ten minutes: check 'php cli.php cmd=schedule-status' for drain-tracker-ingest." );
 
-            $rows[] = $this->fact( '  oldest', date( 'Y-m-d H:i', (int) $oldest ) );
+        if ( $dlq ) {
+
+            $rows[] = $this->row( $dlq['messages'] ? self::WARN : self::OK,
+                'Dead letters', $dlq['messages'] === null ? 'unknown' : (string) $dlq['messages'],
+                "Fix the cause, then 'php cli.php cmd=tracker-ingest-replay'." );
         }
 
         return $rows;

@@ -40,7 +40,6 @@ const PUBLIC_PATHS = [
     'log.php',
     'api/index.php',
     'install.php',
-    'queue.php',
     'blank.php',
     // Built, intentionally-public assets, ALL now under the public/ asset tree (moved
     // out of the source tree so the deny-all can allow public/** wholesale) -- the

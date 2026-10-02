@@ -13,7 +13,8 @@ use OWA\Module\Base\Classes\JobQueueLease;
  *
  * Against a scratch copy of owa_job_queue (JobQueue::$table), so a test never
  * claims a real job and the development install's scheduler never claims a
- * test's. Time is moved with JobQueue::$clock_offset rather than waited for.
+ * test's. The queue's clock is stopped (JobQueue::$frozen_at) and moved on,
+ * never waited for.
  *
  * The commands are real registered ones because enqueue() refuses any other;
  * the drain's runner here is a closure, so none of them runs.
@@ -35,14 +36,14 @@ final class JobQueueTest extends TestCase
         $db->query('DROP TABLE IF EXISTS ' . self::TABLE);
         $db->query('CREATE TABLE ' . self::TABLE . ' LIKE owa_job_queue');
 
-        JobQueue::$table        = self::TABLE;
-        JobQueue::$clock_offset = 0;
+        JobQueue::$table     = self::TABLE;
+        JobQueue::$frozen_at = time();
     }
 
     protected function tearDown(): void
     {
-        JobQueue::$table        = null;
-        JobQueue::$clock_offset = 0;
+        JobQueue::$table     = null;
+        JobQueue::$frozen_at = null;
 
         if (owa_test_db_available()) {
             \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::TABLE);
@@ -65,7 +66,7 @@ final class JobQueueTest extends TestCase
 
     private function later(int $seconds): void
     {
-        JobQueue::$clock_offset += $seconds;
+        JobQueue::$frozen_at += $seconds;
     }
 
     /** Drain with a runner that answers $outcome and records what it was given. */
