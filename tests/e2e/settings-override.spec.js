@@ -14,10 +14,10 @@ const SCREEN = `?owa_do=base.profileSettings&owa_siteId=${FIXTURE.siteId}`;
 
 function controls(page) {
     return {
-        field: page.locator('input[name="config[base.p3p_policy]"]'),
-        sw: page.locator('input[name="override[base.p3p_policy]"]'),
-        inheritNote: page.locator('[data-owa-note-inherit="owa-setting-base-p3p_policy"]'),
-        overrideNote: page.locator('[data-owa-note-override="owa-setting-base-p3p_policy"]'),
+        field: page.locator('select[name="config[base.enableEcommerceReporting]"]'),
+        sw: page.locator('input[name="override[base.enableEcommerceReporting]"]'),
+        inheritNote: page.locator('[data-owa-note-inherit="owa-setting-base-enableEcommerceReporting"]'),
+        overrideNote: page.locator('[data-owa-note-override="owa-setting-base-enableEcommerceReporting"]'),
     };
 }
 
@@ -58,14 +58,15 @@ test('a Profile setting inherits until its Override switch is on', async ({ page
         await c.sw.check();
         await expect(c.field).toBeEnabled();
         await expect(c.overrideNote).toBeVisible();
-        await c.field.fill('NOI ADM DEV E2E');
+        const chosen = inherited === '1' ? '0' : '1';
+        await c.field.selectOption(chosen);
         await save(page);
 
         await page.goto(SCREEN, { waitUntil: 'networkidle' });
         c = controls(page);
         await expect(c.sw).toBeChecked();
         await expect(c.field).toBeEnabled();
-        await expect(c.field).toHaveValue('NOI ADM DEV E2E');
+        await expect(c.field).toHaveValue(chosen);
 
     } finally {
         await page.goto(SCREEN, { waitUntil: 'networkidle' });

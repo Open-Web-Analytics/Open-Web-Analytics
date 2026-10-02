@@ -108,7 +108,7 @@ final class ProfileChainQueryCountTest extends TestCase
 
         $warm = $this->queriesDuring( function () {
             \OWA\Core\CoreAPI::getSetting( 'base', 'log_robots', 'profile', $this->siteId );
-            \OWA\Core\CoreAPI::getSetting( 'base', 'p3p_policy', 'profile', $this->siteId );
+            \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'profile', $this->siteId );
         } );
 
         $this->assertSame( 0, $warm,

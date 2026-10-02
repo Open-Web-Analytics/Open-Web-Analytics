@@ -291,16 +291,6 @@ return array(
         'numGoals' => array( 'default' => 15 ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5' ),
         'owa_user_agent' => array( 'default' => 'Open Web Analytics Bot master' ),
-        'p3p_policy' => array(
-            'default'  => 'NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM',
-            'storable' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
-            'type'     => 'text',
-            'label'    => 'P3P Compact Privacy Policy',
-            'description' =>
-                'The P3P compact privacy policy returned to the browser when OWA sets cookies. '
-                . 'See <a href="https://www.w3.org/P3P/">the W3C&rsquo;s P3P pages</a> for choosing one.',
-        ),
         'partition_detail_months' => array( 'default' => 36 ),
         'partition_max_partitions' => array( 'default' => 0 ),
         'password_length' => array( 'default' => 4 ),

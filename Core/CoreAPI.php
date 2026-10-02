@@ -2127,11 +2127,6 @@ class CoreAPI {
 
                 return \OWA\Core\Lib::redirectToView( $data );
 
-            // return an image . Will output headers and binary data.
-            } elseif ( $data['view_method'] == 'image' ) {
-
-                return \OWA\Core\CoreAPI::displayImage( $data );
-
             } else {
 
                 return \OWA\Core\CoreAPI::displayView( $data );
@@ -2468,19 +2463,6 @@ class CoreAPI {
 
         return $class::getInstance();
     }
-
-    public static function displayImage($data) {
-
-        header('Content-type: image/gif');
-        header('P3P: CP="'.\OWA\Core\CoreAPI::getSetting('base', 'p3p_policy').'"');
-        header('Expires: Sat, 22 Apr 1978 02:19:00 GMT');
-        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
-        header('Cache-Control: no-store, no-cache, must-revalidate');
-        header('Pragma: no-cache');
-
-        echo \OWA\Core\CoreAPI::displayView($data);
-    }
-
 
     /**
      * Displays a View without user authentication. Takes array of data as input

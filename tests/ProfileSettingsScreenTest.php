@@ -137,13 +137,13 @@ final class ProfileSettingsScreenTest extends TestCase
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
-        $key     = 'p3p_policy';
+        $key     = 'enableEcommerceReporting';
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
 
         $inherited = \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'];
 
-        $this->assertNotSame( '', (string) $inherited, 'p3p_policy has a default, so it has a switch' );
+        $this->assertNotNull( $inherited, 'a boolean has a default, so it has a switch' );
 
         $save = function ( array $params ) use ( $site_id ) {
 
@@ -153,11 +153,11 @@ final class ProfileSettingsScreenTest extends TestCase
 
         try {
             $save( array(
-                'config'   => array( 'base.p3p_policy' => (string) $inherited ),
-                'override' => array( 'base.p3p_policy' => '1' ),
+                'config'   => array( 'base.enableEcommerceReporting' => $inherited ? '1' : '0' ),
+                'override' => array( 'base.enableEcommerceReporting' => '1' ),
             ) );
 
-            $this->assertSame( (string) $inherited,
+            $this->assertSame( (bool) $inherited,
                 \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
                 'switched on, the value is this Profile\'s own even when it matches what it inherits' );
 

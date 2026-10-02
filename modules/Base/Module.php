@@ -290,7 +290,6 @@ class Module extends \OWA\Core\Module {
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.profileObservation',
             'settings' => array(
-                'p3p_policy',
                 'domain_aliases',
                 'query_string_filters',
                 'default_page',
