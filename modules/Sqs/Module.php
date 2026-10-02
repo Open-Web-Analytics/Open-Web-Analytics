@@ -47,7 +47,7 @@ class Module extends \OWA\Core\Module {
         $this->registerImplementation( 'event_queue_types', 'sqs',
             \OWA\Module\Sqs\Classes\SqsQueue::class, 'Classes/SqsQueue.php' );
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     /** Active, and its queues created if credentials and a region resolve. */
