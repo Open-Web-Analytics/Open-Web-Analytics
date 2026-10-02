@@ -41,6 +41,38 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
     }
 
+    /**
+     * A value its declaration refuses -- a lookback past its maximum -- is
+     * reported on the form. persistSetting() refuses it regardless.
+     */
+    public function validate() {
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        foreach ( (array) $this->getParam( 'config' ) as $k => $v ) {
+
+            if ( strpos( (string) $k, '.' ) === false ) {
+
+                continue;
+            }
+
+            list( $module, $name ) = explode( '.', (string) $k, 2 );
+
+            $problem = $c->valueProblem( $module, $name, $v );
+
+            if ( $problem !== null ) {
+
+                $this->addValidation( (string) $k, '', 'required', array( 'errorMsg' => $problem ) );
+            }
+        }
+    }
+
+    function errorAction() {
+
+        $this->setRedirectAction( $this->returnAction() );
+        $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+    }
+
     function action() {
 
         $c = \OWA\Core\CoreAPI::configSingleton();

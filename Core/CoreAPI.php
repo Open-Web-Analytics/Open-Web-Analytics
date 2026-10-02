@@ -799,6 +799,18 @@ class CoreAPI {
             return false;
         }
 
+        $problem = \OWA\Core\CoreAPI::configSingleton()->valueProblem( $module, $name, $value );
+
+        if ( $problem !== null ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'Refusing to store %s.%s at %s scope: %s', $module, $name, $scopeType, $problem ) );
+
+            return false;
+        }
+
+        $value = \OWA\Core\CoreAPI::configSingleton()->normalizedValue( $module, $name, $value );
+
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
         $id      = $setting->makeId( $scopeType, $scopeId, $module, $name );
 

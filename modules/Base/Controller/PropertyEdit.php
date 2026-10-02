@@ -55,17 +55,13 @@ class PropertyEdit extends \OWA\Core\AdminController {
                     . 'tracking request is accepted or refused on.' ) );
         }
 
-        // Overridden, a whole number of days, at most ten years.
-        $name     = 'base.attribution_lookback_days';
-        $override = (array) $this->getParam( 'override' );
-        $config   = (array) $this->getParam( 'config' );
-        $lookback = trim( (string) ( $config[ $name ] ?? '' ) );
+        // Each setting the screen would store, checked against its declaration.
+        foreach ( \OWA\Module\Base\Classes\SettingsForm::scopedProblems(
+                      \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
+                      'property', (string) $this->getParam( 'propertyId' ),
+                      $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
 
-        if ( ! empty( $override[ $name ] ) && array_key_exists( $name, $config )
-             && ! ( ctype_digit( $lookback ) && (int) $lookback <= 3650 ) ) {
-
-            $this->addValidation( 'attributionLookbackDays', '', 'required',
-                array( 'errorMsg' => 'The attribution lookback is a whole number of days, 0 to 3650.' ) );
+            $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
         }
 
         /*

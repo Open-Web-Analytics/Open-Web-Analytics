@@ -105,7 +105,9 @@ return array(
             'autoload' => true,
             // Per Property, not per Profile: one cube per Property applies it.
             'scopes'   => array( 'install', 'property' ),
-            'type'     => 'text',
+            'type'     => 'integer',
+            'min'      => 0,
+            'max'      => 365,
             'label'    => 'Attribution lookback (days)',
             'description' =>
                 'How far back a session that arrives directly takes the visitor&rsquo;s last '
