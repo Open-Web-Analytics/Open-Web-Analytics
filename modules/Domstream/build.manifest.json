@@ -1,7 +1,23 @@
 {
     "contributes": {
         "owa.tracker.js": [
-            "src/tracker/Recorder.js"
+            "src/tracker/Overlay.js"
+        ]
+    },
+    "contributes_lazy": {
+        "owa.tracker.js": [
+            {
+                "name": "domstream",
+                "chunk": "owa.domstream",
+                "entry": "src/tracker/Recorder.js",
+                "methods": [
+                    "trackDomStream",
+                    "setDomstreamSampleRate"
+                ],
+                "reservedEventNames": [
+                    "domstream"
+                ]
+            }
         ]
     }
 }

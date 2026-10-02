@@ -110,4 +110,25 @@ final class ReleaseTarballExcludesTest extends TestCase {
                 "$member would ship in the release tarball; add it to the exclude list in .github/workflows/main.yml" );
         }
     }
+
+    /**
+     * The build's generated inputs (webpack.config.js writes lazy-plugin stubs
+     * to .build/) are not part of a release: public/ carries what they built.
+     * Asserted by name, because the directory exists only after a build.
+     */
+    public function testTheGeneratedBuildInputsAreExcluded(): void {
+
+        $covered = false;
+
+        foreach ( $this->excludes() as $pattern ) {
+
+            if ( fnmatch( $pattern, './.build' ) ) {
+
+                $covered = true;
+                break;
+            }
+        }
+
+        $this->assertTrue( $covered, './.build would ship in the release tarball' );
+    }
 }

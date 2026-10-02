@@ -321,14 +321,25 @@ OWATracker.registerPlugin( {
 
         var recorder = recorderFor( tracker );
 
+        var seqOf = ( event ) => {
+
+            var seq = event ? event.get( 'event_seq' ) : null;
+
+            return seq === undefined || seq === null || seq === '' ? null : Number( seq );
+        };
+
+        // Loaded as a chunk after the page view was sent: pick that one up.
+        if ( tracker.lastPageView ) {
+
+            recorder.pageViewSeq = seqOf( tracker.lastPageView );
+        }
+
         // The page view a chunk belongs to: the latest this tracker sent.
         OWA.addAction( 'tracker.pageView', ( o ) => {
 
             if ( o && o.tracker === tracker ) {
 
-                var seq = o.event.get( 'event_seq' );
-
-                recorder.pageViewSeq = seq === undefined || seq === null || seq === '' ? null : Number( seq );
+                recorder.pageViewSeq = seqOf( o.event );
             }
         } );
 
@@ -340,21 +351,6 @@ OWATracker.registerPlugin( {
             }
         } );
     },
-} );
-
-/*
- * Playback: the overlay's `loadPlayer` action, loaded only in an overlay
- * session -- the recorder itself never downloads it.
- */
-OWA.registerOverlayMode( 'loadPlayer', () => {
-
-    Util.loadCss( OWA.getSetting( 'baseUrl' ) + 'public/base/css/owa.overlay.css', function () {} );
-
-    import( /* webpackChunkName: "owa.player" */ './Player.js' ).then( ( { Player } ) => {
-
-        OWA.overlay = new Player();
-        OWA.overlay.init();
-    } );
 } );
 
 export { Recorder, recorderFor, EVENT_NAME };
