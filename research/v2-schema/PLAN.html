@@ -2549,9 +2549,12 @@ snippet keeps nothing else.</p>
 <code>setPageTitle</code> lands before the baked <code>trackPageView</code>. A page that queues its
 own <code>trackPageView</code> &mdash; a custom URL, a single-page app &mdash; suppresses the
 bundle&rsquo;s, so a view is never counted twice.</p>
-<p><strong>Old snippets keep working.</strong> They load the generic
-<code>public/base/dist/owa.tracker.js</code> and push their own commands, which is what they do
-today.</p>
+<p><strong>The generic tracker stays published where it is.</strong> Every build still writes
+<code>public/base/dist/owa.tracker.js</code>, and <code>.htaccess</code> keeps redirecting the older
+paths to it. It takes every snippet command, so existing snippets, the PHP SDK&rsquo;s helper tags
+and anyone loading the tracker directly keep working unchanged. When such a page sends
+<code>trackDomStream</code>, the generic tracker fetches the Domstream chunk from the same
+directory (&sect;2.24.3). Profile bundles are an addition beside it, not a replacement.</p>
 
 <h4><span class="num">2.24.3</span>Composed from the build, never compiled per site <span class="chip c-meas">Measured</span></h4>
 <p><strong>PHP never runs webpack.</strong> Webpack runs once per OWA build, in the release package
