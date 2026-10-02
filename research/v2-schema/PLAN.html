@@ -3623,10 +3623,13 @@ same hook.</li>
 <li><strong>A logging node is configured in <code>owa-config.php</code> alone</strong>:
 <code>OWA_ACTIVE_MODULES</code> (a general constant: named modules are active whatever is stored, for
 a node with <code>OWA_USE_STATIC_CONFIG_ONLY</code>, which never reads <code>is_active</code>) and
-<code>OWA_SQS_QUEUE_URL</code>, the URL the drain install&rsquo;s settings screen shows once
-provisioned. The dead-letter queue is that URL with <code>-dlq</code> and the region is in its host, so
-a beacon needs no lookup. The drain install reads the URL from its provisioning record; only an install
-with neither asks <code>GetQueueUrl</code>, once per process.</li>
+<code>OWA_SQS_REGION</code>; the queue name is derived from the database settings it already has.
+<strong>No queue URL constant.</strong> An SQS URL holds the owner&rsquo;s account id, because queue
+names are unique per account and region, not globally as S3&rsquo;s are; credentials that carry their
+account id (<code>AWS_ACCOUNT_ID</code>, <code>aws_account_id</code> in a profile, SSO, an ECS task
+role) let the URL be built locally, and otherwise <code>GetQueueUrl</code> is asked once per process
+&mdash; one extra request per beacon, after the pixel is sent. The drain install reads the URL from its
+provisioning record.</li>
 </ul>
 
 <h4><span class="num">2.30.5</span>The admin job queue</h4>
