@@ -149,6 +149,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s228">2.27 A cube per property</a>
   <a href="#s229">2.28 URL canonicalisation</a>
   <a href="#s230">2.29 Attributed source: the last non-direct touch</a>
+  <a href="#s231">2.30 Queues and jobs</a>
   <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
@@ -3471,6 +3472,121 @@ session built after a later touch (&sect;2.29.1).</li>
 for an <em>earlier</em> non-direct session stamps the older touch, and nothing corrects it. A visitor whose
 row has expired starts with no touch. The v1 migrator must keep <code>last_touch_*</code> as it goes,
 so it processes each visitor's sessions oldest first.</p>
+
+<h3 id="s231"><span class="num">2.30</span>Queues and jobs <span class="chip c-dec">Decided</span></h3>
+<p class="note"><strong>Decided 2 Oct.</strong> Two queues for two different things, a pluggable
+intake for tracking events and a database queue for admin jobs, replacing <code>owa_queue_item</code>,
+which v2 still writes to and nothing drains.</p>
+
+<h4><span class="num">2.30.1</span>What exists, and what is wrong with it</h4>
+<ul>
+<li><strong>The database queue</strong> (<code>owa_queue_item</code>, <code>DbEventQueue</code>, the
+<code>processing</code> queue) holds a serialized PHP event per row. On v2 one path writes to it:
+<code>EventRawHandlers::store()</code> returns <code>OWA_EHS_EVENT_FAILED</code> when its transaction
+rolls back, and <code>EventDispatch::notify()</code> re-queues the event. <strong>Nothing drains
+it</strong>: <code>cmd=processEventQueue</code> is not a scheduled job, so a beacon that hits a
+transient write failure today is rolled back, queued and never retried.</li>
+<li><strong>The file queue</strong> (<code>incoming_tracking_events</code>, <code>FileEventQueue</code>)
+buffers beacons under <code>owa-data/</code> when <code>queue_incoming_tracking_events</code> is on. Its
+type is hard-coded <code>file</code>, its messages are <code>urlencode(serialize($event))</code>, and it
+is undrained on v2 for the same reason.</li>
+<li><strong>No one-off jobs.</strong> The scheduler runs recurring jobs only, so anything a save should
+start runs from a polling job instead: <code>apply-custom-dimensions</code> every 15 minutes, the
+tracking bundles&rsquo; check (&sect;2.24.5), and the cube rebuild a lookback change needs, which nothing
+starts at all.</li>
+</ul>
+
+<h4><span class="num">2.30.2</span>Why two queues</h4>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Tracking intake</th><th>Admin jobs</th></tr></thead>
+<tbody>
+<tr><td>Volume</td><td>every beacon when queued; bursts of retries under load</td><td>a few a day</td></tr>
+<tr><td>Work</td><td>small, idempotent, one beacon</td><td>heavy: a cube rebuild, an ALTER, N bundles</td></tr>
+<tr><td>Urgency</td><td>before the cube&rsquo;s rebuild window closes</td><td>within minutes</td></tr>
+<tr><td>Dedupe</td><td>none</td><td>essential: ten saves are one publish</td></tr>
+<tr><td>Must survive</td><td>a database failure</td><td>nothing: the save that starts one needs the database</td></tr>
+</tbody></table></div>
+<p>One queue would need priorities and separate budgets to stop a burst of retries delaying a publish or
+a rebuild holding up retries, and a database-backed queue cannot hold the retry of a database
+failure.</p>
+
+<h4><span class="num">2.30.3</span>The tracking intake: pluggable, shaped like SQS</h4>
+<p><strong>A contract any implementation meets</strong>, written to the strictest likely backend, AWS
+SQS: at-least-once delivery, a visibility timeout, no ordering guarantee.</p>
+<div class="scroll"><table>
+<thead><tr><th>Method</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>send( envelope, delay = 0 )</code></td><td>queue one beacon, not visible before the delay</td></tr>
+<tr><td><code>receive( max, visibility )</code></td><td>up to max messages, each with a receipt and its receive count, hidden from other consumers for the visibility timeout</td></tr>
+<tr><td><code>ack( receipt )</code></td><td>done; remove it</td></tr>
+<tr><td><code>release( receipt, delay )</code></td><td>failed; visible again after the delay</td></tr>
+<tr><td><code>deadLetter( receipt, reason )</code></td><td>give up after the receive limit; keep it for inspection (SQS: its own DLQ)</td></tr>
+<tr><td><code>isProbablyEmpty()</code></td><td>a cheap check for a quiet minute: a <code>stat()</code> for files, one attribute call for SQS</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Chosen by a setting</strong>, <code>tracking_queue_type</code>, install scope and
+config-file friendly so a static-config logging node can name it. Default <code>file</code>. A module
+registers its type under <code>event_queue_types</code>, as Base registers <code>file</code> today.</li>
+<li><strong>A JSON envelope, not a PHP object</strong>: <code>{v, type, properties, queued_at}</code>.
+Readable by another system, and nothing is unserialized. The file implementation is rewritten to the
+contract and keeps its lines, locks and rotation.</li>
+<li><strong>The producer</strong> is <code>log.php</code>&rsquo;s existing switch: queued mode sends
+every beacon; direct mode ingests, and a failed ingest write sends the beacon to the intake as a retry
+in either mode.</li>
+</ul>
+
+<h4><span class="num">2.30.4</span>The intake drain: pluggable too</h4>
+<ul>
+<li><strong>A scheduled job</strong>, <code>drain-tracking-queue</code>, every minute, generic over the
+contract: <code>isProbablyEmpty()</code> and stop, or receive batches until empty or a time budget
+runs out, ingest each, <code>ack</code> on success, <code>release</code> with back-off on failure,
+<code>deadLetter</code> past the receive limit. <code>alreadyIngested()</code> makes a redelivery
+harmless.</li>
+<li><strong>Or not the scheduler at all.</strong> <code>tracking_queue_drain</code> is
+<code>scheduler</code> (default) or <code>external</code>: a module whose backend has its own consumer
+&mdash; an SQS-triggered worker or Lambda &mdash; turns the job off and calls the same ingest step per
+message. <code>cli.php cmd=drain-tracking-queue</code> runs it by hand.</li>
+</ul>
+
+<h4><span class="num">2.30.5</span>The admin job queue</h4>
+<ul>
+<li><strong><code>owa_job_queue</code></strong>: <code>id</code>, <code>command</code> (a registered CLI
+command), <code>params</code> (JSON), <code>dedupe_key</code> (unique), <code>status</code>,
+<code>run_after</code>, <code>lease_until</code>, <code>attempts</code>, <code>last_error</code>, and
+created, started and finished times.</li>
+<li><strong><code>CoreAPI::enqueueJob( command, params, key )</code></strong>. With the same key still
+pending it updates that row, so repeats coalesce.</li>
+<li><strong><code>schedule-run</code> drains it</strong> after its recurring jobs, through the same
+command path, lease and failure recording, within a time budget; a job that keeps failing is parked
+with its error on the health screen.</li>
+<li><strong>First users:</strong> <code>publish-trackers</code> for a Property, install or module change
+(a Profile&rsquo;s own save publishes synchronously); <code>custom-dimension-apply</code> on registration,
+replacing its 15-minute poll; a Property&rsquo;s <code>cube-rebuild</code> when its lookback changes.</li>
+</ul>
+
+<h4><span class="num">2.30.6</span>What goes</h4>
+<p><code>owa_queue_item</code> and its entity, <code>DbEventQueue</code>, the <code>processing</code>
+queue, <code>notify()</code>&rsquo;s re-queue branch (a listener enqueues its own retry),
+<code>cmd=processEventQueue</code> (replaced by <code>drain-tracking-queue</code>) and
+<code>flush-processed-events</code>. An update drops the table. <code>HttpEventQueue</code>, which only
+sends to a remote OWA, is checked against the contract on the way.</p>
+<p class="note">A 1.x install with queue files not yet drained must drain them on 1.x before upgrading:
+their lines are serialized objects the v2 file queue does not read. The v1 migration already requires
+1.14 first (<a href="#s221">the last 1.x first (<a href="#s15">&sect;1.5</a>); its pre-flight check adds this.sect;2.21</a>); its pre-flight check adds this.</p>
+
+<h4><span class="num">2.30.7</span>Build sequence</h4>
+<ol>
+<li><strong>Admin job queue</strong>: the table, <code>enqueueJob</code>, the drain in
+<code>schedule-run</code>, the health screen.</li>
+<li><strong>Intake contract</strong>: the interface, the JSON envelope, the file implementation
+rewritten to it, <code>tracking_queue_type</code>, the <code>drain-tracking-queue</code> job and
+<code>tracking_queue_drain</code>.</li>
+<li><strong>Ingest retry</strong> through the intake.</li>
+<li><strong>Remove</strong> <code>owa_queue_item</code> and its code.</li>
+<li><strong>Tracking bundles on the job queue</strong>: #1177&rsquo;s minutely check becomes a Profile
+save&rsquo;s synchronous publish, a job for wider changes, a build-hash check for new versions, and a
+daily full check.</li>
+</ol>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
