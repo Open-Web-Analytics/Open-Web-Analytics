@@ -321,14 +321,25 @@ OWATracker.registerPlugin( {
 
         var recorder = recorderFor( tracker );
 
+        var seqOf = ( event ) => {
+
+            var seq = event ? event.get( 'event_seq' ) : null;
+
+            return seq === undefined || seq === null || seq === '' ? null : Number( seq );
+        };
+
+        // Loaded as a chunk after the page view was sent: pick that one up.
+        if ( tracker.lastPageView ) {
+
+            recorder.pageViewSeq = seqOf( tracker.lastPageView );
+        }
+
         // The page view a chunk belongs to: the latest this tracker sent.
         OWA.addAction( 'tracker.pageView', ( o ) => {
 
             if ( o && o.tracker === tracker ) {
 
-                var seq = o.event.get( 'event_seq' );
-
-                recorder.pageViewSeq = seq === undefined || seq === null || seq === '' ? null : Number( seq );
+                recorder.pageViewSeq = seqOf( o.event );
             }
         } );
 

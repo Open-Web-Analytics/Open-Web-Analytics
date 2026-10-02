@@ -512,6 +512,9 @@ class OWATracker  {
 	     */
 	    this.bindPageLifecycleEvents();
 
+	    // Every tracker on the page, so a plugin loaded later can set them up too.
+	    OWATracker.instances().push( this );
+
 	    // Compiled-in plugins (see registerPlugin) set up on every tracker.
 	    OWATracker.plugins().forEach( ( plugin ) => {
 
@@ -536,8 +539,11 @@ class OWATracker  {
      *                       refuses -- a site's event may not borrow one
      *   methods             { name: function } added to the tracker, so a
      *                       snippet command can call them. A method the tracker
-     *                       already has is NOT replaced.
+     *                       already has is NOT replaced, unless it is a lazy
+     *                       plugin's stub (registerLazyPlugin).
      *   init( tracker )     run for each tracker, at the end of its constructor
+     *                       -- or, for a plugin that arrives after trackers were
+     *                       built, for each of them as it registers
      *
      * Registering the same name twice keeps the first.
      *
@@ -562,7 +568,10 @@ class OWATracker  {
 
         Object.keys( methods ).forEach( ( name ) => {
 
-            if ( typeof methods[ name ] === 'function' && ! ( name in OWATracker.prototype ) ) {
+            var current = OWATracker.prototype[ name ];
+
+            if ( typeof methods[ name ] === 'function'
+                 && ( ! ( name in OWATracker.prototype ) || ( current && current.owaLazyStub ) ) ) {
 
                 OWATracker.prototype[ name ] = methods[ name ];
             }
@@ -570,7 +579,133 @@ class OWATracker  {
 
         registered.push( plugin );
 
+        // A plugin loaded after the page's trackers were built sets them up now.
+        if ( typeof plugin.init === 'function' ) {
+
+            OWATracker.instances().forEach( ( tracker ) => plugin.init( tracker ) );
+        }
+
         return true;
+    }
+
+    /**
+     * A plugin built as its own chunk and loaded on its first command.
+     *
+     * A module declares it in its build manifest (`contributes_lazy`), and the
+     * build generates the call to this, so the tracker names no module. Until
+     * the chunk arrives each command is a stub: calling one queues the call
+     * and starts the import, and when the chunk's own registerPlugin() has
+     * replaced the stubs, the queued calls run in order. A page that never
+     * calls one never downloads it.
+     *
+     * A bundle that carries the chunk inline, before the core (PLAN 2.24.3),
+     * resolves the import with no request.
+     *
+     *   name                the plugin's registerPlugin() name
+     *   methods             the command names the chunk provides
+     *   reservedEventNames  as registerPlugin(), reserved before it loads
+     *   load()              a function returning the chunk's import() promise
+     *
+     * @param {object} spec
+     * @return {boolean} whether it was registered
+     */
+    static registerLazyPlugin( spec ) {
+
+        if ( ! spec || typeof spec.name !== 'string' || ! spec.name || typeof spec.load !== 'function' ) {
+
+            return false;
+        }
+
+        var lazy = OWATracker.lazyPlugins();
+
+        if ( lazy[ spec.name ] ) {
+
+            return false;
+        }
+
+        var state = lazy[ spec.name ] = { spec: spec, loading: null, queue: [] };
+
+        ( spec.methods || [] ).forEach( ( name ) => {
+
+            if ( name in OWATracker.prototype ) {
+
+                return;
+            }
+
+            var stub = function () {
+
+                state.queue.push( { tracker: this, name: name, args: Array.prototype.slice.call( arguments ) } );
+                OWATracker.loadLazyPlugin( spec.name );
+            };
+
+            stub.owaLazyStub = true;
+            OWATracker.prototype[ name ] = stub;
+        } );
+
+        return true;
+    }
+
+    /**
+     * Load a lazy plugin's chunk, once, and replay the calls made before it
+     * arrived.
+     *
+     * @param {string} name
+     * @return {Promise|null}
+     */
+    static loadLazyPlugin( name ) {
+
+        var state = OWATracker.lazyPlugins()[ name ];
+
+        if ( ! state ) {
+
+            return null;
+        }
+
+        if ( state.loading ) {
+
+            return state.loading;
+        }
+
+        state.loading = Promise.resolve().then( () => state.spec.load() ).then( () => {
+
+            state.queue.splice( 0 ).forEach( ( call ) => {
+
+                var method = OWATracker.prototype[ call.name ];
+
+                if ( method && ! method.owaLazyStub ) {
+
+                    method.apply( call.tracker, call.args );
+                }
+            } );
+
+        } ).catch( ( e ) => {
+
+            OWA.debug( 'Could not load the %s tracker plugin: %s', name, e && e.message );
+        } );
+
+        return state.loading;
+    }
+
+    /** @return {object} lazy plugin name => its spec, load state and queued calls */
+    static lazyPlugins() {
+
+        if ( ! Object.prototype.hasOwnProperty.call( OWATracker, '_lazyPlugins' ) ) {
+
+            OWATracker._lazyPlugins = {};
+        }
+
+        return OWATracker._lazyPlugins;
+    }
+
+    /** @return {OWATracker[]} every tracker built on this page, in order */
+    static instances() {
+
+        if ( ! Object.prototype.hasOwnProperty.call( OWATracker, '_instances' ) ) {
+
+            OWATracker._instances = [];
+        }
+
+        return OWATracker._instances;
     }
 
     /** @return {object[]} the registered plugins, in registration order */
@@ -4290,8 +4425,11 @@ class OWATracker  {
             'session_start', 'first_visit'
         ];
 
-        // And whatever a compiled-in plugin sends (registerPlugin).
-        OWATracker.plugins().forEach( ( plugin ) => {
+        // And whatever a compiled-in or lazy plugin sends.
+        var specs = OWATracker.plugins().concat(
+            Object.values( OWATracker.lazyPlugins() ).map( ( state ) => state.spec ) );
+
+        specs.forEach( ( plugin ) => {
 
             ( plugin.reservedEventNames || [] ).forEach( ( name ) => {
 
@@ -4418,7 +4556,9 @@ class OWATracker  {
         var ret = this.trackEvent( event );
 
         // Sent, with its event_seq and session stamped: anything compiled in
-        // that attaches to the page view reads them here.
+        // that attaches to the page view reads them here, and a plugin that
+        // arrives later reads lastPageView.
+        this.lastPageView = event;
         OWA.doAction( 'tracker.pageView', { tracker: this, event: event } );
 
         return ret;

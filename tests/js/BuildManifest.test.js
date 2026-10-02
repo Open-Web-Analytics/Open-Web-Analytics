@@ -44,12 +44,24 @@ describe('per-module build manifest discovery', () => {
             const moduleDir = path.join(modulesDir, module);
 
             // A manifest builds packages, contributes to another's, or both.
-            expect(Array.isArray(manifest.packages) || typeof manifest.contributes === 'object').toBe(true);
+            expect(Array.isArray(manifest.packages)
+                || typeof manifest.contributes === 'object'
+                || typeof manifest.contributes_lazy === 'object').toBe(true);
 
             for (const [target, files] of Object.entries(manifest.contributes || {})) {
                 expect(typeof target).toBe('string');
                 for (const file of files) {
                     expect(fs.existsSync(path.join(moduleDir, file))).toBe(true);
+                }
+            }
+
+            // A lazy plugin names its chunk, its entry (which must exist) and its commands.
+            for (const specs of Object.values(manifest.contributes_lazy || {})) {
+                for (const spec of specs) {
+                    expect(typeof spec.name).toBe('string');
+                    expect(spec.chunk).toMatch(/^[A-Za-z0-9._-]+$/);
+                    expect(fs.existsSync(path.join(moduleDir, spec.entry))).toBe(true);
+                    expect(Array.isArray(spec.methods)).toBe(true);
                 }
             }
 
