@@ -3297,10 +3297,31 @@ class CoreAPI {
         $t = new \OWA\Core\Template();
 
         $t->set( 'site_id', $site_id );
+        // The Profile's own commands, from its tag settings (PLAN 2.24.4).
+        $t->set( 'profile_cmds', \OWA\Module\Base\Classes\TrackerBundle::commandLines( $site_id ) );
+        // And any a third-party module still adds the old way.
         $cmds = \OWA\Core\CoreAPI::filter( 'tracker_tag_cmds', array() );
         $t->set( 'cmds', $cmds );
         $t->set('options', $options);
         $t->set_template('js_log_tag.php');
+        return $t->fetch();
+    }
+
+    /**
+     * The tag that loads a Profile's tracking bundle (PLAN 2.24): one script,
+     * configured on the server, so it never needs pasting again.
+     *
+     * @param  string $site_id
+     * @return string
+     */
+    public static function getJsTrackerBundleTag( $site_id ) {
+
+        $t = new \OWA\Core\Template();
+
+        $t->set( 'site_id', $site_id );
+        $t->set( 'bundle_url', \OWA\Module\Base\Classes\TrackerBundle::url( $site_id ) );
+        $t->set_template( 'js_bundle_tag.php' );
+
         return $t->fetch();
     }
 

@@ -103,10 +103,16 @@ final class DomstreamModuleTest extends TestCase
         }
     }
 
-    public function testTheSnippetStartsTheRecorder(): void
+    /** A Profile that records starts the recorder from its tag config (PLAN 2.24). */
+    public function testTheTagConfigStartsTheRecorder(): void
     {
-        $this->assertSame(['a', "owa_cmds.push(['trackDomStream']);"],
-            $this->module()->addToTracker(['a']));
+        $config = $this->module()->addToBundle(
+            array('options' => array(), 'features' => array(array('trackPageView')), 'plugins' => array()),
+            'zz-domstream-profile');
+
+        $this->assertSame(array(array('trackPageView'), array('trackDomStream')), $config['features'],
+            'after what was there');
+        $this->assertSame(array('domstream'), $config['plugins']);
     }
 
     public function testPageDetailLinksToThisPagesRecordings(): void
