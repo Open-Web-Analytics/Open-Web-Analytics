@@ -2520,10 +2520,9 @@ page without anyone re-pasting a tag.</p>
 <code>trackPageView</code>, <code>trackClicks</code>, <code>trackForms</code>,
 <code>trackScroll</code> and <code>trackSiteSearch</code> for every site; Domstream adds
 <code>trackDomStream</code> whenever the module is active. No setting controls any of them.</li>
-<li><strong>Two values the server and tracker each hold.</strong> The cube&rsquo;s session window
+<li><strong>A value the server and tracker each hold.</strong> The cube&rsquo;s session window
 reads <code>session_length</code> and the tracker its own <code>sessionLength</code>; both are 1800
-by default and nothing keeps them equal. <code>cookie_domain</code> is read by the server and never
-reaches the tracker.</li>
+by default and nothing keeps them equal.</li>
 <li><strong>Every site downloads the recorder.</strong> Domstream contributes
 <code>Recorder.js</code> into the main tracker build, whether or not the site records.</li>
 <li>The tracker is served with no <code>Cache-Control</code>, and a stock Apache cannot be relied on to send one (&sect;2.24.6).</li>
