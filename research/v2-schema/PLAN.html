@@ -3736,8 +3736,10 @@ sends to a remote OWA, is checked against the contract on the way.</p>
 <p class="note">A 1.x install with queue files not yet drained must drain them on 1.x before upgrading:
 their lines are serialized objects the v2 file queue does not read. The v1 migration already requires
 1.14 first (<a href="#s221">&sect;2.21</a>); its pre-flight adds this. Built: Update062 refuses
-before anything else while 1.x file-queue lines or unhandled <code>owa_queue_item</code> rows remain,
-with no override, since every upgrade comes from 1.x; Update068 then drops the table.
+before anything else while 1.x&rsquo;s file queue holds beacons never ingested, with no override, since
+every upgrade comes from 1.x. Unhandled <code>owa_queue_item</code> rows do not stop it: that table held
+only retries of events whose v1 handlers had failed, mostly rows that fail every time, so the upgrade says
+how many and Update068 drops the table.
 <code>queue.php</code>, <code>HttpEventQueue</code>, <code>DbEventQueue</code>,
 <code>Core\EventQueue</code> and the remote-queue settings go with it.</p>
 
