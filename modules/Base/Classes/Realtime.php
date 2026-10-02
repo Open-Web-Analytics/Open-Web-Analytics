@@ -90,7 +90,7 @@ class Realtime {
             'located'     => $this->located(),
             'devices'     => $this->devices(),
             'recent'      => $this->recent(),
-            'queued'      => (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'queue_events' ),
+            'queued'      => \OWA\Module\Base\Classes\TrackerIngest::isQueued(),
         );
     }
 

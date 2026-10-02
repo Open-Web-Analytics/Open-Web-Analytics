@@ -3,11 +3,11 @@
  *
  * WHY THIS EXISTS
  * OWA can be told to QUEUE incoming tracking events instead of ingesting them
- * synchronously (setting: queue_incoming_tracking_events). When on, a beacon at
+ * synchronously (setting: queue_tracker_ingest). When on, a beacon at
  * log.php is appended to the FILE queue under owa-data/logs/ and NOT written to the
- * fact tables until a separate drain runs (`php cli.php cmd=processEventQueue`).
+ * fact tables until a separate drain runs (`php cli.php cmd=drain-tracker-ingest`).
  * That deferred path is what a busy site turns on to keep log.php cheap, and it is
- * exactly the code the retry-cap fix touched (owa_processEventQueueController). No
+ * the tracker-ingest intake's file queue and drain (PLAN 2.30.3, 2.30.4). No
  * jest/phpunit test drives it end to end: enqueue over real HTTP, prove nothing is
  * ingested yet, run the real CLI drain, prove the fact row then appears.
  *
@@ -17,7 +17,7 @@
  *   2. snapshot { queue_depth, fact_rows } for the harness site.
  *   3. fire the REAL built tracker beacon (tracker_harness.html) at log.php.
  *   4. assert the event landed in the FILE QUEUE and NOT in the facts yet.
- *   5. run the real drain: cli.php cmd=processEventQueue queues=incoming_tracking_events.
+ *   5. run the real drain: cli.php cmd=drain-tracker-ingest.
  *   6. assert the queue drained AND a request fact now exists for the site.
  *
  * SELF-HOST ONLY. It persists a global setting and drains the shared file queue
@@ -60,7 +60,7 @@ function helper(...args) {
 function drainQueue() {
     return execFileSync(
         'php',
-        [CLI, 'cmd=processEventQueue', 'queues=incoming_tracking_events'],
+        [CLI, 'cmd=drain-tracker-ingest'],
         { encoding: 'utf8', cwd: REPO_ROOT }
     );
 }
@@ -77,7 +77,7 @@ test.describe('tracking events queue to a file and ingest on drain @selfhost-onl
     test.beforeAll(() => {
         // Turn the incoming-event queue ON (persisted) for the whole describe.
         const res = helper('enable-queue');
-        expect(res.queue_incoming_tracking_events, 'helper failed to enable the queue').toBe(true);
+        expect(res.queue_tracker_ingest, 'helper failed to enable the queue').toBe(true);
     });
 
     test.afterAll(() => {

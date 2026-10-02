@@ -80,6 +80,7 @@ class ScheduleStatusCli extends SchedulerCli {
 
         $lines = array_merge( $lines, $this->describeOrphans( $jobs, $state ) );
         $lines = array_merge( $lines, $this->describeQueue() );
+        $lines = array_merge( $lines, $this->describeIntake() );
         $lines = array_merge( $lines, $this->summarise( $jobs, $state, $ever, $last_activity, $now ) );
 
         $this->write( $lines );
@@ -111,6 +112,77 @@ class ScheduleStatusCli extends SchedulerCli {
         }
 
         return $lines;
+    }
+
+    /**
+     * A tracker-ingest batch held longer than this is reported as hung: a
+     * scheduled drain stops after DrainTrackerIngestCli::BUDGET seconds.
+     */
+    const INTAKE_HELD_TOO_LONG = 600;
+
+    /** The main queue's oldest beacon older than this means the drain is not keeping up. */
+    const INTAKE_BACKLOG_AGE = 600;
+
+    /**
+     * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): what is waiting in it
+     * and its dead-letter queue, and any batch a drain has held too long.
+     *
+     * A drain that dies releases its batch to the next one; a drain that
+     * hangs -- a database call that never returns -- holds it until the
+     * process ends, and nothing else would say so. That part is only for an
+     * intake that can tell (the file queue's heldBatches()).
+     *
+     * @return string[]
+     */
+    protected function describeIntake() {
+
+        try {
+
+            $intake = \OWA\Module\Base\Classes\TrackerIngest::queue();
+            $main   = $intake->stats();
+            $dlq    = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
+
+        } catch ( \Throwable $t ) {
+
+            return array( '', 'Tracker ingest', '  WARNING: ' . $t->getMessage() );
+        }
+
+        $lines = array();
+        $now   = time();
+
+        if ( $main['oldest_age'] !== null && $main['oldest_age'] > self::INTAKE_BACKLOG_AGE ) {
+
+            $lines[] = sprintf( '  WARNING: %s beacon(s) waiting, the oldest for %d minutes; the drain is not keeping up%s.',
+                $main['messages'] ?? 'some', intdiv( $main['oldest_age'], 60 ),
+                \OWA\Module\Base\Classes\TrackerIngest::isDrainedExternally() ? ' (tracker_ingest_drain is external)' : '' );
+        }
+
+        if ( $dlq && $dlq['messages'] ) {
+
+            $lines[] = sprintf( '  WARNING: %d beacon(s) in the dead-letter queue%s. Fix the cause, then '
+                              . 'cmd=tracker-ingest-replay; replay-tracker-ingest sends each back once a day on its own.',
+                $dlq['messages'],
+                $dlq['oldest_age'] !== null ? ', the oldest ' . intdiv( $dlq['oldest_age'], 3600 ) . ' hours old' : '' );
+        }
+
+        foreach ( method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : array() as $held ) {
+
+            $age = $held['held_since'] === null ? null : $now - $held['held_since'];
+
+            if ( $age !== null && $age < self::INTAKE_HELD_TOO_LONG ) {
+
+                continue;
+            }
+
+            $lines[] = sprintf( '  WARNING: batch %s has been held for %s by process %s%s; '
+                              . 'if that process is hung, end it and the next drain takes the batch over.',
+                $held['batch'],
+                $age === null ? 'an unknown time' : intdiv( $age, 60 ) . ' minutes',
+                $held['pid'] === null ? '(unknown)' : $held['pid'],
+                $held['host'] !== '' ? ' on ' . $held['host'] : '' );
+        }
+
+        return $lines ? array_merge( array( '', 'Tracker ingest' ), $lines ) : array();
     }
 
     /**
@@ -264,16 +336,16 @@ class ScheduleStatusCli extends SchedulerCli {
             count( $jobs ), $this->readable( $last_activity )
         );
 
-        // A hint about a job that could exist, rather than a report about one
-        // that does: queue processing is not shipped registered, because whether
-        // to drain at all depends on the installation.
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'queue_events' ) ) {
+        // Queued beacons are ingested only by drain-tracker-ingest, or by
+        // whatever consumes the queue when tracker_ingest_drain is external.
+        if ( \OWA\Module\Base\Classes\TrackerIngest::isQueued()
+             && ! \OWA\Module\Base\Classes\TrackerIngest::isDrainedExternally() ) {
 
             $drains = false;
 
             foreach ( $jobs as $job ) {
 
-                if ( stripos( $job['command'], 'queue' ) !== false ) {
+                if ( $job['command'] === 'drain-tracker-ingest' && ! $this->isDisabled( $job ) ) {
 
                     $drains = true;
                 }
@@ -281,8 +353,8 @@ class ScheduleStatusCli extends SchedulerCli {
 
             if ( ! $drains ) {
 
-                $lines[] = 'NOTE: event queueing is enabled but no job drains the queue. If nothing else '
-                         . 'processes it, add one -- see OWA_SCHEDULED_JOBS in owa-config.php.';
+                $lines[] = 'NOTE: beacons are queued (queue_tracker_ingest) but no job runs drain-tracker-ingest, '
+                         . 'so nothing ingests them. See OWA_SCHEDULED_JOBS in owa-config.php.';
             }
         }
 

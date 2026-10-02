@@ -130,6 +130,67 @@ final class ScheduleCliTest extends CliControllerTestCase
             'the job name has to be part of the seed, not just the install' );
     }
 
+    /** A tracker-ingest batch held past any drain's budget is reported, with its holder. */
+    public function testStatusReportsAHungIntakeDrain()
+    {
+        $dir = sys_get_temp_dir() . '/owa-status-intake-' . bin2hex(random_bytes(4)) . '/';
+        $holder = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+
+        try {
+            $holder->send(['v' => 1, 'type' => 'page_view', 'properties' => [], 'queued_at' => 1]);
+            $holder->receive(10, 300);
+
+            $this->assertSame([], $this->callProtected($this->statusCli(), 'describeIntake'),
+                'a drain inside its budget is not reported');
+
+            // An hour ago, as a hung drain would have written it.
+            $state = glob($dir . 'processing/*.state')[0];
+            $row = json_decode(file_get_contents($state), true);
+            $row['held_since'] = time() - 3600;
+            file_put_contents($state, json_encode($row));
+
+            $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
+
+            $this->assertStringContainsString('held for 60 minutes by process ' . getmypid(), $lines);
+            $this->assertStringContainsString('end it and the next drain takes the batch over', $lines);
+        } finally {
+            \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
+            unset($holder);
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
+
+    /** Dead letters and a backlog are each reported; a quiet intake says nothing. */
+    public function testStatusReportsDeadLettersAndABacklog()
+    {
+        $dir = sys_get_temp_dir() . '/owa-status-dlq-' . bin2hex(random_bytes(4)) . '/';
+        $q   = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = $q;
+        $envelope = ['v' => 1, 'type' => 'page_view', 'properties' => [], 'queued_at' => 1];
+
+        try {
+            $this->assertSame([], $this->callProtected($this->statusCli(), 'describeIntake'));
+
+            $q->send($envelope);
+            $q->deadLetter($q->receive(10, 300)[0], 'gave up');
+
+            $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
+            $this->assertStringContainsString('1 beacon(s) in the dead-letter queue', $lines);
+            $this->assertStringContainsString('cmd=tracker-ingest-replay', $lines);
+
+            $q->send($envelope);
+            touch($dir . 'events.txt', time() - 1800);
+
+            $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
+            $this->assertStringContainsString('the oldest for 30 minutes; the drain is not keeping up', $lines);
+        } finally {
+            \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
+            unset($q);
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
+
     /** Only these jobs ship; everything else is opt-in. */
     public function testTheDefaultJobsAreRegistered()
     {
@@ -145,9 +206,12 @@ final class ScheduleCliTest extends CliControllerTestCase
         // is a full table rebuild, past every request timeout there is -- and
         // publish-trackers because no web request writes a Profile's tracking
         // bundle under public/ (PLAN 2.24.5). prune-job-queue deletes
-        // finished one-off jobs, which nothing else would (PLAN 2.30.5).
+        // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
+        // drain-tracker-ingest is the only thing that ingests a queued beacon
+        // and replay-tracker-ingest the only thing that brings a dead letter
+        // back without someone running it by hand (PLAN 2.30.4).
         $this->assertSame(
-            ['rotate-partitions', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
     }

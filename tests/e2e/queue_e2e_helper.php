@@ -7,7 +7,7 @@
  * The queue flow can't be driven from the browser alone. Turning the incoming
  * tracking-event queue ON is a persisted OWA setting; and once on, a beacon at
  * log.php is written to the FILE queue (owa-data/logs/) and NOT ingested into the
- * fact tables until a separate CLI drain (`php cli.php cmd=processEventQueue`)
+ * fact tables until a separate CLI drain (`php cli.php cmd=drain-tracker-ingest`)
  * runs. So the spec needs a same-box helper to: flip the setting, inspect the
  * file-queue depth and the fact-row count, and run the drain -- none of which is
  * reachable over HTTP. The browser half fires the REAL built tracker beacon; this
@@ -22,14 +22,13 @@
  * playwright.config.js does not (and must not) run this spec.
  *
  * SUBCOMMANDS (all print one JSON object)
- *   enable-queue         persist queue_incoming_tracking_events = true
- *   disable-queue        persist queue_incoming_tracking_events = false
+ *   enable-queue         persist queue_tracker_ingest = true
+ *   disable-queue        persist queue_tracker_ingest = false
  *   state site=<id>      { queue_depth, fact_rows } for the given site_id
  *
  * The DRAIN itself is not a subcommand here: the spec runs the real entrypoint
- * `php cli.php cmd=processEventQueue queues=incoming_tracking_events`, which boots
- * with the proper admin CLI auth and exercises owa_processEventQueueController --
- * the exact code the retry-cap fix touched. This helper only sets the queue up and
+ * `php cli.php cmd=drain-tracker-ingest`, which boots
+ * with the proper admin CLI auth and exercises DrainTrackerIngestCli. This helper only sets the queue up and
  * inspects state around that drain.
  *
  * This file (like all of tests/) is excluded from the release tarball.
@@ -96,19 +95,19 @@ function argSite(array $argv): string
 }
 
 /**
- * Persist queue_incoming_tracking_events. Persisting (not just setSetting) is the
+ * Persist queue_tracker_ingest. Persisting (not just setSetting) is the
  * point: the beacon that log.php ingests runs in a SEPARATE php -S process, so the
  * flag must live in the stored config, not just this process's memory.
  */
 function setQueue(bool $on): array
 {
     $c = \OWA\Core\CoreAPI::configSingleton();
-    $c->persistSetting('base', 'queue_incoming_tracking_events', $on);
+    $c->persistSetting('base', 'queue_tracker_ingest', $on);
     $c->save();
 
     return [
-        'status'                          => 'ok',
-        'queue_incoming_tracking_events'  => $on,
+        'status'               => 'ok',
+        'queue_tracker_ingest' => $on,
     ];
 }
 
@@ -134,10 +133,10 @@ function state(string $site_id): array
 }
 
 /**
- * Count events waiting in the incoming file queue. The queue writes each event as
- * one line to owa-data/logs/events.txt, then rotates that file into logs/unprocessed/
- * for the drain to consume. Count lines across the live event file AND any rotated
- * unprocessed files, so this is accurate whether or not a rotation has happened yet.
+ * Beacons waiting in the tracker-ingest file queue: events.txt, the rotated
+ * batches, a batch a drain holds, and released ones waiting to retry
+ * (FileEventQueue::depth()). The queue's own count, so this helper does not
+ * restate its layout.
  */
 function fileQueueDepth(): int
 {
@@ -146,27 +145,7 @@ function fileQueueDepth(): int
         return 0;
     }
 
-    $files = [];
-    if (is_file($dir . 'events.txt')) {
-        $files[] = $dir . 'events.txt';
-    }
-    $unprocessed = $dir . 'unprocessed/';
-    if (is_dir($unprocessed)) {
-        foreach (new DirectoryIterator($unprocessed) as $item) {
-            if ($item->isFile() && !$item->isDot()) {
-                $files[] = $item->getPathname();
-            }
-        }
-    }
-
-    $lines = 0;
-    foreach ($files as $file) {
-        $contents = @file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if (is_array($contents)) {
-            $lines += count($contents);
-        }
-    }
-    return $lines;
+    return (new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]))->depth();
 }
 
 /**

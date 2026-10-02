@@ -2446,24 +2446,31 @@ class CoreAPI {
         $event = \OWA\Module\Base\Classes\Ingest::at(
             \OWA\Module\Base\Classes\Ingest::EDGE_POST, $event );
 
-        // queue for later or process event straight away
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'queue_events' ) ||
-             \OWA\Core\CoreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
+        // Queued: the drain ingests it (PLAN 2.30.3).
+        if ( \OWA\Module\Base\Classes\TrackerIngest::isQueued() ) {
 
-            $q = \OWA\Core\CoreAPI::getEventQueue( 'incoming_tracking_events' );
             \OWA\Core\CoreAPI::debug( 'Queuing', $event );
-            $q->sendMessage( $event );
 
-        } else {
-
-            // lookup which event processor to use to process this event type
-            $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
-           
-			\OWA\Core\CoreAPI::debug('About to perform action: '.$processor_action);
-			\OWA\Core\CoreAPI::debug( 'With', $event );
-			
-			return \OWA\Core\CoreAPI::performAction( $processor_action, array( 'event' => $event ) );
+            return \OWA\Module\Base\Classes\TrackerIngest::send( $event );
         }
+
+        // Direct: ingested now, and retried from the intake if a write failed.
+        $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
+
+        \OWA\Core\CoreAPI::debug('About to perform action: '.$processor_action);
+        \OWA\Core\CoreAPI::debug( 'With', $event );
+
+        // As it arrived: processing rewrites the properties, and the retry processes it again.
+        $arrived = \OWA\Module\Base\Classes\TrackerIngest::envelope( $event );
+
+        $result = \OWA\Core\CoreAPI::performAction( $processor_action, array( 'event' => $event ) );
+
+        if ( $event->getStatus() === \OWA\Module\Base\Classes\Event::failed ) {
+
+            \OWA\Module\Base\Classes\TrackerIngest::retryLater( $event, $arrived );
+        }
+
+        return $result;
     }
 
     public static function getInstance( $class, $path ) {

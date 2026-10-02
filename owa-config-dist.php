@@ -137,6 +137,25 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 
 /**
+ * TRACKING INTAKE
+ *
+ * Queue every beacon instead of ingesting it while log.php answers; the
+ * drain-tracker-ingest job ingests them every minute. Off by default.
+ * OWA_QUEUE_EVENTS, the 1.x name, is still read when this is not set.
+ */
+
+//define('OWA_QUEUE_TRACKER_INGEST', true);
+
+/*
+ * Where queued beacons go: 'file' (under owa-data/logs/), or a type a module
+ * registers. And who drains it: 'scheduler', or 'external' when the module's
+ * backend has its own consumer.
+ */
+
+//define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'file');
+//define('OWA_TRACKER_INGEST_DRAIN', 'scheduler');
+
+/**
  * SCHEDULED JOBS
  *
  * OWA runs its periodic maintenance from a SINGLE cron entry:
@@ -177,12 +196,8 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //    // here: the shipped job runs with no keep= at all.
 //    'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
 //
-//    // Drain the event queue every two minutes. Not registered by default,
-//    // because whether to drain at all depends on whether you queue events.
-//    'drain-queue' => array(
-//        'command'  => 'processEventQueue',
-//        'schedule' => '*/2 * * * *',
-//    ),
+//    // Drain the tracking intake every five minutes rather than every minute.
+//    'drain-tracker-ingest' => array( 'schedule' => '*/5 * * * *' ),
 //
 //    // The same command a second time, under its own name, with its own
 //    // arguments and cadence.

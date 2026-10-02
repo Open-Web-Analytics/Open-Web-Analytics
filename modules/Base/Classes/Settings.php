@@ -525,6 +525,18 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'queue_events', OWA_QUEUE_EVENTS, 'OWA_QUEUE_EVENTS');
         }
 
+        /* THE TRACKING INTAKE (PLAN 2.30.3) */
+        foreach (array(
+            'OWA_QUEUE_TRACKER_INGEST'      => 'queue_tracker_ingest',
+            'OWA_TRACKER_INGEST_QUEUE_TYPE' => 'tracker_ingest_queue_type',
+            'OWA_TRACKER_INGEST_DRAIN'      => 'tracker_ingest_drain',
+        ) as $constant => $key) {
+
+            if (defined($constant)) {
+                $this->setFromConfigConstant( 'base', $key, constant($constant), $constant );
+            }
+        }
+
         if (defined('OWA_REMOTE_EVENT_QUEUE_ENDPOINT')) {
             $this->setFromConfigConstant( 'base', 'remote_event_queue_endpoint', OWA_REMOTE_EVENT_QUEUE_ENDPOINT, 'OWA_REMOTE_EVENT_QUEUE_ENDPOINT');
         }
@@ -2810,6 +2822,9 @@ namespace OWA\Module\Base\Classes;
                 'mailer-username'                    => '',
                 'mailer-password'                    => '',
                 'queue_events'                        => false,
+                'queue_tracker_ingest'                => null, // unset: the 1.x names decide (TrackerIngest::isQueued())
+                'tracker_ingest_queue_type'           => 'file',
+                'tracker_ingest_drain'                => 'scheduler',
                 // Retry-exhaustion caps for the processing queue. A queued event
                 // that keeps failing (e.g. a session_update whose session never
                 // persists, or an event for an unregistered site) is retried on
