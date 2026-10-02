@@ -357,22 +357,15 @@ final class Update062Test extends TestCase
         return $this->logDir;
     }
 
-    /** 1.x events still queued -- in its file queue or owa_queue_item -- stop the migration (PLAN 2.30.6). */
-    public function testEventsTheOneXQueueNeverProcessedStopTheMigration(): void
+    /** Beacons 1.x queued to its file queue and never ingested stop the migration (PLAN 2.30.6). */
+    public function testBeaconsTheOneXFileQueueNeverIngestedStopTheMigration(): void
     {
         $dir = $this->queueDir();
         file_put_contents($dir . 'unprocessed/incoming_tracking_events-eventfile-2026.txt',
             "12:00:00 2026-01-01|*|incoming_tracking_events|*|1|*|O%3A9%3A%22owa_event%22\n");
         file_put_contents($dir . 'events.txt', '{"r":0,"e":{"v":1}}' . "\n");
 
-        $q = new \OWA\Module\Base\Update\Update068();
-        $q->table = V1Schema::PREFIX . 'queue_item';
-        $q->down();
-        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
-            "INSERT INTO %s (id, status) VALUES (1, 'unhandled'), (2, 'broken')", $q->table));
-
-        $this->assertSame(array('file_lines' => 1, 'queue_rows' => 1), $this->update->undrainedV1Queue(),
-            'v2\'s own JSON lines and broken rows are not 1.x work left undone');
+        $this->assertSame(1, $this->update->undrainedV1Queue()['file_lines'], 'v2\'s own JSON lines are not 1.x work left undone');
 
         \OWA\Core\CoreAPI::setRequestParam('all', true);
         $this->assertFalse($this->update->up());
@@ -380,8 +373,25 @@ final class Update062Test extends TestCase
             'SELECT COUNT(*) AS n FROM owa_event_raw WHERE site_id = ?', [self::SITE])['n'], 'nothing migrated');
 
         // Processed on 1.x, the upgrade goes ahead.
-        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("UPDATE %s SET status = 'handled'", $q->table));
         unlink($dir . 'unprocessed/incoming_tracking_events-eventfile-2026.txt');
+        $this->assertTrue($this->update->up());
+    }
+
+    /** Retries awaiting in owa_queue_item are counted, not a reason to refuse: they are v1 handler failures, dropped with the table. */
+    public function testRetriesInTheOneXQueueTableDoNotStopIt(): void
+    {
+        $this->queueDir();
+
+        $q = new \OWA\Module\Base\Update\Update068();
+        $q->table = V1Schema::PREFIX . 'queue_item';
+        $q->down();
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
+            "INSERT INTO %s (id, status) VALUES (1, 'unhandled'), (2, 'unhandled'), (3, 'broken')", $q->table));
+
+        $this->assertSame(array('file_lines' => 0, 'queue_rows' => 2), $this->update->undrainedV1Queue(),
+            'only rows still awaiting a retry are counted');
+
+        \OWA\Core\CoreAPI::setRequestParam('all', true);
         $this->assertTrue($this->update->up());
     }
 

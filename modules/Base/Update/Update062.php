@@ -51,21 +51,32 @@ class Update062 extends \OWA\Core\Update {
     function up( $force = false ) {
 
         /*
-         * First, whatever v1 holds: events 1.x queued and never processed are
-         * in a format v2 does not read, and Update068 drops owa_queue_item.
-         * They are processed on 1.x before the upgrade (PLAN 2.30.6).
+         * First, whatever v1 holds (PLAN 2.30.6). Beacons in 1.x's FILE queue
+         * arrived and were never ingested, in a format v2 does not read: they
+         * are processed on 1.x before the upgrade, which refuses until they are.
+         *
+         * owa_queue_item is not a reason to refuse. It held only retries --
+         * events whose v1 handlers had already failed -- and with no shipped
+         * drain it is mostly years of rows that fail every time. Its count is
+         * said, and Update068 drops it.
          */
         $queued = $this->undrainedV1Queue();
 
-        if ( array_sum( $queued ) ) {
+        if ( $queued['file_lines'] ) {
 
             $this->e->notice( sprintf(
-                'OWA 1.x queued events that were never processed: %d line(s) in its file queue, %d row(s) in '
-              . '%squeue_item. v2 cannot read them. Process them on 1.x (php cli.php cmd=processEventQueue) '
-              . 'until both are empty, then upgrade.',
-                $queued['file_lines'], $queued['queue_rows'], $this->prefix ) );
+                'OWA 1.x queued %d beacon(s) to its file queue that were never ingested, and v2 cannot read them. '
+              . 'Process them on 1.x (php cli.php cmd=processEventQueue) until the queue is empty, then upgrade.',
+                $queued['file_lines'] ) );
 
             return false;
+        }
+
+        if ( $queued['queue_rows'] ) {
+
+            $this->e->notice( sprintf(
+                '%d failed event(s) awaiting retry in %squeue_item will be dropped with the table: v2 does not '
+              . 'retry v1 handler failures.', $queued['queue_rows'], $this->prefix ) );
         }
 
         if ( ! $this->hasV1() ) {
@@ -284,9 +295,9 @@ class Update062 extends \OWA\Core\Update {
     }
 
     /**
-     * Events OWA 1.x queued and never processed (PLAN 2.30.6): lines in its
-     * file queue that are not v2's JSON, and owa_queue_item rows still
-     * unhandled. v2 reads neither, so they are processed on 1.x first.
+     * What OWA 1.x left queued (PLAN 2.30.6): lines in its file queue that are
+     * not v2's JSON -- beacons never ingested, which stop the upgrade -- and
+     * owa_queue_item rows still awaiting a retry, which do not.
      *
      * @return array file_lines, queue_rows
      */

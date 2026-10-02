@@ -12,9 +12,10 @@ namespace OWA\Module\Base\Update;
  * nothing reads on v2. Failed beacons are retried through the tracker-ingest
  * intake.
  *
- * Nothing unprocessed is lost here: Update062 refuses the upgrade while 1.x
- * still holds queued events, so by now the table holds only rows already
- * handled, or given up on as broken.
+ * What it holds goes with it: retries of events whose v1 handlers failed,
+ * mostly ones that fail every time. Update062 says how many were still
+ * awaiting a retry; it refuses only for beacons never ingested, which were
+ * in 1.x's file queue, not here.
  *
  * The table's shape is spelled out for down(): the entity is gone, and an
  * update is permanent while a shape is not.

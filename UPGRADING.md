@@ -210,11 +210,15 @@ Pinned by `tests/ThirdPartyModuleCompatTest.php`.
 
 ### 4. The event queues, `queue.php` and the RemoteQueue module — REMOVED in v2.0
 
-**Process queued events on 1.x before upgrading.** 1.x queued events as
-serialized PHP objects, in the file queue under `owa-data/logs/` and in
-`owa_queue_item`. v2.0 reads neither: its tracking intake holds one JSON line
-per beacon. Run `php cli.php cmd=processEventQueue` on 1.x until both are
-empty. The upgrade refuses to run while either holds an unprocessed event.
+**Process queued beacons on 1.x before upgrading.** With queueing on, 1.x
+wrote incoming beacons to a file queue under `owa-data/logs/` as serialized PHP
+objects, which v2.0 does not read. Run `php cli.php cmd=processEventQueue` on
+1.x until it is empty; the upgrade refuses to run while it holds a beacon that
+was never ingested.
+
+`owa_queue_item` does not stop the upgrade. It held only retries of events whose
+handlers had already failed, and is dropped; the upgrade says how many were
+still awaiting a retry.
 
 **What replaces them.**
 
