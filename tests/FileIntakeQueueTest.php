@@ -245,6 +245,52 @@ final class FileIntakeQueueTest extends TestCase
         }
     }
 
+    /** A drain that dies before it has the next line in hand -- between receives -- charges nothing. */
+    public function testADeathBeforeTheLineIsHandedOutIsNotChargedToIt(): void
+    {
+        $q = $this->queue();
+        $q->send(self::envelope('a'));
+        $q->send(self::envelope('b'));
+
+        $q->ack($q->receive(1, 300)[0]);
+        $this->dies($q);
+
+        $again = $this->queue()->receive(10, 300);
+
+        $this->assertSame(array('b'), self::names($again));
+        $this->assertSame(1, $again[0]->receive_count, 'b was never in the dead drain\'s hands');
+    }
+
+    /** Who holds a batch, asked of the lock: listed while held, gone once let go. */
+    public function testAHeldBatchNamesItsHolder(): void
+    {
+        $holder = $this->queue();
+        $holder->send(self::envelope('a'));
+        $holder->receive(10, 300);
+
+        $held = $this->queue()->heldBatches();
+
+        $this->assertCount(1, $held);
+        $this->assertSame(getmypid(), $held[0]['pid']);
+        $this->assertSame((string) gethostname(), $held[0]['host']);
+        $this->assertEqualsWithDelta(time(), $held[0]['held_since'], 5);
+
+        unset($holder);
+
+        $this->assertSame(array(), $this->queue()->heldBatches(), 'a batch nobody holds is not reported');
+    }
+
+    /** A dead drain's batch is waiting for the next drain, not held, so it is not reported as hung. */
+    public function testADeadDrainsBatchIsNotHeld(): void
+    {
+        $q = $this->queue();
+        $q->send(self::envelope('a'));
+        $q->receive(10, 300);
+        $this->dies($q);
+
+        $this->assertSame(array(), $this->queue()->heldBatches());
+    }
+
     /** A drain that stops cleanly -- its budget spent -- charges nothing. */
     public function testACleanStopIsNotADeath(): void
     {

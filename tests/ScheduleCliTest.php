@@ -130,6 +130,37 @@ final class ScheduleCliTest extends CliControllerTestCase
             'the job name has to be part of the seed, not just the install' );
     }
 
+    /** A tracker-ingest batch held past any drain's budget is reported, with its holder. */
+    public function testStatusReportsAHungIntakeDrain()
+    {
+        $dir = sys_get_temp_dir() . '/owa-status-intake-' . bin2hex(random_bytes(4)) . '/';
+        $holder = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+
+        try {
+            $holder->send(['v' => 1, 'type' => 'page_view', 'properties' => [], 'queued_at' => 1]);
+            $holder->receive(10, 300);
+
+            $this->assertSame([], $this->callProtected($this->statusCli(), 'describeIntake'),
+                'a drain inside its budget is not reported');
+
+            // An hour ago, as a hung drain would have written it.
+            $state = glob($dir . 'processing/*.state')[0];
+            $row = json_decode(file_get_contents($state), true);
+            $row['held_since'] = time() - 3600;
+            file_put_contents($state, json_encode($row));
+
+            $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
+
+            $this->assertStringContainsString('held for 60 minutes by process ' . getmypid(), $lines);
+            $this->assertStringContainsString('end it and the next drain takes the batch over', $lines);
+        } finally {
+            \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
+            unset($holder);
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
+
     /** Only these jobs ship; everything else is opt-in. */
     public function testTheDefaultJobsAreRegistered()
     {

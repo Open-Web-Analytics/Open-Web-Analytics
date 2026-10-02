@@ -68,7 +68,14 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /** @var string|null its path */
     private $batch;
 
-    /** @var array its .state: settled (byte offset), stuck, clean */
+    /**
+     * @var array its .state:
+     *   settled     byte offset of the first line not yet settled
+     *   in_hand     settled's offset once that line has been handed out, else null
+     *   stuck       how many drains died with that line in hand
+     *   clean       the last holder stopped in an orderly way
+     *   pid, host, held_since   who holds it now, for schedule-status
+     */
     private $state;
 
     /** @var int where this claim resumed: the line a drain that died was on */
@@ -177,6 +184,13 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
             // The line a drain died on is received once more for each drain that died on it.
             $redelivered = $offset === $this->resumed_at ? $this->state['stuck'] : 0;
+
+            // Recorded before it leaves, so a drain that dies on it is charged to it.
+            if ( $offset === $this->state['settled'] && $this->state['in_hand'] !== $offset ) {
+
+                $this->state['in_hand'] = $offset;
+                $this->writeState();
+            }
 
             $this->outstanding[ $offset ] = $end;
 
@@ -314,6 +328,62 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         }
 
         return $n;
+    }
+
+    /**
+     * Batches a drain holds now, for schedule-status: what it is, who holds
+     * it and since when. A batch whose drain died is not held -- the next
+     * drain takes it -- so what this lists is a drain that is running, or
+     * one that is hung.
+     *
+     * Asked of the lock itself, not the .state, so a stale .state is not
+     * mistaken for a holder.
+     *
+     * @return array[] batch, pid, host, held_since, settled
+     */
+    function heldBatches() {
+
+        $held = array();
+
+        foreach ( self::files( $this->processing_path, '.txt' ) as $name ) {
+
+            $path = $this->processing_path . $name;
+
+            if ( $path === $this->batch ) {
+
+                continue;
+            }
+
+            $fh = @fopen( $path, 'r' );
+
+            if ( ! $fh ) {
+
+                continue;
+            }
+
+            if ( flock( $fh, LOCK_EX | LOCK_NB ) ) {
+
+                flock( $fh, LOCK_UN );
+                fclose( $fh );
+
+                continue;
+            }
+
+            fclose( $fh );
+
+            $state = json_decode( (string) @file_get_contents( $path . '.state' ), true );
+            $state = is_array( $state ) ? $state : array();
+
+            $held[] = array(
+                'batch'      => $name,
+                'pid'        => isset( $state['pid'] ) ? (int) $state['pid'] : null,
+                'host'       => (string) ( $state['host'] ?? '' ),
+                'held_since' => isset( $state['held_since'] ) ? (int) $state['held_since'] : null,
+                'settled'    => (int) ( $state['settled'] ?? 0 ),
+            );
+        }
+
+        return $held;
     }
 
     // ---------------------------------------------------------------------
@@ -495,23 +565,31 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $this->outstanding      = array();
         $this->at_end           = false;
         /*
-         * A .state not marked clean belonged to a drain that died: the line at
-         * its settled offset is the one it had in hand -- a drain ingests in
-         * order and records each line as it is settled -- so that line, and
-         * only that one, has been received once more. One that kills every
-         * drain reaches the receive limit and is dead-lettered; the lines
-         * behind it are not charged for it.
+         * A .state not marked clean belonged to a drain that died. It is
+         * charged to the line at the settled offset only if that line was in
+         * its hands: a drain ingests in order, records each line as it is
+         * settled, and records the next one as it hands it out. A drain that
+         * died before reaching the line -- just after taking the batch, or
+         * between receives -- charges nothing. A line that kills every drain
+         * reaches the receive limit and is dead-lettered without being run;
+         * the lines behind it are not charged for it.
          */
-        $died = $state && empty( $state['clean'] );
+        $settled = (int) ( $state['settled'] ?? 0 );
+        $died    = $state && empty( $state['clean'] )
+            && isset( $state['in_hand'] ) && (int) $state['in_hand'] === $settled;
 
         $this->handle      = $fh;
         $this->batch       = $path;
         $this->outstanding = array();
         $this->at_end      = false;
         $this->state       = array(
-            'settled' => (int) ( $state['settled'] ?? 0 ),
-            'stuck'   => (int) ( $state['stuck'] ?? 0 ) + ( $died ? 1 : 0 ),
-            'clean'   => false,
+            'settled'    => $settled,
+            'in_hand'    => null,
+            'stuck'      => (int) ( $state['stuck'] ?? 0 ) + ( $died ? 1 : 0 ),
+            'clean'      => false,
+            'pid'        => getmypid(),
+            'host'       => (string) gethostname(),
+            'held_since' => time(),
         );
         $this->resumed_at  = $this->state['settled'];
 
@@ -542,6 +620,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             $this->state['settled'] = $settled;
             $this->state['stuck']   = 0;
         }
+
+        // The next line is already out when a receive handed out several.
+        $this->state['in_hand'] = isset( $this->outstanding[ $settled ] ) ? $settled : null;
 
         // Every line, so a drain that dies loses at most the one it was on.
         $this->writeState();

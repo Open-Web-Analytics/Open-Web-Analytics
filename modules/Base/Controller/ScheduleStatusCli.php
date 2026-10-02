@@ -80,6 +80,7 @@ class ScheduleStatusCli extends SchedulerCli {
 
         $lines = array_merge( $lines, $this->describeOrphans( $jobs, $state ) );
         $lines = array_merge( $lines, $this->describeQueue() );
+        $lines = array_merge( $lines, $this->describeIntake() );
         $lines = array_merge( $lines, $this->summarise( $jobs, $state, $ever, $last_activity, $now ) );
 
         $this->write( $lines );
@@ -111,6 +112,61 @@ class ScheduleStatusCli extends SchedulerCli {
         }
 
         return $lines;
+    }
+
+    /**
+     * A tracker-ingest batch held longer than this is reported as hung: a
+     * scheduled drain stops after DrainTrackerIngestCli::BUDGET seconds.
+     */
+    const INTAKE_HELD_TOO_LONG = 600;
+
+    /**
+     * Tracker-ingest batches a drain has held too long (PLAN 2.30.4).
+     *
+     * A drain that dies releases its batch to the next one; a drain that
+     * hangs -- a database call that never returns -- holds it until the
+     * process ends, and nothing else would say so. Only for an intake that
+     * can tell (the file queue's heldBatches()).
+     *
+     * @return string[]
+     */
+    protected function describeIntake() {
+
+        try {
+
+            $intake = \OWA\Module\Base\Classes\TrackerIngest::queue();
+
+        } catch ( \Throwable $t ) {
+
+            return array( '', 'Tracker ingest', '  WARNING: ' . $t->getMessage() );
+        }
+
+        if ( ! method_exists( $intake, 'heldBatches' ) ) {
+
+            return array();
+        }
+
+        $lines = array();
+        $now   = time();
+
+        foreach ( $intake->heldBatches() as $held ) {
+
+            $age = $held['held_since'] === null ? null : $now - $held['held_since'];
+
+            if ( $age !== null && $age < self::INTAKE_HELD_TOO_LONG ) {
+
+                continue;
+            }
+
+            $lines[] = sprintf( '  WARNING: batch %s has been held for %s by process %s%s; '
+                              . 'if that process is hung, end it and the next drain takes the batch over.',
+                $held['batch'],
+                $age === null ? 'an unknown time' : intdiv( $age, 60 ) . ' minutes',
+                $held['pid'] === null ? '(unknown)' : $held['pid'],
+                $held['host'] !== '' ? ' on ' . $held['host'] : '' );
+        }
+
+        return $lines ? array_merge( array( '', 'Tracker ingest' ), $lines ) : array();
     }
 
     /**
