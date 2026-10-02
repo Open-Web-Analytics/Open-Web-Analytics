@@ -106,6 +106,10 @@ test('the real tree: the recorder is a lazy chunk of the tracker, not compiled i
     expect(entry[entry.length - 1]).toMatch(/modules[\\/]Base[\\/]src[\\/]tracker[\\/]tracker-dom\.js$/);
     expect(entry.some((f) => /Recorder\.js$/.test(f))).toBe(false);
 
+    // Playback is compiled in eagerly: an overlay opens the player on any page,
+    // recording or not, so it cannot wait for the recorder's chunk.
+    expect(entry.some((f) => /modules[\\/]Domstream[\\/]src[\\/]tracker[\\/]Overlay\.js$/.test(f))).toBe(true);
+
     const stub = fs.readFileSync(entry.find((f) => /lazy-domstream\.js$/.test(f)), 'utf8');
     expect(stub).toContain('webpackChunkName: "owa.domstream"');
     expect(stub).toMatch(/modules[\\/]Domstream[\\/]src[\\/]tracker[\\/]Recorder\.js/);

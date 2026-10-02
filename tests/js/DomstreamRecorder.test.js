@@ -225,6 +225,24 @@ test('hiding the page sends what has accrued', () => {
     r.stop();
 });
 
-test('the player is an overlay mode the recorder registers', () => {
-    expect(typeof OWA.overlayModes.loadPlayer).toBe('function');
+/*
+ * Playback is registered by Overlay.js, compiled into the tracker itself, not by
+ * the recorder: the recorder is a lazy chunk, and an overlay opens the player on
+ * pages that never start recording.
+ */
+test('the player is an overlay mode the tracker registers, not the recorder', async () => {
+    const before = OWA.overlayModes.loadPlayer;
+    delete OWA.overlayModes.loadPlayer;
+
+    try {
+        await import('../../modules/Domstream/src/tracker/Recorder.js');
+        expect(OWA.overlayModes.loadPlayer).toBeUndefined();
+
+        await import('../../modules/Domstream/src/tracker/Overlay.js');
+        expect(typeof OWA.overlayModes.loadPlayer).toBe('function');
+    } finally {
+        if (before && !OWA.overlayModes.loadPlayer) {
+            OWA.overlayModes.loadPlayer = before;
+        }
+    }
 });

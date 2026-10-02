@@ -353,19 +353,4 @@ OWATracker.registerPlugin( {
     },
 } );
 
-/*
- * Playback: the overlay's `loadPlayer` action, loaded only in an overlay
- * session -- the recorder itself never downloads it.
- */
-OWA.registerOverlayMode( 'loadPlayer', () => {
-
-    Util.loadCss( OWA.getSetting( 'baseUrl' ) + 'public/base/css/owa.overlay.css', function () {} );
-
-    import( /* webpackChunkName: "owa.player" */ './Player.js' ).then( ( { Player } ) => {
-
-        OWA.overlay = new Player();
-        OWA.overlay.init();
-    } );
-} );
-
 export { Recorder, recorderFor, EVENT_NAME };
