@@ -103,10 +103,33 @@ final class DomstreamModuleTest extends TestCase
         }
     }
 
-    public function testTheSnippetStartsTheRecorder(): void
+    /**
+     * A Profile that records starts the recorder from its tag config (PLAN 2.24).
+     *
+     * The Profile's recording is set here rather than read from the default:
+     * run alone in a fresh install the module is inactive and its declared
+     * defaults are not loaded.
+     */
+    public function testTheTagConfigStartsTheRecorder(): void
     {
-        $this->assertSame(['a', "owa_cmds.push(['trackDomStream']);"],
-            $this->module()->addToTracker(['a']));
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('sets a Profile setting');
+        }
+
+        \OWA\Core\CoreAPI::setScopedSetting('profile', 'zz-domstream-profile', 'domstream', 'record', true);
+
+        try {
+            $config = $this->module()->addToBundle(
+                array('options' => array(), 'features' => array(array('trackPageView')), 'plugins' => array()),
+                'zz-domstream-profile');
+
+            $this->assertSame(array(array('trackPageView'), array('trackDomStream')), $config['features'],
+                'after what was there');
+            $this->assertSame(array('domstream'), $config['plugins']);
+
+        } finally {
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', 'zz-domstream-profile', 'domstream', 'record');
+        }
     }
 
     public function testPageDetailLinksToThisPagesRecordings(): void

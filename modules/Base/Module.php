@@ -183,8 +183,6 @@ class Module extends \OWA\Core\Module {
      */
     function registerFilters() {
 
-        $this->registerFilter('tracker_tag_cmds', $this, 'addTrackerCmds', 0);
-
         /*
          * The beacon compat layer contributes what an older generation still
          * sends and the current format no longer declares. Through a FILTER
@@ -221,47 +219,6 @@ class Module extends \OWA\Core\Module {
             array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ), 100 );
     }
 
-    /**
-     * The commands the generated snippet pushes, and therefore what a site records
-     * out of the box.
-     *
-     * PER SITE, SERVER-SIDE. Which features a site records is decided here and
-     * written into the page as commands, so the page author names none of them.
-     *
-     * So a feature that is not named here does not happen, however complete its
-     * tracker method, registry entry and reserved name are. trackForms and
-     * trackScroll were in exactly that state: both fully implemented, neither
-     * invoked. CommandQueue dispatches any tracker method by name, so a site could
-     * always have pushed them -- but nothing told it to, and nothing shipped them.
-     *
-     * SCROLL WAS WORSE THAN ABSENT. The depth check hung off another feature's
-     * scroll binding, so scroll events fired only on installs with that module
-     * active, for its sampled fraction of visitors, and nowhere else -- a first-class event gated on an
-     * unrelated feature's sample rate. The two are separate features sharing a DOM
-     * event and each binds its own listener now.
-     *
-     * trackSiteSearch IS here, and was briefly chained to trackPageView() instead.
-     * That was wrong twice over. A public method whose contract is "send a page
-     * view" should not also send a different event; and the chain broke on the
-     * argument trackPageView takes -- Util.parseUrlParams() ignored its own url
-     * parameter and read location.href, so a virtual page view named one URL while
-     * the search read another. Both are fixed, and the command is where every other
-     * feature is declared.
-     *
-     * It binds no listener, so like trackPageView it is called per page --
-     * trackRouteChanges() calls it on each route change for that reason. A site
-     * whose ?q= means something else calls setSearchQueryParams([]).
-     */
-    function addTrackerCmds( $cmds ) {
-
-        $cmds[] = "owa_cmds.push(['trackPageView']);";
-        $cmds[] = "owa_cmds.push(['trackClicks']);";
-        $cmds[] = "owa_cmds.push(['trackForms']);";
-        $cmds[] = "owa_cmds.push(['trackScroll']);";
-        $cmds[] = "owa_cmds.push(['trackSiteSearch']);";
-
-        return $cmds;
-    }
     
     /**
      * Register this module's actions against their controllers.

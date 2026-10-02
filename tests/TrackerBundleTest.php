@@ -219,6 +219,15 @@ final class TrackerBundleTest extends TestCase
         }
     }
 
+    /** On an https page the bundle's beacons go over https, as the classic loader's do. */
+    public function testThePreambleFollowsAnHttpsPage(): void
+    {
+        $preamble = TrackerBundle::preamble(TrackerBundle::config(self::SITE));
+
+        $this->assertStringContainsString('w.location.protocol==="https:"', $preamble);
+        $this->assertStringContainsString('w.owa_baseSecUrl||w.owa_baseUrl.replace(/^http:/,"https:")', $preamble);
+    }
+
     public function testAFileTheManifestDoesNotDescribeIsNotComposed(): void
     {
         file_put_contents($this->dist . 'owa.tracker.js', '/*a different core*/');

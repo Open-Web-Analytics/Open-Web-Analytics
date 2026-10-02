@@ -60,13 +60,10 @@ if ( $owa_tracker_host && $owa_wraps_in_script ) {
 <?php } ?>
 var owa_baseUrl = '<?php $view->out( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ); ?>';
 var owa_cmds = owa_cmds || [];
-<?php if (\OWA\Core\CoreAPI::getSetting('base', 'error_handler') === 'development'){ ?>
-owa_cmds.push(['setDebug', true]);
-<?php }?>
 <?php if ( isset($view->options) && $view->getValue('apiEndpoint', $view->options ) ) { ?>
 owa_cmds.push(['setApiEndpoint', '<?php echo $view->options['apiEndpoint'];?>']);
 <?php } ?>
-owa_cmds.push(['setSiteId', '<?php echo $view->site_id; ?>']);
+<?php foreach ( (array) ( $view->profile_cmds ?? array() ) as $line ) { $view->out( $line, false ); $view->out( "\n" ); } ?>
 <?php 
     if ( isset($view->options) && $view->getValue( 'cmds', $view->options ) ) {
         $view->out($view->getValue( 'cmds', $view->options ), false );

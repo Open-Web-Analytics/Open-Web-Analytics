@@ -18,15 +18,10 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class TrackerSnippetTest extends TestCase
 {
+    /** The classic tag, through the real path, so the Profile's commands are in it. */
     private function render(array $options = array()): string
     {
-        $t = new \OWA\Core\Template();
-        $t->set( 'site_id', 'snippet-site' );
-        $t->set( 'cmds', array() );
-        $t->set( 'options', $options );
-        $t->set_template( 'js_log_tag.php' );
-
-        return $t->fetch();
+        return \OWA\Core\CoreAPI::getJsTrackerTag( 'snippet-site', $options );
     }
 
     public function testItPreconnectsToTheTrackerOriginBeforeAskingForTheScript(): void
@@ -130,7 +125,50 @@ final class TrackerSnippetTest extends TestCase
         $html = $this->render();
 
         $this->assertStringContainsString( 'owa_cmds', $html );
-        $this->assertStringContainsString( "setSiteId', 'snippet-site'", $html );
+        $this->assertStringContainsString( 'owa_cmds.push(["setSiteId","snippet-site"]);', $html );
         $this->assertStringContainsString( 'public/base/dist/owa.tracker.js', $html );
+    }
+
+    /**
+     * The classic tag carries the Profile's commands: the ones its bundle would
+     * bake in, from its tag settings (PLAN 2.24.4), not a list of its own.
+     */
+    public function testTheClassicTagCarriesTheProfilesCommands(): void
+    {
+        $html = $this->render();
+
+        foreach ( \OWA\Module\Base\Classes\TrackerBundle::commandLines( 'snippet-site' ) as $line ) {
+            $this->assertStringContainsString( $line, $html );
+        }
+
+        $this->assertStringContainsString( 'owa_cmds.push(["trackPageView"]);', $html );
+        $this->assertStringContainsString( '"stateStoreExpirations"', $html );
+    }
+
+    private function bundleTag(): string
+    {
+        return \OWA\Core\CoreAPI::getJsTrackerBundleTag( 'snippet-site' );
+    }
+
+    /** The bundle tag is one async script for the Profile's bundle, protocol-relative. */
+    public function testTheBundleTagLoadsTheProfilesBundle(): void
+    {
+        $html = $this->bundleTag();
+        $url  = preg_replace( '#^https?:#', '', \OWA\Module\Base\Classes\TrackerBundle::url( 'snippet-site' ) );
+
+        $this->assertStringContainsString( '<script async src="' . $url . '"></script>', $html );
+        $this->assertSame( 2, substr_count( $html, '<script' ), 'the command queue and the bundle, nothing else' );
+        $this->assertStringContainsString( '<script>var owa_cmds = owa_cmds || [];</script>', $html );
+    }
+
+    public function testTheBundleTagPreconnectsAndCarriesNoComments(): void
+    {
+        $html = $this->bundleTag();
+
+        $this->assertMatchesRegularExpression( '#<link rel="preconnect" href="//[^"]+">#', $html );
+        $this->assertStringNotContainsString( 'crossorigin', $html );
+        $this->assertStringNotContainsString( '//<![CDATA[', $html );
+        $this->assertSame( 2, substr_count( $html, '<!--' ), 'only the start and end markers' );
+        $this->assertStringNotContainsString( '/*', $html );
     }
 }

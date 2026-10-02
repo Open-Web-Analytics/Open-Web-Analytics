@@ -310,12 +310,34 @@ class TrackerBundle {
 
         return '(function(w){'
              . 'var o=' . $json( $config['options'] ) . ',f=' . $json( $config['features'] ) . ',p=w.owa_cmds||[],i;'
-             . 'w.owa_baseUrl=w.owa_baseUrl||' . $json( $base ) . ';'
+             . 'if(!w.owa_baseUrl){w.owa_baseUrl=' . $json( $base ) . ';'
+             . 'if(w.location&&w.location.protocol==="https:"){w.owa_baseUrl=w.owa_baseSecUrl||w.owa_baseUrl.replace(/^http:/,"https:");}}'
              . 'if(!Array.isArray(p)){o.concat(f).forEach(function(c){p.push(c);});return;}'
              . 'for(i=0;i<p.length;i++){if(p[i]&&p[i][0]==="trackPageView"){'
              . 'f=f.filter(function(c){return c[0]!=="trackPageView";});break;}}'
              . 'w.owa_cmds=o.concat(p,f);'
              . '})(window);';
+    }
+
+    /**
+     * The Profile's commands as snippet lines, for the classic tag: the same
+     * options and features the bundle bakes in, so a classic tag copied from
+     * the Tracking Tag screen does what the Profile is set to do then.
+     *
+     * @param  string $site_id
+     * @return string[]
+     */
+    public static function commandLines( $site_id ) {
+
+        $config = self::config( $site_id );
+        $lines  = array();
+
+        foreach ( array_merge( $config['options'], $config['features'] ) as $command ) {
+
+            $lines[] = 'owa_cmds.push(' . json_encode( $command, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . ');';
+        }
+
+        return $lines;
     }
 
     /**

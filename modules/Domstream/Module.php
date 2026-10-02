@@ -118,7 +118,6 @@ class Module extends \OWA\Core\Module {
 
     function registerFilters() {
 
-        $this->registerFilter( 'tracker_tag_cmds', $this, 'addToTracker', 99 );
         $this->registerFilter( 'tracker_bundle_config', $this, 'addToBundle', 99 );
         $this->registerFilter( 'report_links', $this, 'addReportLinks', 10 );
     }
@@ -151,13 +150,6 @@ class Module extends \OWA\Core\Module {
         return $config;
     }
 
-    /** The snippet starts the recorder. */
-    function addToTracker( $cmds ) {
-
-        $cmds[] = "owa_cmds.push(['trackDomStream']);";
-
-        return $cmds;
-    }
 
     /**
      * Recordings from the reports that lead to them: Page Detail's "more
