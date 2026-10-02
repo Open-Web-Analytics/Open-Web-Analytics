@@ -2526,7 +2526,7 @@ by default and nothing keeps them equal. <code>cookie_domain</code> is read by t
 reaches the tracker.</li>
 <li><strong>Every site downloads the recorder.</strong> Domstream contributes
 <code>Recorder.js</code> into the main tracker build, whether or not the site records.</li>
-<li>The tracker is served with no <code>Cache-Control</code> (&sect;2.24.6).</li>
+<li>The tracker is served with no <code>Cache-Control</code>, and a stock Apache cannot be relied on to send one (&sect;2.24.6).</li>
 </ul>
 
 <h4><span class="num">2.24.2</span>The bundle, and the snippet</h4>
@@ -2616,28 +2616,55 @@ publish. A stale or missing file is also caught by the job comparing each bundle
 config and build hashes with the current ones.</li>
 </ul>
 
-<h4><span class="num">2.24.6</span>Cache lifetime, and what happens without one</h4>
-<p><strong>The header goes in the <code>.htaccess</code> OWA already ships</strong>, guarded like
-everything else in it:</p>
-<pre><code>&lt;IfModule mod_headers.c&gt;
-    &lt;If "%{REQUEST_URI} =~ m#/public/(tracker|base/dist)/#"&gt;
-        Header set Cache-Control "public, max-age=900"
-    &lt;/If&gt;
-&lt;/IfModule&gt;</code></pre>
-<p>Root <code>.htaccess</code> rather than one beside the files, because <code>public/</code> is
-gitignored and would not ship. Today the tracker is served with <strong>no</strong>
-<code>Cache-Control</code> at all, so caching is whatever each client decides heuristically. The
-same header covers the generic tracker that old snippets keep loading.</p>
-<p><strong>That header cannot be relied on.</strong> OWA installs onto nginx, LiteSpeed and IIS
-where <code>.htaccess</code> is inert, onto Apache without <code>mod_headers</code> where the guard
-silently skips it, and behind proxies that rewrite it. The failure is invisible: publish succeeds,
-the file on disk is right, and nothing reaches visitors. <strong>So publish fetches the URL it just
-wrote and reads the header back.</strong> Detection of the web server is the remedy, not the test
-&mdash; it decides which snippet to show once verification has already failed, so a server OWA has
-never heard of gets a clear message instead of a wrong one.</p>
-<p class="note">Absent a header, heuristic freshness scales with the age of
-<code>Last-Modified</code>: short right after a publish, longer as the file sits unchanged. Crude,
-client-dependent, and it fails in the useful direction.</p>
+<h4><span class="num">2.24.6</span>Cache headers, and what a stock Apache can do <span class="chip c-meas">Measured</span></h4>
+<p><strong>The goal is revalidation, not no caching.</strong> <code>Cache-Control: no-cache</code>
+lets a browser keep its copy but ask every time; an unchanged bundle answers with a 304 of a few
+hundred bytes, and a changed one arrives on the next page view. <code>no-store</code> would
+re-download the whole bundle on every page and is not wanted.</p>
+<p><strong>No <code>.htaccess</code> can guarantee that header on a stock Apache.</strong></p>
+<ul>
+<li><strong><code>.htaccess</code> may not be read.</strong> Apache 2.4 ships
+<code>AllowOverride None</code>; OWA&rsquo;s existing root <code>.htaccess</code> has the same
+dependency. This box enables it per vhost.</li>
+<li><strong>The header modules are not Base.</strong> Apache&rsquo;s module docs class
+<code>mod_headers</code>, <code>mod_expires</code> and <code>mod_rewrite</code> as
+<em>Extension</em>, so a source build does not compile them by default, and distributions differ on
+whether they are enabled. Amazon Linux loads <code>headers</code> and <code>expires</code>.</li>
+<li><strong>The one Base module that can set a header is not loaded either.</strong>
+<code>mod_asis</code> (a file carrying its own headers) is Base, yet this Amazon Linux Apache does
+not load it, and it answers no conditional request, so every view would re-download the bundle.</li>
+</ul>
+<p><strong>What every Apache does:</strong> core sends <code>ETag</code> and
+<code>Last-Modified</code> for a static file. With no <code>Cache-Control</code>, a browser applies
+heuristic freshness, about a tenth of the file&rsquo;s age: seconds just after a publish, about three
+days for a bundle unchanged for thirty. A change still arrives, late in proportion to how long the
+bundle sat unchanged.</p>
+<p><strong>So, in layers.</strong></p>
+<ol>
+<li><strong>The root <code>.htaccess</code></strong> (not one beside the files: <code>public/</code>
+is gitignored and would not ship), each layer behind <code>IfModule</code>, covering the generic
+tracker too:
+<pre><code>&lt;If "%{REQUEST_URI} =~ m#/public/(tracker|base/dist)/[^/]+\.js$#"&gt;
+    &lt;IfModule mod_headers.c&gt;
+        Header set Cache-Control "no-cache"
+    &lt;/IfModule&gt;
+    &lt;IfModule !mod_headers.c&gt;
+        &lt;IfModule mod_expires.c&gt;
+            ExpiresActive On
+            ExpiresDefault "access plus 0 seconds"
+        &lt;/IfModule&gt;
+    &lt;/IfModule&gt;
+&lt;/If&gt;</code></pre></li>
+<li><strong>Publish reads it back.</strong> After writing, it fetches the bundle&rsquo;s own URL and
+reads the headers. The Tracking Tag screen then says either &ldquo;Changes reach visitors on their
+next page view&rdquo; or &ldquo;This server sends no cache headers for the tracker: a change can take
+hours to days to reach returning visitors&rdquo;, with how to fix it &mdash; enable
+<code>mod_headers</code> and <code>AllowOverride</code>, the nginx equivalent, or a rule at the CDN.
+The check is the test; detecting the web server only chooses which fix to show.</li>
+</ol>
+<p class="note"><strong>No PHP fallback.</strong> Serving the bundle through a PHP endpoint would
+set the header on any server, but puts PHP on every tracked page view, which is what publishing a
+static file exists to avoid. Decided against, 2 Oct.</p>
 
 <h4><span class="num">2.24.7</span>A CDN, later</h4>
 <p>Moving bundles to a CDN is a module&rsquo;s job, after this ships. Publishing raises an event
