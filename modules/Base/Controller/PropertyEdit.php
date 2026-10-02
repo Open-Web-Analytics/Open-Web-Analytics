@@ -55,14 +55,17 @@ class PropertyEdit extends \OWA\Core\AdminController {
                     . 'tracking request is accepted or refused on.' ) );
         }
 
-        // Empty inherits; otherwise a whole number of days, at most ten years.
-        $lookback = trim( (string) $this->getParam( 'attributionLookbackDays' ) );
+        // Overridden, a whole number of days, at most ten years.
+        $name     = 'base.attribution_lookback_days';
+        $override = (array) $this->getParam( 'override' );
+        $config   = (array) $this->getParam( 'config' );
+        $lookback = trim( (string) ( $config[ $name ] ?? '' ) );
 
-        if ( $lookback !== '' && ! ( ctype_digit( $lookback ) && (int) $lookback <= 3650 ) ) {
+        if ( ! empty( $override[ $name ] ) && array_key_exists( $name, $config )
+             && ! ( ctype_digit( $lookback ) && (int) $lookback <= 3650 ) ) {
 
             $this->addValidation( 'attributionLookbackDays', '', 'required',
-                array( 'errorMsg' => 'The attribution lookback is a whole number of days, 0 to 3650, '
-                    . 'or empty to use the install&rsquo;s.' ) );
+                array( 'errorMsg' => 'The attribution lookback is a whole number of days, 0 to 3650.' ) );
         }
 
         /*
@@ -140,18 +143,11 @@ class PropertyEdit extends \OWA\Core\AdminController {
             $property->create();
         }
 
-        // The Property's own lookback, or none so it inherits the install's.
-        $lookback = trim( (string) $this->getParam( 'attributionLookbackDays' ) );
-
-        if ( $lookback === '' ) {
-
-            \OWA\Core\CoreAPI::clearScopedSetting( 'property', (string) $propertyId, 'base', 'attribution_lookback_days' );
-
-        } else {
-
-            \OWA\Core\CoreAPI::setScopedSetting( 'property', (string) $propertyId, 'base',
-                'attribution_lookback_days', (int) $lookback );
-        }
+        // Each setting the screen shows, stored here or not by its Override switch.
+        \OWA\Module\Base\Classes\SettingsForm::saveScoped(
+            \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
+            'property', (string) $propertyId,
+            (array) $this->getParam( 'config' ), (array) $this->getParam( 'override' ) );
 
         $this->set( 'propertyId', $propertyId );
         $this->setRedirectAction( 'base.propertyProfile' );

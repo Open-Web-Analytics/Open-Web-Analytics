@@ -277,7 +277,36 @@ class Module extends \OWA\Core\Module {
      * simpleFactory() never touches the filesystem; the path is kept as a
      * fallback for a broken autoloader.
      */
+    /**
+     * Fieldsets rendered below the install, by SettingsForm::scopedFieldSet():
+     * each field shows what it inherits until its Override switch is on.
+     *
+     * Registered with the actions, not in registerAdminPanels(): that runs only
+     * when the admin nav is built, and the Profile and Property screens and
+     * their save controllers read these without building it.
+     */
+    function registerScopedSettingsFieldSets() {
+
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.profileObservation',
+            'settings' => array(
+                'p3p_policy',
+                'domain_aliases',
+                'query_string_filters',
+                'default_page',
+                'enableEcommerceReporting',
+            ),
+        ) );
+
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.propertyAttribution',
+            'settings' => array( 'attribution_lookback_days' ),
+        ) );
+    }
+
     function registerActions() {
+
+        $this->registerScopedSettingsFieldSets();
 
         $this->registerAction( 'base.addSiteRest',                   'OWA\\Module\\Base\\Controller\\AddSiteRest',                  'Controller/AddSiteRest.php' );
         $this->registerAction( 'base.addUserRest',                   'OWA\\Module\\Base\\Controller\\AddUserRest',                  'Controller/AddUserRest.php' );
@@ -654,6 +683,7 @@ class Module extends \OWA\Core\Module {
             'legend'   => 'Reporting',
             'settings' => array( 'timezone', 'attribution_lookback_days' ),
         ) );
+
 
 
 

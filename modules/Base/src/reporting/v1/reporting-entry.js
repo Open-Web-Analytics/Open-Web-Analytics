@@ -85,6 +85,7 @@ import './owa.kpibox.js';
 // The confirmation an irreversible action gets. Imported after owa.js like the
 // rest; it augments OWA and delegates one document-level handler.
 import './owa.confirm.js';
+import './owa.settingsoverride.js';
 // The add-a-Profile form: shows only the fields the answers make relevant.
 import './owa.profileform.js';
 // Funnel steps on the goal event screen: the constraint rows' + and X are
