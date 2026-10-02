@@ -92,6 +92,8 @@ final class ControllerCapabilityContractTest extends TestCase
         'UpdatesApplyCli',
         // Runs from the scheduler and the shell only, like the others here.
         'NotificationsFetchCli',
+        // Publishes Profiles' tracking bundles; the scheduler and the shell only.
+        'TrackerPublishCli',
 
         // Public/embeddable UI surfaces.
         'OverlayLauncher',

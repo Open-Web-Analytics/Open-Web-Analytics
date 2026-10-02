@@ -57,5 +57,12 @@ class SitesInvocation extends \OWA\Core\View {
 
         // False when the Profile has received nothing; the template says so.
         $this->body->set( 'last_event', $this->get( 'last_event' ) ?: 0 );
+
+        // The Profile's tracking bundle (PLAN 2.24): where it is served, whether
+        // the file is current, and the last read-back of its cache header.
+        $bundle = '\OWA\Module\Base\Classes\TrackerBundle';
+        $this->body->set( 'bundle_url', $bundle::url( $this->get( 'site_id' ) ) );
+        $this->body->set( 'bundle_status', $bundle::status( $this->get( 'site_id' ) ) );
+        $this->body->set( 'bundle_cache', (array) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cache_headers' ) );
     }
 }

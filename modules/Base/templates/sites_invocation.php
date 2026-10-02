@@ -14,6 +14,31 @@
 <?php endif; ?>
 </div>
 
+<div class="owa_trackerBundle">
+    <div class="inline_h2">Tracking bundle</div>
+    <p>This Profile&rsquo;s tracker, configured with the settings below, is served from
+    <code><?php $view->out( $view->bundle_url );?></code>.</p>
+    <?php $status = (array) $view->bundle_status; $cache = (array) $view->bundle_cache; ?>
+    <?php if ( ( $status['state'] ?? '' ) === 'published' ): ?>
+        <p><b>Published</b> <?php $view->out( date( 'Y-m-d H:i', (int) $status['published_at'] ) );?>.</p>
+    <?php elseif ( ( $status['state'] ?? '' ) === 'unbuilt' ): ?>
+        <p><b>Not published:</b> the tracker has not been built on this installation.</p>
+    <?php else: ?>
+        <p><b>Waiting to publish.</b> The scheduler publishes changes within a minute of saving them.</p>
+    <?php endif; ?>
+    <?php if ( isset( $cache['ok'] ) && $cache['ok'] === true ): ?>
+        <p class="owa-inherit-note">Changes reach visitors on their next page view: the bundle is served with <code>Cache-Control: <?php $view->out( $cache['cache_control'] );?></code>.</p>
+    <?php elseif ( isset( $cache['ok'] ) && $cache['ok'] === false ): ?>
+        <p class="owa-inherit-note"><b>This server sends no revalidation header for the tracker</b><?php if ( ! empty( $cache['cache_control'] ) ): ?> (it sends <code>Cache-Control: <?php $view->out( $cache['cache_control'] );?></code>)<?php endif; ?>,
+        so a change can take hours to days to reach returning visitors. On Apache, enable <code>mod_headers</code> and
+        <code>AllowOverride</code> for OWA&rsquo;s directory; elsewhere, send <code>Cache-Control: no-cache</code> for
+        <code>public/tracker/</code> and <code>public/base/dist/</code>.</p>
+    <?php elseif ( ! empty( $cache['checked_at'] ) ): ?>
+        <p class="owa-inherit-note">The cache header could not be checked: the bundle URL answered
+        <?php $view->out( ! empty( $cache['status'] ) ? 'HTTP ' . $cache['status'] : 'nothing' );?> to this server&rsquo;s own request.</p>
+    <?php endif; ?>
+</div>
+
 <?php include('invocation.php');?>
 
 <form method="post" name="owa_tag_settings">

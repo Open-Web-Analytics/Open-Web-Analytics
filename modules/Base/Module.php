@@ -424,6 +424,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesEdit',                     'OWA\\Module\\Base\\Controller\\SitesEdit',                    'Controller/SitesEdit.php' );
         $this->registerAction( 'base.sitesEditAllowedUsers',         'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',        'Controller/SitesEditAllowedUsers.php' );
         $this->registerAction( 'base.sitesEditSettings',             'OWA\\Module\\Base\\Controller\\SitesEditSettings',            'Controller/SitesEditSettings.php' );
+        $this->registerAction( 'base.trackerPublishCli',             'OWA\\Module\\Base\\Controller\\TrackerPublishCli',            'Controller/TrackerPublishCli.php' );
         $this->registerAction( 'base.sitesEditTagSettings',          'OWA\\Module\\Base\\Controller\\SitesEditTagSettings',         'Controller/SitesEditTagSettings.php' );
         $this->registerAction( 'base.sitesInvocation',               'OWA\\Module\\Base\\Controller\\SitesInvocation',              'Controller/SitesInvocation.php' );
         $this->registerAction( 'base.sitesProfile',                  'OWA\\Module\\Base\\Controller\\SitesProfile',                 'Controller/SitesProfile.php' );
@@ -483,6 +484,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
         $this->registerCliCommand('cube-rebuild', 'base.cubeRebuildCli');
+        $this->registerCliCommand('publish-trackers', 'base.trackerPublishCli');
         $this->registerCliCommand('custom-dimension-list', 'base.customDimensionListCli');
         $this->registerCliCommand('custom-dimension-apply', 'base.customDimensionApplyCli');
         $this->registerCliCommand('custom-dimension-register', 'base.customDimensionRegisterCli');
@@ -585,6 +587,16 @@ class Module extends \OWA\Core\Module {
         $this->registerJob(
             'rebuild-cube', 'cube-rebuild',
             \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array() );
+
+        /*
+         * Profiles' tracking bundles (PLAN 2.24.5), EVERY MINUTE: how long a saved
+         * tag setting, a new Profile or an OWA update takes to reach visitors.
+         * A run with nothing to do reads one line of each bundle; saving a
+         * setting writes no file -- no web request writes under public/.
+         */
+        $this->registerJob(
+            'publish-trackers', 'publish-trackers',
+            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'publish-trackers' ), 1 ), array() );
 
         /*
          * Putting registered custom-dimension columns on the cubes.

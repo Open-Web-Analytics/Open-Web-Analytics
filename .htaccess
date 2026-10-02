@@ -96,3 +96,22 @@ RewriteRule owa.tracker.js$ http://%{HTTP_HOST}%1/public/base/dist/owa.tracker.j
 
 </IfModule>
 
+
+# --- Tracker cache headers (PLAN 2.24.6) ------------------------------------------------
+#
+# A Profile's tracking bundle (public/tracker/<site id>.js) and the generic tracker keep
+# one URL for life, so a browser must revalidate them on every page view: no-cache keeps
+# the copy but asks, and an unchanged file answers 304. mod_headers and mod_expires are
+# Extension modules a stock Apache may not load, and .htaccess itself needs AllowOverride,
+# so publishing reads the header back and the Tracking Tag screen says when it is missing.
+<If "%{REQUEST_URI} =~ m#/public/(tracker|base/dist)/[^/]+\.js$#">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-cache"
+    </IfModule>
+    <IfModule !mod_headers.c>
+        <IfModule mod_expires.c>
+            ExpiresActive On
+            ExpiresDefault "access plus 0 seconds"
+        </IfModule>
+    </IfModule>
+</If>
