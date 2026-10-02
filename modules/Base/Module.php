@@ -94,7 +94,94 @@ class Module extends \OWA\Core\Module {
             return false;
         }
 
-        return parent::update();
+        if ( ! parent::update() ) {
+
+            return false;
+        }
+
+        /*
+         * What a new version needs beyond its schema (PLAN 2.30.7): the
+         * Profiles' tracking bundles made from its tracker, and a bundle for
+         * every Profile from 1.x, which has none. Only those not current are
+         * rewritten -- each one's first line names the build and settings it
+         * was made from.
+         *
+         * From the command line, now. From the update screen, as one queued
+         * publish-trackers job for the next scheduler tick: a bundle per
+         * Profile is not work for a web request, the same rule as a save
+         * above one Profile.
+         */
+        if ( self::publishesInline() ) {
+
+            $failed = array_keys( \OWA\Module\Base\Classes\TrackerBundle::publishStale(), 'failed', true );
+
+            if ( $failed ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf( 'Tracker bundles not published for %s; see the log, then run'
+                    . ' php cli.php cmd=publish-trackers.', implode( ', ', $failed ) ) );
+            }
+
+        } else {
+
+            \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
+        }
+
+        return $this->recordTrackerVersion();
+    }
+
+    /** @var bool|null whether update() publishes in the run; null to decide by OWA_CLI. TESTS ONLY. */
+    public static $publish_inline = null;
+
+    /** The command line publishes in the run; the update screen queues it. */
+    private static function publishesInline() {
+
+        return self::$publish_inline ?? ( defined( 'OWA_CLI' ) && OWA_CLI );
+    }
+
+    /**
+     * Up to date when the schema is, AND the tracker this code builds is the
+     * one that last applied an update (PLAN 2.30.7). The tracker build keeps
+     * tracker-version.php, committed like a lock file: its version goes up
+     * when anything the tracker is built from changes. A release that leaves
+     * the tracker alone leaves the version alone and asks for no update.
+     *
+     * The schema alone is still isSchemaCurrent(), which is what the
+     * scheduler asks: a new tracker is no reason to stop its jobs.
+     */
+    function isUpToDate() {
+
+        return parent::isUpToDate()
+            && (int) \OWA\Core\CoreAPI::getSetting( $this->name, 'tracker_version' ) >= self::requiredTrackerVersion();
+    }
+
+    /** The tracker version this code builds, from the file the build keeps; 0 with none. */
+    public static function requiredTrackerVersion() {
+
+        static $version = null;
+
+        if ( $version === null ) {
+
+            $file    = __DIR__ . '/tracker-version.php';
+            $info    = is_file( $file ) ? include $file : array();
+            $version = (int) ( $info['version'] ?? 0 );
+        }
+
+        return $version;
+    }
+
+    function install() {
+
+        return parent::install() && $this->recordTrackerVersion();
+    }
+
+    /** The tracker version as the one the install is updated to. */
+    private function recordTrackerVersion() {
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+        $c->persistSetting( $this->name, 'tracker_version', self::requiredTrackerVersion() );
+        $c->save();
+
+        return true;
     }
 
     function init() {
@@ -563,14 +650,11 @@ class Module extends \OWA\Core\Module {
             \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array() );
 
         /*
-         * Profiles' tracking bundles (PLAN 2.24.5), EVERY MINUTE: how long a saved
-         * tag setting, a new Profile or an OWA update takes to reach visitors.
-         * A run with nothing to do reads one line of each bundle; saving a
-         * setting writes no file -- no web request writes under public/.
+         * No job for Profiles' tracking bundles (PLAN 2.30.7). A save publishes
+         * its own -- a Profile's at once, anything wider as a queued
+         * publish-trackers job -- and a new release is applied with
+         * cmd=update, which republishes what it changed (update()).
          */
-        $this->registerJob(
-            'publish-trackers', 'publish-trackers',
-            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'publish-trackers' ), 1 ), array() );
 
         /*
          * Putting registered custom-dimension columns on the cubes.
@@ -1097,6 +1181,8 @@ class Module extends \OWA\Core\Module {
 
         // install complete handler
         $this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
+        // Install-level tag settings saved: every Profile's bundle may change.
+        $this->registerEventHandler('base.install_settings_saved', $this, 'tagSettingsSavedHandler');
         // User management
         $this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
     }
@@ -1169,6 +1255,30 @@ class Module extends \OWA\Core\Module {
                 'migration_progress')
             );
 
+    }
+
+    /**
+     * Queue one publish of every bundle when a save at install level touched
+     * a tag setting -- Base's or an active module's, anything in a
+     * `tracking_tag` fieldset (PLAN 2.30.7).
+     */
+    function tagSettingsSavedHandler( $event ) {
+
+        $module = (string) $event->get( 'module' );
+        $keys   = (array) $event->get( 'keys' );
+
+        foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
+
+            if ( ( $set['module'] ?? '' ) === $module
+                 && array_intersect( $keys, (array) ( $set['settings'] ?? array() ) ) ) {
+
+                \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
+
+                break;
+            }
+        }
+
+        return OWA_EHS_EVENT_HANDLED;
     }
 
     function installCompleteHandler($event) {

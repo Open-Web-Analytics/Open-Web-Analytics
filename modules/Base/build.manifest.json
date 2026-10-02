@@ -6,6 +6,7 @@
             "entry": "src/tracker/tracker-dom.js",
             "pluginApi": { "path": "src/tracker/Tracker.js", "export": "OWATracker" },
             "bundleManifest": "owa.tracker.manifest.json",
+            "versionFile": "tracker-version.php",
             "outputDir": "../../public/base/dist",
             "splitVendors": "owa.vendors",
             "licence": "src/tracker/LICENSE.txt"

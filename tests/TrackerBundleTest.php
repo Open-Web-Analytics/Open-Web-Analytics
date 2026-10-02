@@ -20,6 +20,7 @@ final class TrackerBundleTest extends TestCase
 
     private string $dist;
     private string $out;
+    private ?string $suiteOut = null;
 
     protected function setUp(): void
     {
@@ -30,6 +31,8 @@ final class TrackerBundleTest extends TestCase
 
         $this->build('/*core*/', '/*chunk*/');
 
+        $this->suiteOut = TrackerBundle::$outDir;
+
         TrackerBundle::$distDir = $this->dist;
         TrackerBundle::$outDir  = $this->out;
     }
@@ -37,7 +40,7 @@ final class TrackerBundleTest extends TestCase
     protected function tearDown(): void
     {
         TrackerBundle::$distDir = null;
-        TrackerBundle::$outDir  = null;
+        TrackerBundle::$outDir  = $this->suiteOut;
 
         if (owa_test_db_available()) {
             foreach (array('tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments') as $key) {
@@ -315,5 +318,192 @@ final class TrackerBundleTest extends TestCase
     {
         $this->assertSame(array('q', 's', 'term'), TrackerBundle::listOf(' q, s,, term ,'));
         $this->assertSame(array(), TrackerBundle::listOf(''));
+    }
+
+    // ---------------------------------------------------------------------
+    // What starts a publish (PLAN 2.30.7)
+    // ---------------------------------------------------------------------
+
+    /** The file the tracker build keeps, committed like a lock file: a version and the hash of what it was built from. */
+    public function testTheTrackerVersionFileIsTheBuildsLockFile(): void
+    {
+        $info = include dirname(__DIR__) . '/modules/Base/tracker-version.php';
+
+        $this->assertIsInt($info['version']);
+        $this->assertGreaterThanOrEqual(1, $info['version']);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $info['sources']);
+        $this->assertSame($info['version'], \OWA\Module\Base\Module::requiredTrackerVersion());
+    }
+
+    /**
+     * A new tracker is an update (PLAN 2.30.7): a recorded tracker version
+     * lower than the build's is an update pending, and the update publishes
+     * every live Profile's bundle that is stale or missing -- which is how
+     * Profiles from 1.x, which have none, get theirs on the upgrade.
+     */
+    public function testANewTrackerIsAnUpdateThatRepublishesStaleBundles(): void
+    {
+        $this->requireDb();
+
+        $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $c    = \OWA\Core\CoreAPI::configSingleton();
+        $was  = $c->get('base', 'tracker_version');
+
+        // The install's own live Profiles, published into this test's directory.
+        $live = TrackerBundle::siteIds();
+
+        if (!$live) {
+            $this->markTestSkipped('needs a live web Profile');
+        }
+
+        try {
+            TrackerBundle::publish($live[0]);
+            // Every other live Profile has no bundle at all, as a Profile from 1.x has none.
+            foreach (array_slice($live, 1) as $site_id) {
+                $this->assertFileDoesNotExist($this->out . $site_id . '.js');
+            }
+            $this->build('/*core of the new release*/', '/*chunk*/');
+            $this->assertFalse(TrackerBundle::isCurrent($live[0]), 'the new build makes it stale');
+
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $this->assertFalse($base->isUpToDate(), 'an older tracker is an update pending');
+            $this->assertTrue($base->isSchemaCurrent(), 'and only that: the schema is current');
+
+            // cmd=update: published in the run.
+            \OWA\Module\Base\Module::$publish_inline = true;
+            $this->assertTrue($base->update());
+
+            $this->assertSame(\OWA\Module\Base\Module::requiredTrackerVersion(), (int) $c->get('base', 'tracker_version'));
+            $this->assertTrue($base->isUpToDate());
+
+            foreach ($live as $site_id) {
+                $this->assertTrue(TrackerBundle::isCurrent($site_id), "$site_id's bundle was republished");
+            }
+        } finally {
+            \OWA\Module\Base\Module::$publish_inline = null;
+            if ($c->get('base', 'tracker_version') !== $was) {
+                $c->set('base', 'tracker_version', $was);
+            }
+        }
+    }
+
+    /** The same update from the update screen queues the publish: a bundle per Profile is not work for a web request. */
+    public function testAnUpdateFromTheScreenQueuesThePublish(): void
+    {
+        $table = $this->scratchJobQueue();
+        $base  = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $was   = $c->get('base', 'tracker_version');
+        $live  = TrackerBundle::siteIds();
+
+        try {
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            \OWA\Module\Base\Module::$publish_inline = false;
+
+            $this->assertTrue($base->update());
+
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
+            foreach ($live as $site_id) {
+                $this->assertFileDoesNotExist($this->out . $site_id . '.js', 'nothing written in the request');
+            }
+            $this->assertSame(\OWA\Module\Base\Module::requiredTrackerVersion(), (int) $c->get('base', 'tracker_version'), 'the update is still recorded');
+        } finally {
+            \OWA\Module\Base\Module::$publish_inline = null;
+            $this->dropScratchJobQueue($table);
+            if ($c->get('base', 'tracker_version') !== $was) {
+                $c->set('base', 'tracker_version', $was);
+            }
+        }
+    }
+
+    public function testRemoveTakesDownOneBundle(): void
+    {
+        TrackerBundle::publish(self::SITE);
+
+        $this->assertTrue(TrackerBundle::remove(self::SITE));
+        $this->assertFileDoesNotExist($this->out . self::SITE . '.js');
+        $this->assertFalse(TrackerBundle::remove(self::SITE), 'nothing left to remove');
+    }
+
+    /** @return string the scratch job table, set for this test */
+    private function scratchJobQueue(): string
+    {
+        $this->requireDb();
+
+        $table = 'owa_job_queue_phpunit_bundles';
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query('DROP TABLE IF EXISTS ' . $table);
+        $db->query('CREATE TABLE ' . $table . ' LIKE owa_job_queue');
+        \OWA\Module\Base\Classes\JobQueue::$table = $table;
+
+        return $table;
+    }
+
+    private function dropScratchJobQueue(string $table): void
+    {
+        \OWA\Module\Base\Classes\JobQueue::$table = null;
+        \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . $table);
+    }
+
+    /** A Profile's save publishes it now; one that cannot be written now is queued, not left. */
+    public function testPublishNowQueuesWhatItCannotWrite(): void
+    {
+        $table = $this->scratchJobQueue();
+
+        try {
+            $this->assertTrue(TrackerBundle::publishNow(self::SITE));
+            $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers'));
+
+            unlink($this->dist . 'owa.tracker.manifest.json');
+
+            $this->assertFalse(TrackerBundle::publishNow(self::SITE));
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . self::SITE));
+
+            $job = \OWA\Module\Base\Classes\JobQueue::listJobs('pending')[0];
+            $this->assertSame(array('site' => self::SITE), json_decode($job['params'], true));
+        } finally {
+            $this->dropScratchJobQueue($table);
+        }
+    }
+
+    /** A change above one Profile is one queued run, however many saves. */
+    public function testWiderChangesQueueOneFullPublish(): void
+    {
+        $table = $this->scratchJobQueue();
+
+        try {
+            $first = TrackerBundle::scheduleFullPublish();
+            $this->assertNotFalse($first);
+            $this->assertSame($first, TrackerBundle::scheduleFullPublish());
+            $this->assertCount(1, \OWA\Module\Base\Classes\JobQueue::listJobs('pending'));
+        } finally {
+            $this->dropScratchJobQueue($table);
+        }
+    }
+
+    /** An install-level save queues a publish when it touched a tag setting, and not otherwise. */
+    public function testAnInstallLevelTagSettingSaveQueuesAFullPublish(): void
+    {
+        $table = $this->scratchJobQueue();
+        $base  = \OWA\Core\CoreAPI::serviceSingleton()->getModule('base');
+        $d     = \OWA\Core\CoreAPI::getEventDispatch();
+        $saved = function (string $module, array $keys) use ($d) {
+            $e = $d->makeEvent('base.install_settings_saved');
+            $e->set('module', $module);
+            $e->set('keys', $keys);
+            return $e;
+        };
+
+        try {
+            $base->tagSettingsSavedHandler($saved('base', array('announce_visitors')));
+            $base->tagSettingsSavedHandler($saved('domstream', array('tracker_clicks')));
+            $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers'),
+                'not a tag setting, or not that module\'s');
+
+            $base->tagSettingsSavedHandler($saved('base', array('announce_visitors', 'tracker_clicks')));
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
+        } finally {
+            $this->dropScratchJobQueue($table);
+        }
     }
 }

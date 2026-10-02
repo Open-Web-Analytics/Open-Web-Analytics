@@ -1171,6 +1171,15 @@ abstract class Module {
     }
 
     /**
+     * Whether nothing is pending for this module: an update is due when this
+     * is false. Its schema, here; Base adds the release (Module::isUpToDate()).
+     */
+    function isUpToDate() {
+
+        return $this->isSchemaCurrent();
+    }
+
+    /**
      * Checks to se if the schema is up to date
      *
      */

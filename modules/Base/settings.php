@@ -354,6 +354,15 @@ return array(
          * above are read (Classes\TrackerIngest::isQueued()).
          */
         'queue_tracker_ingest' => array( 'default' => null, 'storable' => true, 'autoload' => true ),
+
+        /*
+         * The tracker version that last applied an update (Module::isUpToDate()):
+         * lower than the one tracker-version.php records is an update pending,
+         * which republishes the Profiles' bundles. The scheduler keeps running
+         * meanwhile; only a schema behind stops it. No default, like
+         * schema_version: an install with none from 1.x has an update pending.
+         */
+        'tracker_version' => array( 'storable' => true, 'autoload' => true ),
         'tracker_ingest_queue_type' => array( 'default' => 'file' ),
         'tracker_ingest_drain' => array( 'default' => 'scheduler' ),
         'report_wrapper' => array( 'default' => 'wrapper_default.php' ),

@@ -24,7 +24,7 @@
     <?php elseif ( ( $status['state'] ?? '' ) === 'unbuilt' ): ?>
         <p><b>Not published:</b> the tracker has not been built on this installation.</p>
     <?php else: ?>
-        <p><b>Waiting to publish.</b> The scheduler publishes changes within a minute of saving them.</p>
+        <p><b>Waiting to publish.</b> It could not be written when the settings were saved, so it is queued; the scheduler publishes it within a minute. If it stays here, see <code>php cli.php cmd=jobs</code>.</p>
     <?php endif; ?>
     <?php if ( isset( $cache['ok'] ) && $cache['ok'] === true ): ?>
         <p class="owa-inherit-note">Changes reach visitors on their next page view: the bundle is served with <code>Cache-Control: <?php $view->out( $cache['cache_control'] );?></code>.</p>

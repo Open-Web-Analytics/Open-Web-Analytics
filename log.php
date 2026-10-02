@@ -57,25 +57,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // necessary or else buffer is not actually flushed
     echo ' ';
 } else {
-    // return 1x1 pixel gif
+    // return 1x1 pixel gif: 43 bytes
+    $pixel = sprintf(
+        '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c',
+        71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
+    );
+
     header("Content-type: image/gif");
-    // needed to avoid cache time on browser side
-    header("Content-Length: 42");
+    /*
+     * The real length. It said 42 for a 43-byte image, so the header did not
+     * survive and the response went out chunked -- which a client can only
+     * see the end of when the script ends, ingest and all.
+     */
+    header("Content-Length: " . strlen( $pixel ));
     header("Cache-Control: private, no-cache, no-cache=Set-Cookie, proxy-revalidate");
     header("Expires: Wed, 11 Jan 2000 12:59:00 GMT");
     header("Last-Modified: Wed, 11 Jan 2006 12:59:00 GMT");
     header("Pragma: no-cache");
 
-    echo sprintf(
-        '%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c',
-        71,73,70,56,57,97,1,0,1,0,128,255,0,192,192,192,0,0,0,33,249,4,1,0,0,0,0,44,0,0,0,0,1,0,1,0,0,2,2,68,1,0,59
-    );
+    echo $pixel;
 }
 
-// flush all output buffers. No reason to make the user wait for OWA.
-ob_flush();
-flush();
-ob_end_flush();
+/*
+ * End the response here, before anything is loaded: the visitor's browser
+ * has its answer, and everything below -- booting OWA, ingest, the database
+ * -- happens after it.
+ *
+ * flush() alone does not do that under PHP-FPM, which is how this runs on
+ * most servers: the web server is not told the response is complete until
+ * the script exits, so the request stayed open for the whole ingest.
+ * fastcgi_finish_request() tells it now (LiteSpeed has its own); the flush
+ * is what is left for a server API with neither.
+ */
+while ( ob_get_level() > 0 ) {
+    ob_end_flush();
+}
+
+if ( function_exists( 'fastcgi_finish_request' ) ) {
+
+    fastcgi_finish_request();
+
+} elseif ( function_exists( 'litespeed_finish_request' ) ) {
+
+    litespeed_finish_request();
+
+} else {
+
+    flush();
+}
 
 // Create instance of OWA
 require_once(OWA_BASE_DIR.'/owa.php');

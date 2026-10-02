@@ -49,7 +49,8 @@ class ScheduleRunCli extends SchedulerCli {
         // Checked once, here, rather than being discovered separately by every
         // job: Controller::doAction() intercepts each controller with the same
         // check and would render the update view once per job.
-        if ( \OWA\Core\CoreAPI::isUpdateRequired() ) {
+        // The schema only: a new release not yet applied leaves it as the jobs expect.
+        if ( \OWA\Core\CoreAPI::isSchemaUpdateRequired() ) {
 
             return $this->refuse(
                 'Schema updates are pending, so no job can run. Apply them with cmd=update.'

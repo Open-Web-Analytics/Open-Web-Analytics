@@ -122,8 +122,11 @@ final class ScheduleCliTest extends CliControllerTestCase
     public function testTheShippedDailyJobsDoNotCollide()
     {
         $jobs      = $this->callProtected($this->runner(), 'jobs');
-        $schedules = array_column($jobs, 'schedule');
+        // The daily ones: an every-minute job shares its minute with every job.
+        $schedules = array_values(array_filter(array_column($jobs, 'schedule'),
+            fn ($c) => (bool) preg_match('/^\d+ \d+ \* \* \*$/', $c)));
 
+        $this->assertGreaterThanOrEqual(3, count($schedules));
         $this->assertSame(
             count($schedules),
             count(array_unique($schedules)),
@@ -191,6 +194,34 @@ final class ScheduleCliTest extends CliControllerTestCase
         }
     }
 
+    /**
+     * A new tracker not yet applied leaves the schema as the jobs expect, so
+     * they run; a schema behind stops them (PLAN 2.30.7). Without the split, a
+     * release with a new tracker would pause the drain, the cube and the job
+     * queue until someone applied the update.
+     */
+    public function testOnlyASchemaBehindStopsTheJobs()
+    {
+        $s    = \OWA\Core\CoreAPI::serviceSingleton();
+        $c    = \OWA\Core\CoreAPI::configSingleton();
+        $base = $s->getModule('base');
+        $was  = array('version' => $c->get('base', 'tracker_version'), 'schema' => $c->get('base', 'schema_version'));
+
+        try {
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $this->assertFalse($base->isUpToDate());
+            $this->assertFalse($s->isSchemaUpdateRequired(), 'a new tracker alone is not a schema behind');
+
+            $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
+            $this->assertTrue($s->isSchemaUpdateRequired());
+        } finally {
+            $c->set('base', 'tracker_version', $was['version']);
+            $c->set('base', 'schema_version', $was['schema']);
+        }
+
+        $this->assertFalse($s->isSchemaUpdateRequired());
+    }
+
     /** Only these jobs ship; everything else is opt-in. */
     public function testTheDefaultJobsAreRegistered()
     {
@@ -204,31 +235,33 @@ final class ScheduleCliTest extends CliControllerTestCase
         // with no site collecting into v2, apply-custom-dimensions joined
         // them because registering a dimension cannot do its own ALTER -- that
         // is a full table rebuild, past every request timeout there is -- and
-        // publish-trackers because no web request writes a Profile's tracking
-        // bundle under public/ (PLAN 2.24.5). prune-job-queue deletes
+        // (No bundle job: saves publish their own and cmd=update republishes
+        // what a release changed, PLAN 2.30.7.) prune-job-queue deletes
         // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
         // drain-tracker-ingest is the only thing that ingests a queued beacon
         // and replay-tracker-ingest the only thing that brings a dead letter
         // back without someone running it by hand (PLAN 2.30.4).
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
     }
 
     /**
-     * publish-trackers runs every minute: how long a saved tag setting takes to
-     * reach visitors. Affordable because a run with nothing to do reads the
-     * first line of each bundle.
+     * No bundle job ships (PLAN 2.30.7): a save publishes its own, and a
+     * release is applied with cmd=update, which republishes what it changed.
+     * publish-trackers stays a command, and the job queue runs it for a
+     * change above one Profile.
      */
-    public function testTheTrackerPublishJobRunsEveryMinute()
+    public function testNoTrackerBundleJobShips()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
-        $this->assertSame('publish-trackers', $jobs['publish-trackers']['command']);
-        $this->assertSame(
-            implode(',', range(0, 59)) . ' * * * *',
-            $jobs['publish-trackers']['schedule']);
+        $this->assertSame([], array_values(array_filter(array_column($jobs, 'command'),
+            fn ($c) => in_array($c, ['publish-trackers', 'tracker-build-check'], true))));
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->loadCliCommands();
+        $this->assertSame('base.trackerPublishCli', $s->getCliCommandClass('publish-trackers'));
     }
 
     /**

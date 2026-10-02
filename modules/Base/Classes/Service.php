@@ -158,6 +158,13 @@ class Service extends \OWA\Core\Base {
         $present_modules = \OWA\Core\CoreAPI::getPresentModules();
         $am = \OWA\Core\CoreAPI::getActiveModules();
 
+        /*
+         * Not asked on the tracking path (log.php boots with tracking_mode):
+         * a pending update stops nothing there -- only admin screens and the
+         * scheduler act on one -- so the answer would be thrown away.
+         */
+        $check_updates = ! \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_mode' );
+
         foreach ($am as $k => $v) {
 			
 			// active-module names are lowercase runtime names; getPresentModules()
@@ -168,10 +175,8 @@ class Service extends \OWA\Core\Base {
 	
 	            $this->addModule($m);
 	
-	            // check for schema updates
-	            $check = $m->isSchemaCurrent();
-	
-	            if ($check != true) {
+	            if ( $check_updates && ! $m->isUpToDate() ) {
+
 	                $this->markModuleAsNeedingUpdate($m->name);
 	            }
 			}
@@ -190,7 +195,7 @@ class Service extends \OWA\Core\Base {
 	    foreach ($am as $k => $v) {
 		    
             // check for schema updates
-            $check = $this->modules[ $v ]->isSchemaCurrent();
+            $check = $this->modules[ $v ]->isUpToDate();
 
             if ($check != true) {
                 $this->markModuleAsNeedingUpdate($this->modules[ $v ]->name);
@@ -587,6 +592,25 @@ class Service extends \OWA\Core\Base {
     function isUpdateRequired() {
 
         return $this->update_required;
+    }
+
+    /**
+     * Whether a module's SCHEMA is behind: the narrower question the
+     * scheduler asks. An update pending only because a new release has not
+     * been applied (Base\Module::isUpToDate()) leaves the schema as the jobs
+     * expect it, so they keep running.
+     */
+    function isSchemaUpdateRequired() {
+
+        foreach ( $this->modules as $module ) {
+
+            if ( ! $module->isSchemaCurrent() ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     function addModule($module) {
