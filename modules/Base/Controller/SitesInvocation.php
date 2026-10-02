@@ -61,19 +61,6 @@ class SitesInvocation extends \OWA\Core\AdminController {
         $this->setView('base.optionsHierarchy');
 
         /*
-         * The bundle the snippet below loads, there before anyone copies it: a
-         * Profile from before bundles existed -- an install upgraded from 1.x
-         * -- has none until something publishes it (PLAN 2.30.7).
-         */
-        $bundle = \OWA\Module\Base\Classes\TrackerBundle::path( (string) $site_id );
-
-        if ( $bundle && ! is_file( $bundle ) && $s->wasPersisted()
-             && $s->get( 'stream_type' ) === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
-
-            \OWA\Module\Base\Classes\TrackerBundle::publishNow( (string) $site_id );
-        }
-
-        /*
          * Is the tag set up? Answered here, where the tag is, rather than on
          * every report: whether data is ARRIVING is this screen's question, and
          * whether reporting is READY is the reports' (Cube\Status::readiness()).

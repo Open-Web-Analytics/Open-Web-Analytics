@@ -564,9 +564,9 @@ class TrackerBundle {
 
     /**
      * Queue one publish-trackers run for every Profile (PLAN 2.30.7): what a
-     * change above a single Profile asks for -- a Property's or the install's
-     * tag settings, a module turned on or off. Saves within the minute leave
-     * one job, and a run rewrites only the bundles that are stale.
+     * save above a single Profile asks for -- a Property's or the install's
+     * tag settings. Saves within the minute leave one job, and a run rewrites
+     * only the bundles that are stale.
      *
      * Before the job queue exists -- an install mid-upgrade -- there is
      * nothing to queue on, and the daily publish-trackers covers it.

@@ -327,7 +327,8 @@ final class TrackerBundleTest extends TestCase
     /**
      * Every release is applied with cmd=update (PLAN 2.30.7): a version other
      * than the one that last updated is an update pending, and the update
-     * republishes the bundles the release made stale.
+     * publishes every live Profile's bundle that is stale or missing -- which
+     * is how Profiles from 1.x, which have none, get theirs on the upgrade.
      */
     public function testANewVersionIsAnUpdateThatRepublishesStaleBundles(): void
     {
@@ -346,6 +347,10 @@ final class TrackerBundleTest extends TestCase
 
         try {
             TrackerBundle::publish($live[0]);
+            // Every other live Profile has no bundle at all, as a Profile from 1.x has none.
+            foreach (array_slice($live, 1) as $site_id) {
+                $this->assertFileDoesNotExist($this->out . $site_id . '.js');
+            }
             $this->build('/*core of the new release*/', '/*chunk*/');
             $this->assertFalse(TrackerBundle::isCurrent($live[0]), 'the new build makes it stale');
 
