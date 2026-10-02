@@ -3291,6 +3291,20 @@ class CoreAPI {
         return $ret;
     }
 
+    /**
+     * Queue a CLI command to run once, from the scheduler (PLAN 2.30.5).
+     *
+     * @param  string      $command  a registered CLI command
+     * @param  array       $params   its arguments
+     * @param  string|null $key      at most one pending job per key
+     * @param  int         $delay    seconds before it may run
+     * @return string|false  the job's id
+     */
+    public static function enqueueJob( $command, array $params = array(), $key = null, $delay = 0 ) {
+
+        return \OWA\Module\Base\Classes\JobQueue::enqueue( $command, $params, $key, $delay );
+    }
+
     public static function getJsTrackerTag( $site_id, $options = array() ) {
 
 

@@ -144,9 +144,10 @@ final class ScheduleCliTest extends CliControllerTestCase
         // them because registering a dimension cannot do its own ALTER -- that
         // is a full table rebuild, past every request timeout there is -- and
         // publish-trackers because no web request writes a Profile's tracking
-        // bundle under public/ (PLAN 2.24.5).
+        // bundle under public/ (PLAN 2.24.5). prune-job-queue deletes
+        // finished one-off jobs, which nothing else would (PLAN 2.30.5).
         $this->assertSame(
-            ['rotate-partitions', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
     }
