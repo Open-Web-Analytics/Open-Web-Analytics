@@ -9,7 +9,13 @@
  * database.
  */
 define( 'OWA_ACTIVE_MODULES', array( 'sqs', 'no_such_module' ) );
-define( 'OWA_SQS_QUEUE_URL', 'https://sqs.eu-west-2.amazonaws.com/123456789012/owa-tracker-ingest-0123456789ab' );
+define( 'OWA_SQS_REGION', 'eu-west-2' );
+
+// Credentials from the environment, carrying their account id, as the SDK's
+// default chain reads them: no metadata service, and no request to SQS.
+putenv( 'AWS_ACCESS_KEY_ID=AKIAPROBEEXAMPLE' );
+putenv( 'AWS_SECRET_ACCESS_KEY=probe-secret' );
+putenv( 'AWS_ACCOUNT_ID=123456789012' );
 
 if ( ( $argv[1] ?? '' ) === 'static' ) {
     define( 'OWA_USE_STATIC_CONFIG_ONLY', true );
@@ -27,7 +33,8 @@ echo 'PROBE ' . json_encode( array(
     'governed' => \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( 'sqs', 'is_active' ),
     'region'   => \OWA\Module\Sqs\Classes\Sqs::region(),
     'name'     => $queue->name(),
-    // url( false ): from the constant, so no request is made.
+    'derived'  => \OWA\Module\Sqs\Classes\Sqs::queueName(),
+    // url( false ): built from the credentials' account, so no request is made.
     'url'      => $queue->url( false ),
     'dlq_url'  => $queue->deadLetterQueue()->url( false ),
 ) ) . "\n";

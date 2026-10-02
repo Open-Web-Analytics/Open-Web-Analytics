@@ -17,10 +17,10 @@ namespace OWA\Module\Sqs;
  *   define('OWA_ACTIVE_MODULES', array('sqs'));
  *   define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'sqs');
  *   define('OWA_QUEUE_TRACKER_INGEST', true);
- *   define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/<account>/owa-tracker-ingest-<hash>');
+ *   define('OWA_SQS_REGION', 'us-east-1');
  *
- * The URL is the one the settings screen shows once provisioned; the region
- * is read from it.
+ * The queue's name is derived from the database settings in the same file, so
+ * the node finds the queue the drain install made.
  *
  * The queues -- the main one and its dead-letter queue -- are created by the
  * module: on activation, when the region is saved, by

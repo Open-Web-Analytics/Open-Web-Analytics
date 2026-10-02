@@ -7,8 +7,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * A logging node configured only in owa-config.php (PLAN 2.30.4a):
  * OWA_ACTIVE_MODULES makes the sqs module active without a stored row, and
- * OWA_SQS_QUEUE_URL names the queue, its dead-letter queue and its region,
- * so a beacon needs no lookup.
+ * with credentials that carry their account id the queue URL is built
+ * locally, so a beacon needs no lookup.
  *
  * SUBPROCESS, because constants are process-global and this runner has
  * booted OWA already (see SettingsConfigConstantTest).
@@ -57,13 +57,13 @@ final class SqsNodeConfigTest extends TestCase
     }
 
     /** @dataProvider modes */
-    public function testTheQueueUrlGivesTheNameTheDeadLetterQueueAndTheRegion(string $mode): void
+    public function testTheQueueUrlIsBuiltFromTheRegionTheDerivedNameAndTheAccount(string $mode): void
     {
         $r = $this->probe($mode);
 
         $this->assertSame('eu-west-2', $r['region']);
-        $this->assertSame('owa-tracker-ingest-0123456789ab', $r['name']);
-        $this->assertSame('https://sqs.eu-west-2.amazonaws.com/123456789012/owa-tracker-ingest-0123456789ab', $r['url']);
-        $this->assertSame('https://sqs.eu-west-2.amazonaws.com/123456789012/owa-tracker-ingest-0123456789ab-dlq', $r['dlq_url']);
+        $this->assertSame($r['derived'], $r['name'], 'the derived name: nothing names the queue');
+        $this->assertSame('https://sqs.eu-west-2.amazonaws.com/123456789012/' . $r['derived'], $r['url']);
+        $this->assertSame('https://sqs.eu-west-2.amazonaws.com/123456789012/' . $r['derived'] . '-dlq', $r['dlq_url']);
     }
 }

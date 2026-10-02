@@ -24,12 +24,15 @@
             or by <code>php cli.php cmd=tracker-ingest-provision</code>.
         <?php elseif ( ! empty( $p['ok'] ) ): ?>
             In place since <?php $view->out( gmdate( 'j M Y H:i', (int) $p['at'] ) ); ?> UTC.
-            A logging node that cannot read this install's database names the queue in its
-            <code>owa-config.php</code>:<br>
+            A logging node that cannot read this install's database, with the same
+            <code>owa-config.php</code> database settings so it derives the same queue name, needs:<br>
             <code>define('OWA_ACTIVE_MODULES', array('sqs'));</code><br>
             <code>define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'sqs');</code><br>
             <code>define('OWA_QUEUE_TRACKER_INGEST', true);</code><br>
-            <code>define('OWA_SQS_QUEUE_URL', '<?php $view->out( (string) $p['main'] ); ?>');</code>
+            <code>define('OWA_SQS_REGION', '<?php $view->out( (string) $view->region ); ?>');</code><br>
+            Its credentials need <code>sqs:GetQueueUrl</code> and <code>sqs:SendMessage</code>. If they
+            carry the account id (<code>AWS_ACCOUNT_ID</code>, or <code>aws_account_id</code> in its AWS
+            profile), it builds the queue URL itself and makes one request per beacon instead of two.
         <?php else: ?>
             <strong>Failed</strong> <?php $view->out( gmdate( 'j M Y H:i', (int) $p['at'] ) ); ?> UTC:
             <?php $view->out( (string) $p['error'] ); ?>

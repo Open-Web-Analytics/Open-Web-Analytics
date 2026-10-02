@@ -23,10 +23,11 @@ namespace OWA\Module\Sqs\Classes;
  * fourteen days, and both queues are set to that; the file queue keeps one
  * until it is ingested. schedule-status warns long before it matters.
  *
- * A queue's URL holds the account id, so it is never looked up per beacon: a
- * logging node names it in owa-config.php (OWA_SQS_QUEUE_URL), and the install
- * that provisioned it has it in the sqs.provisioned setting. Only an install
- * with neither asks GetQueueUrl, once per process.
+ * A queue's URL holds the account id -- SQS names are unique per account and
+ * region -- so it comes from what is known before asking: the install that
+ * provisioned it has it in the sqs.provisioned setting, and credentials that
+ * carry their account id let it be built locally (Sqs::urlFromCredentials()).
+ * Otherwise GetQueueUrl, once per process.
  */
 class SqsQueue implements \OWA\Core\IntakeQueue {
 
@@ -63,7 +64,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     function __construct( $map = array() ) {
 
         $this->is_dead_letter = ! empty( $map['is_dead_letter'] );
-        $this->name           = (string) ( $map['name'] ?? ( Sqs::configuredName() ?? Sqs::queueName() ) );
+        $this->name           = (string) ( $map['name'] ?? Sqs::queueName() );
         $this->max_receives   = $this->is_dead_letter ? null
             : max( 1, (int) ( $map['max_receives'] ?? \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES ) );
     }
@@ -288,8 +289,8 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     // ---------------------------------------------------------------------
 
     /**
-     * The queue's URL: OWA_SQS_QUEUE_URL (its dead-letter queue's is that
-     * with -dlq), else what provisioning recorded, else GetQueueUrl. A queue
+     * The queue's URL: what provisioning recorded, else built from the
+     * credentials' account id, else GetQueueUrl. A queue
      * that does not exist yet is provisioned, when $provision allows, as the
      * file queue makes its directories on first use.
      *
@@ -339,31 +340,23 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $this->url;
     }
 
-    /** The URL without asking SQS: the constant, or the provisioning record, when it names this queue. */
+    /** The URL without asking SQS: the provisioning record when it names this queue, else from the credentials. */
     private function knownUrl() {
 
-        $main = Sqs::configuredUrl();
+        $record = (array) \OWA\Core\CoreAPI::getSetting( 'sqs', 'provisioned' );
 
-        if ( ! $main ) {
+        if ( ! empty( $record['ok'] ) ) {
 
-            $record = (array) \OWA\Core\CoreAPI::getSetting( 'sqs', 'provisioned' );
-            $main   = ! empty( $record['ok'] ) ? ( $record['main'] ?? null ) : null;
-        }
+            foreach ( array( $record['main'] ?? null, $record['dlq'] ?? null ) as $url ) {
 
-        if ( ! $main ) {
+                if ( $url && basename( (string) parse_url( $url, PHP_URL_PATH ) ) === $this->name ) {
 
-            return null;
-        }
-
-        foreach ( array( $main, $main . '-dlq' ) as $url ) {
-
-            if ( basename( (string) parse_url( $url, PHP_URL_PATH ) ) === $this->name ) {
-
-                return $url;
+                    return $url;
+                }
             }
         }
 
-        return null;
+        return Sqs::urlFromCredentials( $this->name );
     }
 
     /** Keep the URL provisioning returned, for this object. */

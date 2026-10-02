@@ -51,40 +51,38 @@ final class Sqs {
     }
 
     /**
-     * OWA_SQS_QUEUE_URL: the main queue, for a logging node that cannot read
-     * what provisioning recorded. Its dead-letter queue is the same URL with
-     * -dlq, and its region is in its host.
+     * A queue's URL built without asking SQS, when the credentials say which
+     * account they belong to: the SDK knows it from AWS_ACCOUNT_ID,
+     * aws_account_id in a profile, SSO, an ECS task role, and an instance
+     * role whose metadata service reports it. A queue name is unique per
+     * account and region, not globally, so the URL needs it.
      *
-     * @return string|null
+     * The endpoint is the client's, so the partition (.com, .com.cn) is right.
+     *
+     * @param  string $name
+     * @return string|null  null when the account is not known
      */
-    public static function configuredUrl() {
+    public static function urlFromCredentials( $name ) {
 
-        return defined( 'OWA_SQS_QUEUE_URL' ) && OWA_SQS_QUEUE_URL ? (string) OWA_SQS_QUEUE_URL : null;
+        try {
+
+            $client  = self::client();
+            $account = $client->getCredentials()->wait()->getAccountId();
+
+        } catch ( \Throwable $t ) {
+
+            return null;
+        }
+
+        return $account ? rtrim( (string) $client->getEndpoint(), '/' ) . '/' . $account . '/' . $name : null;
     }
 
-    /** The main queue's name as OWA_SQS_QUEUE_URL gives it, or null. */
-    public static function configuredName() {
-
-        $url = self::configuredUrl();
-
-        return $url ? ( basename( (string) parse_url( $url, PHP_URL_PATH ) ) ?: null ) : null;
-    }
-
-    /**
-     * OWA_SQS_REGION, else the one in OWA_SQS_QUEUE_URL's host, else the
-     * setting, else null for the SDK's own chain (AWS_REGION, ~/.aws).
-     */
+    /** OWA_SQS_REGION, else the setting, else null for the SDK's own chain (AWS_REGION, ~/.aws). */
     public static function region() {
 
         if ( defined( 'OWA_SQS_REGION' ) && OWA_SQS_REGION ) {
 
             return (string) OWA_SQS_REGION;
-        }
-
-        if ( self::configuredUrl()
-             && preg_match( '#^https://sqs\.([a-z0-9-]+)\.amazonaws\.com(\.cn)?/#', self::configuredUrl(), $m ) ) {
-
-            return $m[1];
         }
 
         $region = \OWA\Core\CoreAPI::getSetting( 'sqs', 'region' );

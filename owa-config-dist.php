@@ -168,15 +168,16 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 /**
  * AWS SQS TRACKING INTAKE (the sqs module)
  *
- * The queue a logging node sends beacons to: the URL the install that drains
- * it shows on its AWS SQS settings screen once the queues are provisioned. Its
- * region is read from the URL.
+ * The region the queues are in, for a logging node that cannot read the drain
+ * install's settings. The queue names are derived from the database settings
+ * above, so a node with the same ones finds the queues the drain install made.
  *
  * Credentials come from the AWS SDK's default chain -- environment, ~/.aws,
  * then the instance or task role -- unless set here. OWA never stores them.
+ * Credentials that carry their account id (AWS_ACCOUNT_ID, or aws_account_id
+ * in an AWS profile) save one request per beacon.
  */
 
-//define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-0123456789ab');
 //define('OWA_SQS_REGION', 'us-east-1');
 //define('OWA_SQS_KEY', '');
 //define('OWA_SQS_SECRET', '');
