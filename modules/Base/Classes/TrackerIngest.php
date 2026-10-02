@@ -28,11 +28,24 @@ class TrackerIngest {
     /** The envelope's format. */
     const ENVELOPE_VERSION = 1;
 
-    /** Received this many times without being ingested, a beacon is dead-lettered. */
-    const RECEIVE_LIMIT = 5;
+    /**
+     * Attempts before a beacon goes to the dead-letter queue: the queue's
+     * redrive limit (max_receives in its registration; maxReceiveCount on
+     * SQS), and the attempt on which a failure is dead-lettered rather than
+     * released.
+     */
+    const MAX_RECEIVES = 6;
 
-    /** Seconds before each retry, by receive count; the last step is reused. */
-    const BACKOFF = array( 60, 300, 900, 3600 );
+    /**
+     * Seconds before each retry, by attempt: about 7.3 hours from the first
+     * attempt to the last, so a database outage shorter than that loses
+     * nothing to the dead-letter queue. No step may pass 12 hours, SQS's
+     * longest visibility timeout.
+     */
+    const BACKOFF = array( 60, 300, 900, 3600, 21600 );
+
+    /** How long a dead letter that is not replayed stays hidden before a replay looks at it again. */
+    const REPLAY_RECHECK = 3600;
 
     /** How many messages one receive() asks for. */
     const BATCH = 100;
@@ -245,20 +258,15 @@ class TrackerIngest {
 
     /**
      * Deal with one received message: ingest and ack it, release it to retry,
-     * or dead-letter it.
+     * or dead-letter it. The queue itself moves a message past its receive
+     * limit to the dead-letter queue before a consumer sees it -- the case of
+     * a message that kills its consumer, which no code here survives.
      *
      * What an external consumer calls per message, with the same queue.
      *
      * @return string ingested, released, dead
      */
     public static function ingestMessage( \OWA\Core\IntakeQueue $queue, \OWA\Core\IntakeMessage $message ) {
-
-        if ( $message->receive_count > self::RECEIVE_LIMIT ) {
-
-            $queue->deadLetter( $message, sprintf( 'Received %d times without being ingested.', $message->receive_count - 1 ) );
-
-            return 'dead';
-        }
 
         $event = $message->envelope !== null ? self::event( $message->envelope ) : null;
 
@@ -285,6 +293,14 @@ class TrackerIngest {
             $queue->ack( $message );
 
             return 'ingested';
+        }
+
+        // The last attempt: waiting out another step would only delay the dead letter.
+        if ( $message->receive_count >= self::MAX_RECEIVES ) {
+
+            $queue->deadLetter( $message, sprintf( 'Not ingested in %d attempts.', $message->receive_count ) );
+
+            return 'dead';
         }
 
         $steps = self::BACKOFF;
@@ -321,6 +337,66 @@ class TrackerIngest {
             foreach ( $messages as $message ) {
 
                 $counts[ self::ingestMessage( $queue, $message ) ]++;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Send dead letters back to the main queue, with their attempts reset.
+     *
+     * $once_only is the daily replay-tracker-ingest job: a beacon that died
+     * in an outage longer than the back-off gets one more round, and one that
+     * has been replayed already stays, so a beacon that fails for good is not
+     * sent round forever. By hand (cmd=tracker-ingest-replay) everything is
+     * replayed, once its cause is fixed.
+     *
+     * A dead letter that never decoded is never replayed: it would only come
+     * back. What is not replayed is released for REPLAY_RECHECK seconds, so
+     * this run moves past it.
+     *
+     * @param  bool $once_only
+     * @param  int  $deadline  unix time
+     * @return array counts: replayed, kept (replayed before), unreadable
+     */
+    public static function replay( $once_only, $deadline ) {
+
+        $counts = array( 'replayed' => 0, 'kept' => 0, 'unreadable' => 0 );
+        $main   = self::queue();
+        $dlq    = $main->deadLetterQueue();
+
+        if ( ! $dlq || $dlq->isProbablyEmpty() ) {
+
+            return $counts;
+        }
+
+        while ( time() < $deadline ) {
+
+            $messages = $dlq->receive( self::BATCH, self::VISIBILITY );
+
+            if ( ! $messages ) {
+
+                break;
+            }
+
+            foreach ( $messages as $message ) {
+
+                if ( $message->envelope === null ) {
+
+                    $dlq->release( $message, self::REPLAY_RECHECK );
+                    $counts['unreadable']++;
+
+                } elseif ( $once_only && $message->replayed ) {
+
+                    $dlq->release( $message, self::REPLAY_RECHECK );
+                    $counts['kept']++;
+
+                } elseif ( $main->send( $message->envelope, 0, true ) ) {
+
+                    $dlq->ack( $message );
+                    $counts['replayed']++;
+                }
             }
         }
 

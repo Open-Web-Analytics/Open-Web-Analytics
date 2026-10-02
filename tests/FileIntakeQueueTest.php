@@ -54,11 +54,13 @@ final class FileIntakeQueueTest extends TestCase
         return array_map(fn (IntakeMessage $m) => $m->envelope['properties']['n'] ?? null, $messages);
     }
 
-    /** Pretend every delayed file's minute has come. */
+    /** Pretend every delayed file's minute has come, in both queues. */
     private function timePasses(): void
     {
-        foreach ((array) glob($this->dir . 'delayed/*.txt') as $i => $f) {
-            rename($f, $this->dir . 'delayed/' . $i . '.txt');
+        foreach (array($this->dir . 'delayed/', $this->dir . 'dead-letter/delayed/') as $dir) {
+            foreach ((array) glob($dir . '*.txt') as $i => $f) {
+                rename($f, $dir . $i . '.txt');
+            }
         }
     }
 
@@ -146,7 +148,16 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertSame(self::envelope('a'), $again[0]->envelope, 'the envelope is unchanged');
     }
 
-    public function testADeadLetterIsKeptWithItsReason(): void
+    /** The dead-letter queue is a queue like the main one: received from, with why and when. */
+    private function deadLetters(FileEventQueue $q): array
+    {
+        $dlq = $q->deadLetterQueue();
+        $got = $dlq->receive(100, 300);
+
+        return $got;
+    }
+
+    public function testADeadLetterGoesToTheDeadLetterQueueWithItsReason(): void
     {
         $q = $this->queue();
         $q->send(self::envelope('a'));
@@ -154,15 +165,34 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertTrue($q->deadLetter($q->receive(10, 300)[0], 'gave up'));
         $this->assertTrue($q->isProbablyEmpty());
 
-        $letters = file($this->dir . 'dead/' . date('Y-m-d') . '.txt');
-        $this->assertCount(1, $letters);
+        $dead = $this->deadLetters($q);
 
-        $letter = json_decode($letters[0], true);
-        $this->assertSame('gave up', $letter['reason']);
-        $this->assertSame(self::envelope('a'), $letter['e']);
+        $this->assertCount(1, $dead);
+        $this->assertSame(self::envelope('a'), $dead[0]->envelope);
+        $this->assertSame('gave up', $dead[0]->reason);
+        $this->assertEqualsWithDelta(time(), $dead[0]->dead_at, 5);
+        $this->assertFalse($dead[0]->replayed);
+        $this->assertDirectoryExists($this->dir . 'dead-letter/unprocessed');
     }
 
-    /** A line that is not one -- half-written, or a 1.x serialized event -- is received with no envelope, and kept when dead-lettered. */
+    /** A dead-letter queue has no dead-letter queue and no receive limit, as on SQS. */
+    public function testADeadLetterQueueHasNoneOfItsOwn(): void
+    {
+        $dlq = $this->queue()->deadLetterQueue();
+
+        $this->assertNull($dlq->deadLetterQueue());
+
+        $dlq->send(self::envelope('a'));
+
+        for ($i = 1; $i <= 10; $i++) {
+            $got = $dlq->receive(10, 300);
+            $this->assertCount(1, $got, "receive $i");
+            $dlq->release($got[0], 0);
+            $this->timePasses();
+        }
+    }
+
+    /** A line that is not one -- half-written, or a 1.x serialized event -- is received with no envelope, and kept as it was when dead-lettered. */
     public function testALineThatIsNotAnEnvelopeArrivesWithoutOne(): void
     {
         mkdir($this->dir, 0700, true);
@@ -177,15 +207,90 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertSame(array('v' => 1), $got[1]->envelope, 'decoding the line is the queue\'s; reading the envelope is not');
         $this->assertNull($got[2]->envelope);
 
-        $q->deadLetter($got[0], 'not an envelope');
-
-        $letter = json_decode(file($this->dir . 'dead/' . date('Y-m-d') . '.txt')[0], true);
-        $this->assertSame($legacy, $letter['raw']);
+        foreach ($got as $m) {
+            $q->deadLetter($m, 'not an envelope');
+        }
 
         // A batch of nothing but bad lines is finished, not retried forever.
-        $q->deadLetter($got[1], 'not an envelope');
-        $q->deadLetter($got[2], 'not an envelope');
         $this->assertTrue($q->isProbablyEmpty());
+
+        $dead = $this->deadLetters($q);
+        $this->assertSame($legacy, $dead[0]->raw, 'kept as it arrived');
+        $this->assertNull($dead[0]->envelope);
+
+        // Released inside the dead-letter queue, it is still the original line.
+        foreach ($dead as $m) {
+            $q->deadLetterQueue()->release($m, 0);
+        }
+        $this->timePasses();
+        $this->assertSame($legacy, $q->deadLetterQueue()->receive(10, 300)[0]->raw);
+    }
+
+    /** The queue's own redrive: past max_receives it goes to the dead-letter queue, not to a consumer. */
+    public function testAMessagePastItsReceiveLimitIsMovedByTheQueue(): void
+    {
+        $q = new FileEventQueue(array('path' => $this->dir, 'max_receives' => 2));
+        $q->send(self::envelope('a'));
+
+        foreach (array(1, 2) as $n) {
+            $got = $q->receive(10, 300);
+            $this->assertSame($n, $got[0]->receive_count);
+            $q->release($got[0], 0);
+            $this->timePasses();
+        }
+
+        $this->assertSame(array(), $q->receive(10, 300), 'the third receive is the dead-letter queue\'s');
+        $this->assertTrue($q->isProbablyEmpty());
+
+        $dead = $this->deadLetters($q);
+        $this->assertSame(array('a'), self::names($dead));
+        $this->assertSame('Received 2 times without being ingested.', $dead[0]->reason);
+    }
+
+    /** Waiting beacons never expire from a file queue, however old. */
+    public function testThereIsNoRetentionLimit(): void
+    {
+        $q = $this->queue();
+        $q->send(self::envelope('old'));
+        $q->receive(10, 300);
+        unset($q);
+
+        foreach ((array) glob($this->dir . 'processing/*') as $f) {
+            touch($f, time() - 365 * 86400);
+        }
+
+        $this->assertSame(array('old'), self::names($this->queue()->receive(10, 300)));
+    }
+
+    /** Provisioning makes both queues; a send before it makes what it needs. */
+    public function testProvisioningMakesBothQueues(): void
+    {
+        $this->assertTrue($this->queue()->send(self::envelope('a')), 'no provision needed to accept a beacon');
+
+        $this->assertTrue($this->queue()->provision());
+        $this->assertTrue($this->queue()->provision(), 'idempotent');
+
+        foreach (array('unprocessed', 'processing', 'delayed', 'archive',
+                       'dead-letter/unprocessed', 'dead-letter/delayed') as $d) {
+            $this->assertDirectoryExists($this->dir . $d);
+        }
+    }
+
+    /** What is waiting, and how long the oldest due message has waited; a retry waiting out its back-off is not a backlog. */
+    public function testStatsCountWhatWaitsAndAgeWhatIsDue(): void
+    {
+        $q = $this->queue();
+        $this->assertSame(array('messages' => 0, 'oldest_age' => null), $q->stats());
+
+        $q->send(self::envelope('later'), 3600);
+        $this->assertSame(array('messages' => 1, 'oldest_age' => null), $q->stats());
+
+        $q->send(self::envelope('now'));
+        touch($this->dir . 'events.txt', time() - 900);
+
+        $stats = $q->stats();
+        $this->assertSame(2, $stats['messages']);
+        $this->assertEqualsWithDelta(900, $stats['oldest_age'], 5);
     }
 
     /**
@@ -225,8 +330,8 @@ final class FileIntakeQueueTest extends TestCase
             'the line it died on is counted; the line behind it is not');
     }
 
-    /** A line that kills every drain climbs to the receive limit on its own. */
-    public function testALineThatKillsEveryDrainIsCountedEachTime(): void
+    /** A line that kills every drain climbs to the receive limit, and the queue moves it to the dead-letter queue; the line behind it is not charged. */
+    public function testALineThatKillsEveryDrainEndsInTheDeadLetterQueue(): void
     {
         $q = $this->queue();
         $q->send(self::envelope('poison'));
@@ -234,15 +339,25 @@ final class FileIntakeQueueTest extends TestCase
         $q->receive(10, 300);
         $this->dies($q);
 
-        for ($death = 2; $death <= 6; $death++) {
+        for ($receive = 2; $receive <= \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES; $receive++) {
             $q   = $this->queue();
             $got = $q->receive(10, 300);
 
-            $this->assertSame($death, $got[0]->receive_count, "after $death receives");
+            $this->assertSame($receive, $got[0]->receive_count);
             $this->assertSame(1, $got[1]->receive_count);
 
             $this->dies($q);
         }
+
+        $q   = $this->queue();
+        $got = $q->receive(10, 300);
+
+        $this->assertSame(array('fine'), self::names($got), 'the poison line is not handed out again');
+        $this->assertSame(1, $got[0]->receive_count);
+
+        $dead = $this->deadLetters($q);
+        $this->assertSame(array('poison'), self::names($dead));
+        $this->assertSame('Received 6 times without being ingested.', $dead[0]->reason);
     }
 
     /** A drain that dies before it has the next line in hand -- between receives -- charges nothing. */
@@ -344,15 +459,16 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertFalse($q->ack(new IntakeMessage(array('batch' => '/elsewhere', 'offset' => 0), self::envelope('x'), 1)));
     }
 
-    public function testPruningRemovesOldArchivesAndDeadLetters(): void
+    public function testPruningRemovesOldArchivesOfBothQueues(): void
     {
         $q = $this->queue();
+        $q->provision();
 
-        foreach (array('archive/old.txt', 'dead/2020-01-01.txt', 'archive/new.txt') as $f) {
+        foreach (array('archive/old.txt', 'dead-letter/archive/old.txt', 'archive/new.txt') as $f) {
             file_put_contents($this->dir . $f, "x\n");
         }
         touch($this->dir . 'archive/old.txt', time() - 7200);
-        touch($this->dir . 'dead/2020-01-01.txt', time() - 7200);
+        touch($this->dir . 'dead-letter/archive/old.txt', time() - 7200);
 
         $this->assertSame(2, $q->pruneArchive(3600));
         $this->assertSame(array($this->dir . 'archive/new.txt'), glob($this->dir . 'archive/*'));

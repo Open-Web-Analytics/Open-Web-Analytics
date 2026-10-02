@@ -54,6 +54,8 @@ final class CliCommandsTest extends CliControllerTestCase
             'flush-cache'                => ['flush-cache',                'base.flushCacheCli'],
             'processEventQueue'          => ['processEventQueue',          'base.processEventQueue'],
             'drain-tracker-ingest'       => ['drain-tracker-ingest',       'base.drainTrackerIngestCli'],
+            'tracker-ingest-replay'      => ['tracker-ingest-replay',      'base.trackerIngestReplayCli'],
+            'tracker-ingest-provision'   => ['tracker-ingest-provision',   'base.trackerIngestProvisionCli'],
             'install'                    => ['install',                    'base.installCli'],
             'activate'                   => ['activate',                   'base.moduleActivateCli'],
             'deactivate'                 => ['deactivate',                 'base.moduleDeactivateCli'],

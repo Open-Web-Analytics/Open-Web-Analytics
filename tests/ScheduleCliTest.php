@@ -161,6 +161,36 @@ final class ScheduleCliTest extends CliControllerTestCase
         }
     }
 
+    /** Dead letters and a backlog are each reported; a quiet intake says nothing. */
+    public function testStatusReportsDeadLettersAndABacklog()
+    {
+        $dir = sys_get_temp_dir() . '/owa-status-dlq-' . bin2hex(random_bytes(4)) . '/';
+        $q   = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = $q;
+        $envelope = ['v' => 1, 'type' => 'page_view', 'properties' => [], 'queued_at' => 1];
+
+        try {
+            $this->assertSame([], $this->callProtected($this->statusCli(), 'describeIntake'));
+
+            $q->send($envelope);
+            $q->deadLetter($q->receive(10, 300)[0], 'gave up');
+
+            $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
+            $this->assertStringContainsString('1 beacon(s) in the dead-letter queue', $lines);
+            $this->assertStringContainsString('cmd=tracker-ingest-replay', $lines);
+
+            $q->send($envelope);
+            touch($dir . 'events.txt', time() - 1800);
+
+            $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
+            $this->assertStringContainsString('the oldest for 30 minutes; the drain is not keeping up', $lines);
+        } finally {
+            \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
+            unset($q);
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
+
     /** Only these jobs ship; everything else is opt-in. */
     public function testTheDefaultJobsAreRegistered()
     {
@@ -178,9 +208,10 @@ final class ScheduleCliTest extends CliControllerTestCase
         // bundle under public/ (PLAN 2.24.5). prune-job-queue deletes
         // finished one-off jobs, which nothing else would (PLAN 2.30.5), and
         // drain-tracker-ingest is the only thing that ingests a queued beacon
-        // (PLAN 2.30.4).
+        // and replay-tracker-ingest the only thing that brings a dead letter
+        // back without someone running it by hand (PLAN 2.30.4).
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'publish-trackers', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
     }

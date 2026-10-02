@@ -120,13 +120,17 @@ class ScheduleStatusCli extends SchedulerCli {
      */
     const INTAKE_HELD_TOO_LONG = 600;
 
+    /** The main queue's oldest beacon older than this means the drain is not keeping up. */
+    const INTAKE_BACKLOG_AGE = 600;
+
     /**
-     * Tracker-ingest batches a drain has held too long (PLAN 2.30.4).
+     * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): what is waiting in it
+     * and its dead-letter queue, and any batch a drain has held too long.
      *
      * A drain that dies releases its batch to the next one; a drain that
      * hangs -- a database call that never returns -- holds it until the
-     * process ends, and nothing else would say so. Only for an intake that
-     * can tell (the file queue's heldBatches()).
+     * process ends, and nothing else would say so. That part is only for an
+     * intake that can tell (the file queue's heldBatches()).
      *
      * @return string[]
      */
@@ -135,21 +139,33 @@ class ScheduleStatusCli extends SchedulerCli {
         try {
 
             $intake = \OWA\Module\Base\Classes\TrackerIngest::queue();
+            $main   = $intake->stats();
+            $dlq    = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
 
         } catch ( \Throwable $t ) {
 
             return array( '', 'Tracker ingest', '  WARNING: ' . $t->getMessage() );
         }
 
-        if ( ! method_exists( $intake, 'heldBatches' ) ) {
-
-            return array();
-        }
-
         $lines = array();
         $now   = time();
 
-        foreach ( $intake->heldBatches() as $held ) {
+        if ( $main['oldest_age'] !== null && $main['oldest_age'] > self::INTAKE_BACKLOG_AGE ) {
+
+            $lines[] = sprintf( '  WARNING: %s beacon(s) waiting, the oldest for %d minutes; the drain is not keeping up%s.',
+                $main['messages'] ?? 'some', intdiv( $main['oldest_age'], 60 ),
+                \OWA\Module\Base\Classes\TrackerIngest::isDrainedExternally() ? ' (tracker_ingest_drain is external)' : '' );
+        }
+
+        if ( $dlq && $dlq['messages'] ) {
+
+            $lines[] = sprintf( '  WARNING: %d beacon(s) in the dead-letter queue%s. Fix the cause, then '
+                              . 'cmd=tracker-ingest-replay; replay-tracker-ingest sends each back once a day on its own.',
+                $dlq['messages'],
+                $dlq['oldest_age'] !== null ? ', the oldest ' . intdiv( $dlq['oldest_age'], 3600 ) . ' hours old' : '' );
+        }
+
+        foreach ( method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : array() as $held ) {
 
             $age = $held['held_since'] === null ? null : $now - $held['held_since'];
 

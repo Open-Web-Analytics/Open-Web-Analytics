@@ -182,17 +182,30 @@ final class TrackerIngestTest extends TestCase
         $this->assertSame(array(self::TYPE), IntakeTestProcessor::$seen);
     }
 
-    /** A handler failure is a retry after the back-off step for its receive count. */
+    /** A handler failure is a retry after the back-off step for its attempt; about 7.3 hours from first to last. */
     public function testAFailedIngestIsReleasedWithBackOff(): void
     {
         IntakeTestProcessor::$outcome = 'failed';
         $q = new MemoryIntake();
 
-        foreach (array(1 => 60, 2 => 300, 3 => 900, 4 => 3600, 5 => 3600) as $count => $delay) {
+        foreach (array(1 => 60, 2 => 300, 3 => 900, 4 => 3600, 5 => 21600) as $count => $delay) {
             $q->calls = array();
             $this->assertSame('released', TrackerIngest::ingestMessage($q, $this->message(null, $count)));
-            $this->assertSame(array(array('release', $delay)), $q->calls, "receive $count");
+            $this->assertSame(array(array('release', $delay)), $q->calls, "attempt $count");
         }
+
+        $this->assertSame(26460, array_sum(TrackerIngest::BACKOFF));
+        $this->assertLessThanOrEqual(43200, max(TrackerIngest::BACKOFF), 'no step past SQS\'s 12-hour visibility limit');
+    }
+
+    /** The last attempt's failure is dead-lettered at once: another wait would only delay it. */
+    public function testAFailureOnTheLastAttemptIsDeadLettered(): void
+    {
+        IntakeTestProcessor::$outcome = 'failed';
+        $q = new MemoryIntake();
+
+        $this->assertSame('dead', TrackerIngest::ingestMessage($q, $this->message(null, TrackerIngest::MAX_RECEIVES)));
+        $this->assertSame(array(array('dead', 'Not ingested in 6 attempts.')), $q->calls);
     }
 
     public function testAnIngestThatThrowsIsReleased(): void
@@ -203,14 +216,12 @@ final class TrackerIngestTest extends TestCase
         $this->assertSame('released', TrackerIngest::ingestMessage($q, $this->message()));
     }
 
-    public function testAMessageReceivedTooOftenIsDeadLetteredWithoutIngest(): void
+    /** The receive limit is the queue's (its redrive): the drain does not count, it ingests what it is handed. */
+    public function testTheDrainDoesNotEnforceTheReceiveLimit(): void
     {
         $q = new MemoryIntake();
 
-        $this->assertSame('dead', TrackerIngest::ingestMessage($q, $this->message(null, TrackerIngest::RECEIVE_LIMIT + 1)));
-        $this->assertSame('dead', $q->calls[0][0]);
-        $this->assertStringContainsString('Received 5 times', $q->calls[0][1]);
-        $this->assertSame(array(), IntakeTestProcessor::$seen);
+        $this->assertSame('ingested', TrackerIngest::ingestMessage($q, $this->message(null, 99)));
     }
 
     public function testAMessageThatIsNotAnEnvelopeIsDeadLettered(): void
@@ -242,6 +253,89 @@ final class TrackerIngestTest extends TestCase
     }
 
     // ---------------------------------------------------------------------
+    // Replay
+    // ---------------------------------------------------------------------
+
+    /** @return array{0: MemoryIntake, 1: MemoryIntake} the main queue, its dead letters loaded */
+    private function deadLetters(): array
+    {
+        $main = new MemoryIntake();
+        $main->dlq->pending = array(
+            new IntakeMessage('fresh', TrackerIngest::envelope($this->event(array('n' => 'fresh'))), 6, '', false, 'Not ingested in 6 attempts.', time()),
+            new IntakeMessage('again', TrackerIngest::envelope($this->event(array('n' => 'again'))), 6, '', true, 'Not ingested in 6 attempts.', time()),
+            new IntakeMessage('bad', null, 1, 'O:9:"owa_event"', false, 'Not a tracker-ingest envelope this version reads.', time()),
+        );
+        TrackerIngest::$queue = $main;
+
+        return array($main, $main->dlq);
+    }
+
+    /** Daily: each dead letter goes back once, marked; one replayed before stays; one that never decoded stays. */
+    public function testTheDailyReplaySendsEachDeadLetterBackOnce(): void
+    {
+        [$main, $dlq] = $this->deadLetters();
+
+        $this->assertSame(array('replayed' => 1, 'kept' => 1, 'unreadable' => 1), TrackerIngest::replay(true, time() + 30));
+
+        $this->assertCount(1, $main->calls);
+        $this->assertSame('send', $main->calls[0][0]);
+        $this->assertSame('fresh', $main->calls[0][1]['properties']['n']);
+        $this->assertSame(0, $main->calls[0][2], 'due at once');
+        $this->assertTrue($main->calls[0][3], 'marked as replayed');
+
+        $this->assertSame(array(
+            array('ack'),
+            array('release', TrackerIngest::REPLAY_RECHECK),
+            array('release', TrackerIngest::REPLAY_RECHECK),
+        ), $dlq->calls, 'what stays is released past this run, not left to loop');
+    }
+
+    /** By hand, after the cause is fixed: everything that decodes, replayed before or not. */
+    public function testAReplayByHandSendsEverythingThatDecodes(): void
+    {
+        [$main, $dlq] = $this->deadLetters();
+
+        $this->assertSame(array('replayed' => 2, 'kept' => 0, 'unreadable' => 1), TrackerIngest::replay(false, time() + 30));
+        $this->assertSame(array('fresh', 'again'), array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
+    }
+
+    public function testAnEmptyDeadLetterQueueIsNotReceivedFrom(): void
+    {
+        $main = new MemoryIntake();
+        TrackerIngest::$queue = $main;
+
+        TrackerIngest::replay(true, time() + 30);
+
+        $this->assertSame(0, $main->dlq->receives);
+    }
+
+    /** End to end on the file queue: a replayed beacon is due on the main queue at once, with a fresh count. */
+    public function testAReplayedBeaconIsReceivedFromTheMainQueueAfresh(): void
+    {
+        $dir  = sys_get_temp_dir() . '/owa-replay-' . bin2hex(random_bytes(4)) . '/';
+        $main = new \OWA\Module\Base\Classes\FileEventQueue(array('path' => $dir));
+        TrackerIngest::$queue = $main;
+
+        try {
+            $main->send(TrackerIngest::envelope($this->event(array('n' => 'a'))));
+            $main->deadLetter($main->receive(10, 300)[0], 'gave up');
+
+            $this->assertSame(1, TrackerIngest::replay(true, time() + 30)['replayed']);
+
+            $got = $main->receive(10, 300);
+            $this->assertCount(1, $got);
+            $this->assertSame(1, $got[0]->receive_count);
+            $this->assertTrue($got[0]->replayed);
+            $this->assertTrue($main->deadLetterQueue()->isProbablyEmpty());
+        } finally {
+            TrackerIngest::$queue = null;
+            unset($main, $got);
+            gc_collect_cycles();
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
+
+    // ---------------------------------------------------------------------
     // The producers
     // ---------------------------------------------------------------------
 
@@ -267,7 +361,7 @@ final class TrackerIngestTest extends TestCase
         $arrived = TrackerIngest::envelope($this->event(array('n' => 'as-arrived')));
         TrackerIngest::retryLater($this->event(), $arrived);
 
-        $this->assertSame(array('send', $arrived, 60), $q->calls[0]);
+        $this->assertSame(array('send', $arrived, 60, false), $q->calls[0]);
     }
 
     /** notify() marks the event failed rather than queueing it anywhere. */
@@ -318,9 +412,23 @@ class MemoryIntake implements IntakeQueue
 
     public int $receives = 0;
 
-    public function send(array $envelope, $delay = 0)
+    public ?MemoryIntake $dlq = null;
+
+    public function __construct(bool $withDeadLetterQueue = true)
     {
-        $this->calls[] = array('send', $envelope, $delay);
+        if ($withDeadLetterQueue) {
+            $this->dlq = new MemoryIntake(false);
+        }
+    }
+
+    public function provision()
+    {
+        return true;
+    }
+
+    public function send(array $envelope, $delay = 0, $replayed = false)
+    {
+        $this->calls[] = array('send', $envelope, $delay, $replayed);
 
         return true;
     }
@@ -353,8 +461,18 @@ class MemoryIntake implements IntakeQueue
         return true;
     }
 
+    public function deadLetterQueue()
+    {
+        return $this->dlq;
+    }
+
     public function isProbablyEmpty()
     {
         return !$this->pending;
+    }
+
+    public function stats()
+    {
+        return array('messages' => count($this->pending), 'oldest_age' => null);
     }
 }

@@ -18,16 +18,28 @@ namespace OWA\Module\Base\Classes;
 /**
  * The file-backed tracking intake (PLAN 2.30.3), and the default one.
  *
- * Under the queue's directory (async_log_dir):
+ * MIRRORS THE SQS IMPLEMENTATION: a main queue with a dead-letter queue of its
+ * own, a receive limit the queue enforces itself (SQS's redrive policy), and
+ * one-time replay from the dead-letter queue. Where a file cannot do what SQS
+ * does the same way -- hiding a message in place for a delay -- the
+ * difference stays inside this class.
+ *
+ * One difference is deliberate: NO RETENTION LIMIT. A beacon not yet ingested
+ * is kept, in either queue, until it is ingested, replayed or removed by
+ * hand. SQS deletes one after fourteen days at most; a file need not.
+ *
+ * Each queue is a directory (the main one is async_log_dir, its dead-letter
+ * queue is dead-letter/ inside it):
  *
  *   events.txt     what log.php appends to, one JSON line per beacon
  *   unprocessed/   batches rotated out of events.txt, oldest name first
  *   processing/    a batch a consumer holds, and its .state sidecar
  *   delayed/       released messages, one file per due minute
- *   dead/          dead letters, one file per day
  *   archive/       finished batches, when archive_old_events is on
  *
- * A LINE is {"r": times received before, "e": envelope}.
+ * A LINE is {"r": times received before, "e": envelope}, plus "p" once it has
+ * been replayed from the dead-letter queue, and in a dead-letter queue "why"
+ * and "at"; a line that never decoded is kept there as "raw".
  *
  * WRITERS append under flock(LOCK_EX) and, holding it, check that the file
  * they opened is still the one at that path. A consumer rotates by renaming
@@ -42,8 +54,8 @@ namespace OWA\Module\Base\Classes;
  * consumer that dies releases its lock with its process, and the next one
  * claims the batch again from the last point everything before was settled.
  * The .state sidecar, written as each line is settled, records that point and
- * how many drains have died on the line at it; that line's receive count goes
- * up, and the lines behind it are not charged.
+ * how many drains have died with the line at it in hand; that line's receive
+ * count goes up, and the lines behind it are not charged.
  *
  * No Monolog, no PID file, and no shelling out to ps to check one.
  */
@@ -59,8 +71,19 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     var $unprocessed_path;
     var $processing_path;
     var $delayed_path;
-    var $dead_path;
     var $archive_path;
+
+    /** @var int|null receives before a message is moved to the dead-letter queue; null in a dead-letter queue */
+    private $max_receives;
+
+    /** @var bool this is a dead-letter queue */
+    private $is_dead_letter;
+
+    /** @var FileEventQueue|null */
+    private $dlq;
+
+    /** @var bool provision() has run for this object */
+    private $provisioned = false;
 
     /** @var resource|null the batch this consumer holds */
     private $handle;
@@ -97,22 +120,16 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $dir = isset( $map['path'] ) && $map['path'] !== ''
             ? $map['path'] : \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' );
 
+        $this->is_dead_letter = ! empty( $map['is_dead_letter'] );
+        $this->max_receives   = $this->is_dead_letter ? null
+            : max( 1, (int) ( $map['max_receives'] ?? TrackerIngest::MAX_RECEIVES ) );
+
         $this->queue_dir        = rtrim( (string) $dir, '/' ) . '/';
         $this->event_file       = $this->queue_dir . 'events.txt';
         $this->unprocessed_path = $this->queue_dir . 'unprocessed/';
         $this->processing_path  = $this->queue_dir . 'processing/';
         $this->delayed_path     = $this->queue_dir . 'delayed/';
-        $this->dead_path        = $this->queue_dir . 'dead/';
         $this->archive_path     = $this->queue_dir . 'archive/';
-
-        foreach ( array( $this->queue_dir, $this->unprocessed_path, $this->processing_path,
-                         $this->delayed_path, $this->dead_path, $this->archive_path ) as $d ) {
-
-            if ( ! is_dir( $d ) && ! @mkdir( $d, 0755, true ) && ! is_dir( $d ) ) {
-
-                throw new \Exception( "Cannot make queue directory $d." );
-            }
-        }
     }
 
     function __destruct() {
@@ -124,23 +141,46 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     // The contract
     // ---------------------------------------------------------------------
 
-    public function send( array $envelope, $delay = 0 ) {
+    public function provision() {
 
-        $line = self::encodeLine( 0, $envelope );
+        foreach ( array( $this->queue_dir, $this->unprocessed_path, $this->processing_path,
+                         $this->delayed_path, $this->archive_path ) as $d ) {
 
-        if ( $line === null ) {
+            if ( ! is_dir( $d ) && ! @mkdir( $d, 0755, true ) && ! is_dir( $d ) ) {
 
-            return false;
+                \OWA\Core\CoreAPI::notice( "Tracker ingest: cannot make queue directory $d." );
+
+                return false;
+            }
+        }
+
+        $this->provisioned = true;
+
+        $dlq = $this->deadLetterQueue();
+
+        return $dlq ? $dlq->provision() : true;
+    }
+
+    public function send( array $envelope, $delay = 0, $replayed = false ) {
+
+        $row = array( 'r' => 0, 'e' => $envelope );
+
+        if ( $replayed ) {
+
+            $row['p'] = 1;
         }
 
         $delay = (int) $delay;
 
-        return $delay > 0
-            ? $this->append( $this->delayedFile( time() + $delay ), $line )
-            : $this->append( $this->event_file, $line );
+        return $this->appendRow( $delay > 0 ? $this->delayedFile( time() + $delay ) : $this->event_file, $row );
     }
 
     public function receive( $max, $visibility = 0 ) {
+
+        if ( ! $this->provisioned && ! $this->provision() ) {
+
+            return array();
+        }
 
         $max      = max( 1, (int) $max );
         $messages = array();
@@ -180,10 +220,25 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
                 continue;
             }
 
-            [ $before, $envelope ] = self::decodeLine( $line );
+            $row = self::decodeRow( $line );
 
             // The line a drain died on is received once more for each drain that died on it.
-            $redelivered = $offset === $this->resumed_at ? $this->state['stuck'] : 0;
+            $count = (int) $row['r'] + 1 + ( $offset === $this->resumed_at ? $this->state['stuck'] : 0 );
+
+            $this->outstanding[ $offset ] = $end;
+
+            $message = new \OWA\Core\IntakeMessage(
+                array( 'batch' => $this->batch, 'offset' => $offset, 'end' => $end ),
+                $row['e'], $count, isset( $row['raw'] ) ? (string) $row['raw'] : rtrim( $line, "\n" ), ! empty( $row['p'] ),
+                $row['why'] ?? null, $row['at'] ?? null );
+
+            // The redrive policy: past the limit it goes to the dead-letter queue, not to a consumer.
+            if ( $this->max_receives !== null && $count > $this->max_receives ) {
+
+                $this->deadLetter( $message, sprintf( 'Received %d times without being ingested.', $count - 1 ) );
+
+                continue;
+            }
 
             // Recorded before it leaves, so a drain that dies on it is charged to it.
             if ( $offset === $this->state['settled'] && $this->state['in_hand'] !== $offset ) {
@@ -192,11 +247,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
                 $this->writeState();
             }
 
-            $this->outstanding[ $offset ] = $end;
-
-            $messages[] = new \OWA\Core\IntakeMessage(
-                array( 'batch' => $this->batch, 'offset' => $offset, 'end' => $end ),
-                $envelope, $before + 1 + $redelivered, rtrim( $line, "\n" ) );
+            $messages[] = $message;
         }
 
         return $messages;
@@ -209,11 +260,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
     public function release( \OWA\Core\IntakeMessage $message, $delay ) {
 
-        $ok = $message->envelope === null ? false
-            : $this->append( $this->delayedFile( time() + max( 0, (int) $delay ) ),
-                             self::encodeLine( $message->receive_count, $message->envelope ) );
+        $row = $this->rowOf( $message );
 
-        if ( ! $ok ) {
+        if ( $row === null || ! $this->appendRow( $this->delayedFile( time() + max( 0, (int) $delay ) ), $row ) ) {
 
             // Not written anywhere: leave it outstanding so it is delivered again.
             return false;
@@ -224,29 +273,51 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
     public function deadLetter( \OWA\Core\IntakeMessage $message, $reason ) {
 
-        $letter = array(
-            'at'     => time(),
-            'reason' => (string) $reason,
-            'r'      => $message->receive_count,
-        );
+        $dlq = $this->deadLetterQueue();
 
-        if ( $message->envelope !== null ) {
+        if ( ! $dlq ) {
 
-            $letter['e'] = $message->envelope;
-
-        } else {
-
-            $letter['raw'] = $message->raw;
+            // A dead-letter queue has none: what is in one stays until replayed or removed.
+            return false;
         }
 
-        $line = json_encode( $letter, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+        $row = $message->envelope !== null
+            ? array( 'r' => $message->receive_count, 'e' => $message->envelope )
+            : array( 'r' => $message->receive_count, 'raw' => $message->raw );
 
-        if ( $line === false || ! $this->append( $this->dead_path . date( 'Y-m-d' ) . '.txt', $line ) ) {
+        if ( $message->replayed ) {
+
+            $row['p'] = 1;
+        }
+
+        $row['why'] = (string) $reason;
+        $row['at']  = time();
+
+        if ( ! $dlq->appendRow( $dlq->event_file, $row ) ) {
 
             return false;
         }
 
         return $this->settle( $message );
+    }
+
+    public function deadLetterQueue() {
+
+        if ( $this->is_dead_letter ) {
+
+            return null;
+        }
+
+        if ( ! $this->dlq ) {
+
+            $this->dlq = new self( array(
+                'path'           => $this->queue_dir . 'dead-letter/',
+                'queue_name'     => $this->queue_name . '-dlq',
+                'is_dead_letter' => true,
+            ) );
+        }
+
+        return $this->dlq;
     }
 
     public function isProbablyEmpty() {
@@ -274,12 +345,42 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return true;
     }
 
+    public function stats() {
+
+        clearstatcache();
+
+        $oldest = null;
+
+        foreach ( $this->waitingFiles() as $path ) {
+
+            // A retry waiting out its back-off is not a backlog until it is due.
+            if ( strpos( $path, $this->delayed_path ) === 0 && (int) basename( $path ) > time() ) {
+
+                continue;
+            }
+
+            $m = @filemtime( $path );
+
+            if ( $m !== false && filesize( $path ) > 0 ) {
+
+                $oldest = $oldest === null ? $m : min( $oldest, $m );
+            }
+        }
+
+        return array(
+            'messages'   => $this->depth(),
+            // Of what is due. A batch's mtime is its last line's: an underestimate for its first.
+            'oldest_age' => $oldest === null ? null : max( 0, time() - $oldest ),
+        );
+    }
+
     // ---------------------------------------------------------------------
     // Housekeeping
     // ---------------------------------------------------------------------
 
     /**
-     * Delete archived batches and dead letters older than $interval seconds.
+     * Delete archived batches, this queue's and its dead-letter queue's,
+     * older than $interval seconds.
      *
      * @param  int $interval
      * @return int how many files
@@ -288,25 +389,24 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         $removed = 0;
 
-        foreach ( array( $this->archive_path, $this->dead_path ) as $dir ) {
+        foreach ( self::files( $this->archive_path ) as $name ) {
 
-            foreach ( self::files( $dir ) as $name ) {
+            $path = $this->archive_path . $name;
 
-                $path = $dir . $name;
+            if ( filemtime( $path ) < time() - (int) $interval && @unlink( $path ) ) {
 
-                if ( filemtime( $path ) < time() - (int) $interval && @unlink( $path ) ) {
-
-                    $removed++;
-                }
+                $removed++;
             }
         }
 
-        return $removed;
+        $dlq = $this->deadLetterQueue();
+
+        return $removed + ( $dlq ? $dlq->pruneArchive( $interval ) : 0 );
     }
 
     /**
-     * Lines waiting, for diagnostics and tests: events.txt, the batches and
-     * the delayed files. Reads every file, so not for a hot path.
+     * Lines waiting: events.txt, the batches and the delayed files. Reads
+     * every file, so for diagnostics and tests, not a hot path.
      *
      * @return int
      */
@@ -314,17 +414,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         $n = 0;
 
-        foreach ( array_merge(
-            array( $this->event_file ),
-            array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path ) ),
-            array_map( fn ( $f ) => $this->processing_path . $f, self::files( $this->processing_path, '.txt' ) ),
-            array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path ) )
-        ) as $path ) {
+        foreach ( $this->waitingFiles() as $path ) {
 
-            if ( is_file( $path ) ) {
-
-                $n += count( array_filter( (array) file( $path ), fn ( $l ) => trim( $l ) !== '' ) );
-            }
+            $n += count( array_filter( (array) @file( $path ), fn ( $l ) => trim( $l ) !== '' ) );
         }
 
         return $n;
@@ -390,26 +482,72 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     // Lines
     // ---------------------------------------------------------------------
 
-    /** @return string|null one line, without its newline */
-    private static function encodeLine( $received, array $envelope ) {
-
-        $json = json_encode( array( 'r' => (int) $received, 'e' => $envelope ),
-            JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
-
-        return $json === false ? null : $json;
-    }
-
-    /** @return array [ times received before, envelope or null ] */
-    private static function decodeLine( $line ) {
+    /** @return array r, e (array|null), and p, why, at, raw when present */
+    private static function decodeRow( $line ) {
 
         $row = json_decode( $line, true );
 
-        if ( ! is_array( $row ) || ! isset( $row['e'] ) || ! is_array( $row['e'] ) ) {
+        if ( ! is_array( $row ) || ! ( ( isset( $row['e'] ) && is_array( $row['e'] ) ) || isset( $row['raw'] ) ) ) {
 
-            return array( 0, null );
+            // Not a line this queue wrote: half-written, or a 1.x serialized event.
+            return array( 'r' => 0, 'e' => null );
         }
 
-        return array( max( 0, (int) ( $row['r'] ?? 0 ) ), $row['e'] );
+        $row['r'] = max( 0, (int) ( $row['r'] ?? 0 ) );
+        $row['e'] = isset( $row['e'] ) && is_array( $row['e'] ) ? $row['e'] : null;
+
+        return $row;
+    }
+
+    /** What release() re-queues: the message as it was, its count kept. */
+    private function rowOf( \OWA\Core\IntakeMessage $message ) {
+
+        if ( $message->envelope !== null ) {
+
+            $row = array( 'r' => $message->receive_count, 'e' => $message->envelope );
+
+        } elseif ( $message->raw !== '' ) {
+
+            // A dead letter that never decoded, kept as it was.
+            $row = array( 'r' => $message->receive_count, 'raw' => $message->raw );
+
+        } else {
+
+            return null;
+        }
+
+        if ( $message->replayed ) {
+
+            $row['p'] = 1;
+        }
+
+        foreach ( array( 'why' => $message->reason, 'at' => $message->dead_at ) as $k => $v ) {
+
+            if ( $v !== null ) {
+
+                $row[ $k ] = $v;
+            }
+        }
+
+        return $row;
+    }
+
+    /** Append one row; the directory is made on first use, as provision() would. */
+    private function appendRow( $path, array $row ) {
+
+        $line = json_encode( $row, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+
+        if ( $line === false ) {
+
+            return false;
+        }
+
+        if ( ! is_dir( dirname( $path ) ) && ! $this->provision() ) {
+
+            return false;
+        }
+
+        return $this->append( $path, $line );
     }
 
     /**
@@ -458,6 +596,17 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     private function delayedFile( $due ) {
 
         return $this->delayed_path . (string) ( (int) ceil( $due / 60 ) * 60 ) . '.txt';
+    }
+
+    /** @return string[] every file holding waiting lines */
+    private function waitingFiles() {
+
+        return array_values( array_filter( array_merge(
+            array( $this->event_file ),
+            array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path ) ),
+            array_map( fn ( $f ) => $this->processing_path . $f, self::files( $this->processing_path, '.txt' ) ),
+            array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path ) )
+        ), 'is_file' ) );
     }
 
     // ---------------------------------------------------------------------
@@ -560,10 +709,6 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $state = is_file( $path . '.state' ) ? json_decode( (string) file_get_contents( $path . '.state' ), true ) : null;
         $state = is_array( $state ) ? $state : array();
 
-        $this->handle           = $fh;
-        $this->batch            = $path;
-        $this->outstanding      = array();
-        $this->at_end           = false;
         /*
          * A .state not marked clean belonged to a drain that died. It is
          * charged to the line at the settled offset only if that line was in
@@ -571,8 +716,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
          * settled, and records the next one as it hands it out. A drain that
          * died before reaching the line -- just after taking the batch, or
          * between receives -- charges nothing. A line that kills every drain
-         * reaches the receive limit and is dead-lettered without being run;
-         * the lines behind it are not charged for it.
+         * reaches the receive limit and is moved to the dead-letter queue
+         * without being run; the lines behind it are not charged for it.
          */
         $settled = (int) ( $state['settled'] ?? 0 );
         $died    = $state && empty( $state['clean'] )

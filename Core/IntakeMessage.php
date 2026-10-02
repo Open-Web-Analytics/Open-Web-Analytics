@@ -24,12 +24,24 @@ final class IntakeMessage {
     /** @var string the message as stored, for a dead letter of one that did not decode */
     public $raw;
 
-    public function __construct( $receipt, $envelope, $receive_count, $raw = '' ) {
+    /** @var bool sent back once from the dead-letter queue already */
+    public $replayed;
+
+    /** @var string|null in a dead-letter queue: why it is there */
+    public $reason;
+
+    /** @var int|null in a dead-letter queue: when it arrived */
+    public $dead_at;
+
+    public function __construct( $receipt, $envelope, $receive_count, $raw = '', $replayed = false, $reason = null, $dead_at = null ) {
 
         $this->receipt       = $receipt;
         $this->envelope      = is_array( $envelope ) ? $envelope : null;
         $this->receive_count = max( 1, (int) $receive_count );
         $this->raw           = (string) $raw;
+        $this->replayed      = (bool) $replayed;
+        $this->reason        = $reason === null ? null : (string) $reason;
+        $this->dead_at       = $dead_at === null ? null : (int) $dead_at;
     }
 }
 
