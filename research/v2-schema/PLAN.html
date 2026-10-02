@@ -3486,7 +3486,7 @@ which v2 still writes to and nothing drains.</p>
 rolls back, and <code>EventDispatch::notify()</code> re-queues the event. <strong>Nothing drains
 it</strong>: <code>cmd=processEventQueue</code> is not a scheduled job, so a beacon that hits a
 transient write failure today is rolled back, queued and never retried.</li>
-<li><strong>The file queue</strong> (<code>incoming_tracking_events</code>, <code>FileEventQueue</code>)
+<li><strong>The file queue</strong> (<code>incoming_tracking_events</code>, renamed <code>tracker-ingest</code> below; <code>FileEventQueue</code>)
 buffers beacons under <code>owa-data/</code> when <code>queue_incoming_tracking_events</code> is on. Its
 type is hard-coded <code>file</code>, its messages are <code>urlencode(serialize($event))</code>, and it
 is undrained on v2 for the same reason.</li>
@@ -3524,15 +3524,20 @@ SQS: at-least-once delivery, a visibility timeout, no ordering guarantee.</p>
 <tr><td><code>isProbablyEmpty()</code></td><td>a cheap check for a quiet minute: a <code>stat()</code> for files, one attribute call for SQS</td></tr>
 </tbody></table></div>
 <ul>
-<li><strong>Chosen by a setting</strong>, <code>tracking_queue_type</code>, install scope and
+<li><strong>Chosen by a setting</strong>, <code>tracker_ingest_queue_type</code>, install scope and
 config-file friendly so a static-config logging node can name it. Default <code>file</code>. A module
 registers its type under <code>event_queue_types</code>, as Base registers <code>file</code> today, and
 the setting points the existing queue at it.</li>
 <li><strong>Plugging an existing queue is not adding one.</strong> <code>registerEventQueue()</code> lets
 a module create a new named queue, and a type it registers serves only its own queues:
-<code>incoming_tracking_events</code> is registered with <code>'queue_type' =&gt; 'file'</code>
+the intake is registered with <code>'queue_type' =&gt; 'file'</code>
 written into its registration, so nothing outside Base can change what it runs on. The setting is
 that plug.</li>
+<li><strong>Named <code>tracker-ingest</code></strong>, for what it carries: beacons on their way into
+ingest. It was <code>incoming_tracking_events</code>. Its on/off setting,
+<code>queue_incoming_tracking_events</code>, becomes <code>tracker_ingest_queued</code>; 1.x installs set
+the old name, some in <code>owa-config.php</code>, so the old name is still read when the new one is
+absent.</li>
 <li><strong>A JSON envelope, not a PHP object</strong>: <code>{v, type, properties, queued_at}</code>.
 Readable by another system, and nothing is unserialized. The file implementation is rewritten to the
 contract and keeps its lines, locks and rotation.</li>
@@ -3543,15 +3548,15 @@ in either mode.</li>
 
 <h4><span class="num">2.30.4</span>The intake drain: pluggable too</h4>
 <ul>
-<li><strong>A scheduled job</strong>, <code>drain-tracking-queue</code>, every minute, generic over the
+<li><strong>A scheduled job</strong>, <code>drain-tracker-ingest</code>, every minute, generic over the
 contract: <code>isProbablyEmpty()</code> and stop, or receive batches until empty or a time budget
 runs out, ingest each, <code>ack</code> on success, <code>release</code> with back-off on failure,
 <code>deadLetter</code> past the receive limit. <code>alreadyIngested()</code> makes a redelivery
 harmless.</li>
-<li><strong>Or not the scheduler at all.</strong> <code>tracking_queue_drain</code> is
+<li><strong>Or not the scheduler at all.</strong> <code>tracker_ingest_drain</code> is
 <code>scheduler</code> (default) or <code>external</code>: a module whose backend has its own consumer
 &mdash; an SQS-triggered worker or Lambda &mdash; turns the job off and calls the same ingest step per
-message. <code>cli.php cmd=drain-tracking-queue</code> runs it by hand.</li>
+message. <code>cli.php cmd=drain-tracker-ingest</code> runs it by hand.</li>
 </ul>
 
 <h4><span class="num">2.30.5</span>The admin job queue</h4>
@@ -3573,7 +3578,7 @@ replacing its 15-minute poll; a Property&rsquo;s <code>cube-rebuild</code> when 
 <h4><span class="num">2.30.6</span>What goes</h4>
 <p><code>owa_queue_item</code> and its entity, <code>DbEventQueue</code>, the <code>processing</code>
 queue, <code>notify()</code>&rsquo;s re-queue branch (a listener enqueues its own retry),
-<code>cmd=processEventQueue</code> (replaced by <code>drain-tracking-queue</code>) and
+<code>cmd=processEventQueue</code> (replaced by <code>drain-tracker-ingest</code>) and
 <code>flush-processed-events</code>. An update drops the table. <code>HttpEventQueue</code>, which only
 sends to a remote OWA, is checked against the contract on the way.</p>
 <p class="note">A 1.x install with queue files not yet drained must drain them on 1.x before upgrading:
@@ -3585,8 +3590,8 @@ their lines are serialized objects the v2 file queue does not read. The v1 migra
 <li><strong>Admin job queue</strong>: the table, <code>enqueueJob</code>, the drain in
 <code>schedule-run</code>, the health screen.</li>
 <li><strong>Intake contract</strong>: the interface, the JSON envelope, the file implementation
-rewritten to it, <code>tracking_queue_type</code>, the <code>drain-tracking-queue</code> job and
-<code>tracking_queue_drain</code>.</li>
+rewritten to it, <code>tracker_ingest_queue_type</code>, the <code>drain-tracker-ingest</code> job and
+<code>tracker_ingest_drain</code>.</li>
 <li><strong>Ingest retry</strong> through the intake.</li>
 <li><strong>Remove</strong> <code>owa_queue_item</code> and its code.</li>
 <li><strong>Tracking bundles on the job queue</strong>: #1177&rsquo;s minutely check becomes a Profile
