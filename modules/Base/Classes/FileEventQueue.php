@@ -41,9 +41,9 @@ namespace OWA\Module\Base\Classes;
  * object lives, so the visibility argument to receive() is not needed: a
  * consumer that dies releases its lock with its process, and the next one
  * claims the batch again from the last point everything before was settled.
- * The .state sidecar records that point, how far the batch had been handed
- * out, and how many times it has been claimed, which is what a receive count
- * is made from.
+ * The .state sidecar, written as each line is settled, records that point and
+ * how many drains have died on the line at it; that line's receive count goes
+ * up, and the lines behind it are not charged.
  *
  * No Monolog, no PID file, and no shelling out to ps to check one.
  */
@@ -68,11 +68,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /** @var string|null its path */
     private $batch;
 
-    /** @var array its .state: claims, settled (byte offset), delivered (byte offset) */
+    /** @var array its .state: settled (byte offset), stuck, clean */
     private $state;
 
-    /** @var int how far the batch had been handed out before this claim */
-    private $delivered_before = 0;
+    /** @var int where this claim resumed: the line a drain that died was on */
+    private $resumed_at = 0;
 
     /** @var array<int,int> offset => end of each message received and not yet settled */
     private $outstanding = array();
@@ -175,20 +175,14 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
             [ $before, $envelope ] = self::decodeLine( $line );
 
-            // Handed out by a consumer that died: received once more for each claim since.
-            $redelivered = $offset < $this->delivered_before ? max( 0, $this->state['claims'] - 1 ) : 0;
+            // The line a drain died on is received once more for each drain that died on it.
+            $redelivered = $offset === $this->resumed_at ? $this->state['stuck'] : 0;
 
             $this->outstanding[ $offset ] = $end;
 
             $messages[] = new \OWA\Core\IntakeMessage(
                 array( 'batch' => $this->batch, 'offset' => $offset, 'end' => $end ),
                 $envelope, $before + 1 + $redelivered, rtrim( $line, "\n" ) );
-        }
-
-        if ( $this->handle ) {
-
-            $this->state['delivered'] = max( (int) $this->state['delivered'], (int) ftell( $this->handle ) );
-            $this->writeState();
         }
 
         return $messages;
@@ -500,12 +494,26 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $this->batch            = $path;
         $this->outstanding      = array();
         $this->at_end           = false;
-        $this->state            = array(
-            'claims'    => (int) ( $state['claims'] ?? 0 ) + 1,
-            'settled'   => (int) ( $state['settled'] ?? 0 ),
-            'delivered' => (int) ( $state['delivered'] ?? 0 ),
+        /*
+         * A .state not marked clean belonged to a drain that died: the line at
+         * its settled offset is the one it had in hand -- a drain ingests in
+         * order and records each line as it is settled -- so that line, and
+         * only that one, has been received once more. One that kills every
+         * drain reaches the receive limit and is dead-lettered; the lines
+         * behind it are not charged for it.
+         */
+        $died = $state && empty( $state['clean'] );
+
+        $this->handle      = $fh;
+        $this->batch       = $path;
+        $this->outstanding = array();
+        $this->at_end      = false;
+        $this->state       = array(
+            'settled' => (int) ( $state['settled'] ?? 0 ),
+            'stuck'   => (int) ( $state['stuck'] ?? 0 ) + ( $died ? 1 : 0 ),
+            'clean'   => false,
         );
-        $this->delivered_before = $this->state['delivered'];
+        $this->resumed_at  = $this->state['settled'];
 
         fseek( $fh, $this->state['settled'] );
         $this->writeState();
@@ -525,9 +533,18 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         unset( $this->outstanding[ $r['offset'] ] );
 
-        $this->state['settled'] = $this->outstanding
+        $settled = $this->outstanding
             ? min( array_keys( $this->outstanding ) )
             : (int) ftell( $this->handle );
+
+        if ( $settled !== $this->state['settled'] ) {
+
+            $this->state['settled'] = $settled;
+            $this->state['stuck']   = 0;
+        }
+
+        // Every line, so a drain that dies loses at most the one it was on.
+        $this->writeState();
 
         if ( $this->at_end && ! $this->outstanding ) {
 
@@ -568,6 +585,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             return;
         }
 
+        $this->state['clean'] = true;
         $this->writeState();
         flock( $this->handle, LOCK_UN );
         fclose( $this->handle );

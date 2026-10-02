@@ -188,22 +188,74 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertTrue($q->isProbablyEmpty());
     }
 
-    /** A consumer that dies leaves its batch; the next one gets what was not settled, counted again. */
-    public function testABatchHeldByADeadConsumerIsReceivedAgain(): void
+    /**
+     * Let a consumer go as a process that died would: its lock released, its
+     * .state as it last wrote it, never marked clean.
+     */
+    private function dies(FileEventQueue &$q): void
+    {
+        $states = array();
+        foreach ((array) glob($this->dir . 'processing/*.state') as $f) {
+            $states[$f] = file_get_contents($f);
+        }
+
+        $q = null;
+
+        foreach ($states as $f => $content) {
+            file_put_contents($f, $content);
+        }
+    }
+
+    /** A drain that dies leaves its batch; the next one resumes at the line it was on, and only that line is counted again. */
+    public function testABatchHeldByADeadConsumerResumesWhereItDied(): void
+    {
+        $q = $this->queue();
+        foreach (array('a', 'b', 'c') as $n) {
+            $q->send(self::envelope($n));
+        }
+
+        $got = $q->receive(10, 300);
+        $q->ack($got[0]);
+        $this->dies($q);
+
+        $again = $this->queue()->receive(10, 300);
+
+        $this->assertSame(array('b', 'c'), self::names($again), 'what was acked is not delivered again');
+        $this->assertSame(array(2, 1), array_map(fn ($m) => $m->receive_count, $again),
+            'the line it died on is counted; the line behind it is not');
+    }
+
+    /** A line that kills every drain climbs to the receive limit on its own. */
+    public function testALineThatKillsEveryDrainIsCountedEachTime(): void
+    {
+        $q = $this->queue();
+        $q->send(self::envelope('poison'));
+        $q->send(self::envelope('fine'));
+        $q->receive(10, 300);
+        $this->dies($q);
+
+        for ($death = 2; $death <= 6; $death++) {
+            $q   = $this->queue();
+            $got = $q->receive(10, 300);
+
+            $this->assertSame($death, $got[0]->receive_count, "after $death receives");
+            $this->assertSame(1, $got[1]->receive_count);
+
+            $this->dies($q);
+        }
+    }
+
+    /** A drain that stops cleanly -- its budget spent -- charges nothing. */
+    public function testACleanStopIsNotADeath(): void
     {
         $q = $this->queue();
         $q->send(self::envelope('a'));
         $q->send(self::envelope('b'));
 
-        $got = $q->receive(10, 300);
-        $q->ack($got[0]);
-        unset($q, $got);
+        $q->ack($q->receive(1, 300)[0]);
+        unset($q);
 
-        $next  = $this->queue();
-        $again = $next->receive(10, 300);
-
-        $this->assertSame(array('b'), self::names($again), 'what was acked is not delivered again');
-        $this->assertSame(2, $again[0]->receive_count);
+        $this->assertSame(array(1), array_map(fn ($m) => $m->receive_count, $this->queue()->receive(10, 300)));
     }
 
     /** Two consumers never hold the same batch. */
