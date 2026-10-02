@@ -1072,21 +1072,32 @@ final class PropertyAdminScreensTest extends TestCase
             'Grid headers are unsized inside the pane, so they inherit larger than the '
             . 'page heading.' );
 
-        $headline = substr( $css, strpos( $css, '.owa_hierarchyContent .panel_headline {' ) );
-        $headline = substr( $headline, 0, strpos( $headline, "\n}" ) );
+        // Sizes are the type scale's variables, declared on :root in px.
+        preg_match_all( '/(--owa-text-[a-z]+):\s*(\d+)px/', $css, $tokens, PREG_SET_ORDER );
+        $scale = array();
+        foreach ( $tokens as $token ) {
+            $scale[ $token[1] ] = (int) $token[2];
+        }
 
-        preg_match( '/font-size:\s*(\d+)px/', $headline, $h );
+        $sizeOf = function ( string $selector ) use ( $css, $scale ) {
+            $block = substr( $css, strpos( $css, $selector ) );
+            $block = substr( $block, 0, strpos( $block, "\n}" ) );
+            if ( preg_match( '/font-size:\s*(\d+)px/', $block, $m ) ) {
+                return (int) $m[1];
+            }
+            if ( preg_match( '/font-size:\s*var\((--owa-text-[a-z]+)\)/', $block, $m ) ) {
+                return $scale[ $m[1] ] ?? null;
+            }
+            return null;
+        };
 
-        $th = substr( $css, strpos( $css, '.owa_hierarchyContent #panel table.management th' ) );
-        $th = substr( $th, 0, strpos( $th, "\n}" ) );
+        $h = $sizeOf( '.owa_hierarchyContent .panel_headline {' );
+        $t = $sizeOf( '.owa_hierarchyContent #panel table.management th' );
 
-        preg_match( '/font-size:\s*(\d+)px/', $th, $t );
+        $this->assertNotNull( $h, 'the heading has no size to compare against' );
+        $this->assertNotNull( $t, 'the grid header has no size of its own' );
 
-        $this->assertNotEmpty( $h, 'the heading has no size to compare against' );
-        $this->assertNotEmpty( $t, 'the grid header has no size of its own' );
-
-        $this->assertLessThan(
-            (int) $h[1], (int) $t[1],
+        $this->assertLessThan( $h, $t,
             'A column label is larger than the page heading it sits under.' );
     }
 

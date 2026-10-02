@@ -3122,6 +3122,27 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
+ * Type scale for the admin and settings screens.
+ *
+ * Five sizes, named by role rather than by pixel, so a screen says what a piece
+ * of text IS and the scale decides how big that is. On :root because jQuery
+ * UI moves a dialog to the end of <body>, outside every OWA wrapper.
+ *
+ *   xl  page headline
+ *   lg  section heading, dialog title
+ *   md  body: intro text, field titles (bold), form controls, buttons
+ *   sm  field descriptions, help text, nav links, table cells
+ *   xs  notes beneath a field, breadcrumb, nav group heads, ids, badges
+ * ------------------------------------------------------------------------ */
+:root {
+    --owa-text-xl: 18px;
+    --owa-text-lg: 15px;
+    --owa-text-md: 13px;
+    --owa-text-sm: 12px;
+    --owa-text-xs: 11px;
+}
+
+/* ---------------------------------------------------------------------------
  * Site control: Organization / Property / Observation Profile
  *
  * Sits above the left nav, inside a 200px column, so COLLAPSED it must fit that
@@ -3143,7 +3164,7 @@ li.constraintRow {
 .owa_siteControl {
     position: relative;
     margin: 20px 0;
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
 }
 
 .owa_siteControlSummary {
@@ -3166,7 +3187,7 @@ li.constraintRow {
 /* The three tiers, weighted by how specific each is to where you are. */
 .owa_siteControlOrg {
     color: #999999;
-    font-size: 10px;
+    font-size: var(--owa-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -3174,7 +3195,7 @@ li.constraintRow {
 .owa_siteControlProperty {
     color: #505050;
     font-weight: bold;
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     word-break: break-word;
 }
 
@@ -3187,7 +3208,7 @@ li.constraintRow {
 .owa_siteControlDomain {
     display: block;
     color: #999999;
-    font-size: 11px;
+    font-size: var(--owa-text-xs);
     word-break: break-all;
 }
 
@@ -3196,7 +3217,7 @@ li.constraintRow {
 .owa_siteControlId {
     display: block;
     font-family: monospace;
-    font-size: 10px;
+    font-size: var(--owa-text-xs);
     color: #999999;
     word-break: break-all;
 }
@@ -3263,7 +3284,7 @@ li.constraintRow {
 
 .owa_siteControlColumnHead {
     color: #999999;
-    font-size: 10px;
+    font-size: var(--owa-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 8px 10px;
@@ -3352,7 +3373,7 @@ li.constraintRow {
 .owa_siteControlEdit {
     flex: 0 0 auto;
     color: #999999;
-    font-size: 11px;
+    font-size: var(--owa-text-xs);
     text-decoration: none;
     visibility: hidden;
     /*
@@ -3375,7 +3396,7 @@ li.constraintRow {
    each screen sits under a heading that says which thing it is about. */
 
 .owa_hierarchyNav {
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     /* Matches the tile's own inset, so the two read as one column rather than
        a card with a list floating beside it. */
     padding: 0 2px;
@@ -3391,7 +3412,7 @@ li.constraintRow {
 
 .owa_hierarchyNavHead {
     color: #999999;
-    font-size: 10px;
+    font-size: var(--owa-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 0 0 5px 8px;
@@ -3464,7 +3485,7 @@ li.constraintRow {
 }
 
 .owa_hierarchyContent .panel_headline {
-    font-size: 15px;
+    font-size: var(--owa-text-xl);
     font-weight: bold;
     color: #505050;
     background-color: transparent;
@@ -3498,7 +3519,7 @@ li.constraintRow {
 }
 
 .owa_hierarchyContent #panel legend {
-    font-size: 12px;
+    font-size: var(--owa-text-lg);
     font-weight: bold;
     color: #505050;
     text-transform: uppercase;
@@ -3513,14 +3534,14 @@ li.constraintRow {
    form below it break on the same column. */
 .owa_hierarchyContent #panel .owa_panelIntro {
     color: #666666;
-    font-size: 12px;
+    font-size: var(--owa-text-md);
     line-height: 1.55;
     margin: 0 0 22px 0;
 }
 
 .owa_hierarchyContent #panel .inline_h2 {
     color: #666666;
-    font-size: 12px;
+    font-size: var(--owa-text-lg);
     line-height: 1.5;
 }
 
@@ -3528,7 +3549,7 @@ li.constraintRow {
 .owa_hierarchyContent #panel .setting .label {
     color: #505050;
     font-weight: bold;
-    font-size: 12px;
+    font-size: var(--owa-text-md);
 }
 
 /*
@@ -3543,7 +3564,7 @@ li.constraintRow {
     position: static;
     left: auto;
     color: #999999;
-    font-size: 11px;
+    font-size: var(--owa-text-sm);
     margin-top: 4px;
 }
 
@@ -3577,13 +3598,13 @@ li.constraintRow {
  * outweighing both put the emphasis on the least important of the three.
  */
 .owa_hierarchyContent #panel .setting .title {
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     color: #505050;
 }
 
 .owa_hierarchyContent #panel .setting .description {
     color: #999999;
-    font-size: 11px;
+    font-size: var(--owa-text-sm);
     line-height: 1.55;
     max-width: 620px;
 }
@@ -3617,7 +3638,26 @@ li.constraintRow {
 .owa_hierarchyContent #panel input[type="password"] {
     border: 1px solid #cccccc;
     padding: 6px 8px;
-    font-size: 12px;
+    font-size: var(--owa-text-md);
+}
+
+/*
+ * Every control in the pane takes the page's font and the body size. A select
+ * or number input with no rule of its own fell back to the browser's -- 13.33px
+ * Arial beside 12px Helvetica.
+ */
+.owa_hierarchyContent #panel input,
+.owa_hierarchyContent #panel select,
+.owa_hierarchyContent #panel textarea,
+.owa_hierarchyContent #panel button {
+    font-family: inherit;
+    font-size: var(--owa-text-md);
+}
+
+/* The pane's buttons are body text, not the largest thing on the screen. */
+.owa_hierarchyContent #panel .owa-button {
+    font-size: var(--owa-text-md);
+    padding: 10px 24px;
 }
 
 .owa_hierarchyContent #panel input[type="text"]:focus,
@@ -3631,7 +3671,7 @@ li.constraintRow {
    two-line breadcrumb competes with the heading it is meant to sit under. */
 
 .owa_hierarchyCrumb {
-    font-size: 11px;
+    font-size: var(--owa-text-xs);
     color: #999999;
     margin: 0 0 10px 0;
     max-width: 780px;
@@ -3665,7 +3705,7 @@ li.constraintRow {
 .owa_hierarchyContent #panel table.management th {
     background-color: #fbfbfb;
     color: #999999;
-    font-size: 10px;
+    font-size: var(--owa-text-xs);
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -3676,7 +3716,7 @@ li.constraintRow {
 }
 
 .owa_hierarchyContent #panel table.management td {
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     color: #505050;
     padding: 10px;
     border: 0;
@@ -3691,7 +3731,7 @@ li.constraintRow {
    rather than competing with it. */
 .owa_hierarchyContent #panel .owa_optional {
     font-weight: normal;
-    font-size: 10px;
+    font-size: var(--owa-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #bbbbbb;
@@ -3709,7 +3749,7 @@ li.constraintRow {
 }
 
 .owa_siteControlAdd {
-    font-size: 10px;
+    font-size: var(--owa-text-xs);
     text-transform: none;
     letter-spacing: 0;
     color: #999999;
@@ -3742,7 +3782,7 @@ li.constraintRow {
 }
 
 .owa_dangerZoneTitle {
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     font-weight: bold;
     color: #99321f;
     margin: 0 0 6px 0;
@@ -3750,7 +3790,7 @@ li.constraintRow {
 
 .owa_dangerZoneBody {
     color: #666666;
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     line-height: 1.55;
     margin: 0 0 4px 0;
 }
@@ -3763,7 +3803,7 @@ li.constraintRow {
     background-color: #ffffff;
     color: #99321f;
     border: 1px solid #d9b8b1;
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     font-weight: normal;
     padding: 8px 16px;
     margin: 14px 0 0 0;
@@ -3813,7 +3853,7 @@ li.constraintRow {
 }
 
 .owa_confirmDialogFrame .ui-dialog-title {
-    font-size: 15px;
+    font-size: var(--owa-text-lg);
     font-weight: bold;
     color: #333333;
     float: none;
@@ -3830,7 +3870,7 @@ li.constraintRow {
 .owa_confirmDialog .owa_confirmBody {
     margin: 0;
     color: #555555;
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     line-height: 1.6;
 }
 
@@ -3849,7 +3889,7 @@ li.constraintRow {
    button pane, not at the foot of a form. */
 .owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button {
     margin: 0 0 0 8px;
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     font-weight: normal;
     padding: 8px 16px;
 }
@@ -3891,7 +3931,7 @@ li.constraintRow {
 
 .owa_emptyState p {
     color: #666666;
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     line-height: 1.6;
     margin: 0 0 4px 0;
 }
@@ -3900,7 +3940,7 @@ li.constraintRow {
    spaced rather than boxed -- a full pill per part would out-weigh the name
    beside it, which is what someone is actually scanning for. */
 .owa_goalEventCondition {
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     color: #555555;
 }
 
@@ -3913,7 +3953,7 @@ li.constraintRow {
    it is punctuation between the parts, not one of them. */
 .owa_goalEventJoin {
     color: #b5b5b5;
-    font-size: 11px;
+    font-size: var(--owa-text-xs);
     margin: 0 4px;
 }
 
@@ -3924,7 +3964,7 @@ li.constraintRow {
 
 .owa_goalEventValue {
     font-family: Menlo, Consolas, monospace;
-    font-size: 11px;
+    font-size: var(--owa-text-xs);
     background: #f4f4f4;
     border-radius: 3px;
     padding: 1px 5px;
@@ -4005,7 +4045,7 @@ li.constraintRow {
     flex: 1 1 auto;
     max-width: 280px;
     font-family: Menlo, Consolas, monospace;
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
 }
 
 /* The add and remove controls.
@@ -4026,7 +4066,7 @@ li.constraintRow {
     border-radius: 3px;
     background: #fbfbfb;
     color: #666666;
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     cursor: pointer;
     user-select: none;
 }
@@ -4050,7 +4090,7 @@ li.constraintRow {
 .owa_funnelStepMatches {
     display: inline-block;
     color: #999999;
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     padding: 0 8px;
     line-height: 28px;
     vertical-align: middle;
@@ -4075,7 +4115,7 @@ li.constraintRow {
     border-radius: 4px;
     background: #f7f7f7;
     color: #505050;
-    font-size: 13px;
+    font-size: var(--owa-text-md);
     font-weight: bold;
 }
 
@@ -4088,7 +4128,7 @@ li.constraintRow {
    value, so it is the same treatment .form-instructions gets. */
 .owa .owa_statedValueHint {
     color: #999999;
-    font-size: 11px;
+    font-size: var(--owa-text-xs);
     margin-top: 6px;
 }
 
@@ -4104,7 +4144,7 @@ li.constraintRow {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     font-weight: bold;
     white-space: nowrap;
 }
@@ -4123,7 +4163,7 @@ li.constraintRow {
 
 .owa_cubeStatusMismatch {
     color: #c62828;
-    font-size: 11px;
+    font-size: var(--owa-text-xs);
     margin-left: 6px;
 }
 
@@ -4132,7 +4172,7 @@ li.constraintRow {
     border: 1px solid #e6e6e6;
     border-radius: 3px;
     padding: 10px 12px;
-    font-size: 12px;
+    font-size: var(--owa-text-sm);
     overflow-x: auto;
 }
 
