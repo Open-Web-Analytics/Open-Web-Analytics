@@ -44,7 +44,7 @@ CREATE TABLE %s (
   `handled_by` varchar(255) DEFAULT NULL,
   `handler_duration` int DEFAULT NULL,
   PRIMARY KEY (`id`)
-)
+) %s
 SQL;
 
     /** @var string|null a table to use instead of the install's. TESTS ONLY. */
@@ -85,7 +85,7 @@ SQL;
             return true;
         }
 
-        if ( $db->query( sprintf( self::DDL, $table ) ) === false ) {
+        if ( $db->query( sprintf( self::DDL, $table, $db->tableOptions() ) ) === false ) {
 
             $this->e->notice( sprintf( 'Create table %s failed', $table ) );
 
