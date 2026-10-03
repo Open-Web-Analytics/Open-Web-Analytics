@@ -2096,7 +2096,8 @@ class CoreAPI {
 
         self::notice( sprintf(
             'No controller for action "%s" (%d): %s',
-            $action,
+            // As it arrived, but always a string: ?owa_do[]=x is an array.
+            is_scalar( $action ) ? (string) $action : gettype( $action ),
             $code,
             $exception ? $exception->getMessage() : 'not registered'
         ) );
