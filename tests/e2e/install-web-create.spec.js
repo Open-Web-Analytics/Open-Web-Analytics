@@ -62,7 +62,9 @@ test.describe('install: web wizard creating its own database', () => {
         ]);
 
         // The defaults step names the server and the database it connected to.
-        await expect(page.locator('input[name="user_id"]')).toBeVisible();
+        // The site field: the login form, where a wrong redirect lands, has a
+        // user_id field too.
+        await expect(page.locator('input[name="domain"]')).toBeVisible();
         const connected = await page.locator('body').innerText();
         expect(connected).toMatch(/Connected to (MySQL|MariaDB) \d+\.\d+/);
         expect(connected).toContain(name);
