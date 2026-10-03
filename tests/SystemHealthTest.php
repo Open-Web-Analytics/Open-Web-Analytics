@@ -125,7 +125,7 @@ final class SystemHealthTest extends TestCase
         $this->assertTrue($t->set_template('system_health.php'));
         $html = (string) $t->fetch();
 
-        foreach (['Scheduler', 'Recurring jobs', 'Job queue', 'Tracker ingest'] as $title) {
+        foreach (['Scheduler', 'Recurring jobs', 'Job queue', 'Tracker ingest', 'Tracker bundles', 'Data', 'Installation'] as $title) {
             $this->assertStringContainsString($title, $html);
         }
         $this->assertStringContainsString('cmd=jobs-retry', $html);
@@ -133,6 +133,129 @@ final class SystemHealthTest extends TestCase
         $this->assertMatchesRegularExpression('#<code title="Ingests the beacons[^"]*">drain-tracker-ingest</code>#', $html,
             'each job\'s description is on its name, from its registration');
         $this->assertStringContainsString('&lt;b&gt;it broke&lt;/b&gt;', $html, 'a job\'s error is escaped');
+    }
+
+    /** A fixture build and output directory for the bundle section, as TrackerBundleTest makes them. */
+    private function bundleFixture(bool $built = true): array
+    {
+        $root = sys_get_temp_dir() . '/owa-health-bundles-' . bin2hex(random_bytes(4)) . '/';
+        mkdir($root . 'dist', 0700, true);
+        mkdir($root . 'tracker', 0700, true);
+
+        if ($built) {
+            file_put_contents($root . 'dist/owa.tracker.js', '/*core*/');
+            file_put_contents($root . 'dist/owa.domstream.js', '/*chunk*/');
+            file_put_contents($root . 'dist/owa.tracker.manifest.json', json_encode([
+                'core'    => ['file' => 'owa.tracker.js', 'sha256' => hash('sha256', '/*core*/')],
+                'plugins' => ['domstream' => ['file' => 'owa.domstream.js', 'sha256' => hash('sha256', '/*chunk*/')]],
+            ]));
+        }
+
+        $was = [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir];
+        \OWA\Module\Base\Classes\TrackerBundle::$distDir = $root . 'dist/';
+        \OWA\Module\Base\Classes\TrackerBundle::$outDir  = $root . 'tracker/';
+
+        return [$root, $was];
+    }
+
+    private function dropBundleFixture(array $fixture): void
+    {
+        [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir] = $fixture[1];
+        exec('rm -rf ' . escapeshellarg($fixture[0]));
+    }
+
+    public function testWithoutABuildTheBundlesAreRed(): void
+    {
+        $fixture = $this->bundleFixture(false);
+
+        try {
+            $this->assertSame('red', self::levels(SystemHealth::bundles())['Not built']);
+        } finally {
+            $this->dropBundleFixture($fixture);
+        }
+    }
+
+    /** Every live Profile is listed; ones not published, and a new tracker waiting on an update, are attention. */
+    public function testUnpublishedBundlesAndANewTrackerAreReported(): void
+    {
+        $live = \OWA\Module\Base\Classes\TrackerBundle::siteIds();
+
+        if (!$live) {
+            $this->markTestSkipped('needs a live web Profile');
+        }
+
+        $fixture = $this->bundleFixture();
+        $c       = \OWA\Core\CoreAPI::configSingleton();
+        $was     = $c->get('base', 'tracker_version');
+
+        try {
+            $bundles = SystemHealth::bundles();
+            $this->assertSame($live, array_column($bundles['rows'], 'site_id'));
+            $this->assertSame('not published', $bundles['rows'][0]['state'], 'nothing published into the fixture yet');
+            $this->assertSame('yellow', self::levels($bundles)['Not current']);
+
+            foreach ($live as $site_id) {
+                \OWA\Module\Base\Classes\TrackerBundle::publish($site_id);
+            }
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion());
+            $this->assertSame('green', SystemHealth::bundles()['level'], 'all current');
+
+            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $this->assertSame('yellow', self::levels(SystemHealth::bundles())['New tracker']);
+        } finally {
+            $c->set('base', 'tracker_version', $was);
+            $this->dropBundleFixture($fixture);
+        }
+    }
+
+    /** What the installation holds, and how long it keeps it; raw's size from the server's statistics, not a count. */
+    public function testTheDataSectionCountsTheHierarchyAndEstimatesRaw(): void
+    {
+        $data = SystemHealth::data();
+
+        foreach (['Organizations', 'Properties', 'Profiles', 'Raw events', 'Retention', 'Fine partitions'] as $fact) {
+            $this->assertArrayHasKey($fact, $data['facts']);
+        }
+
+        $this->assertMatchesRegularExpression('/^about [\d,]+, [\d.]+ (bytes|KB|MB|GB) on disk$/', $data['facts']['Raw events']);
+        $this->assertGreaterThanOrEqual(count(\OWA\Module\Base\Classes\TrackerBundle::siteIds()),
+            (int) $data['facts']['Profiles'], 'active Profiles include every live web one');
+
+        $source = (string) file_get_contents(dirname(__DIR__) . '/modules/Base/Classes/SystemHealth.php');
+        $this->assertStringContainsString('information_schema.TABLES', $source, 'raw is sized from metadata');
+        $this->assertDoesNotMatchRegularExpression('/COUNT\(\*\)[^;]*\$raw/', $source, 'never counted');
+    }
+
+    /** No keep= is said plainly: nothing is deleted. */
+    public function testRetentionWithoutKeepSaysNothingIsDeleted(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting('base', 'scheduled_jobs');
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', []);
+            $this->assertStringStartsWith('nothing is deleted', SystemHealth::data()['facts']['Retention']);
+
+            \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', ['rotate-partitions' => ['params' => ['keep' => 24]]]);
+            $this->assertStringStartsWith('events older than 24 months are deleted', SystemHealth::data()['facts']['Retention']);
+
+            \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', ['rotate-partitions' => ['schedule' => 'off']]);
+            $this->assertSame('yellow', self::levels(SystemHealth::data())['Not rotated']);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', $was);
+        }
+    }
+
+    /** The installation section: versions, and exactly the installer's environment checks. */
+    public function testTheInstallationIsItsVersionsAndTheInstallersChecks(): void
+    {
+        $install = SystemHealth::installation();
+
+        $this->assertSame(['OWA', 'PHP', 'Schema', 'Tracker'], array_keys($install['facts']));
+        $this->assertSame((string) OWA_VERSION, $install['facts']['OWA']);
+
+        $checks = \OWA\Module\Base\Classes\EnvironmentCheck::all((string) \OWA\Core\CoreAPI::getSetting('base', 'config_file'));
+        $this->assertSame(array_column($checks, 'name'), array_column($install['findings'], 'label'),
+            'the same list the installer and cmd=instance-info read');
     }
 
     public function testThePageIsInTheSettingsNav(): void
