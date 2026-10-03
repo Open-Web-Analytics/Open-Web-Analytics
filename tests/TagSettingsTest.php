@@ -17,10 +17,14 @@ final class TagSettingsTest extends TestCase
         return \OWA\Core\CoreAPI::configSingleton();
     }
 
-    private function tagSet(): array
+    /** Base's tag fieldsets, one per job. */
+    const BASE_SETS = array('base.trackingPageViews', 'base.trackingClicks', 'base.trackingForms', 'base.trackingScroll',
+                            'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit');
+
+    private function tagSet(string $id = 'base.trackingClicks'): array
     {
-        $set = SettingsForm::registeredFieldSet('base.trackingTag');
-        $this->assertNotSame(array(), $set, 'base.trackingTag is registered');
+        $set = SettingsForm::registeredFieldSet($id);
+        $this->assertNotSame(array(), $set, "$id is registered");
 
         return $set;
     }
@@ -47,11 +51,18 @@ final class TagSettingsTest extends TestCase
 
     public function testEveryTagSettingIsDeclaredForTheInstallAndTheProperty(): void
     {
-        $set = $this->tagSet();
+        $keys = array();
 
-        $this->assertSame('tracking_tag', $set['group']);
+        foreach (self::BASE_SETS as $id) {
+            $set = $this->tagSet($id);
+            $this->assertSame('tracking_tag', $set['group'], $id);
+            $keys = array_merge($keys, $set['settings']);
+        }
 
-        foreach ($set['settings'] as $key) {
+        $this->assertCount(14, $keys, 'every tag setting Base declares, each in one fieldset');
+        $this->assertSame($keys, array_unique($keys), 'none in both');
+
+        foreach ($keys as $key) {
             $args = $this->config()->registeredField('base', $key);
 
             $this->assertNotNull($args, "$key is declared");
@@ -65,23 +76,38 @@ final class TagSettingsTest extends TestCase
     /** The visitor cookie is one per page, so its settings stop at the Property. */
     public function testThePropertyOnlySettingsAreNotOnTheProfileScreen(): void
     {
-        $html = SettingsForm::scopedFieldSet($this->tagSet(), 'profile', 'zz-tag-profile', 'owa_');
+        $this->assertStringContainsString('config[base.tracker_clicks]',
+            SettingsForm::scopedFieldSet($this->tagSet(), 'profile', 'zz-tag-profile', 'owa_'));
 
-        $this->assertStringContainsString('config[base.tracker_clicks]', $html);
+        $html = SettingsForm::scopedFieldSet($this->tagSet('base.trackingVisit'), 'profile', 'zz-tag-profile', 'owa_');
+
         $this->assertStringContainsString('config[base.tracker_session_cookie_days]', $html);
         $this->assertStringNotContainsString('config[base.tracker_visitor_cookie_days]', $html);
         $this->assertStringNotContainsString('config[base.tracker_cookie_domain]', $html);
 
-        $property = SettingsForm::scopedFieldSet($this->tagSet(), 'property', 'zz-tag-property', 'owa_');
+        $property = SettingsForm::scopedFieldSet($this->tagSet('base.trackingVisit'), 'property', 'zz-tag-property', 'owa_');
 
         $this->assertStringContainsString('config[base.tracker_visitor_cookie_days]', $property);
         $this->assertStringContainsString('config[base.tracker_cookie_domain]', $property);
     }
 
-    public function testTheInstallScreenHasTheTagFieldset(): void
+    /** The Tracking Tag screen heads each group with its legend and description, so every one needs both. */
+    public function testEveryTagGroupHasALegendAndADescription(): void
     {
-        $this->assertContains('Tracking Tag',
-            array_column(SettingsForm::pageFieldSets('base.optionsGeneral'), 'legend'));
+        foreach (SettingsForm::groupFieldSets('tracking_tag') as $set) {
+            $this->assertNotSame('', trim((string) ($set['legend'] ?? '')), $set['id'] . ' has a legend');
+            $this->assertNotSame('', trim((string) ($set['description'] ?? '')), $set['id'] . ' has a description');
+            $this->assertStringNotContainsString('&', (string) $set['description'], 'plain text: it is escaped when shown');
+        }
+    }
+
+    public function testTheInstallScreenHasTheTagFieldsets(): void
+    {
+        $ids = array_column(SettingsForm::pageFieldSets('base.optionsGeneral'), 'id');
+
+        foreach (self::BASE_SETS as $id) {
+            $this->assertContains($id, $ids);
+        }
     }
 
     /** @dataProvider refused */

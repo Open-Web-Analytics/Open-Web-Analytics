@@ -166,6 +166,54 @@ final class TrackerBundleTest extends TestCase
         return $config;
     }
 
+    /**
+     * What the Tracking Tag screen's pills show: a label for each feature the
+     * saved settings turn on, in the order config() turns them on, and a
+     * feature's command where nothing labels it.
+     */
+    public function testTrackedEventsAreTheFeaturesTheSettingsTurnOn(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('needs the settings store');
+        }
+
+        $events = TrackerBundle::trackedEvents(self::SITE);
+        $this->assertContains('Clicks', $events, 'clicks are on by default');
+
+        \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'base', 'tracker_clicks', false);
+        $this->assertNotContains('Clicks', TrackerBundle::trackedEvents(self::SITE), 'switched off, it goes');
+        $this->assertCount(count($events) - 1, TrackerBundle::trackedEvents(self::SITE), 'and nothing else changes');
+
+        $this->assertSame('Page interaction recording',
+            (new \OWA\Module\Domstream\Module())->labelFeatures(array())['trackDomStream'],
+            'a module labels the feature it adds');
+
+        static $registered = false;
+        if (!$registered) {
+            \OWA\Core\CoreAPI::registerFilter('tracker_bundle_config', array(self::class, 'addUnlabelledFeatureForTest'), 999);
+            $registered = true;
+        }
+
+        self::$withUnlabelled = true;
+        try {
+            $this->assertContains('trackSomethingNew', TrackerBundle::trackedEvents(self::SITE),
+                'a feature nothing labels is named by its command');
+        } finally {
+            self::$withUnlabelled = false;
+        }
+    }
+
+    private static bool $withUnlabelled = false;
+
+    public static function addUnlabelledFeatureForTest($config)
+    {
+        if (self::$withUnlabelled) {
+            $config['features'][] = array('trackSomethingNew');
+        }
+
+        return $config;
+    }
+
     /** The order the measurement requires: header, preamble, each chunk, then the core. */
     public function testABundleIsTheHeaderThePreambleTheChunksAndTheCore(): void
     {

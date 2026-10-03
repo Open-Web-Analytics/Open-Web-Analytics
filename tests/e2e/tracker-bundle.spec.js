@@ -110,10 +110,35 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
         await adminLogin(page);
         await page.goto(`?owa_do=base.sitesInvocation&owa_siteId=${SITE}`, { waitUntil: 'networkidle' });
 
-        const box = page.locator('.owa_trackerBundle');
+        const box = page.locator('.owa-tagStatus');
         await expect(box).toContainText(`public/tracker/${SITE}.js`);
         await expect(box).toContainText('Published');
         await expect(box).toContainText('This server sends no revalidation header for the tracker');
+    });
+
+    /*
+     * The copy button copies the tag exactly as the box shows it. The box
+     * scrolls rather than wrapping, so what is shown is what is pasted.
+     */
+    test('the copy button puts the tag on the clipboard', async ({ page, context }) => {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+        await adminLogin(page);
+        await page.goto(`?owa_do=base.sitesInvocation&owa_siteId=${SITE}`, { waitUntil: 'networkidle' });
+
+        const block = page.locator('.owa-codeBlock').first();
+        const shown = await block.locator('code').textContent();
+        expect(shown).toContain(`public/tracker/${SITE}.js`);
+
+        await block.getByRole('button', { name: 'Copy to clipboard' }).click();
+        await expect(block.locator('.owa-codeBlock__copy')).toContainText('Copied');
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(shown);
+
+        // The block is no wider than the panel it sits in.
+        const [blockWidth, panelWidth] = await page.evaluate(() => [
+            document.querySelector('.owa-codeBlock').getBoundingClientRect().width,
+            document.getElementById('panel').getBoundingClientRect().width,
+        ]);
+        expect(blockWidth).toBeLessThanOrEqual(panelWidth);
     });
 });
 

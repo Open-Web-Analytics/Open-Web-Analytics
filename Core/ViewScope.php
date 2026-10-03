@@ -50,6 +50,7 @@ namespace OWA\Core;
  * Declaring them also documents what a template is allowed to reach for.
  *
  * @method mixed choose_browser_icon($browser_type)
+ * @method string codeBlock($code, $language = 'HTML')
  * @method mixed createNonceFormField($action)
  * @method mixed displaySeriesAsSparkline($name, $result_set_obj, $id = '')
  * @method mixed escapeForXml($string)

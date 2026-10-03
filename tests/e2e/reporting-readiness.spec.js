@@ -105,7 +105,7 @@ test.describe('reporting readiness', () => {
             ]);
 
             await expect(page.locator('.panel_headline')).toHaveText('Tracking Tag');
-            await expect(page.getByText('No events received yet.')).toBeVisible();
+            await expect(page.getByText('None received yet.')).toBeVisible();
         } finally {
             await deleteProfile(page, siteId);
         }
@@ -124,6 +124,6 @@ test.describe('reporting readiness', () => {
         // The seeder writes raw rows for the fixture Profile.
         await gotoAction(page, 'base.sitesInvocation', `&owa_siteId=${FIXTURE.siteId}`);
 
-        await expect(page.getByText('Last event received:')).toBeVisible();
+        await expect(page.locator('.owa-tagStatus')).toContainText('Last received');
     });
 });

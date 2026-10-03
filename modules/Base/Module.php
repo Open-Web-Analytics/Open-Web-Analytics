@@ -339,31 +339,45 @@ class Module extends \OWA\Core\Module {
 
         /*
          * The tracking tag (PLAN 2.24.4), in the `tracking_tag` group so an active
-         * module adds its own fieldset beside it. One fieldset for every level:
-         * each screen shows the settings that level may hold.
+         * module adds its own fieldset beside it. Each fieldset serves every
+         * level: each screen shows the settings that level may hold.
+         *
+         * One per job, each with a description, so the Tracking Tag screen can
+         * show them as collapsed groups a person opens only for the one they want.
          */
-        $this->registerSettingsFieldSet( array(
-            'id'       => 'base.trackingTag',
-            'group'    => 'tracking_tag',
-            'order'    => 0,
-            'legend'   => 'Tracking Tag',
-            'settings' => array(
-                'tracker_page_views',
-                'tracker_clicks',
-                'tracker_forms',
-                'tracker_scroll',
-                'tracker_scroll_thresholds',
-                'tracker_site_search',
-                'tracker_site_search_params',
-                'tracker_download_extensions',
-                'tracker_exceptions',
-                'tracker_route_changes',
-                'tracker_url_fragments',
-                'tracker_visitor_cookie_days',
-                'tracker_session_cookie_days',
-                'tracker_cookie_domain',
-            ),
-        ) );
+        foreach ( array(
+            array( 'base.trackingPageViews', 'Page views',
+                'When the tracker sends a page view, and what identifies the page.',
+                array( 'tracker_page_views', 'tracker_route_changes', 'tracker_url_fragments' ) ),
+            array( 'base.trackingClicks', 'Clicks and downloads',
+                'Clicks on links and other elements, and which links count as downloads.',
+                array( 'tracker_clicks', 'tracker_download_extensions' ) ),
+            array( 'base.trackingForms', 'Forms',
+                'A visitor starting and submitting a form.',
+                array( 'tracker_forms' ) ),
+            array( 'base.trackingScroll', 'Scroll depth',
+                'How far down each page visitors get.',
+                array( 'tracker_scroll', 'tracker_scroll_thresholds' ) ),
+            array( 'base.trackingSearch', 'Site search',
+                'Searches made with your site’s own search box, read from the results page’s URL.',
+                array( 'tracker_site_search', 'tracker_site_search_params' ) ),
+            array( 'base.trackingErrors', 'JavaScript errors',
+                'Uncaught errors in your pages’ scripts.',
+                array( 'tracker_exceptions' ) ),
+            array( 'base.trackingVisit', 'Visits and cookies',
+                'How long the tracker’s cookies hold a visit and a visitor together, and the domain they are set on.',
+                array( 'tracker_session_cookie_days', 'tracker_visitor_cookie_days', 'tracker_cookie_domain' ) ),
+        ) as $order => list( $id, $legend, $description, $settings ) ) {
+
+            $this->registerSettingsFieldSet( array(
+                'id'          => $id,
+                'group'       => 'tracking_tag',
+                'order'       => $order,
+                'legend'      => $legend,
+                'description' => $description,
+                'settings'    => $settings,
+            ) );
+        }
     }
 
     function registerActions() {

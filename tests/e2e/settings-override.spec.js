@@ -88,23 +88,37 @@ test('a Profile setting inherits until its Override switch is on', async ({ page
 });
 
 /**
- * The Tracking Tag screen (PLAN 2.24.4): Base's tag fieldset first, a module's
+ * The Tracking Tag screen (PLAN 2.24.4): Base's two tag fieldsets first, a module's
  * after it, and a setting saved through its switch at Profile scope.
  */
 test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
     const TAG = `?owa_do=base.sitesInvocation&owa_siteId=${FIXTURE.siteId}`;
     const field = () => page.locator('select[name="config[base.tracker_clicks]"]');
     const sw = () => page.locator('input[name="override[base.tracker_clicks]"]');
+    const pills = () => page.locator('.owa-tagStatus .owa-pill');
+
+    // Clicks are in their own group, closed on every load.
+    const openClicks = () => page.locator('details[id="base.trackingClicks"] > summary').click();
+    const gotoTag = async () => {
+        await page.goto(TAG, { waitUntil: 'networkidle' });
+        await openClicks();
+    };
     const saveTag = () => Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle' }),
-        page.locator('input[type="submit"][value="Save Tag Settings"]').click(),
+        page.locator('input[type="submit"][value="Save and republish"]').click(),
     ]);
 
     await adminLogin(page);
     await page.goto(TAG, { waitUntil: 'networkidle' });
 
-    const legends = await page.locator('form[name="owa_tag_settings"] legend').allInnerTexts();
-    expect(legends[0].toLowerCase()).toBe('tracking tag');
+    // Groups, each closed on load, Base's first and a module's after.
+    const groups = page.locator('form[name="owa_tag_settings"] details.owa-settingsGroup');
+    const titles = await groups.locator('.owa-settingsGroup__title').allInnerTexts();
+    expect(titles.slice(0, 2)).toEqual(['Page views', 'Clicks and downloads']);
+    expect(await groups.evaluateAll((all) => all.filter((d) => d.open).length)).toBe(0);
+    await expect(field()).toBeHidden();
+    await openClicks();
+    await expect(field()).toBeVisible();
 
     // The visitor cookie is set per Property, so the Profile screen does not offer it.
     await expect(page.locator('[name="config[base.tracker_visitor_cookie_days]"]')).toHaveCount(0);
@@ -112,7 +126,7 @@ test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
     if (await sw().isChecked()) {
         await sw().uncheck();
         await saveTag();
-        await page.goto(TAG, { waitUntil: 'networkidle' });
+        await gotoTag();
     }
 
     try {
@@ -120,18 +134,23 @@ test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
         await field().selectOption('0');
         await saveTag();
 
-        await page.goto(TAG, { waitUntil: 'networkidle' });
+        await gotoTag();
         await expect(sw()).toBeChecked();
         await expect(field()).toHaveValue('0');
+
+        // The pills follow what is saved: clicks are no longer tracked.
+        await expect(pills()).not.toContainText(['Clicks']);
+        await expect(pills()).toContainText(['Page views']);
     } finally {
-        await page.goto(TAG, { waitUntil: 'networkidle' });
+        await gotoTag();
         if (await sw().isChecked()) {
             await sw().uncheck();
             await saveTag();
         }
     }
 
-    await page.goto(TAG, { waitUntil: 'networkidle' });
+    await gotoTag();
     await expect(sw()).not.toBeChecked();
+    await expect(pills()).toContainText(['Clicks']);
     await expect(field()).toBeDisabled();
 });

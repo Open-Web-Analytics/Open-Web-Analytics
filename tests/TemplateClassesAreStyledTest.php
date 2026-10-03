@@ -8,9 +8,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Every class a settings template uses is one a stylesheet defines.
  *
  * Custom Dimensions was written with field, field_help and submit, which no
- * stylesheet has, and rendered as bare browser defaults. The tracking-tag
- * textarea on Sites > Invocation was sized in columns and ran past its
- * container. Listed templates only: older ones carry JS hooks by class.
+ * stylesheet has, and rendered as bare browser defaults. Listed templates
+ * only: older ones carry JS hooks by class.
  */
 final class TemplateClassesAreStyledTest extends TestCase
 {
@@ -24,7 +23,7 @@ final class TemplateClassesAreStyledTest extends TestCase
             'cube status badge'         => ['cube_status_badge.php'],
             'system health'             => ['system_health.php'],
             'report not ready'          => ['report_not_ready.php'],
-            'invocation'        => ['invocation.php'],
+            'tracking tag'              => ['sites_invocation.php'],
         ];
     }
 
@@ -51,10 +50,23 @@ final class TemplateClassesAreStyledTest extends TestCase
         $this->assertSame([], $unstyled, 'classes no stylesheet defines');
     }
 
-    /** A width in columns ignores the container; the tag must fit it. */
-    public function testTheTrackingTagIsNotSizedInColumns(): void
+    /** The code block's classes come from Template::codeBlock(), not a template file. */
+    public function testTheCodeBlockIsStyled(): void
     {
-        $this->assertStringNotContainsString('cols=',
-            (string) file_get_contents(OWA_DIR . 'modules/Base/templates/invocation.php'));
+        $css = '';
+
+        foreach ((array) glob(OWA_DIR . 'modules/Base/css/*.css') as $file) {
+            $css .= file_get_contents($file);
+        }
+
+        $markup = (new \OWA\Core\Template('base'))->codeBlock('<b>x</b>');
+        preg_match_all('/class="([^"]+)"/', $markup, $m);
+
+        foreach (array_unique(preg_split('/\s+/', implode(' ', $m[1]))) as $class) {
+            if (strpos($class, 'fa') === 0) {
+                continue; // Font Awesome's
+            }
+            $this->assertMatchesRegularExpression('/\.' . preg_quote($class, '/') . '(?![A-Za-z0-9_-])/', $css, $class);
+        }
     }
 }
