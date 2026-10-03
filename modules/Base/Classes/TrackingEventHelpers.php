@@ -353,20 +353,6 @@ class TrackingEventHelpers {
     }
 
     /**
-     * What a property derives from: wire keys, request keys or property names,
-     * according to its `set_by`.
-     *
-     * @param  string $property
-     * @return string[]
-     */
-    public static function sourcesFor( $property ) {
-
-        $all = self::allProperties();
-
-        return (array) ( $all[ $property ]['from'] ?? array() );
-    }
-
-    /**
      * The properties an event of this name may carry.
      *
      * WHY THIS EXISTS. Three namespaces nearly-but-don't align here: the wire
@@ -1471,33 +1457,11 @@ class TrackingEventHelpers {
     }
     
     
-    static function isSocialNetwork( $host ) {
-	    
-	    $social_networks = self::getSocialNetworkList();
-
-        foreach ( $social_networks as $network ) {
-            
-            if ( stripos( $host, $network['domain'] ) !== false ) {
-                
-                \OWA\Core\CoreAPI::debug( 'Found social network: %s', $network['domain'] );
-                
-                return true;
-            }
-        }
-    }
-    
     static function getSearchEngineList() {
 	    
 	    return \OWA\Core\CoreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
     }
     
-    static function getSocialNetworkList() {
-	    
-	    return \OWA\Core\CoreAPI::loadConf( 'socialnetworks.php', 'tracking.social_network_registry' );
-    }
-
-
-
     /**
      * A canonical URL that is safe to store and to render.
      *
@@ -1753,14 +1717,6 @@ class TrackingEventHelpers {
         return strtolower( trim( $string ) );
     }
 
-
-    static function setSearchTerms ( $search_terms, $event ) {
-
-        if ( $search_terms && $search_terms != '(not set)' ) {
-
-            return trim( strtolower( $search_terms ) );
-        }
-    }
 
     /*
      * setUserName() and setEmailAddress() STOOD HERE, and go with the two
@@ -2226,15 +2182,6 @@ class TrackingEventHelpers {
 
 
 
-
-
-    /** As resolveCampaign(). Read by AdHandlers beside ad. */
-    static function resolveAdType( $ad_type, $event ) {
-
-        $tagged = self::taggedValue( $event, 'tagged_ad_type' );
-
-        return $tagged ? trim( $tagged ) : $ad_type;
-    }
 
 
     /*

@@ -383,7 +383,6 @@ class Module extends \OWA\Core\Module {
 
         $this->registerAction( 'base.addSiteRest',                   'OWA\\Module\\Base\\Controller\\AddSiteRest',                  'Controller/AddSiteRest.php' );
         $this->registerAction( 'base.addUserRest',                   'OWA\\Module\\Base\\Controller\\AddUserRest',                  'Controller/AddUserRest.php' );
-        $this->registerAction( 'base.apiRequest',                    'OWA\\Module\\Base\\Controller\\ApiRequest',                   'Controller/ApiRequest.php' );
         $this->registerAction( 'base.changeUserPasswordCli',         'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli',        'Controller/ChangeUserPasswordCli.php' );
         $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight',                'Controller/CorsPreflight.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
@@ -873,31 +872,6 @@ class Module extends \OWA\Core\Module {
         */
     }
 
-
-    /**
-     * Register Metrics
-     *
-     * The following lines register various data metrics.
-     */
-    /**
-     * The v1 metric vocabulary was here.
-     *
-     * REMOVED. v2's metrics replace it -- declared in config/metrics.php and
-     * resolved against the Property's cube -- and the reports that existed
-     * under v1 are driven by those now. There is no second vocabulary to keep
-     * working: the migrator denormalises v1's tracking data into v2's raw
-     * store, so no v1 reporting path survives it.
-     *
-     * Keeping both was not neutral. A name registered against BOTH a v1 fact
-     * table and the cube resolved to whichever the report's base entity
-     * happened to be, so a metric could exist for one report and not another,
-     * and a report mixing a v1-only metric with a cube-only one failed with no
-     * error anywhere -- the metric boxes simply did not render. That cost more
-     * to reason about than the vocabulary was worth.
-     *
-     * git history has the implementations if one is ever needed for comparison.
-     */
-    function registerMetrics() {}
 
     /**
      * And the v1 dimension vocabulary, removed for the same reason.

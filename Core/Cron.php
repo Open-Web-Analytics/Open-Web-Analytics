@@ -321,20 +321,6 @@ class Cron {
     }
 
     /**
-     * Is this schedule due, given the occurrence its last run satisfied?
-     *
-     * @param array    $parsed
-     * @param int|null $last_slot  epoch of the last satisfied occurrence; 0/null if never
-     * @param int      $now
-     * @param string   $timezone
-     * @return bool
-     */
-    public static function isDue( array $parsed, $last_slot, $now, $timezone ) {
-
-        return self::dueSlot( $parsed, $last_slot, $now, $timezone ) !== null;
-    }
-
-    /**
      * The occurrence that is due and unsatisfied, or null.
      *
      * The most recent matching minute at or before $now that is later than

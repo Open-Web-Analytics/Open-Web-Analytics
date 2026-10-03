@@ -152,22 +152,6 @@ class Report extends \OWA\Core\View {
         $this->subview->body->set('endDate', $end_date );
     }
 
-    /**
-     * Applies calling params
-     *
-     * @access     private
-     * @param     array $properties
-     */
-    function _setParams($params = null) {
-
-        if(!empty($params)) {
-            foreach ($params as $key => $value) {
-                if(!empty($value)) {
-                    $this->params[$key] = $value;
-                }
-            }
-        }
-    }
 }
 
 

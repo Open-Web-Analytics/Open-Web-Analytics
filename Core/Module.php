@@ -70,34 +70,11 @@ abstract class Module {
     var $author;
 
     /**
-     * URL for author of module
-     *
-     * @var mixed
-     */
-    var $author_url;
-
-    /**
-     * Wiki Page title. Used to generate link to OWA wiki for this module.
-     *
-     * Must be unique or else it will could clobber another wiki page.
-     *
-     * @var string
-     */
-    var $wiki_title;
-
-    /**
      * name used in display situations
      *
      * @var mixed
      */
     var $display_name;
-
-    /**
-     * Array of event names that this module has handlers for
-     *
-     * @var array
-     */
-    var $subscribed_events;
 
     /**
      * Array of link information for admin panels that this module implements.
@@ -136,13 +113,6 @@ abstract class Module {
      * @var mixed
      */
     var $metrics;
-
-    /**
-     * Array of graphs that are implemented by this module
-     *
-     * @var array
-     */
-    var $graphs;
 
     /**
      * The Module Group that the module belongs to.
@@ -216,20 +186,6 @@ abstract class Module {
     var $scheduled_jobs = array();
 
     /**
-     * API Methods
-     *
-     * @var array
-     */
-    var $api_methods = array();
-
-    /**
-     * Controllers
-     *
-     * @var array
-     */
-    var $actionControllers = array();
-
-    /**
      * Update from CLI Required flag
      *
      * Used by controllers to see if an update error was becuase it needs
@@ -271,7 +227,6 @@ abstract class Module {
         /**
          * Register Metrics
          */
-        $this->registerMetrics();
         $this->registerMetricsFromConfig();
 
         /**
@@ -716,15 +671,6 @@ abstract class Module {
     }
 
     /**
-     * Registers an admin panel with this module
-     * @depricated
-     */
-    function addAdminPanel($panel) {
-
-        return $this->registerSettingsPanel($panel);
-    }
-
-    /**
      * Adds a new Subgroup in the navigation
      *
      * @param string $subgroupName
@@ -786,7 +732,7 @@ abstract class Module {
      * Abstract hook for registering a module's reports.
      *
      * Called LAZILY -- from the registry, when a report is actually needed --
-     * and deliberately NOT from the constructor, which is where registerMetrics(),
+     * and deliberately NOT from the constructor, which is where
      * registerDimensions(), registerJobs() and the rest are called from.
      *
      * The constructor runs on every request, including every tracker beacon
@@ -897,19 +843,6 @@ abstract class Module {
             $this->entities[] = $entity_name;
         }
     }
-
-    /**
-     * Registers Entity
-     *
-     * Depreicated see registerEntity
-     *
-     * @depricated
-     */
-    function _addEntity($entity_name) {
-
-        return $this->registerEntity($entity_name);
-    }
-
 
     function getEntities() {
 
@@ -1137,15 +1070,6 @@ abstract class Module {
     }
 
     /**
-     * Deactivates and removes schema for the module
-     *
-     */
-    function uninstall() {
-
-        return;
-    }
-
-    /**
      * Places the Module into the active module list in the global configuration
      *
      */
@@ -1221,29 +1145,6 @@ abstract class Module {
     }
 
     /**
-     * Registers updates
-     *
-     */
-    function _registerUpdates() {
-
-        return;
-
-    }
-
-    /**
-     * Adds an update class into the update array.
-     * This should be used to within the _registerUpdates method or else
-     * it will not get called.
-     *
-     */
-    function _addUpdate($sequence, $class) {
-
-        $this->updates[$sequence] = $class;
-
-        return true;
-    }
-
-    /**
      * Adds an event processor class to the processor array. This is used to determin
      * which class to use to process a particular event
      */
@@ -1280,28 +1181,6 @@ abstract class Module {
         foreach( $event_types as $event_type) {
 	    
             $this->event_processors[$event_type] = $processor;
-        }
-    }
-
-    function registerMetric($metric_name, $classes, $params = array(), $label = '', $description = '', $group = '') {
-
-        if ( ! $label ) {
-            $label = $metric_name;
-        }
-
-        if ( ! $description ) {
-            $description = 'No description available.';
-        }
-
-        if ( ! is_array( $classes ) ) {
-
-            $classes = array($classes);
-        }
-
-        foreach ($classes as $class_name) {
-
-            $map = array('name' => $metric_name, 'class' => $class_name, 'params' => $params, 'label' => $label, 'description' => $description, 'group' => $group);
-            $this->metrics[$metric_name][] = $map;
         }
     }
 
@@ -1751,20 +1630,17 @@ abstract class Module {
         );
     }
 
+    /**
+     * A formatter for a data type the result sets do not format themselves:
+     * ResultSetManager::formatValue() falls back to it through
+     * Service::getFormatter().
+     *
+     * @param string   $type
+     * @param callable $formatter
+     */
     function registerFormatter($type, $formatter) {
 
         $this->formatters[$type] = $formatter;
-    }
-
-    function registerApiMethod($api_method_name, $user_function, $argument_names, $file = '', $required_capability = '') {
-
-        $map = array('callback' => $user_function, 'args' => $argument_names, 'file' => $file);
-
-        if ($required_capability) {
-            $map['required_capability'] = $required_capability;
-        }
-
-        $this->api_methods[$api_method_name] = $map;
     }
 
     /**
@@ -1878,17 +1754,6 @@ abstract class Module {
      * Called by a module's constructor; redefine in a concrete module class.
      */
     function registerJobs() {
-
-        return false;
-    }
-
-    /**
-     * Abstract method for registering individual Metrics
-     *
-     * This method is called by a module's constructor
-     * and should be redefined in a concrete module class.
-     */
-    function registerMetrics() {
 
         return false;
     }

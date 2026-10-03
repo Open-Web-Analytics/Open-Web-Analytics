@@ -115,18 +115,6 @@ parameters:
 			path: Core/Update.php
 
 		-
-			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\ChartData\:\:\$series_label\.$#'
-			identifier: property.notFound
-			count: 2
-			path: modules/Base/Classes/ChartData.php
-
-		-
-			message: '#^Result of method OWA\\Module\\Base\\Classes\\ChartData\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Classes/ChartData.php
-
-		-
 			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
@@ -251,12 +239,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Classes/Validator.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Controller/ApiRequest.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'

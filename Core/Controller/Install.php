@@ -34,7 +34,6 @@ namespace OWA\Core\Controller;
 
 class Install extends \OWA\Core\Controller {
 
-    var $is_installer = true;
     var $im;
 
     function __construct( $params ) {

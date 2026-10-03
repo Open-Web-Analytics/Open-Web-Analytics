@@ -195,22 +195,6 @@ class Base {
         return implode(' ', array_values($msg));
     }
 
-    /**
-     * Sets object attributes
-     *
-     * @param array $array
-     */
-    function _setObjectValues($array) {
-
-        foreach ($array as $n => $v) {
-
-                $this->$n = $v;
-
-            }
-
-        return;
-    }
-
     function __destruct() {
         \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
     }

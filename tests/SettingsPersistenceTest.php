@@ -207,12 +207,16 @@ final class SettingsPersistenceTest extends TestCase
             \OWA\Module\Base\Classes\Settings::databaseStateSettings()['base']
         );
 
+        // async_error_log_file, async_log_file, async_lock_file, db_class_dir,
+        // module_dir, templates_dir, search_engines.ini and query_strings.ini
+        // were on this list too. They were removed in v2.0 with nothing left
+        // that reads them, so a stored value has no effect.
         $original = [
-            'error_log_file','async_error_log_file','async_log_file','async_log_dir',
-            'async_lock_file','report_wrapper','db_type','db_host','db_port','db_name',
-            'db_user','db_password','db_class_dir','plugin_dir','module_dir',
-            'templates_dir','public_path','configuration_id','schema_version',
-            'install_complete','is_active','search_engines.ini','query_strings.ini',
+            'error_log_file','async_log_dir',
+            'report_wrapper','db_type','db_host','db_port','db_name',
+            'db_user','db_password','plugin_dir',
+            'public_path','configuration_id','schema_version',
+            'install_complete','is_active',
         ];
 
         foreach ($original as $key) {
@@ -427,7 +431,7 @@ final class SettingsPersistenceTest extends TestCase
      * They were written around base.report_wrapper, which is convenient -- a
      * code default and a documented history of being pinned -- and is also
      * config-file-only: a stored value there is an arbitrary file include.
-     * Base declares all 21 of those static now, so persistSetting refuses
+     * Base declares all of those static now, so persistSetting refuses
      * them, and the pruning rule is shown on a setting that can legitimately
      * hold a stored value.
      */

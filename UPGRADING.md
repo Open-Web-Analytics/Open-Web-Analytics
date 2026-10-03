@@ -275,6 +275,29 @@ Pinned by `tests/ActionResolutionTest.php`.
 
 ---
 
+### 6. The 1.x module hooks and the `do=` API — REMOVED in v2.0
+
+**Module methods removed.** None did anything a v2 module can use:
+
+- `registerMetric()` named a metric class per metric. Metrics are declared in
+  the module's metrics config and built as `base.configurableMetric`.
+- `registerApiMethod()` and the `do=` API it fed (`?owa_do=base.apiRequest&do=…`).
+  Use a REST route: `registerRestApiRoute()` in `registerApiMethods()`, served
+  from `api/`.
+- `addAdminPanel()`: use `registerSettingsPage()`.
+- `uninstall()`, which was an empty stub nothing called.
+- `registerMetrics()`, an empty hook.
+
+**`Caller` methods removed:** `placeHelperPageTags()`,
+`handleHelperPageTagsRequest()`, `handleRequestFromUrl()` and
+`setErrorHandler()`. The tracking tag comes from a Profile's Tracking Tag
+screen, or `CoreAPI::getJsTrackerBundleTag()`.
+
+`registerFormatter()` stays: `ResultSetManager` falls back to a module's
+formatter for a data type it does not format itself.
+
+---
+
 ## Deprecated in 2.0
 
 ### Tracker option `cookiePersistence`

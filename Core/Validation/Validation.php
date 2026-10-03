@@ -80,13 +80,6 @@ namespace OWA\Core\Validation;
          return $this->errorMsg;
      }
 
-     function setErrorMsgTemplate($string) {
-
-         $this->errorMsgTemplate = $string;
-
-         return;
-     }
-
      // depricated
      function setErrorMsg($msg) {
 
@@ -108,12 +101,6 @@ namespace OWA\Core\Validation;
          else:
              return true;
          endif;
-     }
-
-     function setConfig($name, $value) {
-
-         $this->conf[$name] = $value;
-         return;
      }
 
      function setConfigArray($array) {

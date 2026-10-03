@@ -121,18 +121,6 @@ class Geolocation {
         }
     }
     
-    function getLatitude() {
-        if (array_key_exists('latitude', $this->properties)) {
-            return $this->properties['latitude'];
-        }
-    }
-    
-    function getLongitude() {
-        if (array_key_exists('longitude', $this->properties)) {
-            return $this->properties['longitude'];
-        }
-    }
-
 }
 
 ?>

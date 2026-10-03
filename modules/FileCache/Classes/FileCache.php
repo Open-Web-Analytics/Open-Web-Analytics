@@ -226,11 +226,6 @@ class FileCache extends \OWA\Core\CacheType {
         return true;
     }
 
-    function setCacheDir($dir) {
-
-        $this->cache_dir = $dir;
-    }
-
     function acquire_lock() {
         // Acquire a write lock.
         $this->mutex = @fopen($this->cache_dir.$this->lock_file_name, 'w');

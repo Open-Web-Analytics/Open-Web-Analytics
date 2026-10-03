@@ -40,11 +40,9 @@ class Date {
     var $year;
     var $month;
     var $day;
-    var $is_leap_year;
     var $day_of_week;
     var $day_of_week_label;
     var $day_of_year;
-    var $day_of_year_label;
     var $week_of_year;
     var $hour;
     var $minute;
@@ -98,16 +96,8 @@ class Date {
         return $this->$name;
     }
 
-    function getDay() {
-        return $this->day;
-    }
-
     function getMonth() {
         return $this->month;
-    }
-
-    function getYear() {
-        return $this->year;
     }
 
     function getLabel($format = '') {

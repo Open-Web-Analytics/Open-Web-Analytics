@@ -61,13 +61,6 @@ class View extends \OWA\Core\Base {
     var $subview_rendered;
 
     /**
-     * CSS file for main template
-     *
-     * @var mixed
-     */
-    var $css_file;
-
-    /**
      * The priviledge level required to access this view
      * @depricated
      * @var string
@@ -108,8 +101,6 @@ class View extends \OWA\Core\Base {
     var $css = array();
 
     var $postProcessView = false;
-
-    var $renderJsInline;
 
     /**
      * Constructor
@@ -474,29 +465,6 @@ class View extends \OWA\Core\Base {
         $this->js[$uid]['ie_only'] = $ie_only;
     }
 
-    function concatinateJs() {
-
-        $js_libs = '';
-
-        foreach ($this->js as $lib) {
-
-            $js_libs .= file_get_contents($lib['path']);
-            $js_libs .= "\n\n";
-        }
-
-        $this->body->set('js_includes', $js_libs);
-    }
-
-    /**
-     * Sets flag to tell view to render the JS inline as <SCRIPT> blocks
-     * @todo not yet implemented
-     */
-    function renderJsInline() {
-
-        $this->renderJsInLine = true;
-    }
-
-
     /**
      * Sets the Priviledge Level required to access this view
      *
@@ -596,15 +564,6 @@ class View extends \OWA\Core\Base {
     function set($name, $value) {
 
         $this->data[$name] = $value;
-    }
-
-    function setSubViewProperty($name, $value) {
-
-        $this->subview->set($name, $value);
-    }
-
-    function getSubViewProperty($name) {
-        return $this->subview->get($name);
     }
 
     function setData($data) {

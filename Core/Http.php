@@ -52,36 +52,9 @@ class Http {
      */
     var $e;
 
-    /**
-     * The length of text contained in the snippet
-     *
-     * @var string
-     */
-    var $snip_len = 100;
-
-    /**
-     * The string that is added to the beginning and
-     * end of snippet text.
-     *
-     * @var string
-     */
-    var $snip_str = '...';
-
-    /**
-     * Anchor information for a particular link
-     *
-     * @var array
-     */
-    var $anchor_info = [];
-
     var $http;
 
     var $response;
-    var $response_headers;
-    var $response_code;
-
-    var $request_headers;
-
     function __construct() {
 	    
 	    $this->http = new Client( [
@@ -91,85 +64,6 @@ class Http {
 	    ] );
 
     }
-    /**
-     * Searches a fetched html document for the anchor of a specific url
-     *
-     * @param string $link
-     */
-    function extractAnchors() {
-	    
-	    $regex = '/<a\s[^>]*href\s*=\s*([\"\']??)(http|https[^\\1 >]*?)\\1[^>]*>s*(.*)<\/a>/simU';
-	    
-	    if( preg_match_all("$regex", $this->getResponseBody(), $matches, PREG_SET_ORDER ) ) {
-		   
-		    \OWA\Core\CoreAPI::debug( 'Found anchors:', $matches );
-		    
-		    return $matches;
-		}
-    }
-    
-    function extractAnchorText( $url ) {
-	    
-	    $anchors = $this->extractAnchors();
-	    
-	    $anchortext = '';
-	    
-	    if ( $anchors ) {
-		    
-		    foreach( $anchors as $match ) {
-			    
-		    	// match[0] = full matching <a> tag
-		    	// $match[2] = link address
-				// $match[3] = link text	
-		        
-		        //strip any HTML tags (i.e. img, span, etc)
-		        if ( $match[3] ) {
-			        
-		        	$match[3] = trim( \OWA\Module\Base\Classes\Sanitize::stripAllTags( $match[3] ) );
-		        }
-		        
-		        // if anything is left as anchortext then use that
-				if ( $match[3] && $url === $match[2] ) {
-					
-					$anchortext = $match[3];
-	        		
-					\OWA\Core\CoreAPI::debug( 'Anchor info:', $this->anchor_info );
-					
-					return \OWA\Core\Lib::inputFilter( $anchortext );
-				}
-			}
-		}
-    }
-
-    function extract_title() {
-
-        preg_match('/<title[^>]*>(.*?)<\/title>/', $this->getResponseBody(), $matches);
-
-        $title = null;
-
-        if ($matches && count($matches) > 0 && isset($matches[1])) {
-            $title = $matches[1];
-        }
-
-        \OWA\Core\CoreAPI::debug( 'referrer title extract:', $title );
-
-        return \OWA\Core\Lib::inputFilter( trim( (string) $title ), ['remove_html' => true] );
-    }
-
-    function strip_selected_tags($str, $tags = array(), $stripContent = false) {
-
-       foreach ($tags as $k => $tag){
-       
-           if ($stripContent == true) {
-                   $pattern = sprintf('#(<%s.*?>)(.*?)(<\/%s.*?>)#is', preg_quote($tag), preg_quote($tag));
-               $str = preg_replace($pattern,"",$str);
-           }
-           $str = preg_replace($pattern, '${2}',$str);
-       }
-       
-       return $str;
-   }
-   
    function getRequest($url, $arguments = '') {
 		
 		$this->response = '';

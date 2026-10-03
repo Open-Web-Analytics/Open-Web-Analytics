@@ -75,7 +75,6 @@ class Service extends \OWA\Core\Base {
             $this->_loadMetrics();
             $this->_loadDimensions();
             $this->_loadFormatters();
-            $this->_loadApiMethods();
             $this->_loadEventProcessors();
             $this->setInit();
 
@@ -188,27 +187,6 @@ class Service extends \OWA\Core\Base {
         }
     }
     
-    function checkForRequiredUpdates() {
-	    \OWA\Core\CoreAPI::debug( \OWA\Core\CoreAPI::configSingleton() );
-	    $am = \OWA\Core\CoreAPI::getActiveModules();
-	    
-	    foreach ($am as $k => $v) {
-		    
-            // check for schema updates
-            $check = $this->modules[ $v ]->isUpToDate();
-
-            if ($check != true) {
-                $this->markModuleAsNeedingUpdate($this->modules[ $v ]->name);
-            }
-        }
-        
-        // set schema update flag
-        if (!empty($this->modules_needing_updates)) {
-            $this->setUpdateRequired();
-        }
-    }
-
-
     function _loadEntities() {
 
         foreach ($this->modules as $k => $module) {
@@ -423,15 +401,6 @@ class Service extends \OWA\Core\Base {
     }
 
     /**
-     * @param string $name
-     * @return array|false
-     */
-    function getJob( $name ) {
-
-        return $this->getMapValue('scheduled_jobs', $name);
-    }
-
-    /**
      * @return array  every job, keyed by name
      */
     function getJobs() {
@@ -439,20 +408,6 @@ class Service extends \OWA\Core\Base {
         $jobs = $this->getMap('scheduled_jobs');
 
         return is_array( $jobs ) ? $jobs : array();
-    }
-
-    function _loadApiMethods() {
-
-        $method_map = array();
-
-        foreach ($this->modules as $k => $module) {
-
-            if (is_array($module->api_methods)) {
-                $method_map = array_merge($method_map, $module->api_methods);
-            }
-        }
-
-        $this->setMap('api_methods', $method_map);
     }
 
     function _loadDimensions() {
@@ -635,11 +590,6 @@ class Service extends \OWA\Core\Base {
         $this->install_required = true;
     }
 
-    function isInstallRequired() {
-
-        return $this->install_required;
-    }
-
     function addEntity($entity_name, $class) {
 
         $this->entities[$entity_name] = $class;
@@ -662,10 +612,6 @@ class Service extends \OWA\Core\Base {
             return false;
         }
 
-    }
-
-    function getAllModules() {
-        return $this->modules;
     }
 
     function getMetricClasses($name) {
@@ -704,22 +650,6 @@ class Service extends \OWA\Core\Base {
         return end($byEntity) ?: null;
     }
 
-    /**
-     * Every entity a normalized dimension is defined for.
-     *
-     * Nothing consumes this yet. It exists so that scoping can be written and
-     * tested against a real second registration before there is a second schema
-     * generation to depend on it.
-     */
-    function getDimensionEntities($name) {
-
-        if (! array_key_exists($name, $this->dimensions)) {
-            return array();
-        }
-
-        return array_keys($this->dimensions[$name]);
-    }
-
     function getDenormalizedDimension($name, $entity) {
 
         //print_r($this->denormalizedDimensions);
@@ -742,20 +672,6 @@ class Service extends \OWA\Core\Base {
         return $this->getMapValue('cli_commands', $command);
     }
 
-    function setCliCommandClass($command, $class) {
-
-        $this->setMapValue('cli_commands', $command, $class);
-    }
-
-    function getApiMethodClass($method_name) {
-
-        return $this->getMapValue('api_methods', $method_name);
-    }
-
-    function setApiMethodClass($method_name, $class) {
-
-        $this->setMapValue('api_methods', $method_name, $class);
-    }
 }
 
 

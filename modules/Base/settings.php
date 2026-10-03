@@ -33,15 +33,14 @@
  * install_complete, domain_aliases and goals are stored and have never had a
  * code default, and inventing one would put them within reach of the prune.
  *
- * The 21 config-file-only settings -- paths, stream targets, database
+ * The config-file-only settings -- paths, stream targets, database
  * credentials, report_wrapper -- are declared STATIC, which is the same
  * guarantee configFileOnlySettings() gives by listing them: never read from
  * the database. A stored error_log_file or report_wrapper is an RCE primitive,
  * so that list stays as a test asserting this file agrees with it.
  *
- * SEVEN SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
- * config_file, db_class_dir, templates_dir, plugin_dir, module_dir,
- * search_engines.ini and query_strings.ini. getDefaultSettingsArray() builds
+ * TWO SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
+ * config_file and plugin_dir. getDefaultSettingsArray() builds
  * those from OWA_DIR, so their value depends on where the installation lives
  * -- baking one into a static file made the declaration disagree with the code
  * the moment the checkout moved, which the configless CI run caught by running
@@ -56,7 +55,6 @@ return array(
     'settings' => array(
 
         'action_url' => array( 'default' => '' ),
-        'allow_slowly_changing_dimensions' => array( 'default' => true ),
         'announce_visitors' => array(
             'default'  => false,
             'storable' => true,
@@ -83,10 +81,7 @@ return array(
         'app_ns' => array( 'default' => '' ),
         'archive_old_events' => array( 'default' => true ),
         'assets_url' => array( 'default' => '' ),
-        'async_error_log_file' => array( 'default' => 'events_error.txt' ),
-        'async_lock_file' => array( 'default' => 'owa.lock' ),
         'async_log_dir' => array( 'default' => '' ),
-        'async_log_file' => array( 'default' => 'events.txt' ),
         'base_url' => array( 'default' => '' ),
         'cacheType' => array( 'default' => '' ),
         'cache_objects' => array( 'default' => false ),
@@ -127,7 +122,6 @@ return array(
                 . 'A purchase that names no currency is recorded in this one.',
         ),
         'currencyLocal' => array( 'default' => 'en_US' ),
-        'db_class_dir' => array(),
         'db_force_new_connections' => array( 'default' => true ),
         'db_host' => array( 'default' => '' ),
         'db_make_persistant_connections' => array( 'default' => false ),
@@ -235,7 +229,6 @@ return array(
         'maxCustomVars' => array( 'default' => 5 ),
         'memcachedPersistantConnections' => array( 'default' => true ),
         'memcachedServers' => array( 'default' => array() ),
-        'module_dir' => array(),
         'modules' => array( 'default' => array( 'base' ) ),
         'nonce_expiration_period' => array( 'default' => 7200 ),
         'notice_email' => array(
@@ -310,7 +303,6 @@ return array(
                 . 'to the use of tracking or others state parameters in your URLs. '
                 . 'Parameter names should be separated by comma.',
         ),
-        'query_strings.ini' => array(),
         /*
          * COMPUTED AT BOOT, never stored, and declared anyway.
          *
@@ -380,13 +372,10 @@ return array(
         ),
         'scheduled_jobs' => array( 'default' => array() ),
         'scheduler_enabled' => array( 'default' => true ),
-        'search_engines.ini' => array(),
         'session_length' => array( 'default' => 1800 ),
         'site_id' => array( 'default' => '' ),
-        'slowly_changing_dimension_entities' => array( 'default' => array() ),
         'source_param' => array( 'default' => 'source' ),
         'start_page' => array( 'default' => 'base.reportingHome' ),
-        'templates_dir' => array(),
         'theme' => array( 'default' => '' ),
         /*
          * 'timezone' is a type of its own, not a select with 400 options in the
@@ -551,7 +540,6 @@ return array(
             'pattern'  => '/^$|^\\.?[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/',
             'pattern_problem' => 'Tracker Cookie Domain is a domain name, such as example.com.',
         ),
-        'update_session_user_name' => array( 'default' => true ),
         'useStaticConfigOnly' => array( 'default' => false ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true ),
         // Set by Update034 when it re-keyed an installation that arrived still

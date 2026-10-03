@@ -102,20 +102,6 @@ class Lib {
     }
 
 
-    public static function decon_assoc($a_array) {
-
-        $data_arrays = array();
-
-        foreach ($a_array as $key => $value) {
-            //foreach ($value as $k => $v) {
-                $data_arrays[$key][] = $value;
-
-            //}
-        }
-
-        return $data_arrays;
-    }
-
     /**
      * Array of Current Time
      *
@@ -218,142 +204,6 @@ class Lib {
     }
 
 
-    /**
-     * Sets the suffix for Days used in Date labels
-     * @depricated
-     * @param string $day
-     * @return string
-     */
-    public static function setDaySuffix($day) {
-
-        switch ($day) {
-
-            case "1":
-                $day_suffix = 'st';
-                break;
-            case "2":
-                $day_suffix = 'nd';
-                break;
-            case "3":
-                $day_suffix = 'rd';
-                break;
-            default:
-                $day_suffix = 'th';
-        }
-
-        return $day_suffix;
-
-    }
-
-    /**
-     * Generates the label for a date
-     * @depricated
-     * @param array $params
-     * @return string|false
-     */
-    public static function getDatelabel($params) {
-
-        switch ($params['period']) {
-
-            case "day":
-                return sprintf("%s, %d%s %s",
-                            \OWA\Core\Lib::get_month_label($params['month']),
-                            $params['day'],
-                            \OWA\Core\Lib::setDaySuffix($params['day']),
-                            $params['year']
-                        );
-                break;
-
-            case "month":
-                return sprintf("%s %s",
-                            \OWA\Core\Lib::get_month_label($params['month']),
-                            $params['year']
-                        );
-                break;
-
-            case "year":
-                return sprintf("%s",
-                            $params['year']
-                        );
-                break;
-            case "date_range":
-                return sprintf("%s, %d%s %s - %s, %d%s %s",
-                            \OWA\Core\Lib::get_month_label($params['month']),
-                            $params['day'],
-                            \OWA\Core\Lib::setDaySuffix($params['day']),
-                            $params['year'],
-                            \OWA\Core\Lib::get_month_label($params['month2']),
-                            $params['day2'],
-                            \OWA\Core\Lib::setDaySuffix($params['day2']),
-                            $params['year2']
-                        );
-                break;
-        }
-
-        return false;
-
-    }
-
-    /**
-     * Array of Reporting Periods
-     * @depricated
-     * @return array
-     */
-    public static function reporting_periods() {
-
-        return array(
-
-                    'today' => array('label' => 'Today'),
-                    'yesterday' => array('label' => 'Yesterday'),
-                    'this_week' => array('label' => 'This Week'),
-                    'this_month' => array('label' => 'This Month'),
-                    'this_year' => array('label' => 'This Year'),
-                    'last_week'  => array('label' => 'Last Week'),
-                    'last_month' => array('label' => 'Last Month'),
-                    'last_year' => array('label' => 'Last Year'),
-                    'last_half_hour' => array('label' => 'The Last 30 Minutes'),
-                    'last_hour' => array('label' => 'Last Hour'),
-                    'last_24_hours' => array('label' => 'The Last 24 Hours'),
-                    'last_seven_days' => array('label' => 'The Last Seven Days'),
-                    'last_thirty_days' => array('label' => 'The Last Thirty Days'),
-                    'same_day_last_week' => array('label' => 'Same Day last Week'),
-                    'same_week_last_year' => array('label' => 'Same Week Last Year'),
-                    'same_month_last_year' => array('label' => 'Same Month Last Year'),
-                    'date_range' => array('label' => 'Date Range')
-        );
-
-    }
-
-    /**
-     * Array of Date specific Reporting Periods
-     * @depricated
-     * @return array
-     */
-    public static function date_reporting_periods() {
-
-        return array(
-
-                    'day' => array('label' => 'Day'),
-                    'month' => array('label' => 'Month'),
-                    'year' => array('label' => 'Year'),
-                    'date_range' => array('label' => 'Date Range')
-        );
-
-    }
-
-    /**
-     * Gets label for a particular reporting period
-     *
-     * @param mixed $period
-     * @return unknown
-     */
-    public static function get_period_label($period) {
-
-        $periods = \OWA\Core\Lib::reporting_periods();
-
-        return $periods[$period]['label'];
-    }
-	
 	public static function isHttps() {
 		
 		// check for https
@@ -682,24 +532,6 @@ class Lib {
         return $base;
     }
 
-    public static function getRequestParams() {
-
-        $params = array();
-
-        if (!empty($_POST)) {
-            $params = $_POST;
-        } else {
-            $params = $_GET;
-        }
-
-        if (!empty($_COOKIE)) {
-
-            $params = array_merge($params, $_COOKIE);
-        }
-
-        return $params;
-    }
-
     public static function rekeyArray($array, $new_keys) {
 
         $new_keys = $new_keys;
@@ -934,75 +766,6 @@ class Lib {
         return null;
     }
 
-    /**
-     * Add constraints into SQL where clause
-     *
-     * @param     array $constraints
-     * @return     string|null $where
-     * @access     public
-     * @depricated
-     * @todo remove
-     */
-    function addConstraints($constraints) {
-
-        if (!empty($constraints)):
-
-            $count = count($constraints);
-
-            $i = 0;
-
-            $where = '';
-
-            foreach ($constraints as $key => $value) {
-
-                if (empty($value)):
-                    $i++;
-                else:
-
-                    if (!is_array($value)):
-                        $where .= $key . ' = ' . "'$value'";
-                    else:
-
-                        switch ($value['operator']) {
-                            case 'BETWEEN':
-                                $where .= sprintf("%s BETWEEN '%s' AND '%s'", $key, $value['start'], $value['end']);
-                                break;
-                            default:
-                                $where .= sprintf("%s %s '%s'", $key, $value['operator'], $value['value']);
-                                break;
-                        }
-
-
-                    endif;
-
-                    if ($i < $count - 1):
-
-                        $where .= " AND ";
-
-                    endif;
-
-                    $i++;
-
-                endif;
-
-            }
-            // needed in case all values in the array are empty
-            if (!empty($where)):
-                return $where;
-            else:
-                return null;
-            endif;
-
-        else:
-
-            return null;
-
-        endif;
-
-
-
-    }
-
     public static function assocFromString($string_state, $inner = '=>', $outer = '|||') {
 
         if (!empty($string_state)):
@@ -1070,52 +833,6 @@ class Lib {
 
       return $files;
 
-    }
-
-    public static function makeDateArray($result, $format) {
-
-        if (!empty($result)) {
-
-            $timestamps = array();
-
-            foreach ($result as $row) {
-
-                $timestamps[]= mktime(0,0,0,$row['month'],$row['day'],$row['year']);
-            }
-
-            return \OWA\Core\Lib::makeDates($timestamps, $format);
-
-        } else {
-
-            return array();
-        }
-
-    }
-
-    public static function makeDates($timestamps, $format) {
-
-        sort($timestamps);
-
-            $new_dates = array();
-
-            foreach ($timestamps as $timestamp) {
-
-                $new_dates[] = date($format, $timestamp);
-
-            }
-
-        return $new_dates;
-
-    }
-
-    public static function html2txt($document){
-        $search = array('@<script[^>]*?>.*?</script>@si',  // Strip out javascript
-                       '@<style[^>]*?>.*?</style>@siU',    // Strip style tags properly
-                       '@<[\/\!]*?[^<>]*?>@si',            // Strip out HTML tags
-                       '@<![\s\S]*?--[ \t\n\r]*>@'         // Strip multi-line comments including CDATA
-        );
-        $text = preg_replace($search, '', $document);
-        return $text;
     }
 
     public static function escapeNonAsciiChars($string) {
@@ -1233,17 +950,6 @@ class Lib {
         return $params;
     }
 
-    public static function timestampToYyyymmdd($timestamp = '') {
-
-        if(empty($timestamp)) {
-            $timestamp = time();
-        }
-        //print "before date";
-        $yyyymmdd = date("Ymd", $timestamp);
-        ///print "after date";
-        return $yyyymmdd;
-    }
-
     public static function setContentTypeHeader($type = 'html') {
 
         if (!$type) {
@@ -1259,20 +965,6 @@ class Lib {
             $mime = $content_types[$type];
             header('Content-type: '.$mime);
         }
-    }
-
-    public static function array_values_assoc($assoc) {
-
-        $values = array();
-
-        foreach ($assoc as $k => $v) {
-
-            if (!empty($v)) {
-                $values[] = $v;
-            }
-        }
-
-        return $values;
     }
 
     public static function prepareCurrencyValue($string) {
@@ -1465,22 +1157,6 @@ class Lib {
           return $url;
     }
 
-    public static function iniGet( $name ) {
-
-        $b = ini_get( $name );
-
-        switch ( strtolower( $b ) ) {
-            case 'on':
-            case 'yes':
-            case 'true':
-                return true;
-
-            default:
-                return (bool) (int) $b;
-        }
-
-    }
-
     // better empty check when you need to accept these as valid, non-empty values:
     // - 0 (0 as an integer)
     //- 0.0 (0 as a float)
@@ -1490,17 +1166,6 @@ class Lib {
         if ( empty( $value ) && ! is_numeric( $value ) ) {
 	        
 	        return true;
-        }
-    }
-
-    public static function isIpAddressValid( $ip = '' ) {
-
-        if ( $ip && filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-              // it's valid
-              return true;
-        } else {
-              // it's not valid
-              return false;
         }
     }
 
@@ -1554,26 +1219,6 @@ class Lib {
 	    return rtrim( $url, '&');
     }
 
-    public static function moveFile( $oldfile, $newfile ) {
-
-        if ( file_exists( $oldfile ) ) {
-
-            if ( ! rename( $oldfile, $newfile ) ) {
-
-                if ( copy( $oldfile, $newfile ) ) {
-
-                    unlink( $oldfile );
-
-                    return true;
-                }
-
-            } else {
-
-                return true;
-            }
-        }
-    }
-    
     public static function anonymizeIp( $ip_address ) {
 	    
 	    $ipv4NetMask = "255.255.255.0";
@@ -1591,28 +1236,10 @@ class Lib {
         }
     }
     
-    public static function isIpv6SupportEnabled() {
-	    
-		if ( defined( 'AF_INET6' ) ) {
-			
-			return true;
-		}
-    }
-
-    public static function isValidIp( $ip_address ) {
-		
-		return filter_var( $ip_address, FILTER_VALIDATE_IP, [] );
-    }
-
     // check to see if the IP address falls within known private IP ranges
     public static function isNotPrivateIp( $ip_address ) {
 
 		return filter_var( $ip_address, FILTER_VALIDATE_IP, ['flags' => FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ] );
-    }
-    
-    public static function isValidIpv6( $ip_address ) {
-	    
-	    return filter_var( $ip_address, FILTER_VALIDATE_IP, ['flags' => FILTER_FLAG_IPV6 ] );
     }
     
     public static function keyExistsNotEmpty( $key, $array ) {

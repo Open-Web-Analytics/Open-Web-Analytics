@@ -376,32 +376,9 @@ class PaginatedResultSet {
         return http_build_query($new,'', $seperator);
     }
     
-    function getResultSetAsArray() {
-
-        $set = array();
-
-        $set['labels'] = $this->labels;
-        $set['resultsRows'] = $this->resultsRows;
-        $set['count'] = $this->resultsTotal;
-        $set['page'] = $this->page;
-        $set['total_pages'] = $this->total_pages;
-        $set['more'] = $this->more;
-        $set['period'] = $this->getPeriodInfo();
-        return $set;
-    }
-
     function setLabels($labels) {
 
         $this->labels = $labels;
-    }
-
-    function displayPagination() {
-
-
-    }
-
-    function getPeriodInfo() {
-        return $this->periodInfo;
     }
 
     function setPeriodInfo($info) {
@@ -415,92 +392,14 @@ class PaginatedResultSet {
         }
     }
 
-    function getAllLabels() {
-
-        return $this->labels;
-    }
-
-
-    function formatResults( $format ) {
-
-        $formats = array('html' => 'resultSetToHtml',
-                         'json'    =>    'resultSetToJson',
-                         'xml'    =>    'resultSetToXml',
-                         'php'    =>    'resultSetToSerializedPhp',
-                         'csv'    =>    'resultSetToCsv',
-                         'debug' => 'resultSetToDebug');
-
-        if ( array_key_exists( $format, $formats ) ) {
-
-            $method = $formats[ $format ];
-
-            return $this->$method();
-
-        } else {
-
-            \OWA\Core\CoreAPI::debug("Format '$format' is not supported.");
-            return $this;
-        }
-    }
-
     // @todo move this to a proper xml view
-    function resultSetToXml() {
-
-        $t = new \OWA\Core\Template;
-
-        $t->set_template('resultSetXml.php');
-        $t->set('rs', $this);
-
-        return $t->fetch();
-    }
-
     //json formatting has been moved to owa_jsonView
-    function resultSetToJson() {
-
-        return $this;
-    }
-
-    function resultSetToDebug() {
-
-        return print_r($this, true);
-    }
-
-    function resultSetToSerializedPhp() {
-        return serialize($this);
-    }
-
-    function resultSetToHtml($class = 'dimensionalResultSet') {
-        $t = new \OWA\Core\Template;
-
-        $t->set_template('resultSetHtml.php');
-        $t->set('rs', $this);
-        $t->set('class', $class);
-
-        return $t->fetch();
-    }
-
     function getDataRows() {
         return $this->resultsRows;
     }
 
     function getResultsRows() {
         return $this->resultsRows;
-    }
-
-    function addLinkToRowItem($item_name, $template, $subs) {
-
-
-        foreach ($this->resultsRows as $k => $row) {
-
-            $sub_array = array();
-
-            foreach ($subs as $sub) {
-                $sub_array[] = urlencode($this->resultsRows[$k][$sub]['value']);
-            }
-
-            $this->resultsRows[$k][$item_name]['link'] = vsprintf($template, $sub_array);
-        }
-
     }
 
     function getSeries($name) {
