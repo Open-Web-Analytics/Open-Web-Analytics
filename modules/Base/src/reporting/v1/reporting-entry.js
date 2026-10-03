@@ -86,6 +86,8 @@ import './owa.kpibox.js';
 // rest; it augments OWA and delegates one document-level handler.
 import './owa.confirm.js';
 import './owa.settingsoverride.js';
+// The copy button on a code block (Template::codeBlock()).
+import './owa.copy.js';
 // The add-a-Profile form: shows only the fields the answers make relevant.
 import './owa.profileform.js';
 // Funnel steps on the goal event screen: the constraint rows' + and X are

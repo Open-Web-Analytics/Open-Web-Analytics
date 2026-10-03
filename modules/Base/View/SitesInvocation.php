@@ -44,7 +44,7 @@ class SitesInvocation extends \OWA\Core\View {
 
 
         //page title
-        $this->t->set('page_title', 'Tracking Tags');
+        $this->t->set('page_title', 'Tracking Tag');
         $this->body->set('site', $site);
         $this->body->set('name', $name);
         $this->body->set('options', array());
@@ -65,5 +65,7 @@ class SitesInvocation extends \OWA\Core\View {
         $this->body->set( 'bundle_url', $bundle::url( $this->get( 'site_id' ) ) );
         $this->body->set( 'bundle_status', $bundle::status( $this->get( 'site_id' ) ) );
         $this->body->set( 'bundle_cache', (array) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cache_headers' ) );
+        // What the saved settings have the tracker record, one pill each.
+        $this->body->set( 'tracked_events', $bundle::trackedEvents( $this->get( 'site_id' ) ) );
     }
 }

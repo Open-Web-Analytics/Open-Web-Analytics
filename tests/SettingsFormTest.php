@@ -98,11 +98,12 @@ final class SettingsFormTest extends TestCase
     {
         $sets = \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral');
 
-        // The page's own, in order, then its group's: Base's tag fieldset first,
-        // then any an active module added.
+        // The page's own, in order, then its group's: Base's tag fieldsets
+        // first, then any an active module added.
         $this->assertSame(
-            array('Tracking Request Processing', 'Visitor Announcements', 'Reporting', 'Tracking Tag'),
-            array_slice(array_column($sets, 'legend'), 0, 4),
+            array('Tracking Request Processing', 'Visitor Announcements', 'Reporting',
+                  'Page views', 'Clicks and downloads', 'Forms', 'Scroll depth', 'Site search', 'JavaScript errors', 'Visits and cookies'),
+            array_slice(array_column($sets, 'legend'), 0, 10),
             'the page renders its fieldsets in the order it registered them');
     }
 
@@ -120,7 +121,9 @@ final class SettingsFormTest extends TestCase
             \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), 'legend');
 
         $this->assertContains("A Module's Tag Settings", $legends);
-        $this->assertSame('Tracking Tag', $legends[3], 'after the fieldset of the module that owns the screen');
+        $this->assertSame('Page views', $legends[3], 'after the fieldsets of the module that owns the screen');
+        $this->assertGreaterThan(9, array_search("A Module's Tag Settings", $legends, true),
+            "after Base's seven, which declare their order");
     }
 
     /** A group is ordered by its fieldsets' declared order, not by when they registered. */
@@ -137,7 +140,9 @@ final class SettingsFormTest extends TestCase
             array_column(\OWA\Module\Base\Classes\SettingsForm::groupFieldSets('zz_group'), 'legend'));
 
         $tag = \OWA\Module\Base\Classes\SettingsForm::groupFieldSets('tracking_tag');
-        $this->assertSame('base.trackingTag', $tag[0]['id'], "Base's tag fieldset leads its own screen");
+        $this->assertSame(array('base.trackingPageViews', 'base.trackingClicks', 'base.trackingForms', 'base.trackingScroll',
+                                'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit'),
+            array_slice(array_column($tag, 'id'), 0, 7), "Base's tag fieldsets lead their own screen");
     }
 
     /** A page that names a fieldset nobody registered renders what it can. */

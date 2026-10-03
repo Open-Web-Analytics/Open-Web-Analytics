@@ -503,5 +503,274 @@
     align-items: flex-start;
 }
 
-/* The tracking tag on Sites > Invocation: as wide as its container, never wider. */
-.owa_trackingCode {width:100%; box-sizing:border-box; font-family:monospace; font-size:12px;}
+/*
+ * A code block with a copy button (Template::codeBlock(), owa.copy.js).
+ *
+ * The code scrolls sideways inside its box and never wraps, so what is copied
+ * is exactly what is shown. width:0 with min-width:100% fills the container
+ * while adding nothing to its minimum width: the admin screens sit in a table,
+ * and a table cell otherwise grows to the longest line of code.
+ */
+.owa-codeBlock {
+    width: 0;
+    min-width: 100%;
+    box-sizing: border-box;
+    margin: 10px 0 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    background: #f6f8fa;
+    overflow: hidden;
+}
+
+.owa-codeBlock__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px 4px 12px;
+    border-bottom: 1px solid #d0d7de;
+    background: #eef1f4;
+    font-size: var(--owa-text-xs, 11px);
+    color: #57606a;
+}
+
+.owa-codeBlock__language {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.owa-codeBlock__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #57606a;
+    font: inherit;
+    cursor: pointer;
+}
+
+.owa-codeBlock__copy:hover,
+.owa-codeBlock__copy:focus-visible {
+    border-color: #d0d7de;
+    background: #ffffff;
+    color: #1f2328;
+}
+
+/* Wide enough for "Copied", so the button does not change size when it says so. */
+.owa-codeBlock__copyLabel {
+    min-width: 3.4em;
+    text-align: left;
+}
+
+.owa-codeBlock__copy[data-owa-copy-state="copied"] {
+    color: #1a7f37;
+}
+
+.owa-codeBlock__code {
+    margin: 0;
+    padding: 12px;
+    overflow-x: auto;
+    white-space: pre;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #1f2328;
+    background: transparent;
+}
+
+/*
+ * The Tracking Tag screen (base.sitesInvocation): status, then the tag, then
+ * the settings built into it.
+ */
+.owa-tagScreen {
+    max-width: 860px;
+    min-width: 0;
+}
+
+.owa-tagScreen code {
+    overflow-wrap: anywhere;
+}
+
+.owa-tagScreen__section {
+    margin: 0 0 32px;
+}
+
+.owa-tagScreen__section > h2 {
+    margin: 0 0 6px;
+    font-size: var(--owa-text-xl, 18px);
+}
+
+.owa-tagScreen__lede {
+    margin: 0 0 12px;
+    color: #444444;
+    line-height: 1.5;
+}
+
+.owa-tagScreen details {
+    margin: 8px 0 0;
+}
+
+.owa-tagScreen__classic {
+    margin-top: 24px;
+    padding: 10px 14px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+}
+
+.owa-tagScreen__classic[open] > summary {
+    margin-bottom: 8px;
+}
+
+.owa-tagScreen summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.owa-tagStatus {
+    margin: 0;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.owa-tagStatus__row {
+    display: grid;
+    grid-template-columns: 9.5em minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 1px solid #e6e9ec;
+    border-left: 4px solid #d0d7de;
+}
+
+.owa-tagStatus__row:first-child {
+    border-top: 0;
+}
+
+.owa-tagStatus__row--ok      { border-left-color: #2da44e; }
+.owa-tagStatus__row--pending { border-left-color: #d4a72c; }
+.owa-tagStatus__row--problem { border-left-color: #cf222e; }
+
+.owa-tagStatus dt {
+    margin: 0;
+    font-weight: bold;
+}
+
+.owa-tagStatus dd {
+    margin: 0;
+    min-width: 0;
+    line-height: 1.5;
+}
+
+.owa-tagStatus__detail {
+    display: block;
+    color: #57606a;
+    font-size: var(--owa-text-sm, 12px);
+}
+
+@media (max-width: 600px) {
+
+    .owa-tagStatus__row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+    }
+}
+
+/* What the saved settings have the tracker record (TrackerBundle::trackedEvents()). */
+.owa-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 4px;
+    padding: 0;
+    list-style: none;
+}
+
+.owa-pill {
+    padding: 3px 10px;
+    border: 1px solid #b6e3c4;
+    border-radius: 999px;
+    background: #e9f7ee;
+    color: #1a5e30;
+    font-size: var(--owa-text-sm, 12px);
+    white-space: nowrap;
+}
+
+/*
+ * A group of settings, closed until opened (SettingsForm::scopedFieldSet()
+ * with $collapsible): its name and what it is for are the heading, so a person
+ * after one setting opens one group.
+ */
+.owa-settingsGroup {
+    margin: 0 0 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+}
+
+.owa-settingsGroup > summary {
+    display: grid;
+    grid-template-columns: 1em minmax(0, 1fr);
+    column-gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.owa-settingsGroup > summary::-webkit-details-marker,
+.owa-tagScreen__classic > summary::-webkit-details-marker {
+    display: none;
+}
+
+.owa-tagScreen__classic > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+}
+
+/* Drawn, not a glyph: the arrow characters are missing from some fonts. */
+.owa-settingsGroup > summary::before,
+.owa-tagScreen__classic > summary::before {
+    content: "";
+    grid-row: 1 / span 2;
+    width: 6px;
+    height: 6px;
+    margin: 6px 0 0 2px;
+    border-right: 2px solid #57606a;
+    border-bottom: 2px solid #57606a;
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+}
+
+.owa-settingsGroup[open] > summary::before,
+.owa-tagScreen__classic[open] > summary::before {
+    transform: rotate(45deg);
+}
+
+.owa-tagScreen__classic > summary::before {
+    margin-top: 0;
+}
+
+.owa-settingsGroup[open] > summary {
+    border-bottom: 1px solid #e6e9ec;
+}
+
+.owa-settingsGroup__title {
+    font-weight: bold;
+}
+
+.owa-settingsGroup__description {
+    grid-column: 2;
+    font-weight: normal;
+    color: #57606a;
+    font-size: var(--owa-text-sm, 12px);
+}
+
+/* As specific as the hierarchy panel's own fieldset rule (owa.report.css), which loads later. */
+.owa_hierarchyContent #panel .owa-settingsGroup > fieldset,
+.owa-settingsGroup > fieldset {
+    margin: 0;
+    padding: 4px 14px 10px 36px;
+    border: 0;
+}

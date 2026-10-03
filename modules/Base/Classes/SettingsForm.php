@@ -268,9 +268,12 @@ class SettingsForm {
      * @param  string|null $scopeId    null for one not created yet
      * @param  string      $ns
      * @param  array|null  $posted     a refused post to redisplay: array( 'config' => ..., 'override' => ... )
+     * @param  bool        $collapsible as a closed group, its legend and description the heading a person
+     *                                  opens it by. Open when redisplaying a refused post, so a refused value
+     *                                  is not hidden from the person who has to fix it.
      * @return string
      */
-    public static function scopedFieldSet( array $set, $scopeType, $scopeId, $ns = '', $posted = null ) {
+    public static function scopedFieldSet( array $set, $scopeType, $scopeId, $ns = '', $posted = null, $collapsible = false ) {
 
         $module = (string) ( $set['module'] ?? '' );
 
@@ -284,6 +287,21 @@ class SettingsForm {
         if ( $fields === '' ) {
 
             return '';
+        }
+
+        if ( $collapsible ) {
+
+            return sprintf(
+                "<details class=\"owa-settingsGroup\" id=\"%s\"%s>\n"
+              . "    <summary><span class=\"owa-settingsGroup__title\">%s</span>%s</summary>\n"
+              . "<fieldset name=\"owa-options\" class=\"options\">\n%s</fieldset>\n</details>\n",
+                self::esc( (string) ( $set['id'] ?? '' ) ),
+                is_array( $posted ) ? ' open' : '',
+                self::esc( (string) ( $set['legend'] ?? '' ) ),
+                isset( $set['description'] )
+                    ? sprintf( '<span class="owa-settingsGroup__description">%s</span>', self::esc( $set['description'] ) )
+                    : '',
+                $fields );
         }
 
         $legend = isset( $set['legend'] )

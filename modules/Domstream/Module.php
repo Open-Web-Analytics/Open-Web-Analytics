@@ -93,7 +93,8 @@ class Module extends \OWA\Core\Module {
         $this->registerSettingsFieldSet( array(
             'id'       => 'trackingTag',
             'group'    => 'tracking_tag',
-            'legend'   => 'Page Interaction Recording',
+            'legend'   => 'Page interaction recording',
+            'description' => 'Pointer movement, clicks and key presses, recorded so a visit can be played back.',
             'settings' => array( 'record', 'sample_rate' ),
         ) );
 
@@ -119,6 +120,7 @@ class Module extends \OWA\Core\Module {
     function registerFilters() {
 
         $this->registerFilter( 'tracker_bundle_config', $this, 'addToBundle', 99 );
+        $this->registerFilter( 'tracker_feature_labels', $this, 'labelFeatures', 10 );
         $this->registerFilter( 'report_links', $this, 'addReportLinks', 10 );
     }
 
@@ -150,6 +152,14 @@ class Module extends \OWA\Core\Module {
         return $config;
     }
 
+
+    /** The Tracking Tag screen's name for what addToBundle() turns on. */
+    function labelFeatures( $labels ) {
+
+        $labels['trackDomStream'] = 'Page interaction recording';
+
+        return $labels;
+    }
 
     /**
      * Recordings from the reports that lead to them: Page Detail's "more

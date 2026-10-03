@@ -150,11 +150,13 @@ final class TrackerSnippetTest extends TestCase
         return \OWA\Core\CoreAPI::getJsTrackerBundleTag( 'snippet-site' );
     }
 
-    /** The bundle tag is one async script for the Profile's bundle, protocol-relative. */
+    /** The bundle tag is one async script for the Profile's bundle, at its full URL, scheme and all. */
     public function testTheBundleTagLoadsTheProfilesBundle(): void
     {
         $html = $this->bundleTag();
-        $url  = preg_replace( '#^https?:#', '', \OWA\Module\Base\Classes\TrackerBundle::url( 'snippet-site' ) );
+        $url  = \OWA\Module\Base\Classes\TrackerBundle::url( 'snippet-site' );
+
+        $this->assertMatchesRegularExpression( '#^https?://#', $url );
 
         $this->assertStringContainsString( '<script async src="' . $url . '"></script>', $html );
         $this->assertSame( 2, substr_count( $html, '<script' ), 'the command queue and the bundle, nothing else' );
@@ -165,7 +167,8 @@ final class TrackerSnippetTest extends TestCase
     {
         $html = $this->bundleTag();
 
-        $this->assertMatchesRegularExpression( '#<link rel="preconnect" href="//[^"]+">#', $html );
+        $this->assertMatchesRegularExpression( '#<link rel="preconnect" href="https?://[^/"]+">#', $html );
+        $this->assertDoesNotMatchRegularExpression( '#(src|href)="//#', $html, 'nothing protocol-relative' );
         $this->assertStringNotContainsString( 'crossorigin', $html );
         $this->assertStringNotContainsString( '//<![CDATA[', $html );
         $this->assertSame( 2, substr_count( $html, '<!--' ), 'only the start and end markers' );

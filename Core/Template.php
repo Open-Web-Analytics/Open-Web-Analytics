@@ -1289,6 +1289,33 @@ class Template extends TemplateEngine {
     }
 
     /**
+     * Code to copy, in a box with a copy button: the tracking tag and anything
+     * else a person is told to paste somewhere.
+     *
+     * Scrolls sideways rather than wrapping, so what is copied is exactly what
+     * is shown, and never widens the page. The button is wired by
+     * owa.copy.js; without it the code is still selectable.
+     *
+     * @param string $code     shown and copied as-is (escaped for display)
+     * @param string $language the label in the box's top bar
+     * @return string HTML
+     */
+    function codeBlock( $code, $language = 'HTML' ) {
+
+        $e = function ( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES, 'UTF-8' ); };
+
+        return '<div class="owa-codeBlock">'
+             . '<div class="owa-codeBlock__bar">'
+             . '<span class="owa-codeBlock__language">' . $e( $language ) . '</span>'
+             . '<button type="button" class="owa-codeBlock__copy" data-owa-copy aria-label="Copy to clipboard">'
+             . '<i class="far fa-copy" aria-hidden="true"></i><span class="owa-codeBlock__copyLabel">Copy</span>'
+             . '</button>'
+             . '</div>'
+             . '<pre class="owa-codeBlock__code"><code>' . $e( trim( (string) $code, "\r\n" ) ) . '</code></pre>'
+             . '</div>';
+    }
+
+    /**
      * Outputs data into the template
      *
      * @param    string    $output        The String to be output into the template

@@ -183,6 +183,45 @@ class TrackerBundle {
         );
     }
 
+    /** What each of Base's feature commands records, as the Tracking Tag screen names it. */
+    const FEATURE_LABELS = array(
+        'trackPageView'     => 'Page views',
+        'trackClicks'       => 'Clicks',
+        'trackForms'        => 'Forms',
+        'trackScroll'       => 'Scroll depth',
+        'trackSiteSearch'   => 'Site search',
+        'trackExceptions'   => 'JavaScript errors',
+        'trackRouteChanges' => 'Route changes',
+    );
+
+    /**
+     * What this Profile's tracker records, from its saved settings: a label for
+     * each feature config() turns on, in the order it turns them on.
+     *
+     * A module labels the features it adds through the tracker_feature_labels
+     * filter; one it does not label is named by its command.
+     *
+     * @param  string $site_id
+     * @return string[]
+     */
+    public static function trackedEvents( $site_id ) {
+
+        $labels = (array) \OWA\Core\CoreAPI::filter( 'tracker_feature_labels', self::FEATURE_LABELS );
+        $out    = array();
+
+        foreach ( self::config( $site_id )['features'] as $feature ) {
+
+            $command = (string) ( $feature[0] ?? '' );
+
+            if ( $command !== '' ) {
+
+                $out[ $command ] = (string) ( $labels[ $command ] ?? $command );
+            }
+        }
+
+        return array_values( $out );
+    }
+
     /**
      * The first line of a bundle made from this config and this build.
      *
