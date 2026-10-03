@@ -64,14 +64,8 @@ class Auth extends \OWA\Core\Base {
 
     var $_is_user = false;
 
-    var $_priviledge_level;
-
-    var $_is_priviledged = false;
-
     var $params;
 
-    var $check_for_credentials = false;
-    
     var $auth_method;
 
     var $eq;
@@ -396,29 +390,6 @@ class Auth extends \OWA\Core\Base {
 
             return false;
         }
-    }
-
-    /**
-     * Sets a temporary Passkey for a user
-     *
-     * @param string $email_address
-     * @return boolean
-     */
-    function setTempPasskey($email_address) {
-
-        $this->u = \OWA\Core\CoreAPI::entityFactory('base.user');
-        $this->u->getByColumn('email_address', $email_address);
-
-        $id = $u->get('id');
-
-        if (!empty($id)):
-
-            $this->eq->log(array('email_address' => $this->u->email_address), 'user.set_temp_passkey');
-            return true;
-        else:
-            return false;
-        endif;
-
     }
 
     function generateTempPasskey($seed) {

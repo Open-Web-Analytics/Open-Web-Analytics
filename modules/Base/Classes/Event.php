@@ -216,18 +216,6 @@ class Event {
     }
 
     /**
-     * Adds new properties to the eventt without overwriting values
-     * for properties that are already set.
-     *
-     * @param     array $properties
-     */
-    function setNewProperties( $properties = array() ) {
-
-        $this->properties = array_merge($properties, $this->properties);
-
-    }
-
-    /**
      * Exports Event Class variables
      *
      * @return     array
@@ -308,31 +296,6 @@ class Event {
         return \OWA\Core\Lib::generateRandomUid();
     }
 
-    /**
-     * Create guid from string
-     *
-     * @param     string $string
-     * @return     integer
-     * @access     private
-     */
-    function set_string_guid($string) {
-
-        return crc32(strtolower($string));
-
-    }
-
-    /**
-     * Attempts to make a unique ID out of http request variables.
-     * This should only be used when storing state in a cookie is impossible.
-     *
-     * @return integer
-     */
-    function setEnvGUID() {
-
-        return crc32( $this->get('ua') . $this->get('ip_address') );
-
-    }
-
     function getProperties() {
 
         return $this->properties;
@@ -393,11 +356,6 @@ class Event {
         return $this->dispatchName !== '';
     }
 
-    function cleanProperties() {
-
-        return $this->setProperties(\OWA\Core\Lib::inputFilter($this->getProperties()));
-    }
-
     function setPageTitle($value) {
 
         $this->set('page_title', $value);
@@ -428,11 +386,6 @@ class Event {
     function getGuid() {
 
         return $this->guid;
-    }
-
-    function getSiteSpecificGuid($site_id) {
-
-        return \OWA\Core\Lib::generateRandomUid();
     }
 
     function getStatus() {

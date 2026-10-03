@@ -36,10 +36,8 @@ class Cache {
     var $cache;
     var $statistics = array('warm' => 0, 'cold' => 0, 'miss' => 0, 'replaced' => 0, 'added' => 0, 'removed' => 0, 'dirty' => 0, 'persisted' => 0);
     var $cache_id = 1; // default cache id
-    var $collections;
     var $dirty_collections;
     var $dirty_objs = array();
-    var $global_collections = array();
     var $collection_expiration_periods = [];
     var $e;
     var $warm;
@@ -307,11 +305,6 @@ class Cache {
         }
     }
     
-    function setGlobalCollection($collection) {
-    
-        return $this->global_collections[] = $collection;
-    
-    }
 }
 
 ?>

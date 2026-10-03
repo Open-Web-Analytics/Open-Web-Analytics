@@ -38,13 +38,6 @@ class Browscap extends \OWA\Core\Base {
 
 
     /**
-     * main regex file location
-     *
-     * @var array
-     */
-    var $browscap_db;
-
-    /**
      * Browscap Record for current User agent
      *
      * @var mixed
@@ -302,21 +295,6 @@ class Browscap extends \OWA\Core\Base {
         return $this->browser->ua->family;
     }
 
-    function getUaVersionMajor() {
-
-        return $this->browser->ua->major;
-    }
-
-    function getUaVersionMinor() {
-
-        return $this->browser->ua->minor;
-    }
-
-    function getUaVersionPatch() {
-
-        return $this->browser->ua->patch;
-    }
-
     function getUaFamilyVersion() {
 
         return $this->browser->ua->toVersion();
@@ -327,39 +305,9 @@ class Browscap extends \OWA\Core\Base {
         return $this->browser->ua->toVersion();
     }
 
-    function getUaOriginal() {
-
-        return $this->browser->originalUserAgent;
-    }
-
-    function getUaOs() {
-
-        return $this->browser->toString();
-    }
-
     function getOsFamily() {
 
         return $this->browser->os->family;
-    }
-
-    function getOsVersionMajor() {
-
-        return $this->browser->os->major;
-    }
-
-    function getOsVersionMinor() {
-
-        return $this->browser->os->minor;
-    }
-
-    function getOsVersionPatch() {
-
-        return $this->browser->os->patch;
-    }
-
-    function getOsFamilyVersion() {
-
-        return $this->browser->os->toString();
     }
 
     function getOsVersion() {

@@ -41,13 +41,6 @@ if ( ! defined( 'OWA_MAXMIND_DATA_DIR' ) ) {
  */
 class Maxmind extends \OWA\Core\Location {
 
-    /**
-     * URL template for REST based web service
-     *
-     * @var mixed
-     */
-    var $ws_url = '';
-    var $db_file_dir;
     var $db_file_name = 'GeoLite2-City.mmdb';
     var $db_file_path;
     var $db_file_present = false;

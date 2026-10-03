@@ -17,38 +17,14 @@ class CacheType {
 	var $collection_expiration_periods = [];
 	var $cache_id = 1;
 	
-	/**
-     * Store specific implementation of getting an object from the cold cache store
-     */
-    function getItemFromCacheStore( $collection, $id ) {
-        
-        return $this->get( $collection, $id );
-    }
-    
     function get( $collection, $id ) {
         
         return false;
     }
     
-    /**
-     * Store specific implementation of putting an object to the cold cache store
-     */
-    function putItemToCacheStore($collection, $id, $value = '') {
-        
-        return $this->set( $collection, $id, $value );
-    }
-    
     function set( $collection, $id, $value ) {
         
         return false;
-    }
-    
-    /**
-     * Store specific implementation of removing an object to the cold cache store
-     */
-    function removeItemFromCacheStore( $collection, $id ) {
-        
-        return $this->remove( $collection, $id );
     }
     
     function remove( $collection, $id ) {

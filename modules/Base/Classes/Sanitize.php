@@ -35,40 +35,6 @@ namespace OWA\Module\Base\Classes;
 class Sanitize {
 
     /**
-     * Remove Non alpha or numeric characters
-     *
-     * @param     string|array    $input         String or array contain input to sanitize.
-     * @param     array            $exceptions An array of additional characters that should be allowed.
-     * @return     string|array     $sanitzed    A Santized string or array
-     */
-    public static function removeNonAlphaNumeric($input, $exceptions = array()) {
-
-        $allow = '';
-
-        // add exceptions to allowed char part of regex
-        if ( !empty( $exceptions ) ) {
-            foreach ( $exceptions as $value ) {
-                $allowed_chars .= "\\$value";
-            }
-        }
-
-        $regex = "/[^{$allowed_chars}a-zA-Z0-9]/";
-
-        // check to see if string is an array
-        if ( is_array ( $input ) ) {
-            $sanitized = array();
-            foreach ( $input as $key => $item ) {
-                $sanitized[$key] = preg_replace( $regex, '', $item );
-            }
-        // assume input is a singel string
-        } else {
-            $sanitized = preg_replace( $regex, '', $input );
-        }
-
-        return $sanitized;
-    }
-
-    /**
      * Escapes a string for use in display output
      *
      * @param    string     $string     The string to be escaped
@@ -216,21 +182,6 @@ class Sanitize {
     public static function escapeDollarSigns( $input = '' ) {
 
         return str_replace( "\\\$", "$", $input );
-    }
-
-    public static function escapeOctets ( $input = '' ) {
-
-        $match = array();
-        $found = false;
-        while ( preg_match('/%[a-f0-9]{2}/i', $input, $match) ) {
-            $input = str_replace($match[0], '', $input);
-            $found = true;
-        }
-
-        if ( $found ) {
-            // Strip out the whitespace that may now exist after removing the octets.
-            $filtered_input = trim( preg_replace( '/ +/', ' ', $input ) );
-        }
     }
 
     /**

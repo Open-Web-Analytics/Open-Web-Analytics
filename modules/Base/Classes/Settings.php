@@ -2170,54 +2170,6 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Resolve several settings in ONE query.
-      *
-      * The batch exists because a settings screen reads a whole page of keys
-      * at once, and resolving them one at a time would be a query each. Keys
-      * already resolved are dropped before the query, so calling this twice
-      * costs one query and then none.
-      *
-      * A key with NO ROW is resolved too. "There is nothing stored" is an
-      * answer -- the default stands -- and recording it is what stops the next
-      * read asking again.
-      *
-      * @param  array $pairs  list of array($module, $key)
-      * @return array "module|key" => effective value
-      */
-     public function getSettings( array $pairs ) {
-
-         $wanted = array();
-
-         foreach ( $pairs as $pair ) {
-
-             list( $module, $key ) = $pair;
-
-             $id = $module . '|' . $key;
-
-             if ( ! $this->isLoaded( $module, $key ) ) {
-
-                 $wanted[ $id ] = array( $module, $key );
-             }
-         }
-
-         if ( $wanted ) {
-
-             $this->resolveFromStore( $wanted );
-         }
-
-         $out = array();
-
-         foreach ( $pairs as $pair ) {
-
-             list( $module, $key ) = $pair;
-
-             $out[ $module . '|' . $key ] = $this->get( $module, $key );
-         }
-
-         return $out;
-     }
-
-     /**
       * Resolve EVERY pending key at once, in one query.
       *
       * Registering a setting says "there might be a row for this". Asking the
@@ -2659,24 +2611,6 @@ namespace OWA\Module\Base\Classes;
          $this->config->set('settings', $settings);
      }
 
-     /**
-      * Alternate Constructor for base module settings
-      * Needed for backwards compatibility with older classes
-      *
-      */
-     function &get_settings($id = 1) {
-
-         static $config2;
-
-         if (!isset($config2)) {
-             //print 'hello from alt constructor';
-             $config2 = \OWA\Core\CoreAPI::configSingleton();
-        }
-
-         return $config2->fetch('base');
-
-     }
-     
      function setMailerDomain() {
 
 	     // Only a fallback. This runs from the constructor, BEFORE load() merges
@@ -2792,18 +2726,10 @@ namespace OWA\Module\Base\Classes;
                 'clean_query_string'                => true,
                 'query_string_filters'                => '', // move to site settings
                 'async_log_dir'                        => '', //OWA_DATA_DIR . 'logs/',
-                'async_log_file'                    => 'events.txt',
-                'async_lock_file'                    => 'owa.lock',
-                'async_error_log_file'                => 'events_error.txt',
                 'notice_email'                        => '',
                 'error_log_file'                    => '', //OWA_DATA_DIR . 'logs/errors.txt',
                 'ua-regexes'                        => '',
-                'search_engines.ini'                => OWA_BASE_DIR . '/conf/search_engines.ini',
-                'query_strings.ini'                    => OWA_BASE_DIR . '/conf/query_strings.ini',
-                'db_class_dir'                        => OWA_BASE_DIR . '/plugins/db/',
-                'templates_dir'                        => OWA_BASE_DIR . '/templates/',
                 'plugin_dir'                        => OWA_BASE_DIR . '/plugins/',
-                'module_dir'                        => OWA_BASE_DIR . '/modules',
                 'public_path'                        => '',
                 'geolocation_lookup'                => false,
                 'geolocation_service'                => '',
@@ -2943,7 +2869,6 @@ namespace OWA\Module\Base\Classes;
                 'scheduled_jobs'                    => array(),
                 'scheduler_enabled'                    => true,
                 'maxCustomVars'                        => 5, //sdk
-                'update_session_user_name'            => true, // updates the session with latest user_name value
                 'logo_image_path'                    => 'base/i/owa-logo-100w.png',
                 // Content-derived dimension ids are 63-bit. This flag marks an
                 // installation whose existing ids are the old 32-bit crc32
@@ -2959,8 +2884,6 @@ namespace OWA\Module\Base\Classes;
                 'archive_old_events'                => true, // used by event queues to archive processed events.
                 'request_mode'						=> 'web_app',
                 'useStaticConfigOnly'				=> false,
-                'allow_slowly_changing_dimensions'	=> true,
-                'slowly_changing_dimension_entities' => [],
                 'db_supported_types'				=> ['mysql' => 'MySQL / MariaDB'],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
@@ -3346,46 +3269,6 @@ namespace OWA\Module\Base\Classes;
         }
     }
 
-    function removeCapabilityFromRole( $role, $capability ) {
-
-        $caps = $this->get('base', 'capabilities');
-
-        if ( isset( $caps[ $role ] ) && in_array( $capability, $caps[ $role ] ) ) {
-            $caps[ $role ] = array_flip($caps[ $role ]);
-            unset( $caps[ $role ][ $capability ] );
-            $caps[ $role ] = array_unique( array_flip($caps[ $role ] ) );
-            $this->set('base', 'capabilities', $caps);
-        }
-    }
-
-    function removeSiteAccessRequiredFromCapability( $capability ) {
-
-        $sar = $this->get('base', 'capabilitiesThatRequireSiteAccess');
-
-        if ( in_array( $capability, $sar ) ) {
-            $sar = array_flip( $sar );
-            unset( $sar[ $capability ] );
-            $sar = array_unique( array_flip($sar ) );
-            $this->set('base', 'capabilitiesThatRequireSiteAccess', $sar);
-        }
-    }
-
-    function getAllRolesAndCapabilities() {
-        return $this->get('base', 'capabilities');
-    }
-
-    function getCapabilitiesThatRequireSiteAccess() {
-        return $this->get('base', 'capabilitiesThatRequireSiteAccess');
-    }
-
-    function getCapabilitiesForRole( $role ) {
-
-        $caps = $this->get('base', 'capabilities');
-
-        if ( isset( $caps[ $role ] ) ) {
-            return $caps[ $role ];
-        }
-    }
 }
 
 ?>

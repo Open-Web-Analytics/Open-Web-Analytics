@@ -458,11 +458,6 @@ class DbColumn {
          $this->is_not_null = true;
      }
 
-    function setUnique() {
-
-         $this->is_unique = true;
-     }
-
      function setLabel($label) {
 
          $this->label = $label;

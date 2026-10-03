@@ -144,54 +144,6 @@ class Caller extends \OWA\Core\Base {
         $this->params = $this->service->request->getAllOwaParams();
     }
     
-    function handleRequestFromUrl()  {
-        
-        //$this->params = owa_lib::getRequestParams();
-        return $this->handleRequest();
-        
-    }
-    
-    
-    /**
-     * Returns a configured javascript tracker for inclusion in your web page.
-     * You can pass an options array to control what the tracker will log.
-     * The options array is a key/value pair format like:
-     *
-     * $options = array('do_not_log_pageview' => true);
-     *
-     * @param     $echo        bool     if true the function will echo. if false the tracker is returned asa string.
-     * @param    $options    array    an key value pair option array
-     * @return     $tag         string    the tracker javascript.
-     */
-    function placeHelperPageTags($echo = true, $options = array()) {
-        
-        if( ! \OWA\Core\CoreAPI::getRequestParam( 'is_robot' ) ) {
-        
-        
-            $t = new \OWA\Core\Template();
-            $t->set_template('js_helper_tags.php');
-                
-            $tracking_code = \OWA\Core\CoreAPI::getJsTrackerTag( $this->getSiteId(), $options );
-            $t->set('tracking_code', $tracking_code);
-            $tag = $t->fetch();
-            
-            if ($echo == false) {
-                return $tag;
-            } else {
-                echo $tag;
-            }
-        }
-    }
-    
-    // needed?
-    function handleHelperPageTagsRequest() {
-    
-        $params = array();
-        $params['do'] = 'base.helperPageTags';
-        return $this->handleRequest($params);
-    
-    }
-    
     /**
      * Handles OWA internal page/action requests
      *
@@ -257,11 +209,6 @@ class Caller extends \OWA\Core\Base {
     function getSiteId() {
         
         return $this->site_id;
-    }
-    
-    /** @param mixed $mode ignored: OWA_DEBUG decides the log level now */
-    function setErrorHandler( $mode = null ) {
-        $this->e->setHandler();
     }
     
     function isOwaInstalled() {

@@ -49,9 +49,6 @@ class Error {
         'emergency' => 600,
     );
 
-    /** Kept for callers that still pass a priority by name: every key of LEVELS. */
-    const PRIORITIES = array( 'debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency' );
-
     /**
      * Where messages go once the handler is set: file paths and, under the
      * CLI, the STDOUT stream. Opened on the first message that is written.
@@ -393,22 +390,6 @@ class Error {
         $err .= "</errorentry>\n\n";
 
         $this->debug( $err );
-    }
-
-    function backtrace() {
-
-        $dbgTrace = debug_backtrace();
-        $bt = array();
-        foreach($dbgTrace as $dbgIndex => $dbgInfo) {
-
-            $bt[$dbgIndex] = array('file' => $dbgInfo['file'],
-                                    'line' => $dbgInfo['line'],
-                                    'function' => $dbgInfo['function'],
-                                    'args' => $dbgInfo['args']);
-        }
-
-        return $bt;
-
     }
 
     function logException($exception) {

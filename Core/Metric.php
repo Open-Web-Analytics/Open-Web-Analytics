@@ -99,20 +99,11 @@ class Metric extends \OWA\Core\Base {
     var $labels = array();
     
     /**
-     * Page results
-     *
-     * @var boolean
-     */
-    var $page_results = false;
-    
-    /**
      * Data Access Object
      *
      * @var object
      */
     var $db;
-    
-    var $_default_offset = 0;
     
     var $pagination;
     
@@ -126,13 +117,9 @@ class Metric extends \OWA\Core\Base {
     
     var $select = array();
     
-    var $time_period_constraint_format = 'timestamp';
-    
     var $column;
     
     var $is_calculated = false;
-    
-    var $is_aggregate;
     
     var $data_type;
     
@@ -268,16 +255,6 @@ class Metric extends \OWA\Core\Base {
     function getTableAlias() {
         
         return $this->entity->getTableAlias();
-    }
-    
-    function setSelect($column, $as = '') {
-        
-        if (!$as) {
-            
-            $as = $this->getName();
-        }
-        
-        $this->select = array($column, $as);
     }
     
     function getSelect() {
@@ -562,16 +539,6 @@ class Metric extends \OWA\Core\Base {
     
     function getDataType() {
         return $this->data_type;
-    }
-    
-    function setAggregate() {
-    
-        $this->is_aggregate = true;
-    }
-    
-    function isAggregate() {
-    
-        return $this->is_aggregate;
     }
     
     /**

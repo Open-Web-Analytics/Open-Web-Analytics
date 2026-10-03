@@ -350,21 +350,6 @@ class EventDispatch {
     }
 
     /**
-     * Notify Untill
-     *
-     * Notifies all handlers of events in order that they were registered
-     * Stops notifying after first handler returns true
-     *
-     * @param     $event_type    string
-     * @param    $event    array
-     * @return bool
-     */
-
-    function notifyUntill() {
-        \OWA\Core\CoreAPI::debug("Notifying Until listener for $event_type answers");
-    }
-
-    /**
      * Filter
      *
      * Filters event by handlers in order that they were registered

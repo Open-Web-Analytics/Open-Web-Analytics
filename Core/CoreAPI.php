@@ -1021,23 +1021,6 @@ class CoreAPI {
         }
     }
 
-    public static function getSiteSettings($site_id) {
-
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load( $site->generateId( $site_id ) );
-        if ( $site->wasPersisted() ) {
-
-            $settings = $site->get('settings');
-
-            if ( $settings ) {
-                return $settings;
-            } else {
-                return array();
-            }
-        }
-
-    }
-
     /**
      * Every setting a scope answers with, most specific value winning.
      *
@@ -1538,88 +1521,6 @@ class CoreAPI {
     }
 
     /**
-     * Convienence method for generating entities
-     *
-     * @param mixed $entity_name
-     * @return unknown
-     * @depricated
-     * @todo REMOVE
-     */
-    public static function rawEntityFactory($entity_name) {
-
-        return \OWA\Core\CoreAPI::entityFactory($entity_name);
-
-    }
-
-    public static function executeApiCommand($map) {
-		
-		// carve out for REST API backwards compatability during migration
-		if ( array_key_exists('version', $map) ) {
-			
-			$route = self::lookupRestRoute( $map['request_method'], $map['module'], $map['version'], $map['do']);
-			
-			if ( $route ) {
-				
-				//$params['rest_route'] = $route;
-				\OWA\Core\CoreAPI::debug('API params: ');
-				\OWA\Core\CoreAPI::debug($map);
-				\OWA\Core\CoreAPI::debug('API route: ');
-				\OWA\Core\CoreAPI::debug($route);
-				$controller = \OWA\Core\Lib::simpleFactory( $route['class_name'], $route['file'], $map );					
-				$response = self::runController( $controller );
-				
-				$response = json_decode($response);
-				
-				return $response->data;
-			}
-		}
-		
-        if (!array_key_exists('do', $map)) {
-            echo ("API Command missing from request.");
-            \OWA\Core\CoreAPI::debug('API Command missing from request. Aborting.');
-            exit;
-        } else {
-            // load service
-            $s = \OWA\Core\CoreAPI::serviceSingleton();
-            // lookup method class
-            $do = $s->getApiMethodClass($map['do']);
-
-        }
-
-        // if exists, pass to OWA as a request
-        if ($do) {
-
-            if (array_key_exists('args', $do)) {
-
-                $passed_args = array();
-
-                foreach ($do['args'] as $arg) {
-
-                    if (isset($map[$arg])) {
-                        $passed_args[] = $map[$arg];
-                    } else {
-                        $passed_args[] = '';
-                    }
-                }
-
-                if (!empty($do['file'])) {
-
-                    if (!class_exists($do['callback'][0])) {
-                        require_once($file);
-                    }
-                }
-
-                $something = call_user_func_array($do['callback'], $passed_args);
-            }
-
-            return $something;
-        } else {
-            echo "No API Method Found.";
-        }
-
-    }
-
-    /**
      * Convienence method for generating metrics
      *
      * @param string $metric_name
@@ -1941,15 +1842,6 @@ class CoreAPI {
 
         return $sorted;
     }
-
-    /**
-     * @Todo REMOVE
-     */
-    public static function getNavSort($a, $b) {
-
-        return strnatcmp($a['order'], $b['order']);
-    }
-
 
     public static function getActiveModules() {
 
@@ -2502,64 +2394,6 @@ class CoreAPI {
       
         $view->setData($data);
         return $view->assembleView($data);
-
-    }
-
-    public static function displaySubView($data, $viewfile = '') {
-
-        if (empty($viewfile)):
-            $viewfile = $data['view'];
-        endif;
-
-        $view =  \OWA\Core\CoreAPI::subViewFactory($viewfile);
-
-        return $view->assembleView($data);
-
-    }
-
-    /**
-     * Strip a URL of certain GET params
-     * @depricated
-     * @return string
-     * @todo REMOVE
-     */
-    function stripDocumentUrl($url) {
-
-        if (\OWA\Core\CoreAPI::getSetting('base', 'clean_query_string')):
-
-            if (\OWA\Core\CoreAPI::getSetting('base', 'query_string_filters')):
-                $filters = str_replace(' ', '', (string) \OWA\Core\CoreAPI::getSetting('base', 'query_string_filters'));
-                $filters = explode(',', $filters);
-            else:
-                $filters = array();
-            endif;
-
-            // OWA specific params to filter
-            array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'source_param'));
-            array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').\OWA\Core\CoreAPI::getSetting('base', 'feed_subscription_param'));
-
-            //print_r($filters);
-
-            foreach ($filters as $filter => $value) {
-
-              $url = preg_replace(
-                '#\?' .
-                $value .
-                '=.*$|&' .
-                $value .
-                '=.*$|' .
-                $value .
-                '=.*&#msiU',
-                '',
-                $url
-              );
-
-            }
-
-        endif;
-         //print $url;
-
-         return $url;
 
     }
 

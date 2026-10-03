@@ -37,7 +37,6 @@ class State {
     var $stores_meta = array();
     var $is_dirty;
     var $dirty_stores;
-    var $default_store_type = 'cookie';
     var $stores_with_cdh = array();
     var $initial_state = array();
 
@@ -297,12 +296,6 @@ class State {
                 }
             }
         }
-    }
-
-    function getPermExpiration() {
-
-        $time = time()+3600*24*365*15;
-        return $time;
     }
 
     function addStores($array) {

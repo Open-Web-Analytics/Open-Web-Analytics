@@ -32,14 +32,6 @@ namespace OWA\Core;
 
 class Observer extends \OWA\Core\Base {
 
-     /**
-     * The type of event that an observer would want to hear about.
-     *
-     * @var array
-     * @access private
-     */
-    var $_event_type = array();
-    
     var $id;
     
     /**

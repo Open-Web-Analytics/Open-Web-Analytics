@@ -64,13 +64,6 @@ class ResultSetManager extends \OWA\Core\Base {
     var $dimensions = array();
 
     /**
-     * The Number of Dimensions to groupby
-     *
-     * @var integer
-     */
-    var $dimensionCount;
-
-    /**
      * The table/column or denormalized dimensions
      * associated with this metric
      *
@@ -78,25 +71,20 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     var $denormalizedDimensions = array();
 
-    var $_default_offset = 0;
     var $page = 1;
     var $limit;
     var $order;
     var $format;
     var $constraint_operators = array('==','!=','>=', '<=', '>', '<', '=~', '!~', '=@','!@');
-    var $related_entities = array();
     var $related_dimensions = array();
     var $related_metrics = array();
     var $resultSet;
-    var $base_table;
     var $metrics = array();
-    var $metricsByTable = array();
     var $childMetrics = array();
     var $calculatedMetrics = array();
     var $query_params = array();
     var $baseEntity;
     var $metricObjectsByEntityMap = array();
-    var $metricObjectsCache = array();
     var $errors = array();
 
     /**
@@ -1073,13 +1061,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function setOrder($value) {
-
-        if (!empty($value)) {
-            $this->params['order'] = $value;
-        }
-    }
-
     function getOrder() {
 
         if (array_key_exists('order', $this->params)) {
@@ -1277,20 +1258,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if (!empty($value)) {
             $this->params['period'] = $value;
         }
-    }
-    
-    function setTimeResolution( $value ) {
-      
-      $map = [
-        'day',
-        'month',
-        'year'
-      ];
-      
-      if ( in_array( $value, $map ) ) {
-        
-        $this->resolution = $value;
-      }
     }
     
     function getTimeResolution() {
@@ -1816,11 +1783,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
 
-    function dimensionsArrayToString($array) {
-
-        return implode(',', $array);
-    }
-
     /**
      * Applies dimensional sql to dao object
      */
@@ -1836,65 +1798,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function getBaseEntity() {
-        return $this->baseEntity;
-    }
-
-    // remove
-    function addMetric($metric_name, $child = false) {
-
-        $ret = false;
-
-        $m = $this->getMetric($metric_name);
-
-        if (!$m) {
-            $m = \OWA\Core\CoreAPI::metricFactory($metric_name);
-
-            if ($m) {
-
-
-                // necessary if the metric was first added as a child but later added as a parent.
-                if (!$child) {
-
-                    if (array_key_exists($metric_name, $this->childMetrics)) {
-                        unset ($this->childMetrics[$metric_name]);
-                    }
-                } else {
-                    // add child metrics to child metric maps
-                    // check to see if it wasn't already added as a non-child metric.
-                    if (!array_key_exists($metric_name, $this->metrics)){
-                        $this->childMetrics[$metric_name] = $metric_name;
-                    }
-                }
-
-                // check to see if this is a calculated metric
-                if ($m->isCalculated()) {
-
-                    return $this->addCalculatedMetric($m);
-                }
-
-                if ($this->checkForFactTableRelation($m)) {
-
-                    $this->metrics[$metric_name] = $m;
-                    $this->metricsByTable[$m->getTableName()] = $metric_name;
-                    $this->addSelect($m->getSelect());
-                    $this->addLabel($m->getName(), $m->getLabel());
-
-                    $ret = true;
-                }
-
-            } else {
-                $this->addError("$metric_name is not a metric.");
-            }
-        } else {
-            $ret =  true;
-        }
-
-
-
-        return $ret;
-    }
-
     function addCalculatedMetric($calc_metric_obj) {
 
         // add label of calculated metric obj
@@ -1907,19 +1810,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function getCalculatedMetricByName($name) {
 
         return $this->calculatedMetrics[$name];
-    }
-
-    function addSelect($select_array) {
-
-        $this->params['selects'][] = $select_array;
-    }
-
-    //depricated?
-    function getSelects() {
-
-        if (array_key_exists('selects', $this->params)) {
-            return $this->params['selects'];
-        }
     }
 
     // can only be called after base entity is determined.

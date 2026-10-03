@@ -82,13 +82,6 @@ class Controller extends \OWA\Core\Base {
     var $capability;
 
     /**
-     * Available Views
-     *
-     * @var Array
-     */
-    var $available_views = array();
-
-    /**
      * Time period
      *
      * @var Object
@@ -101,13 +94,6 @@ class Controller extends \OWA\Core\Base {
      * @var String
      */
     var $dom_id;
-
-    /**
-     * Flag for requiring authenciation before performing actions
-     *
-     * @var Bool
-     */
-    var $authenticate_user;
 
     var $state;
 
@@ -476,12 +462,6 @@ class Controller extends \OWA\Core\Base {
         }
     }
 
-    // depricated
-    function _setCapability($capability) {
-
-        $this->setRequiredCapability($capability);
-    }
-
     function setRequiredCapability($capability) {
 
         $this->capability = $capability;
@@ -514,11 +494,6 @@ class Controller extends \OWA\Core\Base {
     function get($name) {
 
         return $this->getParam($name);
-    }
-
-    function getAllParams() {
-
-        return $this->params;
     }
 
     function pre() {
@@ -619,12 +594,6 @@ class Controller extends \OWA\Core\Base {
 
     }
 
-    function setPagination($pagination, $name = 'pagination') {
-
-        $this->data[$name] = $pagination;
-
-    }
-
     function set($name, $value) {
 
         $this->data[$name] = $value;
@@ -692,11 +661,6 @@ class Controller extends \OWA\Core\Base {
     function setStatusCode($code) {
 
         $this->data['status_code'] = $code;
-    }
-
-    function setStatusMsg($msg) {
-
-        $this->data['status_message'] = $msg;
     }
 
     function setErrorMsg( $msg ) {

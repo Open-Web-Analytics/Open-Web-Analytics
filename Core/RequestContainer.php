@@ -333,16 +333,6 @@ class RequestContainer {
         return true;
     }
 
-    function getCookie($name) {
-
-        if (array_key_exists($name, $this->cookies)) {
-            return $this->cookies[$name];
-        } else {
-            return false;
-        }
-
-    }
-
     function getRequestParam($name) {
 
         if (array_key_exists($name, $this->request)) {
@@ -350,11 +340,6 @@ class RequestContainer {
         } else {
             return false;
         }
-    }
-
-    function getAllRequestParams() {
-
-        return $this->request;
     }
 
     function getAllOwaParams() {
@@ -404,16 +389,6 @@ class RequestContainer {
     function arrayUrlDecode(&$val, $index) {
         
         rawurldecode($val);
-    }
-
-    function getOwaCookie($name) {
-
-        if (array_key_exists($name, $this->owa_cookies)) {
-            return $this->owa_cookies[$name];
-        } else {
-            return false;
-        }
-
     }
 
     public function getTimestamp() {

@@ -97,13 +97,6 @@ class Db extends \OWA\Core\Base {
     var $params = array();
 
     /**
-     * Status of selecting a databse
-     *
-     * @var boolean
-     */
-    var $database_selection;
-
-    /**
      * Status of connection
      *
      * @var boolean
@@ -111,32 +104,11 @@ class Db extends \OWA\Core\Base {
     var $connection_status;
 
     /**
-     * Number of rows in result set
-     *
-     * @var integer
-     */
-    var $num_rows;
-
-    /**
      * Number of rows affected by insert/update/delete statements
      *
      * @var integer
      */
     var $rows_affected;
-
-    /**
-     * Microtime Start of Query
-     *
-     * @var float
-     */
-    var $_start_time;
-
-    /**
-     * Total Elapsed time of query
-     *
-     * @var string
-     */
-    var $_total_time;
 
     /**
      * Storage Array for components of sql queries
@@ -331,11 +303,6 @@ class Db extends \OWA\Core\Base {
         return false;
     }
 
-    function pconnect() {
-
-        return false;
-    }
-
     function close() {
 
         return false;
@@ -406,35 +373,6 @@ class Db extends \OWA\Core\Base {
         return $this->_bindings;
     }
 
-    function prepare_string($string) {
-
-        $chars = array("\t", "\n");
-        return str_replace($chars, " ", $string);
-    }
-
-    /**
-     * Starts the query microtimer
-     *
-     */
-    function _timerStart() {
-
-        $this->_start_time = microtime(true);
-        return;
-    }
-
-    /**
-     * Ends the query microtimer and populates $this->_total_time
-     *
-     */
-    function _timerEnd() {
-
-        $endtime = microtime(true);
-        $this->_total_time = number_format($endtime - $this->_start_time, 6);
-
-        return;
-
-    }
-
     function selectColumn($name, $as = '') {
 
         if (is_array($name)) {
@@ -475,24 +413,6 @@ class Db extends \OWA\Core\Base {
 
             $this->_sqlParams['having'][$name] = array('name' => $name, 'value' => $value, 'operator' => $operator);
         }
-    }
-
-    function multiWhere($where_array = array()) {
-
-        if (!empty($where_array)):
-
-            foreach ($where_array as $k => $v) {
-                if ( ! \OWA\Core\Lib::isEmpty($v) ):
-
-                    if (empty($v['operator'])):
-                        $v['operator'] = '=';
-                    endif;
-
-                    $this->_sqlParams['where'][$k] = array('name' => $k, 'value' => $v['value'], 'operator' => $v['operator']);
-                endif;
-            }
-
-        endif;
     }
 
     function groupBy($col) {
@@ -738,13 +658,6 @@ class Db extends \OWA\Core\Base {
         $this->resetBindings();
 
         $this->_setSql(sprintf(OWA_SQL_DELETE_ROW, $this->_sqlParams['table'], $this->_makeWhereClause()));
-
-        return $this->_query();
-    }
-
-    function rawQuery($sql) {
-
-        $this->_setSql($sql);
 
         return $this->_query();
     }
@@ -1153,37 +1066,6 @@ class Db extends \OWA\Core\Base {
     }
 
 
-    /**
-     * Creates a delimited value list from an array or arrays.
-     *
-     */
-    function _makeDelimitedValueListArray($values, $delimiter = ', ', $inner_delimiter = ' ') {
-
-        $items = '';
-        $i = 0;
-        $count = count($values);
-
-        //print_r($values);
-
-        foreach ($values as $k) {
-
-            $items .= implode($inner_delimiter, $k);
-
-            // Add commas
-            if ($i < $count - 1):
-
-                $items .= $delimiter;
-
-            endif;
-
-            $i++;
-
-        }
-
-        return $items;
-
-    }
-
     function _makeDelimitedValueList($values, $delimiter = ', ') {
 
         $items = '';
@@ -1253,17 +1135,6 @@ class Db extends \OWA\Core\Base {
 
     }
 
-    function removeNs($string, $ns = '') {
-
-        if (empty($ns)):
-            $ns = $this->config['ns'];
-        endif;
-
-        $ns_len = strlen($ns);
-        return substr($string, $ns_len);
-
-    }
-
     function setFormat($value) {
 
         $this->_sqlParams['result_format'] = $value;
@@ -1299,17 +1170,6 @@ class Db extends \OWA\Core\Base {
         return $this->query(sprintf(OWA_SQL_DROP_TABLE, $table_name));
 
     }
-
-    /**
-     * Change table type
-     *
-     */
-    function alterTableType($table_name, $engine) {
-
-        return $this->query(sprintf(OWA_SQL_ALTER_TABLE_TYPE, $table_name, $engine));
-
-    }
-
 
     /**
      * Rename a table
@@ -2183,31 +2043,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Empty a table, keeping its definition.
-     *
-     * For a working table that is rebuilt on every use: dropping and creating
-     * it again costs whatever its definition costs, and a staging table built
-     * with CREATE TABLE LIKE from a partitioned cube costs seconds. TRUNCATE
-     * costs milliseconds and leaves the shape alone.
-     *
-     * NOT a substitute for DELETE where rows matter: it cannot be rolled back,
-     * and it does not fire triggers.
-     *
-     * @param string $table_name
-     * @return bool
-     */
-    function truncateTable( $table_name ) {
-
-        if ( ! defined( 'OWA_SQL_TRUNCATE_TABLE' )
-          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
-
-            return false;
-        }
-
-        return (bool) $this->query( sprintf( OWA_SQL_TRUNCATE_TABLE, $table_name ) );
-    }
-
-    /**
      * Add a column without the instant algorithm, rebuilding the table.
      *
      * For a table that EXCHANGE PARTITION compares byte for byte. An instantly
@@ -2371,52 +2206,6 @@ class Db extends \OWA\Core\Base {
 
         return (bool) $this->query( sprintf(
             OWA_SQL_EXCHANGE_PARTITION, $table_name, $partition, $with_table ) );
-    }
-
-    /**
-     * Indexes that duplicate another index on the same table, exactly.
-     *
-     * Same columns in the same order, same uniqueness, same type. The first by
-     * name is kept and the rest are returned as removable, so the result is
-     * stable and one index always survives for each column list.
-     *
-     * Reporting is separated from removing so the decision can be inspected --
-     * and tested -- without touching the schema.
-     *
-     * @return array of ['t' => table, 'i' => index, 'cols' => column list, 'keeping' => index kept]
-     */
-    function getDuplicateIndexes( $only_table = null ) {
-
-        $seen = array();
-        $dupes = array();
-
-        foreach ( $this->listIndexes() as $row ) {
-
-            if ( $only_table !== null && $row['t'] !== $only_table ) {
-
-                continue;
-            }
-
-            // Uniqueness and type are part of the identity: a unique index and a
-            // non-unique one over the same columns are not copies of each other.
-            $key = $row['t'] . "\0" . $row['cols'] . "\0" . $row['nu'] . "\0" . $row['ty'];
-
-            if ( isset( $seen[ $key ] ) ) {
-
-                $dupes[] = array(
-                    't'       => $row['t'],
-                    'i'       => $row['i'],
-                    'cols'    => $row['cols'],
-                    'keeping' => $seen[ $key ],
-                );
-
-            } else {
-
-                $seen[ $key ] = $row['i'];
-            }
-        }
-
-        return $dupes;
     }
 
     /**

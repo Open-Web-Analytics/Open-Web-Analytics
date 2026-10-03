@@ -1221,28 +1221,6 @@ class Template extends TemplateEngine {
         }
     }
 
-    function displayMetricInfobox($params = array()) {
-
-        $t = new \OWA\Core\Template;
-
-        if (!empty($dom_id)) {
-            $dom_id = rand();
-        }
-        $params['do'] = 'getResultSet';
-        $count = \OWA\Core\CoreAPI::executeApiCommand($params);
-        $params['period'] = 'last_thirty_days';
-        $params['dimensions'] = 'date';
-        $trend = \OWA\Core\CoreAPI::executeApiCommand($params);
-        $t->set('metric_name', $params['metrics']);
-        $t->set('dom_id', $dom_id);
-        $t->set('count', $count);
-        $t->set('trend', $trend);
-        $t->set_template('metricInfobox.php');
-
-        return $t->fetch();
-
-    }
-
     public function renderKpiInfobox($number, $label, $link = '', $class = '') {
 
         $t = new \OWA\Core\Template;

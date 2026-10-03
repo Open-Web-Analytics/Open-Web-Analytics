@@ -66,12 +66,10 @@ final class ControllerCapabilityContractTest extends TestCase
         'UsersPasswordEntry',
         'UsersNewAccount',
 
-        // REST plumbing. ApiRequest runs the same capability check itself
-        // before dispatching; CorsPreflight answers OPTIONS only.
-        'ApiRequest',
+        // REST plumbing: CorsPreflight answers OPTIONS only.
         'CorsPreflight',
 
-        // Report dispatch, and the same shape as ApiRequest above: it resolves
+        // Report dispatch: it resolves
         // a reportId to a report and hands the request on, delegating at
         // doAction() -- which is where checkCapabilityAndAuthenticateUser()
         // lives, so the TARGET report's own requirement is what runs.

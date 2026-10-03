@@ -35,14 +35,6 @@ final class TemplateXssTest extends TestCase
     private const TEXT_PAYLOAD = '"><img src=x onerror=alert(1)>';
 
     /**
-     * A scheme-based payload. htmlentities() leaves this untouched -- it has no
-     * quote/angle-bracket to escape -- so a template that only ran out() on a
-     * URL would still emit a live javascript: href. safeHref() must collapse
-     * the scheme to '#'.
-     */
-    private const SCHEME_PAYLOAD = 'javascript:alert(document.cookie)';
-
-    /**
      * Assert an escaped render: the raw attribute-breakout sequence `">` and a
      * raw `<script` / `<img` opener must NOT appear; the escaped entity form
      * (&quot; / &lt;) must. This is what \OWA\Core\Template::out() produces.
@@ -72,33 +64,6 @@ final class TemplateXssTest extends TestCase
         }
         $this->assertTrue($t->set_template($file), "could not locate template $file");
         return $t->fetch();
-    }
-
-    /*
-     * documentNavSum.php and row_visitSummary.php are GONE.
-     *
-     * They were the per-visit CARD stack, alive only for the visitor report,
-     * which was dropped 2026-08-25 along with visit, visits and
-     * visitors-roster. The escaping rule they were checked against still
-     * applies to every remaining template through the sweep below.
-     */
-
-    public function testItemDocumentEscapesUrlAndTitle(): void
-    {
-        // Reached via reportDocument.php / reportDomClicks.php.
-        // $properties is a small stub exposing get(), matching the entity API
-        // the template calls ($properties->get('url') etc.).
-        $properties = new class([
-            'id'         => '1785002347504724034', // numeric GUID (safe)
-            'page_title' => self::TEXT_PAYLOAD,
-            'url'        => self::URL_PAYLOAD,
-            'page_type'  => 'page',
-        ]) {
-            public function __construct(private array $p) {}
-            public function get($k) { return $this->p[$k] ?? null; }
-        };
-        $html = $this->renderBaseTemplate('item_document.php', ['properties' => $properties]);
-        $this->assertEscaped($html, 'item_document.php');
     }
 
     public function testNewSessionEmailEscapesVisitorFields(): void
@@ -146,26 +111,4 @@ final class TemplateXssTest extends TestCase
         $this->assertSame('#', \OWA\Module\Base\Classes\Sanitize::sanitizeHref(''));
     }
 
-    /**
-     * A stored page URL of  javascript:...  must NOT render as a live scheme in
-     * the item_document "Visit Site" href. out() alone would let it through;
-     * safeHref() replaces it with '#'.
-     */
-    public function testItemDocumentNeutralizesJavascriptScheme(): void
-    {
-        $properties = new class([
-            'id'         => '1785002347504724034',
-            'page_title' => 'Home',
-            'url'        => self::SCHEME_PAYLOAD,
-            'page_type'  => 'page',
-        ]) {
-            public function __construct(private array $p) {}
-            public function get($k) { return $this->p[$k] ?? null; }
-        };
-        $html = $this->renderBaseTemplate('item_document.php', ['properties' => $properties]);
-
-        // The href must be neutralized; no live javascript: scheme in an attribute.
-        $this->assertStringNotContainsString('href="javascript:', $html, 'live javascript: scheme survived into href');
-        $this->assertStringContainsString('href="#"', $html, 'expected scheme to collapse to #');
-    }
 }
