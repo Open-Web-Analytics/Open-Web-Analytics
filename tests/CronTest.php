@@ -421,7 +421,10 @@ final class CronTest extends TestCase
             '@monthly'      => 'monthly, on the 1st at 00:00',
             '@daily'        => 'daily at 00:00',
             '@hourly'       => 'hourly, on the hour',
+            '* * * * *'     => 'every minute',
             '*/5 * * * *'   => 'every 5 minutes',
+            '1,6,11,16,21,26,31,36,41,46,51,56 * * * *' => 'every 5 minutes, from :01',
+            '11,26,41,56 * * * *' => 'every 15 minutes, from :11',
             '10 * * * *'    => 'hourly, at 10 past',
             '0 4 * * *'     => 'daily at 04:00',
             '30 2 1 * *'    => 'monthly, on day 1 at 02:30',
@@ -431,6 +434,7 @@ final class CronTest extends TestCase
 
         // Anything unusual is shown as itself rather than mis-described.
         $this->assertSame('0 4 * * 1-5', \OWA\Core\Cron::describe('0 4 * * 1-5'));
+        $this->assertSame('1,2,10 * * * *', \OWA\Core\Cron::describe('1,2,10 * * * *'), 'an uneven list is not a step');
     }
 
     /** An unusable timezone yields no match rather than an exception. */

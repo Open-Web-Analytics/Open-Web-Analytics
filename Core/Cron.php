@@ -523,9 +523,36 @@ class Cron {
             return $words[ $expr ];
         }
 
+        if ( $expr === '* * * * *' ) {
+
+            return 'every minute';
+        }
+
         if ( preg_match( '#^\*/(\d+) \* \* \* \*$#', $expr, $m ) ) {
 
             return sprintf( 'every %d minutes', (int) $m[1] );
+        }
+
+        /*
+         * A spread every-N-minutes job (minutelySpreadFor()) is a minute list
+         * at an even step from an offset: '1,6,11,...,56 * * * *' is every 5
+         * minutes, from :01.
+         */
+        if ( preg_match( '#^(\d+(?:,\d+)+) \* \* \* \*$#', $expr, $m ) ) {
+
+            $minutes = array_map( 'intval', explode( ',', $m[1] ) );
+            $step    = $minutes[1] - $minutes[0];
+            $even    = $step > 0 && 60 % $step === 0 && count( $minutes ) === 60 / $step;
+
+            foreach ( $minutes as $i => $minute ) {
+
+                $even = $even && $minute === $minutes[0] + $i * $step;
+            }
+
+            if ( $even ) {
+
+                return sprintf( 'every %d minutes, from :%02d', $step, $minutes[0] );
+            }
         }
 
         if ( preg_match( '#^(\d+) \* \* \* \*$#', $expr, $m ) ) {

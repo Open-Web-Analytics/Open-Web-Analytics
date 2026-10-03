@@ -421,6 +421,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.pruneEventQueueArchivesCli',    'OWA\\Module\\Base\\Controller\\PruneEventQueueArchivesCli',   'Controller/PruneEventQueueArchivesCli.php' );
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
         $this->registerAction( 'base.cubeStatus',                    'OWA\\Module\\Base\\Controller\\CubeStatus',                 'Controller/CubeStatus.php' );
+        $this->registerAction( 'base.systemHealth',                  'OWA\\Module\\Base\\Controller\\SystemHealth',               'Controller/SystemHealth.php' );
         $this->registerAction( 'base.cubeStatusDetail',              'OWA\\Module\\Base\\Controller\\CubeStatusDetail',           'Controller/CubeStatusDetail.php' );
         $this->registerAction( 'base.customDimensions',              'OWA\\Module\\Base\\Controller\\CustomDimensions',           'Controller/CustomDimensions.php' );
         $this->registerAction( 'base.customDimensionEdit',           'OWA\\Module\\Base\\Controller\\CustomDimensionEdit',        'Controller/CustomDimensionEdit.php' );
@@ -832,6 +833,14 @@ class Module extends \OWA\Core\Module {
                 'title'          => 'Reporting Cubes',
                 'group'          => 'General',
                 'order'          => 4)
+        );
+
+        // Is the background work happening: the scheduler, its jobs, the job queue, the tracker intake.
+        $this->registerSettingsPage(array(
+                'do'             => 'base.systemHealth',
+                'title'          => 'System Health',
+                'group'          => 'General',
+                'order'          => 5)
         );
 
         /*
