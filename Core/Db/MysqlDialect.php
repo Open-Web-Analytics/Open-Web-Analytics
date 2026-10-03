@@ -495,9 +495,11 @@ trait MysqlDialect
     }
 
     /**
-     * Create a database for an install. Its default character set is
-     * utf8mb4; OWA's own tables declare theirs, so this governs only what
-     * else is put in it.
+     * Create a database for an install, defaulting to the character set OWA
+     * declares its tables with (OWA_DTD_CHARACTER_ENCODING_UTF8). Not
+     * utf8mb4: a table created without naming one -- the cube's computed
+     * table is -- takes the database's, and utf8mb4 quadruples what each
+     * VARCHAR counts against the 65,535-byte row limit.
      *
      * @param string $name
      * @return bool
@@ -509,7 +511,7 @@ trait MysqlDialect
             return false;
         }
 
-        return $this->query( sprintf( 'CREATE DATABASE `%s` CHARACTER SET utf8mb4', $name ) ) !== false;
+        return $this->query( sprintf( 'CREATE DATABASE `%s` CHARACTER SET %s', $name, OWA_DTD_CHARACTER_ENCODING_UTF8 ) ) !== false;
     }
 
     /**

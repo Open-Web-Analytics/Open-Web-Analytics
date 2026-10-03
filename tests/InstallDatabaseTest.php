@@ -53,6 +53,11 @@ final class InstallDatabaseTest extends TestCase
             $this->assertSame(['ok' => true, 'error' => null], InstallDatabase::create($name));
             $this->assertTrue($db->databaseExists($name));
 
+            // The tables' character set, which an undeclared table inherits.
+            $row = $db->get_row(sprintf(
+                "SELECT DEFAULT_CHARACTER_SET_NAME AS c FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '%s'", $name));
+            $this->assertMatchesRegularExpression('/^utf8(mb3)?$/', (string) ($row['c'] ?? ''));
+
             $again = InstallDatabase::create($name);
             $this->assertFalse($again['ok'], 'never into a database that exists');
             $this->assertStringContainsString('already exists', $again['error']);

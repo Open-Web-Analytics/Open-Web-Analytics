@@ -80,6 +80,8 @@ test.describe('install: web wizard creating its own database', () => {
         const result = harness('assert-created', name);
         expect(result.status).toBe('installed');
         expect(result.organization_named_by_db).toBe(true);
-        expect(result.charset).toBe('utf8mb4');
+        // The tables' own character set, not utf8mb4: a table created without
+        // naming one inherits this.
+        expect(result.charset).toMatch(/^utf8(mb3)?$/);
     });
 });

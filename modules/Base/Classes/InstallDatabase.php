@@ -78,9 +78,9 @@ final class InstallDatabase {
 
             return array( 'ok' => false, 'error' => sprintf(
                 'The server refused to create the database: %s. Either give this user permission to create databases, '
-              . 'or have an administrator run CREATE DATABASE `%s` CHARACTER SET utf8mb4; GRANT ALL ON `%s`.* TO '
+              . 'or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO '
               . '<this user>; and choose "Use an existing database".',
-                $server->lastQueryError() ?: 'permission denied', $name, $name ) );
+                $server->lastQueryError() ?: 'permission denied', $name, OWA_DTD_CHARACTER_ENCODING_UTF8, $name ) );
         }
 
         return array( 'ok' => true, 'error' => null );
