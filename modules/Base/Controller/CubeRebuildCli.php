@@ -394,6 +394,34 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             }
         }
 
+        /*
+         * NAMED DATES REACH BACK TOO. A cube has dated partitions only as far
+         * as something gave it them -- its lead, or a first build's reach-back
+         * to the first day in raw -- and partitions() can only build what a
+         * partition covers. A run asking for older dates found none and built
+         * just the partitions that existed, saying "covers 3 partition(s)" for
+         * 15 years of migrated history and nothing more. So the cube is given
+         * partitions back to the start of what was asked for, or the first day
+         * raw holds, whichever is later; nothing is added where they exist.
+         */
+        if ( ! $dry_run && ! $routine ) {
+
+            $first = isset( $earliest ) ? $earliest : \OWA\Module\Base\Classes\Cube\Cubes::earliestDay( $property_id );
+
+            if ( $first ) {
+
+                $want   = max( (int) $range['from'], (int) $first );
+                $result = $this->ensurePartitionsFrom( $table, $want );
+
+                if ( ! $result['covered'] && ! $result['added'] ) {
+
+                    \OWA\Core\CoreAPI::error( sprintf(
+                        '%s: could not add partitions back to %d, so days before its oldest partition are not built.',
+                        $table, $want ) );
+                }
+            }
+        }
+
         if ( ! $db->isPartitioned( $table ) ) {
 
             \OWA\Core\CoreAPI::error( sprintf(
@@ -558,6 +586,25 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * Dated partitions on $table back to $day, adding only what is missing.
+     *
+     * @param string $table
+     * @param int    $day yyyymmdd
+     * @return array extendPartitionsBack()'s result: covered, added, ...
+     */
+    protected function ensurePartitionsFrom( $table, $day ) {
+
+        // As partition-rotate reads them, so the next rotation finds the table in shape.
+        $detail_months = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' )
+            ?: \OWA\Core\Db::PARTITION_DETAIL_MONTHS;
+        $limit         = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_max_partitions' )
+            ?: \OWA\Core\Db::PARTITION_COUNT_LIMIT;
+
+        return \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(
+            $table, (string) (int) $day, $detail_months, $limit );
+    }
+
+    /**
      * Give a just-created cube dated partitions back to $earliest, and widen
      * the range to start there.
      *
@@ -571,14 +618,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     protected function reachBackForFirstBuild( $table, $earliest, array $range ) {
 
-        // As partition-rotate reads them, so the next rotation finds the table in shape.
-        $detail_months = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' )
-            ?: \OWA\Core\Db::PARTITION_DETAIL_MONTHS;
-        $limit         = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_max_partitions' )
-            ?: \OWA\Core\Db::PARTITION_COUNT_LIMIT;
-
-        $result = \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(
-            $table, (string) $earliest, $detail_months, $limit );
+        $result = $this->ensurePartitionsFrom( $table, $earliest );
 
         if ( ! $result['covered'] && ! $result['added'] ) {
 

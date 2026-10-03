@@ -263,4 +263,51 @@ final class CubeFirstBuildBackfillTest extends TestCase
         $this->assertSame(1, $this->cubeRowsOn(self::PROPERTY, self::$old_day),
             'a routine build covers yesterday and today only');
     }
+
+    private function dropCube(int $property_id): void
+    {
+        foreach (['', '_rebuild', '_computed'] as $suffix) {
+            \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DROP TABLE IF EXISTS %s%s', Cubes::tableFor($property_id), $suffix));
+        }
+    }
+
+    /**
+     * A NAMED range reaches back too. With from= earlier than the first day in
+     * raw, the cube this run created had only its lead, and the build covered
+     * just those partitions: found rehearsing the upgrade, where
+     * from=20110101 over 15 years of migrated history built 3 partitions.
+     */
+    public function testANamedRangeOnANewCubeReachesBackToTheFirstDay(): void
+    {
+        $this->dropCube(self::PROPERTY);
+
+        $this->cli(['property' => (string) self::PROPERTY, 'from' => '20100101'])->action();
+
+        $raw = (int) (\OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            "SELECT COUNT(*) AS n FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE, self::$old_day))['n'] ?? 0);
+
+        $this->assertGreaterThan(0, $raw);
+        $this->assertSame($raw, $this->cubeRowsOn(self::PROPERTY, self::$old_day),
+            'the first day in raw is built though from= named an earlier one');
+
+        $first = \OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans(Cubes::tableFor(self::PROPERTY))[0];
+        $this->assertSame(true, (int) $first['start'] <= self::$old_day && (int) $first['start'] > 20100101,
+            'partitions reach the first day in raw, not the empty years before it');
+    }
+
+    /** An existing cube asked for days older than its partitions is given them. */
+    public function testANamedRangeOnAnExistingCubeReachesBack(): void
+    {
+        $this->dropCube(self::PROPERTY);
+        $this->cli(['property' => (string) self::PROPERTY])->action();
+
+        $older = (int) date('Ymd', strtotime((string) self::$old_day) - 400 * 86400);
+        self::seedRaw(self::SITE, $older, 7);
+
+        $this->cli(['property' => (string) self::PROPERTY, 'from' => (string) $older])->action();
+
+        $this->assertSame(1, $this->cubeRowsOn(self::PROPERTY, $older),
+            'history older than the cube is built when asked for');
+    }
 }
