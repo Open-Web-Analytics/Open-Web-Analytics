@@ -32,6 +32,20 @@ Until it is applied, the admin screens show the update notice. Tracking is
 unaffected, and so are scheduled jobs unless the release also changes the
 schema, which stops them until it is applied.
 
+### `OWA_DEBUG` replaces `OWA_ERROR_HANDLER`
+
+Debug mode is `define('OWA_DEBUG', true);` in `owa-config.php`. It writes debug
+lines to OWA's error log as well as notices and errors, routes PHP's own errors
+there, and has the tracker log to the browser console.
+
+`OWA_ERROR_HANDLER` is no longer read. A 1.x config that sets it to
+`'development'` logs at the normal level until it is replaced with `OWA_DEBUG`;
+`'production'` was already the default and needs nothing. Uncaught exceptions
+are handled the same way in either mode.
+
+The log is written without Monolog, which is no longer a dependency. Its file,
+line format and permissions are unchanged.
+
 ### Strict SQL mode is now the default
 
 OWA used to send `SET SESSION sql_mode=''` on every connection, which disables

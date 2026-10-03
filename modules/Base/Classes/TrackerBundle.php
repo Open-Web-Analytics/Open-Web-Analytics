@@ -149,7 +149,7 @@ class TrackerBundle {
             $options[] = array( 'setTrackUrlFragments', true );
         }
 
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'error_handler' ) === 'development' ) {
+        if ( \OWA\Core\Lib::inDebug() ) {
 
             $options[] = array( 'setDebug', true );
         }

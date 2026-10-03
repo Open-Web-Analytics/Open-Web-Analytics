@@ -79,26 +79,14 @@ define('OWA_AUTH_SALT', 'yourauthsaltgoeshere');
 define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 /**
- * OWA ERROR HANDLER
+ * DEBUG
  *
- * Overide OWA error handler. This should be done through the admin GUI, but
- * can be handy during install or development.
- * 
- * Choices are:
- *
- * 'production' - will log only critical errors to a log file.
- * 'development' - logs al sorts of useful debug to log file.
+ * Writes debug lines to OWA's error log as well as notices and errors, routes
+ * PHP's own errors there, and has the tracker log to the browser console.
+ * For development and for diagnosing a problem: the log grows quickly.
  */
 
-//define('OWA_ERROR_HANDLER', 'development');
-
-/**
- * LOG PHP ERRORS
- *
- * Log all php errors to OWA's error log file. Only do this to debug.
- */
-
-//define('OWA_LOG_PHP_ERRORS', true);
+//define('OWA_DEBUG', true);
  
 /**
  * OBJECT CACHING

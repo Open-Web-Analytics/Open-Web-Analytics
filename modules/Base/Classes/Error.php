@@ -18,55 +18,50 @@ namespace OWA\Module\Base\Classes;
 // $Id$
 //
 
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Formatter\LineFormatter;
-
 /**
- * Error Class
- * 
+ * OWA's log: one file (base.error_log_file), and STDOUT as well under the CLI.
+ *
+ * Written directly rather than through a logging library. All OWA ever used
+ * one for was a single file stream with a level threshold and a line format,
+ * and a library on the boot path meant a checkout without vendor/ could log
+ * nothing at all.
+ *
+ * The threshold is notice, or debug when OWA_DEBUG is true (Lib::inDebug()).
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
- * @version        $Revision$
  * @since        owa 1.0.0
  */
 class Error {
 
-    const OWA_LOG_ALL = 0;
-    const OWA_LOG_DEBUG = 2;
-    const OWA_LOG_INFO = 4;
-    const OWA_LOG_NOTICE = 6;
-    const OWA_LOG_WARNING = 8;
-    const OWA_LOG_ERR = 10;
-    const OWA_LOG_CRIT = 12;
-    const OWA_LOG_ALERT = 14;
-    const OWA_LOG_EMERG = 16;
+    /** Each priority logMsg() writes, by rank; a message below the threshold is not written. */
+    const LEVELS = array(
+        'debug'     => 100,
+        'info'      => 200,
+        'notice'    => 250,
+        'warning'   => 300,
+        'error'     => 400,
+        'critical'  => 500,
+        'alert'     => 550,
+        'emergency' => 600,
+    );
 
-    /**
-     * logger instance
-     *
-     * Constructed lazily -- see logger(). Null until something is actually
-     * logged, and null forever on an installation whose vendor/ is missing.
-     *
-     * @var \Monolog\Logger|null
-     */
-    var $logger;
-
-    /**
-     * Whether the log handlers have been attached to the logger yet.
-     *
-     * @var bool
-     */
-    private $handlers_attached = false;
-
-    /** The priorities logMsg() writes; each is the Monolog method of the same name. */
+    /** Kept for callers that still pass a priority by name: every key of LEVELS. */
     const PRIORITIES = array( 'debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency' );
-    
+
     /**
-     * Buffered Msgs
+     * Where messages go once the handler is set: file paths and, under the
+     * CLI, the STDOUT stream. Opened on the first message that is written.
+     *
+     * @var array|null  null until opened
+     */
+    private $sinks = null;
+
+    /**
+     * Messages logged before the configuration was loaded.
      *
      * @var array
      */
@@ -75,48 +70,16 @@ class Error {
     var $init = false;
 
     /**
-     * Constructor
+     * Call once the configuration is loaded: it decides where the log is and
+     * at what level. Flushes what was logged before.
      *
+     * Under OWA_DEBUG, PHP's own errors are routed to the log too.
+     *
+     * @param mixed $type ignored; once 'development' or 'production', now OWA_DEBUG decides
      */
-    function __construct() {
-		
-/*
-		if ( owa_lib::inDebug() ) {
-			
-			$this->createDevelopmentHandler();
-			
-		} else {
-			
-			$this->createProductionHandler();
-		}
-*/
-		
-		//$this->init = true;
-        //$this->logBufferedMsgs();
-    }
+    public function setHandler( $type = null ) {
 
-    function __destruct() {
-
-    }
-
-    // This is called by a client after the owas global config object has been created.
-    public function setHandler($type) {
-
-        /*
-         * Do not build the log handlers here.
-         *
-         * Attaching a handler means constructing Monolog objects, and Monolog
-         * is a Composer package: on a source checkout with no vendor/ that is a
-         * fatal during boot, which is why an unbuilt download used to answer
-         * every request with a blank 500 instead of the installer's environment
-         * check saying so. Nothing here needs a logger, so nothing here builds
-         * one -- logger() does, on the first message that is actually written.
-         *
-         * The rest of what these handlers set up is not Monolog's and stays
-         * eager, because it has to be in place before the next line of code
-         * runs, not before the next message is logged.
-         */
-        if ( $type === 'development' ) {
+        if ( \OWA\Core\Lib::inDebug() ) {
 
             $this->logPhpErrors();
         }
@@ -128,65 +91,73 @@ class Error {
     }
 
     /**
-     * The logger, built on first use.
+     * Open the file (and STDOUT under the CLI), once.
      *
-     * Answers null when Monolog is not installed, which is the whole point:
-     * every caller below treats "no logger" as "do not log" rather than as an
-     * error. An installation in that state cannot write a log file, but it can
-     * still render the page that explains why -- see
-     * modules/Base/Controller/InstallCheckEnv.php.
-     *
-     * @return \Monolog\Logger|null
+     * @return array the open sinks: each array( 'path' => string|null, 'stream' => resource|null )
      */
-    private function logger() {
+    private function sinks() {
 
-        if ( ! class_exists( Logger::class ) ) {
+        if ( $this->sinks !== null ) {
 
-            return null;
+            return $this->sinks;
         }
 
-        if ( ! $this->logger ) {
+        $this->sinks = array();
 
-            $this->logger = new Logger( 'errors' );
+        $path = \OWA\Core\CoreAPI::getSetting( 'base', 'error_log_file' );
+
+        if ( ! self::isSafeLogPath( $path ) ) {
+
+            // refuse to open the file rather than write to an attacker-controlled sink
+            error_log( sprintf( 'OWA: refusing unsafe error_log_file value (%s); file logging disabled.', $path ) );
+
+        } else {
+
+            $this->sinks[] = array( 'path' => (string) $path, 'stream' => null );
         }
 
-        if ( ! $this->handlers_attached ) {
+        if ( defined( 'OWA_CLI' ) ) {
 
-            // Before the handlers, so a handler that logs cannot recurse into
-            // this method and attach a second copy of everything.
-            $this->handlers_attached = true;
-
-            $this->make_file_logger();
-
-            // if the CLI is in use, also make a console logger
-            if ( defined( 'OWA_CLI' ) ) {
-
-                $this->make_console_logger();
-            }
+            $this->sinks[] = array( 'path' => null, 'stream' => defined( 'STDOUT' ) ? STDOUT : fopen( 'php://stdout', 'w' ) );
         }
 
-        return $this->logger;
+        return $this->sinks;
     }
 
     /**
-     * Kept for callers that want the handlers attached now rather than on the
-     * first message. Both builders route through logger(), so the attachment
-     * happens exactly once however it is reached.
+     * Append one line to a file, creating it group-writable.
+     *
+     * Both the web server user and the account running the CLI write to this
+     * path, so the mode is set rather than left to whichever umask creates the
+     * file: a 0644 file from a shell's 022 would shut the web server out. The
+     * path embeds the instance hash, so a new file -- and a new race over who
+     * creates it -- appears on every credential rotation.
+     *
+     * @return bool
      */
-    function createDevelopmentHandler() {
+    private static function appendToFile( $path, $line ) {
 
-        $this->logPhpErrors();
+        $created = ! file_exists( $path );
 
-        set_exception_handler( [ $this, 'handleUncaughtException' ] );
+        $fh = @fopen( $path, 'a' );
 
-        $this->logger();
-    }
+        if ( ! $fh ) {
 
-    function createProductionHandler() {
+            return false;
+        }
 
-        set_exception_handler( [ $this, 'handleUncaughtException' ] );
+        if ( $created ) {
 
-        $this->logger();
+            @chmod( $path, 0664 );
+        }
+
+        // One line at a time from many processes: lock, so lines never interleave.
+        @flock( $fh, LOCK_EX );
+        $ok = @fwrite( $fh, $line ) !== false;
+        @flock( $fh, LOCK_UN );
+        fclose( $fh );
+
+        return $ok;
     }
 
     /**
@@ -295,42 +266,35 @@ class Error {
     
     function logMsg( $msg, $priority ) {
 
+        if ( ! isset( self::LEVELS[ $priority ] ) || self::LEVELS[ $priority ] < self::LEVELS[ $this->getLogLevel() ] ) {
+
+            return;
+        }
+
         if ( is_object( $msg ) || is_array( $msg ) ) {
 
             $msg = \OWA\Core\Lib::forLog( $msg );
         }
 
+        $line = sprintf( "[%s] [%d] [%s] %s\n",
+            date( $this->getDateTimestamp() ), getmypid(), strtoupper( $priority ), $msg );
+
         /*
-         * No Monolog, no log file. An installation missing vendor/ cannot write
-         * one, and saying so is the installer's job -- not this method's, which
-         * runs long before there is a page to say it on. Dropping the message is
-         * what lets the environment check render and name the real problem.
+         * A write that fails is dropped, never thrown: logging must not be the
+         * thing that turns a request into an error. At shutdown STDOUT can be
+         * closed before an object whose destructor still logs (the cache
+         * persisting itself), which once made a successful `cmd=update` exit 255.
          */
-        $logger = $this->logger();
+        foreach ( $this->sinks() as $sink ) {
 
-        if ( ! $logger ) {
+            if ( $sink['path'] !== null ) {
 
-            return;
-        }
-        
-        /*
-         * A write that fails is dropped, never thrown. Monolog throws from a
-         * handler whose stream is closed -- the console handler writes to STDOUT,
-         * and at shutdown it can be destroyed before an object whose destructor
-         * still logs (the cache persisting itself), which turned a successful
-         * `cmd=update` into a fatal and exit code 255.
-         */
-        try {
+                self::appendToFile( $sink['path'], $line );
 
-            // Each priority is the name of Monolog's method for it.
-            if ( in_array( $priority, self::PRIORITIES, true ) ) {
+            } elseif ( is_resource( $sink['stream'] ) ) {
 
-                $logger->{$priority}( $msg );
+                @fwrite( $sink['stream'], $line );
             }
-
-        } catch ( \Throwable $e ) {
-
-            return;
         }
     }
 
@@ -353,109 +317,15 @@ class Error {
         }
     }
 
-    /**
-     * Builds a console logger
-     *
-     */
-    function make_console_logger() {
-		
-		// define standard out
-		if ( ! defined( 'STDOUT' ) ) {
-	       
-	       define('STDOUT', fopen("php://stdout", "w") );
-    	}
-       
-       // determine log level
-       $level = $this->getLogLevel();
-              
-       // create a stream
-       $stream = new StreamHandler(STDOUT, $level);
-       
-       // create a formatter
-       $dt = $this->getDateTimestamp();
-       
-       $template = $this->getLineFormat();
-	  
-	   $formatter = new LineFormatter($template, $dt, true, true);
-        
-	   $stream->setFormatter( $formatter );
-	   
-	   // add the stream hadnler to the logger
-       $logger = $this->logger();
-
-       if ( $logger ) {
-
-           $logger->pushHandler( $stream );
-       }
-    }
-    
+    /** The lowest priority written: debug under OWA_DEBUG, notice otherwise. */
     function getLogLevel() {
-	    
-	   $level = Logger::NOTICE;
-       
-       if ( \OWA\Core\Lib::inDebug() ) {
-	       
-	       $level = Logger::DEBUG;
-       }
-       
-       return $level;
+
+        return \OWA\Core\Lib::inDebug() ? 'debug' : 'notice';
     }
-    
+
     function getDateTimestamp() {
-	    
-	    return "H:i:s Y-m-d";
-    }
-    
-    function getLineFormat() {
-	    
-	    $pid = getmypid();
-	    return "[%datetime%] [$pid] [%level_name%] %message% %context% %extra%\n";
-    }
 
-    /**
-     * Builds a logger that writes to a file.
-     *
-     */
-    function make_file_logger() {
-
-		// create a formatter
-		$dt = $this->getDateTimestamp();
-
-		$template = $this->getLineFormat();
-
-		$formatter = new LineFormatter($template, $dt, true, true);
-
-        // determine log level
-        $level = $this->getLogLevel();
-
-        // create stream handler
-        $path = \OWA\Core\CoreAPI::getSetting('base', 'error_log_file');
-
-        if ( ! self::isSafeLogPath( $path ) ) {
-            // refuse to open the handler rather than write to an attacker-controlled sink
-            error_log( sprintf( 'OWA: refusing unsafe error_log_file value (%s); file logger disabled.', $path ) );
-            return;
-        }
-
-        // Set the mode explicitly. Without it the file inherits the umask of
-        // whichever process happens to create it, and both the web server user
-        // and the account running the CLI write to this same path. A file
-        // created under umask 022 is 0644, so the other one can no longer append
-        // -- and a log write that cannot open its file raises, which turns a
-        // notice into a fatal. The path changes whenever the instance hash does,
-        // so a new file (and a new race over who creates it) appears on every
-        // credential rotation.
-        $stream = new StreamHandler($path, $level, true, 0664);
-
-		$stream->setFormatter($formatter);
-
-		// add stream handler to logger
-		$logger = $this->logger();
-
-		if ( $logger ) {
-
-			$logger->pushHandler( $stream );
-		}
+        return "H:i:s Y-m-d";
     }
 
     /**

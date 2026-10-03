@@ -132,36 +132,34 @@ final class ActionResolutionTest extends TestCase
     }
 
     /**
-     * The production error handler must register an exception handler.
+     * The error handler must register an exception handler, debug or not.
      *
-     * This is the defect that made the difference between installations: only
-     * the development handler registered one, so the installation facing the
-     * internet was the one where an uncaught exception became a PHP fatal.
+     * Only the 1.x development handler once registered one, so the installation
+     * facing the internet was the one where an uncaught exception became a PHP
+     * fatal.
      */
-    public function testBothErrorHandlersRegisterAnExceptionHandler()
+    public function testTheErrorHandlerRegistersAnExceptionHandler()
     {
         $original = set_exception_handler(null);
 
         try {
-            foreach (['createProductionHandler', 'createDevelopmentHandler'] as $method) {
+            // Clear first. Without this the handler registered by the
+            // bootstrap is still installed, and the assertion below passes
+            // whether or not setHandler() registers anything at all.
+            set_exception_handler(null);
+            $this->assertNull(set_exception_handler(null),
+                'the slot must be empty before the method under test runs');
 
-                // Clear first. Without this the handler registered by the
-                // bootstrap -- or by the previous iteration -- is still
-                // installed, and the assertion below passes whether or not the
-                // method under test registers anything at all.
-                set_exception_handler(null);
-                $this->assertNull(set_exception_handler(null),
-                    'the slot must be empty before the method under test runs');
+            // One path for every install now: OWA_DEBUG changes the log level,
+            // not whether uncaught exceptions are handled.
+            $e = \OWA\Core\CoreAPI::supportClassFactory('base', 'error');
+            $e->setHandler();
 
-                $e = \OWA\Core\CoreAPI::supportClassFactory('base', 'error');
-                $e->$method();
+            $handler = set_exception_handler(null);
 
-                $handler = set_exception_handler(null);
-
-                $this->assertIsArray($handler, "$method must register an exception handler");
-                $this->assertSame('handleUncaughtException', $handler[1],
-                    "$method must register the handler that sets a status code");
-            }
+            $this->assertIsArray($handler, 'setHandler() must register an exception handler');
+            $this->assertSame('handleUncaughtException', $handler[1],
+                'it must be the handler that sets a status code');
 
         } finally {
             set_exception_handler($original);

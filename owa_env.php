@@ -63,8 +63,8 @@ if ( file_exists( OWA_VENDOR_DIR . 'autoload.php' ) ) {
 	 * This registers the same two PSR-4 prefixes composer.json declares, for
 	 * OWA's own code only. It deliberately does NOT stand in for the packages
 	 * in vendor/; it boots far enough to reach the screen that explains they
-	 * are missing. The one package on that path is Monolog, which
-	 * modules/Base/Classes/Error.php now builds lazily for this reason.
+	 * are missing. Nothing on that path needs one; the last that did was
+	 * Monolog, which the error log no longer uses.
 	 */
 	spl_autoload_register( function ( $class ) {
 

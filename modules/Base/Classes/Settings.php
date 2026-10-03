@@ -507,11 +507,6 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'db_password', OWA_DB_PASSWORD, 'OWA_DB_PASSWORD');
         }
 
-        /* SET ERROR HANDLER */
-        if (defined('OWA_ERROR_HANDLER')) {
-            $this->setFromConfigConstant( 'base', 'error_handler', OWA_ERROR_HANDLER, 'OWA_ERROR_HANDLER');
-        }
-
         if (defined('OWA_PUBLIC_URL')) {
             $this->setFromConfigConstant( 'base', 'public_url', OWA_PUBLIC_URL, 'OWA_PUBLIC_URL');
         }
@@ -1536,7 +1531,7 @@ namespace OWA\Module\Base\Classes;
          $this->warned_about_undeclared = true;
 
          if ( ! defined( 'OWA_CLI' )
-              && \OWA\Core\CoreAPI::getSetting( 'base', 'error_handler' ) !== 'development' ) {
+              && ! \OWA\Core\Lib::inDebug() ) {
 
              return;
          }
@@ -2801,7 +2796,6 @@ namespace OWA\Module\Base\Classes;
                 'async_lock_file'                    => 'owa.lock',
                 'async_error_log_file'                => 'events_error.txt',
                 'notice_email'                        => '',
-                'error_handler'                        => 'production',
                 'error_log_file'                    => '', //OWA_DATA_DIR . 'logs/errors.txt',
                 'ua-regexes'                        => '',
                 'search_engines.ini'                => OWA_BASE_DIR . '/conf/search_engines.ini',
