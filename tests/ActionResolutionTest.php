@@ -52,6 +52,7 @@ final class ActionResolutionTest extends TestCase
             'base.owa-config',             // hyphen is not an identifier char
             'base.owa.config',             // extra dot
             "base.owa\0config",            // null byte
+            "base.owaconfig\n",            // trailing newline: $ alone would let it through
         ];
 
         foreach ($malformed as $action) {
@@ -273,6 +274,72 @@ final class ActionResolutionTest extends TestCase
             $this->assertSame($expected, http_response_code(), "$action should answer $expected");
             $this->assertStringContainsString('could not be found', $page,
                 "$action should render the error page");
+        }
+    }
+
+    /**
+     * Only the registry resolves an action. Each of these names a real
+     * controller class that the convention lookup removed in v2.0 would have
+     * built: base.LoginForm is the LoginForm controller under a name nobody
+     * registered (only base.loginForm is), and base.partitionsCli an abstract
+     * base whose instantiation fataled the request.
+     */
+    public function testAnUnregisteredNameIsNotResolvedByConvention()
+    {
+        $this->assertTrue(class_exists(\OWA\Module\Base\Controller\LoginForm::class));
+        $this->assertTrue((new \ReflectionClass(\OWA\Module\Base\Controller\PartitionsCli::class))->isAbstract());
+
+        foreach (['base.LoginForm', 'base.partitionsCli'] as $action) {
+
+            $this->assertEmpty(\OWA\Core\CoreAPI::serviceSingleton()->getMapValue('actions', $action),
+                "precondition: $action is not registered");
+
+            http_response_code(200);
+
+            try {
+                $page = (string) \OWA\Core\CoreAPI::performAction($action, []);
+            } catch (\Throwable $t) {
+                $this->fail(sprintf('performAction("%s") raised %s: %s', $action, get_class($t), $t->getMessage()));
+            }
+
+            $this->assertSame(404, http_response_code(), "$action is a missing page");
+            $this->assertStringContainsString('could not be found', $page);
+        }
+    }
+
+    /** A name that is not a string -- ?owa_do[]=x -- is malformed, not a TypeError. */
+    public function testANonStringNameIsABadRequest()
+    {
+        foreach ([['base.loginForm'], null, 42] as $action) {
+
+            http_response_code(200);
+            \OWA\Core\CoreAPI::performAction($action, []);
+            $this->assertSame(400, http_response_code(), var_export($action, true));
+        }
+    }
+
+    /**
+     * The request filter on do/action takes what PHP hands it, which for
+     * ?do[]=x is an array. That threw from strpos() while the request was
+     * being read, before anything resolved: a 500 for a malformed URL.
+     */
+    public function testTheRequestFilterTurnsANonStringIntoNothing()
+    {
+        foreach ([['base.loginForm'], ['a' => ['b']], null, 42] as $value) {
+            $this->assertSame('', \OWA\Core\Lib::fileInclusionFilter($value), var_export($value, true));
+        }
+
+        $this->assertSame('base.loginForm', \OWA\Core\Lib::fileInclusionFilter('base.loginForm'));
+    }
+
+    /** The shape check behind the 400/404 split. */
+    public function testWhatCountsAsAnActionName()
+    {
+        $this->assertTrue(\OWA\Core\CoreAPI::isActionName('base.loginForm'));
+        $this->assertTrue(\OWA\Core\CoreAPI::isActionName('my_module.action2'));
+
+        foreach (['base', 'base.', '.x', 'base.a.b', 'base.a-b', "base.a\n", 'base.a/b', '', null, ['base.x']] as $bad) {
+            $this->assertFalse(\OWA\Core\CoreAPI::isActionName($bad), var_export($bad, true));
         }
     }
 

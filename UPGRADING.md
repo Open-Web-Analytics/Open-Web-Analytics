@@ -253,6 +253,28 @@ still awaiting a retry.
 
 ---
 
+### 5. Unregistered actions — REMOVED in v2.0
+
+**What changed.** An action is reached only if a module registers it, with
+`registerAction()` in its `registerActions()`. 1.x also resolved a name nothing
+registered by convention, turning `?owa_do=<module>.<action>` into the
+module's controller class of that name. **v2.0 does not**: an unregistered
+name gets the missing-page response (404, or 400 for a name that is not
+`<module>.<action>`), and no controller is built.
+
+**Migrating.** Register each controller a URL or a form names:
+
+```php
+function registerActions() {
+    $this->registerAction( 'mymodule.reportWidgets',
+        'OWA\\Module\\MyModule\\Controller\\ReportWidgets', '' );
+}
+```
+
+Pinned by `tests/ActionResolutionTest.php`.
+
+---
+
 ## Deprecated in 2.0
 
 ### Tracker option `cookiePersistence`
