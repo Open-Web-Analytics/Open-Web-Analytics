@@ -323,9 +323,11 @@ final class CubeBuildTest extends TestCase
             'page_location' => 'https://example.test/found',
             'page_path'     => '/found',
             'page_title'    => 'Found',
-            'referer_url'   => 'https://yandex.ru/search/?text=open+web+analytics',
+            // Cyrillic, as a Yandex query mostly is: the computed table it is
+            // written to must hold more than Latin-1.
+            'referer_url'   => 'https://yandex.ru/search/?text=%D0%B2%D0%B5%D0%B1+%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D1%82%D0%B8%D0%BA%D0%B0',
             'referer_host'  => 'yandex.ru',
-            'referer_query' => 'text=open+web+analytics',
+            'referer_query' => 'text=%D0%B2%D0%B5%D0%B1+%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D1%82%D0%B8%D0%BA%D0%B0',
         ]);
 
         // A tagged arrival that ALSO has an engine query. The tag wins: a
@@ -1211,8 +1213,8 @@ final class CubeBuildTest extends TestCase
         // engine list never reaches.
         $row = $this->built('page_view', self::VISITOR_SEARCHER, 8881000000000007, $this->t0);
 
-        $this->assertSame('open web analytics', $row['search_terms'],
-            'the + separators decode to spaces, which is the half SQL cannot do');
+        $this->assertSame('веб аналитика', $row['search_terms'],
+            'the + separators and %-escapes decode, which is the half SQL cannot do');
     }
 
     public function testTheCandidateQueryExcludesRowsSqlAlreadyAnswers(): void

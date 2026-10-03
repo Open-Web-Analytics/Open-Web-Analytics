@@ -85,5 +85,9 @@ final class Update068Test extends TestCase
                        '/`not_before_timestamp` int(\(\d+\))?/', '/`is_assigned` tinyint\(1\)/', '/PRIMARY KEY \(`id`\)/') as $piece) {
             $this->assertMatchesRegularExpression($piece, $create);
         }
+
+        // Declared, not the database's default (latin1 on an older install).
+        $this->assertMatchesRegularExpression('/ENGINE=InnoDB/', $create);
+        $this->assertMatchesRegularExpression('/CHARSET=utf8(mb3)?\b/', $create);
     }
 }

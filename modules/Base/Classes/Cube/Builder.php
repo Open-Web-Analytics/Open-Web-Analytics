@@ -864,8 +864,10 @@ class Builder {
 
         $this->db->query( sprintf( OWA_SQL_DROP_TABLE, $this->tables['computed'] ) );
 
-        if ( ! $this->db->query( sprintf( 'CREATE TABLE %s (%s)',
-                $this->tables['computed'], implode( ', ', $definitions ) ) ) ) {
+        // Declared like every other OWA table: left to the database's
+        // default, a search term outside Latin-1 failed the whole build.
+        if ( ! $this->db->query( sprintf( 'CREATE TABLE %s (%s) %s',
+                $this->tables['computed'], implode( ', ', $definitions ), $this->db->tableOptions() ) ) ) {
 
             \OWA\Core\CoreAPI::error( sprintf(
                 'Cube build: could not create %s.', $this->tables['computed'] ) );

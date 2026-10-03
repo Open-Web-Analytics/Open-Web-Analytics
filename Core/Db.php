@@ -3956,52 +3956,7 @@ class Db extends \OWA\Core\Base {
             $columns .= ', ' . implode( ', ', $indexes );
         }
 
-        // make table options
-        $table_options = '';
-        $options = $entity->getTableOptions();
-
-        // table type
-        switch ($options['table_type']) {
-
-            case "disk":
-                $table_type = OWA_DTD_TABLE_TYPE_DISK;
-                break;
-            case "memory":
-                $table_type = OWA_DTD_TABLE_TYPE_MEMORY;
-                break;
-            default:
-                $table_type = OWA_DTD_TABLE_TYPE_DEFAULT;
-
-        }
-
-        $table_options .= sprintf(OWA_DTD_TABLE_TYPE, $table_type);
-
-        // character encoding type
-
-        // just in case the propoerties is not i nthe array, add a default value.
-        if (!array_key_exists('character_encoding', $options)) {
-
-            $options['character_encoding'] = OWA_DTD_CHARACTER_ENCODING_UTF8;
-        }
-
-        $table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
-
-        /*
-         * Declared rather than inherited. InnoDB's ~8,126-byte on-page row
-         * limit is the one that actually stops a wide table being created, and
-         * how much of a long column can be moved off the page to satisfy it
-         * depends entirely on this. Measured: the reporting cube is creatable
-         * under DYNAMIC and refused under COMPACT and REDUNDANT.
-         */
-        if ( defined( 'OWA_DTD_TABLE_ROW_FORMAT' ) ) {
-
-            if ( ! array_key_exists( 'row_format', $options ) ) {
-
-                $options['row_format'] = OWA_DTD_TABLE_ROW_FORMAT_DEFAULT;
-            }
-
-            $table_options .= sprintf( ' ' . OWA_DTD_TABLE_ROW_FORMAT, $options['row_format'] );
-        }
+        $table_options = $this->tableOptions( $entity->getTableOptions() );
 
         if ( $partition_column ) {
 
@@ -4047,6 +4002,66 @@ class Db extends \OWA\Core\Base {
         }
 
         return $this->query(sprintf(OWA_SQL_CREATE_TABLE, $entity->getTableName(), $columns, $table_options));
+    }
+
+    /**
+     * The engine, character set and row format a table is created with.
+     *
+     * Every CREATE TABLE goes through this, including the ones that do not
+     * start from an entity: a table that names none of these takes the
+     * database's defaults, which on an existing install can be latin1.
+     *
+     * @param array $options table_type, character_encoding, row_format; each optional
+     * @return string
+     */
+    public function tableOptions( array $options = array() ) {
+
+        $table_options = '';
+
+        // table type
+        switch ($options['table_type'] ?? null) {
+
+            case "disk":
+                $table_type = OWA_DTD_TABLE_TYPE_DISK;
+                break;
+            case "memory":
+                $table_type = OWA_DTD_TABLE_TYPE_MEMORY;
+                break;
+            default:
+                $table_type = OWA_DTD_TABLE_TYPE_DEFAULT;
+
+        }
+
+        $table_options .= sprintf(OWA_DTD_TABLE_TYPE, $table_type);
+
+        // character encoding type
+
+        // just in case the propoerties is not i nthe array, add a default value.
+        if (!array_key_exists('character_encoding', $options)) {
+
+            $options['character_encoding'] = OWA_DTD_CHARACTER_ENCODING_UTF8;
+        }
+
+        $table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
+
+        /*
+         * Declared rather than inherited. InnoDB's ~8,126-byte on-page row
+         * limit is the one that actually stops a wide table being created, and
+         * how much of a long column can be moved off the page to satisfy it
+         * depends entirely on this. Measured: the reporting cube is creatable
+         * under DYNAMIC and refused under COMPACT and REDUNDANT.
+         */
+        if ( defined( 'OWA_DTD_TABLE_ROW_FORMAT' ) ) {
+
+            if ( ! array_key_exists( 'row_format', $options ) ) {
+
+                $options['row_format'] = OWA_DTD_TABLE_ROW_FORMAT_DEFAULT;
+            }
+
+            $table_options .= sprintf( ' ' . OWA_DTD_TABLE_ROW_FORMAT, $options['row_format'] );
+        }
+
+        return $table_options;
     }
 
 
