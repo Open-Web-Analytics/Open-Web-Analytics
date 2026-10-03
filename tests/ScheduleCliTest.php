@@ -222,6 +222,41 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertFalse($s->isSchemaUpdateRequired());
     }
 
+    /**
+     * Every shipped job says what it does, in its registration: the System
+     * Health screen shows it on hover and cmd=schedule-status format=markdown
+     * writes it out for the wiki, so a job without one would be a gap in both.
+     */
+    public function testEveryShippedJobDescribesItself()
+    {
+        foreach ($this->callProtected($this->runner(), 'jobs') as $name => $job) {
+            $this->assertGreaterThan(20, strlen((string) ($job['description'] ?? '')), "$name has no description");
+        }
+    }
+
+    /** OWA_SCHEDULED_JOBS can describe a job it adds, or redescribe a shipped one. */
+    public function testAConfiguredJobCarriesItsDescription()
+    {
+        $jobs = $this->jobsWith([
+            'rotate-partitions' => ['description' => 'Our own words for it.'],
+            'owa-test-described' => ['command' => 'partition-status', 'schedule' => '@daily', 'description' => 'A job of ours.'],
+        ]);
+
+        $this->assertSame('Our own words for it.', $jobs['rotate-partitions']['description']);
+        $this->assertSame('A job of ours.', $jobs['owa-test-described']['description']);
+    }
+
+    /** The wiki's table: every job, its command, its schedule in words and its description. */
+    public function testTheMarkdownTableListsEveryJob()
+    {
+        $lines = $this->callProtected($this->statusCli(['format' => 'markdown']), 'markdown');
+        $jobs  = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertSame('| Job | Runs | Schedule | What it does |', $lines[0]);
+        $this->assertCount(count($jobs) + 2, $lines);
+        $this->assertStringContainsString('| `drain-tracker-ingest` | `drain-tracker-ingest` | every minute | Ingests', implode("\n", $lines));
+    }
+
     /** Only these jobs ship; everything else is opt-in. */
     public function testTheDefaultJobsAreRegistered()
     {

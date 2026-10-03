@@ -142,6 +142,7 @@ class SystemHealth {
 
             $rows[] = array(
                 'name'     => $name,
+                'description' => (string) ( $s['job']['description'] ?? '' ),
                 'level'    => $level,
                 'schedule' => JobStatus::isDisabled( $s['job'] ) ? 'off' : \OWA\Core\Cron::describe( $s['job']['schedule'] ),
                 'last_run' => isset( $row['last_run_at'] ) ? JobStatus::readable( (int) $row['last_run_at'] ) : 'never',

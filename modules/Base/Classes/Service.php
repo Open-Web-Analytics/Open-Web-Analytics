@@ -380,9 +380,10 @@ class Service extends \OWA\Core\Base {
             }
 
             $job = $known ? $jobs[ $name ] : array(
-                'name'   => $name,
-                'module' => 'config',
-                'params' => array(),
+                'name'        => $name,
+                'module'      => 'config',
+                'params'      => array(),
+                'description' => '',
             );
 
             $job['source'] = $known ? 'config-override' : 'config';
@@ -390,6 +391,7 @@ class Service extends \OWA\Core\Base {
             if ( isset( $spec['command'] ) )  { $job['command']  = (string) $spec['command']; }
             if ( isset( $spec['schedule'] ) ) { $job['schedule'] = (string) $spec['schedule']; }
             if ( isset( $spec['params'] ) )   { $job['params']   = (array) $spec['params']; }
+            if ( isset( $spec['description'] ) ) { $job['description'] = (string) $spec['description']; }
 
             // A command nothing answers to would otherwise be listed as a
             // healthy job with a next-due time, and only fail silently at

@@ -29,6 +29,11 @@ class ScheduleStatusCli extends SchedulerCli {
 
     function action() {
 
+        if ( $this->getParam( 'format' ) === 'markdown' ) {
+
+            return $this->write( $this->markdown() );
+        }
+
         $now     = time();
         $jobs    = $this->jobs();
         $state   = $this->allState();
@@ -91,6 +96,31 @@ class ScheduleStatusCli extends SchedulerCli {
         $lines = array_merge( $lines, $this->summarise( $jobs, $state, $ever, $last_activity, $now ) );
 
         $this->write( $lines );
+    }
+
+    /**
+     * The registered jobs as a Markdown table, for the wiki:
+     *
+     *   php cli.php cmd=schedule-status format=markdown
+     *
+     * Read from the registrations, so the page says what the code does. The
+     * schedule is this install's: spread jobs land on a minute derived from it.
+     *
+     * @return string[]
+     */
+    protected function markdown() {
+
+        $lines = array( '| Job | Runs | Schedule | What it does |', '|---|---|---|---|' );
+        $cell  = fn ( $v ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), (string) $v );
+
+        foreach ( $this->jobs() as $name => $job ) {
+
+            $lines[] = sprintf( '| `%s` | `%s` | %s | %s |', $name, $job['command'],
+                $cell( $this->isDisabled( $job ) ? 'off' : \OWA\Core\Cron::describe( $job['schedule'] ) ),
+                $cell( $job['description'] ?? '' ) );
+        }
+
+        return $lines;
     }
 
     /**
@@ -166,6 +196,11 @@ class ScheduleStatusCli extends SchedulerCli {
             $this->isDisabled( $job ) ? 'off' : \OWA\Core\Cron::describe( $job['schedule'] ),
             $job['source']
         ) );
+
+        if ( ( $job['description'] ?? '' ) !== '' ) {
+
+            $lines[] = '  does         ' . $job['description'];
+        }
 
         $lines[] = sprintf( '  runs         %s%s',
             $job['command'],

@@ -40,7 +40,7 @@ $owa_s = (array) $view->sections;
         <tr><th>Job</th><th>Schedule</th><th>Last run</th><th>Outcome</th><th>Next</th></tr>
         <?php foreach ( $owa_sec['rows'] as $owa_r ): ?>
         <tr>
-            <td><?php echo owa_cube_status_badge( $owa_r['level'] ); ?> <code><?php $view->out( $owa_r['name'] ); ?></code></td>
+            <td><?php echo owa_cube_status_badge( $owa_r['level'] ); ?> <code<?php if ( $owa_r['description'] !== '' ): ?> title="<?php $view->out( $owa_r['description'] ); ?>"<?php endif; ?>><?php $view->out( $owa_r['name'] ); ?></code></td>
             <td><?php $view->out( $owa_r['schedule'] ); ?></td>
             <td><?php $view->out( $owa_r['last_run'] ); ?></td>
             <td><?php $view->out( $owa_r['outcome'] ?: '--' ); ?><?php if ( $owa_r['outcome'] !== 'ok' && $owa_r['message'] !== '' ): ?><br><?php $view->out( $owa_r['message'] ); ?><?php endif; ?></td>

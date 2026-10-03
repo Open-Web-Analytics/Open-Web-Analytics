@@ -604,7 +604,10 @@ class Module extends \OWA\Core\Module {
         // local reason rather than a remote one.
         $this->registerJob(
             'rotate-partitions', 'partition-rotate',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array() );
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array(),
+            'Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods '
+          . 'so the tables stay within the server\'s open-file limit. Deletes nothing unless told to keep '
+          . 'less history (keep= in OWA_SCHEDULED_JOBS).' );
 
         /*
          * The tracking intake's drain (PLAN 2.30.4), every minute. A minute
@@ -612,7 +615,10 @@ class Module extends \OWA\Core\Module {
          * With tracker_ingest_drain = external it refuses, and whatever
          * consumes the module's backend ingests instead.
          */
-        $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', array( 'scheduled' => 1 ) );
+        $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', array( 'scheduled' => 1 ),
+            'Ingests the beacons waiting in the tracker-ingest queue -- every beacon when queueing is on, and '
+          . 'any whose write failed and is waiting to be retried. A minute with nothing waiting costs a few '
+          . 'file checks.' );
 
         /*
          * Dead letters back to the intake once each, daily (PLAN 2.30.4): a
@@ -620,12 +626,16 @@ class Module extends \OWA\Core\Module {
          * round, and one already replayed stays for cmd=tracker-ingest-replay.
          */
         $this->registerJob( 'replay-tracker-ingest', 'tracker-ingest-replay',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'replay-tracker-ingest' ) ), array( 'scheduled' => 1 ) );
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'replay-tracker-ingest' ) ), array( 'scheduled' => 1 ),
+            'Gives each beacon in the tracker-ingest dead-letter queue one more try, once: one that failed '
+          . 'during an outage longer than the retries gets ingested after all. One already replayed stays '
+          . 'for cmd=tracker-ingest-replay.' );
 
         // Finished one-off jobs (PLAN 2.30.5): done after 7 days, failed after 30.
         $this->registerJob(
             'prune-job-queue', 'jobs-prune',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-job-queue' ) ), array() );
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-job-queue' ) ), array(),
+            'Deletes finished one-off jobs from the job queue: done ones after 7 days, failed ones after 30.' );
 
         /*
          * The reporting cube's build, EVERY FIVE MINUTES. Reports read the
@@ -648,7 +658,9 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerJob(
             'rebuild-cube', 'cube-rebuild',
-            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array() );
+            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array(),
+            'Builds each Property\'s reporting cube from new events, so reports are at most a few minutes '
+          . 'behind. Skips the days that have not changed.' );
 
         /*
          * No job for Profiles' tracking bundles (PLAN 2.30.7). A save publishes
@@ -677,7 +689,9 @@ class Module extends \OWA\Core\Module {
         $this->registerJob(
             'apply-custom-dimensions', 'custom-dimension-apply',
             \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'apply-custom-dimensions' ), 15 ),
-            array() );
+            array(),
+            'Adds the columns for newly registered custom dimensions to the reporting cubes -- a table rebuild '
+          . 'too slow for the request that registered them. With nothing pending it is one quick read.' );
 
         /*
          * Daily is the right cadence for release announcements: they are not
@@ -700,7 +714,8 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerJob(
             'fetch-notifications', 'fetch-notifications',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'fetch-notifications' ) ), array() );
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'fetch-notifications' ) ), array(),
+            'Fetches OWA\'s release announcements for the notifications bell, once a day.' );
 
         // NOT registering update-ua-regexes here, deliberately.
         //

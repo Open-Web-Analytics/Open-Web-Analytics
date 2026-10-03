@@ -130,6 +130,8 @@ final class SystemHealthTest extends TestCase
         }
         $this->assertStringContainsString('cmd=jobs-retry', $html);
         $this->assertStringContainsString('drain-tracker-ingest', $html, 'the recurring jobs are listed');
+        $this->assertMatchesRegularExpression('#<code title="Ingests the beacons[^"]*">drain-tracker-ingest</code>#', $html,
+            'each job\'s description is on its name, from its registration');
         $this->assertStringContainsString('&lt;b&gt;it broke&lt;/b&gt;', $html, 'a job\'s error is escaped');
     }
 

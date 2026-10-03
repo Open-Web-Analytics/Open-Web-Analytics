@@ -206,6 +206,9 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * Overrides are per key: giving only 'params' keeps the shipped schedule, and
  * giving only 'schedule' keeps the shipped arguments.
  *
+ * A 'description' says what a job does; the System Health screen shows it. A
+ * job you add should have one.
+ *
  * Schedules are standard five-field cron expressions, or the usual @hourly,
  * @daily, @weekly, @monthly and @yearly shorthands, or 'off'. They are read in
  * this installation's configured timezone. An entry that cannot be read disables
