@@ -31,7 +31,9 @@ class ScheduleStatusCli extends SchedulerCli {
 
         if ( $this->getParam( 'format' ) === 'markdown' ) {
 
-            return $this->write( $this->markdown() );
+            $this->write( $this->markdown() );
+
+            return;
         }
 
         $now     = time();
