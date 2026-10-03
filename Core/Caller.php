@@ -83,7 +83,7 @@ class Caller extends \OWA\Core\Base {
         \OWA\Core\CoreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
         
         if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
-            \OWA\Core\CoreAPI::debug( 'Request URL:' . $_SERVER['REQUEST_METHOD'] .' '.$_SERVER['REQUEST_URI'] );
+            \OWA\Core\CoreAPI::debug( 'Request URL:' . ( $_SERVER['REQUEST_METHOD'] ?? '' ) .' '.$_SERVER['REQUEST_URI'] );
         }
         
         if ( array_key_exists('HTTP_USER_AGENT', $_SERVER ) ) {
