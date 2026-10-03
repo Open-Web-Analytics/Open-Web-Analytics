@@ -92,11 +92,6 @@ class RequestContainer {
         // php's server variables
         $this->server = $_SERVER;
       
-        // files
-        if (!empty($_FILES)) {
-            $this->files = $_FILES;
-        }
-
         // setup cookies
         $this->cookies = array();
 

@@ -1137,26 +1137,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                                 $sort_col, $sort_metric->getPrecision() );
                         }
 
-                    } elseif ( $sort_metric->isCalculated() ) {
-
-                        $child_metrics = $sort_metric->getChildMetrics();
-                        $formula = $sort_metric->getFormula();
-
-                        // replace metric names with unique identifiers
-                        // so that follow on replacement doesn't clobber anything.
-                        foreach ($child_metrics as $child) {
-
-                            $formula = str_replace($child, '__'.$child, $formula);
-                        }
-
-                        // now replace the names with select statements.
-                        foreach ($child_metrics as $child) {
-                            $child_metric = $this->getMetricImplementation( $child );
-                            $select = $child_metric->getSelect();
-                            $formula = str_replace('__'.$child, $select[0], $formula);
-                        }
-
-                        $sort_col = $formula;
                     } else {
 
                         $select = $sort_metric->getSelect();
@@ -1708,16 +1688,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function getLabels() {
 
         return $this->labels;
-    }
-
-    /**
-     * Sets an individual label
-     * return the key so that it can be nested
-     * @return $key string
-     */
-    function setLabel($label) {
-
-        $this->labels[$this->getName()] = $label;
     }
 
     /**
@@ -2315,65 +2285,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 continue;
             }
 
-            $formula = $cm->getFormula();
-            $div_by_zero = false;
-
-            //owa_coreAPI::debug( "checking calculated metrics..." );
-            //owa_coreAPI::debug( $rs->aggregates );
-            foreach ($cm->getChildMetrics() as $metric_name) {
-
-                $ag_value = $rs->getAggregateMetric($metric_name);
-
-                if (empty($ag_value) || $ag_value == 0) {
-                    $ag_value = 0;
-                    $div_by_zero = true;
-                }
-
-                $formula = str_replace($metric_name, $ag_value, $formula);
-            }
-
-            if ( ! $div_by_zero ) {
-                $value = $this->evalFormula($formula);
-            } else {
-                $value = 0;
-            }
-
-            $rs->setAggregateMetric($cm->getName(), $value, $cm->getLabel(), $cm->getDataType(), $this->formatValue($cm->getDataType(), $value));
-
-            // add dimensional metric
-
-            if ($rs->getRowCount() > 0) {
-
-                foreach ($rs->resultsRows as $k => $row) {
-
-                    // add aggregate metric
-                    $formula = $cm->getFormula();
-                    $row_div_by_zero = false;
-                    foreach ($cm->getChildMetrics() as $metric_name) {
-
-                        if (array_key_exists($metric_name, $row)) {
-                            $row_value = $row[$metric_name]['value'];
-                        } else {
-                            $row_value = '';
-                        }
-                        if (empty($row_value) || $row_value == 0) {
-                            $row_value = 0;
-                            $row_div_by_zero = true;
-                        }
-
-                        $formula = str_replace($metric_name, $row_value, $formula);
-
-                    }
-
-                    if ( ! $row_div_by_zero ) {
-                        $value = $this->evalFormula($formula);
-                    } else {
-                        $value = 0;
-                    }
-
-                    $rs->appendRow($k, 'metric', $cm->getName(), $value, $cm->getLabel(), $cm->getDataType(), $this->formatValue($cm->getDataType(), $value));
-                }
-            }
+            // Every calculated metric is a difference or a ratio: a formula is
+            // refused when the metric is built (ConfigurableMetric).
         }
 
         // clean up by removing child metrics before returning the result set.
@@ -2415,24 +2328,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $rs->appendRow( $k, 'metric', $cm->getName(), $value, $cm->getLabel(),
                 $cm->getDataType(), $this->formatValue( $cm->getDataType(), $value ) );
         }
-    }
-
-    function evalFormula($formula) {
-
-        //safety first. should only be computing numbers.
-            $formula = str_replace('$','', $formula);
-
-            // need parens and @ to handle divsion by zero errors
-            $formula = '$value = ('.$formula.');';
-            //print $formula;
-            // calc
-            @ eval($formula);
-
-            if (!$value) {
-                $value = 0;
-            }
-
-            return $value;
     }
 
     /**

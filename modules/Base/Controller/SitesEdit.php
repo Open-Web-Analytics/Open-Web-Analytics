@@ -62,7 +62,7 @@ class SitesEdit extends \OWA\Core\AdminController {
 
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         if (! $this->getParam('siteId')) {
-            throw exception('No siteId passed on request');
+            throw new \InvalidArgumentException('No siteId passed on request');
         }
         $site->load( $site->generateId( $this->getParam('siteId') ) );
         $site->set('name', $this->getParam( 'name' ) );

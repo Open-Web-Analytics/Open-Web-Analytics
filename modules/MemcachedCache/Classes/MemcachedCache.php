@@ -57,7 +57,7 @@ class MemcachedCache extends \OWA\Core\CacheType {
 
             \OWA\Core\CoreAPI::notice( "PECL memcached extension not loaded; memcached object cache disabled." );
             $this->mc = null;
-            return parent::__construct();
+            return;
         }
 
         $servers = \OWA\Core\CoreAPI::getSetting( 'memcachedCache', 'memcachedServers' );
@@ -85,8 +85,6 @@ class MemcachedCache extends \OWA\Core\CacheType {
                 $this->mc->addServer( $host, $port );
             }
         }
-
-        return parent::__construct();
     }
 
     function makeKey( $values ) {

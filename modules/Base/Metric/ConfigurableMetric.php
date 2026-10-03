@@ -46,10 +46,9 @@ class ConfigurableMetric extends \OWA\Core\Metric {
         if ( $this->isCalculated() ) {
 
             /*
-             * A ratio names its two sides; a formula names an expression and
-             * the children in it separately. Both are calculated metrics as far
-             * as everything else is concerned -- the ratio just has nothing to
-             * substitute.
+             * A calculated metric is a difference or a ratio, each naming its
+             * two sides. A formula -- an expression eval()'d with the children
+             * substituted in by name -- was the 1.x form and is refused.
              */
             if ( ! empty( $params['minuend'] ) ) {
 
@@ -65,11 +64,9 @@ class ConfigurableMetric extends \OWA\Core\Metric {
 
             } else {
 
-                foreach ( $params['child_metrics'] as $child ) {
-                    $this->setChildMetric( $child );
-                }
-
-                $this->setFormula( $params['formula']);
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'Metric %s is calculated but declares neither a ratio (numerator, denominator) nor a '
+                  . 'difference (minuend, subtrahend). A formula is not supported in v2.0.', $params['name'] ) );
             }
         } else {
             $this->setEntity( $params['entity'] );

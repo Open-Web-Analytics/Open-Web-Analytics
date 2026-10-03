@@ -324,6 +324,8 @@ abstract class Module {
 
         $eq = \OWA\Core\CoreAPI::getEventDispatch();
         $eq->attach($event_name, array($handler_name, $method));
+
+        return true;
     }
 
     /**
@@ -1203,8 +1205,8 @@ abstract class Module {
      *        'metric_type'    => '',          // 'count', 'distinct_count', 'sum', or 'calculated'
      *        'data_type'        => '',          // 'integrer', 'currency', 'average'
      *        'column'        => '',          // the column of the entity to use when calculating
-     *        'child_metrics'    => array(),     // if it's a clculated metric, the child metrics used in the formula.
-     *        'formula'        => ''           // if it's a calculated metric, the formula to use (e.g. pageViews / visits).
+     *        'numerator', 'denominator'      // a calculated ratio, each a metric name
+     *        'minuend', 'subtrahend'         // a calculated difference, each a metric name
      *
      *
      */
@@ -1234,8 +1236,6 @@ abstract class Module {
              * count every row while claiming to count some of them.
              */
             'condition'         => array(),
-            'child_metrics'    => array(),
-            'formula'        => '',
             /*
              * A ratio's declaration. Same reason as subtrahend_column and
              * condition: array_intersect_key() below filters params down to
@@ -1274,24 +1274,6 @@ abstract class Module {
         if ( isset( $map['metric_type'] )
              && $map['metric_type'] != 'calculated'
              && ! isset( $map['column'] ) )
-        {
-
-            // throw exception
-
-        }
-
-        if ( isset( $map['metric_type'] )
-             && $map['metric_type'] === 'calculated'
-             && ! isset( $map['child_metrics'] ) )
-        {
-
-            // throw exception
-
-        }
-
-        if ( isset( $map['metric_type'] )
-             && $map['metric_type'] === 'calculated'
-             && ! isset( $map['formula'] ) )
         {
 
             // throw exception

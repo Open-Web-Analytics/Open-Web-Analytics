@@ -129,8 +129,6 @@ final class MetricSqlTest extends TestCase
                 $calculated++;
 
                 $this->assertArrayNotHasKey( 'expression', $implementation );
-                $this->assertNotEmpty( $implementation['formula'], "'$name' has no formula." );
-                $this->assertNotEmpty( $implementation['children'], "'$name' has no children." );
             }
         }
 
@@ -139,8 +137,9 @@ final class MetricSqlTest extends TestCase
          * became a `ratio` in #1133 -- a formula string cost an eval, a
          * substitution by metric name that collided when one name contained
          * another, and a child list restating what the formula already named.
-         * The kind still renders; nothing declares it. Ratios carry the claim
-         * now, which is what the count below checks.
+         * Formulas were then removed in v2.0, so a metric of this kind is one
+         * the build refused. Ratios carry the claim, which the count below
+         * checks.
          */
         $this->assertSame( 0, $calculated,
             'a metric declared `calculated` should be a `ratio`' );

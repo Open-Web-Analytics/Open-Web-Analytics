@@ -50,57 +50,6 @@ class Entity {
     var $cache;
     var $dirty = [];
     
-    function init() {
-        
-        // get the full property list
-        $properties = $this->getEntityPropertyList();
-        
-        foreach ( $properties as $col_name => $col_props ) {
-            
-            // create the column obj with the proper name and data type
-            $col = new \OWA\Module\Base\Classes\DbColumn( $col_name, $col_props['dtd'] );
-            
-            // Evaluate the type of column that needs to be created
-            if ( array_key_exists( 'type', $col_props) ) {
-                
-                switch ( $col_props['type'] ) {
-                    
-                    case 'primary_key':
-                        
-                        $col->setPrimaryKey();
-                        
-                        break;
-                        
-                    case 'foreign_key':
-                        
-                        if ( array_key_exists( 'linked_entity', $col_props ) && ! empty( $col_props['linked_entity'] ) ) {
-                            
-                            $col->setForeignKey( $col_props['linked_entity'] );
-                        }
-                        
-                        break;
-                }
-            }
-            
-            // should an index be created for the column?
-            if ( array_key_exists('index', $col_props ) ) {
-                
-                switch ( $col_props['index'] ) {
-                    
-                    case true:
-                        
-                        $col->setindex();
-                        
-                        break;
-                }
-            }
-            
-            // add the full configured col to entity property list
-            $this->setProperty( $col );
-        }
-    }
-    
-    
     function _getProperties() {
         
         $properties = array();
