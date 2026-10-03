@@ -69,6 +69,8 @@ class Update062 extends \OWA\Core\Update {
               . 'Process them on 1.x (php cli.php cmd=processEventQueue) until the queue is empty, then upgrade.',
                 $queued['file_lines'] ) );
 
+            $this->awaiting = 'the 1.x file queue processed first';
+
             return false;
         }
 
@@ -109,6 +111,8 @@ class Update062 extends \OWA\Core\Update {
             $this->e->notice( 'Choose how much history to migrate: cmd=update since=<yyyymmdd, or a period'
                 . ' such as 2years or 18m>, or cmd=update --all. Rows older than the cutoff stay in the v1'
                 . ' tables until they are dropped.' );
+
+            $this->awaiting = 'a choice of how much history to migrate';
 
             return false;
         }

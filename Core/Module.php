@@ -149,6 +149,14 @@ abstract class Module {
      *
      * @var array
      */
+    /**
+     * What the last update() stopped for, when an update stopped for the
+     * operator rather than failing (Update::$awaiting); '' otherwise.
+     *
+     * @var string
+     */
+    var $update_awaiting = '';
+
     var $event_processors = array();
 
     /**
@@ -1062,6 +1070,10 @@ abstract class Module {
 
             if ($ret == true) {
                 \OWA\Core\CoreAPI::notice("Update Succeeded");
+            } elseif ( ( $obj->awaiting ?? '' ) !== '' ) {
+                // Stopped for the operator, not failed: see Update::$awaiting.
+                $this->update_awaiting = $obj->awaiting;
+                return false;
             } else {
                 \OWA\Core\CoreAPI::notice("Update Failed");
                 return false;

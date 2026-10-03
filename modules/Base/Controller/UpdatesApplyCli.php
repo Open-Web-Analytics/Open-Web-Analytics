@@ -68,15 +68,20 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
             foreach ($modules as $k => $v) {
             
                 $ret = $s->modules[$v]->update();
-                
+
                 if ($ret != true):
+                    $awaiting = (string) ( $s->modules[$v]->update_awaiting ?? '' );
                     $error = true;
                     break;
                 endif;
-            
+
             }
-            
-            if ($error === true) {
+
+            if ( ( $awaiting ?? '' ) !== '' ) {
+                // Nothing failed: an update needs the operator first, and has said what.
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'Updates paused: one needs %s. Do what it says above, then run cmd=update again.', $awaiting ) );
+            } elseif ($error === true) {
                 \OWA\Core\CoreAPI::notice($this->getMsg(3307));
             } else {
                 

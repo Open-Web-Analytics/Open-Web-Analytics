@@ -646,8 +646,8 @@ abstract class FactMigrator {
             'HTTP_USER_AGENT' => $ua['ua'] ?? null,
             'browser_type'    => $ua['browser_type'] ?? null,
             'os'              => $os['name'] ?? ( $r['os'] ?? null ),
-            'ip_address'      => $r['ip_address'] ?? null,
-            'language'        => $r['language'] ?? null,
+            'ip_address'      => self::ipAddress( $r['ip_address'] ?? null ),
+            'language'        => self::language( $r['language'] ?? null ),
 
             'country'      => $location['country'] ?? null,
             'country_code' => $location['country_code'] ?? null,
@@ -735,12 +735,19 @@ abstract class FactMigrator {
     }
 
     /**
-     * A v1 location's names, with any double-encoded one undone.
+     * A v1 location's names, with any double-encoded one undone, and its
+     * country code a code or nothing.
      *
      * The geolocation reader once encoded MaxMind's names a second time --
      * "MÃ¼nchen" for "München" (#742). 1.14 ships repair-geo-encoding for the
      * rows already stored, but nothing makes an administrator run it, and v2
      * does not have it, so the migration repairs them on the way through.
+     *
+     * v1 upper-cased the country code, its "(not set)" sentinel included, so
+     * "(NOT SET)" got past the sentinel check and into a CHAR(2) column, which
+     * strict mode refuses -- and with it the whole batch. Measured on a 1.x
+     * install: 745 of 11,741 locations, plus one "VATICAN CITY STATE)". A code
+     * is two letters; anything else is not one, and is stored as no code.
      */
     public static function repairedLocation( array $location ) {
 
@@ -754,7 +761,63 @@ abstract class FactMigrator {
             }
         }
 
+        if ( array_key_exists( 'country_code', $location ) ) {
+
+            $code = trim( (string) $location['country_code'] );
+
+            $location['country_code'] = preg_match( '/^[A-Za-z]{2}$/D', $code ) ? strtoupper( $code ) : null;
+        }
+
         return $location;
+    }
+
+    /**
+     * A v1 address, or a v1 proxy chain resolved the way ingest resolves one.
+     *
+     * 1.x sometimes stored the whole X-Forwarded-For chain -- "client, proxy,
+     * ..." -- which is not an address and is longer than the column: strict
+     * mode refused the batch. Measured on a 1.x install: 5 of 724,000 rows.
+     * A single address is kept as v1 stored it; 1.x already chose it.
+     *
+     * @param mixed $value
+     * @return string|null
+     */
+    public static function ipAddress( $value ) {
+
+        $value = trim( (string) $value );
+
+        if ( $value === '' ) {
+
+            return null;
+        }
+
+        if ( strpos( $value, ',' ) === false ) {
+
+            return strlen( $value ) <= 45 ? $value : null;
+        }
+
+        $chosen = \OWA\Module\Base\Classes\TrackingEventHelpers::chooseIp( $value );
+
+        return $chosen !== '' ? $chosen : null;
+    }
+
+    /**
+     * A v1 language, unless it cannot be one.
+     *
+     * Kept as stored when it fits the column: ingest stores the first five
+     * characters of Accept-Language, so "de,en" is as legitimate here as it
+     * is live, and "(not set)" is ingest's own sentinel to drop. One row
+     * measured on a 1.x install holds "0.20504800 1616979699" -- a microtime,
+     * longer than any language ingest writes and than the column.
+     *
+     * @param mixed $value
+     * @return string|null
+     */
+    public static function language( $value ) {
+
+        $value = trim( (string) $value );
+
+        return $value !== '' && strlen( $value ) <= 16 ? $value : null;
     }
 
     /** A stored value, as opposed to empty or v1's "(not set)". */
