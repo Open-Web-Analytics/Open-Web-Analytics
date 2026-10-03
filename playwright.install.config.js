@@ -102,13 +102,22 @@ module.exports = defineConfig({
     projects: [
         {
             name: 'install-web',
-            testMatch: /install-web\.spec\.js/,
+            testMatch: /install-web\.spec\.js$/,
+            use: CHROME,
+        },
+        {
+            // The wizard again, choosing "Let OWA create a new database": its
+            // unconfig step removes the first run's config, and prepare-cli
+            // removes this one's.
+            name: 'install-web-create',
+            testMatch: /install-web-create\.spec\.js/,
+            dependencies: ['install-web'],
             use: CHROME,
         },
         {
             name: 'install-cli',
             testMatch: /install-cli\.spec\.js/,
-            dependencies: ['install-web'],
+            dependencies: ['install-web-create'],
             use: CHROME,
         },
     ],

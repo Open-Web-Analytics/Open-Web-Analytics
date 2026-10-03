@@ -2967,7 +2967,7 @@ namespace OWA\Module\Base\Classes;
                 'useStaticConfigOnly'				=> false,
                 'allow_slowly_changing_dimensions'	=> true,
                 'slowly_changing_dimension_entities' => [],
-                'db_supported_types'				=> ['mysql' => 'MySQL'],
+                'db_supported_types'				=> ['mysql' => 'MySQL / MariaDB'],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
         );
@@ -3150,6 +3150,19 @@ namespace OWA\Module\Base\Classes;
         \OWA\Core\CoreAPI::debug('Config file created');
 
         /*
+         * Evict any compiled copy. A worker that included an earlier file at
+         * this path (a re-install after the config was removed) keeps running
+         * that copy until OPcache next checks the timestamp -- two seconds by
+         * default -- so the redirect after this could connect to the old
+         * database. The cache is shared by the pool, so one call covers every
+         * worker.
+         */
+        if ( function_exists( 'opcache_invalidate' ) ) {
+
+            opcache_invalidate( $file, true );
+        }
+
+        /*
          * The file is NOT loaded here.
          *
          * Its constants are already defined in this request -- InstallConfig
@@ -3163,7 +3176,8 @@ namespace OWA\Module\Base\Classes;
          *
          * Nothing needs it loaded. The only caller redirects immediately
          * (InstallConfig::action), and a redirect is a new request that reads
-         * the file from scratch with nothing predefined.
+         * the file from scratch with nothing predefined -- once the compiled
+         * copy above is gone.
          *
          * Guarding the defines in owa-config-dist.php would have fixed only
          * files written from that template afterwards; every existing install

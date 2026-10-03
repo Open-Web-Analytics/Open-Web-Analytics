@@ -94,7 +94,9 @@ test.describe('install: web wizard (fresh install into a scratch DB)', () => {
 
         // installConfig validates the connection, writes owa-config.php, and
         // redirects to the defaults-entry form (the admin-user + site fields).
-        await expect(page.locator('input[name="user_id"]')).toBeVisible();
+        // The site field: the login form, where a wrong redirect lands, has a
+        // user_id field too.
+        await expect(page.locator('input[name="domain"]')).toBeVisible();
 
         // --- STEP 5+6: Defaults entry -> installBase (schema+admin+site) ------
         /*

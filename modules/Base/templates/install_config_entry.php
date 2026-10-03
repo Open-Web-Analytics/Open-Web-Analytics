@@ -27,7 +27,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
                     <?php endforeach;?>
                 </select>
             </span>
-            <span class="owa_installHint">This is the type of database you are going to use.</span>
+            <span class="owa_installHint">OWA tells MySQL from MariaDB itself, once it connects.</span>
         </div>
 
         <div class="owa_installField">
@@ -47,11 +47,21 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
         </div>
 
         <div class="owa_installField">
-            <label>Database Name</label>
+            <label>Database</label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>db_name" value="<?php echo $view->config['db_name'] ?? '';?>">
+                <label>
+                    <input type="radio" name="<?php echo $view->getNs();?>db_mode" value="existing"<?php if ( $view->config['db_mode'] === 'existing' ): ?> checked<?php endif; ?>>
+                    Use an existing database for this install
+                </label><br>
+                <input type="text" size="30" name="<?php echo $view->getNs();?>db_name" value="<?php $view->out( (string) ( $view->config['db_name'] ?? '' ) ); ?>" placeholder="its name"><br>
+                <label>
+                    <input type="radio" name="<?php echo $view->getNs();?>db_mode" value="create"<?php if ( $view->config['db_mode'] === 'create' ): ?> checked<?php endif; ?>>
+                    Let OWA create a new database for this install (CREATE permissions required)
+                </label><br>
+                <code><?php $view->out( (string) $view->config['db_create_name'] ); ?></code>
+                <input type="hidden" name="<?php echo $view->getNs();?>db_create_name" value="<?php $view->out( (string) $view->config['db_create_name'] ); ?>">
             </span>
-            <span class="owa_installHint">This is the name of the database to install tables into.</span>
+            <span class="owa_installHint">A database OWA creates is named for this install's Organization, so it can become one Organization's database when OWA hosts several.</span>
         </div>
 
         <div class="owa_installField">

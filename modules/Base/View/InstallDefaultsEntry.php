@@ -37,6 +37,8 @@ class InstallDefaultsEntry extends \OWA\Core\View {
         $this->t->set('page_title', 'OWA User / Site Setup');
         // set defaults
         $this->body->set('defaults', $this->get('defaults'));
+        $this->body->set( 'db_server', (string) $this->get( 'db_server' ) );
+        $this->body->set( 'db_name', (string) $this->get( 'db_name' ) );
         // load body template
         $this->body->set_template('install_defaults_entry.php');
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");

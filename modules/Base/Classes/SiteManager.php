@@ -107,6 +107,23 @@ class SiteManager extends \OWA\Core\Base {
      *
      * @return string|null organization id
      */
+    /**
+     * The id the install's first Organization gets.
+     *
+     * A database OWA created for this install is named for its Organization
+     * (InstallDatabase): the Organization takes that id, so the two belong
+     * together from the start. Otherwise the id is the one every install has
+     * always derived.
+     *
+     * @param string $db_name
+     * @return string
+     */
+    public static function newOrganizationId( $db_name ) {
+
+        return \OWA\Module\Base\Classes\InstallDatabase::organizationIdFrom( $db_name )
+            ?? \OWA\Core\CoreAPI::entityFactory( 'base.organization' )->generateId( self::DEFAULT_ORGANIZATION_KEY );
+    }
+
     public function ensureOrganization() {
 
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
@@ -137,7 +154,7 @@ class SiteManager extends \OWA\Core\Base {
             return $existing['id'];
         }
 
-        $id = $organization->generateId( self::DEFAULT_ORGANIZATION_KEY );
+        $id = self::newOrganizationId( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_name' ) );
 
         $organization->set( 'id', $id );
         $organization->set( 'name', self::DEFAULT_ORGANIZATION_NAME );
