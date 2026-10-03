@@ -186,7 +186,7 @@ final class ScheduleCliTest extends CliControllerTestCase
             touch($dir . 'events.txt', time() - 1800);
 
             $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
-            $this->assertStringContainsString('the oldest for 30 minutes; the drain is not keeping up', $lines);
+            $this->assertStringContainsString('the oldest for 30 minutes: the drain is not keeping up', $lines);
         } finally {
             \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
             unset($q);

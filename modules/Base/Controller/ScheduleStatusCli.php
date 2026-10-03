@@ -94,102 +94,59 @@ class ScheduleStatusCli extends SchedulerCli {
     }
 
     /**
-     * The one-off job queue (PLAN 2.30.5), drained after the recurring jobs.
+     * The one-off job queue (PLAN 2.30.5), drained after the recurring jobs:
+     * its counts, and what Classes\SystemHealth finds wrong with it -- the
+     * same findings the System Health screen shows.
      *
      * @return string[]
      */
     protected function describeQueue() {
 
-        $q = \OWA\Module\Base\Classes\JobQueue::stats();
+        $section = \OWA\Module\Base\Classes\SystemHealth::queue();
+        $q       = $section['stats'];
 
         $lines = array( '', 'Queued jobs' );
 
         $lines[] = sprintf( '  due %d, delayed %d, running %d, failed %d, done %d',
             $q['due'], $q['delayed'], $q['running'], $q['failed'], $q['done'] );
 
-        if ( $q['oldest_due_age'] !== null && $q['oldest_due_age'] > 300 ) {
-
-            $lines[] = sprintf( '  WARNING: a job has been due for %d minutes; the scheduler is not draining the queue.',
-                intdiv( $q['oldest_due_age'], 60 ) );
-        }
-
-        if ( $q['failed'] ) {
-
-            $lines[] = '  See them with cmd=jobs status=failed; retry with cmd=jobs-retry id=<id>|all.';
-        }
-
-        return $lines;
+        return array_merge( $lines, self::problemLines( $section ) );
     }
 
     /**
-     * A tracker-ingest batch held longer than this is reported as hung: a
-     * scheduled drain stops after DrainTrackerIngestCli::BUDGET seconds.
-     */
-    const INTAKE_HELD_TOO_LONG = 600;
-
-    /** The main queue's oldest beacon older than this means the drain is not keeping up. */
-    const INTAKE_BACKLOG_AGE = 600;
-
-    /**
-     * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): what is waiting in it
-     * and its dead-letter queue, and any batch a drain has held too long.
-     *
-     * A drain that dies releases its batch to the next one; a drain that
-     * hangs -- a database call that never returns -- holds it until the
-     * process ends, and nothing else would say so. That part is only for an
-     * intake that can tell (the file queue's heldBatches()).
+     * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): only when something is
+     * wrong -- a backlog, dead letters, a drain that has hung.
      *
      * @return string[]
      */
     protected function describeIntake() {
 
-        try {
+        $lines = self::problemLines( \OWA\Module\Base\Classes\SystemHealth::intake() );
 
-            $intake = \OWA\Module\Base\Classes\TrackerIngest::queue();
-            $main   = $intake->stats();
-            $dlq    = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
+        return $lines ? array_merge( array( '', 'Tracker ingest' ), $lines ) : array();
+    }
 
-        } catch ( \Throwable $t ) {
-
-            return array( '', 'Tracker ingest', '  WARNING: ' . $t->getMessage() );
-        }
+    /** A section's findings that are not green, as status lines. */
+    private static function problemLines( array $section ) {
 
         $lines = array();
-        $now   = time();
 
-        if ( $main['oldest_age'] !== null && $main['oldest_age'] > self::INTAKE_BACKLOG_AGE ) {
+        foreach ( $section['findings'] as $f ) {
 
-            $lines[] = sprintf( '  WARNING: %s beacon(s) waiting, the oldest for %d minutes; the drain is not keeping up%s.',
-                $main['messages'] ?? 'some', intdiv( $main['oldest_age'], 60 ),
-                \OWA\Module\Base\Classes\TrackerIngest::isDrainedExternally() ? ' (tracker_ingest_drain is external)' : '' );
-        }
-
-        if ( $dlq && $dlq['messages'] ) {
-
-            $lines[] = sprintf( '  WARNING: %d beacon(s) in the dead-letter queue%s. Fix the cause, then '
-                              . 'cmd=tracker-ingest-replay; replay-tracker-ingest sends each back once a day on its own.',
-                $dlq['messages'],
-                $dlq['oldest_age'] !== null ? ', the oldest ' . intdiv( $dlq['oldest_age'], 3600 ) . ' hours old' : '' );
-        }
-
-        foreach ( method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : array() as $held ) {
-
-            $age = $held['held_since'] === null ? null : $now - $held['held_since'];
-
-            if ( $age !== null && $age < self::INTAKE_HELD_TOO_LONG ) {
+            if ( $f['level'] === 'green' ) {
 
                 continue;
             }
 
-            $lines[] = sprintf( '  WARNING: batch %s has been held for %s by process %s%s; '
-                              . 'if that process is hung, end it and the next drain takes the batch over.',
-                $held['batch'],
-                $age === null ? 'an unknown time' : intdiv( $age, 60 ) . ' minutes',
-                $held['pid'] === null ? '(unknown)' : $held['pid'],
-                $held['host'] !== '' ? ' on ' . $held['host'] : '' );
+            $lines[] = sprintf( '  %s: %s: %s', $f['level'] === 'red' ? 'WARNING' : 'NOTE', $f['label'], $f['detail'] );
+
+            if ( $f['command'] ) {
+
+                $lines[] = '    ' . $f['command'];
+            }
         }
 
-        return $lines ? array_merge( array( '', 'Tracker ingest' ), $lines ) : array();
+        return $lines;
     }
 
     /**

@@ -22,6 +22,7 @@ final class TemplateClassesAreStyledTest extends TestCase
             'reporting cubes'           => ['cube_status.php'],
             'reporting cube'            => ['cube_status_detail.php'],
             'cube status badge'         => ['cube_status_badge.php'],
+            'system health'             => ['system_health.php'],
             'report not ready'          => ['report_not_ready.php'],
             'invocation'        => ['invocation.php'],
         ];
