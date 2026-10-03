@@ -3724,8 +3724,12 @@ rollback.</li>
 resets attempts and error and makes it due now; <code>cmd=jobs-forget id=&lt;id&gt;</code> deletes one.</li>
 <li><strong>Pruned daily</strong>, 1,000 rows at a time: <code>done</code> after 7 days, <code>failed</code>
 after 30.</li>
-<li><strong>On the health screen</strong>: pending, delayed, running and failed counts, and the age of the
-oldest due job &mdash; a due job minutes old means the scheduler is not draining.</li>
+<li><strong>On the System Health screen</strong> (Settings &rarr; Instance, beside Reporting Cubes):
+pending, delayed, running and failed counts, the failed jobs with their errors, and the age of the oldest
+due job &mdash; a due job minutes old means the scheduler is not draining. The screen also shows the
+scheduler, every recurring job&rsquo;s last run and next, and the tracker-ingest intake (backlog, dead
+letters, a hung drain). Read-only: it names the command to run. <code>Classes\SystemHealth</code> is the
+one source for it and for <code>cmd=schedule-status</code>.</li>
 </ul>
 
 <p><strong>Not adopted</strong></p>
