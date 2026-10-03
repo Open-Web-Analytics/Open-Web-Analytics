@@ -2967,7 +2967,7 @@ namespace OWA\Module\Base\Classes;
                 'useStaticConfigOnly'				=> false,
                 'allow_slowly_changing_dimensions'	=> true,
                 'slowly_changing_dimension_entities' => [],
-                'db_supported_types'				=> ['mysql' => 'MySQL'],
+                'db_supported_types'				=> ['mysql' => 'MySQL / MariaDB'],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
         );

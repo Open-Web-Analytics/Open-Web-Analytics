@@ -66,6 +66,9 @@ const INSTALLCLI_DOMAIN   = 'owa-e2e-installcli.example.test';
 
 // Filenames (all resolved against the repo root at runtime).
 const CONFIG_FILE  = 'owa-config.php';
+// Databases the create-a-database run made (owa_org_<id>): recorded so teardown
+// drops them and the guards accept them. Outside the checkout.
+define('CREATED_DBS_FILE', sys_get_temp_dir() . '/owa-e2e-install-created-dbs.txt');
 const BACKUP_FILE  = 'owa-config.php.e2e-install-bak';
 
 // -----------------------------------------------------------------------------
@@ -112,6 +115,11 @@ switch ($cmd) {
     // asserting a value the CLI path never writes.
     case 'assert-web':out(assertInstalled($repoRoot, SCRATCH_DB_WEB, INSTALL_ADMIN_ID, 'web', 'Europe/London')); break;
     case 'assert-cli':out(assertInstalled($repoRoot, SCRATCH_DB_CLI, INSTALLCLI_ADMIN_ID, 'cli', null)); break;
+    // The create-a-database run: clear the first wizard's config, record the
+    // database the wizard will create, then check it like the first.
+    case 'unconfig':  out(unconfig($repoRoot));                 break;
+    case 'record-created': out(recordCreated($argv[2] ?? ''));  break;
+    case 'assert-created': out(assertCreated($repoRoot, $argv[2] ?? '')); break;
     case 'restore':   out(restore($repoRoot));                  break;
     case 'doctor':    out(doctor($repoRoot));                   break;
     case 'info':      out(info());                              break;
@@ -203,7 +211,7 @@ function connectServer(array $creds)
 /** Backtick-safe identifier guard: scratch DB names are fixed sentinels, but assert anyway. */
 function assertScratchName(string $db): void
 {
-    if ($db !== SCRATCH_DB_WEB && $db !== SCRATCH_DB_CLI) {
+    if ($db !== SCRATCH_DB_WEB && $db !== SCRATCH_DB_CLI && !in_array($db, createdDbs(), true)) {
         fail("Refusing to operate on non-scratch database '$db'.");
     }
     if (!preg_match('/^[a-z0-9_]+$/', $db)) {
@@ -395,6 +403,68 @@ function webForm(string $repoRoot): array
         'db_password'=> $creds['password'],
         'public_url' => $creds['public_url'] ?: 'https://test.openwebanalytics.com/owa/',
     ];
+}
+
+/** Databases the create-a-database run recorded. */
+function createdDbs(): array
+{
+    if (!is_file(CREATED_DBS_FILE)) {
+        return [];
+    }
+    return array_values(array_filter(array_map('trim', (array) file(CREATED_DBS_FILE)),
+        fn ($n) => (bool) preg_match('/^owa_org_[1-9][0-9]{0,18}$/', $n)));
+}
+
+/** Record the name the wizard shows for a database it will create, before it creates it. */
+function recordCreated(string $name): array
+{
+    if (!preg_match('/^owa_org_[1-9][0-9]{0,18}$/', $name)) {
+        fail("record-created: '$name' is not a name the installer gives a database.");
+    }
+    file_put_contents(CREATED_DBS_FILE, $name . "\n", FILE_APPEND);
+    return ['status' => 'recorded', 'db' => $name];
+}
+
+/**
+ * UNCONFIG: remove the config the first wizard run wrote, so the wizard runs
+ * again. Only one that points at the web scratch database: never the live one.
+ */
+function unconfig(string $repoRoot): array
+{
+    $config = $repoRoot . CONFIG_FILE;
+    if (!inEnvMode() && !file_exists($repoRoot . BACKUP_FILE)) {
+        fail('unconfig: no backup present -- stash must run first.');
+    }
+    if (file_exists($config)) {
+        if (!preg_match("/define\(\s*'OWA_DB_NAME',\s*'" . SCRATCH_DB_WEB . "'/", (string) file_get_contents($config))) {
+            fail('unconfig: ' . CONFIG_FILE . ' does not point at the web scratch database; refusing to remove it.');
+        }
+        @unlink($config);
+    }
+    return ['status' => 'unconfigured'];
+}
+
+/** The created database got a working install, and its Organization took the id in its name. */
+function assertCreated(string $repoRoot, string $db): array
+{
+    $result = assertInstalled($repoRoot, $db, INSTALL_ADMIN_ID, 'web', 'Europe/London');
+
+    $creds = liveDbCreds($repoRoot);
+    $m = connectServer($creds);
+    mysqli_select_db($m, $db);
+    $r = mysqli_query($m, 'SELECT id FROM owa_organization');
+    $ids = [];
+    while ($r && ($row = mysqli_fetch_assoc($r))) {
+        $ids[] = (string) $row['id'];
+    }
+    $cs = mysqli_fetch_assoc(mysqli_query($m, "SELECT DEFAULT_CHARACTER_SET_NAME c FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '$db'"));
+    mysqli_close($m);
+
+    $result['organization_ids'] = $ids;
+    $result['organization_named_by_db'] = $ids === [substr($db, strlen('owa_org_'))];
+    $result['charset'] = $cs['c'] ?? null;
+
+    return $result;
 }
 
 /**
@@ -624,7 +694,7 @@ function restore(string $repoRoot): array
     try {
         $creds = liveDbCreds($repoRoot);
         $m = connectServer($creds);
-        foreach ([SCRATCH_DB_WEB, SCRATCH_DB_CLI] as $db) {
+        foreach (array_merge([SCRATCH_DB_WEB, SCRATCH_DB_CLI], createdDbs()) as $db) {
             assertScratchName($db);
             if (mysqli_query($m, "DROP DATABASE IF EXISTS `$db`")) {
                 $done["dropped_$db"] = true;
@@ -633,6 +703,7 @@ function restore(string $repoRoot): array
             }
         }
         mysqli_close($m);
+        @unlink(CREATED_DBS_FILE);
     } catch (\Throwable $e) {
         $done['drop_dbs'] = 'skip: ' . $e->getMessage();
     }

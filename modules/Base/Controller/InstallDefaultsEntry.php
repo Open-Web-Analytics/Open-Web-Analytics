@@ -37,6 +37,10 @@ class InstallDefaultsEntry extends \OWA\Core\Controller\Install {
 
         $this->setView('base.install');
         $this->setSubview('base.installDefaultsEntry');
+
+        // What the previous step connected to: which server, and which database.
+        $this->set( 'db_server', \OWA\Module\Base\Classes\InstallDatabase::serverDescription() );
+        $this->set( 'db_name', (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_name' ) );
     }
 }
 

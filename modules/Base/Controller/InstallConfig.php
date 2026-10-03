@@ -45,7 +45,10 @@ class InstallConfig extends \OWA\Core\Controller\Install {
     {
         //required params
         $this->addValidation('db_host', $this->getParam('db_host'), 'required', ['errorMsg' => 'Database host is required.']);
-        $this->addValidation('db_name', $this->getParam('db_name'), 'required', ['errorMsg' => 'Database name is required.']);
+        // The name is typed only for an existing database; a created one is named for its Organization.
+        if ( $this->getParam( 'db_mode' ) !== 'create' ) {
+            $this->addValidation('db_name', $this->getParam('db_name'), 'required', ['errorMsg' => 'Database name is required.']);
+        }
         $this->addValidation('db_user', $this->getParam('db_user'), 'required', ['errorMsg' => 'Database user is required.']);
         // NOTE: db_password is intentionally NOT required. MySQL permits accounts
         // with an empty password (common for local/dev servers, and the CI
@@ -80,6 +83,13 @@ class InstallConfig extends \OWA\Core\Controller\Install {
 
     function action() {
 
+        $create = $this->getParam( 'db_mode' ) === 'create';
+
+        if ( $create ) {
+
+            $this->params['db_name'] = (string) $this->getParam( 'db_create_name' );
+        }
+
         // define db connection constants using values submitted
         if ( ! defined( 'OWA_DB_TYPE' ) ) {
             define( 'OWA_DB_TYPE', $this->getParam( 'db_type' ) );
@@ -112,9 +122,34 @@ class InstallConfig extends \OWA\Core\Controller\Install {
         \OWA\Core\CoreAPI::setSetting('base', 'db_user', OWA_DB_USER);
         \OWA\Core\CoreAPI::setSetting('base', 'db_password', OWA_DB_PASSWORD);
 
+        // Create it first when asked to, so the check below connects to it.
+        if ( $create ) {
+
+            $made = \OWA\Module\Base\Classes\InstallDatabase::create( OWA_DB_NAME );
+
+            if ( ! $made['ok'] ) {
+
+                $this->set('error_msg', $made['error']);
+                $this->set('config', $this->params);
+                $this->setView('base.install');
+                $this->setSubview('base.installConfigEntry');
+
+                return;
+            }
+        }
+
         // Check DB connection status
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->connect();
+        $usable = $db->connection_status == true
+            && \OWA\Module\Base\Classes\DatabaseRequirement::problem() === null;
+
+        // Created here and not usable: take it back, so a retry starts clean.
+        if ( $create && ! $usable ) {
+
+            \OWA\Module\Base\Classes\InstallDatabase::dropCreated( OWA_DB_NAME );
+        }
+
         if ($db->connection_status != true) {
             $this->set('error_msg', $this->getMsg(3012));
             $this->set('config', $this->params);

@@ -141,7 +141,7 @@ return array(
          */
         'db_password' => array( 'default' => '', 'secret' => true ),
         'db_port' => array( 'default' => 3306 ),
-        'db_supported_types' => array( 'default' => array( 'mysql' => 'MySQL' ) ),
+        'db_supported_types' => array( 'default' => array( 'mysql' => 'MySQL / MariaDB' ) ),
         'db_type' => array( 'default' => '' ),
         'db_user' => array( 'default' => '' ),
         'default_cache_expiration_period' => array( 'default' => 604800 ),

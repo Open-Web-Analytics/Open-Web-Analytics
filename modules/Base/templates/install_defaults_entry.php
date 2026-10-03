@@ -1,6 +1,9 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <h2>Your first Property</h2>
 
+<?php if ( $view->db_server !== '' ): ?>
+<p class="owa_publicIntro">Connected to <?php $view->out( $view->db_server ); ?>, database <code><?php $view->out( $view->db_name ); ?></code>.</p>
+<?php endif; ?>
 <p class="owa_publicIntro">A Property is the website or application you want to
 track.</p>
 <div id="configSettings">

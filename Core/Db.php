@@ -1431,6 +1431,24 @@ class Db extends \OWA\Core\Base {
         return array();
     }
 
+    /** Whether a database exists. Unknown, without introspection. */
+    function databaseExists( $name ) {
+
+        return null;
+    }
+
+    /** Create a database. Not supported without a dialect that can. */
+    function createDatabase( $name ) {
+
+        return false;
+    }
+
+    /** Drop a database. Not supported without a dialect that can. */
+    function dropDatabase( $name ) {
+
+        return false;
+    }
+
     /**
      * A table's size as the server estimates it. Unknown, without introspection.
      *

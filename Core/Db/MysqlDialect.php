@@ -477,6 +477,59 @@ trait MysqlDialect
     }
 
     /**
+     * Whether a database exists on this server. Needs no database selected,
+     * so the installer can ask before one does.
+     *
+     * @param string $name
+     * @return bool|null null when the name cannot be one
+     */
+    function databaseExists( $name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
+
+            return null;
+        }
+
+        return (bool) $this->get_row( sprintf(
+            "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '%s'", $name ) );
+    }
+
+    /**
+     * Create a database for an install. Its default character set is
+     * utf8mb4; OWA's own tables declare theirs, so this governs only what
+     * else is put in it.
+     *
+     * @param string $name
+     * @return bool
+     */
+    function createDatabase( $name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
+
+            return false;
+        }
+
+        return $this->query( sprintf( 'CREATE DATABASE `%s` CHARACTER SET utf8mb4', $name ) ) !== false;
+    }
+
+    /**
+     * Drop a database -- only for one an install created this run and could
+     * not use (InstallConfig).
+     *
+     * @param string $name
+     * @return bool
+     */
+    function dropDatabase( $name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
+
+            return false;
+        }
+
+        return $this->query( sprintf( 'DROP DATABASE IF EXISTS `%s`', $name ) ) !== false;
+    }
+
+    /**
      * A table's size as the server estimates it, without reading the table:
      * InnoDB's row estimate and its data plus index bytes, from
      * information_schema. MySQL 8 caches these statistics, for up to a day by

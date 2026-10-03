@@ -476,6 +476,9 @@ final class InstallTimezoneTest extends TestCase
 
         $t->fake_constant = $constant;
         $t->set('defaults', array());
+        // Set by the View on every render; empty hides the "Connected to" line.
+        $t->set('db_server', '');
+        $t->set('db_name', '');
         $t->set_template('install_defaults_entry.php');
 
         return $t->fetch();
