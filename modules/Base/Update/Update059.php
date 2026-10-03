@@ -3,9 +3,11 @@ namespace OWA\Module\Base\Update;
 
 /**
  * Create owa_migration_progress, where the v1 migration records how far it has
- * got and what it refused (PLAN.html 2.21, 2.22).
+ * got and what it refused (PLAN.html 2.21, 2.22), and owa_migration_tally and
+ * owa_migration_day_visitor, what each batch wrote, which reconciliation counts
+ * against.
  *
- * NOT CLI-ONLY. It creates one small empty table; the migration that fills it
+ * NOT CLI-ONLY. It creates small empty tables; the migration that fills them
  * is its own blocking command.
  */
 class Update059 extends \OWA\Core\Update {
@@ -14,40 +16,48 @@ class Update059 extends \OWA\Core\Update {
 
     var $is_cli_mode_required = false;
 
+    const ENTITIES = array( 'base.migration_progress', 'base.migration_tally', 'base.migration_day_visitor' );
+
     function up( $force = false ) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
+        foreach ( self::ENTITIES as $name ) {
 
-        if ( \OWA\Core\CoreAPI::dbSingleton()->tableExists( $entity->getTableName() ) ) {
+            $entity = \OWA\Core\CoreAPI::entityFactory( $name );
 
-            return true;
-        }
+            if ( \OWA\Core\CoreAPI::dbSingleton()->tableExists( $entity->getTableName() ) ) {
 
-        if ( $entity->createTable() === false ) {
+                continue;
+            }
 
-            $this->e->notice( sprintf( 'Create table %s failed', $entity->getTableName() ) );
+            if ( $entity->createTable() === false ) {
 
-            return false;
+                $this->e->notice( sprintf( 'Create table %s failed', $entity->getTableName() ) );
+
+                return false;
+            }
         }
 
         return true;
     }
 
-    /** Drop it: the exact inverse. */
+    /** Drop them: the exact inverse. */
     function down() {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
+        foreach ( self::ENTITIES as $name ) {
 
-        if ( ! \OWA\Core\CoreAPI::dbSingleton()->tableExists( $entity->getTableName() ) ) {
+            $entity = \OWA\Core\CoreAPI::entityFactory( $name );
 
-            return true;
-        }
+            if ( ! \OWA\Core\CoreAPI::dbSingleton()->tableExists( $entity->getTableName() ) ) {
 
-        if ( $entity->dropTable() === false ) {
+                continue;
+            }
 
-            $this->e->notice( sprintf( 'Drop table %s failed', $entity->getTableName() ) );
+            if ( $entity->dropTable() === false ) {
 
-            return false;
+                $this->e->notice( sprintf( 'Drop table %s failed', $entity->getTableName() ) );
+
+                return false;
+            }
         }
 
         return true;

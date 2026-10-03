@@ -1260,8 +1260,11 @@ class Module extends \OWA\Core\Module {
                 'event_raw',
                 'visitor_acquisition',
                 'custom_dimension',
-                // How far the v1 migration has got (Classes\Migration).
-                'migration_progress')
+                // How far the v1 migration has got, and what it wrote
+                // (Classes\Migration).
+                'migration_progress',
+                'migration_tally',
+                'migration_day_visitor')
             );
 
     }

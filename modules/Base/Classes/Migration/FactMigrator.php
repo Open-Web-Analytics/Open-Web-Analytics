@@ -68,7 +68,7 @@ abstract class FactMigrator {
     /** @var int|null the oldest day migrated, as yyyymmdd; null migrates all */
     private $since;
 
-    /** @var array table => bool, whether its `id` column is an integer type */
+    /** @var array "table.column" => bool, whether that v1 column is an integer type */
     private $integer_keys = array();
 
     /**
@@ -247,7 +247,106 @@ abstract class FactMigrator {
      */
     protected function apply( array $rows, array &$progress ) {
 
-        return $this->write( $this->build( $rows, $progress ) );
+        $tally   = array();
+        $written = $this->write( $this->build( $rows, $progress, $tally ) );
+
+        if ( $written === false || ! $this->recordTally( (string) $rows[0]['site_id'], $tally ) ) {
+
+            return false;
+        }
+
+        return $written;
+    }
+
+    /**
+     * Add a batch's tally to owa_migration_tally and owa_migration_day_visitor,
+     * inside the batch's transaction.
+     *
+     * @param string $site_id
+     * @param array  $tally from build()
+     * @return bool
+     */
+    protected function recordTally( $site_id, array $tally ) {
+
+        $source  = static::progressKey();
+        $table   = \OWA\Core\CoreAPI::entityFactory( 'base.migration_tally' )->getTableName();
+        $entries = array();
+
+        foreach ( $tally['read'] ?? array() as $d => $n ) {
+
+            $entries[] = array( $d, 'read', '', $n, 0, 0, null );
+        }
+
+        foreach ( $tally['refused'] ?? array() as $d => $reasons ) {
+
+            foreach ( $reasons as $reason => $n ) {
+
+                $entries[] = array( $d, 'refused', $reason, $n, 0, 0, null );
+            }
+        }
+
+        foreach ( $tally['events'] ?? array() as $d => $types ) {
+
+            foreach ( $types as $type => $t ) {
+
+                $entries[] = array( $d, 'event', $type, $t['n'], $t['revenue'], $t['items'], $t['max_ts'] );
+            }
+        }
+
+        foreach ( $entries as list( $d, $kind, $name, $n, $revenue, $items, $max_ts ) ) {
+
+            // Added to rather than replaced: a day spans batches.
+            $ok = $this->db()->query( sprintf(
+                'INSERT INTO %s (id, source, site_id, yyyymmdd, kind, name, n, revenue, items, max_ts)'
+              . ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE n = n + ?, revenue = revenue + ?,'
+              . ' items = items + ?, max_ts = GREATEST(COALESCE(max_ts, 0), COALESCE(?, 0))', $table ),
+                array( \OWA\Module\Base\Entity\MigrationTally::idFor( $source, $site_id, $d, $kind, $name ),
+                    $source, $site_id, (int) $d, $kind, $name, (int) $n, (int) $revenue, (int) $items, $max_ts,
+                    (int) $n, (int) $revenue, (int) $items, $max_ts ) );
+
+            if ( $ok === false ) {
+
+                return false;
+            }
+        }
+
+        $visitors = array();
+
+        foreach ( $tally['visitors'] ?? array() as $d => $ids ) {
+
+            foreach ( array_keys( $ids ) as $visitor_id ) {
+
+                $visitors[] = array( \OWA\Module\Base\Entity\MigrationDayVisitor::idFor( $source, $site_id, $d, $visitor_id ),
+                    $source, $site_id, (int) $d, (string) $visitor_id );
+            }
+        }
+
+        foreach ( array_chunk( $visitors, 500 ) as $chunk ) {
+
+            $ok = $this->db()->query( sprintf(
+                'INSERT INTO %s (id, source, site_id, yyyymmdd, visitor_id) VALUES %s ON DUPLICATE KEY UPDATE id = id',
+                \OWA\Core\CoreAPI::entityFactory( 'base.migration_day_visitor' )->getTableName(),
+                implode( ',', array_fill( 0, count( $chunk ), '(?, ?, ?, ?, ?)' ) ) ),
+                array_merge( ...$chunk ) );
+
+            if ( $ok === false ) {
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** Drop a site's tally for this pass: it starts over, or is reverted. */
+    protected function forgetTally( $site_id ) {
+
+        foreach ( array( 'base.migration_tally', 'base.migration_day_visitor' ) as $entity ) {
+
+            $this->db()->query( sprintf( 'DELETE FROM %s WHERE source = ? AND site_id = ?',
+                \OWA\Core\CoreAPI::entityFactory( $entity )->getTableName() ),
+                array( static::progressKey(), (string) $site_id ) );
+        }
     }
 
     /**
@@ -255,7 +354,7 @@ abstract class FactMigrator {
      *
      * @return array[]
      */
-    protected function build( array $rows, array &$progress ) {
+    protected function build( array $rows, array &$progress, ?array &$tally = null ) {
 
         $refs = $this->resolve( $rows );
 
@@ -266,6 +365,17 @@ abstract class FactMigrator {
             $progress['rows_read']++;
 
             $refused = $this->refusal( $r );
+
+            if ( $tally !== null ) {
+
+                $d = (int) ( $r['yyyymmdd'] ?? 0 );
+                $tally['read'][ $d ] = ( $tally['read'][ $d ] ?? 0 ) + 1;
+
+                if ( $refused ) {
+
+                    $tally['refused'][ $d ][ $refused ] = ( $tally['refused'][ $d ][ $refused ] ?? 0 ) + 1;
+                }
+            }
 
             if ( $refused ) {
 
@@ -279,9 +389,26 @@ abstract class FactMigrator {
 
                 $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $event );
 
-                if ( $row ) {
+                if ( ! $row ) {
 
-                    $out[] = $row;
+                    continue;
+                }
+
+                $out[] = $row;
+
+                if ( $tally !== null ) {
+
+                    $d    = (int) $row['yyyymmdd'];
+                    $type = (string) $row['event_type'];
+                    $t    = $tally['events'][ $d ][ $type ] ?? array( 'n' => 0, 'revenue' => 0, 'items' => 0, 'max_ts' => 0 );
+
+                    $t['n']++;
+                    $t['revenue'] += (int) ( $row['revenue'] ?? 0 );
+                    $t['items']   += self::itemCount( $row['params'] ?? null );
+                    $t['max_ts']   = max( $t['max_ts'], (int) $row['ts'] );
+
+                    $tally['events'][ $d ][ $type ] = $t;
+                    $tally['visitors'][ $d ][ (string) $row['visitor_id'] ] = true;
                 }
             }
         }
@@ -338,6 +465,7 @@ abstract class FactMigrator {
         }
 
         $entity->delete();
+        $this->forgetTally( $site_id );
 
         return $deleted;
     }
@@ -346,12 +474,16 @@ abstract class FactMigrator {
      * What v1 holds for one site against what reached owa_event_raw, per day
      * (PLAN.html 2.22).
      *
-     * v1 is read again with the cutoff the site was migrated with and every
-     * row rebuilt, exactly as revertSite() does, so the ids are the ones the
-     * migration wrote. Per day and event type: rows v1 holds, rows refused,
-     * rows the migration should have written, and how many of those are in
-     * raw -- with their revenue, line items and distinct visitors on both
-     * sides. Nothing is written.
+     * The expected side is what each batch recorded as it wrote
+     * (recordTally()): per day, v1 rows read and refused, and per event type
+     * the rows written with their revenue and line items, and the visitors.
+     * The present side is counted from raw: this pass's event types, up to the
+     * latest ts it wrote -- v1 stopped before v2 began recording, so a row
+     * after that is live traffic, not migrated history.
+     *
+     * Counted, not rebuilt. Reconciliation used to read v1 again and rebuild
+     * every row to know what to expect, which cost as much as the migration:
+     * 26 of 54 minutes on a real 1.x install.
      *
      * A site reconciles when every expected row is present with the same
      * revenue and visitors. Refused rows are the accounted-for difference.
@@ -360,99 +492,91 @@ abstract class FactMigrator {
      */
     public function reconcileSite( $site_id ) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
-        $entity->load( \OWA\Module\Base\Entity\MigrationProgress::idFor( static::progressKey(), $site_id ) );
-
-        if ( $entity->wasPersisted() ) {
-
-            $since = (int) $entity->get( 'since' );
-            $this->since = $since > 0 ? $since : null;
-        }
-
-        $table   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $source  = static::progressKey();
+        $site_id = (string) $site_id;
+        $raw     = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
         $days    = array();
-        $after   = null;
-        $scratch = array( 'rows_read' => 0, 'rows_refused' => 0, 'refusals' => array() );
+        $types   = array();
+        $bound   = 0;
 
         $day = function ( $d ) use ( &$days ) {
 
             if ( ! isset( $days[ $d ] ) ) {
 
                 $days[ $d ] = array( 'read' => 0, 'refused' => array(), 'types' => array(),
-                    'visitors_expected' => array(), 'visitors_present' => array() );
+                    'visitors_expected' => 0, 'visitors_present' => 0 );
             }
         };
 
-        while ( $rows = $this->read( $site_id, $after ) ) {
+        foreach ( (array) $this->db()->get_results( sprintf(
+                'SELECT yyyymmdd, kind, name, n, revenue, items, max_ts FROM %s WHERE source = ? AND site_id = ?',
+                \OWA\Core\CoreAPI::entityFactory( 'base.migration_tally' )->getTableName() ),
+                array( $source, $site_id ) ) as $row ) {
 
-            foreach ( $rows as $r ) {
+            $row = (array) $row;
+            $d   = (int) $row['yyyymmdd'];
+            $day( $d );
 
-                $d = (int) $r['yyyymmdd'];
-                $day( $d );
-                $days[ $d ]['read']++;
+            if ( $row['kind'] === 'read' ) {
 
-                $reason = $this->refusal( $r );
+                $days[ $d ]['read'] = (int) $row['n'];
 
-                if ( $reason ) {
+            } elseif ( $row['kind'] === 'refused' ) {
 
-                    $days[ $d ]['refused'][ $reason ] = ( $days[ $d ]['refused'][ $reason ] ?? 0 ) + 1;
-                }
+                $days[ $d ]['refused'][ (string) $row['name'] ] = (int) $row['n'];
+
+            } else {
+
+                $type = (string) $row['name'];
+                $days[ $d ]['types'][ $type ]['expected']         = (int) $row['n'];
+                $days[ $d ]['types'][ $type ]['revenue_expected'] = (int) $row['revenue'];
+                $days[ $d ]['types'][ $type ]['items_expected']   = (int) $row['items'];
+                $types[ $type ] = true;
+                $bound = max( $bound, (int) $row['max_ts'] );
             }
+        }
 
-            $built = $this->build( $rows, $scratch );
-            $ids   = array();
+        foreach ( (array) $this->db()->get_results( sprintf(
+                'SELECT yyyymmdd, COUNT(*) AS n FROM %s WHERE source = ? AND site_id = ? GROUP BY yyyymmdd',
+                \OWA\Core\CoreAPI::entityFactory( 'base.migration_day_visitor' )->getTableName() ),
+                array( $source, $site_id ) ) as $row ) {
 
-            foreach ( $built as $row ) {
+            $row = (array) $row;
+            $day( (int) $row['yyyymmdd'] );
+            $days[ (int) $row['yyyymmdd'] ]['visitors_expected'] = (int) $row['n'];
+        }
 
+        if ( $types ) {
+
+            $in    = implode( ',', array_fill( 0, count( $types ), '?' ) );
+            $span  = array_keys( $days );
+            $where = sprintf( 'site_id = ? AND event_type IN (%s) AND ts <= %d AND yyyymmdd BETWEEN %d AND %d',
+                $in, $bound, min( $span ), max( $span ) );
+            $args  = array_merge( array( $site_id ), array_keys( $types ) );
+
+            foreach ( (array) $this->db()->get_results( sprintf(
+                    "SELECT yyyymmdd, event_type, COUNT(*) AS n, SUM(COALESCE(revenue, 0)) AS revenue,"
+                  . " SUM(COALESCE(JSON_LENGTH(params, '$.items'), 0)) AS items FROM %s WHERE %s"
+                  . ' GROUP BY yyyymmdd, event_type', $raw, $where ), $args ) as $row ) {
+
+                $row  = (array) $row;
                 $d    = (int) $row['yyyymmdd'];
                 $type = (string) $row['event_type'];
                 $day( $d );
 
-                $days[ $d ]['types'][ $type ]['expected']         = ( $days[ $d ]['types'][ $type ]['expected'] ?? 0 ) + 1;
-                $days[ $d ]['types'][ $type ]['revenue_expected'] = ( $days[ $d ]['types'][ $type ]['revenue_expected'] ?? 0 )
-                    + (int) ( $row['revenue'] ?? 0 );
-                $days[ $d ]['types'][ $type ]['items_expected']   = ( $days[ $d ]['types'][ $type ]['items_expected'] ?? 0 )
-                    + self::itemCount( $row['params'] ?? null );
-                $days[ $d ]['visitors_expected'][ (string) $row['visitor_id'] ] = true;
-
-                $ids[] = (int) $row['id'];
+                $days[ $d ]['types'][ $type ]['present']         = (int) $row['n'];
+                $days[ $d ]['types'][ $type ]['revenue_present'] = (int) $row['revenue'];
+                $days[ $d ]['types'][ $type ]['items_present']   = (int) $row['items'];
             }
 
-            if ( $ids ) {
+            foreach ( (array) $this->db()->get_results( sprintf(
+                    'SELECT yyyymmdd, COUNT(DISTINCT visitor_id) AS n FROM %s WHERE %s GROUP BY yyyymmdd', $raw, $where ),
+                    $args ) as $row ) {
 
-                $span = array_map( 'intval', array_column( $built, 'yyyymmdd' ) );
-
-                // The day range prunes partitions: a lookup by id alone reads every one.
-                $present = (array) $this->db()->get_results( sprintf(
-                    'SELECT id, yyyymmdd, event_type, visitor_id, revenue,'
-                    . " JSON_LENGTH(params, '$.items') AS items FROM %s"
-                    . ' WHERE yyyymmdd BETWEEN %d AND %d AND id IN (%s)',
-                    $table, min( $span ), max( $span ), implode( ',', $ids ) ) );
-
-                foreach ( $present as $p ) {
-
-                    $p    = (array) $p;
-                    $d    = (int) $p['yyyymmdd'];
-                    $type = (string) $p['event_type'];
-                    $day( $d );
-
-                    $days[ $d ]['types'][ $type ]['present']         = ( $days[ $d ]['types'][ $type ]['present'] ?? 0 ) + 1;
-                    $days[ $d ]['types'][ $type ]['revenue_present'] = ( $days[ $d ]['types'][ $type ]['revenue_present'] ?? 0 )
-                        + (int) ( $p['revenue'] ?? 0 );
-                    $days[ $d ]['types'][ $type ]['items_present']   = ( $days[ $d ]['types'][ $type ]['items_present'] ?? 0 )
-                        + (int) ( $p['items'] ?? 0 );
-                    $days[ $d ]['visitors_present'][ (string) $p['visitor_id'] ] = true;
-                }
+                $row = (array) $row;
+                $day( (int) $row['yyyymmdd'] );
+                $days[ (int) $row['yyyymmdd'] ]['visitors_present'] = (int) $row['n'];
             }
-
-            $last  = end( $rows );
-            $after = (string) $last['id'];
-        }
-
-        foreach ( $days as $d => $values ) {
-
-            $days[ $d ]['visitors_expected'] = count( $values['visitors_expected'] );
-            $days[ $d ]['visitors_present']  = count( $values['visitors_present'] );
         }
 
         ksort( $days );
@@ -558,8 +682,10 @@ abstract class FactMigrator {
         return is_array( $doc ) && is_array( $doc['items'] ?? null ) ? count( $doc['items'] ) : 0;
     }
 
-    /** Drop a site's progress row, so the pass starts over. */
+    /** Drop a site's progress row and tally, so the pass starts over. */
     protected function forget( $site_id ) {
+
+        $this->forgetTally( $site_id );
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
         $entity->load( \OWA\Module\Base\Entity\MigrationProgress::idFor( static::progressKey(), $site_id ) );
@@ -862,7 +988,7 @@ abstract class FactMigrator {
             'location_dim' => $this->lookup( 'location_dim', array_column( $rows, 'location_id' ),
                                   'id, country, country_code, state, city' ),
             'session'      => $this->lookup( 'session', array_column( $rows, 'session_id' ),
-                                  'id, timestamp, prior_session_id' ),
+                                  'id, timestamp, prior_session_id, is_new_visitor' ),
             'source_dim'   => $this->lookup( 'source_dim', array_column( $rows, 'source_id' ), 'id, source_domain' ),
             'campaign_dim' => $this->lookup( 'campaign_dim', array_column( $rows, 'campaign_id' ), 'id, name' ),
             'ad_dim'       => $this->lookup( 'ad_dim', array_column( $rows, 'ad_id' ), 'id, name' ),
@@ -931,15 +1057,26 @@ abstract class FactMigrator {
     /** Whether a v1 table's `id` column is an integer type on this installation. */
     protected function integerKey( $table ) {
 
-        if ( ! isset( $this->integer_keys[ $table ] ) ) {
+        return $this->integerColumn( $table, 'id' );
+    }
 
-            $column = (array) $this->db()->get_row( sprintf( "SHOW COLUMNS FROM %s LIKE 'id'",
-                V1Tables::name( $table, $this->prefix ) ) );
+    /**
+     * Whether a v1 column is an integer type on this installation: the same
+     * columns are BIGINT on one and VARCHAR on another (V1Schema).
+     */
+    protected function integerColumn( $table, $column ) {
 
-            $this->integer_keys[ $table ] = (bool) preg_match( '/int/i', (string) ( $column['Type'] ?? '' ) );
+        $key = $table . '.' . $column;
+
+        if ( ! isset( $this->integer_keys[ $key ] ) ) {
+
+            $row = (array) $this->db()->get_row( sprintf( "SHOW COLUMNS FROM %s LIKE '%s'",
+                V1Tables::name( $table, $this->prefix ), preg_replace( '/[^a-z_]/', '', $column ) ) );
+
+            $this->integer_keys[ $key ] = (bool) preg_match( '/int/i', (string) ( $row['Type'] ?? '' ) );
         }
 
-        return $this->integer_keys[ $table ];
+        return $this->integer_keys[ $key ];
     }
 
     /** A signed 64-bit integer written as text, other than zero. */
