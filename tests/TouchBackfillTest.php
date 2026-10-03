@@ -118,6 +118,47 @@ final class TouchBackfillTest extends TestCase
         $this->assertSame($stamps, $this->stamps());
     }
 
+    /** @return array[] the two visitors' store rows */
+    private function storeRows(): array
+    {
+        return array_map(fn ($r) => array_values((array) $r), (array) \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
+            'SELECT visitor_id, last_touch_source, last_touch_referer_host, last_touch_ts FROM %s
+              WHERE visitor_id IN (%d, %d) ORDER BY visitor_id',
+            \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::VISITOR, self::LONER)));
+    }
+
+    /**
+     * Batched by visitor, the backfill writes exactly what one statement per
+     * site wrote: every step is per visitor. One statement was a 12-minute
+     * UPDATE on a real 1.x install's history.
+     */
+    public function testBatchesOfOneVisitorGiveTheSameAnswerAsOneBatch(): void
+    {
+        $h = 3600 * 1000000;
+        $this->landing(self::VISITOR, 1, $this->t0, ['tagged_source' => 'newsletter']);
+        $this->landing(self::LONER, 11, $this->t0 + $h, ['referer_host' => 'search.example']);
+        $this->landing(self::VISITOR, 2, $this->t0 + 2 * $h, []);
+        $this->landing(self::LONER, 12, $this->t0 + 3 * $h, []);
+
+        $one = new \OWA\Module\Base\Classes\TouchBackfill(1);
+        $this->assertCount(2, $one->ranges(self::SITE, 1), 'a range per visitor');
+        $this->assertTrue($one->site(self::SITE));
+        [$stamps, $store] = [$this->stamps(), $this->storeRows()];
+
+        $this->clean();
+        $this->landing(self::VISITOR, 1, $this->t0, ['tagged_source' => 'newsletter']);
+        $this->landing(self::LONER, 11, $this->t0 + $h, ['referer_host' => 'search.example']);
+        $this->landing(self::VISITOR, 2, $this->t0 + 2 * $h, []);
+        $this->landing(self::LONER, 12, $this->t0 + 3 * $h, []);
+
+        $this->assertTrue((new \OWA\Module\Base\Classes\TouchBackfill(2000))->site(self::SITE));
+
+        $this->assertSame($stamps, $this->stamps());
+        $this->assertSame($store, $this->storeRows());
+        $this->assertSame('newsletter', $stamps[2]['session_start'][0], 'and the answer is the right one');
+        $this->assertSame('search.example', $stamps[12]['session_start'][1]);
+    }
+
     /** A newer touch ingest already recorded is not replaced by older history. */
     public function testANewerStoredTouchStays(): void
     {

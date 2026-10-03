@@ -170,4 +170,24 @@ final class GeoEncodingRepairTest extends TestCase
         $this->assertSame( array(), \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( array() ),
             'a row with no location stays empty' );
     }
+
+    /**
+     * A v1 country code is two letters or nothing. v1 upper-cased its "(not
+     * set)" sentinel, which then reached a CHAR(2) column and failed the whole
+     * batch under strict mode -- found rehearsing a real 1.x install.
+     */
+    public function testTheMigrationKeepsOnlyACountryCode(): void
+    {
+        $code = static function ( $v ) {
+            return \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( array( 'country_code' => $v ) )['country_code'];
+        };
+
+        $this->assertSame( 'DE', $code( 'DE' ) );
+        $this->assertSame( 'DE', $code( 'de' ), 'upper-cased' );
+        $this->assertSame( 'DE', $code( ' DE ' ) );
+
+        foreach ( array( '(NOT SET)', '(not set)', 'VATICAN CITY STATE)', 'DEU', 'D', '', null, 'D1' ) as $bad ) {
+            $this->assertNull( $code( $bad ), var_export( $bad, true ) );
+        }
+    }
 }

@@ -52,7 +52,9 @@ final class MigrateRequestsTest extends TestCase
         $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
 
         $db->query("DELETE FROM $raw WHERE site_id = ?", [self::SITE]);
-        $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+            $db->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+        }
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
     }
 
@@ -177,6 +179,61 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame(['first_visit' => 1, 'page_view' => 3, 'session_start' => 1], $types);
     }
 
+    /** @return array event type => count, for one session */
+    private function typesFor(string $session): array
+    {
+        $types = [];
+        foreach ($this->rows() as $r) {
+            if ((string) $r['session_id'] === $session) {
+                $types[$r['event_type']] = ($types[$r['event_type']] ?? 0) + 1;
+            }
+        }
+        ksort($types);
+
+        return $types;
+    }
+
+    /**
+     * v1 set is_entry_page on more than one request of a session (1,445
+     * sessions on a real 1.x install). The session starts once, at its
+     * earliest request.
+     */
+    public function testASessionV1FlaggedTwiceStartsOnce(): void
+    {
+        $this->visit();
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('UPDATE %srequest SET is_entry_page = 1, is_new_visitor = 1',
+            V1Schema::PREFIX));
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $this->assertSame(['first_visit' => 1, 'page_view' => 3, 'session_start' => 1], $this->typesFor(self::SESSION));
+    }
+
+    /**
+     * v1 flagged no request of a session whose session row it had lost (9,279
+     * sessions on a real 1.x install). Its earliest request still starts it,
+     * as live ingest would have.
+     */
+    public function testASessionV1NeverFlaggedStartsAtItsEarliestRequest(): void
+    {
+        $orphan = '1790000000000000099';
+        $this->visit();
+        $this->request('1790000000000000203', ['session_id' => $orphan, 'timestamp' => self::T + 60]);
+        $this->request('1790000000000000201', ['session_id' => $orphan, 'timestamp' => self::T + 120]);
+        $this->request('1790000000000000202', ['session_id' => $orphan, 'timestamp' => self::T + 60]);
+
+        $this->migrator(2)->migrateSite(self::SITE);
+
+        $this->assertSame(['page_view' => 3, 'session_start' => 1], $this->typesFor($orphan),
+            'one start, across batches of two');
+
+        $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName();
+        $start = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            "SELECT ts FROM $raw WHERE session_id = ? AND event_type = 'session_start'", [$orphan]);
+        $this->assertSame(self::T + 60, intdiv((int) $start['ts'], 1000000),
+            'at the earliest time, and of those the lowest id (202)');
+    }
+
     public function testTwoPageViewsInOneSecondAreTwoRows(): void
     {
         $this->visit();
@@ -214,7 +271,9 @@ final class MigrateRequestsTest extends TestCase
         $first = $this->rows();
 
         // Forget the progress, as an interrupted run that lost it would.
-        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+            \OWA\Core\CoreAPI::dbSingleton()->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+        }
 
         $progress = $this->migrator()->migrateSite(self::SITE);
 
@@ -417,7 +476,9 @@ final class MigrateRequestsTest extends TestCase
         foreach (['direct', 'organic-search', 'social-network', 'referral', 'Direct'] as $medium) {
             $db->query('DELETE FROM ' . \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName()
                 . ' WHERE site_id = ?', [self::SITE]);
-            $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+            foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+                $db->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+            }
             $db->query("UPDATE owa_v1fx_request SET medium = ?, source_id = 601, campaign_id = 701"
                 . " WHERE id = 1790000000000000101", [$medium]);
 
@@ -431,7 +492,9 @@ final class MigrateRequestsTest extends TestCase
 
         $db->query('DELETE FROM ' . \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName()
             . ' WHERE site_id = ?', [self::SITE]);
-        $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+            $db->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+        }
         $db->query("UPDATE owa_v1fx_request SET medium = 'cpc' WHERE id = 1790000000000000101");
 
         $this->migrator()->migrateSite(self::SITE);

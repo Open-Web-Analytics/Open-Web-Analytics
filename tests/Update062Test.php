@@ -63,7 +63,9 @@ final class Update062Test extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query('DELETE FROM owa_event_raw WHERE site_id = ?', [self::SITE]);
-        $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+            $db->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+        }
         $db->query("DELETE FROM owa_visitor_acquisition WHERE visitor_id = '1790000000000000311'");
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
     }
@@ -91,6 +93,8 @@ final class Update062Test extends TestCase
     public function testWithoutAChoiceOfHistoryItFailsAndWritesNothing(): void
     {
         $this->assertFalse($this->update->up());
+        $this->assertSame('a choice of how much history to migrate', $this->update->awaiting,
+            'it waits for the operator rather than failing, so cmd=update says so instead of "failed"');
 
         \OWA\Core\CoreAPI::setRequestParam('since', '2years');
         \OWA\Core\CoreAPI::setRequestParam('all', true);

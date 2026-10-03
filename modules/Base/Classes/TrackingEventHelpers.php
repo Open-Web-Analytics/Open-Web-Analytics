@@ -1168,6 +1168,32 @@ class TrackingEventHelpers {
      * because anonymisation is a per-Profile decision; $value stays ignored,
      * as this callback always recomputes the address from the request.
      */
+    /**
+     * The visitor's address from what a request carried: the first public
+     * address of a proxy chain ("client, proxy, ..."), or the address itself
+     * when it is public; '' when there is none.
+     *
+     * The v1 migration uses it too: 1.x sometimes stored the whole chain,
+     * which is longer than the column and is not an address.
+     *
+     * @param string $ip
+     * @return string
+     */
+    public static function chooseIp( $ip ) {
+
+        foreach ( explode( ',', (string) $ip ) as $candidate ) {
+
+            $candidate = trim( $candidate );
+
+            if ( \OWA\Core\Lib::isNotPrivateIp( $candidate ) ) {
+
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
     static function ipAddressDefault( $value = '', $event = null ) {
 
         $ip = '';
@@ -1197,42 +1223,7 @@ class TrackingEventHelpers {
              }
         }
 
-         // check to see if there are multiple ips possibly passed from a poxy
-         if ( strpos( $ip, ',' ) ) {
-
-             \OWA\Core\CoreAPI::debug('multiple ip addresses found');
-             // evaluate each IP to make sure it's valid and that it's not a private IP
-             $candidate_ips = explode( ',', $ip );
-
-             foreach ( $candidate_ips as $candidate_ip ) {
-
-                 $candidate_ip = trim( $candidate_ip );
-
-                 if ( \OWA\Core\Lib::isNotPrivateIp( $candidate_ip ) ) {
-
-                     $chosen_ip = $candidate_ip;
-                     \OWA\Core\CoreAPI::debug("Candidate IP address $candidate_ip was chosen.");
-
-                     break;
-                     
-                 } else {
-	                 
-	                 \OWA\Core\CoreAPI::debug("Candidate IP address $candidate_ip was private.");
-                 }
-             }
-             
-         } else {
-	         
-	         if ( \OWA\Core\Lib::isNotPrivateIp( $ip ) ) {
-		     	
-		     	$chosen_ip = $ip;
-		     	\OWA\Core\CoreAPI::debug("IP address $ip was chosen.");
-		     	
-		     } else {
-			     
-			     \OWA\Core\CoreAPI::debug("IP address $ip was private.");
-		     }
-         }
+        $chosen_ip = self::chooseIp( $ip );
 
         // Anonymize IP if needed.
         $site_id = $event ? $event->get('site_id') : '';

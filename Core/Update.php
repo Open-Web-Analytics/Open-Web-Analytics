@@ -61,6 +61,16 @@ class Update extends \OWA\Core\Base {
 
     var $is_cli_mode_required;
 
+    /**
+     * Set by an update that stops for the operator rather than failing: a
+     * choice to make, or something to do first. up() returns false with it
+     * set, and every layer above reports it as waiting, not as a failure.
+     * The update says what is needed in its own notice.
+     *
+     * @var string
+     */
+    var $awaiting = '';
+
     function __construct() {
 
         return parent::__construct();
@@ -119,6 +129,9 @@ class Update extends \OWA\Core\Base {
                     $this->e->notice("Post Update Proceadure Failed");
                     return false;
                 endif;
+            elseif ( $this->awaiting !== '' ):
+                $this->e->notice( sprintf( 'Update stopped: it needs %s.', $this->awaiting ) );
+                return false;
             else:
                 $this->e->notice("Update Proceadure Failed");
                 return false;

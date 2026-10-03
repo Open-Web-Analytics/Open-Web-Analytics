@@ -60,7 +60,9 @@ final class MigrateMoreSourcesTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->query('DELETE FROM owa_event_raw WHERE site_id = ?', [self::SITE]);
-        $db->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+            $db->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+        }
         $db->query('DELETE FROM owa_visitor_acquisition WHERE site_id = ?', [self::SITE]);
         $db->query('DELETE FROM owa_setting WHERE scope_id IN (?, ?)', [self::SITE, (string) self::PROPERTY]);
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
@@ -216,7 +218,9 @@ final class MigrateMoreSourcesTest extends TestCase
 
         // A yen Profile: v1's 120000 was 1200 yen, and yen has no minor unit.
         \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_event_raw WHERE site_id = ?', [self::SITE]);
-        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+            \OWA\Core\CoreAPI::dbSingleton()->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+        }
         // Per Property, not per Profile: a Property's revenue sums in one cube.
         $this->assertNotFalse(\OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base', 'currencyISO3', 'JPY'));
         \OWA\Core\CoreAPI::dbSingleton()->query('UPDATE owa_v1fx_commerce_transaction_fact SET total_revenue = 120000');
@@ -360,7 +364,9 @@ final class MigrateMoreSourcesTest extends TestCase
         // Insert-if-absent: a second pass, or a row v2 collected, is left alone.
         \OWA\Core\CoreAPI::dbSingleton()->query('UPDATE owa_visitor_acquisition SET acq_source = ? WHERE visitor_id = ?',
             ['live', self::VISITOR]);
-        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_migration_progress WHERE site_id = ?', [self::SITE]);
+        foreach (['owa_migration_progress', 'owa_migration_tally', 'owa_migration_day_visitor'] as $t) {
+            \OWA\Core\CoreAPI::dbSingleton()->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
+        }
 
         (new VisitorMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
 
