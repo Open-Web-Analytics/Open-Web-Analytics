@@ -276,6 +276,8 @@ final class SettingsStoreConsolidationTest extends TestCase
 
         $c = \OWA\Core\CoreAPI::configSingleton();
 
+        // Declared, as only a declared key may be stored.
+        $c->registerField( self::MODULE, 'autoload_probe', array( 'default' => 'd', 'storable' => true ) );
         $c->persistSetting( self::MODULE, 'autoload_probe', 'stored' );
         $c->save();
 

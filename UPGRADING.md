@@ -296,6 +296,17 @@ screen, or `CoreAPI::getJsTrackerBundleTag()`.
 `registerFormatter()` stays: `ResultSetManager` falls back to a module's
 formatter for a data type it does not format itself.
 
+**Formula metrics removed.** A `calculated` metric declares a `ratio`
+(`numerator`, `denominator`, optional `precision`) or a difference (`minuend`,
+`subtrahend`). The 1.x `formula` with `child_metrics` -- an expression run
+through `eval()` with child values substituted in by name -- is refused with a
+notice, and nothing in OWA uses `eval()` any more.
+
+**Only declared settings can be stored.** `persistSetting()` and the options
+form refuse a key no module declares (in its `settings.php`, `storable` and with
+`install` among its scopes). A module that stored an undeclared key in 1.x must
+declare it.
+
 ---
 
 ## Deprecated in 2.0

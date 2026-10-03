@@ -453,6 +453,8 @@ final class SettingsPersistenceTest extends TestCase
     public function testWritingAnEmptyStringStoresItRatherThanRemovingTheKey(): void
     {
         $c = $this->settings();
+        // Declared, as only a declared key may be stored.
+        $c->registerField('base', 'zz_removal_probe', ['default' => 'd', 'storable' => true]);
 
         $c->persistSetting('base', 'zz_removal_probe', '');
 
@@ -465,6 +467,7 @@ final class SettingsPersistenceTest extends TestCase
     public function testRemoveSettingDropsTheStoredValue(): void
     {
         $c = $this->settings();
+        $c->registerField('base', 'zz_removal_probe', ['default' => false, 'storable' => true]);
 
         $c->persistSetting('base', 'zz_removal_probe', 'stored');
 

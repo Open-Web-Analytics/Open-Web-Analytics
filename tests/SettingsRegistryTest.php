@@ -440,9 +440,11 @@ final class SettingsRegistryTest extends TestCase
         $c->persistSetting( self::MODULE, 'normal', 'stored' );
         $this->assertSame( 'stored', $c->db_settings[ self::MODULE ]['normal'] ?? null );
 
-        // Unregistered: base has not declared, and OptionsUpdate writes its
-        // keys through this path.
-        $this->assertTrue( $c->mayPersistInstallWide( self::MODULE, 'nobody_declared_me' ) );
+        // Undeclared: refused, so the options form cannot store a name a
+        // browser made up. persistSetting() stores nothing for it.
+        $this->assertFalse( $c->mayPersistInstallWide( self::MODULE, 'nobody_declared_me' ) );
+        $c->persistSetting( self::MODULE, 'nobody_declared_me', 'made up' );
+        $this->assertArrayNotHasKey( 'nobody_declared_me', (array) ( $c->db_settings[ self::MODULE ] ?? array() ) );
 
         // Mechanical settings are storable via autoload, so module activation
         // and the schema-version stamp keep working.

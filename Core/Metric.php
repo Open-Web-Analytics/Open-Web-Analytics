@@ -36,7 +36,7 @@ class Metric extends \OWA\Core\Base {
      * A ratio's two children and its rounding, when it is one.
      *
      * Named rather than written into a formula string, so nothing has to be
-     * substituted by name into an expression -- see setFormula() for what that
+     * substituted by name into an expression -- see setRatio() for what that
      * costs.
      *
      * @var string
@@ -493,7 +493,7 @@ class Metric extends \OWA\Core\Base {
     }
     
     /**
-     * Children and formula of a calculated metric.
+     * Children of a calculated metric.
      *
      * These lived only on CalculatedMetric, so ConfigurableMetric -- which
      * extends this class -- called setChildMetric() on an object that had no
@@ -503,7 +503,6 @@ class Metric extends \OWA\Core\Base {
      * keeps only the flag that says it is.
      */
     var $child_metrics = array();
-    var $formula;
 
     function setChildMetric( $name ) {
 
@@ -513,16 +512,6 @@ class Metric extends \OWA\Core\Base {
     function getChildMetrics() {
 
         return $this->child_metrics;
-    }
-
-    function setFormula( $string ) {
-
-        $this->formula = $string;
-    }
-
-    function getFormula() {
-
-        return $this->formula;
     }
 
     function isCalculated() {
@@ -703,7 +692,7 @@ class Metric extends \OWA\Core\Base {
          * The children ARE the two sides, so they are recorded where every
          * other reader already looks for them. Nothing else in the manager has
          * to learn what a ratio is: it resolves children, excludes them from
-         * the output and reduces entities exactly as it does for a formula.
+         * the output and reduces entities exactly as it does for a difference.
          */
         $this->setChildMetric( $this->numerator );
         $this->setChildMetric( $this->denominator );
@@ -738,8 +727,7 @@ class Metric extends \OWA\Core\Base {
      *
      * NULL WHEN THE DENOMINATOR IS ZERO, not 0. "No visits, so pages-per-visit
      * is not a number" and "pages-per-visit is zero" are different answers, and
-     * a formatter renders the first as absent (PLAN 2.11). The formula path
-     * returns 0 for both.
+     * a formatter renders the first as absent (PLAN 2.11).
      *
      * A zero NUMERATOR is an ordinary zero and says so.
      *

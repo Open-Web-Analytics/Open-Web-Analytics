@@ -1406,8 +1406,8 @@ namespace OWA\Module\Base\Classes;
           * The same applies to a setting whose declared scopes do not include
           * install: storing it here puts it at a level nothing resolves from.
           *
-          * Unregistered settings are unconstrained, as everywhere else -- base
-          * has not declared yet and OptionsUpdate writes its keys through here.
+          * An undeclared setting is refused too: nothing declared a reader for
+          * it, so a stored value could only be a name somebody made up.
           */
          if ( ! $this->mayPersistInstallWide( $module, $key ) ) {
 
@@ -1417,6 +1417,10 @@ namespace OWA\Module\Base\Classes;
 
                  $why = sprintf( 'it is set by %s in owa-config.php, which wins on every boot',
                      $governing );
+
+             } elseif ( ! $this->isRegistered( $module, $key ) ) {
+
+                 $why = 'no module declares it';
 
              } elseif ( ! self::isStorable( $this->registeredField( $module, $key ) ) ) {
 
@@ -2016,8 +2020,10 @@ namespace OWA\Module\Base\Classes;
      /**
       * Whether this setting may be stored install-wide.
       *
-      * True for anything unregistered. Only a setting that HAS declared is
-      * held to what it declared.
+      * Only a declared one: storable, and with install among its scopes. A key
+      * no module declared is refused, so the options form cannot store a name
+      * a browser made up. Every module declares its settings, its mechanical
+      * is_active and schema_version included (Module::mechanicalSettings()).
       *
       * @return bool
       */
@@ -2040,7 +2046,7 @@ namespace OWA\Module\Base\Classes;
 
          if ( ! $this->isRegistered( $module, $key ) ) {
 
-             return true;
+             return false;
          }
 
          $args = $this->registeredField( $module, $key );

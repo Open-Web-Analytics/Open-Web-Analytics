@@ -115,9 +115,10 @@ final class MetricSqlHarness
                 );
             }
 
+            // Neither a difference nor a ratio: a declaration v2.0 refuses
+            // (a formula), recorded so the test below can say so.
             return array(
                 'kind'     => 'calculated',
-                'formula'  => (string) $metric->getFormula(),
                 'children' => $children,
             );
         }
