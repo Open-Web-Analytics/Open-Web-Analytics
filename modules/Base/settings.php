@@ -175,7 +175,6 @@ return array(
             'label'    => 'e-commerce Reporting',
             'description' => 'Adds e-commerce metrics to reports.',
         ),
-        'error_handler' => array( 'default' => 'production' ),
         'error_log_file' => array( 'default' => '' ),
         'excluded_ips' => array(
             'default'  => '',

@@ -272,7 +272,7 @@ final class SettingTierMoveTest extends TestCase
     {
         $config = \OWA\Core\CoreAPI::configSingleton();
 
-        $previous = set_error_handler( static function ( $no, $str ) {
+        set_error_handler( static function ( $no, $str ) {
             throw new \RuntimeException( $str );
         } );
 
@@ -280,7 +280,7 @@ final class SettingTierMoveTest extends TestCase
             $this->assertSame( array(), $config->getModuleSettings( 'no_such_module_here' ) );
 
         } finally {
-            set_error_handler( $previous );
+            restore_error_handler();
         }
     }
 

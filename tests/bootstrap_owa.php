@@ -42,6 +42,17 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
     owa_test_pause_scheduler();
 
     /*
+     * PHPUnit must see PHP's warnings. Under OWA_DEBUG, which the dev config
+     * defines, booting installs OWA's own PHP error handler, which writes a
+     * warning to the log and returns -- so a warning that fails CI (where
+     * there is no config and no debug) passed here unseen.
+     */
+    $handler = set_error_handler(null);
+    if (!(is_array($handler) && $handler[0] instanceof \OWA\Module\Base\Classes\Error)) {
+        set_error_handler($handler);
+    }
+
+    /*
      * Tracking bundles go to a directory of the suite's own. Creating a
      * Profile or saving its tag settings publishes its bundle (PLAN 2.30.7),
      * and a test doing either would otherwise leave files under the

@@ -162,7 +162,7 @@ final class GoalEventStorageTest extends TestCase
     {
         $seen = false;
 
-        $previous = set_error_handler(
+        set_error_handler(
             static function ( $no, $str ) use ( &$seen ) {
 
                 if ( ! ( error_reporting() & $no ) ) {
@@ -183,7 +183,7 @@ final class GoalEventStorageTest extends TestCase
                 'A broken pattern warns on every tracked event.' );
 
         } finally {
-            set_error_handler( $previous );
+            restore_error_handler();
         }
     }
 

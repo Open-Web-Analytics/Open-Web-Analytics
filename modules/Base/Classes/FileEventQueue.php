@@ -57,7 +57,7 @@ namespace OWA\Module\Base\Classes;
  * how many drains have died with the line at it in hand; that line's receive
  * count goes up, and the lines behind it are not charged.
  *
- * No Monolog, no PID file, and no shelling out to ps to check one.
+ * No PID file, and no shelling out to ps to check one.
  */
 class FileEventQueue implements \OWA\Core\IntakeQueue {
 

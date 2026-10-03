@@ -1676,13 +1676,16 @@ class Lib {
         return $text;
     }
 
+    /**
+     * Debug mode: define('OWA_DEBUG', true) in owa-config.php. Writes debug
+     * lines to the log, routes PHP's own errors there, and has the tracker
+     * log to the browser console.
+     *
+     * @return bool
+     */
     public static function inDebug() {
-	    
-	    if ( ( defined( 'OWA_DEBUG') &&  OWA_DEBUG === true ) ||
-	    	 ( defined( 'OWA_ERROR_HANDLER') && OWA_ERROR_HANDLER === 'development' )
-		){
-			return true;
-		}	    	
+
+        return defined( 'OWA_DEBUG' ) && OWA_DEBUG === true;
     }
     
      public static function inRestDebug() {

@@ -83,7 +83,7 @@ class Caller extends \OWA\Core\Base {
         \OWA\Core\CoreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
         
         if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
-            \OWA\Core\CoreAPI::debug( 'Request URL:' . $_SERVER['REQUEST_METHOD'] .' '.$_SERVER['REQUEST_URI'] );
+            \OWA\Core\CoreAPI::debug( 'Request URL:' . ( $_SERVER['REQUEST_METHOD'] ?? '' ) .' '.$_SERVER['REQUEST_URI'] );
         }
         
         if ( array_key_exists('HTTP_USER_AGENT', $_SERVER ) ) {
@@ -118,7 +118,7 @@ class Caller extends \OWA\Core\Base {
 
         // Sets the correct mode of the error logger now that final config values are in place
         // This will flush buffered msgs that were thrown up untill this point
-        $this->e->setHandler($this->c->get('base', 'error_handler'));
+        $this->e->setHandler();
             
         /* LOAD SERVICE LAYER */
         $this->service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -259,8 +259,9 @@ class Caller extends \OWA\Core\Base {
         return $this->site_id;
     }
     
-    function setErrorHandler($mode) {
-        $this->e->setHandler($mode);
+    /** @param mixed $mode ignored: OWA_DEBUG decides the log level now */
+    function setErrorHandler( $mode = null ) {
+        $this->e->setHandler();
     }
     
     function isOwaInstalled() {
