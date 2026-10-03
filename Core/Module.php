@@ -324,6 +324,8 @@ abstract class Module {
 
         $eq = \OWA\Core\CoreAPI::getEventDispatch();
         $eq->attach($event_name, array($handler_name, $method));
+
+        return true;
     }
 
     /**

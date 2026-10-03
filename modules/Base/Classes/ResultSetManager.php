@@ -1711,16 +1711,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /**
-     * Sets an individual label
-     * return the key so that it can be nested
-     * @return $key string
-     */
-    function setLabel($label) {
-
-        $this->labels[$this->getName()] = $label;
-    }
-
-    /**
      * Set the labels of the measures
      *
      */

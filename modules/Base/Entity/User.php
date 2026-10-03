@@ -134,16 +134,6 @@ class User extends \OWA\Core\Entity {
         }
     }
     
-     /**
-     * @return boolean
-     */
-    public function isDefaultUser() {
-	    
-	    if ( $this->get('id') === 1 ) {
-		    
-		    return true;
-	    }
-    }
 }
 
 ?>

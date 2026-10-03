@@ -193,6 +193,8 @@ class ServiceUser extends \OWA\Core\Base {
         if (is_array($capabilitiesThatRequireSiteAccess) && in_array($capability, $capabilitiesThatRequireSiteAccess)) {
             return true;
         }
+
+        return false;
     }
 
     /**
@@ -211,16 +213,14 @@ class ServiceUser extends \OWA\Core\Base {
             return true;
         }
 
-        if ( ! $this->isAssignedSitesListLoaded ) {
-            //$this->loadAssignedSites();
-        }
-
         if ( isset( $this->assignedSites[ $siteId ] ) ) {
             \OWA\Core\CoreAPI::debug("Site ID: $siteId in accessible list for this user.");
             return true;
-        } else {
-            \OWA\Core\CoreAPI::debug("Site ID: $siteId is not in accessible list for this user.");
         }
+
+        \OWA\Core\CoreAPI::debug("Site ID: $siteId is not in accessible list for this user.");
+
+        return false;
     }
 
     // mark the user as authenticated and populate their capabilities

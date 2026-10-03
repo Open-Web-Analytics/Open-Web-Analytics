@@ -300,37 +300,6 @@ class Template extends TemplateEngine {
 
     }
     
-    function displayNavigationMenu( $menu_name, $addState = true, $options = [] ) {
-        
-        if ( $menu_name ) {
-            
-            $defaults = [
-                
-                'class'                 => 'navigation',
-                'container_element'     => 'nav'
-            ];
-            
-            $options = \OWA\Core\Lib::setDefaultParams( $defaults, $options );
-            
-            $nav = \OWA\Core\CoreAPI::getGroupNavigation( $menu_name );
-            
-            if ( $nav ) {
-                
-                $items = $this->makeNavigation( $nav, $menu_name . '_menu', $class );
-                
-                $menu = sprintf( '<%s class="%s">%s</%s>', $options['container_element'], $options['class'], $items, $options['container_element'] );
-                
-                $this->out( $menu, false );
-                
-            } else {
-                
-                $this->out('There is no menu by that name.');
-            }
-            
-            $this->out( $menu );
-        }
-    }
-
     /**
      * Makes navigation links by checking whether or not the view
      * that is rendering the template is not the view being refered to in the link.

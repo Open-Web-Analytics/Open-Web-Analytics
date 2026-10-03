@@ -155,7 +155,7 @@ class EventDispatch {
      *
      * @param     $filter_name    string
      * @param    $observer    mixed can be a function name or function array
-     * @return bool
+     * @return void
      */
 
     function attachFilter($filter_name, $observer, $priority = 10) {

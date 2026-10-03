@@ -118,12 +118,6 @@ class Auth extends \OWA\Core\Base {
 	        \OWA\Core\CoreAPI::debug('User is already authenticated.');
             $ret = true;
         
-        } elseif (\OWA\Core\CoreAPI::getRequestParam('pk') && \OWA\Core\CoreAPI::getStateParam('u')) {
-            // auth user by temporary passkey. used in forgot password situations
-            $this->setAuthMethod( 'temp_key');
-            $ret = $this->authenticateUserByUrlPasskey(\OWA\Core\CoreAPI::getRequestParam('pk'));
-             \OWA\Core\CoreAPI::debug('User authenticated via temporary passkey.');
-    
         } elseif (\OWA\Core\CoreAPI::getRequestParam('user_id') && \OWA\Core\CoreAPI::getRequestParam('password')) {
             // auth user by login form input
             $this->setAuthMethod( 'login_form');
@@ -355,52 +349,9 @@ class Auth extends \OWA\Core\Base {
         }
     }
 
-    /**
-     * Authenticates user by a passkey
-     *
-     * @param mixed $key
-     * @return unknown
-     */
-    function authenticateUserByUrlPasskey($user_id, $passkey) {
-
-        $passkey = \OWA\Module\Base\Classes\Sanitize::cleanMd5( $passkey );
-
-        if ( $passkey ) {
-
-            // set credentials
-            $this->credentials['user_id'] = $user_id;
-            $this->credentials['passkey'] = $passkey;
-
-            // fetch user obj
-            $this->getUser();
-
-            // generate a new passkey from its components in the db
-            $key = $this->generateUrlPasskey($this->u->get('user_id'), $this->u->get('password'));
-
-            // see if it matches the key on the url
-            if ($key == $passkey) {
-
-                return true;
-
-            } else {
-                return false;
-            }
-
-        } else {
-
-            return false;
-        }
-    }
-
     function generateTempPasskey($seed) {
 
         return md5($seed.time().rand());
-    }
-
-    function generateUrlPasskey($user_name, $password) {
-
-        return md5($user_name . $password);
-
     }
 
     /**

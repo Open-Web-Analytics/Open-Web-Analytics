@@ -167,9 +167,11 @@ namespace OWA\Module\Base\Classes;
         $file = $this->get('base', 'config_file');
         
         if ( file_exists( $file ) ) {
-            
+
             return true;
         }
+
+        return false;
      }
      
      public function isConfigFileLoaded() {
@@ -1233,6 +1235,8 @@ namespace OWA\Module\Base\Classes;
          unset( $this->pending[ $module . '|' . $key ] );
 
          $this->writeValue( $module, $key, $value );
+
+         return true;
      }
 
      /**
