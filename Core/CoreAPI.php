@@ -1236,7 +1236,8 @@ class CoreAPI {
 
         foreach ( array( 'module' => $module, 'action' => $file ) as $part => $value ) {
 
-            if ( ! preg_match( '/^[a-zA-Z0-9_]+$/', $value ) ) {
+            // D: without it $ also matches before a trailing newline.
+            if ( ! preg_match( '/^[a-zA-Z0-9_]+$/D', $value ) ) {
 
                 \OWA\Core\CoreAPI::notice(
                     sprintf( 'Refusing to resolve action: %s segment is not a bare identifier.', $part )
@@ -2038,42 +2039,41 @@ class CoreAPI {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 			
-		// Load action controller from service map which uses the 'module.action' convention	
-		$action_map = $service->getMapValue('actions', $action );
-			
-		// create the controller object
-        if ( $action_map ) {
-	    
-            $controller = \OWA\Core\Lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
-        
-        } else {
-        
-            // attempt to use old style convention
-            //
-            // This is the fallback for third-party modules that predate the
-            // action registry, and it is the only resolution path a request can
-            // reach with a name nothing answers to. Both ways it can fail --
-            // a name that is not a bare <module>.<action>, and one that is but
-            // names no controller -- raise, and until this was caught they left
-            // the request as an uncaught exception: a 500 and a PHP fatal for
-            // what is a missing page.
-            try {
+        /*
+         * The action registry is the only way in. A name no module registered
+         * is answered as a missing page, and never turned into a class name:
+         * the convention lookup this replaced reached any class under a
+         * module's Controller/ directory, registered or not -- an abstract
+         * base among them, which then fataled.
+         *
+         * Malformed (not <module>.<action>, each a bare identifier) is a 400,
+         * since it was never a route anywhere; well-formed but unregistered is
+         * a 404.
+         */
+        $action_map = is_string( $action ) && $action !== '' ? $service->getMapValue( 'actions', $action ) : null;
 
-                $controller = \OWA\Core\CoreAPI::moduleFactory($action, 'Controller', $params);
+        if ( ! $action_map ) {
 
-            } catch ( \OWA\Core\Exception\InvalidAction $e ) {
-
-                return self::actionNotResolved( $action, 400, $e );
-
-            } catch ( \Exception $e ) {
-
-                return self::actionNotResolved( $action, 404, $e );
-            }
+            return self::actionNotResolved( $action, self::isActionName( $action ) ? 404 : 400 );
         }
-		
+
+        $controller = \OWA\Core\Lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
+
 		return \OWA\Core\CoreAPI::runController( $controller );
     }
     
+    /**
+     * Whether a name has an action name's shape: <module>.<action>, each a bare
+     * identifier.
+     *
+     * @param mixed $action
+     * @return bool
+     */
+    public static function isActionName( $action ) {
+
+        return is_string( $action ) && (bool) preg_match( '/^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+$/D', $action );
+    }
+
     /**
      * Answer a request whose action resolves to nothing.
      *

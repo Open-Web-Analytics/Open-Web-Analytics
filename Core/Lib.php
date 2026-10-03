@@ -427,6 +427,13 @@ class Lib {
 
     public static function fileInclusionFilter($str) {
 
+        // ?do[]=x arrives as an array. Not a name, so nothing: the dispatcher
+        // answers an empty one as a bad request, where strpos() below threw.
+        if ( ! is_string( $str ) ) {
+
+            return '';
+        }
+
         $str = str_replace("http://", "", $str);
         $str = str_replace("/", "", $str);
         $str = str_replace("\\", "", $str);

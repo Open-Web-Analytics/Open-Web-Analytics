@@ -301,12 +301,9 @@ class Module extends \OWA\Core\Module {
     /**
      * Register this module's actions against their controllers.
      *
-     * Registration is what lets CoreAPI::performAction() take the safe branch --
-     * Lib::simpleFactory() with a class name and path resolved from THIS table --
-     * instead of falling through to moduleFactory(), which reconstructs a class
-     * name and a filesystem path by concatenating the request's own 'do' param.
-     * That legacy branch stays for third-party modules that do not register, and
-     * is now guarded by an identifier check, but core should never rely on it.
+     * Registration is the only way an action is reached: CoreAPI::performAction()
+     * resolves a request's 'do' param through this table alone, and answers any
+     * name not in it as a missing page.
      *
      * Class names are the PSR-4 names, so Composer autoloads them and
      * simpleFactory() never touches the filesystem; the path is kept as a
