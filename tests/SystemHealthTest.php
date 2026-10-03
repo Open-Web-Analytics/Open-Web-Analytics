@@ -222,8 +222,13 @@ final class SystemHealthTest extends TestCase
             (int) $data['facts']['Profiles'], 'active Profiles include every live web one');
 
         $source = (string) file_get_contents(dirname(__DIR__) . '/modules/Base/Classes/SystemHealth.php');
-        $this->assertStringContainsString('information_schema.TABLES', $source, 'raw is sized from metadata');
+        $this->assertStringContainsString('->tableSize( $raw )', $source, 'raw is sized from the server\'s statistics');
         $this->assertDoesNotMatchRegularExpression('/COUNT\(\*\)[^;]*\$raw/', $source, 'never counted');
+
+        $size = \OWA\Core\CoreAPI::dbSingleton()->tableSize('owa_event_raw');
+        $this->assertIsInt($size['rows']);
+        $this->assertGreaterThan(0, $size['bytes']);
+        $this->assertNull(\OWA\Core\CoreAPI::dbSingleton()->tableSize('not a table'), 'a name that cannot be one is refused');
     }
 
     /** No keep= is said plainly: nothing is deleted. */

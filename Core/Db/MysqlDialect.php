@@ -477,6 +477,28 @@ trait MysqlDialect
     }
 
     /**
+     * A table's size as the server estimates it, without reading the table:
+     * InnoDB's row estimate and its data plus index bytes, from
+     * information_schema. MySQL 8 caches these statistics, for up to a day by
+     * default (information_schema_stats_expiry), so they are "about".
+     *
+     * @param string $table_name
+     * @return array|null ['rows' => int, 'bytes' => int], or null when unknown
+     */
+    function tableSize( $table_name ) {
+
+        if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
+
+            return null;
+        }
+
+        $row = $this->get_row( sprintf( "SELECT TABLE_ROWS AS n, DATA_LENGTH + INDEX_LENGTH AS bytes "
+            . "FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '%s'", $table_name ) );
+
+        return $row ? array( 'rows' => (int) $row['n'], 'bytes' => (int) $row['bytes'] ) : null;
+    }
+
+    /**
      * Spare open-file slots on this server, or null if it cannot be read.
      *
      * Each partition is a file, and InnoDB caps how many tablespaces it keeps

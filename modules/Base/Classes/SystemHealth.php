@@ -369,11 +369,9 @@ class SystemHealth {
     /**
      * What the installation holds and how long it keeps it.
      *
-     * Raw's size is the server's own estimate, read from information_schema
-     * rather than counted: a COUNT(*) over the event table is a full scan.
-     * InnoDB's row count is approximate, and MySQL 8 caches these statistics
-     * for up to a day (information_schema_stats_expiry), so the screen says
-     * "about".
+     * Raw's size is the server's own estimate (Db::tableSize()) rather than
+     * counted: a COUNT(*) over the event table is a full scan. It is
+     * approximate and can be a day old, so the screen says "about".
      */
     public static function data() {
 
@@ -394,11 +392,11 @@ class SystemHealth {
 
         // Raw: the estimate and size, and the oldest partition holding rows.
         $raw   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
-        $stats = (array) $db->get_row( 'SELECT TABLE_ROWS AS n, DATA_LENGTH + INDEX_LENGTH AS bytes'
-            . ' FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?', array( $raw ) );
+        $size = $db->tableSize( $raw );
 
-        $facts['Raw events'] = sprintf( 'about %s, %s on disk', number_format( (int) ( $stats['n'] ?? 0 ) ),
-            self::bytes( (int) ( $stats['bytes'] ?? 0 ) ) );
+        $facts['Raw events'] = $size
+            ? sprintf( 'about %s, %s on disk', number_format( $size['rows'] ), self::bytes( $size['bytes'] ) )
+            : 'unknown';
 
         foreach ( (array) $db->listPartitions( $raw ) as $partition ) {
 
