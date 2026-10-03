@@ -52,6 +52,15 @@ final class EmptyTestConstraintTest extends TestCase
             array( 'name' => 'sessionCampaign', 'operator' => $operator, 'value' => $value ) ) );
     }
 
+    public function testARangeValueIsNotTheEmptyTest(): void
+    {
+        // Every report's date range is a BETWEEN constraint holding an array;
+        // casting it to a string raised "Array to string conversion".
+        $this->assertSame( '', ResultSetManager::emptyTestFor( array(
+            'name' => 'yyyymmdd', 'operator' => 'BETWEEN',
+            'value' => array( 'start' => 20260101, 'end' => 20260131 ) ) ) );
+    }
+
     public static function mappings(): array
     {
         return array(
