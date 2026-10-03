@@ -57,7 +57,7 @@ beforeAll(() => {
     // The control renders its markup with jQote2 (jqoteapp), the same plugin
     // reporting-entry.js loads in the browser. Without it the control cannot be
     // built at all, and this file could only ever test the formatter.
-    require('../../modules/Base/src/reporting/v1/includes/jquery/jQote2/jquery.jqote2.js');
+    require('../../modules/Base/src/reporting/v1/includes/jquery/jQote2/jquery.jqote2.min.js');
 
     const src = require('fs').readFileSync(
         require('path').join(__dirname, '..', '..',
