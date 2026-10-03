@@ -1432,6 +1432,17 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * A table's size as the server estimates it. Unknown, without introspection.
+     *
+     * @param string $table_name
+     * @return array|null ['rows' => int, 'bytes' => int]
+     */
+    function tableSize( $table_name ) {
+
+        return null;
+    }
+
+    /**
      * The columns of a table's primary key. Unknown, without introspection.
      *
      * @param string $table_name

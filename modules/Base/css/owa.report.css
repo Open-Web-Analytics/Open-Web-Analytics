@@ -3470,7 +3470,8 @@ li.constraintRow {
  * ------------------------------------------------------------------------ */
 
 /*
- * Clears the top nav.
+ * Clears the top nav, and leaves room above the footer: without it the
+ * panel's bottom border sat on the "powered by" line.
  *
  * The CONTENT column only. The left column's clearance is the tile's own
  * margin, which is shared with the report page -- padding the cell as well
@@ -3478,6 +3479,7 @@ li.constraintRow {
  */
 .owa_hierarchyPage > tbody > tr > td.owa_hierarchyContent {
     padding-top: 20px;
+    padding-bottom: 32px;
 }
 
 .owa_hierarchyContent {

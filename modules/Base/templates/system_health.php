@@ -13,15 +13,23 @@ $owa_s = (array) $view->sections;
 <div id="panel">
 
 <div class="owa_panelIntro">
-    OWA's background work: the scheduler and its jobs, the queue of one-off jobs, and the queue
-    incoming beacons go through. <b>Action needed</b> means something has stopped until someone acts;
+    OWA's background work -- the scheduler and its jobs, the queue of one-off jobs, the queue
+    incoming beacons go through, and the Profiles' tracking bundles -- and, last, the installation itself. <b>Action needed</b> means something has stopped until someone acts;
     <b>Attention</b> means something worth a look that the next run, or time, may resolve.
 </div>
 
-<?php foreach ( array( 'scheduler', 'jobs', 'queue', 'intake' ) as $owa_key ): ?>
+<?php foreach ( array( 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ) as $owa_key ): ?>
 <?php $owa_sec = (array) ( $owa_s[ $owa_key ] ?? array() ); if ( ! $owa_sec ) { continue; } ?>
 <fieldset>
     <legend><?php $view->out( $owa_sec['title'] ); ?> <?php echo owa_cube_status_badge( $owa_sec['level'] ); ?></legend>
+
+    <?php if ( in_array( $owa_key, array( 'data', 'install' ), true ) && ! empty( $owa_sec['facts'] ) ): ?>
+    <table class="management">
+        <?php foreach ( $owa_sec['facts'] as $owa_label => $owa_value ): ?>
+        <tr><td style="width:1%"><b><?php $view->out( $owa_label ); ?></b></td><td><?php if ( $owa_key === 'install' ): ?><code><?php $view->out( $owa_value ); ?></code><?php else: ?><?php $view->out( $owa_value ); ?><?php endif; ?></td></tr>
+        <?php endforeach; ?>
+    </table>
+    <?php endif; ?>
 
     <table class="management">
     <?php foreach ( (array) $owa_sec['findings'] as $owa_f ): ?>
@@ -40,7 +48,7 @@ $owa_s = (array) $view->sections;
         <tr><th>Job</th><th>Schedule</th><th>Last run</th><th>Outcome</th><th>Next</th></tr>
         <?php foreach ( $owa_sec['rows'] as $owa_r ): ?>
         <tr>
-            <td><?php echo owa_cube_status_badge( $owa_r['level'] ); ?> <code><?php $view->out( $owa_r['name'] ); ?></code></td>
+            <td><?php echo owa_cube_status_badge( $owa_r['level'] ); ?> <code<?php if ( $owa_r['description'] !== '' ): ?> title="<?php $view->out( $owa_r['description'] ); ?>"<?php endif; ?>><?php $view->out( $owa_r['name'] ); ?></code></td>
             <td><?php $view->out( $owa_r['schedule'] ); ?></td>
             <td><?php $view->out( $owa_r['last_run'] ); ?></td>
             <td><?php $view->out( $owa_r['outcome'] ?: '--' ); ?><?php if ( $owa_r['outcome'] !== 'ok' && $owa_r['message'] !== '' ): ?><br><?php $view->out( $owa_r['message'] ); ?><?php endif; ?></td>
@@ -75,6 +83,19 @@ $owa_s = (array) $view->sections;
             <?php endforeach; ?>
         </table>
         <?php endif; ?>
+    <?php endif; ?>
+
+    <?php if ( $owa_key === 'bundles' && ! empty( $owa_sec['rows'] ) ): ?>
+    <table class="management">
+        <tr><th>Profile</th><th>Bundle</th><th>Published</th></tr>
+        <?php foreach ( $owa_sec['rows'] as $owa_b ): ?>
+        <tr>
+            <td><?php $view->out( $owa_b['name'] !== '' ? $owa_b['name'] : $owa_b['site_id'] ); ?><br><code><?php $view->out( $owa_b['site_id'] ); ?></code></td>
+            <td><?php echo owa_cube_status_badge( $owa_b['level'] ); ?> <?php $view->out( $owa_b['state'] ); ?></td>
+            <td><?php $view->out( $owa_b['published_at'] ?: '--' ); ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
     <?php endif; ?>
 
     <?php if ( $owa_key === 'intake' && isset( $owa_sec['type'] ) ): ?>

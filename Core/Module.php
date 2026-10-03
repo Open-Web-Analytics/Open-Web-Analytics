@@ -1726,15 +1726,28 @@ abstract class Module {
      * @param array  $params    arguments passed to the controller verbatim
      * @return void
      */
-    function registerJob( $name, $command, $schedule, $params ) {
+    /**
+     * Register a recurring job, run by cmd=schedule-run.
+     *
+     * @param string $name         the job's name, unique across modules
+     * @param string $command      the CLI command it runs
+     * @param string $schedule     a cron expression
+     * @param array  $params       the command's arguments
+     * @param string $description  what it does, in a sentence or two, for an
+     *                             administrator: the System Health screen shows
+     *                             it, and cmd=schedule-status format=markdown
+     *                             writes it out for the wiki
+     */
+    function registerJob( $name, $command, $schedule, $params, $description = '' ) {
 
         $this->scheduled_jobs[ $name ] = array(
-            'name'     => $name,
-            'command'  => $command,
-            'schedule' => $schedule,
-            'params'   => (array) $params,
-            'module'   => $this->name,
-            'source'   => 'code',
+            'name'        => $name,
+            'command'     => $command,
+            'schedule'    => $schedule,
+            'params'      => (array) $params,
+            'description' => (string) $description,
+            'module'      => $this->name,
+            'source'      => 'code',
         );
     }
 
