@@ -247,7 +247,11 @@ final class RetentionCubeTest extends TestCase
         $this->assertSame(1, $this->rowsOn(self::$recent), 'raw still holds this, so it is rebuilt as usual');
 
         // Without the guard the same rebuild empties it: the test is the guard.
-        $this->cli(['property' => (string) self::PROPERTY, 'from' => (string) self::$old])->action();
+        $unguarded = get_class(new class extends CubeRebuildCli {
+            public function __construct() {}
+            protected function rawCoversFrom() { return null; }
+        });
+        $this->cli(['property' => (string) self::PROPERTY, 'from' => (string) self::$old], $unguarded)->action();
         $this->assertSame(0, $this->rowsOn(self::$old), 'unguarded, raw\'s nothing replaces the month');
 
         self::seedRaw(self::$old, 1);
