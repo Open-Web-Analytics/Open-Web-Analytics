@@ -62,13 +62,18 @@ class Builder {
     const COMPUTED_SUFFIX = '_computed';
 
     /**
-     * Candidate rows a build will hand to PHP before it refuses.
+     * Candidate rows read into PHP at a time.
      *
-     * Exceeding it FAILS the build rather than skipping the enrichment:
-     * degrading would make two builds of one partition disagree, and
-     * convergence is what the swap rests on.
+     * A page, not a cap. Every candidate is still computed -- skipping some
+     * would make two builds of one partition disagree, and convergence is what
+     * the swap rests on -- but no more than this many are held at once. As a
+     * cap it refused any partition with more: a year of back-filled history,
+     * or a busy site's month.
      */
-    const CANDIDATE_CAP = 50000;
+    const CANDIDATE_PAGE = 50000;
+
+    /** @var int rows per candidate page; a test sets it small to cross pages */
+    public $candidate_page = self::CANDIDATE_PAGE;
 
     /** @var \OWA\Core\Db */
     protected $db;
@@ -493,7 +498,37 @@ class Builder {
 
         try {
 
-            $context->candidates = $dry_run ? array() : $this->candidates( $span );
+            /*
+             * The compute steps see every candidate, a page at a time, before
+             * the steps run for their expressions; their values accumulate.
+             */
+            foreach ( $this->steps as $step ) {
+
+                if ( $step instanceof ComputeStep ) {
+
+                    $step->reset();
+                }
+            }
+
+            $context->candidates = array();
+
+            if ( ! $dry_run ) {
+
+                foreach ( $this->candidatePages( $span ) as $page ) {
+
+                    $context->candidates = $page;
+
+                    foreach ( $this->steps as $step ) {
+
+                        if ( $step instanceof ComputeStep ) {
+
+                            $step->execute( $context );
+                        }
+                    }
+                }
+
+                $context->candidates = array();
+            }
 
             $expressions = $this->runSteps( $context );
 
@@ -717,13 +752,12 @@ class Builder {
      * The one candidate query every compute step shares.
      *
      * Projects the union of their reads, and ORs their rendered predicates. One
-     * scan per build however many are registered, and none at all when none is.
+     * query per page however many are registered, and none at all when none is.
      *
      * @param array $span
-     * @return array
-     * @throws \RuntimeException past the cap
+     * @return \Generator pages of at most $candidate_page rows
      */
-    protected function candidates( array $span ) {
+    protected function candidatePages( array $span ) {
 
         $reads = array();
         $where = array();
@@ -765,28 +799,38 @@ class Builder {
             return array();
         }
 
-        $columns = array_merge( array( 'id', 'yyyymmdd' ), array_keys( $reads ) );
+        $columns = 'r.' . implode( ', r.', array_merge( array( 'id', 'yyyymmdd' ), array_keys( $reads ) ) );
+        $after   = null;
 
-        $rows = (array) $this->db->get_results( sprintf(
-            'SELECT %s FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s AND (%s) LIMIT %d',
-            'r.' . implode( ', r.', $columns ),
-            $this->tables['raw'],
-            (int) $span['start'],
-            (int) $span['less_than'],
-            $this->siteFilter( 'r' ),
-            implode( ' OR ', $where ),
-            self::CANDIDATE_CAP + 1
-        ) );
+        // Keyed on (yyyymmdd, id), the partition key first, so each page is a
+        // pruned range scan rather than a sort of the partition.
+        do {
 
-        if ( count( $rows ) > self::CANDIDATE_CAP ) {
+            $from = $after === null ? '' : sprintf( ' AND (r.yyyymmdd > %d OR (r.yyyymmdd = %d AND r.id > %d))',
+                $after[0], $after[0], $after[1] );
 
-            throw new \RuntimeException( sprintf(
-                'the candidate query returned more than %d rows for %s. Refusing rather '
-              . 'than enriching part of the partition, which would not be convergent.',
-                self::CANDIDATE_CAP, $span['name'] ) );
-        }
+            $rows = (array) $this->db->get_results( sprintf(
+                'SELECT %s FROM %s r WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s%s AND (%s)'
+              . ' ORDER BY r.yyyymmdd, r.id LIMIT %d',
+                $columns,
+                $this->tables['raw'],
+                (int) $span['start'],
+                (int) $span['less_than'],
+                $this->siteFilter( 'r' ),
+                $from,
+                implode( ' OR ', $where ),
+                max( 1, (int) $this->candidate_page )
+            ) );
 
-        return $rows;
+            if ( $rows ) {
+
+                $last  = (array) end( $rows );
+                $after = array( (int) $last['yyyymmdd'], (int) $last['id'] );
+
+                yield $rows;
+            }
+
+        } while ( count( $rows ) === max( 1, (int) $this->candidate_page ) );
     }
 
     /**

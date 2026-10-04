@@ -104,6 +104,12 @@ abstract class ComputeStep extends Step {
      *
      * @return array
      */
+    /** Forget the last partition's values: a builder reuses its steps across partitions. */
+    public function reset() {
+
+        $this->values = array();
+    }
+
     public function values() {
 
         return $this->values;

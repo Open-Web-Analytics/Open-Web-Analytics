@@ -1217,6 +1217,41 @@ final class CubeBuildTest extends TestCase
             'the + separators and %-escapes decode, which is the half SQL cannot do');
     }
 
+    public function testCandidatesArePagedRatherThanCapped(): void
+    {
+        // A busy partition has more candidates than one query should return.
+        // A page of one row puts each candidate on its own page, and every
+        // page's values must still reach the build.
+        $searchers = [];
+        foreach (['alpha', 'bravo', 'charlie'] as $i => $term) {
+            $visitor = 7771000000000091 + $i;
+            $session = 8881000000000091 + $i;
+            $this->seed('page_view', $visitor, $session, $this->t0, [
+                'page_location' => 'https://example.test/found',
+                'page_path'     => '/found',
+                'referer_url'   => 'https://yandex.ru/search/?text=' . $term,
+                'referer_host'  => 'yandex.ru',
+                'referer_query' => 'text=' . $term,
+            ]);
+            $searchers[$term] = [$visitor, $session];
+        }
+
+        $builder = new \OWA\Module\Base\Classes\Cube\Builder(self::PROPERTY);
+        $builder->candidate_page = 1;
+
+        foreach ($builder->partitions($this->yyyymmdd, $this->yyyymmdd) as $span) {
+            $this->assertTrue($builder->rebuild($span)['ok'], 'rebuild of ' . $span['name'] . ' failed');
+        }
+
+        $row = $this->built('page_view', self::VISITOR_SEARCHER, 8881000000000007, $this->t0);
+        $this->assertSame('веб аналитика', $row['search_terms']);
+
+        foreach ($searchers as $term => [$visitor, $session]) {
+            $row = $this->built('page_view', $visitor, $session, $this->t0);
+            $this->assertSame($term, $row['search_terms'], "the candidate searching for $term");
+        }
+    }
+
     public function testTheCandidateQueryExcludesRowsSqlAlreadyAnswers(): void
     {
         // A tagged arrival that also carries an engine query. It is not a
