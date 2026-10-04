@@ -44,6 +44,9 @@ abstract class FactMigrator {
     /** The v1 table, unprefixed; each subclass names its own. */
     const SOURCE = '';
 
+    /** v1's page views, which name sessions v1 lost the row for (priorSessions()). */
+    const REQUESTS = 'request';
+
     /**
      * What progress is recorded under: the table, unless two passes read the
      * same one.
@@ -1048,8 +1051,13 @@ abstract class FactMigrator {
      * Counting the rows v1 kept gives one rule for any history: a visitor's
      * first retained session has none before it, and is its first visit.
      *
-     * A session v1 lost the row for is not counted as an earlier session of
-     * a later one. One query per batch, on owa_session's visitor_id index.
+     * A visitor's sessions are its owa_session rows and the sessions its page
+     * views name, which include those v1 lost the row for (2,719 in one year
+     * of a real 1.x install). Left out, each such session read as a first
+     * visit, and 1,034 visitors there had two or more. A session with a row
+     * starts at the row; one without, at its earliest page view, as
+     * sessionStarts() has it. Two queries per batch, on each table's
+     * visitor_id index.
      *
      * @param  array $rows
      * @param  array $starts session id as text => timestamp
@@ -1081,12 +1089,36 @@ abstract class FactMigrator {
             $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),
             $integer ? array() : array_map( 'strval', $ids ) );
 
+        $integer = $this->integerColumn( self::REQUESTS, 'visitor_id' );
+
+        $viewed = (array) $this->db()->get_results( sprintf(
+            'SELECT session_id AS id, site_id, visitor_id, MIN(timestamp) AS timestamp FROM %s'
+            . ' WHERE visitor_id IN (%s) AND timestamp > 0 GROUP BY site_id, visitor_id, session_id',
+            $this->v1Table( self::REQUESTS ),
+            $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),
+            $integer ? array() : array_map( 'strval', $ids ) );
+
+        // site|visitor => session id => [ start, id ]; a session row's start wins.
         $by = array();
 
-        foreach ( $sessions as $row ) {
+        foreach ( array( $sessions, $viewed ) as $source ) {
 
-            $row = (array) $row;
-            $by[ $row['site_id'] . '|' . $row['visitor_id'] ][] = array( (int) $row['timestamp'], (int) $row['id'] );
+            foreach ( $source as $row ) {
+
+                $row = (array) $row;
+
+                if ( ! self::isId( $row['id'] ) ) {
+
+                    continue;
+                }
+
+                $key = $row['site_id'] . '|' . $row['visitor_id'];
+
+                if ( ! isset( $by[ $key ][ (string) $row['id'] ] ) ) {
+
+                    $by[ $key ][ (string) $row['id'] ] = array( (int) $row['timestamp'], (int) $row['id'] );
+                }
+            }
         }
 
         $counts = array();
