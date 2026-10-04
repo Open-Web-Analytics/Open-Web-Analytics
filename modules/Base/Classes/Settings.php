@@ -2779,6 +2779,9 @@ namespace OWA\Module\Base\Classes;
                 // pending a measurement of client-side lateness.
                 'cube_rebuild_window_days'           => 7,
                 'attribution_lookback_days'          => 90,
+                // Retention windows in months; 0 keeps everything (Classes\Retention).
+                'raw_retention_months'               => 0,
+                'cube_retention_months'              => 0,
                 // Largest run of calendar years that may be merged into a single
                 // partition. A cap: without it, an unreachable budget would drive
                 // everything into one partition, which fits no better and means

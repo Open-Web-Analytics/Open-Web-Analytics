@@ -45,13 +45,13 @@ final class CliArgumentParsingTest extends TestCase
     public function testValuesInBothSpellings()
     {
         $this->assertSame(
-            ['cmd' => 'partition-rotate', 'keep' => '24'],
-            $this->parse(['cmd=partition-rotate', 'keep=24'])
+            ['cmd' => 'partition-rotate', 'raw-months' => '24'],
+            $this->parse(['cmd=partition-rotate', 'raw-months=24'])
         );
 
         $this->assertSame(
-            ['cmd' => 'partition-rotate', 'keep' => '24'],
-            $this->parse(['cmd=partition-rotate', '--keep=24'])
+            ['cmd' => 'partition-rotate', 'raw-months' => '24'],
+            $this->parse(['cmd=partition-rotate', '--raw-months=24'])
         );
     }
 

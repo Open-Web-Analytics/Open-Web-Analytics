@@ -156,32 +156,58 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
-     * An unreadable keep is refused; an absent one is not.
+     * Retention is the settings, so the command line cannot set it.
      *
-     * The two mean opposite things. Omitting keep asks to retain everything;
-     * "lots" is a mistake, and treating it as absent would silently turn a
-     * botched retention policy into no retention policy at all.
+     * keep= is refused whatever it says, and a what-if (raw-months, cube-months,
+     * property) is refused without --dry-run: run for real, it would delete what
+     * the settings say to keep. An unreadable what-if is refused even dry.
      */
-    public function testAnUnreadableKeepIsRefusedButAnAbsentOneIsNot()
+    public function testTheCommandLineCannotSetRetention()
     {
         $before = $this->partitionCount('owa_event_raw');
 
-        foreach ([['keep' => 'lots'], ['keep' => '-4'], ['keep' => '0'], ['keep' => '2.5']] as $params) {
-            $this->rotate($params + ['table' => 'owa_event_raw'])->action();
+        foreach ([['keep' => '24'], ['keep' => 'lots'], ['raw-months' => '12'], ['cube-months' => '6'],
+                  ['property' => '1'], ['raw-months' => 'lots', 'dry-run' => 1], ['raw-months' => '-4', 'dry-run' => 1]]
+                 as $params) {
+            $cli = $this->rotate($params + ['table' => 'owa_event_raw']);
+            $cli->action();
+
+            $this->assertSame('refused', $cli->getCliOutcome()['outcome'], json_encode($params) . ' must be refused');
         }
 
-        $this->assertSame(
-            $before,
-            $this->partitionCount('owa_event_raw'),
-            'an unreadable keep must stop the command, not be ignored'
-        );
+        $this->assertSame($before, $this->partitionCount('owa_event_raw'), 'a refusal changes nothing');
+    }
 
-        // Absent is a valid policy, and must be accepted: it reaches the cutoff
-        // resolution path at all only when keep is present.
-        $this->assertNull(
-            $this->callProtected($this->rotate(), 'resolveCutoff', ['']),
-            'nothing to resolve when keep is absent'
-        );
+    /**
+     * partition-drop prunes raw and cubes independently: only=raw leaves every
+     * cube, only=cubes leaves raw, property= is one cube, and anything it
+     * cannot read is refused rather than widened to every table.
+     */
+    public function testDropSelectsRawOrCubesIndependently()
+    {
+        $isCube = fn ($t) => \OWA\Module\Base\Classes\Cube\Cubes::propertyIdFor($t) !== '';
+
+        $raw = $this->callProtected($this->drop(['only' => 'raw']), 'selectTables');
+        $this->assertContains('owa_event_raw', $raw);
+        $this->assertSame([], array_values(array_filter($raw, $isCube)), 'only=raw takes no cube');
+
+        $cubes = $this->callProtected($this->drop(['only' => 'cubes']), 'selectTables');
+        $this->assertNotContains('owa_event_raw', $cubes);
+        $this->assertSame($cubes, array_values(array_filter($cubes, $isCube)), 'only=cubes takes nothing else');
+
+        $all = $this->callProtected($this->drop([]), 'selectTables');
+        $this->assertEqualsCanonicalizing(array_merge($raw, $cubes), $all, 'neither, and it is every table as before');
+
+        if ($cubes) {
+            $pid = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdFor($cubes[0]);
+            $this->assertSame([$cubes[0]], $this->callProtected($this->drop(['property' => $pid]), 'selectTables'));
+        }
+
+        foreach ([['only' => 'everything'], ['property' => '999999999999']] as $bad) {
+            $cli = $this->drop($bad);
+            $this->assertFalse($this->callProtected($cli, 'selectTables'), json_encode($bad));
+            $this->assertSame('refused', $cli->getCliOutcome()['outcome']);
+        }
     }
 
     /** A dry run reports and changes nothing, which is what makes it safe to suggest. */
@@ -195,10 +221,10 @@ final class PartitionCliTest extends CliControllerTestCase
 
         $before  = $this->partitionCount('owa_event_raw');
         $rows    = (int) $db->get_row('SELECT COUNT(*) AS n FROM owa_event_raw')['n'];
-        $store   = \OWA\Module\Base\Classes\VisitorExpiry::table();
+        $store   = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition')->getTableName();
         $holding = (int) $db->get_row("SELECT COUNT(*) AS n FROM $store")['n'];
 
-        $this->rotate(['keep' => 24, 'table' => 'owa_event_raw', 'dry-run' => 1])->action();
+        $this->rotate(['raw-months' => 24, 'table' => 'owa_event_raw', 'dry-run' => 1])->action();
         $this->drop(['older-than' => '1month', 'table' => 'owa_event_raw', 'dry-run' => 1])->action();
 
         $this->assertSame($before, $this->partitionCount('owa_event_raw'), 'no partition may be added or removed');
@@ -208,34 +234,15 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
-     * The visitor store follows raw's retention and nothing else: rotate
-     * prunes it under keep= and leaves it whole without one. Run dry, so no
-     * partition of this database is dropped.
+     * The visitor store has its own window: shortening raw's never reaches it.
      */
-    public function testTheVisitorStoreIsPrunedOnlyUnderKeep()
+    public function testRotateNeverTouchesTheVisitorStore()
     {
-        if (! \OWA\Core\CoreAPI::dbSingleton()->supportsPartitioning()) {
-            $this->markTestSkipped('Driver cannot partition.');
-        }
+        $this->assertFalse(method_exists($this->rotate(), 'expireVisitorStore'),
+            'rotate must not expire the visitor store');
 
-        $calls = function (array $params): int {
-            $cli = new class($params) extends \OWA\Module\Base\Controller\PartitionRotateCli {
-                public $storeCalls = 0;
-
-                protected function expireVisitorStore(array $tables, $dry_run)
-                {
-                    $this->storeCalls++;
-                }
-            };
-
-            $cli->action();
-
-            return $cli->storeCalls;
-        };
-
-        $this->assertSame(1, $calls(['keep' => 24, 'table' => 'owa_event_raw', 'dry-run' => 1]));
-        $this->assertSame(0, $calls(['table' => 'owa_event_raw', 'dry-run' => 1]),
-            'retaining everything keeps every visitor');
+        $source = (string) file_get_contents(OWA_DIR . 'modules/Base/Controller/PartitionRotateCli.php');
+        $this->assertStringNotContainsString('VisitorExpiry', $source, 'nor reach it any other way');
     }
 
     /**
@@ -255,7 +262,7 @@ final class PartitionCliTest extends CliControllerTestCase
                 "$bad must not be a granularity"
             );
 
-            $this->rotate(['keep' => 24, 'granularity' => $bad, 'table' => 'owa_event_raw'])->action();
+            $this->rotate(['granularity' => $bad, 'table' => 'owa_event_raw'])->action();
         }
 
         $this->assertSame(

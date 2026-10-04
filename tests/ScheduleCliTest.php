@@ -92,16 +92,15 @@ final class ScheduleCliTest extends CliControllerTestCase
      * The rotate job is registered with EMPTY params.
      *
      * The most valuable assertion in this file. It reddens if anyone later adds
-     * keep=24 to the REGISTRATION, which would quietly turn "nothing is deleted
-     * by default" into a retention policy that starts deleting data on upgrade.
-     * Adding keep in config is the supported path and has its own case below.
+     * an argument to the REGISTRATION. Retention is the Data Retention settings
+     * (Classes\Retention), 0 by default, and rotate refuses keep= altogether.
      */
     public function testRotateShipsWithNoArgumentsSoNothingIsEverDeleted()
     {
         $jobs = $this->callProtected($this->runner(), 'jobs');
 
         $this->assertArrayHasKey('rotate-partitions', $jobs);
-        $this->assertSame([], $jobs['rotate-partitions']['params'], 'no keep= may be registered in code');
+        $this->assertSame([], $jobs['rotate-partitions']['params'], 'no argument may be registered in code');
         $this->assertSame('code', $jobs['rotate-partitions']['source']);
 
         // Daily, and spread: every piece of work it does is triggered by a
@@ -411,9 +410,9 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** Giving only params keeps the shipped schedule, and vice versa. */
     public function testConfigOverridesPerKey()
     {
-        $jobs = $this->jobsWith(['rotate-partitions' => ['params' => ['keep' => 24]]]);
+        $jobs = $this->jobsWith(['rotate-partitions' => ['params' => ['months-ahead' => 6]]]);
 
-        $this->assertSame(['keep' => 24], $jobs['rotate-partitions']['params']);
+        $this->assertSame(['months-ahead' => 6], $jobs['rotate-partitions']['params']);
         $this->assertMatchesRegularExpression('/^\d+ \d+ \* \* \*$/',
             $jobs['rotate-partitions']['schedule'], 'the shipped schedule survives');
         $this->assertSame('config-override', $jobs['rotate-partitions']['source']);
@@ -425,8 +424,8 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * ...and both keys together, which is the common real request: keep two
-     * years of data AND run the job at 4am on the 1st rather than midnight.
+     * ...and both keys together: a shorter lead AND the job at 4am on the 1st
+     * rather than at its spread time.
      *
      * There is one configuration form, not a short one and a long one. Every key
      * is independently optional on a job that is already registered, and
@@ -437,11 +436,11 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $jobs = $this->jobsWith(['rotate-partitions' => [
             'schedule' => '0 4 1 * *',
-            'params'   => ['keep' => 24],
+            'params'   => ['months-ahead' => 6],
         ]]);
 
         $this->assertSame('0 4 1 * *', $jobs['rotate-partitions']['schedule']);
-        $this->assertSame(['keep' => 24], $jobs['rotate-partitions']['params']);
+        $this->assertSame(['months-ahead' => 6], $jobs['rotate-partitions']['params']);
         $this->assertSame('partition-rotate', $jobs['rotate-partitions']['command'],
             'the registered command survives: config never has to restate it');
         $this->assertSame('config-override', $jobs['rotate-partitions']['source']);
@@ -651,11 +650,11 @@ final class ScheduleCliTest extends CliControllerTestCase
      */
     public function testRotateReportsItsRefusals()
     {
-        foreach (['abc', '0', '-4'] as $bad) {
-            $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['keep' => $bad]);
+        foreach ([['keep' => '24'], ['raw-months' => 'abc'], ['raw-months' => '12'], ['property' => '1']] as $bad) {
+            $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli($bad);
             $ctrl->action();
 
-            $this->assertSame('refused', $ctrl->getCliOutcome()['outcome'], "keep=$bad should be refused");
+            $this->assertSame('refused', $ctrl->getCliOutcome()['outcome'], json_encode($bad) . ' should be refused');
         }
 
         $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['granularity' => 'fortnightly']);

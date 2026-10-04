@@ -231,22 +231,24 @@ final class SystemHealthTest extends TestCase
         $this->assertNull(\OWA\Core\CoreAPI::dbSingleton()->tableSize('not a table'), 'a name that cannot be one is refused');
     }
 
-    /** No keep= is said plainly: nothing is deleted. */
-    public function testRetentionWithoutKeepSaysNothingIsDeleted(): void
+    /** No event-data window is said plainly: nothing is deleted. */
+    public function testRetentionWithoutAWindowSaysNothingIsDeleted(): void
     {
-        $was = \OWA\Core\CoreAPI::getSetting('base', 'scheduled_jobs');
+        $was  = \OWA\Core\CoreAPI::getSetting('base', 'scheduled_jobs');
+        $raw  = \OWA\Core\CoreAPI::getSetting('base', 'raw_retention_months');
 
         try {
-            \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', []);
+            \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', 0);
             $this->assertStringStartsWith('nothing is deleted', SystemHealth::data()['facts']['Retention']);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', ['rotate-partitions' => ['params' => ['keep' => 24]]]);
+            \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', 24);
             $this->assertStringStartsWith('events older than 24 months are deleted', SystemHealth::data()['facts']['Retention']);
 
             \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', ['rotate-partitions' => ['schedule' => 'off']]);
             $this->assertSame('yellow', self::levels(SystemHealth::data())['Not rotated']);
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', $was);
+            \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', $raw);
         }
     }
 

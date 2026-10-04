@@ -56,12 +56,15 @@ namespace OWA\Module\Base\Controller;
  * first_visit or a session that closed after the last rebuild is picked up. An
  * installation that wants them states them in owa-config.php:
  *
- *   define( 'OWA_SCHEDULED_JOBS', serialize( array(
+ *   define( 'OWA_SCHEDULED_JOBS', array(
  *       'rebuild-cube-current' => array( 'command' => 'cube-rebuild',
  *           'schedule' => '0,15,30,45 * * * *' ),
  *       'rebuild-cube-window'  => array( 'command' => 'cube-rebuild',
  *           'schedule' => '@hourly', 'params' => array( 'days' => 3 ) ),
- *   ) ) );
+ *   ) );
+ *
+ * A plain array: Settings reads the constant only when is_array() holds, so a
+ * serialize()d string is ignored and neither job is scheduled.
  *
  * Written long rather than as a step expression because the step form's slash
  * would have to be escaped to survive this docblock, and Cron::parse() refuses
@@ -342,6 +345,16 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
             $earliest = \OWA\Module\Base\Classes\Cube\Cubes::earliestDay( $property_id );
 
+            // No further back than the cube's retention window: the next rotate
+            // would only drop what was built before it.
+            $window = \OWA\Module\Base\Classes\Retention::cutoff(
+                \OWA\Module\Base\Classes\Retention::cubeMonths( $property_id ) );
+
+            if ( $earliest && $window && $earliest < $window ) {
+
+                $earliest = $window;
+            }
+
             if ( $dry_run ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
@@ -511,7 +524,26 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
          * partitions -- a run that carried on past a failure would stamp newer
          * partitions settled and leave the failed one behind them for good.
          */
+        $raw_from = $this->rawCoversFrom();
+
         foreach ( $partitions as $span ) {
+
+            /*
+             * RAW NO LONGER HOLDS THIS PERIOD, or not all of it: its partitions
+             * were dropped (partition-drop) while the cube kept them. A rebuild
+             * replaces the partition with what raw has, which is less or
+             * nothing, so the partition is left as built.
+             */
+            if ( $raw_from && (int) $span['start'] < $raw_from ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s %s: kept as built. Raw no longer holds data before %d, so a rebuild would empty it.',
+                    $table, $span['name'], $raw_from ) );
+
+                $outcome['skipped']++;
+
+                continue;
+            }
 
             /*
              * NOTHING TO BUILD, NOTHING TO SWAP: empty in raw for this
@@ -584,6 +616,53 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         return $outcome;
     }
+
+    /**
+     * The first day raw's partitions cover, or null when raw is not
+     * partitioned or has none.
+     *
+     * Read from the oldest partition's boundary, not from the oldest row: a
+     * Property's first partition usually starts before its first event, and
+     * must still be built. Only dropped partitions move this boundary.
+     *
+     * @return int|null yyyymmdd
+     */
+    protected function rawCoversFrom() {
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+
+        if ( ! $db->isPartitioned( $raw ) ) {
+
+            return null;
+        }
+
+        if ( $this->raw_covers_from !== false ) {
+
+            return $this->raw_covers_from;
+        }
+
+        $spans = $db->getPartitionSpans( $raw );
+        $from  = $spans && ctype_digit( (string) $spans[0]['start'] ) ? (int) $spans[0]['start'] : null;
+
+        // The oldest partition holds everything below its boundary, so a row
+        // can sit before the start its name gives. Raw covers that row too.
+        if ( $from ) {
+
+            $row = (array) $db->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS d FROM %s PARTITION (%s)',
+                $raw, $spans[0]['name'] ) );
+
+            if ( ! empty( $row['d'] ) && (int) $row['d'] < $from ) {
+
+                $from = (int) $row['d'];
+            }
+        }
+
+        return $this->raw_covers_from = $from;
+    }
+
+    /** @var int|null|false rawCoversFrom(), once per run of the command; false = not read yet */
+    protected $raw_covers_from = false;
 
     /**
      * Dated partitions on $table back to $day, adding only what is missing.

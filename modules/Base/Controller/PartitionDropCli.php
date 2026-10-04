@@ -21,6 +21,15 @@ namespace OWA\Module\Base\Controller;
  *   cmd=partition-drop older-than=20260101    a date
  *   cmd=partition-drop older-than=12months    a period back from today
  *   cmd=partition-drop older-than=18m --dry-run
+ *   cmd=partition-drop older-than=2years only=raw         event data only
+ *   cmd=partition-drop older-than=12months only=cubes     every reporting cube only
+ *   cmd=partition-drop older-than=12months property=<id>  one Property's cube
+ *
+ * THE MANUAL PRUNE, not bound by the retention settings (Classes\Retention),
+ * which govern the scheduled partition-rotate. Raw and cubes are independent:
+ * a cube keeps months dropped from raw, and a rebuild leaves those months as
+ * built rather than emptying them (CubeRebuildCli). Months dropped from a cube
+ * are rebuilt from raw when its window is lengthened, as far back as raw holds.
  */
 class PartitionDropCli extends PartitionsCli {
 
@@ -59,7 +68,14 @@ class PartitionDropCli extends PartitionsCli {
 
         $touched = 0;
 
-        foreach ( $this->factTables( $this->getParam( 'table' ) ?: null ) as $table ) {
+        $tables = $this->selectTables();
+
+        if ( $tables === false ) {
+
+            return;
+        }
+
+        foreach ( $tables as $table ) {
 
             if ( ! $db->isPartitioned( $table ) ) {
 
@@ -78,5 +94,57 @@ class PartitionDropCli extends PartitionsCli {
 
             $this->refuse( 'Nothing to drop: no fact table is partitioned. Run cmd=partition-init first.' );
         }
+    }
+
+    /**
+     * The tables this prune covers: table=, only=raw or only=cubes, or property=.
+     *
+     * @return string[]|false false when the arguments were refused
+     */
+    protected function selectTables() {
+
+        $only     = (string) $this->getParam( 'only' );
+        $property = (string) $this->getParam( 'property' );
+        $tables   = $this->factTables( $this->getParam( 'table' ) ?: null );
+
+        if ( $only !== '' && ! in_array( $only, array( 'raw', 'cubes' ), true ) ) {
+
+            $this->refuse( sprintf( 'only=%s: use only=raw (event data) or only=cubes (reporting cubes).', $only ) );
+
+            return false;
+        }
+
+        if ( $property !== '' ) {
+
+            $cube = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $property );
+
+            if ( ! $cube || ! in_array( $cube, $tables, true ) ) {
+
+                $this->refuse( sprintf( 'Property %s has no reporting cube.', $property ) );
+
+                return false;
+            }
+
+            return array( $cube );
+        }
+
+        if ( $only === '' ) {
+
+            return $tables;
+        }
+
+        $keep = array();
+
+        foreach ( $tables as $table ) {
+
+            $is_cube = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdFor( $table ) !== '';
+
+            if ( ( $only === 'cubes' ) === $is_cube ) {
+
+                $keep[] = $table;
+            }
+        }
+
+        return $keep;
     }
 }

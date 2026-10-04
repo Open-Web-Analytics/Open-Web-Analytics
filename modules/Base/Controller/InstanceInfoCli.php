@@ -365,19 +365,18 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         /*
          * Retention is opt-in and silent. rotate-partitions EXTENDS the tables
-         * and merges old periods; it deletes nothing unless it is given a
-         * 'keep'. An instance that wanted a retention window and never set one
+         * and merges old periods; it deletes nothing unless raw_retention_months
+         * is set. An instance that wanted a retention window and never set one
          * looks identical to an instance that wanted to keep everything.
          */
-        $jobs = $this->registeredJobs();
-        $keep = $jobs['rotate-partitions']['params']['keep'] ?? null;
+        $keep = \OWA\Module\Base\Classes\Retention::rawMonths();
 
         $rows[] = $this->row(
             $keep ? self::OK : self::WARN,
             'Retention',
-            $keep ? sprintf( 'keeping %d month(s)', (int) $keep ) : 'unlimited (nothing is deleted)',
-            'Not an error, and a reasonable default -- but it is a choice. Set a '
-          . "'keep' param on the rotate-partitions job in owa-config.php to bound it." );
+            $keep ? sprintf( 'keeping %d month(s) of event data', $keep ) : 'unlimited (nothing is deleted)',
+            'Not an error, and a reasonable default -- but it is a choice. Set it on the '
+          . 'Data Retention settings page.' );
 
         return $rows;
     }

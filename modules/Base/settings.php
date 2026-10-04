@@ -121,6 +121,38 @@ return array(
                 'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. '
                 . 'A purchase that names no currency is recorded in this one.',
         ),
+        // RETENTION (Classes\Retention). Months, 0 = keep everything. Read by
+        // partition-rotate, which drops whole partitions outside the window.
+        'raw_retention_months' => array(
+            'default'  => 0,
+            'storable' => true,
+            'autoload' => true,
+            // Install only: raw is one table shared by every Property, and a
+            // partition can only be dropped for all of them at once.
+            'type'     => 'integer',
+            'min'      => 0,
+            'max'      => 1200,
+            'label'    => 'Keep event data (months)',
+            'description' =>
+                'How many months of tracked events to keep. Older months are deleted at the next '
+                . 'daily maintenance run and <strong>cannot be recovered</strong>. Reporting data '
+                . 'can never reach further back than this. 0 keeps everything.',
+        ),
+        'cube_retention_months' => array(
+            'default'  => 0,
+            'storable' => true,
+            'autoload' => true,
+            // Per Property: one cube per Property, dropped and rebuilt on its own.
+            'scopes'   => array( 'install', 'property' ),
+            'type'     => 'integer',
+            'min'      => 0,
+            'max'      => 1200,
+            'label'    => 'Keep reporting data (months)',
+            'description' =>
+                'How many months reports can show. Shortening it removes older months from reports '
+                . 'only: they are rebuilt from the event data if it is lengthened again, as far back '
+                . 'as event data is kept. 0 means the same as event data.',
+        ),
         'currencyLocal' => array( 'default' => 'en_US' ),
         'db_force_new_connections' => array( 'default' => true ),
         'db_host' => array( 'default' => '' ),

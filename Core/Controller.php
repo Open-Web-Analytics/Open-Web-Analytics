@@ -1060,6 +1060,9 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.customDimensions', 'label' => 'Custom Dimensions',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_settings' ),
+                array( 'do' => 'base.propertyRetention', 'label' => 'Data Retention',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_settings' ),
             );
 
             /*
