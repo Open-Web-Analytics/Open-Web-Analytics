@@ -328,6 +328,34 @@ final class DbDriverSqlParityTest extends TestCase
         $this->assertNotNull($rows['pdo']);
     }
 
+    /**
+     * A bound multi-row upsert that leaves duplicates unchanged reports only
+     * the new rows as affected, from both. The v1 migration's write() returns
+     * this as the number of rows it wrote.
+     */
+    public function testAnUnchangedDuplicateIsNotAnAffectedRowOnEitherDriver(): void
+    {
+        foreach ($this->drivers() as $name => $db) {
+            $table = 'owa_parity_upsert_' . $name;
+            $db->query("DROP TEMPORARY TABLE IF EXISTS $table");
+            $db->query("CREATE TEMPORARY TABLE $table (id BIGINT PRIMARY KEY, v VARCHAR(10))");
+
+            $upsert = "INSERT INTO $table (id, v) VALUES (?, ?), (?, ?) ON DUPLICATE KEY UPDATE id = id";
+
+            $this->assertNotFalse($db->query($upsert, [1, 'alice', 2, 'bob']));
+            $this->assertSame(2, (int) $db->getAffectedRows(), "$name: two new rows");
+
+            $this->assertNotFalse($db->query($upsert, [2, 'bob', 3, 'carol']));
+            $this->assertSame(1, (int) $db->getAffectedRows(), "$name: one new, one unchanged duplicate");
+
+            $this->assertNotFalse($db->query($upsert, [1, 'alice', 3, 'carol']));
+            $this->assertSame(0, (int) $db->getAffectedRows(), "$name: both duplicates");
+
+            $db->query("DROP TEMPORARY TABLE $table");
+            $db->close();
+        }
+    }
+
     /** No rows must read as null from both, not [] from one and null from the other. */
     public function testNoRowsIsNullFromBothDrivers(): void
     {
