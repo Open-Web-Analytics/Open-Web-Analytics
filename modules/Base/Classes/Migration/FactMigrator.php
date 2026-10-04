@@ -780,7 +780,8 @@ abstract class FactMigrator {
             'city'         => $location['city'] ?? null,
             'state'        => $location['state'] ?? null,
 
-            'num_prior_sessions' => $r['num_prior_sessions'] ?? null,
+            // Counted from v1's session table, not copied (priorSessions()).
+            'num_prior_sessions' => $refs['prior_sessions'][ (string) $r['session_id'] ] ?? null,
             'fsts' => $visitor['first_session_timestamp'] ?? null,
             'sts'  => $session['timestamp'] ?? null,
             'psts' => $prior['timestamp'] ?? null,
@@ -988,7 +989,7 @@ abstract class FactMigrator {
             'location_dim' => $this->lookup( 'location_dim', array_column( $rows, 'location_id' ),
                                   'id, country, country_code, state, city' ),
             'session'      => $this->lookup( 'session', array_column( $rows, 'session_id' ),
-                                  'id, timestamp, prior_session_id, is_new_visitor' ),
+                                  'id, timestamp, prior_session_id' ),
             'source_dim'   => $this->lookup( 'source_dim', array_column( $rows, 'source_id' ), 'id, source_domain' ),
             'campaign_dim' => $this->lookup( 'campaign_dim', array_column( $rows, 'campaign_id' ), 'id, name' ),
             'ad_dim'       => $this->lookup( 'ad_dim', array_column( $rows, 'ad_id' ), 'id, name' ),
@@ -1001,7 +1002,120 @@ abstract class FactMigrator {
         $refs['prior_session'] = $this->lookup( 'session',
             array_column( $refs['session'], 'prior_session_id' ), 'id, timestamp' );
 
+        $refs['prior_sessions'] = $this->priorSessions( $rows, $this->sessionStarts( $rows, $refs ) );
+
         return $refs;
+    }
+
+    /**
+     * When each of the batch's sessions began, in seconds: its v1 session
+     * row's timestamp, or where v1 lost that row, the earliest of the
+     * session's rows in this batch.
+     *
+     * @param  array $rows
+     * @param  array $refs resolve()'s, which a subclass may add to
+     * @return array session id as text => timestamp
+     */
+    protected function sessionStarts( array $rows, array &$refs ) {
+
+        $starts = array();
+
+        foreach ( $rows as $r ) {
+
+            $sid = (string) $r['session_id'];
+
+            if ( isset( $refs['session'][ $sid ]['timestamp'] ) ) {
+
+                $starts[ $sid ] = (int) $refs['session'][ $sid ]['timestamp'];
+
+            } elseif ( ! isset( $starts[ $sid ] ) || (int) $r['timestamp'] < $starts[ $sid ] ) {
+
+                $starts[ $sid ] = (int) $r['timestamp'];
+            }
+        }
+
+        return $starts;
+    }
+
+    /**
+     * How many sessions each of the batch's visitors had on the site before
+     * each of its sessions, counted from v1's owa_session.
+     *
+     * v1's own two readings cannot be used. num_prior_sessions counted the
+     * current session for years (a new visitor read 1), and is_new_visitor was
+     * written 0 for every session for others; on a real 1.x install the two
+     * disagree with each other from 2016 to 2019, and each is wrong somewhere.
+     * Counting the rows v1 kept gives one rule for any history: a visitor's
+     * first retained session has none before it, and is its first visit.
+     *
+     * A session v1 lost the row for is not counted as an earlier session of
+     * a later one. One query per batch, on owa_session's visitor_id index.
+     *
+     * @param  array $rows
+     * @param  array $starts session id as text => timestamp
+     * @return array session id as text => count
+     */
+    protected function priorSessions( array $rows, array $starts ) {
+
+        $visitors = array();
+
+        foreach ( $rows as $r ) {
+
+            if ( self::isId( $r['visitor_id'] ?? null ) ) {
+
+                $visitors[ (string) $r['visitor_id'] ] = true;
+            }
+        }
+
+        if ( ! $visitors ) {
+
+            return array();
+        }
+
+        $ids     = array_keys( $visitors );
+        $integer = $this->integerColumn( 'session', 'visitor_id' );
+
+        $sessions = (array) $this->db()->get_results( sprintf(
+            'SELECT id, site_id, visitor_id, timestamp FROM %s WHERE visitor_id IN (%s)',
+            $this->v1Table( 'session' ),
+            $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),
+            $integer ? array() : array_map( 'strval', $ids ) );
+
+        $by = array();
+
+        foreach ( $sessions as $row ) {
+
+            $row = (array) $row;
+            $by[ $row['site_id'] . '|' . $row['visitor_id'] ][] = array( (int) $row['timestamp'], (int) $row['id'] );
+        }
+
+        $counts = array();
+
+        foreach ( $rows as $r ) {
+
+            $sid = (string) $r['session_id'];
+
+            if ( isset( $counts[ $sid ] ) || ! isset( $starts[ $sid ] ) ) {
+
+                continue;
+            }
+
+            // Earlier by time, then by id, as entries() orders a session's requests.
+            $mine = array( $starts[ $sid ], (int) $sid );
+            $n    = 0;
+
+            foreach ( $by[ $r['site_id'] . '|' . $r['visitor_id'] ] ?? array() as $other ) {
+
+                if ( $other[1] !== $mine[1] && $other < $mine ) {
+
+                    $n++;
+                }
+            }
+
+            $counts[ $sid ] = $n;
+        }
+
+        return $counts;
     }
 
     /**
