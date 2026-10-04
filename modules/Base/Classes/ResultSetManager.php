@@ -450,7 +450,9 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     public static function emptyTestFor( array $constraint ) {
 
-        if ( ! isset( $constraint['value'] ) || trim( (string) $constraint['value'] ) !== self::NOT_SET_LABEL ) {
+        // A BETWEEN constraint's value is array( 'start', 'end' ), never the label.
+        if ( ! isset( $constraint['value'] ) || ! is_scalar( $constraint['value'] )
+            || trim( (string) $constraint['value'] ) !== self::NOT_SET_LABEL ) {
 
             return '';
         }
