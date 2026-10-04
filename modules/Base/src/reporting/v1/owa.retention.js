@@ -55,13 +55,17 @@ export function readValues( form ) {
     const cube = control( form, CUBE );
     const sw = form.querySelector( '[data-owa-override]' );
 
-    if ( sw && ! sw.checked ) {
+    const value = cube ? String( cube.value ).trim() : '';
+
+    // Inheriting: switched off, or -- with nothing set above to override, so
+    // no switch -- left blank.
+    if ( ( sw && ! sw.checked ) || ( ! sw && value === '' ) ) {
 
         out.cube_inherit = '1';
 
     } else if ( cube ) {
 
-        out.cube = String( cube.value ).trim();
+        out.cube = value;
     }
 
     return out;

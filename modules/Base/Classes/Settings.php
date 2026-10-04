@@ -1357,6 +1357,13 @@ namespace OWA\Module\Base\Classes;
          }
 
          $text  = is_int( $value ) ? (string) $value : trim( (string) $value );
+
+         // A setting that declares `blank` may be left empty: that is its "none".
+         if ( $text === '' && isset( $args['blank'] ) ) {
+
+             return null;
+         }
+
          $label = isset( $args['label'] ) && $args['label'] !== '' ? $args['label'] : $key;
          $min   = $args['min'] ?? null;
          $max   = $args['max'] ?? null;
@@ -1388,7 +1395,18 @@ namespace OWA\Module\Base\Classes;
 
          $args = $this->registeredField( $module, $key );
 
-         return $args && ( $args['type'] ?? '' ) === 'integer' ? (int) trim( (string) $value ) : $value;
+         if ( ! $args || ( $args['type'] ?? '' ) !== 'integer' ) {
+
+             return $value;
+         }
+
+         // Left blank where blank is allowed: no value, not 0.
+         if ( isset( $args['blank'] ) && trim( (string) $value ) === '' ) {
+
+             return null;
+         }
+
+         return (int) trim( (string) $value );
      }
 
      public function persistSetting($module, $key, $value) {
@@ -2779,9 +2797,9 @@ namespace OWA\Module\Base\Classes;
                 // pending a measurement of client-side lateness.
                 'cube_rebuild_window_days'           => 7,
                 'attribution_lookback_days'          => 90,
-                // Retention windows in months; 0 keeps everything (Classes\Retention).
-                'raw_retention_months'               => 0,
-                'cube_retention_months'              => 0,
+                // Retention windows in months; none keeps everything (Classes\Retention).
+                'raw_retention_months'               => null,
+                'cube_retention_months'              => null,
                 // Largest run of calendar years that may be merged into a single
                 // partition. A cap: without it, an unreachable budget would drive
                 // everything into one partition, which fits no better and means

@@ -13,8 +13,8 @@ namespace OWA\Module\Base\Controller;
  * Read-only: it plans and describes, and stores nothing. The browser asks it
  * before a save and shows the confirmation it returns (owa.retention.js).
  *
- *   raw=N             the install page's event-data window
- *   cube_default=N    the install page's reporting window
+ *   raw=N             the install page's event-data window; blank keeps everything
+ *   cube_default=N    the install page's reporting window; blank is raw's
  *   property_id=ID    the Property page, with cube=N when overriding, or
  *   cube_inherit=1    when it takes the install's window
  */
@@ -35,9 +35,10 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
     }
 
     /**
-     * The request's values as Retention::preview() takes them. Anything that
-     * is not a whole number of months is left out rather than read as 0, so a
-     * malformed request asks about no change rather than "keep everything".
+     * The request's values as Retention::preview() takes them. A blank value is
+     * the field left empty, which keeps everything (0). Anything else that is
+     * not a whole number of months is left out, so a malformed request asks
+     * about no change rather than "keep everything".
      *
      * @param array $params
      * @return array
@@ -48,9 +49,20 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
 
         foreach ( array( 'raw' => 'raw', 'cube_default' => 'cube_default', 'cube' => 'cube' ) as $param => $key ) {
 
-            if ( isset( $params[ $param ] ) && ctype_digit( (string) $params[ $param ] ) ) {
+            if ( ! array_key_exists( $param, $params ) || $params[ $param ] === null ) {
 
-                $out[ $key ] = (int) $params[ $param ];
+                continue;
+            }
+
+            $value = trim( (string) $params[ $param ] );
+
+            if ( $value === '' ) {
+
+                $out[ $key ] = 0;
+
+            } elseif ( ctype_digit( $value ) ) {
+
+                $out[ $key ] = (int) $value;
             }
         }
 

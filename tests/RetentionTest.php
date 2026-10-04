@@ -137,6 +137,30 @@ final class RetentionTest extends TestCase
             'taking the install\'s window previews as that window');
     }
 
+    /**
+     * Blank is "keep everything" on the screen: valid, stored as no value, and
+     * named in the field's placeholder. 0 is no longer a window.
+     */
+    public function testABlankWindowKeepsEverything(): void
+    {
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        foreach ([Retention::RAW, Retention::CUBE] as $key) {
+            $this->assertNull($c->valueProblem('base', $key, ''), "$key may be left blank");
+            $this->assertNull($c->normalizedValue('base', $key, ' '), 'blank is stored as no value, not 0');
+            $this->assertNotNull($c->valueProblem('base', $key, '0'), '0 is not a window any more');
+            $this->assertSame(12, $c->normalizedValue('base', $key, '12'));
+        }
+
+        $this->assertSame(['raw' => 0, 'cube_default' => 6],
+            \OWA\Module\Base\Controller\RetentionPreviewRest::proposed(['raw' => '', 'cube_default' => '6']),
+            'a field cleared is "keep everything", and is still asked about');
+
+        $html = \OWA\Module\Base\Classes\SettingsForm::field('base', Retention::RAW);
+        $this->assertStringContainsString('placeholder="Keep everything"', $html);
+        $this->assertStringContainsString('value=""', $html, 'nothing set shows as blank, not 0');
+    }
+
     /** Rebuild estimates are a range, never zero. */
     public function testRebuildMinutesAreARange(): void
     {

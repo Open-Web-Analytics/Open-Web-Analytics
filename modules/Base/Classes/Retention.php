@@ -10,20 +10,21 @@ namespace OWA\Module\Base\Classes;
 /**
  * How long data is kept: the one place that answers it.
  *
- * TWO WINDOWS, in months, 0 meaning keep everything:
+ * TWO WINDOWS, in months. Not set keeps everything, which this class reads as 0:
  *
  *   raw_retention_months    install only    owa_event_raw and every other
  *                                           day-partitioned event table
  *   cube_retention_months   install, then   that Property's cube
  *                           per Property
  *
- * NOT THE VISITOR STORE. A visitor's acquisition and last touch feed the
- * attribution lookback, which is a window of its own; deleting event history
- * says nothing about how long a returning visitor is recognised.
+ * NOT THE VISITOR STORE. Its rule is fixed (Classes\VisitorExpiry): a visitor
+ * not seen for 14 months -- past any cookie's reach -- with no event left in
+ * raw. A cube rebuild reads acquisition from the store for every event raw
+ * holds, so a row is never deleted while raw still has one of its visitor's.
  *
  * A CUBE'S WINDOW IS CAPPED AT RAW'S. A cube is built from raw, so a window
- * longer than raw's names months there is nothing to build from; 0 means "the
- * same as raw". A cube can still hold months raw has lost to a manual prune
+ * longer than raw's names months there is nothing to build from; not set means
+ * "the same as raw". A cube can still hold months raw has lost to a manual prune
  * (partition-drop only=raw): a rebuild leaves those as built (CubeRebuildCli).
  *
  * ONLY SHORTENING RAW DESTROYS ANYTHING. A shorter cube window drops cube

@@ -25,7 +25,9 @@ namespace OWA\Module\Base\Controller;
  * raw_retention_months for raw and every other event table, and each
  * Property's cube_retention_months for its cube. Both 0 by default, which
  * keeps everything: the lead is maintained and old periods are merged, never
- * dropped. The visitor store is not rotated: it has its own window.
+ * dropped. The visitor store has its own fixed rule instead: a visitor not
+ * seen for 14 months, with no event left in raw, is deleted
+ * (expireVisitorStore()), so a cube rebuild never loses an acquisition.
  *
  * There is no keep=. A command-line window that differed from the settings
  * would delete what they say to keep, or name data already gone. A what-if is
@@ -219,7 +221,7 @@ class PartitionRotateCli extends PartitionsCli {
                 $raw_months, $raw_cutoff, array_key_exists( 'raw', $whatif ) ? ' [what-if]' : '',
                 $months_ahead, $through )
             : sprintf(
-                'Rotating: RETAINING ALL EVENT DATA (raw_retention_months is 0)%s, each reporting cube to its '
+                'Rotating: RETAINING ALL EVENT DATA (raw_retention_months is not set)%s, each reporting cube to its '
               . 'own window, and %d month(s) of partitions ahead (through %s). Old periods are merged, not '
               . 'deleted, to stay within the partition ceiling.',
                 array_key_exists( 'raw', $whatif ) ? ' [what-if]' : '', $months_ahead, $through )
@@ -291,6 +293,7 @@ class PartitionRotateCli extends PartitionsCli {
 
         if ( $rotated ) {
 
+            $this->expireVisitorStore( $tables, $dry_run );
             $this->queueBackfills( $whatif, $dry_run );
         }
 
@@ -450,5 +453,70 @@ class PartitionRotateCli extends PartitionsCli {
 
             \OWA\Module\Base\Classes\Retention::enqueueBackfills( $owed );
         }
+    }
+
+    /**
+     * Delete the visitor-store rows raw no longer refers to.
+     *
+     * The store's own rule, not a retention setting: a row goes once its
+     * visitor was last seen more than 14 months ago AND raw holds none of their
+     * events, because a cube rebuild reads acquisition from the store for every
+     * event raw still has. On every run where raw is rotated, so a store left
+     * behind by an earlier run catches up; while raw keeps everything nothing
+     * is eligible, and the check is one loose index scan and an empty indexed
+     * read. See Classes\VisitorExpiry.
+     *
+     * @param string[] $tables
+     * @param bool     $dry_run
+     * @return void
+     */
+    protected function expireVisitorStore( array $tables, $dry_run ) {
+
+        $raw = \OWA\Module\Base\Classes\VisitorExpiry::rawTable();
+
+        if ( ! in_array( $raw, $tables, true )
+          || ! \OWA\Core\CoreAPI::dbSingleton()->isPartitioned( $raw ) ) {
+
+            return;
+        }
+
+        $month = \OWA\Module\Base\Classes\VisitorExpiry::cutoff(
+            \OWA\Module\Base\Classes\VisitorExpiry::oldestRawMonth(),
+            \OWA\Module\Base\Classes\VisitorExpiry::now() );
+
+        if ( $month === null ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s is empty, so the visitor store is left alone.', $raw ) );
+
+            return;
+        }
+
+        $store = \OWA\Module\Base\Classes\VisitorExpiry::table();
+        $since = sprintf( '%04d-%02d', intdiv( $month, 100 ), $month % 100 );
+        $what  = sprintf( 'visitor(s) last seen before %s with no event left in %s', $since, $raw );
+
+        if ( $dry_run ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                '%s: would delete %d %s.',
+                $store, \OWA\Module\Base\Classes\VisitorExpiry::countExpired( $month ), $what ) );
+
+            return;
+        }
+
+        $deleted = \OWA\Module\Base\Classes\VisitorExpiry::deleteAll(
+            $month, function () { $this->heartbeat(); } );
+
+        if ( $deleted === false ) {
+
+            $this->fail( sprintf(
+                'Deleting from %s was refused. Its rows stay until the next run.', $store ) );
+
+            return;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            '%s: deleted %d %s.', $store, $deleted, $what ) );
     }
 }

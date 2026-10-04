@@ -18,9 +18,10 @@ namespace OWA\Module\Base\Classes;
  * that partition -- a first build of a new cube, or a reprocess over old
  * history. A row can go only once no rebuild can read one of its events.
  *
- * So there is no window of its own. partition-rotate calls this after it drops
- * raw partitions under keep=; without keep= nothing is dropped from raw, and
- * nothing is deleted here either.
+ * So it has a fixed rule rather than a retention setting. partition-rotate
+ * calls this on every run that rotates raw; while raw keeps everything
+ * (raw_retention_months unset) no visitor is without an event, and nothing is
+ * deleted here.
  *
  * The table is not partitioned (Entity\VisitorAcquisition says why), so this
  * is a DELETE in batches, not a partition drop.
@@ -37,8 +38,8 @@ namespace OWA\Module\Base\Classes;
  * AND NEVER WITHIN A COOKIE'S REACH. A visitor with no event left in raw can
  * still return carrying their cookie -- Chrome keeps a first-party cookie up to
  * 400 days -- and with the row gone no first_visit is raised, so every new
- * event gets the sentinel. Under keep= of 14 months or more raw outlives the
- * cookie and this changes nothing; under a shorter keep= it holds rows for
+ * event gets the sentinel. With a raw window of 14 months or more raw outlives
+ * the cookie and this changes nothing; under a shorter one it holds rows for
  * visitors seen in the last 14 months (PLAN A.1.22 has the lifespans).
  *
  * UNDATED ROWS ARE KEPT. last_seen 0 or NULL says nothing about age.
@@ -73,7 +74,7 @@ class VisitorExpiry {
      * The month of the oldest day raw still holds, as yyyymm, or null when raw
      * is empty.
      *
-     * Read from the data, not from keep=: a partition is dropped only when it
+     * Read from the data, not from the raw window: a partition is dropped only when it
      * lies wholly before the cutoff, and old periods are merged into blocks of
      * up to five years, so a kept block can hold days long before it.
      *

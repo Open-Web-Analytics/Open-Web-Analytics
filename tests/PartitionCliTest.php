@@ -234,15 +234,34 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
-     * The visitor store has its own window: shortening raw's never reaches it.
+     * The visitor store has its own fixed rule (VisitorExpiry), so rotate runs
+     * it on every run that rotates raw -- with a raw window or without one --
+     * rather than only when raw is shortened. Run dry, so nothing is deleted.
      */
-    public function testRotateNeverTouchesTheVisitorStore()
+    public function testRotateExpiresTheVisitorStoreOnEveryRun()
     {
-        $this->assertFalse(method_exists($this->rotate(), 'expireVisitorStore'),
-            'rotate must not expire the visitor store');
+        if (! \OWA\Core\CoreAPI::dbSingleton()->supportsPartitioning()) {
+            $this->markTestSkipped('Driver cannot partition.');
+        }
 
-        $source = (string) file_get_contents(OWA_DIR . 'modules/Base/Controller/PartitionRotateCli.php');
-        $this->assertStringNotContainsString('VisitorExpiry', $source, 'nor reach it any other way');
+        $calls = function (array $params): int {
+            $cli = new class($params) extends \OWA\Module\Base\Controller\PartitionRotateCli {
+                public $storeCalls = 0;
+
+                protected function expireVisitorStore(array $tables, $dry_run)
+                {
+                    $this->storeCalls++;
+                }
+            };
+
+            $cli->action();
+
+            return $cli->storeCalls;
+        };
+
+        $this->assertSame(1, $calls(['raw-months' => 24, 'table' => 'owa_event_raw', 'dry-run' => 1]));
+        $this->assertSame(1, $calls(['table' => 'owa_event_raw', 'dry-run' => 1]),
+            'its own rule, not the raw window: it runs either way');
     }
 
     /**

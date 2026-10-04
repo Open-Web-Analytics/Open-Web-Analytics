@@ -33,6 +33,15 @@ test('the property form reads its own window, or that it inherits', () => {
     expect(readValues(propertyForm('12', false))).toEqual({ cube_inherit: '1' });
 });
 
+test('with nothing set above, a blank property field inherits', () => {
+    document.body.innerHTML = `
+        <form data-owa-retention-form="property" data-owa-retention-property="42">
+            <input name="config[base.cube_retention_months]" value="">
+        </form>`;
+
+    expect(readValues(document.querySelector('form'))).toEqual({ cube_inherit: '1' });
+});
+
 test('a save that changes no window is not interrupted', () => {
     expect(previewParams({ raw: '24', cube_default: '0' }, { raw: '24', cube_default: '0' }, '')).toBeNull();
 });

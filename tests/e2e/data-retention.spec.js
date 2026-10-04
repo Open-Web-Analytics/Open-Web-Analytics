@@ -8,7 +8,7 @@ const { FIXTURE, adminLogin } = require('./fixtures');
  *
  * The window used is 1200 months. It is shorter than "keep everything", so it
  * asks as a deletion would, and it deletes nothing on any real installation.
- * Each test puts the setting back to 0.
+ * Each test puts the setting back to blank, which keeps everything.
  */
 
 const INSTALL = '?owa_do=base.optionsRetention';
@@ -23,8 +23,8 @@ async function saveInstall(page) {
 async function restoreRaw(page) {
     await page.goto(INSTALL, { waitUntil: 'networkidle' });
 
-    if ((await raw(page).inputValue()) !== '0') {
-        await raw(page).fill('0');
+    if ((await raw(page).inputValue()) !== '') {
+        await raw(page).fill('');
         await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle' }), saveInstall(page)]);
     }
 }
@@ -46,7 +46,8 @@ test('shortening the event-data window asks first, and Cancel stores nothing', a
         await expect(dialog(page)).toBeHidden();
 
         await page.goto(INSTALL, { waitUntil: 'networkidle' });
-        await expect(raw(page)).toHaveValue('0');
+        await expect(raw(page)).toHaveValue('');
+        await expect(raw(page)).toHaveAttribute('placeholder', 'Keep everything');
 
         // Asked again, and this time saved.
         await raw(page).fill('1200');
@@ -61,11 +62,11 @@ test('shortening the event-data window asks first, and Cancel stores nothing', a
         await expect(raw(page)).toHaveValue('1200');
 
         // Back to keeping everything deletes nothing, so nothing is asked.
-        await raw(page).fill('0');
+        await raw(page).fill('');
         await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle' }), saveInstall(page)]);
         await expect(dialog(page)).toHaveCount(0);
         await page.goto(INSTALL, { waitUntil: 'networkidle' });
-        await expect(raw(page)).toHaveValue('0');
+        await expect(raw(page)).toHaveValue('');
     } finally {
         await restoreRaw(page);
     }

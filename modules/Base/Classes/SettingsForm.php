@@ -762,9 +762,11 @@ class SettingsForm {
 
             case 'integer':
 
-                return sprintf( '<input type="number" step="1"%s%s name="%s" value="%s"%s>',
+                // `blank` names what an empty field means, shown in it as a placeholder.
+                return sprintf( '<input type="number" step="1"%s%s%s name="%s" value="%s"%s>',
                     isset( $args['min'] ) ? sprintf( ' min="%d"', $args['min'] ) : '',
                     isset( $args['max'] ) ? sprintf( ' max="%d"', $args['max'] ) : '',
+                    isset( $args['blank'] ) ? sprintf( ' placeholder="%s"', self::esc( (string) $args['blank'] ) ) : '',
                     self::esc( $name ), self::esc( (string) $value ), $off );
         }
 

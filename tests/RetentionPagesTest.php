@@ -76,21 +76,42 @@ final class RetentionPagesTest extends TestCase
         $this->assertStringContainsString( 'value="base.optionsRetentionUpdate"', $html );
     }
 
-    /** The Property's window, with its Override switch, in a form that names the Property. */
-    public function testThePropertyPageRendersItsWindow(): void
+    private function renderPropertyPage(): string
     {
         $template = new \OWA\Core\Template( 'base' );
         $template->set_template( 'property_retention.php' );
         $template->set( 'headline', 'Data Retention' );
         $template->set( 'property', array( 'id' => '7781000000000009', 'name' => 'Alice\'s shop' ) );
 
-        $html = (string) $template->fetch();
+        return (string) $template->fetch();
+    }
 
-        $this->assertStringContainsString( 'config[base.cube_retention_months]', $html );
-        $this->assertStringContainsString( 'data-owa-override=', $html, 'it inherits the install\'s until overridden' );
-        $this->assertStringContainsString( 'data-owa-retention-form="property"', $html );
-        $this->assertStringContainsString( 'data-owa-retention-property="7781000000000009"', $html );
-        $this->assertStringContainsString( 'Alice&#039;s shop', $html, 'named, and escaped' );
+    /**
+     * The Property's window in a form that names the Property. With nothing set
+     * for the install it is a plain field whose blank says "Same as event
+     * data"; with an install window, it inherits that until overridden.
+     */
+    public function testThePropertyPageRendersItsWindow(): void
+    {
+        $was = \OWA\Core\CoreAPI::getSetting( 'base', 'cube_retention_months' );
+
+        try {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'cube_retention_months', null );
+            $html = $this->renderPropertyPage();
+
+            $this->assertStringContainsString( 'config[base.cube_retention_months]', $html );
+            $this->assertStringContainsString( 'placeholder="Same as event data"', $html );
+            $this->assertStringNotContainsString( 'data-owa-override=', $html, 'nothing set above, nothing to override' );
+            $this->assertStringContainsString( 'data-owa-retention-form="property"', $html );
+            $this->assertStringContainsString( 'data-owa-retention-property="7781000000000009"', $html );
+            $this->assertStringContainsString( 'Alice&#039;s shop', $html, 'named, and escaped' );
+
+            \OWA\Core\CoreAPI::setSetting( 'base', 'cube_retention_months', 12 );
+            $this->assertStringContainsString( 'data-owa-override=', $this->renderPropertyPage(),
+                'it inherits the install\'s window until overridden' );
+        } finally {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'cube_retention_months', $was );
+        }
     }
 
     /** The Property tier of the settings nav links its Data Retention page, for administrators only. */

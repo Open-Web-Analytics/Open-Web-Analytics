@@ -178,6 +178,11 @@ final class RetentionCubeTest extends TestCase
         $this->assertSame(1, Retention::enqueueBackfills([$owed]));
         $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('cube-rebuild', 'cube-backfill:' . self::PROPERTY));
 
+        // Gone at once: on an install whose scheduler shares this database, a
+        // job left pending is claimed and run, and fills the cube under the
+        // next test.
+        self::forgetJobs();
+
         // What the queued job runs.
         $this->cli(['property' => (string) self::PROPERTY, 'from' => (string) $owed['from'], 'to' => (string) $owed['to']])->action();
 
