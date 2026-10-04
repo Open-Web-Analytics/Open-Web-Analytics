@@ -15,6 +15,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class TouchBackfillTest extends TestCase
 {
     const SITE    = 'owa-touch-backfill-site';
+    const OTHER   = 'owa-touch-backfill-other';
     const VISITOR = 7783000000000001;
     const LONER   = 7783000000000002;
 
@@ -41,21 +42,21 @@ final class TouchBackfillTest extends TestCase
     private function clean(): void
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE));
+        $db->query(sprintf("DELETE FROM %s WHERE site_id IN ('%s', '%s')",
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE, self::OTHER));
         $db->query(sprintf('DELETE FROM %s WHERE visitor_id IN (%d, %d)',
             \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition')->getTableName(), self::VISITOR, self::LONER));
     }
 
     /** A landing beacon: its session_start and page_view rows. */
-    private function landing(int $visitor, int $session, int $ts, array $evidence): void
+    private function landing(int $visitor, int $session, int $ts, array $evidence, string $site = self::SITE): void
     {
         foreach (['session_start', 'page_view'] as $type) {
             $raw = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
             $raw->setProperties($evidence + [
-                'id'         => \OWA\Module\Base\Classes\V2Event::id(self::SITE, $visitor, $session, $ts, $type),
+                'id'         => \OWA\Module\Base\Classes\V2Event::id($site, $visitor, $session, $ts, $type),
                 'event_type' => $type,
-                'site_id'    => self::SITE,
+                'site_id'    => $site,
                 'visitor_id' => $visitor,
                 'session_id' => $session,
                 'ts'         => $ts,
@@ -116,6 +117,22 @@ final class TouchBackfillTest extends TestCase
         // Again, and nothing changes.
         $this->assertTrue($backfill->site(self::SITE));
         $this->assertSame($stamps, $this->stamps());
+    }
+
+    /**
+     * The prior landing is this site's. The same visitor landing on another
+     * site at the same instant is not this site's touch.
+     */
+    public function testThePriorLandingIsThisSitesOwn(): void
+    {
+        $h = 3600 * 1000000;
+        $this->landing(self::VISITOR, 91, $this->t0, ['tagged_source' => 'elsewhere'], self::OTHER);
+        $this->landing(self::VISITOR, 1, $this->t0, ['tagged_source' => 'newsletter']);
+        $this->landing(self::VISITOR, 2, $this->t0 + $h, []);
+
+        $this->assertTrue((new \OWA\Module\Base\Classes\TouchBackfill())->site(self::SITE));
+
+        $this->assertSame(['newsletter', null, (string) $this->t0], $this->stamps()[2]['session_start']);
     }
 
     /** @return array[] the two visitors' store rows */

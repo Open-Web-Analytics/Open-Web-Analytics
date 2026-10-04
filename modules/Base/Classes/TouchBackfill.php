@@ -162,11 +162,23 @@ class TouchBackfill {
           . '      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prior_ts'
           . "  FROM %1\$s l WHERE l.event_type = 'session_start' AND l.site_id = ? AND l.visitor_id BETWEEN %4\$d AND %5\$d"
           . ') w ON r.site_id = ? AND r.visitor_id = w.visitor_id AND r.session_id = w.session_id AND r.ts = w.ts'
-          . " JOIN %1\$s p ON p.event_type = 'session_start' AND p.visitor_id = w.visitor_id AND p.ts = w.prior_ts"
+          /*
+           * The prior landing is read from this batch's own landings, not
+           * joined back to raw. raw's only visitor index is visitor_id alone,
+           * so the join scanned every event of the visitor once per landing:
+           * one visitor with 1,726 sessions made a batch take 132 s, and the
+           * backfill 379 s where this takes 22 s on the same copy. DISTINCT
+           * keeps the derived table materialised; merged into the UPDATE, it
+           * would be the join again.
+           */
+          . ' JOIN (SELECT DISTINCT s.visitor_id, s.ts, s.tagged_source, s.tagged_medium, s.tagged_campaign,'
+          . '    s.tagged_ad, s.referer_host'
+          . "  FROM %1\$s s WHERE s.event_type = 'session_start' AND s.site_id = ? AND s.visitor_id BETWEEN %4\$d AND %5\$d"
+          . ') p ON p.visitor_id = w.visitor_id AND p.ts = w.prior_ts'
           . ' SET %2$s WHERE r.visitor_id BETWEEN %4$d AND %5$d',
             $this->raw, implode( ', ', $set ), self::nonDirect( 'l' ), (int) $low, (int) $high );
 
-        return $this->db->query( $sql, array( (string) $site_id, (string) $site_id ) ) !== false;
+        return $this->db->query( $sql, array( (string) $site_id, (string) $site_id, (string) $site_id ) ) !== false;
     }
 
     /** Step 2: each visitor's latest non-direct landing, onto the visitor store. */
