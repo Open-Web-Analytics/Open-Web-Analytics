@@ -209,6 +209,35 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame([self::PRIOR => 0, self::SESSION => 1], $prior + [self::PRIOR => -1]);
     }
 
+    /**
+     * A session v1 lost the row for is still an earlier session of the
+     * visitor's later ones: only the first of them is a first visit.
+     */
+    public function testASessionWithoutARowIsAnEarlierSession(): void
+    {
+        $first  = '1790000000000000097';
+        $second = '1790000000000000098';
+        $this->visit();
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DELETE FROM %ssession', V1Schema::PREFIX));
+        $this->request('1790000000000000211', ['session_id' => $first, 'timestamp' => self::T - 7200]);
+        $this->request('1790000000000000212', ['session_id' => $second, 'timestamp' => self::T - 3600]);
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $this->assertSame(['first_visit' => 1, 'page_view' => 1, 'session_start' => 1], $this->typesFor($first));
+        $this->assertSame(['page_view' => 1, 'session_start' => 1], $this->typesFor($second));
+        $this->assertSame(['page_view' => 3, 'session_start' => 1], $this->typesFor(self::SESSION));
+
+        $prior = [];
+        foreach ($this->rows() as $r) {
+            if ($r['event_type'] === 'session_start') {
+                $prior[(string) $r['session_id']] = (int) $r['prior_sessions'];
+            }
+        }
+        ksort($prior);
+        $this->assertSame([self::SESSION => 2, $first => 0, $second => 1], $prior);
+    }
+
     /** Sessions on another site are not earlier sessions on this one. */
     public function testPriorSessionsAreCountedPerSite(): void
     {
