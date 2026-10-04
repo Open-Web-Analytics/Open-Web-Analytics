@@ -160,7 +160,7 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame('en-US', $entry['language']);
         $this->assertSame('alice', $entry['user_id']);
 
-        $this->assertSame(3, (int) $entry['prior_sessions']);
+        $this->assertSame(1, (int) $entry['prior_sessions'], 'counted from v1 sessions (PRIOR), not v1\'s 3');
         $this->assertSame(self::T - 86400 * 10, (int) $entry['visitor_fsts']);
         $this->assertSame(self::T, (int) $entry['session_start_ts']);
         $this->assertSame(self::T - 86400, (int) $entry['prior_session_start_ts']);
@@ -168,15 +168,82 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame(['plan' => 'pro'], json_decode((string) $entry['params'], true));
     }
 
-    public function testTheEntryPageRaisesTheSessionAndVisitorMarkers(): void
+    public function testTheEntryPageRaisesTheSessionMarker(): void
     {
         $this->visit();
 
         $this->migrator()->migrateSite(self::SITE);
 
         $types = array_count_values(array_column($this->rows(), 'event_type'));
+        ksort($types);
 
-        $this->assertSame(['first_visit' => 1, 'page_view' => 3, 'session_start' => 1], $types);
+        // v1 flagged the entry is_new_visitor, but the visitor had a session
+        // before it (PRIOR), so it is not a first visit.
+        $this->assertSame(['page_view' => 3, 'session_start' => 1], $types);
+    }
+
+    /**
+     * The visitor's first session v1 kept is its first visit, whatever v1
+     * flagged: older trackers wrote num_prior_sessions 1 for a new visitor and
+     * later ones wrote is_new_visitor 0 for everyone.
+     */
+    public function testTheVisitorsFirstSessionIsItsFirstVisitWhateverV1Flagged(): void
+    {
+        $this->visit();
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query(sprintf('UPDATE %srequest SET is_new_visitor = 0, num_prior_sessions = 1', V1Schema::PREFIX));
+        $this->request('1790000000000000301', ['session_id' => self::PRIOR, 'timestamp' => self::T - 86400,
+            'yyyymmdd' => self::DAY - 1]);
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $this->assertSame(['first_visit' => 1, 'page_view' => 1, 'session_start' => 1], $this->typesFor(self::PRIOR));
+        $this->assertSame(['page_view' => 3, 'session_start' => 1], $this->typesFor(self::SESSION));
+
+        $prior = [];
+        foreach ($this->rows() as $r) {
+            if ($r['event_type'] === 'page_view') {
+                $prior[(string) $r['session_id']] = (int) $r['prior_sessions'];
+            }
+        }
+        $this->assertSame([self::PRIOR => 0, self::SESSION => 1], $prior + [self::PRIOR => -1]);
+    }
+
+    /** Sessions on another site are not earlier sessions on this one. */
+    public function testPriorSessionsAreCountedPerSite(): void
+    {
+        $this->visit();
+        $this->insert('session', ['id' => '1790000000000000030', 'site_id' => 'mig-site-bob',
+            'visitor_id' => self::VISITOR, 'timestamp' => self::T - 3600, 'yyyymmdd' => self::DAY]);
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        foreach ($this->rows() as $r) {
+            if ($r['event_type'] === 'page_view') {
+                $this->assertSame(1, (int) $r['prior_sessions'], 'PRIOR only, not the other site\'s');
+            }
+        }
+    }
+
+    /**
+     * A session v1 lost the row for begins at its earliest request, read
+     * across batches, and counts the visitor's sessions before that.
+     */
+    public function testASessionWithoutARowCountsTheSessionsBeforeItsFirstRequest(): void
+    {
+        $orphan = '1790000000000000099';
+        $this->visit();
+        $this->request('1790000000000000202', ['session_id' => $orphan, 'timestamp' => self::T + 7200]);
+        $this->request('1790000000000000201', ['session_id' => $orphan, 'timestamp' => self::T - 7200]);
+
+        $this->migrator(1)->migrateSite(self::SITE);
+
+        foreach ($this->rows() as $r) {
+            if ($r['event_type'] === 'page_view' && (string) $r['session_id'] === $orphan) {
+                $this->assertSame(1, (int) $r['prior_sessions'],
+                    'PRIOR began before it; SESSION began after its first request, though before its second');
+            }
+        }
     }
 
     /** @return array event type => count, for one session */
@@ -206,7 +273,7 @@ final class MigrateRequestsTest extends TestCase
 
         $this->migrator()->migrateSite(self::SITE);
 
-        $this->assertSame(['first_visit' => 1, 'page_view' => 3, 'session_start' => 1], $this->typesFor(self::SESSION));
+        $this->assertSame(['page_view' => 3, 'session_start' => 1], $this->typesFor(self::SESSION));
     }
 
     /**
@@ -259,7 +326,7 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame(6, $progress['rows_read']);
         $this->assertSame(3, $progress['rows_refused']);
         $this->assertEquals(['no_visitor' => 1, 'no_timestamp' => 1, 'no_session' => 1], $progress['refusals']);
-        $this->assertSame(5, $progress['rows_written'], 'three page views and two markers');
+        $this->assertSame(4, $progress['rows_written'], 'three page views and the session start');
         $this->assertNotEmpty($progress['completed_at']);
     }
 
@@ -294,8 +361,8 @@ final class MigrateRequestsTest extends TestCase
         $done = $this->migrator(1)->migrateSite(self::SITE);
 
         $this->assertSame(3, $done['rows_read'], 'the count carries over');
-        $this->assertSame(5, $done['rows_written']);
-        $this->assertCount(5, $this->rows());
+        $this->assertSame(4, $done['rows_written']);
+        $this->assertCount(4, $this->rows());
         $this->assertNotEmpty($done['completed_at']);
 
         $again = $this->migrator(1)->migrateSite(self::SITE);

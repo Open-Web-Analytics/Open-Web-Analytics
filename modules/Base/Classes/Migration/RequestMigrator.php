@@ -11,8 +11,8 @@ namespace OWA\Module\Base\Classes\Migration;
  * v1's page views (owa_request) into page_view events.
  *
  * A session's entry is its EARLIEST request -- by time, then id -- and it
- * carries the new-session flag, and the new-visitor flag where v1 recorded a
- * new visitor, so ingest's own materialisers raise session_start and
+ * carries the new-session flag, and the new-visitor flag where the visitor had
+ * no earlier session (FactMigrator::priorSessions()), so ingest's own materialisers raise session_start and
  * first_visit exactly as for a live beacon (PLAN.html 2.21): once per session.
  *
  * Not v1's is_entry_page. On a real 1.x install it was set on two or more of a
@@ -24,12 +24,26 @@ class RequestMigrator extends FactMigrator {
 
     const SOURCE = 'request';
 
-    protected function resolve( array $rows ) {
+    /**
+     * Where v1 lost a session's row, it began at its entry request: read
+     * across all of the session's requests, so a session split over batches
+     * has one start.
+     */
+    protected function sessionStarts( array $rows, array &$refs ) {
 
-        $refs = parent::resolve( $rows );
         $refs['entry'] = $this->entries( array_column( $rows, 'session_id' ) );
 
-        return $refs;
+        $starts = parent::sessionStarts( $rows, $refs );
+
+        foreach ( $refs['entry'] as $sid => $entry ) {
+
+            if ( ! isset( $refs['session'][ $sid ]['timestamp'] ) ) {
+
+                $starts[ $sid ] = $entry['ts'];
+            }
+        }
+
+        return $starts;
     }
 
     /**
@@ -41,7 +55,7 @@ class RequestMigrator extends FactMigrator {
      * entry, or the session would start on a row that is not written.
      *
      * @param  array $session_ids as read
-     * @return array session id as text => entry request id as text
+     * @return array session id as text => array( 'id' => request id as text, 'ts' => seconds )
      */
     protected function entries( array $session_ids ) {
 
@@ -80,18 +94,17 @@ class RequestMigrator extends FactMigrator {
             }
         }
 
-        return array_map( function ( $f ) { return $f['id']; }, $first );
+        return array_map( function ( $f ) { return array( 'id' => $f['id'], 'ts' => $f['key'][0] ); }, $first );
     }
 
     protected function events( array $r, array $refs ) {
 
         $sid      = (string) $r['session_id'];
-        $is_entry = isset( $refs['entry'][ $sid ] ) && $refs['entry'][ $sid ] === (string) $r['id'];
+        $is_entry = isset( $refs['entry'][ $sid ] ) && $refs['entry'][ $sid ]['id'] === (string) $r['id'];
 
-        // The session's own flag where v1 kept the session row and set it; the
-        // request's otherwise.
-        $flag        = $refs['session'][ $sid ]['is_new_visitor'] ?? null;
-        $new_visitor = $flag !== null ? ! empty( $flag ) : ! empty( $r['is_new_visitor'] );
+        // A new visitor has no earlier session, counted (priorSessions()); v1's
+        // is_new_visitor is not read.
+        $new_visitor = ( $refs['prior_sessions'][ $sid ] ?? null ) === 0;
 
         $event = $this->baseEvent( $r, $refs, 'page_view', array(
             'is_new_session_start'   => $is_entry,
