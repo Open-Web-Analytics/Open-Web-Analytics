@@ -529,15 +529,21 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         foreach ( $partitions as $span ) {
 
             /*
-             * RAW NO LONGER HOLDS THIS PERIOD, or not all of it: its partitions
-             * were dropped (partition-drop) while the cube kept them. A rebuild
-             * replaces the partition with what raw has, which is less or
-             * nothing, so the partition is left as built.
+             * THE CUBE HOLDS DAYS RAW NO LONGER HAS: raw's partitions were
+             * dropped (partition-drop only=raw) while the cube kept them. A
+             * rebuild replaces the partition with what raw has, which would
+             * lose those days, so the partition is left as built.
+             *
+             * Asked of the cube's own rows, not of partition boundaries. Raw's
+             * oldest partition holds everything below it, so a table that never
+             * had older partitions and one whose older partitions were dropped
+             * look the same; only what the cube holds tells them apart.
              */
-            if ( $raw_from && (int) $span['start'] < $raw_from ) {
+            if ( $raw_from && (int) $span['start'] < $raw_from
+                 && $this->holdsDaysBefore( $table, $span, $raw_from ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s %s: kept as built. Raw no longer holds data before %d, so a rebuild would empty it.',
+                    '%s %s: kept as built. It holds days before %d, which raw no longer has, so a rebuild would lose them.',
                     $table, $span['name'], $raw_from ) );
 
                 $outcome['skipped']++;
@@ -618,12 +624,9 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The first day raw's partitions cover, or null when raw is not
-     * partitioned or has none.
-     *
-     * Read from the oldest partition's boundary, not from the oldest row: a
-     * Property's first partition usually starts before its first event, and
-     * must still be built. Only dropped partitions move this boundary.
+     * The oldest day raw holds, or null when raw is not partitioned or has
+     * no partitions: the start of its oldest partition, or the oldest row in it
+     * when that is earlier (the oldest partition holds everything below it).
      *
      * @return int|null yyyymmdd
      */
@@ -659,6 +662,23 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         }
 
         return $this->raw_covers_from = $from;
+    }
+
+    /**
+     * Whether a cube partition holds any day before $day.
+     *
+     * @param string $table
+     * @param array  $span
+     * @param int    $day yyyymmdd
+     * @return bool
+     */
+    protected function holdsDaysBefore( $table, array $span, $day ) {
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
+            'SELECT 1 AS present FROM %s PARTITION (%s) WHERE yyyymmdd < %d LIMIT 1',
+            $table, $span['name'], (int) $day ) );
+
+        return is_array( $row ) && ! empty( $row );
     }
 
     /** @var int|null|false rawCoversFrom(), once per run of the command; false = not read yet */

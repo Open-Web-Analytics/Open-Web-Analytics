@@ -252,4 +252,40 @@ final class RetentionCubeTest extends TestCase
 
         self::seedRaw(self::$old, 1);
     }
+
+    /**
+     * A partition that starts before raw's oldest day but holds nothing older
+     * is rebuilt as usual. A fresh install's raw has one partition holding
+     * everything, so its oldest day is its oldest row, and the cube's first
+     * partition always starts before it: guarded on the boundary alone, it was
+     * never rebuilt (the isolation sweep, on fresh databases, caught it).
+     */
+    public function testAPartitionHoldingNothingOlderThanRawIsRebuilt(): void
+    {
+        $this->cli(['property' => (string) self::PROPERTY])->action();
+
+        $class = get_class(new class extends CubeRebuildCli {
+            public function __construct() {}
+            protected function rawCoversFrom() { return RetentionCubeTest::recentDay(); }
+        });
+
+        // A late arrival on the recent day: only a rebuild picks it up.
+        self::seedRaw(self::$recent, 3);
+
+        $this->cli(['property' => (string) self::PROPERTY, 'from' => (string) self::$recent], $class)->action();
+
+        try {
+            $this->assertSame(2, $this->rowsOn(self::$recent), 'rebuilt: it holds no day raw has lost');
+        } finally {
+            // The late row is this test's own; the others count one on that day.
+            $ts = strtotime((string) self::$recent . ' 12:00:00') * 1000000 + 3;
+            \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE site_id = '%s' AND ts = %d",
+                \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), self::SITE, $ts));
+        }
+    }
+
+    public static function recentDay(): int
+    {
+        return self::$recent;
+    }
 }
