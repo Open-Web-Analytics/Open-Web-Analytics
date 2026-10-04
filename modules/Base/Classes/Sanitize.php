@@ -203,7 +203,13 @@ class Sanitize {
      */
     public static function cleanInput($input, $options = array()) {
 
-        if (empty($input)) {
+        /*
+         * NOT empty(). It is true for "0", so every request parameter and every
+         * tracked string whose value was zero arrived as null: a settings form
+         * could not save 0 into an integer setting, and a page titled "0" was
+         * stored with no title.
+         */
+        if ($input === null || $input === '' || $input === false || $input === array()) {
             return;
         }
 

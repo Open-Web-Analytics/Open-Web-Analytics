@@ -52,6 +52,11 @@ function settingsFor( el ) {
  * element it is given to the end of <body>, so a single reused node would
  * migrate out of whatever it was declared inside; making one per ask keeps that
  * from mattering.
+ *
+ * Two options beyond the strings: `paragraphs`, an array shown one paragraph
+ * each in place of `body`, and `tone: 'notice'`, for a confirmation that is not
+ * a warning -- the proceed button is then an ordinary one rather than red.
+ * Text is always set as text, never as HTML.
  */
 OWA.confirmAction = function ( options, onProceed ) {
 
@@ -62,7 +67,12 @@ OWA.confirmAction = function ( options, onProceed ) {
         .attr( 'id', 'owa_confirmDialog' )
         .attr( 'title', opts.title );
 
-    $( '<p>' ).addClass( 'owa_confirmBody' ).text( opts.body ).appendTo( $dialog );
+    var paragraphs = $.isArray( opts.paragraphs ) && opts.paragraphs.length ? opts.paragraphs : [ opts.body ];
+
+    $.each( paragraphs, function ( i, text ) {
+
+        $( '<p>' ).addClass( 'owa_confirmBody' ).text( text ).appendTo( $dialog );
+    } );
 
     $dialog.appendTo( 'body' ).dialog( {
         modal: true,
@@ -82,7 +92,7 @@ OWA.confirmAction = function ( options, onProceed ) {
             },
             {
                 text: opts.proceed,
-                class: 'owa-button owa-button-danger owa_confirmProceed',
+                class: 'owa-button ' + ( opts.tone === 'notice' ? '' : 'owa-button-danger ' ) + 'owa_confirmProceed',
                 click: function () {
                     // Closed BEFORE proceeding: the action navigates, and a
                     // dialog left open flashes over the unloading page.

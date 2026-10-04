@@ -408,14 +408,13 @@ class SystemHealth {
             }
         }
 
-        // Retention: rotate-partitions' keep=, or nothing deleted.
+        // Retention: the Data Retention settings, applied by rotate-partitions.
         $rotate = JobStatus::jobs()['rotate-partitions'] ?? null;
-        $keep   = $rotate ? ( $rotate['params']['keep'] ?? null ) : null;
+        $keep   = Retention::rawMonths();
 
         $facts['Retention'] = $keep
-            ? sprintf( 'events older than %d months are deleted by rotate-partitions, and visitors with no event left',
-                (int) $keep )
-            : 'nothing is deleted: rotate-partitions runs with no keep= (set one in OWA_SCHEDULED_JOBS)';
+            ? sprintf( 'events older than %d months are deleted by rotate-partitions (Data Retention settings)', $keep )
+            : 'nothing is deleted: event data is kept indefinitely (Data Retention settings)';
 
         $facts['Fine partitions'] = sprintf( 'the last %d months by month, older years by year',
             (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' ) );

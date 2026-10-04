@@ -334,6 +334,12 @@ class Module extends \OWA\Core\Module {
             'settings' => array( 'attribution_lookback_days', 'campaignUtmParams' ),
         ) );
 
+        // The Property's Data Retention screen (Classes\Retention).
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.propertyRetention',
+            'settings' => array( 'cube_retention_months' ),
+        ) );
+
         /*
          * The tracking tag (PLAN 2.24.4), in the `tracking_tag` group so an active
          * module adds its own fieldset beside it. Each fieldset serves every
@@ -420,6 +426,11 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.optionsModules',                'OWA\\Module\\Base\\Controller\\OptionsModules',               'Controller/OptionsModules.php' );
         $this->registerAction( 'base.optionsReset',                  'OWA\\Module\\Base\\Controller\\OptionsReset',                 'Controller/OptionsReset.php' );
         $this->registerAction( 'base.optionsUpdate',                 'OWA\\Module\\Base\\Controller\\OptionsUpdate',                'Controller/OptionsUpdate.php' );
+        $this->registerAction( 'base.optionsRetention',              'OWA\\Module\\Base\\Controller\\OptionsRetention',             'Controller/OptionsRetention.php' );
+        $this->registerAction( 'base.optionsRetentionUpdate',        'OWA\\Module\\Base\\Controller\\OptionsRetentionUpdate',       'Controller/OptionsRetentionUpdate.php' );
+        $this->registerAction( 'base.propertyRetention',             'OWA\\Module\\Base\\Controller\\PropertyRetention',            'Controller/PropertyRetention.php' );
+        $this->registerAction( 'base.propertyRetentionUpdate',       'OWA\\Module\\Base\\Controller\\PropertyRetentionUpdate',      'Controller/PropertyRetentionUpdate.php' );
+        $this->registerAction( 'base.retentionPreviewRest',          'OWA\\Module\\Base\\Controller\\RetentionPreviewRest',         'Controller/RetentionPreviewRest.php' );
         $this->registerAction( 'base.overlayLauncher',               'OWA\\Module\\Base\\Controller\\OverlayLauncher',              'Controller/OverlayLauncher.php' );
         $this->registerAction( 'base.passwordResetForm',             'OWA\\Module\\Base\\Controller\\PasswordResetForm',            'Controller/PasswordResetForm.php' );
         $this->registerAction( 'base.passwordResetRequest',          'OWA\\Module\\Base\\Controller\\PasswordResetRequest',         'Controller/PasswordResetRequest.php' );
@@ -758,6 +769,7 @@ class Module extends \OWA\Core\Module {
 		$this->registerRestApiRoute( 'v1', 'notifications', 'POST', 'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest', 'Controller/NotificationMarkReadRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', 'Controller/NotificationDismissRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', 'Controller/ReportsRest.php', [ 'params_order' => ['report_name'] ] );
+		$this->registerRestApiRoute( 'v1', 'retentionPreview', 'GET', 'OWA\\Module\\Base\\Controller\\RetentionPreviewRest', 'Controller/RetentionPreviewRest.php' );
     }
 
     /**
@@ -808,6 +820,24 @@ class Module extends \OWA\Core\Module {
             'id'       => 'base.reporting',
             'legend'   => 'Reporting',
             'settings' => array( 'timezone', 'attribution_lookback_days' ),
+        ) );
+
+        // How long data is kept (Classes\Retention). Its own page: lowering the
+        // first of these deletes data, and that should not sit among routine settings.
+        $this->registerSettingsPage( array(
+                'do'        => 'base.optionsRetention',
+                'title'     => 'Data Retention',
+                'group'     => 'General',
+                'order'     => 2,
+                'fieldsets' => array( 'base.retention' ) )
+        );
+
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.retention',
+            'legend'   => 'Data Retention',
+            'description' => 'Each night\'s maintenance run (rotate-partitions) removes data outside these windows. '
+                . 'Every Property can set its own reporting window on its Data Retention page.',
+            'settings' => array( 'raw_retention_months', 'cube_retention_months' ),
         ) );
 
 
