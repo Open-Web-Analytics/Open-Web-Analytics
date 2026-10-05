@@ -8,10 +8,13 @@ import $ from 'jquery';
  * each condition's picker here instead of offering page-view properties for a
  * click until the form is saved and reloaded.
  *
- * A property a condition already names stays when the new event does not carry
- * it, labelled "not carried by <event>" -- as GoalEventEdit::conditionProperties()
- * does on the server. Dropping it would rewrite the condition to whatever came
- * first in the list on the next save.
+ * A SAVED condition's property stays when the new event does not carry it,
+ * labelled "not carried by <event>" -- as GoalEventEdit::conditionProperties()
+ * does on the server. Dropping it would rewrite a stored condition to whatever
+ * came first in the list on the next save. A property picked on this page and
+ * not yet saved is not kept: nothing would be lost, so the picker moves to the
+ * new event's list without a warning. The saved property is on the row as
+ * data-saved-property; a new or added row has none.
  *
  * The pickers are chosen widgets, searchable, and each option reads
  * "Label -- description" in the list so both are searched and seen. The
@@ -40,25 +43,25 @@ function plainLabel( vocabulary, name ) {
 }
 
 /**
- * The properties a condition can offer under this event, keeping the one it
- * already names.
+ * The properties a condition can offer under this event, keeping the saved one.
  *
  * @param  {Object} vocabulary  event => list of {name, label, description, carried}
  * @param  {string} event
- * @param  {string} selected    the property the condition names now, or ''
+ * @param  {string} saved       the property the stored condition names, or '' for
+ *                              a condition not yet saved
  * @return {Array}
  */
-export function optionsFor( vocabulary, event, selected ) {
+export function optionsFor( vocabulary, event, saved ) {
 
     const list = ( vocabulary[ event ] || [] ).filter( ( p ) => p.carried !== false );
 
-    if ( selected && ! list.some( ( p ) => p.name === selected ) ) {
+    if ( saved && ! list.some( ( p ) => p.name === saved ) ) {
 
         let description = '';
 
         for ( const e of Object.keys( vocabulary ) ) {
 
-            const hit = ( vocabulary[ e ] || [] ).find( ( p ) => p.name === selected );
+            const hit = ( vocabulary[ e ] || [] ).find( ( p ) => p.name === saved );
 
             if ( hit ) {
 
@@ -68,8 +71,8 @@ export function optionsFor( vocabulary, event, selected ) {
         }
 
         list.push( {
-            name: selected,
-            label: plainLabel( vocabulary, selected ) + ' -- not carried by ' + event,
+            name: saved,
+            label: plainLabel( vocabulary, saved ) + ' -- not carried by ' + event,
             description: description,
             carried: false,
         } );
@@ -99,6 +102,60 @@ export function helpText( property, event ) {
     }
 
     return property.description || '';
+}
+
+/**
+ * One item of chosen's open list, as two lines: the name, then what it holds.
+ *
+ * An <option> holds text only, so the list item arrives as "Label -- description"
+ * in one run. chosen writes it from the option, already escaped and with any
+ * search match wrapped in <em>, so the split is on that markup and keeps the
+ * highlighting. Idempotent: an item already split is left alone.
+ *
+ * @param {HTMLElement} li
+ */
+export function formatResult( li ) {
+
+    if ( li.querySelector( '.owa_goalOptionName' ) ) {
+
+        return;
+    }
+
+    const html = li.innerHTML;
+    const at = html.indexOf( SEPARATOR );
+
+    if ( at < 0 ) {
+
+        return;
+    }
+
+    li.innerHTML = '<span class="owa_goalOptionName">' + html.slice( 0, at ) + '</span>'
+        + '<span class="owa_goalOptionDescription">' + html.slice( at + SEPARATOR.length ) + '</span>';
+}
+
+/**
+ * Keep a picker's list split while chosen redraws it.
+ *
+ * chosen rewrites every item on each keystroke of a search, and says nothing
+ * when it does, so the list is watched rather than hooked.
+ */
+function splitResults( select ) {
+
+    const container = select.nextElementSibling;
+    const results = container && container.querySelector( '.chosen-results' );
+
+    if ( ! results || results.dataset.owaSplit || typeof MutationObserver === 'undefined' ) {
+
+        return;
+    }
+
+    results.dataset.owaSplit = '1';
+
+    new MutationObserver( () => {
+
+        results.querySelectorAll( 'li.active-result' ).forEach( formatResult );
+
+    } ).observe( results, { childList: true, subtree: true } );
 }
 
 /** Replace a <select>'s options, keeping its selection where it survives. */
@@ -214,11 +271,16 @@ function buildRow( row, vocabulary, event ) {
         return;
     }
 
-    fill( select, optionsFor( vocabulary, event, select.value ), select.value );
+    // Kept and flagged only while the row still names its SAVED property.
+    const current = select.value;
+    const saved = row.dataset.savedProperty || '';
+
+    fill( select, optionsFor( vocabulary, event, current === saved ? saved : '' ), current );
 
     if ( ! select.nextElementSibling || ! select.nextElementSibling.classList.contains( 'chosen-container' ) ) {
 
         enhance( select, { search_contains: true, width: '260px' } );
+        splitResults( select );
     } else {
 
         refresh( select );
@@ -267,6 +329,9 @@ function bind() {
 
             select.value = '';
         }
+
+        // A copy of a saved row is not that condition.
+        this.dataset.savedProperty = '';
 
         buildRow( this, vocabulary, event() );
     } );

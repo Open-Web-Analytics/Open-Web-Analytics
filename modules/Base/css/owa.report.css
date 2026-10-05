@@ -4599,6 +4599,35 @@ li.constraintRow {
     line-height: 1.35;
 }
 
+/* Each item is two lines: the property's name, then what it holds, quieter. */
+.owa .owa_goalBuilder .chosen-results .owa_goalOptionName {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #303030;
+}
+
+.owa .owa_goalBuilder .chosen-results .owa_goalOptionDescription {
+    display: block;
+    margin-top: 1px;
+    font-size: 11px;
+    color: #707070;
+}
+
+.owa .owa_goalBuilder .chosen-results li {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionName,
+.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription {
+    color: #ffffff;
+}
+
+.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription {
+    opacity: 0.85;
+}
+
 /* The event picker is part of the sentence's text, not a pill. */
 .owa .owa_goalSentence .chosen-container {
     font-size: 13px;
