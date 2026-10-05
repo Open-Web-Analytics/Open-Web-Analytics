@@ -144,7 +144,7 @@ class TrackerBundle {
     /**
      * The features file: pushes the legacy commands onto the running tracker's
      * queue. A script, not JSON, so a page on another origin can load it with no
-     * CORS, as it loads the tracker. A page's disableFeature has already run by
+     * CORS, as it loads the tracker. A page's disabledFeatures option is set by
      * then, so a feature it turned off stays off.
      *
      * @param  string $site_id

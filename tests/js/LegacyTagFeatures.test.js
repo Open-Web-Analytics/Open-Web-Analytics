@@ -4,7 +4,7 @@ import { isLegacyTrackerSrc, featuresUrl, loadProfileFeatures } from '../../modu
 /**
  * A 1.x tag gets its Profile's behaviour features without pushing a command
  * for each (LegacyTag.js), and a page turns any feature off with
- * disableFeature -- under a legacy tag or a bundle alike.
+ * the disabledFeatures option -- under a legacy tag or a bundle alike.
  */
 
 beforeEach(() => {
@@ -56,32 +56,35 @@ describe('loading the Profile features', () => {
     });
 });
 
-describe('disableFeature', () => {
+describe('the disabledFeatures option', () => {
 
     test('a feature the page disabled is skipped when it arrives', () => {
         const q = new CommandQueue();
         q.push(['setSiteId', 'abc123']);
-        q.push(['disableFeature', 'trackScroll']);
+        q.push(['setOption', 'disabledFeatures', ['trackScroll', 'trackSiteSearch']]);
 
         const scroll = jest.spyOn(window.OWATracker, 'trackScroll');
+        const search = jest.spyOn(window.OWATracker, 'trackSiteSearch');
         const forms  = jest.spyOn(window.OWATracker, 'trackForms').mockImplementation(() => {});
 
         // What the features file (or a bundle's tail) pushes afterwards.
         q.push(['trackScroll']);
+        q.push(['trackSiteSearch']);
         q.push(['trackForms']);
 
         expect(scroll).not.toHaveBeenCalled();
+        expect(search).not.toHaveBeenCalled();
         expect(forms).toHaveBeenCalledTimes(1);
         expect(window.OWATracker.isScrollTrackingEnabled).toBe(false);
     });
 
-    test('disabling twice records it once; other commands are untouched', () => {
+    test('without the option, or with something other than a list, nothing is skipped', () => {
         const q = new CommandQueue();
         q.push(['setSiteId', 'abc123']);
-        q.push(['disableFeature', 'trackForms']);
-        q.push(['disableFeature', 'trackForms']);
 
-        expect(window.OWATracker.disabledFeatures).toEqual(['trackForms']);
+        expect(window.OWATracker.isFeatureDisabled('trackScroll')).toBe(false);
+
+        q.push(['setOption', 'disabledFeatures', 'trackScroll']);
         expect(window.OWATracker.isFeatureDisabled('trackScroll')).toBe(false);
     });
 });

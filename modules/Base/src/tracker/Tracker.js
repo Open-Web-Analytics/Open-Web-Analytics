@@ -189,12 +189,6 @@ class OWATracker  {
 	    /** The URL this.urlParams was parsed from, so a route change re-parses. */
 	    this.urlParamsFrom = '';
 	    /**
-	     * Feature commands the page has turned off with disableFeature, which
-	     * the command queue then skips -- so a feature a bundle or a legacy
-	     * tag's Profile turns on can be refused page by page.
-	     */
-	    this.disabledFeatures = [];
-	    /**
 	     * Whether trackScroll() has bound its depth listener, so pushing the
 	     * command twice does not report every threshold twice.
 	     */
@@ -5077,29 +5071,24 @@ class OWATracker  {
     }
 
     /**
-     * Turn a feature off on this page: owa_cmds.push(['disableFeature', 'trackScroll']).
+     * Whether the page turned this feature command off:
      *
-     * The bundle queues its features after the page's commands, and a legacy
-     * tag's Profile features arrive later still, so a page's disableFeature is
-     * seen first and the feature command is skipped. One pushed after the feature
-     * has already run changes nothing.
+     *   owa_cmds.push(['setOption', 'disabledFeatures', ['trackScroll', 'trackForms']]);
      *
-     * @param {string} name a feature command, e.g. trackScroll
+     * An option, like scrollThresholds, rather than a command of its own. The
+     * command queue skips a feature command this names. The bundle queues its
+     * features after the page's commands, and a legacy tag's Profile features
+     * arrive later still, so the option is set before they run; set after a
+     * feature has already started, it changes nothing.
+     *
+     * @param  {string} name a feature command, e.g. trackScroll
+     * @return {boolean}
      */
-    disableFeature( name ) {
-
-        name = String( name || '' );
-
-        if ( name && this.disabledFeatures.indexOf( name ) === -1 ) {
-
-            this.disabledFeatures.push( name );
-        }
-    }
-
-    /** @return {boolean} whether the page turned this feature command off */
     isFeatureDisabled( name ) {
 
-        return this.disabledFeatures.indexOf( String( name ) ) !== -1;
+        var disabled = this.getOption( 'disabledFeatures' );
+
+        return Array.isArray( disabled ) && disabled.indexOf( String( name ) ) !== -1;
     }
 
     /**

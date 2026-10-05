@@ -160,8 +160,8 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
         await page.unrouteAll({ behavior: 'ignoreErrors' });
     });
 
-    /** A page turns a feature off with one command, and the Profile's arrives to find it off. */
-    test('disableFeature keeps a Profile feature off on that page', async ({ page }) => {
+    /** A page turns a feature off with one option, and the Profile's arrives to find it off. */
+    test('the disabledFeatures option keeps a Profile feature off on that page', async ({ page }) => {
         const root = installRoot(test.info().project.use.baseURL);
         const url = root + 'tests/e2e/legacy_page.html';
         const scripts = [];
@@ -171,7 +171,7 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
 
         await redirectLegacyPath(page, root);
         await page.route(url, (route) => route.fulfill({ contentType: 'text/html',
-            body: legacyPageWith(root, [['setSiteId', SITE], ['disableFeature', 'trackScroll'], ['trackPageView']]) }));
+            body: legacyPageWith(root, [['setSiteId', SITE], ['setOption', 'disabledFeatures', ['trackScroll']], ['trackPageView']]) }));
 
         await page.goto(url, { waitUntil: 'load' });
 
