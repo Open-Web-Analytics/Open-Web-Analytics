@@ -126,7 +126,7 @@ class Module extends \OWA\Core\Module {
             \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
         }
 
-        return $this->recordTrackerVersion();
+        return $this->recordTrackerBuild();
     }
 
     /** @var bool|null whether update() publishes in the run; null to decide by OWA_CLI. TESTS ONLY. */
@@ -139,11 +139,14 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Up to date when the schema is, AND the tracker this code builds is the
-     * one that last applied an update (PLAN 2.30.7). The tracker build keeps
-     * tracker-version.php, committed like a lock file: its version goes up
-     * when anything the tracker is built from changes. A release that leaves
-     * the tracker alone leaves the version alone and asks for no update.
+     * Up to date when the schema is, AND the tracker this install has built is
+     * the one that last applied an update (PLAN 2.30.7): the hash of the built
+     * tracker (TrackerBundle::buildHash()) is the one recorded. A release that
+     * leaves the tracker alone builds the same tracker and asks for no update.
+     *
+     * The BUILD, not a version a PR bumps: the hash comes from the manifest the
+     * build writes, so nothing is committed and two tracker changes in flight
+     * cannot conflict. Equal or not is all the gate asks, so no order is needed.
      *
      * The schema alone is still isSchemaCurrent(), which is what the
      * scheduler asks: a new tracker is no reason to stop its jobs.
@@ -151,34 +154,25 @@ class Module extends \OWA\Core\Module {
     function isUpToDate() {
 
         return parent::isUpToDate()
-            && (int) \OWA\Core\CoreAPI::getSetting( $this->name, 'tracker_version' ) >= self::requiredTrackerVersion();
+            && (string) \OWA\Core\CoreAPI::getSetting( $this->name, 'tracker_build' ) === self::requiredTrackerBuild();
     }
 
-    /** The tracker version this code builds, from the file the build keeps; 0 with none. */
-    public static function requiredTrackerVersion() {
+    /** The built tracker's hash; empty with no build. Not cached: a build can change under a long run. */
+    public static function requiredTrackerBuild() {
 
-        static $version = null;
-
-        if ( $version === null ) {
-
-            $file    = __DIR__ . '/tracker-version.php';
-            $info    = is_file( $file ) ? include $file : array();
-            $version = (int) ( $info['version'] ?? 0 );
-        }
-
-        return $version;
+        return \OWA\Module\Base\Classes\TrackerBundle::buildHash();
     }
 
     function install() {
 
-        return parent::install() && $this->recordTrackerVersion();
+        return parent::install() && $this->recordTrackerBuild();
     }
 
-    /** The tracker version as the one the install is updated to. */
-    private function recordTrackerVersion() {
+    /** The built tracker as the one the install is updated to. */
+    private function recordTrackerBuild() {
 
         $c = \OWA\Core\CoreAPI::configSingleton();
-        $c->persistSetting( $this->name, 'tracker_version', self::requiredTrackerVersion() );
+        $c->persistSetting( $this->name, 'tracker_build', self::requiredTrackerBuild() );
         $c->save();
 
         return true;

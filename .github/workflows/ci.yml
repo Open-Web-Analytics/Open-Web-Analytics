@@ -85,18 +85,6 @@ jobs:
       - name: Build JS bundles
         run: npm run build
 
-      # The tracker build keeps modules/Base/tracker-version.php, committed like
-      # a lock file: its version goes up when anything the tracker is built from
-      # changes, and an install recording a lower one republishes its bundles on
-      # update (PLAN 2.30.7). A tracker change committed without the rebuilt file
-      # would never reach those installs.
-      - name: Tracker version file is current
-        run: |
-          if ! git diff --exit-code -- modules/Base/tracker-version.php; then
-            echo "::error file=modules/Base/tracker-version.php::The tracker changed. Run npm run build and commit modules/Base/tracker-version.php."
-            exit 1
-          fi
-
       - name: JS unit tests (Jest — tracker + reporting bundle)
         run: npm test
 

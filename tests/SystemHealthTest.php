@@ -151,8 +151,10 @@ final class SystemHealthTest extends TestCase
             ]));
         }
 
-        $was = [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir];
-        \OWA\Module\Base\Classes\TrackerBundle::$distDir = $root . 'dist/';
+        $was = [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir,
+            \OWA\Module\Base\Classes\TrackerBundle::$buildDir];
+        \OWA\Module\Base\Classes\TrackerBundle::$distDir  = $root . 'dist/';
+        \OWA\Module\Base\Classes\TrackerBundle::$buildDir = $root . 'dist/';   // the fixture's manifest is beside its files
         \OWA\Module\Base\Classes\TrackerBundle::$outDir  = $root . 'tracker/';
 
         return [$root, $was];
@@ -160,7 +162,8 @@ final class SystemHealthTest extends TestCase
 
     private function dropBundleFixture(array $fixture): void
     {
-        [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir] = $fixture[1];
+        [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir,
+            \OWA\Module\Base\Classes\TrackerBundle::$buildDir] = $fixture[1];
         exec('rm -rf ' . escapeshellarg($fixture[0]));
     }
 
@@ -186,7 +189,7 @@ final class SystemHealthTest extends TestCase
 
         $fixture = $this->bundleFixture();
         $c       = \OWA\Core\CoreAPI::configSingleton();
-        $was     = $c->get('base', 'tracker_version');
+        $was     = $c->get('base', 'tracker_build');
 
         try {
             $bundles = SystemHealth::bundles();
@@ -197,13 +200,13 @@ final class SystemHealthTest extends TestCase
             foreach ($live as $site_id) {
                 \OWA\Module\Base\Classes\TrackerBundle::publish($site_id);
             }
-            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion());
+            $c->set('base', 'tracker_build', \OWA\Module\Base\Module::requiredTrackerBuild());
             $this->assertSame('green', SystemHealth::bundles()['level'], 'all current');
 
-            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $c->set('base', 'tracker_build', 'an-older-build');
             $this->assertSame('yellow', self::levels(SystemHealth::bundles())['New tracker']);
         } finally {
-            $c->set('base', 'tracker_version', $was);
+            $c->set('base', 'tracker_build', $was);
             $this->dropBundleFixture($fixture);
         }
     }

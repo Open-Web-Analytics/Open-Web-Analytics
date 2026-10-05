@@ -41,8 +41,15 @@ class TrackerBundle {
     /** Where bundles are written, under OWA_DIR. */
     const DIR = 'public/tracker/';
 
-    /** The built tracker's directory and its manifest, under OWA_DIR. */
+    /** The built tracker's directory, under OWA_DIR. */
     const DIST = 'public/base/dist/';
+
+    /**
+     * The build's manifest, under OWA_DIR: outside the served tree (nothing a
+     * browser loads needs it), shipped with the code and replaced with it, and
+     * gitignored -- the build writes it beside nothing it could drift from.
+     */
+    const BUILD = 'modules/Base/build/';
     const MANIFEST = 'owa.tracker.manifest.json';
 
     /** A site id that may be a file name. */
@@ -50,11 +57,17 @@ class TrackerBundle {
 
     /** Absolute directories in place of OWA_DIR's, for tests. Null in use. */
     public static $distDir = null;
+    public static $buildDir = null;
     public static $outDir  = null;
 
     private static function distDir() {
 
         return self::$distDir ?? OWA_DIR . self::DIST;
+    }
+
+    private static function buildDir() {
+
+        return self::$buildDir ?? OWA_DIR . self::BUILD;
     }
 
     private static function outDir() {
@@ -91,7 +104,7 @@ class TrackerBundle {
      */
     public static function buildManifest() {
 
-        $file = self::distDir() . self::MANIFEST;
+        $file = self::buildDir() . self::MANIFEST;
 
         if ( ! is_readable( $file ) ) {
 
@@ -241,6 +254,22 @@ class TrackerBundle {
      * The build's identity, as a bundle's header records it: a hash of the
      * manifest, which names every built file by its content.
      */
+    /**
+     * The built tracker, as a hash of the manifest the build writes beside it:
+     * the SHA-256 of the core and of each chunk. A new build is a new hash.
+     *
+     * What the update gate compares (Module::isUpToDate()) -- the build itself,
+     * so no PR has a version to bump. Empty when there is no build.
+     *
+     * @return string
+     */
+    public static function buildHash() {
+
+        $manifest = self::buildManifest();
+
+        return $manifest ? self::manifestHash( $manifest ) : '';
+    }
+
     private static function manifestHash( array $manifest ) {
 
         return hash( 'sha256', json_encode( $manifest ) );

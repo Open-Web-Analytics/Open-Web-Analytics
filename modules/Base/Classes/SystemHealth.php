@@ -319,14 +319,14 @@ class SystemHealth {
             );
         }
 
-        $required = \OWA\Module\Base\Module::requiredTrackerVersion();
-        $recorded = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_version' );
+        $required = \OWA\Module\Base\Module::requiredTrackerBuild();
+        $recorded = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_build' );
 
-        if ( $recorded < $required ) {
+        if ( $recorded !== $required ) {
 
             $findings[] = self::finding( 'yellow', 'New tracker', sprintf(
-                'This code builds tracker version %d and the installation was last updated with %d: the update '
-                . 'republishes every bundle.', $required, $recorded ), 'php cli.php cmd=update' );
+                'The built tracker is %s; the installation was last updated with %s. The update republishes '
+                . 'every bundle.', self::shortBuild( $required ), self::shortBuild( $recorded ) ), 'php cli.php cmd=update' );
         }
 
         if ( $stale ) {
@@ -452,6 +452,12 @@ class SystemHealth {
      * The installation itself: what is running, and the environment checks
      * the installer runs (Classes\EnvironmentCheck, shared with cmd=instance-info).
      */
+    /** A build hash, short enough to read; 'none' for no build or none recorded. */
+    private static function shortBuild( $hash ) {
+
+        return $hash === '' ? 'none' : substr( $hash, 0, 12 );
+    }
+
     public static function installation() {
 
         $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule( 'base' );
@@ -461,9 +467,9 @@ class SystemHealth {
             'PHP'     => PHP_VERSION . ' (' . PHP_SAPI . ')',
             'Schema'  => sprintf( '%d (this code requires %d)',
                 (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' ), (int) $base->required_schema_version ),
-            'Tracker' => sprintf( 'version %d (this code builds %d)',
-                (int) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_version' ),
-                \OWA\Module\Base\Module::requiredTrackerVersion() ),
+            'Tracker' => sprintf( 'build %s (built here: %s)',
+                self::shortBuild( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_build' ) ),
+                self::shortBuild( \OWA\Module\Base\Module::requiredTrackerBuild() ) ),
         );
 
         $findings = array();

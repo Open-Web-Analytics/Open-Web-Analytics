@@ -39,8 +39,10 @@ const CopyPlugin = require('copy-webpack-plugin');
 // plugin API -- which the package declares as `pluginApi: {path, export}` --
 // and joins the entry like a contribution. The chunk's own code registers the
 // real plugin when it arrives. A package that declares `bundleManifest` also
-// emits that file: its own file and each lazy chunk's, with their SHA-256, for
-// whatever composes them (publishing a Profile's tracking bundle).
+// writes that file -- a path RELATIVE to the module directory, outside the
+// served tree -- listing its own file and each lazy chunk's with their SHA-256,
+// for whatever composes them (publishing a Profile's tracking bundle) and for
+// the update gate (TrackerBundle::buildHash()).
 // A manifest package is one of:
 //   JS  { name, type:'js', entry, outputDir, splitVendors, licence? }
 //   CSS { name, type:'css', outputDir, files:[...], copy:[{from,to,ignore?}] }
@@ -145,16 +147,21 @@ function lazyStub(moduleDir, pkg, lazy) {
 // Emits a package's bundle manifest: its own file and each lazy chunk's, with
 // their SHA-256, computed from what is actually written.
 class BundleManifestPlugin {
-	constructor(filename, core, chunks) {
-		this.filename = filename;
+	// file: where to write the manifest (absolute). Not an emitted asset: the
+	// output dir is public/, which is served, and nothing a browser loads needs
+	// it. Written after the files it describes are on disk, so a reader never
+	// sees a manifest for files that are not there yet.
+	constructor(file, core, chunks) {
+		this.file = file;
 		this.core = core;
 		this.chunks = chunks;
+		this.manifest = null;
 	}
 
 	// webpack's own classes come from the compiler it hands the plugin: this
 	// config imports no webpack itself (see BundleIntegrity.test.js).
 	apply(compiler) {
-		const { Compilation, sources } = compiler.webpack;
+		const { Compilation } = compiler.webpack;
 
 		compiler.hooks.thisCompilation.tap('OwaBundleManifest', (compilation) => {
 			compilation.hooks.processAssets.tap(
@@ -174,89 +181,22 @@ class BundleManifestPlugin {
 					for (const { name, chunk } of this.chunks) {
 						manifest.plugins[name] = describe(`${chunk}.js`);
 					}
-					compilation.emitAsset(
-						this.filename,
-						new sources.RawSource(JSON.stringify(manifest, null, 2) + '\n')
-					);
+					this.manifest = manifest;
 				}
 			);
 		});
-	}
-}
 
-// Keeps a package's version file -- committed, like package-lock.json -- in step
-// with what the package is built from (PLAN 2.30.7). After each build it hashes
-// every file webpack read outside node_modules, plus package-lock.json, this
-// config and the modules' build manifests; when that hash differs from the one
-// in the file, the version goes up by one and the file is rewritten.
-//
-// PHP reads the version: an install whose recorded tracker version is lower has
-// an update pending, and the update republishes the Profiles' bundles. CI builds
-// and fails if the file changed, so a tracker change cannot land without it.
-//
-// A PHP file rather than JSON because every request reads it, log.php included,
-// and the opcode cache makes that free.
-class TrackerVersionPlugin {
-	constructor(file) {
-		this.file = file;
-	}
-
-	static readCurrent(file) {
-		if (!fs.existsSync(file)) {
-			return { version: 0, sources: '' };
-		}
-		const text = fs.readFileSync(file, 'utf8');
-		const version = /'version'\s*=>\s*(\d+)/.exec(text);
-		const sources = /'sources'\s*=>\s*'([0-9a-f]*)'/.exec(text);
-		return { version: version ? Number(version[1]) : 0, sources: sources ? sources[1] : '' };
-	}
-
-	static inputs(compilation) {
-		const root = __dirname + path.sep;
-		const files = new Set(
-			[...compilation.fileDependencies].filter((f) =>
-				f.startsWith(root)
-				&& !f.includes(`${path.sep}node_modules${path.sep}`)
-				&& !f.includes(`${path.sep}.build${path.sep}`)
-				&& fs.existsSync(f) && fs.statSync(f).isFile()));
-
-		files.add(path.join(__dirname, 'package-lock.json'));
-		files.add(path.join(__dirname, 'webpack.config.js'));
-		for (const dir of fs.readdirSync(path.join(__dirname, 'modules'))) {
-			const manifest = path.join(__dirname, 'modules', dir, MANIFEST);
-			if (fs.existsSync(manifest)) {
-				files.add(manifest);
-			}
-		}
-
-		return [...files].map((f) => path.relative(__dirname, f).split(path.sep).join('/')).sort();
-	}
-
-	apply(compiler) {
-		compiler.hooks.afterEmit.tap('OwaTrackerVersion', (compilation) => {
-			if (compilation.errors.length) {
+		compiler.hooks.afterEmit.tap('OwaBundleManifest', (compilation) => {
+			if (compilation.errors.length || !this.manifest) {
 				return;
 			}
-			const hash = crypto.createHash('sha256');
-			for (const rel of TrackerVersionPlugin.inputs(compilation)) {
-				hash.update(rel + '\0').update(fs.readFileSync(path.join(__dirname, rel))).update('\0');
-			}
-			const sources = hash.digest('hex');
-			const current = TrackerVersionPlugin.readCurrent(this.file);
+			fs.mkdirSync(path.dirname(this.file), { recursive: true });
+			const tmp = `${this.file}.${process.pid}.tmp`;
+			fs.writeFileSync(tmp, JSON.stringify(this.manifest, null, 2) + '\n');
+			fs.renameSync(tmp, this.file);
 
-			if (current.sources === sources) {
-				return;
-			}
-
-			fs.writeFileSync(this.file, [
-				'<?php',
-				'// GENERATED by the tracker build (webpack.config.js, TrackerVersionPlugin).',
-				'// Commit it with the change, like package-lock.json. The version goes up when',
-				'// anything the tracker is built from changes; an install recording a lower one',
-				'// has an update pending, which republishes its Profiles\' bundles.',
-				`return array( 'version' => ${current.version + 1}, 'sources' => '${sources}' );`,
-				'',
-			].join('\n'));
+			// Where earlier builds emitted it, beside the tracker in public/.
+			fs.rmSync(path.join(compilation.outputOptions.path, path.basename(this.file)), { force: true });
 		});
 	}
 }
@@ -284,10 +224,7 @@ function jsConfig(moduleName, moduleDir, pkg, contributed = [], lazy = []) {
 		// source: the release tarball excludes modules/Base/src and ships public/, so
 		// public/ is the only place the notice actually reaches a user.
 		plugins: (pkg.bundleManifest
-			? [new BundleManifestPlugin(pkg.bundleManifest, pkg.name, lazy.map((l) => l.spec))]
-			: []
-		).concat(pkg.versionFile
-			? [new TrackerVersionPlugin(path.resolve(moduleDir, pkg.versionFile))]
+			? [new BundleManifestPlugin(path.resolve(moduleDir, pkg.bundleManifest), pkg.name, lazy.map((l) => l.spec))]
 			: []
 		).concat(pkg.licence
 			? [
