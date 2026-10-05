@@ -20,7 +20,7 @@
             "type": "grid-card",
             "id": "eventNames",
             "container": "event-names",
-            "title": "Event Names",
+            "title": "Events",
             "colspan": 6,
             "query": {
                 "metrics": "eventCount",
