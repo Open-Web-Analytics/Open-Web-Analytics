@@ -532,12 +532,21 @@ final class ReportNavigationLinkTest extends TestCase
 
         $nav = $this->ecommerceNav();
 
-        foreach ( array( 'product-categories', 'ecommerce-conversion-rate', 'products' ) as $id ) {
+        /*
+         * The one of the three still shipped. This also named product-categories
+         * and products after both were retired: each read compared null with
+         * null, passed, and raised a warning about the missing file.
+         */
+        foreach ( array( 'ecommerce-conversion-rate' ) as $id ) {
 
-            $definition = json_decode( (string) file_get_contents(
-                OWA_DIR . 'modules/Base/reports/' . $id . '.json' ), true );
+            $file = OWA_DIR . 'modules/Base/reports/' . $id . '.json';
 
-            $this->assertSame( $nav[ $id ] ?? null, $definition['title'] ?? null,
+            $this->assertFileExists( $file, "'$id' is listed as remaining but has no definition" );
+
+            $definition = json_decode( (string) file_get_contents( $file ), true );
+
+            $this->assertNotEmpty( $definition['title'] ?? null, "'$id' has no title to compare with" );
+            $this->assertSame( $definition['title'], $nav[ $id ] ?? null,
                 "the nav calls '$id' something other than the report does" );
         }
     }

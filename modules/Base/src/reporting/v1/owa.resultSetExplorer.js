@@ -498,7 +498,7 @@ OWA.resultSetExplorer.prototype = {
             }
 
             grid.jqGrid( 'setGridWidth',
-                Math.max( width, that.options.grid.minGridWidth || 0 ), true );
+                Math.max( width, that.options.grid.minGridWidth || 0, grid.data( 'owaFloor' ) || 0 ), true );
         } );
     },
 
@@ -1834,6 +1834,56 @@ OWA.dataGrid.prototype = {
             jQuery('#' + that.dom_id + '_grid').jqGrid('setLabel', columns[y].name, '',css);
         }
 
+        /*
+         * Not narrower than its columns can be read at.
+         *
+         * autowidth fits the grid to its widget, and on a phone that left the
+         * fixed metric columns their 100px each and squeezed every dimension
+         * column to a character or two. The floor is the fixed columns plus a
+         * readable share for each flexible one; past it the widget scrolls
+         * sideways rather than the columns shrinking. watchGridWidth() keeps
+         * to the same floor on a resize.
+         */
+        var grid = jQuery('#' + that.dom_id + '_grid');
+        var floor = this.readableWidth( columns );
+
+        grid.data( 'owaFloor', floor );
+
+        if ( grid.jqGrid( 'getGridParam', 'width' ) < floor ) {
+
+            grid.jqGrid( 'setGridWidth', floor, true );
+        }
+
+    },
+
+    /**
+     * The narrowest a grid of these columns can be and still be read.
+     *
+     * A fixed column at its width; a flexible one at what its content measured
+     * (sizeColumnsToContent), up to READABLE -- a long URL should not set the
+     * floor, it should be the column that ellipsizes.
+     *
+     * @param {Array} columns jqGrid column definitions
+     * @return {number} pixels
+     */
+    readableWidth : function ( columns ) {
+
+        var READABLE = 120;
+        var total = this.options.showRowNumbers ? 25 : 0;
+
+        for ( var c = 0; c < columns.length; c++ ) {
+
+            var def = columns[c];
+
+            if ( def.hidden ) {
+
+                continue;
+            }
+
+            total += def.fixed ? ( def.width || 100 ) : Math.min( def.width || 150, READABLE );
+        }
+
+        return total;
     },
 
     // private

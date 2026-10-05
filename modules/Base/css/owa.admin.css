@@ -774,3 +774,46 @@
     padding: 4px 14px 10px 36px;
     border: 0;
 }
+
+/* ---------------------------------------------------------------------------
+ * The top bar on a phone
+ *
+ * At full size the logo, the links and the account controls each take a 55px
+ * line, and on a phone they wrapped into two rows that used a sixth of the
+ * screen. A shorter bar, a smaller logo, and the account shown by its icon
+ * rather than the whole address keep it to one row. The address is in the
+ * menu's label for a screen reader, and the menu still opens on the icon.
+ * ------------------------------------------------------------------------- */
+.owa .owa_userMenuIcon { display: none; }
+
+@media (max-width: 900px) {
+
+    .owa #owa_header { padding: 4px 8px; line-height: 44px; }
+
+    .owa #owa_header .owa_logo { padding-right: 10px; }
+
+    .owa #owa_header .owa_logo img { height: 36px; width: auto; vertical-align: middle; }
+
+    .owa .owa_navigation { height: 44px; }
+
+    .owa .owa_navigation ul { gap: 0; }
+
+    .owa .owa_navigation li a { padding: 0 8px; font-size: 15px; }
+
+    .owa .owa_userMenu, .owa .owa_helpMenu, .owa .owa_notificationBell { height: 44px; }
+
+    .owa .owa_userMenu { margin-right: 4px; }
+
+    .owa .owa_helpMenu, .owa .owa_notificationBell { margin-right: 6px; }
+
+    .owa .owa_userMenuToggle { padding: 0 8px; gap: 4px; }
+
+    .owa #owa_header .owa_logo { padding-right: 4px; }
+
+    .owa .owa_navigation li a { padding: 0 6px; }
+
+    .owa .owa_userMenuName { display: none; }
+
+    .owa .owa_userMenuIcon { display: inline-block; font-size: 22px; }
+}
+

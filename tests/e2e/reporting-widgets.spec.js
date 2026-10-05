@@ -1142,14 +1142,23 @@ test.describe('the report grid gives every widget a usable width', () => {
          * grid answers this question -- it is about jqGrid refitting to its
          * widget, not about which report it is on.
          */
+        /*
+         * `fit` is the width the grid should take: its widget's, unless that is
+         * narrower than the grid's columns can be read at (readableWidth()), in
+         * which case it stays at that floor and the widget scrolls.
+         */
         const measure = () => page.evaluate(() => {
             const w = document.querySelector('#latest-visits');
             const g = document.querySelector('#latest-visits .ui-jqgrid');
+            const t = document.querySelector('#latest-visits .ui-jqgrid-btable');
+            const floor = t ? (window.jQuery(t).data('owaFloor') || 0) : 0;
             return w && g ? {
                 widget: Math.round(w.getBoundingClientRect().width),
                 grid:   Math.round(g.getBoundingClientRect().width),
+                floor:  Math.round(floor),
             } : null;
         });
+        const fits = (m) => Math.abs(m.grid - Math.max(m.widget, m.floor)) < 6;
 
         await page.setViewportSize({ width: 1600, height: 1000 });
 
@@ -1165,13 +1174,11 @@ test.describe('the report grid gives every widget a usable width', () => {
 
         // Within a couple of pixels of its widget: jqGrid rounds.
         expect(Math.abs(wide.grid - wide.widget)).toBeLessThan(6);
+        expect(wide.floor, 'the floor is recorded on the grid').toBeGreaterThan(0);
 
         await page.setViewportSize({ width: 1000, height: 1000 });
 
-        await expect.poll(async () => {
-            const m = await measure();
-            return Math.abs(m.grid - m.widget) < 6;
-        }, { timeout: 10_000 }).toBe(true);
+        await expect.poll(async () => fits(await measure()), { timeout: 10_000 }).toBe(true);
 
         const narrow = await measure();
         expect(narrow.grid).toBeLessThan(wide.grid);
@@ -1179,10 +1186,7 @@ test.describe('the report grid gives every widget a usable width', () => {
         // ...and back, so this is a refit rather than a one-way shrink.
         await page.setViewportSize({ width: 1600, height: 1000 });
 
-        await expect.poll(async () => {
-            const m = await measure();
-            return Math.abs(m.grid - m.widget) < 6;
-        }, { timeout: 10_000 }).toBe(true);
+        await expect.poll(async () => fits(await measure()), { timeout: 10_000 }).toBe(true);
 
         expect((await measure()).grid).toBeGreaterThan(narrow.grid);
     });

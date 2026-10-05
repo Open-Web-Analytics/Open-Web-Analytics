@@ -56,7 +56,18 @@ jQuery(document).ready(function(){
         <TR>
             <?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
             <TD valign="top" class="owa_reportLeftNavColumn">
-                <div>
+                <?php
+                    /*
+                     * On a narrow screen this leaves the page and slides in over
+                     * the report from the menu button, closing again when a
+                     * report is chosen (owa.reportnav.js, owa.report.css). At
+                     * full width it is the column it always was.
+                     */
+                ?>
+                <div class="owa_reportNavRail" id="owa_reportNavRail">
+                    <button type="button" class="owa_reportNavClose" aria-label="Hide the report menu">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
                     <?php
                         /*
                          * The site control sits ABOVE the nav because it scopes
@@ -74,6 +85,13 @@ jQuery(document).ready(function(){
             </TD>
             <?php endif;?>
             <TD valign="top" width="*">
+
+                <?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
+                <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail"
+                        aria-expanded="false" aria-label="Show the report menu">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+                <?php endif;?>
 
                 <div class="reportSectionContainer">
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>

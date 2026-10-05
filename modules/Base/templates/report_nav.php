@@ -33,7 +33,12 @@
 			      
                     ?>"></span>
               
-                    <span><i class="owa_nav_icon <?php $view->out( $l['icon_class']); ?>"></i><a class=" owa_admin_nav_topmenu_item_text" id="owa_admin_nav_topmenu_item_<?php echo $kl;?>" href="<?php echo $view->makeLink($view->navLinkParams($l), true);?>"><?php echo $l['anchortext'];?></a></span>
+                    <?php
+                        // An entry that declares no icon gets the default: on a narrow
+                        // screen the icon is all that shows of it (owa.reportnav.js).
+                        $owa_icon = trim( (string) ( $l['icon_class'] ?? '' ) ) ?: \OWA\Core\Module::DEFAULT_NAV_ICON;
+                    ?>
+                    <span title="<?php $view->out( strip_tags( (string) $l['anchortext'] ) ); ?>"><i class="owa_nav_icon <?php $view->out( $owa_icon ); ?>" aria-hidden="true"></i><a class=" owa_admin_nav_topmenu_item_text" id="owa_admin_nav_topmenu_item_<?php echo $kl;?>" href="<?php echo $view->makeLink($view->navLinkParams($l), true);?>"><?php echo $l['anchortext'];?></a></span>
                     
 
                 </div>

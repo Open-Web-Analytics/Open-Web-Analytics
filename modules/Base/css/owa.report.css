@@ -4459,3 +4459,73 @@ li.constraintRow {
         display: none;
     }
 }
+
+/* ---------------------------------------------------------------------------
+ * Report navigation on a narrow screen
+ *
+ * The nav leaves the page so the report has the whole width, and slides in
+ * over it from a menu button that stays in reach; choosing a report closes it
+ * (owa.reportnav.js). Full width is unchanged: the button is hidden and the
+ * nav is the left column it always was.
+ * ------------------------------------------------------------------------- */
+.owa_reportNavToggle, .owa_reportNavClose { display: none; }
+
+@media (max-width: 900px) {
+
+    /* Inside the open panel, which covers the menu button. */
+    .owa_reportNavClose {
+        display: block;
+        width: 44px;
+        height: 44px;
+        margin-left: auto;
+        border: 0;
+        background: transparent;
+        font-size: 20px;
+        color: #555555;
+        cursor: pointer;
+    }
+
+    /* The report's card, closer to the edges: 40px each side was a tenth of the width. */
+    .reportSectionContainer { margin: 8px; padding: 12px; }
+
+    /* The report's column only: settings screens use the same cell for their own nav. */
+    .owa_reportContainer .owa_reportLeftNavColumn { width: 0; padding: 0; }
+
+    .owa_reportNavToggle {
+        display: block;
+        position: sticky;
+        top: 0;
+        z-index: 150;
+        width: 44px;
+        height: 44px;
+        margin-bottom: 6px;
+        border: 1px solid #dddddd;
+        border-radius: 4px;
+        background: #ffffff;
+        font-size: 18px;
+        color: #555555;
+        cursor: pointer;
+    }
+
+    .owa_reportNavRail {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 200;
+        width: 280px;
+        max-width: 85vw;
+        overflow-y: auto;
+        background: #ffffff;
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+        padding-bottom: 20px;
+        transform: translateX(-105%);
+        transition: transform 0.2s ease;
+        visibility: hidden;
+    }
+
+    .owa_reportNavRail.owa_reportNavOpen {
+        transform: translateX(0);
+        visibility: visible;
+    }
+}
