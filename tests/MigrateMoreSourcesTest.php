@@ -130,6 +130,53 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame(0, (int) $in['is_outbound'], 'a click to the same host stays');
     }
 
+    /**
+     * The tracker's rule, not an exact host match: from www.shop.example the
+     * apex and every subdomain are the site. Compared exactly, these were all
+     * outbound in migrated history and internal in everything tracked since.
+     */
+    public function testAClickToTheSitesOwnSubdomainsStays(): void
+    {
+        $this->insert('document', ['id' => '103', 'url' => 'https://www.shop.example/gallery', 'page_title' => 'Gallery']);
+
+        $targets = [
+            '1790000000000000511' => ['https://shop.example/', 0],
+            '1790000000000000512' => ['https://art.shop.example/prints', 0],
+            '1790000000000000513' => ['https://www.shop.example/about', 0],
+            '1790000000000000514' => ['https://other.example/', 1],
+            '1790000000000000515' => ['https://notshop.example/', 1],
+        ];
+
+        foreach ($targets as $id => [$url]) {
+            $this->fact('click', $id, ['target_url' => $url, 'document_id' => '103', 'dom_element_id' => $id]);
+        }
+
+        (new ClickMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $clicks = array_column($this->rows('click'), null, 'element_id');
+        $this->assertCount(count($targets), $clicks);
+
+        foreach ($targets as $id => [$url, $outbound]) {
+            $this->assertSame('www.shop.example', $clicks[$id]['host'], $url);
+            $this->assertSame($outbound, (int) $clicks[$id]['is_outbound'], $url);
+        }
+    }
+
+    /** A configured tracker cookie domain is the site, as the tracker is told it. */
+    public function testAConfiguredCookieDomainIsTheSite(): void
+    {
+        $this->assertNotFalse(\OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base',
+            'tracker_cookie_domain', 'example'));
+
+        $this->fact('click', '1790000000000000521', ['target_url' => 'https://other.example/',
+            'dom_element_id' => 'sibling']);
+
+        (new ClickMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $this->assertSame(0, (int) $this->rows('click')[0]['is_outbound'],
+            'other.example is under the configured domain, example');
+    }
+
     public function testAnActionIsACustomEventNamedByTheAction(): void
     {
         $this->fact('action_fact', '1790000000000000601', ['action_name' => 'Signup Form Submit',
