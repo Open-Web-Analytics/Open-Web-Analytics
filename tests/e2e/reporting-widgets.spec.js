@@ -543,7 +543,10 @@ test.describe('the report grid gives every widget a usable width', () => {
         expect(wide.forward, 'a forward arrow with nothing to the right').toBe(false);
 
         // Narrow enough that they do not fit -- same count, still one line.
-        const start = await carousel(1100);
+        // The dashboard's Site Metrics card is full width, so that takes a
+        // phone-sized viewport: measured, 640px overflows by 134px and 900px
+        // not at all.
+        const start = await carousel(640);
 
         expect(start.boxes).toBe(wide.boxes);
         expect(start.rows, 'the boxes wrapped instead of scrolling').toBe(1);

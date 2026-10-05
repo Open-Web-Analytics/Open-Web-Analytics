@@ -8,11 +8,27 @@
             "container": "trend-chart",
             "title": "Site Metrics",
             "showTitle": true,
+            "colspan": 12,
             "chartMetric": "totalUsers",
             "query": {
                 "metrics": "totalUsers,pageViews,pageViewsPerSession,engagementRate,averageEngagementTimePerSession",
                 "dimensions": "date",
                 "sort": "date"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "eventNames",
+            "container": "event-names",
+            "title": "Event Names",
+            "colspan": 6,
+            "query": {
+                "metrics": "eventCount",
+                "dimensions": "eventName",
+                "sort": "eventCount-"
+            },
+            "more": {
+                "reportId": "events"
             }
         },
         {
