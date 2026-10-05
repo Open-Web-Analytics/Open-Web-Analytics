@@ -305,6 +305,68 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
             'a role only utm_* names is still read');
     }
 
+    /**
+     * page_query loses every parameter read as a campaign tag -- utm_* with
+     * owa_* -- and keeps the site's own; page_location keeps them all, and the
+     * tags are still read from it. As GA's Page path + query string and Page
+     * location.
+     */
+    public function testPageQueryDropsTheCampaignTagsItReads(): void
+    {
+        $H  = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $ns = (string) \OWA\Core\CoreAPI::getSetting('base', 'ns');
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
+
+        $url = 'https://example.test/p?utm_source=newsletter&utm_medium=email&utm_campaign=spring'
+            . '&utm_term=shoes&utm_content=banner1&' . $ns . 'source=feed&page_id=7';
+
+        $event = $this->event(['site_id' => 'utm-query-site', 'page_location' => $url]);
+
+        $this->assertSame('page_id=7', $H::derivePageQuery(null, $event));
+        $this->assertSame($url, $event->get('page_location'), 'the URL itself is untouched');
+        $this->assertSame('feed', $H::taggedValue($event, 'tagged_source'), 'owa_ wins, as before');
+        $this->assertSame('email', $H::taggedValue($event, 'tagged_medium'), 'and the utm_ tags are still read');
+    }
+
+    /** Switched off, utm_* is not a campaign tag, so it is the site's own and stays. */
+    public function testPageQueryKeepsUtmWhenUtmIsNotRead(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        $c->set('base', 'campaignKeys', []);
+        $c->set('base', 'campaignUtmParams', false);
+
+        try {
+            $event = $this->event(['site_id' => 'utm-query-off-site',
+                'page_location' => 'https://example.test/p?utm_source=newsletter&page_id=7']);
+
+            $this->assertSame('utm_source=newsletter&page_id=7', $H::derivePageQuery(null, $event));
+
+        } finally {
+            $c->set('base', 'campaignUtmParams', true);
+        }
+    }
+
+    /** A Property's own name for a campaign role is dropped with the rest. */
+    public function testPageQueryDropsAConfiguredCampaignKey(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        $c->set('base', 'campaignKeys', ['source' => 'src']);
+
+        try {
+            $event = $this->event(['site_id' => 'utm-query-named-site',
+                'page_location' => 'https://example.test/p?src=partner&page_id=7']);
+
+            $this->assertSame('page_id=7', $H::derivePageQuery(null, $event));
+
+        } finally {
+            $c->set('base', 'campaignKeys', []);
+        }
+    }
+
     /** Switched off, utm_* is not read. */
     public function testUtmParametersCanBeSwitchedOff(): void
     {
