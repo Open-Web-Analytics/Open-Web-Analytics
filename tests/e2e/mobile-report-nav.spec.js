@@ -74,6 +74,35 @@ test.describe('report nav on a phone', () => {
         expect(page.url()).toContain(`owa_reportId=${REPORT}`);
     });
 
+    /**
+     * The rest of the screen fits the phone too: the top bar is one row, the
+     * page never scrolls sideways, and the table keeps its columns readable by
+     * scrolling inside its widget instead of squeezing them to a character.
+     */
+    test('the header is one row and the table scrolls rather than squeezes', async ({ page }) => {
+        await openReport(page, REPORT);
+
+        const rows = await page.evaluate(() =>
+            ['.owa_logo', '.owa_navigation', '.owa_helpMenu', '.owa_notificationBell', '.owa_userMenu']
+                .map((s) => Math.round(document.querySelector(s).getBoundingClientRect().top)));
+        expect(new Set(rows).size, `header item tops: ${rows}`).toBe(1);
+
+        const page_width = await page.evaluate(() => document.documentElement.scrollWidth);
+        expect(page_width).toBeLessThanOrEqual(390);
+
+        const grid = await page.evaluate(() => {
+            const widths = [...document.querySelectorAll('.ui-jqgrid-htable th')]
+                .filter((th) => th.offsetWidth > 0)
+                .map((th) => th.offsetWidth);
+            const box = document.querySelector('.ui-jqgrid').closest('.owa_widget-grid');
+            return { narrowest: Math.min(...widths), scrolls: box.scrollWidth > box.clientWidth,
+                overflow: getComputedStyle(box).overflowX };
+        });
+        expect(grid.narrowest, 'every column keeps a readable width').toBeGreaterThanOrEqual(60);
+        expect(grid.scrolls, 'the table is wider than the phone, so its widget scrolls').toBe(true);
+        expect(['auto', 'scroll']).toContain(grid.overflow);
+    });
+
     test('choosing a report goes to it with the nav closed', async ({ page }) => {
         await openReport(page, REPORT);
 

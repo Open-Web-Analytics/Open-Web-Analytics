@@ -39,7 +39,9 @@
     ?>
     <span class="owa_userMenu">
         <button type="button" id="owa_userMenuToggle" class="owa_userMenuToggle"
-                aria-expanded="false" aria-controls="owa_userMenuPanel" aria-haspopup="true">
+                aria-expanded="false" aria-controls="owa_userMenuPanel" aria-haspopup="true"
+                aria-label="Account: <?php $view->out( $cu->getUserData('user_id') );?>">
+            <i class="fas fa-user-circle owa_userMenuIcon" aria-hidden="true"></i>
             <span class="owa_userMenuName"><?php $view->out( $cu->getUserData('user_id') );?></span>
             <i class="fas fa-chevron-down owa_userMenuCaret" aria-hidden="true"></i>
         </button>

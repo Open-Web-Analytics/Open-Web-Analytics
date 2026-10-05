@@ -4485,6 +4485,9 @@ li.constraintRow {
         cursor: pointer;
     }
 
+    /* The report's card, closer to the edges: 40px each side was a tenth of the width. */
+    .reportSectionContainer { margin: 8px; padding: 12px; }
+
     /* The report's column only: settings screens use the same cell for their own nav. */
     .owa_reportContainer .owa_reportLeftNavColumn { width: 0; padding: 0; }
 
