@@ -88,6 +88,8 @@ import './owa.confirm.js';
 import './owa.settingsoverride.js';
 // The confirmation before a Data Retention save, worded by the server.
 import './owa.retention.js';
+// The report nav behind a menu button on a narrow screen.
+import './owa.reportnav.js';
 // The copy button on a code block (Template::codeBlock()).
 import './owa.copy.js';
 // The add-a-Profile form: shows only the fields the answers make relevant.
