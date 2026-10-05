@@ -31,12 +31,21 @@ var LIST_SELECTOR = '[data-owa-repeatable]';
 
 OWA.funnelBuilder = {
 
-    /** A blank copy of a row, so the new step does not inherit its values. */
+    /**
+     * A blank copy of a row, so the new step does not inherit its values.
+     *
+     * Without any widget a row's select was enhanced into: a chosen box is
+     * markup bound to the ORIGINAL select, so a cloned one opens the first
+     * row's list. The list gets an `owa:rowadded` on the new row and enhances
+     * it itself (owa.goalbuilder.js).
+     */
     blankCopy: function ( $row ) {
 
         var $copy = $row.clone();
 
         $copy.find( 'input' ).val( '' );
+        $copy.find( '.chosen-container' ).remove();
+        $copy.find( 'select' ).removeData( 'chosen' ).css( 'display', '' );
 
         return $copy;
     },
@@ -77,7 +86,7 @@ $( function () {
 
             var $row = $( this ).closest( '.constraintRow' );
 
-            OWA.funnelBuilder.blankCopy( $row ).insertAfter( $row );
+            OWA.funnelBuilder.blankCopy( $row ).insertAfter( $row ).trigger( 'owa:rowadded' );
         } );
 
     $( document ).on( 'click keypress', LIST_SELECTOR + ' .constraintRemoveButton',

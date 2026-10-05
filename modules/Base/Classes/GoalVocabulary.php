@@ -125,6 +125,41 @@ class GoalVocabulary {
                                     . 'readable form of the same question',
         'session_start_ts'       => 'an epoch value',
         'prior_session_start_ts' => 'an epoch value',
+        'prior_touch_ts'         => 'an epoch value. The prior touch\'s source, '
+                                    . 'medium and campaign are the readable parts',
+
+        'event_seq'   => 'the event\'s position in its page load, an ordering the '
+                         . 'tracker keeps for the build -- not something a visitor did',
+        'remote_host' => 'a reverse-DNS lookup of the visitor\'s address, where one '
+                         . 'resolves: network plumbing, and absent for most visitors',
+    );
+
+    /**
+     * What a column holds, for the builder's picker, where the report dimension
+     * reading the same column has no description to lend (description()).
+     */
+    const DESCRIPTIONS = array(
+        'raw_ua'               => 'The browser\'s full user agent string, as it arrived. '
+                                  . 'Browser, operating system and device are its readings.',
+        'engagement_msec'      => 'How long the page was in the foreground before this event, '
+                                  . 'in milliseconds.',
+        'page_width'           => 'The width of the page, in pixels, when the click happened.',
+        'page_height'          => 'The height of the page, in pixels, when the click happened.',
+        'referer_query'        => 'The query string of the referring URL, without the host or path.',
+        'tagged_ad'            => 'The ad or link the landing URL was tagged with '
+                                  . '(owa_ad or utm_content).',
+        'tagged_search_terms'  => 'The search terms the landing URL was tagged with '
+                                  . '(owa_search_terms or utm_term).',
+        'prior_touch_source'   => 'The source of the visit before this one that had a '
+                                  . 'campaign or referrer, within the lookback window.',
+        'prior_touch_medium'   => 'The medium of that prior touch.',
+        'prior_touch_campaign' => 'The campaign of that prior touch.',
+        'prior_touch_ad'       => 'The ad of that prior touch.',
+        'prior_touch_referer_host' => 'The referring host of that prior touch.',
+        'revenue'              => 'The purchase\'s total, in minor units of its currency '
+                                  . '(cents for USD).',
+        'tax'                  => 'The tax on the purchase, in minor units of its currency.',
+        'shipping'             => 'The shipping on the purchase, in minor units of its currency.',
     );
 
     /**
@@ -178,6 +213,8 @@ class GoalVocabulary {
         // Prettifying the column gives "Is outbound", which reads as a question
         // half-asked. The condition is on the click.
         'is_outbound'         => 'Outbound click',
+        'engagement_msec'     => 'Engagement time (ms)',
+        'target_url'          => 'Target URL',
     );
 
     /**
@@ -235,6 +272,44 @@ class GoalVocabulary {
         asort( $out );
 
         return $out;
+    }
+
+    /** @var array|null column => description, from the dimension registry */
+    private static $registryDescriptions = null;
+
+    /**
+     * What a column holds, in a sentence, for the builder's picker.
+     *
+     * The report dimension that reads the same column says it already: a goal
+     * on is_outbound and a report grouped by Outbound Click are about the same
+     * value, so the two describe it once. DESCRIPTIONS covers the columns no
+     * dimension reads.
+     *
+     * @param  string $column
+     * @return string  empty when nothing describes it
+     */
+    public static function description( $column ) {
+
+        if ( self::$registryDescriptions === null ) {
+
+            self::$registryDescriptions = array();
+
+            foreach ( (array) \OWA\Core\CoreAPI::getAllDimensions() as $dim ) {
+
+                $col = (string) ( $dim['column'] ?? '' );
+
+                if ( $col !== '' && ! empty( $dim['description'] )
+                     && ( $dim['entity'] ?? '' ) === 'base.event'
+                     && ! isset( self::$registryDescriptions[ $col ] ) ) {
+
+                    self::$registryDescriptions[ $col ] = (string) $dim['description'];
+                }
+            }
+        }
+
+        $column = (string) $column;
+
+        return self::$registryDescriptions[ $column ] ?? self::DESCRIPTIONS[ $column ] ?? '';
     }
 
     /** A column's label. */

@@ -15,6 +15,23 @@ async function gotoAction(page, doName, extra = '') {
     await page.goto(`?owa_do=${doName}${extra}`, { waitUntil: 'networkidle' });
 }
 
+/**
+ * Pick from a chosen widget the way a person does: open it, type, take the
+ * first match. The <select> under it is hidden, so selectOption() on it is not
+ * what anyone can do.
+ */
+async function choose(scope, selectSelector, text) {
+    const box = scope.locator(selectSelector).locator('xpath=following-sibling::div[contains(@class,"chosen-container")][1]');
+    await box.locator('.chosen-single').click();
+    await box.locator('.chosen-search input').pressSequentially(text);
+    await box.locator('.chosen-results li.active-result').first().click();
+}
+
+/** The property names a condition's picker offers, in order. */
+async function offered(row) {
+    return row.locator('select.owa_goalProperty option').evaluateAll((o) => o.map((x) => x.value));
+}
+
 /** Click something destructive and confirm it through the modal. */
 async function confirmAndWait(page, locator) {
     await locator.click();
@@ -68,7 +85,8 @@ test.describe('goal events', () => {
         await expect(page.locator('select[name="conditionMatch"]')).toBeVisible();
 
         await page.fill('input[name="name"]', name);
-        await page.selectOption('select[name="conditionProperty[]"]', 'page_path');
+        await choose(condition, 'select.owa_goalProperty', 'Page path');
+        await expect(page.locator('select[name="conditionProperty[]"]')).toHaveValue('page_path');
         await page.selectOption('select[name="conditionOperator[]"]', 'begins');
         await page.fill('input[name="conditionValue[]"]', '/thanks');
         await page.fill('input[name="value"]', '2.50');
@@ -135,6 +153,100 @@ test.describe('goal events', () => {
         await expect(
             page.locator('table.management tbody tr', { hasText: renamed })
         ).toHaveCount(0);
+    });
+
+    /**
+     * THE PROPERTIES FOLLOW THE EVENT. The list was rendered for the saved event
+     * and nothing changed it, so choosing "click" still offered a page view's
+     * properties until the form was saved and reloaded -- which is how a goal
+     * gets written that can never fire.
+     */
+    test('choosing the event changes the properties offered', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        const row = page.locator('.owa_goalCondition').first();
+
+        // One sentence: the event opens the condition builder.
+        await expect(page.locator('.owa_goalSentence select.owa_goalTrigger')).toHaveCount(1);
+
+        let names = await offered(row);
+        expect(names).toContain('tagged_source');
+        expect(names).not.toContain('is_outbound');
+
+        await choose(page, 'select.owa_goalTrigger', 'click');
+        await expect(page.locator('select.owa_goalTrigger')).toHaveValue('click');
+
+        names = await offered(row);
+        expect(names, 'a click carries its target').toContain('is_outbound');
+        expect(names, 'and not the landing URL\'s campaign tags').not.toContain('tagged_source');
+    });
+
+    /**
+     * A property already in use stays when the new event does not carry it, and
+     * says so. Dropping it would rewrite the condition to whatever came first.
+     */
+    test('a property the new event does not carry is kept and flagged', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        const row = page.locator('.owa_goalCondition').first();
+
+        await choose(row, 'select.owa_goalProperty', 'Source (from the URL)');
+        await expect(row.locator('select.owa_goalProperty')).toHaveValue('tagged_source');
+
+        await choose(page, 'select.owa_goalTrigger', 'click');
+
+        await expect(row.locator('select.owa_goalProperty')).toHaveValue('tagged_source');
+        await expect(row.locator('.chosen-single')).toContainText('not carried by click');
+        await expect(row.locator('.owa_goalConditionHelp')).toContainText('does not carry this');
+        await expect(row.locator('.owa_goalConditionHelp')).toHaveClass(/owa_goalConditionWarning/);
+    });
+
+    /**
+     * Each property says what it holds: in the list, where it is searched, and
+     * under the row once chosen -- where the picker itself shows only the name.
+     */
+    test('the picker describes what it offers', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+        await choose(page, 'select.owa_goalTrigger', 'click');
+
+        const row = page.locator('.owa_goalCondition').first();
+        const box = row.locator('.chosen-container');
+
+        // Searching the DESCRIPTION finds it: no label says "other than the page".
+        await box.locator('.chosen-single').click();
+        await box.locator('.chosen-search input').pressSequentially('other than the page');
+        const hit = box.locator('.chosen-results li.active-result');
+        await expect(hit).toHaveCount(1);
+        await expect(hit).toContainText('Outbound click');
+        await hit.click();
+
+        await expect(row.locator('.chosen-single')).toHaveText('Outbound click');
+        await expect(row.locator('.owa_goalConditionHelp'))
+            .toHaveText('Whether the click went to a host other than the page it was on.');
+
+        // Every option carries one.
+        const blank = await row.locator('select.owa_goalProperty option')
+            .evaluateAll((o) => o.filter((x) => !x.dataset.description).map((x) => x.value));
+        expect(blank, 'properties offered with no description').toEqual([]);
+    });
+
+    /** An added row gets a picker of its own, not a copy bound to the first. */
+    test('an added condition has its own picker', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+        await choose(page, 'select.owa_goalTrigger', 'click');
+
+        const rows = page.locator('.owa_goalCondition');
+        await choose(rows.first(), 'select.owa_goalProperty', 'Outbound click');
+
+        await rows.first().locator('.constraintAddButton').click();
+        await expect(rows).toHaveCount(2);
+        await expect(rows.nth(1).locator('.chosen-container')).toHaveCount(1);
+
+        await choose(rows.nth(1), 'select.owa_goalProperty', 'Target host');
+
+        await expect(rows.nth(1).locator('select.owa_goalProperty')).toHaveValue('target_host');
+        await expect(rows.first().locator('select.owa_goalProperty')).toHaveValue('is_outbound');
+        await expect(rows.first().locator('.chosen-single')).toHaveText('Outbound click');
     });
 
     /**

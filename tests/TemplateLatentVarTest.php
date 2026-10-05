@@ -376,13 +376,17 @@ final class TemplateLatentVarTest extends TestCase
                      */
                     'headline' => 'New Goal Event', 'siteId' => 'abc123',
                     'goalEvent' => [], 'goalEventId' => '',
-                    'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path' ] ],
+                    'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path',
+                        'description' => 'The path of the page.', 'carried' => true ] ],
+                    'conditionVocabulary' => [ 'page_view' => [ [ 'name' => 'page_path', 'label' => 'Page path',
+                        'description' => 'The path of the page.', 'carried' => true ] ], 'click' => [] ],
                     'triggerEvent' => 'page_view',
                     'triggerEvents' => [ 'page_view', 'click' ],
                     'funnelSteps' => [],
                     'conditions' => [], 'validation_errors' => [],
                 ],
-                ['name="name"', 'name="conditionValue[]"'],
+                ['name="name"', 'name="conditionValue[]"', 'id="owa_goalVocabulary"',
+                 'data-description="The path of the page."'],
             ],
         ];
     }

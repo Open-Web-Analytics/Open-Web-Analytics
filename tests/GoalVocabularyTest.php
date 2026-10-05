@@ -187,6 +187,53 @@ final class GoalVocabularyTest extends TestCase
         }
     }
 
+    /* ---------------- what the picker says ---------------- */
+
+    /**
+     * EVERY PROPERTY OFFERED IS DESCRIBED, on every event.
+     *
+     * The builder shows the description in its list and under the row, so a
+     * property offered without one is a blank line in the one place a person
+     * decides what a goal tests. Most borrow the report dimension's; the rest
+     * are written in GoalVocabulary::DESCRIPTIONS.
+     */
+    public function testEveryOfferedPropertyIsDescribedOnEveryEvent(): void
+    {
+        $blank = array();
+
+        foreach ( Helpers::eventNames() as $event ) {
+
+            foreach ( array_keys( Vocab::columnsForEvent( $event ) ) as $column ) {
+
+                if ( trim( Vocab::description( $column ) ) === '' ) {
+
+                    $blank[ $column ] = $event;
+                }
+            }
+        }
+
+        $this->assertSame( array(), $blank, 'offered with no description (column => an event offering it)' );
+    }
+
+    /** A dimension's description is the column's, said once for reports and goals. */
+    public function testADescriptionIsTheReportDimensionsWhereThereIsOne(): void
+    {
+        $this->assertSame( 'Whether the click went to a host other than the page it was on.',
+            Vocab::description( 'is_outbound' ) );
+
+        $this->assertSame( Vocab::DESCRIPTIONS['raw_ua'], Vocab::description( 'raw_ua' ),
+            'no dimension reads raw_ua, so it is written here' );
+    }
+
+    /** Written descriptions are for columns a condition may name. */
+    public function testEveryWrittenDescriptionIsForAnOfferableColumn(): void
+    {
+        foreach ( array_keys( Vocab::DESCRIPTIONS ) as $column ) {
+
+            $this->assertTrue( Vocab::has( $column ), "$column is described but cannot be named" );
+        }
+    }
+
     /* ---------------- the legacy map ---------------- */
 
     /**

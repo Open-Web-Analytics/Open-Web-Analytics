@@ -4529,3 +4529,93 @@ li.constraintRow {
         visibility: visible;
     }
 }
+
+/* ---------------------------------------------------------------------------
+   A goal event's condition builder (goal_event_edit.php, owa.goalbuilder.js).
+
+   ONE PANEL, read as a sentence: "A [click] event where [all] of these match",
+   then the conditions. The event decides which properties exist, so it opens
+   the builder instead of sitting in a section of its own above it.
+
+   The rows are .constraintRow and take that row's pills; what is added here is
+   the sentence, the description under each row, and a drop wide enough for a
+   property's description to be read in the list.
+   --------------------------------------------------------------------------- */
+.owa .owa_goalBuilder {
+    border: 1px solid #dddddd;
+    border-radius: 6px;
+    padding: 14px 16px;
+    background: #ffffff;
+    max-width: 760px;
+    box-sizing: border-box;
+}
+
+.owa .owa_goalSentence {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+/* The rows indent under the sentence that opens them. Scoped like the settings
+   pane's own row rules (`.owa_hierarchyContent #panel .constraintRow`), which
+   set the margin and would otherwise win. */
+.owa .owa_goalBuilder .owa_goalEventCondition {
+    margin: 0;
+    list-style: none;
+}
+
+.owa_hierarchyContent #panel .owa_goalBuilder .constraintRow {
+    flex-wrap: wrap;
+    margin: 0 0 10px 18px;
+}
+
+/* The description is the row's own last line, under the property it describes. */
+.owa .owa_goalConditionHelp {
+    flex-basis: 100%;
+    margin: 0 0 0 2px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #666666;
+}
+
+.owa .owa_goalConditionHelp:empty {
+    display: none;
+}
+
+.owa .owa_goalConditionHelp.owa_goalConditionWarning {
+    color: #b0461b;
+}
+
+/* "Label -- description" in the list: wide enough to read, and wrapping. */
+.owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop {
+    min-width: 420px;
+}
+
+.owa .owa_goalBuilder .chosen-results li {
+    white-space: normal;
+    line-height: 1.35;
+}
+
+/* The event picker is part of the sentence's text, not a pill. */
+.owa .owa_goalSentence .chosen-container {
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+
+    .owa .owa_goalBuilder {
+        padding: 12px;
+    }
+
+    .owa_hierarchyContent #panel .owa_goalBuilder .constraintRow {
+        margin-left: 0;
+    }
+
+    .owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop {
+        min-width: 0;
+        width: calc(100vw - 48px);
+    }
+}

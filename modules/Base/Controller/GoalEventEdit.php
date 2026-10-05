@@ -59,6 +59,19 @@ class GoalEventEdit extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
         $this->set( 'conditionProperties', self::conditionProperties( $trigger, $conditions ) );
 
+        /*
+         * Every trigger's list, so the picker follows the event as it changes
+         * instead of offering the saved event's properties until the next load.
+         */
+        $vocabulary = array();
+
+        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() as $event ) {
+
+            $vocabulary[ $event ] = self::conditionProperties( $event );
+        }
+
+        $this->set( 'conditionVocabulary', $vocabulary );
+
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 3 );
@@ -84,7 +97,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
      *
      * @param  string $event_name  the trigger event
      * @param  array  $conditions  this goal event's stored conditions
-     * @return array  list of { name, label }
+     * @return array  list of { name, label, description, carried }
      */
     public static function conditionProperties( $event_name, array $conditions = array() ) {
 
@@ -94,7 +107,8 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
         foreach ( $available as $name => $label ) {
 
-            $out[] = array( 'name' => $name, 'label' => $label );
+            $out[] = array( 'name' => $name, 'label' => $label, 'carried' => true,
+                'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ) );
         }
 
         foreach ( $conditions as $condition ) {
@@ -107,9 +121,11 @@ class GoalEventEdit extends \OWA\Core\AdminController {
             }
 
             $out[] = array(
-                'name'  => $name,
-                'label' => \OWA\Module\Base\Classes\GoalVocabulary::label( $name )
-                           . ' -- not carried by ' . $event_name,
+                'name'        => $name,
+                'label'       => \OWA\Module\Base\Classes\GoalVocabulary::label( $name )
+                                 . ' -- not carried by ' . $event_name,
+                'carried'     => false,
+                'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ),
             );
         }
 

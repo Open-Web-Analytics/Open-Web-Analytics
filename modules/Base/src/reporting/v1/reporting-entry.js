@@ -98,6 +98,7 @@ import './owa.profileform.js';
 // bound per row inside the report builder, so reusing the markup does not
 // reuse the behaviour.
 import './owa.funnelbuilder.js';
+import './owa.goalbuilder.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
 // window.OWA (the ~166 template references) is published by owa.js itself.
