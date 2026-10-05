@@ -50,10 +50,10 @@ final class LogEndpointTest extends TestCase
     public function testTheTrackingBootDoesNotCheckForUpdates(): void
     {
         $c    = \OWA\Core\CoreAPI::configSingleton();
-        $was  = array($c->get('base', 'tracker_version'), $c->get('base', 'tracking_mode'));
+        $was  = array($c->get('base', 'tracker_build'), $c->get('base', 'tracking_mode'));
 
         try {
-            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $c->set('base', 'tracker_build', 'an-older-build');
 
             $c->set('base', 'tracking_mode', true);
             $tracking = new \OWA\Module\Base\Classes\Service();
@@ -65,7 +65,7 @@ final class LogEndpointTest extends TestCase
             $admin->_loadModules();
             $this->assertContains('base', (array) $admin->getModulesNeedingUpdates());
         } finally {
-            $c->set('base', 'tracker_version', $was[0]);
+            $c->set('base', 'tracker_build', $was[0]);
             $c->set('base', 'tracking_mode', $was[1]);
         }
     }

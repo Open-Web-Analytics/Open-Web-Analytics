@@ -241,6 +241,22 @@ class TrackerBundle {
      * The build's identity, as a bundle's header records it: a hash of the
      * manifest, which names every built file by its content.
      */
+    /**
+     * The built tracker, as a hash of the manifest the build writes beside it:
+     * the SHA-256 of the core and of each chunk. A new build is a new hash.
+     *
+     * What the update gate compares (Module::isUpToDate()) -- the build itself,
+     * so no PR has a version to bump. Empty when there is no build.
+     *
+     * @return string
+     */
+    public static function buildHash() {
+
+        $manifest = self::buildManifest();
+
+        return $manifest ? self::manifestHash( $manifest ) : '';
+    }
+
     private static function manifestHash( array $manifest ) {
 
         return hash( 'sha256', json_encode( $manifest ) );

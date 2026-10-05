@@ -204,17 +204,17 @@ final class ScheduleCliTest extends CliControllerTestCase
         $s    = \OWA\Core\CoreAPI::serviceSingleton();
         $c    = \OWA\Core\CoreAPI::configSingleton();
         $base = $s->getModule('base');
-        $was  = array('version' => $c->get('base', 'tracker_version'), 'schema' => $c->get('base', 'schema_version'));
+        $was  = array('version' => $c->get('base', 'tracker_build'), 'schema' => $c->get('base', 'schema_version'));
 
         try {
-            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $c->set('base', 'tracker_build', 'an-older-build');
             $this->assertFalse($base->isUpToDate());
             $this->assertFalse($s->isSchemaUpdateRequired(), 'a new tracker alone is not a schema behind');
 
             $c->set('base', 'schema_version', (int) $base->required_schema_version - 1);
             $this->assertTrue($s->isSchemaUpdateRequired());
         } finally {
-            $c->set('base', 'tracker_version', $was['version']);
+            $c->set('base', 'tracker_build', $was['version']);
             $c->set('base', 'schema_version', $was['schema']);
         }
 

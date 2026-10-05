@@ -186,7 +186,7 @@ final class SystemHealthTest extends TestCase
 
         $fixture = $this->bundleFixture();
         $c       = \OWA\Core\CoreAPI::configSingleton();
-        $was     = $c->get('base', 'tracker_version');
+        $was     = $c->get('base', 'tracker_build');
 
         try {
             $bundles = SystemHealth::bundles();
@@ -197,13 +197,13 @@ final class SystemHealthTest extends TestCase
             foreach ($live as $site_id) {
                 \OWA\Module\Base\Classes\TrackerBundle::publish($site_id);
             }
-            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion());
+            $c->set('base', 'tracker_build', \OWA\Module\Base\Module::requiredTrackerBuild());
             $this->assertSame('green', SystemHealth::bundles()['level'], 'all current');
 
-            $c->set('base', 'tracker_version', \OWA\Module\Base\Module::requiredTrackerVersion() - 1);
+            $c->set('base', 'tracker_build', 'an-older-build');
             $this->assertSame('yellow', self::levels(SystemHealth::bundles())['New tracker']);
         } finally {
-            $c->set('base', 'tracker_version', $was);
+            $c->set('base', 'tracker_build', $was);
             $this->dropBundleFixture($fixture);
         }
     }
