@@ -17,6 +17,26 @@ const SITE = 'e2e-tracker-harness';
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const BUNDLE = path.join(ROOT_DIR, 'public', 'tracker', SITE + '.js');
 const SELFHOST = process.env.OWA_E2E_SELFHOST === '1';
+const FEATURES = path.join(ROOT_DIR, 'public', 'tracker', 'features', SITE + '.js');
+
+/**
+ * A 1.x tag: its own commands, and the tracker by the old fixed path. Apache
+ * 301s that path to public/base/dist/owa.tracker.js (.htaccess); php -S does
+ * not read .htaccess, so the test answers the old path with the same redirect.
+ */
+function legacyPageWith(root, cmds) {
+    return '<!doctype html><html><head><title>Legacy page</title>'
+        + '<script>window.owa_track_automated_browsers = true;'
+        + `var owa_baseUrl = ${JSON.stringify(root)};`
+        + 'var owa_cmds = ' + JSON.stringify(cmds) + ';</script>'
+        + `<script async src="${root}modules/base/js/owa.tracker-combined-min.js"></script>`
+        + '</head><body><p style="height:4000px">tall</p></body></html>';
+}
+
+async function redirectLegacyPath(page, root) {
+    await page.route(root + 'modules/base/js/owa.tracker-combined-min.js', (route) => route.fulfill({
+        status: 301, headers: { location: root + 'public/base/dist/owa.tracker.js' } }));
+}
 
 function installRoot(baseURL) {
     return baseURL.replace(/index\.php.*$/, '');
@@ -53,8 +73,10 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
     });
 
     test.afterAll(() => {
-        if (fs.existsSync(BUNDLE)) {
-            fs.unlinkSync(BUNDLE);
+        for (const file of [BUNDLE, FEATURES]) {
+            if (fs.existsSync(file)) {
+                fs.unlinkSync(file);
+            }
         }
     });
 
@@ -106,6 +128,66 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
      * and what publishing read back. php -S reads no .htaccess, so here it sends
      * no cache header and the screen must say so.
      */
+    /**
+     * An OLD tag gets its Profile's behaviour features -- on by default, as GA's
+     * enhanced measurement is -- without a command for each. Page views and
+     * clicks stay as the tag says: one page view, not two.
+     */
+    test('a 1.x tag scrolls without asking, and counts one page view', async ({ page }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+        const url = root + 'tests/e2e/legacy_page.html';
+        const scripts = [];
+
+        page.on('request', (r) => { if (r.resourceType() === 'script') scripts.push(r.url()); });
+        const beacons = beaconsOf(page);
+
+        await redirectLegacyPath(page, root);
+        await page.route(url, (route) => route.fulfill({ contentType: 'text/html',
+            body: legacyPageWith(root, [['setSiteId', SITE], ['trackPageView'], ['trackClicks']]) }));
+
+        await page.goto(url, { waitUntil: 'load' });
+
+        await expect.poll(() => scripts.some((u) => u.endsWith(`public/tracker/features/${SITE}.js`)),
+            { timeout: 15_000 }).toBe(true);
+
+        await page.mouse.wheel(0, 4000);
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+        await expect.poll(() => beacons.filter((q) => q.get('e_t') === 'scroll').length,
+            { timeout: 15_000 }).toBeGreaterThan(0);
+
+        expect(beacons.filter((q) => q.get('e_t') === 'page_view')).toHaveLength(1);
+        await page.unrouteAll({ behavior: 'ignoreErrors' });
+    });
+
+    /** A page turns a feature off with one option, and the Profile's arrives to find it off. */
+    test('the disabledFeatures option keeps a Profile feature off on that page', async ({ page }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+        const url = root + 'tests/e2e/legacy_page.html';
+        const scripts = [];
+
+        page.on('request', (r) => { if (r.resourceType() === 'script') scripts.push(r.url()); });
+        const beacons = beaconsOf(page);
+
+        await redirectLegacyPath(page, root);
+        await page.route(url, (route) => route.fulfill({ contentType: 'text/html',
+            body: legacyPageWith(root, [['setSiteId', SITE], ['setOption', 'disabledFeatures', ['trackScroll']], ['trackPageView']]) }));
+
+        await page.goto(url, { waitUntil: 'load' });
+
+        await expect.poll(() => scripts.some((u) => u.endsWith(`public/tracker/features/${SITE}.js`)),
+            { timeout: 15_000 }).toBe(true);
+        await expect.poll(() => beacons.filter((q) => q.get('e_t') === 'page_view').length,
+            { timeout: 15_000 }).toBe(1);
+
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await page.waitForTimeout(2000);
+
+        expect(beacons.filter((q) => q.get('e_t') === 'scroll')).toHaveLength(0);
+        expect(await page.evaluate(() => window.OWATracker.isFeatureDisabled('trackScroll'))).toBe(true);
+        await page.unrouteAll({ behavior: 'ignoreErrors' });
+    });
+
     test('the Tracking Tag screen reports the bundle and its cache header', async ({ page }) => {
         await adminLogin(page);
         await page.goto(`?owa_do=base.sitesInvocation&owa_siteId=${SITE}`, { waitUntil: 'networkidle' });

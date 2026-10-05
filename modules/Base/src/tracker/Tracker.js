@@ -5071,6 +5071,27 @@ class OWATracker  {
     }
 
     /**
+     * Whether the page turned this feature command off:
+     *
+     *   owa_cmds.push(['setOption', 'disabledFeatures', ['trackScroll', 'trackForms']]);
+     *
+     * An option, like scrollThresholds, rather than a command of its own. The
+     * command queue skips a feature command this names. The bundle queues its
+     * features after the page's commands, and a legacy tag's Profile features
+     * arrive later still, so the option is set before they run; set after a
+     * feature has already started, it changes nothing.
+     *
+     * @param  {string} name a feature command, e.g. trackScroll
+     * @return {boolean}
+     */
+    isFeatureDisabled( name ) {
+
+        var disabled = this.getOption( 'disabledFeatures' );
+
+        return Array.isArray( disabled ) && disabled.indexOf( String( name ) ) !== -1;
+    }
+
+    /**
      * Raise a `scroll` event when the page passes a depth threshold.
      *
      * ITS OWN LISTENER. Scroll depth once shared a single `window.onscroll`
