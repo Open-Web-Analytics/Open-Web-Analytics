@@ -261,8 +261,14 @@ function refresh( select ) {
     $( select ).trigger( 'chosen:updated' );
 }
 
-/** Build one row's picker for this event. */
-function buildRow( row, vocabulary, event ) {
+/**
+ * Build one row's picker for this event.
+ *
+ * ON LOAD the row keeps what the server rendered, whatever it is: loading the
+ * page is not changing the event. On a CHANGE, a property the new event does
+ * not carry is kept only if it is the row's saved one.
+ */
+function buildRow( row, vocabulary, event, onLoad = false ) {
 
     const select = row.querySelector( 'select.owa_goalProperty' );
 
@@ -275,7 +281,9 @@ function buildRow( row, vocabulary, event ) {
     const current = select.value;
     const saved = row.dataset.savedProperty || '';
 
-    fill( select, optionsFor( vocabulary, event, current === saved ? saved : '' ), current );
+    const keep = onLoad || current === saved ? current : '';
+
+    fill( select, optionsFor( vocabulary, event, keep ), current );
 
     if ( ! select.nextElementSibling || ! select.nextElementSibling.classList.contains( 'chosen-container' ) ) {
 
@@ -303,7 +311,7 @@ function bind() {
     const event = () => ( trigger ? trigger.value : '' );
     const rows = () => builder.querySelectorAll( '.owa_goalCondition' );
 
-    rows().forEach( ( row ) => buildRow( row, vocabulary, event() ) );
+    rows().forEach( ( row ) => buildRow( row, vocabulary, event(), true ) );
 
     if ( trigger ) {
 

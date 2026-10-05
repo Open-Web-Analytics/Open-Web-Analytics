@@ -59,18 +59,8 @@ class GoalEventEdit extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
         $this->set( 'conditionProperties', self::conditionProperties( $trigger, $conditions ) );
 
-        /*
-         * Every trigger's list, so the picker follows the event as it changes
-         * instead of offering the saved event's properties until the next load.
-         */
-        $vocabulary = array();
-
-        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() as $event ) {
-
-            $vocabulary[ $event ] = self::conditionProperties( $event );
-        }
-
-        $this->set( 'conditionVocabulary', $vocabulary );
+        $this->set( 'conditionVocabulary', self::vocabulary() );
+        $this->set( 'savedProperties', array_column( $conditions, 'condition_property' ) );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
@@ -78,6 +68,25 @@ class GoalEventEdit extends \OWA\Core\AdminController {
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.goalEventEdit' );
+    }
+
+    /**
+     * Every trigger's condition properties, so the picker follows the event as
+     * it changes (owa.goalbuilder.js). Both screens that render the form set it
+     * -- this one and GoalEventSave's refused-form path -- from here.
+     *
+     * @return array  event => list of { name, label, description, carried }
+     */
+    public static function vocabulary() {
+
+        $vocabulary = array();
+
+        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() as $event ) {
+
+            $vocabulary[ $event ] = self::conditionProperties( $event );
+        }
+
+        return $vocabulary;
     }
 
     /**
