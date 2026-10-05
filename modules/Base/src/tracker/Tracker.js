@@ -189,6 +189,12 @@ class OWATracker  {
 	    /** The URL this.urlParams was parsed from, so a route change re-parses. */
 	    this.urlParamsFrom = '';
 	    /**
+	     * Feature commands the page has turned off with disableFeature, which
+	     * the command queue then skips -- so a feature a bundle or a legacy
+	     * tag's Profile turns on can be refused page by page.
+	     */
+	    this.disabledFeatures = [];
+	    /**
 	     * Whether trackScroll() has bound its depth listener, so pushing the
 	     * command twice does not report every threshold twice.
 	     */
@@ -5068,6 +5074,32 @@ class OWATracker  {
         this.setOption('logClicksAsTheyHappen', true);
         this.bindClickEvents();
 
+    }
+
+    /**
+     * Turn a feature off on this page: owa_cmds.push(['disableFeature', 'trackScroll']).
+     *
+     * The bundle queues its features after the page's commands, and a legacy
+     * tag's Profile features arrive later still, so a page's disableFeature is
+     * seen first and the feature command is skipped. One pushed after the feature
+     * has already run changes nothing.
+     *
+     * @param {string} name a feature command, e.g. trackScroll
+     */
+    disableFeature( name ) {
+
+        name = String( name || '' );
+
+        if ( name && this.disabledFeatures.indexOf( name ) === -1 ) {
+
+            this.disabledFeatures.push( name );
+        }
+    }
+
+    /** @return {boolean} whether the page turned this feature command off */
+    isFeatureDisabled( name ) {
+
+        return this.disabledFeatures.indexOf( String( name ) ) !== -1;
     }
 
     /**

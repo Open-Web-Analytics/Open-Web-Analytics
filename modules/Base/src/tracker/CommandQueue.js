@@ -121,6 +121,11 @@ class CommandQueue {
                     window[obj_name].setSiteId( args[0] );
                 }
 
+            } else if ( typeof window[obj_name].isFeatureDisabled === 'function'
+                    && window[obj_name].isFeatureDisabled( method ) ) {
+
+                OWA.debug( 'Skipping %s.%s: the page disabled it', obj_name, method );
+
             } else if ( typeof window[obj_name][method] === 'function' ) {
 
                 window[obj_name][method].apply(window[obj_name], args);

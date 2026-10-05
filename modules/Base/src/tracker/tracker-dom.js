@@ -1,5 +1,11 @@
 import { CommandQueue as OwaCommandQueue } from './CommandQueue.js';
 import { Util as OwaUtil } from '../common/Util.js';
+import { isLegacyTrackerSrc, loadProfileFeatures } from './LegacyTag.js';
+
+// Read while this file is executing: currentScript is null once it returns.
+const startedFromLegacyTag = typeof document !== 'undefined' && document.currentScript
+    ? isLegacyTrackerSrc( document.currentScript.src )
+    : false;
 
 // Pin webpack's runtime publicPath to the public/ asset tree.
 //
@@ -34,6 +40,12 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
 
         window['owa_cmds'] = q;
         window['owa_cmds'].process();
+
+        // A 1.x tag: apply its Profile's behaviour features (LegacyTag.js).
+        if ( startedFromLegacyTag && window.OWATracker && typeof window.OWATracker.getSiteId === 'function' ) {
+
+            loadProfileFeatures( document, window.owa_baseUrl, window.OWATracker.getSiteId() );
+        }
 
     } else if ( typeof navigator !== 'undefined' && navigator.webdriver === true
         && typeof console !== 'undefined' && console.log ) {
