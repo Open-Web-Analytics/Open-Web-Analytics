@@ -53,6 +53,42 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
+     * The Events card comes before Top Content and beside it, under a full-width
+     * Site Metrics, counting events by name with a link to the Events report.
+     * Paired on one row so the three small cards after them still fill theirs
+     * at the widths where a 3-column card is widened to 4.
+     */
+    test('the events card sits before top content and links to the events report', async ({ page }) => {
+        const names = page.locator('#event-names');
+
+        await expect(names.locator('.ui-jqgrid')).toBeVisible({ timeout: 20_000 });
+
+        const before = await names.evaluate((el) => {
+            const other = document.getElementById('top-pages');
+            return !!(el.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING);
+        });
+        expect(before, 'Events is placed before Top Content').toBe(true);
+
+        const a = await names.boundingBox();
+        const b = await page.locator('#top-pages').boundingBox();
+        expect(Math.abs(a.y - b.y), 'Events and Top Content share a row').toBeLessThan(2);
+        expect(a.x).toBeLessThan(b.x);
+
+        if (process.env.OWA_DASH_SCREENSHOT) {
+            await page.screenshot({ path: process.env.OWA_DASH_SCREENSHOT, fullPage: true });
+        }
+
+        await expect(names.locator('.ui-jqgrid-htable')).toContainText('Event Name');
+        await expect(names.locator('.ui-jqgrid-btable')).toContainText('page_view');
+
+        await expect(names.locator('xpath=..').locator('.owa_reportSectionHeader')).toHaveText('Events');
+
+        const more = names.locator('xpath=..').locator('.owa_moreLinks a');
+        await expect(more).toHaveCount(1);
+        expect(await more.getAttribute('href')).toContain('reportId=events');
+    });
+
+    /**
      * Two pies the same width draw the same size.
      *
      * flot fits its round-the-edge labels by SHRINKING: drawPie() returns false
