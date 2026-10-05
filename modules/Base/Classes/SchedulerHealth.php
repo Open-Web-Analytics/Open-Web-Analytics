@@ -100,12 +100,11 @@ class SchedulerHealth {
         if ( ! (int) $row['jobs'] ) {
 
             return array(
-                'headline' => "OWA's Job Scheduler is not running.",
+                'headline' => \OWA\Core\CoreAPI::t( 'OWA\'s Job Scheduler is not running.' ),
                 // The line itself is NOT appended here. The caller decides how to
                 // present it -- the banner gives it its own <code> block, and
                 // running them together produced it twice on the page.
-                'message'  => 'OWA needs one cron entry to run its scheduled jobs. Add this '
-                            . 'line to the crontab of the user that owns your OWA files:',
+                'message'  => \OWA\Core\CoreAPI::t( 'Add this line to the crontab of the user that owns the OWA files:' ),
             );
         }
 
@@ -123,12 +122,9 @@ class SchedulerHealth {
                 && ( time() - $last ) > self::silentFor( self::registeredJobs() ) ) {
 
             return array(
-                'headline' => "OWA's Job Scheduler may have stopped.",
+                'headline' => \OWA\Core\CoreAPI::t( 'OWA\'s Job Scheduler may have stopped.' ),
                 'message'  => sprintf(
-                    'The scheduler last ran %s. It has run before, so the cron entry was '
-                  . 'working at some point -- check that it is still there and that the user it '
-                  . 'runs as can still execute cli.php. Run "cli.php cmd=schedule-status" for a '
-                  . 'full diagnosis.',
+                    \OWA\Core\CoreAPI::t( 'The scheduler last ran %s. Check that the cron entry still exists and that its user can run cli.php. Details: cli.php cmd=schedule-status' ),
                     \OWA\Module\Base\Classes\JobStatus::readable( $last )
                 ),
             );

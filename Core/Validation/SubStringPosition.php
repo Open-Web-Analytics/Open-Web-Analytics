@@ -70,7 +70,9 @@ namespace OWA\Core\Validation;
         // check to see if an error msg is passed from the controller
         if ( ! $this->getErrorMsg() ) {
             // if not set this default msg.
-            $this->setErrorMessage(sprintf('The string "%s" %s found within the value at position %d', $substring, $verb, $pos));
+            $this->setErrorMessage( sprintf( $verb === 'was'
+                ? \OWA\Core\CoreAPI::t( 'The value contains "%s" at position %d.' )
+                : \OWA\Core\CoreAPI::t( 'The value does not contain "%s" at position %d.' ), $substring, $pos ) );
         }
        
      }

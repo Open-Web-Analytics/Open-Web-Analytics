@@ -37,7 +37,7 @@ namespace OWA\Core\Validation;
          $error = $this->getErrorMsg();
 
          if (empty($error)) {
-             $this->setErrorMessage('The user name contains illegal characters.');
+             $this->setErrorMessage( \OWA\Core\CoreAPI::t( 'The user name contains characters that are not allowed.' ) );
          }
 
          $u = $this->getValues();

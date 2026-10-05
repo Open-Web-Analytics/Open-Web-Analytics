@@ -61,7 +61,7 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
         // validate() should already have rejected non-existent entities.
         if ( ! $s->wasPersisted() || ! $u->wasPersisted() ) {
 
-	        $this->set( 'response', [ 'error' => 'Site or user does not exist.' ] );
+	        $this->set( 'response', [ 'error' => \OWA\Core\CoreAPI::t( 'The site or user does not exist.' ) ] );
 	        $this->errorAction();
 
 	        // return non-empty data so finishActionCall() does not fall through

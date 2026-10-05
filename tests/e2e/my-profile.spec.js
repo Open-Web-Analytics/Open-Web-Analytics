@@ -218,7 +218,7 @@ test.describe('my preferences', () => {
                 }),
             ]);
 
-            expect(await notice(page)).toContain('not something your role can do');
+            expect(await notice(page)).toContain('Your role cannot change the account email address.');
 
             // ...and it did not take.
             await openPreferences(page);

@@ -46,7 +46,7 @@ class IsNotCurrentUser extends \OWA\Core\Validation\Validation {
 		 // check to see if an error msg is passed from the controller
 		 if ( ! $this->getErrorMsg() ) {
             // if not set this default msg.
-            $this->setErrorMessage(sprintf('The user ID "%s" is the current user.', $value));
+            $this->setErrorMessage( sprintf( \OWA\Core\CoreAPI::t( '"%s" is the current user.' ), $value ) );
     	}
        
    	}

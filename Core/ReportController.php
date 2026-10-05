@@ -129,7 +129,7 @@ class ReportController extends \OWA\Core\AdminController {
                     'possible_values' => $timePeriod->getValidPeriods(),
                     'stopOnError'     => true,
                     'errorMsg'        => sprintf(
-                        '"%s" is not a reporting period. Choose one from the date picker.',
+                        \OWA\Core\CoreAPI::t( '"%s" is not a reporting period.' ),
                         htmlspecialchars( (string) $period, ENT_QUOTES ) ),
                 )
             );
@@ -150,8 +150,8 @@ class ReportController extends \OWA\Core\AdminController {
             http_response_code( 400 );
         }
 
-        $this->set( 'error_msg', 'The report could not be shown: '
-            . implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+        $this->set( 'error_msg', sprintf( \OWA\Core\CoreAPI::t( 'The report could not be shown: %s' ),
+            implode( ' ', (array) $this->getValidationErrorMsgs() ) ) );
 
         $this->setView( 'base.error' );
 

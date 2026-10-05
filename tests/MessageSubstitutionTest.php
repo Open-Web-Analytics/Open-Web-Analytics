@@ -50,7 +50,7 @@ final class MessageSubstitutionTest extends TestCase
     {
         $msg = $this->base->getMsg(2000, ['message' => ['user@example.com']]);
 
-        $this->assertSame('Check your e-mail', $msg['headline']);
+        $this->assertSame('Check your email', $msg['headline']);
         $this->assertStringContainsString('user@example.com', $msg['message']);
         $this->assertStringNotContainsString('%s', $msg['message']);
     }
@@ -96,7 +96,7 @@ final class MessageSubstitutionTest extends TestCase
 
         $this->assertSame('Error', $msg['headline']);
         $this->assertSame(
-            'A user with that email address does not exist.',
+            'No user has that email address.',
             $msg['message']
         );
     }

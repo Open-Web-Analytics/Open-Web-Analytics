@@ -67,7 +67,7 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
             if ( ! $may ) {
 
-                return $this->refuse( 'That report belongs to somebody else.' );
+                return $this->refuse( \OWA\Core\CoreAPI::t( 'That report belongs to another user.' ) );
             }
         }
 
@@ -156,6 +156,6 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
     function errorAction() {
 
-        return $this->refuse( 'A custom report needs a name and at least one widget.' );
+        return $this->refuse( \OWA\Core\CoreAPI::t( 'A custom report needs a name and at least one widget.' ) );
     }
 }

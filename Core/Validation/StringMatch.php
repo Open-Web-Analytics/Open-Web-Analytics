@@ -41,7 +41,7 @@ namespace OWA\Core\Validation;
          $error = $this->getErrorMsg();
 
          if (empty($error)) {
-             $this->setErrorMessage('Strings do not match.');
+             $this->setErrorMessage( \OWA\Core\CoreAPI::t( 'The values do not match.' ) );
          }
 
          // validation logic

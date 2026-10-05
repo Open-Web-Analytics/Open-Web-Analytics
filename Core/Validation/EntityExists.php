@@ -40,7 +40,7 @@ namespace OWA\Core\Validation;
          $error = $this->getErrorMsg();
          
          if (empty($error)) {
-             $this->setErrorMessage('An entity with that value does not exist.');
+             $this->setErrorMessage( \OWA\Core\CoreAPI::t( 'That value does not exist.' ) );
          }
 
         $id = $entity->get('id');

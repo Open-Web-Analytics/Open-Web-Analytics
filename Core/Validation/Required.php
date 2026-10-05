@@ -39,7 +39,7 @@ namespace OWA\Core\Validation;
          $error = $this->getErrorMsg();
          
          if (empty($error)) {
-             $this->setErrorMessage( $this->getName().' is required.');
+             $this->setErrorMessage( sprintf( \OWA\Core\CoreAPI::t( '%s is required.' ), $this->getName() ) );
          }
          
          if (empty($value)):

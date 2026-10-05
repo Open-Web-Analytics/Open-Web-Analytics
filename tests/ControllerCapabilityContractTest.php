@@ -92,6 +92,8 @@ final class ControllerCapabilityContractTest extends TestCase
         'NotificationsFetchCli',
         // Publishes Profiles' tracking bundles; the scheduler and the shell only.
         'TrackerPublishCli',
+        // Writes the English string catalogue from the code; the shell only.
+        'StringsExtractCli',
 
         // Public/embeddable UI surfaces.
         'OverlayLauncher',

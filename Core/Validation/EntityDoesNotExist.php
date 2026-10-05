@@ -44,7 +44,7 @@ namespace OWA\Core\Validation;
 		 
 		} else {
 			 
-			$this->setErrorMessage('No entity value to check.');
+			$this->setErrorMessage( \OWA\Core\CoreAPI::t( 'A value is required.' ) );
 			$this->hasError();
 		}	
          
@@ -52,7 +52,7 @@ namespace OWA\Core\Validation;
 
          if (empty($error)) {
           
-             $this->setErrorMessage('An entity with that value already exists.');
+             $this->setErrorMessage( \OWA\Core\CoreAPI::t( 'That value is already in use.' ) );
          }
 
         $id = $entity->get('id');

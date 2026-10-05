@@ -193,7 +193,7 @@ final class GoalEventStorageTest extends TestCase
         $src = (string) file_get_contents(
             OWA_DIR . 'modules/Base/Controller/GoalEventSave.php' );
 
-        $this->assertStringContainsString( 'not a valid regular expression', $src,
+        $this->assertStringContainsString( 'The regular expression is not valid.', $src,
             'A pattern that cannot compile can be saved, and then matches nothing '
             . 'for ever without saying so.' );
     }

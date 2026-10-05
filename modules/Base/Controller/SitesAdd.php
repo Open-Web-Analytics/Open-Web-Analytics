@@ -123,7 +123,7 @@ class SitesAdd extends \OWA\Core\AdminController {
                 array(
                     'entity'   => 'base.property',
                     'column'   => 'id',
-                    'errorMsg' => 'That Property no longer exists.',
+                    'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ),
                 ) );
 
             return;
@@ -136,7 +136,7 @@ class SitesAdd extends \OWA\Core\AdminController {
          * selector.
          */
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => 'A name is needed -- it is what the new Property will be called.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
     }
 
     /**
@@ -153,13 +153,13 @@ class SitesAdd extends \OWA\Core\AdminController {
         if ( $type === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
             $this->addValidation( 'domain', trim( (string) $this->getParam( 'domain' ) ), 'required',
-                array( 'errorMsg' => 'A website Profile needs the domain of the site it observes.' ) );
+                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ) );
 
             return;
         }
 
         $this->addValidation( 'appId', trim( (string) $this->getParam( 'appId' ) ), 'required',
-            array( 'errorMsg' => 'An app Profile needs its bundle id or package name.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Bundle ID or package name is required.' ) ) );
     }
     
     function success() {

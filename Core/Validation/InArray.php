@@ -48,7 +48,7 @@ namespace OWA\Core\Validation;
 	        
             $error = $this->setErrorMessage( sprintf(
             	
-            	'"%s" is not not a possible value. Choices are: %s',
+            	\OWA\Core\CoreAPI::t( '"%s" is not an allowed value. Allowed: %s' ),
             	$value,
             	implode( ' | ', $possible_values )
             	 

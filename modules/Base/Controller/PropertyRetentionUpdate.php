@@ -37,7 +37,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
 
         if ( ! ctype_digit( $id ) || ! $property->wasPersisted() ) {
 
-            $this->addValidation( 'propertyId', '', 'required', array( 'errorMsg' => 'No such Property.' ) );
+            $this->addValidation( 'propertyId', '', 'required', array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ) ) );
 
             return;
         }

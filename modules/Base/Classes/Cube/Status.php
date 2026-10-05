@@ -250,9 +250,8 @@ class Status {
 
             return array(
                 'state'       => 'no_property',
-                'headline'    => 'This Profile belongs to no Property.',
-                'message'     => 'Reports are built per Property, so there is nothing to report on '
-                               . 'until this Profile is given one.',
+                'headline'    => \OWA\Core\CoreAPI::t( 'This Profile belongs to no Property.' ),
+                'message'     => \OWA\Core\CoreAPI::t( 'Reports are built per Property. Assign this Profile to a Property.' ),
                 'cron'        => '',
                 'property_id' => '',
             );
@@ -262,10 +261,8 @@ class Status {
 
             return array(
                 'state'       => 'scheduler',
-                'headline'    => 'Reports need the job scheduler.',
-                'message'     => "Reporting data is built by OWA's scheduled jobs, and they are not "
-                               . 'running. Add this line to the crontab of the user that owns your '
-                               . 'OWA files; reports appear after its first build.',
+                'headline'    => \OWA\Core\CoreAPI::t( 'Reports need the job scheduler.' ),
+                'message'     => \OWA\Core\CoreAPI::t( 'Scheduled jobs build the reporting data and are not running. Add this line to the crontab of the user that owns the OWA files:' ),
                 'cron'        => \OWA\Module\Base\Classes\SchedulerHealth::cronLine(),
                 'property_id' => (string) $property_id,
             );
@@ -273,10 +270,12 @@ class Status {
 
         return array(
             'state'       => 'waiting',
-            'headline'    => 'No reporting data yet.',
-            'message'     => 'Reports appear after the first scheduled build once data has arrived'
-                           . ( $next ? ' -- the next is due ' . \OWA\Module\Base\Classes\JobStatus::readable( $next ) : '' )
-                           . '. The Tracking Tag page shows whether this Profile has received any.',
+            'headline'    => \OWA\Core\CoreAPI::t( 'No reporting data yet.' ),
+            'message'     => ( $next
+                ? sprintf( \OWA\Core\CoreAPI::t( 'Reports appear after the first scheduled build with data. The next build is due %s.' ),
+                    \OWA\Module\Base\Classes\JobStatus::readable( $next ) )
+                : \OWA\Core\CoreAPI::t( 'Reports appear after the first scheduled build with data.' ) )
+                . ' ' . \OWA\Core\CoreAPI::t( 'The Tracking Tag page shows whether data has arrived.' ),
             'cron'        => '',
             'property_id' => (string) $property_id,
         );

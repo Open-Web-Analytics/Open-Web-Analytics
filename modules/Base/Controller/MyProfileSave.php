@@ -44,7 +44,7 @@ class MyProfileSave extends \OWA\Core\Controller {
 
             $this->addValidation( 'email_address', $this->getParam( 'email_address' ),
                 'emailAddress',
-                array( 'errorMsg' => 'That does not look like an email address.' ) );
+                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' ) ) );
         }
 
         if ( ! $this->changingPassword() ) {
@@ -54,15 +54,15 @@ class MyProfileSave extends \OWA\Core\Controller {
 
         $this->addValidation( 'current_password', $this->getParam( 'current_password' ),
             'required',
-            array( 'errorMsg' => 'Enter your current password to change it.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Current password is required.' ) ) );
 
         $this->addValidation( 'new_password', $this->getParam( 'new_password' ), 'required',
-            array( 'errorMsg' => 'Enter the new password.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'New password is required.' ) ) );
 
         $this->addValidation( 'password_match',
             array( $this->getParam( 'new_password' ), $this->getParam( 'new_password2' ) ),
             'stringMatch',
-            array( 'errorMsg' => 'The new passwords do not match.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'The new passwords do not match.' ) ) );
 
         /*
          * stringLength, not required -- that is the validator that reads the
@@ -74,7 +74,7 @@ class MyProfileSave extends \OWA\Core\Controller {
             'stringLength', array(
                 'operator' => '>=',
                 'length'   => self::MIN_PASSWORD_LENGTH,
-                'errorMsg' => sprintf( 'The new password must be at least %d characters.',
+                'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The new password must be at least %d characters.' ),
                     self::MIN_PASSWORD_LENGTH ),
             ) );
     }
@@ -104,7 +104,7 @@ class MyProfileSave extends \OWA\Core\Controller {
 
         if ( ! $entity->wasPersisted() ) {
 
-            return $this->refuse( 'That account no longer exists.' );
+            return $this->refuse( \OWA\Core\CoreAPI::t( 'That account does not exist.' ) );
         }
 
         $entity->set( 'real_name', trim( (string) $this->getParam( 'real_name' ) ) );
@@ -135,8 +135,7 @@ class MyProfileSave extends \OWA\Core\Controller {
                 if ( ! $user->isCapable( 'edit_own_email' ) ) {
 
                     return $this->refuse(
-                        'Changing the email address on your account is not something '
-                      . 'your role can do. Ask an administrator.' );
+                        \OWA\Core\CoreAPI::t( 'Your role cannot change the account email address.' ) );
                 }
 
                 $entity->set( 'email_address', $submitted_email );
@@ -259,6 +258,6 @@ class MyProfileSave extends \OWA\Core\Controller {
         $messages = (array) $this->getValidationErrorMsgs();
 
         return $this->refuse( $messages ? implode( ' ', $messages )
-            : 'Those details could not be saved.' );
+            : \OWA\Core\CoreAPI::t( 'Those details could not be saved.' ) );
     }
 }

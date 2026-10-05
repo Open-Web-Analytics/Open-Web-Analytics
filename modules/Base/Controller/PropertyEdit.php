@@ -32,7 +32,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
          * deleted.
          */
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => 'A Property needs a name -- it is what the site selector groups by.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
 
         /*
          * A web Property needs a domain.
@@ -51,8 +51,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
              === \OWA\Module\Base\Entity\Property::TYPE_WEB ) {
 
             $this->addValidation( 'domain', trim( (string) $this->getParam( 'domain' ) ), 'required',
-                array( 'errorMsg' => 'A website Property needs a domain -- it is the origin a '
-                    . 'tracking request is accepted or refused on.' ) );
+                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ) );
         }
 
         // Each setting the screen would store, checked against its declaration.
@@ -76,7 +75,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
                 array(
                     'entity'   => 'base.property',
                     'column'   => 'id',
-                    'errorMsg' => 'That Property no longer exists.',
+                    'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ),
                 ) );
         }
     }

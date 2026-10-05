@@ -45,7 +45,7 @@ class PropertyDelete extends \OWA\Core\AdminController {
             array(
                 'entity'   => 'base.property',
                 'column'   => 'id',
-                'errorMsg' => 'That Property no longer exists.',
+                'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ),
             ) );
     }
 

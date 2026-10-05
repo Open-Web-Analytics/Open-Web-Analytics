@@ -26,6 +26,36 @@ import $ from 'jquery';
 
 export const SEPARATOR = ' — ';
 
+/**
+ * The words this script writes, as printf patterns. The page passes them
+ * translated (data-not-carried-label / -help on .owa_goalBuilder, from
+ * CoreAPI::t()); these English ones are the fallback.
+ */
+const TEXT = {
+    notCarriedLabel: '%s -- not carried by %s',
+    notCarriedHelp: 'A %s event does not carry this property.',
+};
+
+/** Fill %s placeholders in order. */
+export function format( pattern, ...args ) {
+
+    let i = 0;
+
+    return String( pattern ).replace( /%s/g, () => String( args[ i++ ] ?? '' ) );
+}
+
+/** Use the page's translated patterns. */
+export function setText( text ) {
+
+    for ( const key of Object.keys( TEXT ) ) {
+
+        if ( text && typeof text[ key ] === 'string' && text[ key ] !== '' ) {
+
+            TEXT[ key ] = text[ key ];
+        }
+    }
+}
+
 /** The label a property has under any event, without a "not carried" suffix. */
 function plainLabel( vocabulary, name ) {
 
@@ -72,7 +102,7 @@ export function optionsFor( vocabulary, event, saved ) {
 
         list.push( {
             name: saved,
-            label: plainLabel( vocabulary, saved ) + ' -- not carried by ' + event,
+            label: format( TEXT.notCarriedLabel, plainLabel( vocabulary, saved ), event ),
             description: description,
             carried: false,
         } );
@@ -97,8 +127,7 @@ export function helpText( property, event ) {
 
     if ( property.carried === false ) {
 
-        return 'A ' + event + ' does not carry this, so the condition cannot match. '
-            + 'Choose another property or another event.';
+        return format( TEXT.notCarriedHelp, event );
     }
 
     return property.description || '';
@@ -298,6 +327,8 @@ function bind() {
 
         return;
     }
+
+    setText( { notCarriedLabel: builder.dataset.notCarriedLabel, notCarriedHelp: builder.dataset.notCarriedHelp } );
 
     const trigger = builder.querySelector( 'select.owa_goalTrigger' );
     const event = () => ( trigger ? trigger.value : '' );
