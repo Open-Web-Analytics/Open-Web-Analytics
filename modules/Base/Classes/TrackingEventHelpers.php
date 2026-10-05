@@ -2334,6 +2334,49 @@ class TrackingEventHelpers {
      */
 
     /**
+     * Whether a click to $target_host left the site, by the tracker's rule
+     * (OWATracker.isOutboundUrl()), for data that arrives without the tracker
+     * having decided -- v1's clicks, migrated.
+     *
+     * THE COOKIE DOMAIN IS THE SITE. The page's own host is never outbound, and
+     * neither is the cookie domain or any subdomain of it. The cookie domain is
+     * the tracker_cookie_domain setting when one is set, else the page's host
+     * without www. -- as setCookieDomain() resolves it with nothing passed -- so
+     * from www.example.com a link to example.com or shop.example.com stays.
+     *
+     * @param  string|null $target_host
+     * @param  string|null $page_host
+     * @param  string|null $cookie_domain  tracker_cookie_domain; empty for the default
+     * @return bool
+     */
+    static function isOutboundHost( $target_host, $page_host, $cookie_domain = '' ) {
+
+        $target = strtolower( trim( (string) $target_host ) );
+        $page   = strtolower( trim( (string) $page_host ) );
+
+        if ( $target === '' || $target === $page ) {
+
+            return false;
+        }
+
+        $domain = strtolower( ltrim( trim( (string) $cookie_domain ), '.' ) );
+
+        if ( $domain === '' ) {
+
+            $domain = strncmp( $page, 'www.', 4 ) === 0 ? substr( $page, 4 ) : $page;
+        }
+
+        // Nothing to compare against: no page and no configured domain.
+        if ( $domain === '' ) {
+
+            return false;
+        }
+
+        return $target !== $domain
+            && substr( $target, - ( strlen( $domain ) + 1 ) ) !== '.' . $domain;
+    }
+
+    /**
      * A money property as the minor units its column stores.
      *
      * ONE CALLBACK FOR ALL THREE -- ct_total, ct_tax, ct_shipping -- because it

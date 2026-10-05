@@ -11,8 +11,11 @@ namespace OWA\Module\Base\Classes\Migration;
  * v1's clicks (owa_click) into click events.
  *
  * Whether a click left the site is decided on the client now; v1 never
- * recorded it, so it is worked out here the way the tracker does: the
- * target's host against the page's.
+ * recorded it, so it is worked out here by the tracker's rule
+ * (TrackingEventHelpers::isOutboundHost()): the site is its cookie domain and
+ * every subdomain of it, not just the page's own host. Comparing hosts exactly
+ * made a link from www.example.com to shop.example.com outbound in migrated
+ * history and internal in everything tracked since.
  */
 class ClickMigrator extends FactMigrator {
 
@@ -34,9 +37,31 @@ class ClickMigrator extends FactMigrator {
         $host   = (string) $event->get( 'host' );
 
         $event->set( 'target_host', $target );
-        $event->set( 'is_outbound', $target && $host && strcasecmp( $target, $host ) !== 0 ? 1 : 0 );
+        $event->set( 'is_outbound', \OWA\Module\Base\Classes\TrackingEventHelpers::isOutboundHost(
+            $target, $host, $this->cookieDomain( (string) $event->getSiteId() ) ) ? 1 : 0 );
 
         return array( $event );
+    }
+
+    /** @var array site id => its tracker_cookie_domain, read once per site */
+    private $cookie_domains = array();
+
+    /**
+     * The cookie domain the site's tracker is given -- tracker_cookie_domain as
+     * TrackerBundle resolves it for the Profile, empty for the default.
+     *
+     * @param  string $site_id
+     * @return string
+     */
+    protected function cookieDomain( $site_id ) {
+
+        if ( ! array_key_exists( $site_id, $this->cookie_domains ) ) {
+
+            $this->cookie_domains[ $site_id ] = $site_id === '' ? '' : trim( (string)
+                \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cookie_domain', 'profile', $site_id ) );
+        }
+
+        return $this->cookie_domains[ $site_id ];
     }
 }
 
