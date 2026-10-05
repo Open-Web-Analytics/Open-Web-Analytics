@@ -44,83 +44,92 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
 
     <div class="setting">
-        <div class="title">On this event</div>
-        <div class="description">Which event the conditions are tested against. Only
-        this event type can count as this goal &mdash; a condition is checked against
-        what that event carries, so a click's target cannot be tested on a page
-        view.</div>
-        <div class="field">
-            <select name="<?php echo $view->getNs();?>triggerEvent">
-            <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
-                <option value="<?php $view->out( $owa_event );?>"
-                    <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
-                    <?php $view->out( $owa_event );?>
-                </option>
-            <?php endforeach;?>
-            </select>
-            <span class="validation_error"><?php $view->out( $view->validation_errors['triggerEvent'] ?? '' );?></span>
-        </div>
-    </div>
-
-    <div class="setting">
         <div class="title">Counts when</div>
-        <div class="description">An event matching these conditions is counted as a goal
-        event.</div>
+        <div class="description">Which event can count as this goal, and what it has to
+        carry. The properties offered are the ones the chosen event carries &mdash; a
+        click's target cannot be tested on a page view. A goal event with no conditions
+        matches nothing.</div>
         <div class="field">
-            <?php if ( count( (array) $view->conditions ) > 1 || true ):?>
-            <div class="owa_conditionMatch">
-                Match
-                <select name="<?php echo $view->getNs();?>conditionMatch">
-                    <option value="all" <?php echo ( $owa_ke['condition_match'] ?? 'all' ) !== 'any' ? 'selected' : '';?>>all</option>
-                    <option value="any" <?php echo ( $owa_ke['condition_match'] ?? '' ) === 'any' ? 'selected' : '';?>>any</option>
-                </select>
-                of the following:
-            </div>
-            <?php endif;?>
-            <ul class="constraintList owa_goalEventCondition" data-owa-repeatable>
             <?php
             /*
-             * At least one row, always. An empty list would render a condition
-             * builder with nothing to build in, and a goal event with no
-             * conditions deliberately matches NOTHING -- so there has to be
-             * somewhere to type the first one.
+             * ONE SENTENCE, because the two halves are one decision: the event
+             * decides which properties exist, so the event picker opens the
+             * condition builder rather than sitting in a section of its own.
+             *
+             * The field names are unchanged -- triggerEvent, conditionMatch and the
+             * three conditionX[] arrays -- so the save path and a page with no
+             * JavaScript behave as before. owa.goalbuilder.js adds the rest: the
+             * property list follows the event, and the pickers are searchable and
+             * describe what they offer.
              */
             $owa_conditions = $view->conditions ?: array( array(
                 'condition_property' => '', 'condition_operator' => '', 'condition_value' => '' ) );
             ?>
-            <?php foreach ( $owa_conditions as $owa_cond ):?>
-                <li class="constraintRow">
-                    <span class="constraintDimensionPicker">
-                        <select class="dim-list" name="<?php echo $view->getNs();?>conditionProperty[]">
-                        <?php foreach ( (array) $view->conditionProperties as $owa_prop ):?>
-                            <option value="<?php $view->out( $owa_prop['name'] );?>"
-                                <?php echo ( ( $owa_cond['condition_property'] ?? '' ) === $owa_prop['name'] ) ? 'selected' : '';?>>
-                                <?php $view->out( $owa_prop['label'] );?> (<?php $view->out( $owa_prop['name'] );?>)
-                            </option>
-                        <?php endforeach;?>
-                        </select>
-                    </span>
-                    <span class="constraintOperatorPicker">
-                        <select class="operator-list" name="<?php echo $view->getNs();?>conditionOperator[]">
-                        <?php foreach ( \OWA\Module\Base\Entity\GoalEvent::operators() as $owa_value => $owa_label ):?>
-                            <option value="<?php $view->out( $owa_value );?>"
-                                <?php echo ( ( $owa_cond['condition_operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>>
-                                <?php $view->out( $owa_label );?>
-                            </option>
-                        <?php endforeach;?>
-                        </select>
-                    </span>
-                    <input class="constraintValueField" type="text"
-                           name="<?php echo $view->getNs();?>conditionValue[]"
-                           value="<?php $view->out( $owa_cond['condition_value'] ?? '' );?>">
-                    <span class="constraintAddButton" role="button" tabindex="0"
-                          title="Add another condition" aria-label="Add another condition">+</span>
-                    <span class="constraintRemoveButton" role="button" tabindex="0"
-                          title="Remove this condition" aria-label="Remove this condition">X</span>
-                </li>
-            <?php endforeach;?>
-            </ul>
+            <div class="owa_goalBuilder">
+                <div class="owa_goalSentence">
+                    A
+                    <select class="owa_goalTrigger" name="<?php echo $view->getNs();?>triggerEvent"
+                            aria-label="The event this goal counts">
+                    <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
+                        <option value="<?php $view->out( $owa_event );?>"
+                            <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
+                            <?php $view->out( $owa_event );?>
+                        </option>
+                    <?php endforeach;?>
+                    </select>
+                    event where
+                    <select class="owa_goalMatch" name="<?php echo $view->getNs();?>conditionMatch"
+                            aria-label="How many conditions must match">
+                        <option value="all" <?php echo ( $owa_ke['condition_match'] ?? 'all' ) !== 'any' ? 'selected' : '';?>>all</option>
+                        <option value="any" <?php echo ( $owa_ke['condition_match'] ?? '' ) === 'any' ? 'selected' : '';?>>any</option>
+                    </select>
+                    of these match:
+                </div>
+                <span class="validation_error"><?php $view->out( $view->validation_errors['triggerEvent'] ?? '' );?></span>
+
+                <ul class="constraintList owa_goalEventCondition" data-owa-repeatable>
+                <?php foreach ( $owa_conditions as $owa_cond ):?>
+                    <li class="constraintRow owa_goalCondition">
+                        <span class="constraintDimensionPicker">
+                            <select class="dim-list owa_goalProperty" name="<?php echo $view->getNs();?>conditionProperty[]"
+                                    aria-label="Property">
+                            <?php foreach ( (array) $view->conditionProperties as $owa_prop ):?>
+                                <option value="<?php $view->out( $owa_prop['name'] );?>"
+                                    data-description="<?php $view->out( $owa_prop['description'] ?? '' );?>"
+                                    <?php echo ( ( $owa_cond['condition_property'] ?? '' ) === $owa_prop['name'] ) ? 'selected' : '';?>>
+                                    <?php $view->out( $owa_prop['label'] );?>
+                                </option>
+                            <?php endforeach;?>
+                            </select>
+                        </span>
+                        <span class="constraintOperatorPicker">
+                            <select class="operator-list" name="<?php echo $view->getNs();?>conditionOperator[]"
+                                    aria-label="Comparison">
+                            <?php foreach ( \OWA\Module\Base\Entity\GoalEvent::operators() as $owa_value => $owa_label ):?>
+                                <option value="<?php $view->out( $owa_value );?>"
+                                    <?php echo ( ( $owa_cond['condition_operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>>
+                                    <?php $view->out( $owa_label );?>
+                                </option>
+                            <?php endforeach;?>
+                            </select>
+                        </span>
+                        <input class="constraintValueField" type="text" aria-label="Value"
+                               name="<?php echo $view->getNs();?>conditionValue[]"
+                               value="<?php $view->out( $owa_cond['condition_value'] ?? '' );?>">
+                        <span class="constraintAddButton" role="button" tabindex="0"
+                              title="Add another condition" aria-label="Add another condition">+</span>
+                        <span class="constraintRemoveButton" role="button" tabindex="0"
+                              title="Remove this condition" aria-label="Remove this condition">X</span>
+                        <div class="owa_goalConditionHelp"></div>
+                    </li>
+                <?php endforeach;?>
+                </ul>
+            </div>
             <span class="validation_error"><?php $view->out( $view->validation_errors['conditionValue'] ?? '' );?></span>
+            <script type="application/json" id="owa_goalVocabulary"><?php
+                echo json_encode( (array) $view->conditionVocabulary,
+                    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+            ?></script>
         </div>
     </div>
 

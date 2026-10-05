@@ -17,6 +17,9 @@ class GoalEventEdit extends \OWA\Core\View {
         $this->body->set( 'siteId', $this->get( 'siteId' ) );
         $this->body->set( 'conditionProperties', $this->get( 'conditionProperties' ) );
 
+        // Every trigger's properties, so the picker follows the event (owa.goalbuilder.js).
+        $this->body->set( 'conditionVocabulary', (array) $this->get( 'conditionVocabulary' ) );
+
         /*
          * The trigger, and the events it can be. Both are read by the template, so
          * both have to be set here: View::get() answers FALSE for a key nobody
