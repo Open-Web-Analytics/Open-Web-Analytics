@@ -2536,9 +2536,18 @@ class TrackingEventHelpers {
     /**
      * The query parameters that come out of a stored page_query, for one site.
      *
-     * OWA's own control parameters, plus the site's query_string_filters at both
-     * install and Profile scope. NOT utm_*: those are the site's own tagging
-     * rather than ours, and v1 keeps them.
+     * OWA's own control parameters, every parameter the site reads as a campaign
+     * tag (campaignKeysFor(): the ns-prefixed names, a Property's campaignKeys,
+     * and utm_* while campaignUtmParams is on), plus the site's
+     * query_string_filters at both install and Profile scope.
+     *
+     * THE CAMPAIGN TAGS ARE ONE LIST. utm_* used to stay, as "the site's own
+     * tagging", while owa_source went: so with campaignUtmParams on -- the default
+     * -- a utm-tagged visit was a different page in every page report, though
+     * attribution had read the tags exactly like OWA's own. GA omits UTM
+     * parameters from Page path + query string and keeps them in Page location;
+     * so does this. Attribution is unaffected: it parses page_location, which
+     * keeps the whole URL.
      *
      * The list is per site and settings change, so what a report shows depends on
      * the list as it was when the row was written. Making a corrected list
@@ -2553,16 +2562,11 @@ class TrackingEventHelpers {
 
         $ns = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
 
-        $drop = array(
-            $ns . 'source',
-            $ns . 'medium',
-            $ns . 'campaign',
-            $ns . 'ad',
-            $ns . 'ad_type',
+        $drop = array_merge( array_keys( self::campaignKeysFor( (string) $site_id ) ), array(
             $ns . 'overlay',
             $ns . 'state',
             $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
-        );
+        ) );
 
         foreach ( array(
             \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
