@@ -380,6 +380,7 @@ final class TemplateLatentVarTest extends TestCase
                         'description' => 'The path of the page.', 'carried' => true ] ],
                     'conditionVocabulary' => [ 'page_view' => [ [ 'name' => 'page_path', 'label' => 'Page path',
                         'description' => 'The path of the page.', 'carried' => true ] ], 'click' => [] ],
+                    'savedProperties' => [],
                     'triggerEvent' => 'page_view',
                     'triggerEvents' => [ 'page_view', 'click' ],
                     'funnelSteps' => [],

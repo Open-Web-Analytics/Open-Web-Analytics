@@ -90,7 +90,8 @@ the event, how to compare it, and what to compare it to.</div>
                 <ul class="constraintList owa_goalEventCondition" data-owa-repeatable>
                 <?php foreach ( $owa_conditions as $owa_cond ):?>
                     <li class="constraintRow owa_goalCondition"
-                        data-saved-property="<?php $view->out( $owa_cond['condition_property'] ?? '' );?>">
+                        data-saved-property="<?php $view->out( in_array( (string) ( $owa_cond['condition_property'] ?? '' ),
+                            (array) $view->savedProperties, true ) ? $owa_cond['condition_property'] : '' );?>">
                         <span class="constraintDimensionPicker">
                             <select class="dim-list owa_goalProperty" name="<?php echo $view->getNs();?>conditionProperty[]"
                                     aria-label="Property">

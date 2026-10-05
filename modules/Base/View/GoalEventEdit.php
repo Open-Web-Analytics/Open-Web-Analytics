@@ -19,6 +19,7 @@ class GoalEventEdit extends \OWA\Core\View {
 
         // Every trigger's properties, so the picker follows the event (owa.goalbuilder.js).
         $this->body->set( 'conditionVocabulary', (array) $this->get( 'conditionVocabulary' ) );
+        $this->body->set( 'savedProperties', (array) $this->get( 'savedProperties' ) );
 
         /*
          * The trigger, and the events it can be. Both are read by the template, so

@@ -317,6 +317,27 @@ class GoalEventSave extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
         $this->set( 'conditionProperties',
             GoalEventEdit::conditionProperties( $trigger, $conditions ) );
+        $this->set( 'conditionVocabulary', GoalEventEdit::vocabulary() );
+
+        /*
+         * SAVED means stored, not submitted: the properties the goal event's
+         * conditions name in the database. A refused NEW goal event has none, so
+         * nothing on the redrawn form is treated as saved.
+         */
+        $saved = array();
+
+        if ( $this->getParam( 'goalEventId' ) ) {
+
+            $stored = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $stored->load( $this->getParam( 'goalEventId' ) );
+
+            foreach ( $stored->get( 'id' ) ? $stored->loadConditions() : array() as $condition ) {
+
+                $saved[] = (string) $condition->get( 'condition_property' );
+            }
+        }
+
+        $this->set( 'savedProperties', $saved );
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 3 );

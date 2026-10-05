@@ -249,6 +249,39 @@ test.describe('goal events', () => {
     });
 
     /**
+     * A REFUSED SAVE redraws the form without inventing problems. The redraw
+     * came from the save controller, which set no per-event lists, so every
+     * property read as "not carried" -- under a valid condition, with the event
+     * unchanged. And nothing typed into a new goal event is saved, so nothing on
+     * the redrawn form is flagged when the event then changes.
+     */
+    test('a refused save does not flag a valid property', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await page.fill('input[name="name"]', 'E2E Refused ' + Date.now());
+        const fresh = page.locator('.owa_goalCondition').first();
+        await choose(fresh, 'select.owa_goalProperty', 'Source (from the URL)');
+
+        // No value: refused.
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        const row = page.locator('.owa_goalCondition').first();
+        await expect(row.locator('select.owa_goalProperty')).toHaveValue('tagged_source');
+        await expect(row.locator('.owa_goalConditionHelp')).not.toHaveClass(/owa_goalConditionWarning/);
+        await expect(row.locator('.owa_goalConditionHelp')).toContainText('source named by the landing URL');
+        await expect(row).toHaveAttribute('data-saved-property', '');
+
+        // The lists are there, and the unsaved property gives way on a change.
+        await choose(page, 'select.owa_goalTrigger', 'click');
+        expect(await offered(row)).toContain('is_outbound');
+        await expect(row.locator('select.owa_goalProperty')).not.toHaveValue('tagged_source');
+        await expect(row.locator('.owa_goalConditionHelp')).not.toHaveClass(/owa_goalConditionWarning/);
+    });
+
+    /**
      * Each property says what it holds: in the list, where it is searched, and
      * under the row once chosen -- where the picker itself shows only the name.
      */
