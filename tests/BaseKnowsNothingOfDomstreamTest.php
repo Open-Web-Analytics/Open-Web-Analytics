@@ -34,7 +34,11 @@ final class BaseKnowsNothingOfDomstreamTest extends TestCase
             foreach ($files as $file) {
                 $path = substr($file->getPathname(), strlen(OWA_DIR));
 
-                if (!preg_match('/\.(php|js|json|css)$/', $path) || strpos($path, '/dist/') !== false) {
+                // Build output names what the build produced, the module's chunk
+                // included: public/base/dist/ and the tracker manifest's
+                // modules/Base/build/ (TrackerBundle::BUILD) are generated, not source.
+                if (!preg_match('/\.(php|js|json|css)$/', $path) || strpos($path, '/dist/') !== false
+                    || strpos($path, 'modules/Base/build/') === 0) {
                     continue;
                 }
 

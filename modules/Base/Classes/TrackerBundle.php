@@ -62,8 +62,9 @@ class TrackerBundle {
      *
      * The behaviour features only. NOT page views or clicks: the old tag pushes
      * its own, and a second trackPageView counts every page twice. NOT what a
-     * module adds (Domstream records page interactions, which an old tag opted
-     * into explicitly when it wanted it). And of the options, only those these
+     * module adds through tracker_bundle_config: a module's feature can be far
+     * more intrusive than these, and an old tag opted into it explicitly when it
+     * wanted it. And of the options, only those these
      * features read: a cookie or session option arriving after the first event
      * would split the visitor's state.
      */

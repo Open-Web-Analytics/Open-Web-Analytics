@@ -7,8 +7,8 @@
  * site search, errors, route changes -- never reached it. Started from a legacy
  * path, the tracker loads the Profile's features file instead
  * (public/tracker/features/<site id>.js, TrackerBundle::featuresSource()), which
- * pushes them onto the running queue. Page views, clicks and Domstream are not
- * in it: the tag says those for itself.
+ * pushes them onto the running queue. Page views, clicks and any feature a
+ * module adds are not in it: the tag says those for itself.
  *
  * A script element keeps its ORIGINAL src through a redirect, so
  * document.currentScript.src names the path the tag asked for.
