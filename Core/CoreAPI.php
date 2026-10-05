@@ -2007,7 +2007,7 @@ class CoreAPI {
         }
 
         return self::displayView(
-            array( 'error_msg' => 'The page you requested could not be found.' ),
+            array( 'error_msg' => \OWA\Core\CoreAPI::t( 'The page could not be found.' ) ),
             'base.error'
         );
     }
@@ -2821,12 +2821,12 @@ class CoreAPI {
 
         $messages = array(
             400 => array(
-                'headline'  => 'Bad request.',
-                'msg'       => 'The request did not name a route to call.'
+                'headline'  => \OWA\Core\CoreAPI::t( 'Bad request.' ),
+                'msg'       => \OWA\Core\CoreAPI::t( 'The request names no route.' )
             ),
             401 => array(
-                'headline'  => 'Not authenticated.',
-                'msg'       => 'Check API credentials or permissions for this user.'
+                'headline'  => \OWA\Core\CoreAPI::t( 'Not authenticated.' ),
+                'msg'       => \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )
             ),
         );
 
@@ -3292,6 +3292,21 @@ class CoreAPI {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         return $s->metrics;
+    }
+
+    /**
+     * A user-facing string in the locale in use, keyed by its English.
+     *
+     * See Core\Strings. Write the English at the call site; the catalogue is
+     * generated from these calls by `cli.php cmd=strings-extract`.
+     *
+     * @param  string $text     the English, as a string literal
+     * @param  string $context  optional, to tell two meanings of the same English apart
+     * @return string
+     */
+    public static function t( $text, $context = '' ) {
+
+        return \OWA\Core\Strings::translate( $text, $context );
     }
 
     public static function getRequestTimestamp() {

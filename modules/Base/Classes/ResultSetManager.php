@@ -387,10 +387,7 @@ class ResultSetManager extends \OWA\Core\Base {
         if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
 
             $this->addError( sprintf(
-                '%s constraint was given no value. Refusing to run the query '
-                . 'unconstrained -- a missing value is not a request for everything.',
-                $constraint['name']
-            ) );
+                \OWA\Core\CoreAPI::t( 'The %s constraint has no value.' ), $constraint['name'] ) );
 
             return;
         }
@@ -407,7 +404,7 @@ class ResultSetManager extends \OWA\Core\Base {
 
         if ( $unary && $this->isMetric( $constraint['name'] ) ) {
 
-            $this->addError( sprintf( '%s is a metric; only a dimension can be %s.',
+            $this->addError( sprintf( \OWA\Core\CoreAPI::t( '%s is a metric; only a dimension can be %s.' ),
                 $constraint['name'], self::NOT_SET_LABEL ) );
             return;
         }
@@ -437,7 +434,7 @@ class ResultSetManager extends \OWA\Core\Base {
                 $db->having($col, $constraint['value'], $constraint['operator']);
             } else {
 
-                $this->addError( 'Cannot add a calculated metric to a constraint.' );
+                $this->addError( \OWA\Core\CoreAPI::t( 'A calculated metric cannot be a constraint.' ) );
             }
         }
     }
@@ -833,7 +830,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         if ( ! $with ) {
 
-            return sprintf( '"%s" cannot be queried here.', $offender );
+            return sprintf( \OWA\Core\CoreAPI::t( '"%s" cannot be queried here.' ), $offender );
         }
 
         return sprintf(
@@ -1153,7 +1150,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 }
 
                 if ( $sort_col === null ) {
-                    $this->addError( $sort[0] . " is not a valid column to sort on" );
+                    $this->addError( sprintf( \OWA\Core\CoreAPI::t( '%s is not a valid sort column.' ), $sort[0] ) );
                     continue;
                 }
 

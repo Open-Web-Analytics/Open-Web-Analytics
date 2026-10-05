@@ -148,7 +148,7 @@ class Controller extends \OWA\Core\Base {
 	
 	function updateAction() {
 		
-		$error_msg = 'Cannot perform action. OWA Updates required.';
+		$error_msg = \OWA\Core\CoreAPI::t( 'Cannot perform action. OWA Updates required.' );
 	                
         \OWA\Core\CoreAPI::debug( $error_msg );
         
@@ -792,7 +792,7 @@ class Controller extends \OWA\Core\Base {
 		if (\OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
 			
 			$this->setView('base.restApi');
-			$this->set('error_msg', ['headline'	=> 'Not authenticated.', 'msg' => 'Check API credentials or permissions for this user.'] );
+			$this->set('error_msg', ['headline'	=> \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
 			http_response_code(401);	
 		} else {
 	        $this->setRedirectAction('base.loginForm');

@@ -27,7 +27,7 @@ class OrganizationEdit extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => 'An Organization needs a name.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
     }
 
     function action() {

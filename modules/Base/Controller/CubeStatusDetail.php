@@ -23,7 +23,7 @@ class CubeStatusDetail extends \OWA\Core\AdminController {
     function validate() {
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required',
-            array( 'errorMsg' => 'Say which Property\'s cube to show.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Choose a Property.' ) ) );
     }
 
     function action() {

@@ -441,7 +441,7 @@ final class CustomReportsTest extends TestCase
 
         $definition['widgets'][1]['query']['metrics'] =
             'sessions,totalUsers,pageViews,goalConversions,totalEngagementTime';
-        $this->assertStringContainsString('4 is the most',
+        $this->assertStringContainsString('the most is 4',
             CustomReports::validate($definition), 'five metrics is refused');
 
         $definition = $this->definition();
@@ -453,7 +453,7 @@ final class CustomReportsTest extends TestCase
 
         $definition['widgets'][1]['query']['dimensions'] =
             'pagePath,browserType,city,country,sessionMedium';
-        $this->assertStringContainsString('4 is the most',
+        $this->assertStringContainsString('the most is 4',
             CustomReports::validate($definition), 'five dimensions is refused');
     }
 
@@ -750,17 +750,17 @@ final class CustomReportsTest extends TestCase
             ),
             'a column the widget does not show' => array(
                 array('linkColumn' => 'browserType', 'valueColumns' => 'pagePath', 'template' => $good),
-                'not a column it shows',
+                'which it does not show',
             ),
             'extra parameters' => array(
                 array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
                       'template' => $good + array('siteId' => 'somebody-elses-site')),
-                'carrying 2 parameters',
+                'with 2 parameters',
             ),
             'a literal value rather than the row' => array(
                 array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
                       'template' => array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '/admin')),
-                'filled from the row',
+                'it must be %s',
             ),
         );
     }
@@ -986,7 +986,7 @@ final class CustomReportsTest extends TestCase
 
         $this->assertNotSame('', $error,
             sprintf('"%s" must be refused at save time', $constraint));
-        $this->assertStringContainsString('widget 2', $error,
+        $this->assertStringContainsString('Widget 2', $error,
             'the message has to say which widget');
         $this->assertStringContainsString($expected, $error);
     }
@@ -1106,7 +1106,7 @@ final class CustomReportsTest extends TestCase
 
         $says = CustomReports::validate($definition);
 
-        $this->assertStringContainsString('widget 2', $says,
+        $this->assertStringContainsString('Widget 2', $says,
             'the message has to say WHICH widget, or the author cannot find it');
         $this->assertStringContainsString('names no metrics', $says);
 
@@ -1228,7 +1228,7 @@ final class CustomReportsTest extends TestCase
         $says = CustomReports::validate($definition);
 
         $this->assertStringContainsString('Trend card', $says);
-        $this->assertStringContainsString('does not take the report metric set', $says);
+        $this->assertStringContainsString('names its own metrics', $says);
 
         $definition['widgets'][1]['query']['metrics'] = 'sessions';
 
@@ -1508,7 +1508,7 @@ final class CustomReportsTest extends TestCase
         $saved = $this->store(array('name' => '   '));
 
         $this->assertFalse($saved['ok']);
-        $this->assertStringContainsString('name', $saved['error']);
+        $this->assertSame('Name is required.', $saved['error']);
     }
 
     public function testDefinitionsMayArriveAsJsonText(): void
@@ -2025,7 +2025,7 @@ final class CustomReportsTest extends TestCase
         )))->doAction();
         $page = ob_get_clean() . (is_string($returned) ? $returned : '');
 
-        $this->assertStringContainsString("This saved report can't be drawn", $page);
+        $this->assertStringContainsString("This saved report cannot be drawn", $page);
         $this->assertStringContainsString('aDimensionThatNoLongerExists', $page);
         $this->assertStringNotContainsString('could not be found', $page);
 

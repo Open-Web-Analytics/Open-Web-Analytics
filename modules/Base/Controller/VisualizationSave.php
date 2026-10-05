@@ -40,7 +40,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => 'A visualization needs a name.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
 
         /*
          * The step rules. Every one was earned by a bug.
@@ -74,13 +74,13 @@ class VisualizationSave extends \OWA\Core\AdminController {
             $kept++;
 
             $this->addValidation( 'stepName' . $number, $name, 'required',
-                array( 'errorMsg' => sprintf( 'Step %s needs a name.', $number ) ) );
+                array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: name is required.' ), $number ) ) );
 
             if ( $isGoal ) {
 
                 $this->addValidation( 'stepGoalEvent' . $number, $goal, 'required',
                     array( 'errorMsg' => sprintf(
-                        'Step %s needs a goal event chosen.', $number ) ) );
+                        \OWA\Core\CoreAPI::t( 'Step %s: choose a goal event.' ), $number ) ) );
 
                 /*
                  * And it has to be one a funnel can actually count.
@@ -98,7 +98,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
                     if ( $error !== '' ) {
 
                         $this->addValidation( 'stepGoalEvent' . $number, '', 'required',
-                            array( 'errorMsg' => sprintf( 'Step %s: %s', $number, $error ) ) );
+                            array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: %s' ), $number, $error ) ) );
                     }
                 }
 
@@ -106,7 +106,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
             }
 
             $this->addValidation( 'stepPath' . $number, $path, 'required',
-                array( 'errorMsg' => sprintf( 'Step %s needs a path.', $number ) ) );
+                array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: path is required.' ), $number ) ) );
 
             /*
              * A path, not a URL. The counting matches on the path alone, so a
@@ -117,8 +117,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
                 $this->addValidation( 'stepPath' . $number, '', 'required', array(
                     'errorMsg' => sprintf(
-                        'Step %s: enter the page PATH, such as /basket -- not a full web address. '
-                        . 'Steps are matched on the path alone.', $number ),
+                        \OWA\Core\CoreAPI::t( 'Step %s: enter a path such as /basket, not a full URL.' ), $number ),
                 ) );
             }
         }
@@ -126,7 +125,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
         if ( ! $kept ) {
 
             $this->addValidation( 'stepPath1', '', 'required',
-                array( 'errorMsg' => 'A funnel needs at least one step.' ) );
+                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'A funnel needs at least one step.' ) ) );
         }
 
         /* A ceiling on the CHART rather than on the query -- see MAX_STEPS. */
@@ -134,8 +133,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
             $this->addValidation( 'stepPath1', '', 'required', array(
                 'errorMsg' => sprintf(
-                    'A funnel can have at most %d steps, and this one has %d. Beyond that the '
-                    . 'chart stops being readable.',
+                    \OWA\Core\CoreAPI::t( 'A funnel has at most %d steps; this one has %d.' ),
                     self::MAX_STEPS, $kept ),
             ) );
         }

@@ -152,7 +152,7 @@ final class ReportingReadinessTest extends TestCase
 
         $waiting = Status::readinessFor('7', false, strtotime('2026-09-29 18:46'));
         $this->assertSame('waiting', $waiting['state']);
-        $this->assertStringContainsString('next is due', $waiting['message']);
+        $this->assertStringContainsString('next build is due', $waiting['message']);
         $this->assertStringContainsString('Tracking Tag', $waiting['message'],
             'and where to ask whether data is arriving');
     }

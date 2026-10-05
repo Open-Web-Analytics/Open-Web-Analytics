@@ -37,12 +37,12 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required',
-            array( 'errorMsg' => 'A custom dimension belongs to a Property.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Property is required.' ) ) );
 
         $key = trim( (string) $this->getParam( 'dimensionKey' ) );
 
         $this->addValidation( 'dimensionKey', $key, 'required',
-            array( 'errorMsg' => 'A custom dimension needs the name the tracker sets it under.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Dimension key is required.' ) ) );
 
         if ( $key === '' || ! $this->getParam( 'propertyId' ) ) {
 

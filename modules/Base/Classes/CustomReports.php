@@ -391,12 +391,12 @@ class CustomReports {
 
         if ( ! $widgets ) {
 
-            return 'a report needs at least one widget';
+            return \OWA\Core\CoreAPI::t( 'A report needs at least one widget.' );
         }
 
         if ( count( $widgets ) > self::MAX_WIDGETS ) {
 
-            return sprintf( 'a report may have at most %d widgets; this one has %d',
+            return sprintf( \OWA\Core\CoreAPI::t( 'A report has at most %d widgets; this one has %d.' ),
                 self::MAX_WIDGETS, count( $widgets ) );
         }
 
@@ -411,18 +411,18 @@ class CustomReports {
 
         foreach ( $widgets as $i => $widget ) {
 
-            $where = sprintf( 'widget %d', $i + 1 );
+            $where = sprintf( \OWA\Core\CoreAPI::t( 'Widget %d' ), $i + 1 );
 
             if ( ! is_array( $widget ) ) {
 
-                return $where . ' is not an object';
+                return sprintf( \OWA\Core\CoreAPI::t( '%s is not an object.' ), $where );
             }
 
             $type = isset( $widget['type'] ) ? (string) $widget['type'] : '';
 
             if ( ! isset( self::WIDGET_TYPES[ $type ] ) ) {
 
-                return sprintf( '%s names widget type "%s", which is not one that can be built. Choose one of: %s',
+                return sprintf( \OWA\Core\CoreAPI::t( '%s has an unknown widget type "%s". Types: %s.' ),
                     $where, $type, implode( ', ', array_keys( self::WIDGET_TYPES ) ) );
             }
 
@@ -439,7 +439,7 @@ class CustomReports {
          * tab group, independent of any one widget. Same registry check -- an
          * unresolvable name here takes down every widget rather than one.
          */
-        $error = self::validateNames( $definition, 'metrics', 'metric', 'the report metric set' );
+        $error = self::validateNames( $definition, 'metrics', 'metric', \OWA\Core\CoreAPI::t( 'The report metric set' ) );
 
         if ( $error !== '' ) {
 
@@ -448,8 +448,7 @@ class CustomReports {
 
         $error = self::validateFieldCount(
             isset( $definition['metrics'] ) ? $definition['metrics'] : '',
-            self::MAX_METRICS, 'metrics', 'the report metric set',
-            'the boxes stop fitting a row and the numbers stop being readable' );
+            self::MAX_METRICS, 'metrics', \OWA\Core\CoreAPI::t( 'The report metric set' ) );
 
         if ( $error !== '' ) {
 
@@ -517,9 +516,11 @@ class CustomReports {
              */
             if ( ( $listed[0] ?? '' ) !== $fixed ) {
 
-                return sprintf(
-                    '%s is a %s, which is always over %s; this one starts with "%s".',
-                    $where, $label, $fixed, $listed ? $listed[0] : 'nothing' );
+                return $listed
+                    ? sprintf( \OWA\Core\CoreAPI::t( '%s is a %s, which is always over %s; this one starts with "%s".' ),
+                        $where, $label, $fixed, $listed[0] )
+                    : sprintf( \OWA\Core\CoreAPI::t( '%s is a %s, which is always over %s; this one names no dimension.' ),
+                        $where, $label, $fixed );
             }
 
             $extra = array_slice( $listed, 1 );
@@ -527,9 +528,8 @@ class CustomReports {
             if ( count( $extra ) > ( self::FIXED_DIMENSION_EXTRA[ $type ] ?? 0 ) ) {
 
                 return sprintf(
-                    '%s is a %s: one metric over %s, optionally broken out by one '
-                  . 'dimension. This one names %d beyond the %s.',
-                    $where, $label, $fixed, count( $extra ), $fixed );
+                    \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and at most one more dimension. This one names %d more.' ),
+                    $where, $label, $fixed, count( $extra ) );
             }
 
             /*
@@ -541,9 +541,7 @@ class CustomReports {
                 if ( in_array( $name, self::TIME_DIMENSIONS, true ) ) {
 
                     return sprintf(
-                        '%s is broken out by "%s", which measures time -- and time is '
-                      . 'already the axis it is drawn against. Break it out by '
-                      . 'something else, or by nothing.',
+                        \OWA\Core\CoreAPI::t( '%s cannot be broken out by "%s": time is already its axis.' ),
                         $where, $name );
                 }
             }
@@ -603,21 +601,19 @@ class CustomReports {
             if ( $has_report_metrics && in_array( $type, self::OWN_METRIC_TYPES, true ) ) {
 
                 return sprintf(
-                    '%s is a %s, which names its own metrics -- it does not take the '
-                  . 'report metric set. This one names none.',
+                    \OWA\Core\CoreAPI::t( '%s is a %s, which names its own metrics. This one names none.' ),
                     $where, self::WIDGET_TYPES[ $type ] ?? $type );
             }
 
             if ( ! $has_report_metrics ) {
 
-                return sprintf( '%s names no metrics.', $where );
+                return sprintf( \OWA\Core\CoreAPI::t( '%s names no metrics.' ), $where );
             }
         }
 
         $error = self::validateFieldCount(
             isset( $query['metrics'] ) ? $query['metrics'] : '',
-            self::maxMetricsFor( $type ), 'metrics', $where,
-            'the boxes stop fitting a row and the numbers stop being readable' );
+            self::maxMetricsFor( $type ), 'metrics', $where );
 
         if ( $error !== '' ) {
 
@@ -635,9 +631,7 @@ class CustomReports {
 
             $error = self::validateFieldCount(
                 isset( $query['dimensions'] ) ? $query['dimensions'] : '',
-                self::maxDimensionsFor( $type ), 'dimensions', $where,
-                'every dimension multiplies the rows, and a grid grouped that many ways '
-              . 'is a list of near-unique rows' );
+                self::maxDimensionsFor( $type ), 'dimensions', $where );
 
             if ( $error !== '' ) {
 
@@ -721,7 +715,7 @@ class CustomReports {
 
                 if ( ! self::isKnownName( $name ) ) {
 
-                    return sprintf( '%s sorts on "%s", which is not a metric or a dimension', $where, $name );
+                    return sprintf( \OWA\Core\CoreAPI::t( '%s sorts on "%s", which is not a metric or a dimension.' ), $where, $name );
                 }
             }
         }
@@ -760,7 +754,9 @@ class CustomReports {
 
             if ( ! $known ) {
 
-                return sprintf( '%s names "%s", which is not a known %s', $where, $name, $kind );
+                return sprintf( $kind === 'metric'
+                    ? \OWA\Core\CoreAPI::t( '%s names "%s", which is not a known metric.' )
+                    : \OWA\Core\CoreAPI::t( '%s names "%s", which is not a known dimension.' ), $where, $name );
             }
         }
 
@@ -844,10 +840,9 @@ class CustomReports {
      * @param int    $max
      * @param string $kind   metrics|dimensions, for the message
      * @param string $where
-     * @param string $why    what goes wrong past the limit
      * @return string
      */
-    private static function validateFieldCount( $fields, $max, $kind, $where, $why ) {
+    private static function validateFieldCount( $fields, $max, $kind, $where ) {
 
         $names = self::asNames( $fields );
 
@@ -856,10 +851,9 @@ class CustomReports {
             return '';
         }
 
-        return sprintf(
-            '%s asks for %d %s; %d is the most one widget can carry. Beyond that %s -- '
-          . 'split them across widgets instead.',
-            $where, count( $names ), $kind, $max, $why );
+        return sprintf( $kind === 'metrics'
+            ? \OWA\Core\CoreAPI::t( '%s names %d metrics; the most is %d.' )
+            : \OWA\Core\CoreAPI::t( '%s names %d dimensions; the most is %d.' ), $where, count( $names ), $max );
     }
 
     /**
@@ -882,13 +876,10 @@ class CustomReports {
             return '';
         }
 
-        return sprintf(
-            '%s is a %s, which draws one %s. This one names %d %s. %s',
-            $where, $label, rtrim( $key, 's' ), $count, $key,
-            $key === 'metrics'
-                ? 'A report metric set is several metrics, and there is nothing to say '
-                  . 'which of them this would draw.'
-                : sprintf( 'Use a %s if you need more than one.', self::WIDGET_TYPES['grid'] ) );
+        return $key === 'metrics'
+            ? sprintf( \OWA\Core\CoreAPI::t( '%s is a %s, which draws one metric. This one names %d metrics.' ), $where, $label, $count )
+            : sprintf( \OWA\Core\CoreAPI::t( '%s is a %s, which draws one dimension. This one names %d dimensions. Use a %s for more than one.' ),
+                $where, $label, $count, self::WIDGET_TYPES['grid'] );
     }
 
     // ------------------------------------------------------------------
@@ -1104,10 +1095,7 @@ class CustomReports {
          */
         if ( count( $charted ) !== 1 ) {
 
-            return sprintf(
-                '%s charts %d metrics; a chart draws one. The rest of a widget\'s '
-              . 'metrics are drawn as boxes beneath it.',
-                $where, count( $charted ) );
+            return sprintf( \OWA\Core\CoreAPI::t( '%s charts %d metrics; a chart draws one.' ), $where, count( $charted ) );
         }
 
         $error = self::validateNames(
@@ -1131,8 +1119,7 @@ class CustomReports {
         if ( $missing ) {
 
             return sprintf(
-                '%s charts %s, which it does not measure. A chart draws lines from '
-              . 'the metrics the widget asks for: %s.',
+                \OWA\Core\CoreAPI::t( '%s charts %s, which it does not measure. Its metrics: %s.' ),
                 $where, implode( ', ', $missing ), implode( ', ', $own ) );
         }
 
@@ -1161,7 +1148,7 @@ class CustomReports {
 
         if ( ! is_array( $widget['more'] ) ) {
 
-            return $where . ' has a "more" link that is not an object';
+            return sprintf( \OWA\Core\CoreAPI::t( '%s has a full-report link that is not an object.' ), $where );
         }
 
         $reportId = (string) ( $widget['more']['reportId'] ?? '' );
@@ -1172,7 +1159,7 @@ class CustomReports {
 
         if ( ! $definition ) {
 
-            return sprintf( '%s has a full-report link to "%s", which is not a registered report',
+            return sprintf( \OWA\Core\CoreAPI::t( '%s has a full-report link to "%s", which is not a registered report.' ),
                 $where, $reportId );
         }
 
@@ -1180,13 +1167,13 @@ class CustomReports {
 
         if ( $unknown ) {
 
-            return sprintf( '%s has a full-report link with unknown key(s): %s',
+            return sprintf( \OWA\Core\CoreAPI::t( '%s has a full-report link with unknown keys: %s.' ),
                 $where, implode( ', ', $unknown ) );
         }
 
         if ( isset( $widget['more']['label'] ) && ! is_string( $widget['more']['label'] ) ) {
 
-            return $where . ' has a full-report link whose label is not text';
+            return sprintf( \OWA\Core\CoreAPI::t( '%s has a full-report link whose label is not text.' ), $where );
         }
 
         /*
@@ -1217,9 +1204,7 @@ class CustomReports {
         if ( $needs ) {
 
             return sprintf(
-                '%s has a full-report link to "%s", which is read under %s -- a link '
-              . 'below a widget carries no value, so that report cannot be reached '
-              . 'from one. Link the rows instead.',
+                \OWA\Core\CoreAPI::t( '%s has a full-report link to "%s", which needs %s. Link the rows instead.' ),
                 $where, $reportId, implode( ', ', array_unique( $needs ) ) );
         }
 
@@ -1228,11 +1213,11 @@ class CustomReports {
 
         if ( ! array_intersect( $mine, $shown ) ) {
 
-            return sprintf(
-                '%s has a full-report link to "%s", which does not show %s. A full '
-              . 'report link goes to the report that shows more of the same thing.',
-                $where, $reportId,
-                $mine ? implode( ' or ', $mine ) : 'anything this widget shows' );
+            return $mine
+                ? sprintf( \OWA\Core\CoreAPI::t( '%s has a full-report link to "%s", which does not show %s.' ),
+                    $where, $reportId, implode( ', ', $mine ) )
+                : sprintf( \OWA\Core\CoreAPI::t( '%s has a full-report link to "%s", which shows nothing this widget shows.' ),
+                    $where, $reportId );
         }
 
         return '';
@@ -1334,7 +1319,7 @@ class CustomReports {
 
         if ( ! is_array( $widget['link'] ) ) {
 
-            return $where . ' has a link that is not an object';
+            return sprintf( \OWA\Core\CoreAPI::t( '%s has a link that is not an object.' ), $where );
         }
 
         $link       = $widget['link'];
@@ -1346,15 +1331,15 @@ class CustomReports {
 
             if ( $column === '' ) {
 
-                return sprintf( '%s has a link with no %s', $where, $key );
+                return sprintf( \OWA\Core\CoreAPI::t( '%s has a link with no %s.' ), $where, $key );
             }
 
             if ( ! in_array( $column, $dimensions, true ) ) {
 
-                return sprintf(
-                    '%s links from "%s", which is not a column it shows. A link has to '
-                  . 'come from one of this widget\'s dimensions: %s',
-                    $where, $column, implode( ', ', $dimensions ) ?: '(none)' );
+                return $dimensions
+                    ? sprintf( \OWA\Core\CoreAPI::t( '%s links from "%s", which it does not show. Its dimensions: %s.' ),
+                        $where, $column, implode( ', ', $dimensions ) )
+                    : sprintf( \OWA\Core\CoreAPI::t( '%s links from "%s" but shows no dimensions.' ), $where, $column );
             }
         }
 
@@ -1362,14 +1347,14 @@ class CustomReports {
 
         if ( ( $template['do'] ?? '' ) !== self::LINK_ACTION ) {
 
-            return sprintf( '%s has a link to something other than a report', $where );
+            return sprintf( \OWA\Core\CoreAPI::t( '%s has a link to something other than a report.' ), $where );
         }
 
         $reportId = (string) ( $template['reportId'] ?? '' );
 
         if ( $reportId === '' || ! \OWA\Core\CoreAPI::getReportDefinition( $reportId ) ) {
 
-            return sprintf( '%s links to report "%s", which is not registered',
+            return sprintf( \OWA\Core\CoreAPI::t( '%s links to report "%s", which is not registered.' ),
                 $where, $reportId );
         }
 
@@ -1383,8 +1368,7 @@ class CustomReports {
         if ( count( $extra ) !== 1 ) {
 
             return sprintf(
-                '%s has a link carrying %d parameters; it carries the one the '
-              . 'destination is read under, and nothing else.',
+                \OWA\Core\CoreAPI::t( '%s has a link with %d parameters; it takes exactly one.' ),
                 $where, count( $extra ) );
         }
 
@@ -1393,8 +1377,7 @@ class CustomReports {
         if ( $value !== '%s' ) {
 
             return sprintf(
-                '%s has a link whose parameter is "%s"; it is filled from the row, so '
-              . 'it has to be %%s', $where, $value );
+                \OWA\Core\CoreAPI::t( '%s has a link parameter "%s"; it must be %%s.' ), $where, $value );
         }
 
         return '';
@@ -1515,21 +1498,20 @@ class CustomReports {
                     if ( strpos( $clause, $candidate ) === 0 ) {
 
                         return sprintf(
-                            '%s has the constraint "%s", which names nothing to '
-                          . 'constrain on.',
+                            \OWA\Core\CoreAPI::t( '%s has the constraint "%s", which names nothing to constrain on.' ),
                             $where, $clause );
                     }
                 }
 
                 return sprintf(
-                    '%s has the constraint "%s", which names no operator. Use one of: %s.',
+                    \OWA\Core\CoreAPI::t( '%s has the constraint "%s", which names no operator. Operators: %s.' ),
                     $where, $clause, implode( ' ', $operators ) );
             }
 
             if ( ! self::isKnownName( $name ) ) {
 
                 return sprintf(
-                    '%s constrains on "%s", which is not a dimension or a metric.',
+                    \OWA\Core\CoreAPI::t( '%s constrains on "%s", which is not a dimension or a metric.' ),
                     $where, $name );
             }
 
@@ -1538,7 +1520,7 @@ class CustomReports {
                 // ResultSetManager refuses this at query time; checked here so
                 // a half-filled row is caught before it is stored.
                 return sprintf(
-                    '%s constrains on "%s" but gives no value.', $where, $name );
+                    \OWA\Core\CoreAPI::t( '%s constrains on "%s" but gives no value.' ), $where, $name );
             }
         }
 
@@ -1810,7 +1792,7 @@ class CustomReports {
 
         if ( $name === '' ) {
 
-            return self::failure( 'a report needs a name' );
+            return self::failure( \OWA\Core\CoreAPI::t( 'Name is required.' ) );
         }
 
         $definition = $fields['definition'] ?? array();
@@ -1821,7 +1803,7 @@ class CustomReports {
 
             if ( ! is_array( $decoded ) ) {
 
-                return self::failure( 'the report definition is not valid JSON: ' . json_last_error_msg() );
+                return self::failure( sprintf( \OWA\Core\CoreAPI::t( 'The report definition is not valid JSON: %s' ), json_last_error_msg() ) );
             }
 
             $definition = $decoded;
@@ -1854,7 +1836,7 @@ class CustomReports {
 
             if ( ! $entity->wasPersisted() ) {
 
-                return self::failure( 'that report no longer exists' );
+                return self::failure( \OWA\Core\CoreAPI::t( 'That report does not exist.' ) );
             }
         }
 

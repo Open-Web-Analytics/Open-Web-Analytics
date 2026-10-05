@@ -65,7 +65,9 @@ the event, how to compare it, and what to compare it to.</div>
             $owa_conditions = $view->conditions ?: array( array(
                 'condition_property' => '', 'condition_operator' => '', 'condition_value' => '' ) );
             ?>
-            <div class="owa_goalBuilder">
+            <div class="owa_goalBuilder"
+                 data-not-carried-label="<?php $view->out( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ) );?>"
+                 data-not-carried-help="<?php $view->out( \OWA\Core\CoreAPI::t( 'A %s event does not carry this property.' ) );?>">
                 <div class="owa_goalSentence">
                     A
                     <select class="owa_goalTrigger" name="<?php echo $view->getNs();?>triggerEvent"

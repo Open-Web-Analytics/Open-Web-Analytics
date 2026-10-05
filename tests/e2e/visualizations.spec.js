@@ -193,7 +193,7 @@ test.describe('visualizations', () => {
         ]);
 
         await expect(page.locator('input[name="name"]')).toHaveValue('E2E Bad Step');
-        await expect(page.locator('.validation_error').filter({ hasText: 'page PATH' }))
+        await expect(page.locator('.validation_error').filter({ hasText: 'not a full URL' }))
             .toHaveCount(1);
     });
 
@@ -230,7 +230,7 @@ test.describe('visualizations', () => {
         ]);
 
         // The message names the step it is about, and the work is still there.
-        await expect(page.locator('.validation_error').filter({ hasText: 'Step 2 needs a path' }))
+        await expect(page.locator('.validation_error').filter({ hasText: 'Step 2: path is required' }))
             .toHaveCount(1);
         await expect(page.locator('input[name="stepName[]"]').nth(1)).toHaveValue('Two');
     });

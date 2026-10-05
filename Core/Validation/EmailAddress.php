@@ -37,7 +37,7 @@ namespace OWA\Core\Validation;
          $error = $this->getErrorMsg();
          
          if (empty($error)) {
-             $this->setErrorMessage('The email address is not valid.');
+             $this->setErrorMessage( \OWA\Core\CoreAPI::t( 'The email address is not valid.' ) );
          }
 
          $email = $this->getValues();

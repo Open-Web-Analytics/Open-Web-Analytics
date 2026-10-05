@@ -512,7 +512,8 @@ class Report extends \OWA\Core\Controller {
         }
 
         return \OWA\Core\CoreAPI::displayView( array( 'error_msg' => sprintf(
-            'This saved report can\'t be drawn: %s. Edit the report to fix it.', $error ) ), 'base.error' );
+            \OWA\Core\CoreAPI::t( 'This saved report cannot be drawn: %s Edit the report to fix it.' ),
+            rtrim( $error, '.' ) . '.' ) ), 'base.error' );
     }
 
     private function reportNotResolved( $id, $message, $status ) {

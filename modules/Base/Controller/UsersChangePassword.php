@@ -37,13 +37,13 @@ class UsersChangePassword extends \OWA\Core\Controller {
 
     public function validate()
     {
-        $this->addValidation('password_match', [$this->getParam('password'), $this->getParam('password2')], 'stringMatch', ['errorMsg' => 'Your passwords must match.']);
+        $this->addValidation('password_match', [$this->getParam('password'), $this->getParam('password2')], 'stringMatch', ['errorMsg' => \OWA\Core\CoreAPI::t( 'The passwords do not match.' )]);
         $this->addValidation('password_required', $this->getParam('password'), 'required');
 
         $passwordLengthConf = [
             'operator'  => '>=',
             'length'    => 6,
-            'errorMsg'  => 'Your password must be at least 6 characters in length.',
+            'errorMsg'  => \OWA\Core\CoreAPI::t( 'The password must be at least 6 characters.' ),
         ];
 
         // 'stringLength' (not 'required') is the validator that actually reads

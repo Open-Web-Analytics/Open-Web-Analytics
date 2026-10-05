@@ -57,29 +57,27 @@ final class InstallDatabase {
 
         if ( self::organizationIdFrom( $name ) === null ) {
 
-            return array( 'ok' => false, 'error' => sprintf( '"%s" is not a name OWA gives a database.', $name ) );
+            return array( 'ok' => false, 'error' => sprintf( \OWA\Core\CoreAPI::t( '"%s" is not a database name OWA can use.' ), $name ) );
         }
 
         $server = self::server();
 
         if ( ! $server ) {
 
-            return array( 'ok' => false, 'error' => 'Could not connect to the database server with these details.' );
+            return array( 'ok' => false, 'error' => \OWA\Core\CoreAPI::t( 'Could not connect to the database server with these details.' ) );
         }
 
         if ( $server->databaseExists( $name ) ) {
 
             return array( 'ok' => false, 'error' => sprintf(
-                'A database named %s already exists on this server. Choose "Use an existing database" to install into it.',
+                \OWA\Core\CoreAPI::t( 'A database named %s already exists on this server. Choose "Use an existing database" to install into it.' ),
                 $name ) );
         }
 
         if ( ! $server->createDatabase( $name ) ) {
 
             return array( 'ok' => false, 'error' => sprintf(
-                'The server refused to create the database: %s. Either give this user permission to create databases, '
-              . 'or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO '
-              . '<this user>; and choose "Use an existing database".',
+                \OWA\Core\CoreAPI::t( 'The server refused to create the database: %s. Give this user permission to create databases, or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO <this user>; then choose "Use an existing database".' ),
                 $server->lastQueryError() ?: 'permission denied', $name, OWA_DTD_CHARACTER_ENCODING_UTF8, $name ) );
         }
 

@@ -61,7 +61,7 @@ namespace OWA\Core\Validation;
         $error = $this->getErrorMsg();
 
         if (empty($error)) {
-            $error = $this->setErrorMessage(sprintf('The string "%s" was found within the value at position %d', $this->getConfig('match'), $this->getConfig('position')));
+            $error = $this->setErrorMessage( sprintf( \OWA\Core\CoreAPI::t( 'The value contains "%s" at position %d.' ), $this->getConfig('match'), $this->getConfig('position') ) );
         }
      }
 

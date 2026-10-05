@@ -131,8 +131,8 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
             $out[] = array(
                 'name'        => $name,
-                'label'       => \OWA\Module\Base\Classes\GoalVocabulary::label( $name )
-                                 . ' -- not carried by ' . $event_name,
+                'label'       => sprintf( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ),
+                                 \OWA\Module\Base\Classes\GoalVocabulary::label( $name ), $event_name ),
                 'carried'     => false,
                 'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ),
             );

@@ -1347,7 +1347,7 @@ namespace OWA\Module\Base\Classes;
 
              return preg_match( $args['pattern'], trim( (string) $value ) )
                  ? null
-                 : (string) ( $args['pattern_problem'] ?? sprintf( '%s is not in the expected form.',
+                 : (string) ( $args['pattern_problem'] ?? sprintf( \OWA\Core\CoreAPI::t( '%s is not in the expected form.' ),
                        $args['label'] ?? $key ) );
          }
 
@@ -1368,15 +1368,28 @@ namespace OWA\Module\Base\Classes;
          $min   = $args['min'] ?? null;
          $max   = $args['max'] ?? null;
 
-         $range = $min !== null && $max !== null ? sprintf( ' from %d to %d', $min, $max )
-                : ( $min !== null ? sprintf( ' of at least %d', $min )
-                : ( $max !== null ? sprintf( ' of at most %d', $max ) : '' ) );
-
          if ( ! preg_match( '/^-?\d+$/', $text )
               || ( $min !== null && (int) $text < $min )
               || ( $max !== null && (int) $text > $max ) ) {
 
-             return sprintf( '%s is a whole number%s.', $label, $range );
+             // Whole sentences, not a sentence and a range fragment: a fragment
+             // cannot be translated on its own.
+             if ( $min !== null && $max !== null ) {
+
+                 return sprintf( \OWA\Core\CoreAPI::t( '%s is a whole number from %d to %d.' ), $label, $min, $max );
+             }
+
+             if ( $min !== null ) {
+
+                 return sprintf( \OWA\Core\CoreAPI::t( '%s is a whole number of at least %d.' ), $label, $min );
+             }
+
+             if ( $max !== null ) {
+
+                 return sprintf( \OWA\Core\CoreAPI::t( '%s is a whole number of at most %d.' ), $label, $max );
+             }
+
+             return sprintf( \OWA\Core\CoreAPI::t( '%s is a whole number.' ), $label );
          }
 
          return null;

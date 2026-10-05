@@ -1,4 +1,4 @@
-import { optionsFor, optionText, helpText, fill, formatResult, SEPARATOR } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
+import { optionsFor, optionText, helpText, fill, formatResult, setText, SEPARATOR } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
 
 /**
  * The goal event builder's picker (owa.goalbuilder.js): what it offers for an
@@ -36,7 +36,7 @@ test('a carried property in use is not duplicated', () => {
 test('an option reads label then description; the help line says why a flagged one cannot match', () => {
     expect(optionText(VOCAB.click[1])).toBe('Outbound click' + SEPARATOR + 'Whether it left.');
     expect(helpText(VOCAB.click[1], 'click')).toBe('Whether it left.');
-    expect(helpText({ name: 'x', label: 'X', carried: false }, 'click')).toMatch(/A click does not carry this/);
+    expect(helpText({ name: 'x', label: 'X', carried: false }, 'click')).toBe('A click event does not carry this property.');
 });
 
 test('filling a select keeps the selection where it survives and falls back to the first', () => {
@@ -71,4 +71,14 @@ test('an item with no description is left as it is', () => {
     li.textContent = 'Page path';
     formatResult(li);
     expect(li.innerHTML).toBe('Page path');
+});
+
+test('the page\'s translated patterns replace the English ones', () => {
+    setText({ notCarriedLabel: '%s (sin %s)', notCarriedHelp: 'Un evento %s no lo lleva.' });
+
+    expect(optionsFor(VOCAB, 'click', 'tagged_source').find((p) => p.name === 'tagged_source').label)
+        .toBe('Source (from the URL) (sin click)');
+    expect(helpText({ name: 'x', label: 'X', carried: false }, 'click')).toBe('Un evento click no lo lleva.');
+
+    setText({ notCarriedLabel: '%s -- not carried by %s', notCarriedHelp: 'A %s event does not carry this property.' });
 });

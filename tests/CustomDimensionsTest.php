@@ -149,13 +149,18 @@ final class CustomDimensionsTest extends TestCase
             Dimensions::definitionFor(CustomDimension::TYPE_INTEGER, 0));
     }
 
-    /** There is no session scope, and the refusal says why. */
-    public function testSessionScopeIsRefusedWithItsReason(): void
+    /** There is no session scope; the refusal names the scopes there are. */
+    public function testSessionScopeIsRefusedWithTheAllowedScopes(): void
     {
         $checked = $this->validate($this->request(['scope' => 'session']));
 
         $this->assertArrayHasKey('error', $checked);
-        $this->assertStringContainsString('derives', $checked['error']);
+
+        foreach (CustomDimension::scopes() as $scope) {
+            $this->assertStringContainsString($scope, $checked['error']);
+        }
+
+        $this->assertStringNotContainsString('session', $checked['error']);
     }
 
     public function testAnUnknownTypeIsRefused(): void
@@ -255,11 +260,11 @@ final class CustomDimensionsTest extends TestCase
 
         $this->assertArrayHasKey('error', $this->validate($this->request(), $existing));
 
-        // And the case-folded twin, with the reason spelled out.
+        // And the case-folded twin, which says the match ignored case.
         $checked = $this->validate($this->request(['key' => 'Plan']), $existing);
 
         $this->assertArrayHasKey('error', $checked);
-        $this->assertStringContainsString('case-insensitive', $checked['error']);
+        $this->assertStringContainsString('ignore case', $checked['error']);
     }
 
     /** Two keys in ONE batch that derive one column are caught before the ALTER. */

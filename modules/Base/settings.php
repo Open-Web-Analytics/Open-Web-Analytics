@@ -518,7 +518,7 @@ return array(
             'label'    => 'Scroll Thresholds',
             'description' => 'The scroll depths, in percent of the page, that each send a scroll event. Separate them with commas.',
             'pattern'  => '/^(100|[1-9][0-9]?)(\\s*,\\s*(100|[1-9][0-9]?))*$/',
-            'pattern_problem' => 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.' ),
         ),
         'tracker_site_search_params' => array(
             'default'  => 'q, s, search, query, keyword',
@@ -528,7 +528,7 @@ return array(
             'label'    => 'Site Search Parameters',
             'description' => 'The URL parameters that carry a search term on your site. Separate them with commas.',
             'pattern'  => '/^[A-Za-z0-9_.\\-\\[\\]]+(\\s*,\\s*[A-Za-z0-9_.\\-\\[\\]]+)*$/',
-            'pattern_problem' => 'Site Search Parameters is a comma-separated list of URL parameter names.',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Site Search Parameters is a comma-separated list of URL parameter names.' ),
         ),
         'tracker_download_extensions' => array(
             'default'  => 'pdf, doc, docx, xls, xlsx, ppt, pptx, csv, txt, rtf, zip, gz, tar, rar, 7z, dmg, pkg, exe, mp3, wav, mp4, mov, avi, wmv, epub, mobi',
@@ -538,7 +538,7 @@ return array(
             'label'    => 'Download File Extensions',
             'description' => 'A click on a link to a file with one of these extensions is a download. Separate them with commas.',
             'pattern'  => '/^[A-Za-z0-9]+(\\s*,\\s*[A-Za-z0-9]+)*$/',
-            'pattern_problem' => 'Download File Extensions is a comma-separated list of file extensions, without the dot.',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Download File Extensions is a comma-separated list of file extensions, without the dot.' ),
         ),
         'tracker_visitor_cookie_days' => array(
             'default'  => 364,
@@ -574,7 +574,7 @@ return array(
             'description' => 'The domain the tracker&rsquo;s cookies are set on, such as example.com to share '
                 . 'them across its subdomains. Empty uses the page&rsquo;s own domain.',
             'pattern'  => '/^$|^\\.?[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/',
-            'pattern_problem' => 'Tracker Cookie Domain is a domain name, such as example.com.',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain is a domain name, such as example.com.' ),
         ),
         'useStaticConfigOnly' => array( 'default' => false ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true ),

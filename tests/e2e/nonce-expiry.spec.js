@@ -59,12 +59,12 @@ test.describe('a stale nonce on an authenticated session', () => {
             .toMatch(/(no longer valid|expired)/);
 
         expect(body, 'it must not suggest the password was wrong')
-            .not.toMatch(/user name or password did not match/);
+            .not.toMatch(/user name or password is incorrect/);
 
         // The capability page is a different refusal; matching it would mean the
         // request never reached the nonce check.
         expect(body, 'this should be the nonce refusal, not the capability one')
-            .not.toMatch(/lacks the necessary privileges/);
+            .not.toMatch(/does not have access to this page/);
     });
 
     /**

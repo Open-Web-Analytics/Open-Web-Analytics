@@ -16,7 +16,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => 'A goal event needs a name. It is what reports call it.' ) );
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
 
         /*
          * A condition with no value counts nothing, and says nothing about it.
@@ -42,7 +42,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         if ( ! $values ) {
 
             $this->addValidation( 'conditionValue', '', 'required', array(
-                'errorMsg' => 'Without something to compare against, this would count nothing.' ) );
+                'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a value to compare against.' ) ) );
         }
 
         /*
@@ -62,8 +62,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
                 \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
 
             $this->addValidation( 'triggerEvent', '', 'required', array(
-                'errorMsg' => 'That is not an event OWA collects, so nothing would '
-                              . 'ever match it.' ) );
+                'errorMsg' => \OWA\Core\CoreAPI::t( 'OWA does not collect that event.' ) ) );
 
             $trigger = '';
         }
@@ -89,9 +88,8 @@ class GoalEventSave extends \OWA\Core\AdminController {
                 }
 
                 $this->addValidation( 'conditionValue', '', 'required', array(
-                    'errorMsg' => sprintf(
-                        'A %s event does not carry %s, so a condition on it would '
-                        . 'never match.', $trigger, $property ) ) );
+                    'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'A %s event does not carry %s.' ),
+                        $trigger, $property ) ) );
             }
         }
 
@@ -114,7 +112,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
             if ( $pattern !== '' && @preg_match( '@' . $pattern . '@i', '' ) === false ) {
 
                 $this->addValidation( 'conditionValue', '', 'required', array(
-                    'errorMsg' => 'That is not a valid regular expression, so it would never match.',
+                    'errorMsg' => \OWA\Core\CoreAPI::t( 'The regular expression is not valid.' ),
                 ) );
             }
         }
