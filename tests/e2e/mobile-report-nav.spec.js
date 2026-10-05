@@ -32,7 +32,10 @@ async function shot(page, name) {
 
 test.describe('report nav on a phone', () => {
 
-    test.use({ viewport: { width: 390, height: 844 } });
+    // isMobile, so the page lays out as a phone browser would: without a
+    // viewport meta tag that is 980px wide, past the breakpoint, whatever the
+    // screen. A plain 390px viewport skips that step and hides the omission.
+    test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
     test.beforeEach(async ({ page }) => {
         await login(page);
