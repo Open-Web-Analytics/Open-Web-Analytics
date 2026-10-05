@@ -1,4 +1,4 @@
-import { optionsFor, optionText, helpText, fill, SEPARATOR } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
+import { optionsFor, optionText, helpText, fill, formatResult, SEPARATOR } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
 
 /**
  * The goal event builder's picker (owa.goalbuilder.js): what it offers for an
@@ -49,4 +49,26 @@ test('filling a select keeps the selection where it survives and falls back to t
 
     fill(select, optionsFor(VOCAB, 'click', ''), 'gone');
     expect(select.value).toBe('page_path');
+});
+
+test('an open-list item is split into a name line and a description line, keeping the search match', () => {
+    const li = document.createElement('li');
+    li.innerHTML = 'Outbound <em>click</em>' + SEPARATOR + 'Whether it left the &amp; site.';
+
+    formatResult(li);
+
+    expect(li.querySelector('.owa_goalOptionName').innerHTML).toBe('Outbound <em>click</em>');
+    expect(li.querySelector('.owa_goalOptionDescription').textContent).toBe('Whether it left the & site.');
+
+    // Again is a no-op.
+    const before = li.innerHTML;
+    formatResult(li);
+    expect(li.innerHTML).toBe(before);
+});
+
+test('an item with no description is left as it is', () => {
+    const li = document.createElement('li');
+    li.textContent = 'Page path';
+    formatResult(li);
+    expect(li.innerHTML).toBe('Page path');
 });

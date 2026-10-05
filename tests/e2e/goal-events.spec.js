@@ -182,10 +182,11 @@ test.describe('goal events', () => {
     });
 
     /**
-     * A property already in use stays when the new event does not carry it, and
-     * says so. Dropping it would rewrite the condition to whatever came first.
+     * A property picked on this page and not saved gives way: switching the
+     * event moves it to the new event's list, with no warning, because nothing
+     * stored would be lost.
      */
-    test('a property the new event does not carry is kept and flagged', async ({ page }) => {
+    test('an unsaved property the new event does not carry gives way quietly', async ({ page }) => {
         await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         const row = page.locator('.owa_goalCondition').first();
@@ -195,10 +196,56 @@ test.describe('goal events', () => {
 
         await choose(page, 'select.owa_goalTrigger', 'click');
 
+        await expect(row.locator('select.owa_goalProperty')).not.toHaveValue('tagged_source');
+        await expect(row.locator('.chosen-single')).not.toContainText('not carried');
+        await expect(row.locator('.owa_goalConditionHelp')).not.toHaveClass(/owa_goalConditionWarning/);
+        expect(await offered(row)).not.toContain('tagged_source');
+    });
+
+    /**
+     * A SAVED condition's property stays when the event changes to one that
+     * does not carry it, and says so. Dropping it would rewrite a stored
+     * condition to whatever came first in the list.
+     */
+    test('a saved property the new event does not carry is kept and flagged', async ({ page }) => {
+        const name = 'E2E Tagged ' + Date.now();
+
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+        await page.fill('input[name="name"]', name);
+
+        const fresh = page.locator('.owa_goalCondition').first();
+        await choose(fresh, 'select.owa_goalProperty', 'Source (from the URL)');
+        await fresh.locator('input.constraintValueField').fill('newsletter');
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        const editHref = await page.locator('table.management tbody tr', { hasText: name })
+            .locator('a[href*="base.goalEventEdit"]').first().getAttribute('href');
+        const params = new URL(editHref, page.url()).searchParams;
+        const id = params.get('owa_goalEventId') || params.get('goalEventId');
+
+        await gotoAction(page, 'base.goalEventEdit',
+            `&owa_siteId=${FIXTURE.siteId}&owa_goalEventId=${id}`);
+
+        const row = page.locator('.owa_goalCondition').first();
+        await expect(row).toHaveAttribute('data-saved-property', 'tagged_source');
+
+        await choose(page, 'select.owa_goalTrigger', 'click');
+
         await expect(row.locator('select.owa_goalProperty')).toHaveValue('tagged_source');
         await expect(row.locator('.chosen-single')).toContainText('not carried by click');
         await expect(row.locator('.owa_goalConditionHelp')).toContainText('does not carry this');
         await expect(row.locator('.owa_goalConditionHelp')).toHaveClass(/owa_goalConditionWarning/);
+
+        // Back to an event that carries it: an ordinary condition again.
+        await choose(page, 'select.owa_goalTrigger', 'page_view');
+        await expect(row.locator('select.owa_goalProperty')).toHaveValue('tagged_source');
+        await expect(row.locator('.owa_goalConditionHelp')).not.toHaveClass(/owa_goalConditionWarning/);
+
+        await confirmAndWait(page, page.locator('input[value="Delete Goal Event"]'));
     });
 
     /**
@@ -212,12 +259,19 @@ test.describe('goal events', () => {
         const row = page.locator('.owa_goalCondition').first();
         const box = row.locator('.chosen-container');
 
-        // Searching the DESCRIPTION finds it: no label says "other than the page".
+        // Open, each item is two lines: the name, then the description.
         await box.locator('.chosen-single').click();
+        const first = box.locator('.chosen-results li.active-result').first();
+        await expect(first.locator('.owa_goalOptionName')).toHaveCount(1);
+        await expect(first.locator('.owa_goalOptionDescription')).not.toHaveText('');
+
+        // Searching the DESCRIPTION finds it: no label says "other than the page".
+        // chosen redraws the list as it filters, and the split survives that.
         await box.locator('.chosen-search input').pressSequentially('other than the page');
         const hit = box.locator('.chosen-results li.active-result');
         await expect(hit).toHaveCount(1);
-        await expect(hit).toContainText('Outbound click');
+        await expect(hit.locator('.owa_goalOptionName')).toHaveText('Outbound click');
+        await expect(hit.locator('.owa_goalOptionDescription em')).toHaveText('other than the page');
         await hit.click();
 
         await expect(row.locator('.chosen-single')).toHaveText('Outbound click');
