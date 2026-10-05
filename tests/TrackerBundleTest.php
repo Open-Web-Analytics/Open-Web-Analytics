@@ -33,13 +33,15 @@ final class TrackerBundleTest extends TestCase
 
         $this->suiteOut = TrackerBundle::$outDir;
 
-        TrackerBundle::$distDir = $this->dist;
-        TrackerBundle::$outDir  = $this->out;
+        TrackerBundle::$distDir  = $this->dist;
+        TrackerBundle::$buildDir = $this->dist;   // the fixture writes its manifest beside the files
+        TrackerBundle::$outDir   = $this->out;
     }
 
     protected function tearDown(): void
     {
-        TrackerBundle::$distDir = null;
+        TrackerBundle::$distDir  = null;
+        TrackerBundle::$buildDir = null;
         TrackerBundle::$outDir  = $this->suiteOut;
 
         if (owa_test_db_available()) {
@@ -438,9 +440,25 @@ final class TrackerBundleTest extends TestCase
             }
         } finally {
             \OWA\Module\Base\Module::$publish_inline = null;
-            if ($c->get('base', 'tracker_build') !== $was) {
-                $c->set('base', 'tracker_build', $was);
-            }
+            $this->restoreTrackerBuild($was);
+        }
+    }
+
+    /**
+     * Put the recorded build back as it was, in the DATABASE as well: update()
+     * persists the fixture's hash, and leaving it would make every later test
+     * on this install see an update pending.
+     */
+    private function restoreTrackerBuild($was): void
+    {
+        $c = \OWA\Core\CoreAPI::configSingleton();
+        $c->set('base', 'tracker_build', $was);
+
+        if ($was === null || $was === false || $was === '') {
+            \OWA\Core\CoreAPI::clearScopedSetting('install', '1', 'base', 'tracker_build');
+        } else {
+            $c->persistSetting('base', 'tracker_build', $was);
+            $c->save();
         }
     }
 
@@ -467,9 +485,7 @@ final class TrackerBundleTest extends TestCase
         } finally {
             \OWA\Module\Base\Module::$publish_inline = null;
             $this->dropScratchJobQueue($table);
-            if ($c->get('base', 'tracker_build') !== $was) {
-                $c->set('base', 'tracker_build', $was);
-            }
+            $this->restoreTrackerBuild($was);
         }
     }
 

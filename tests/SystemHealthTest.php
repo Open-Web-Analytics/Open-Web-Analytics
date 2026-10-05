@@ -151,8 +151,10 @@ final class SystemHealthTest extends TestCase
             ]));
         }
 
-        $was = [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir];
-        \OWA\Module\Base\Classes\TrackerBundle::$distDir = $root . 'dist/';
+        $was = [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir,
+            \OWA\Module\Base\Classes\TrackerBundle::$buildDir];
+        \OWA\Module\Base\Classes\TrackerBundle::$distDir  = $root . 'dist/';
+        \OWA\Module\Base\Classes\TrackerBundle::$buildDir = $root . 'dist/';   // the fixture's manifest is beside its files
         \OWA\Module\Base\Classes\TrackerBundle::$outDir  = $root . 'tracker/';
 
         return [$root, $was];
@@ -160,7 +162,8 @@ final class SystemHealthTest extends TestCase
 
     private function dropBundleFixture(array $fixture): void
     {
-        [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir] = $fixture[1];
+        [\OWA\Module\Base\Classes\TrackerBundle::$distDir, \OWA\Module\Base\Classes\TrackerBundle::$outDir,
+            \OWA\Module\Base\Classes\TrackerBundle::$buildDir] = $fixture[1];
         exec('rm -rf ' . escapeshellarg($fixture[0]));
     }
 

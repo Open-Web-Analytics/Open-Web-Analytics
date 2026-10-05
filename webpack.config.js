@@ -39,8 +39,10 @@ const CopyPlugin = require('copy-webpack-plugin');
 // plugin API -- which the package declares as `pluginApi: {path, export}` --
 // and joins the entry like a contribution. The chunk's own code registers the
 // real plugin when it arrives. A package that declares `bundleManifest` also
-// emits that file: its own file and each lazy chunk's, with their SHA-256, for
-// whatever composes them (publishing a Profile's tracking bundle).
+// writes that file -- a path RELATIVE to the module directory, outside the
+// served tree -- listing its own file and each lazy chunk's with their SHA-256,
+// for whatever composes them (publishing a Profile's tracking bundle) and for
+// the update gate (TrackerBundle::buildHash()).
 // A manifest package is one of:
 //   JS  { name, type:'js', entry, outputDir, splitVendors, licence? }
 //   CSS { name, type:'css', outputDir, files:[...], copy:[{from,to,ignore?}] }
@@ -145,16 +147,21 @@ function lazyStub(moduleDir, pkg, lazy) {
 // Emits a package's bundle manifest: its own file and each lazy chunk's, with
 // their SHA-256, computed from what is actually written.
 class BundleManifestPlugin {
-	constructor(filename, core, chunks) {
-		this.filename = filename;
+	// file: where to write the manifest (absolute). Not an emitted asset: the
+	// output dir is public/, which is served, and nothing a browser loads needs
+	// it. Written after the files it describes are on disk, so a reader never
+	// sees a manifest for files that are not there yet.
+	constructor(file, core, chunks) {
+		this.file = file;
 		this.core = core;
 		this.chunks = chunks;
+		this.manifest = null;
 	}
 
 	// webpack's own classes come from the compiler it hands the plugin: this
 	// config imports no webpack itself (see BundleIntegrity.test.js).
 	apply(compiler) {
-		const { Compilation, sources } = compiler.webpack;
+		const { Compilation } = compiler.webpack;
 
 		compiler.hooks.thisCompilation.tap('OwaBundleManifest', (compilation) => {
 			compilation.hooks.processAssets.tap(
@@ -174,12 +181,22 @@ class BundleManifestPlugin {
 					for (const { name, chunk } of this.chunks) {
 						manifest.plugins[name] = describe(`${chunk}.js`);
 					}
-					compilation.emitAsset(
-						this.filename,
-						new sources.RawSource(JSON.stringify(manifest, null, 2) + '\n')
-					);
+					this.manifest = manifest;
 				}
 			);
+		});
+
+		compiler.hooks.afterEmit.tap('OwaBundleManifest', (compilation) => {
+			if (compilation.errors.length || !this.manifest) {
+				return;
+			}
+			fs.mkdirSync(path.dirname(this.file), { recursive: true });
+			const tmp = `${this.file}.${process.pid}.tmp`;
+			fs.writeFileSync(tmp, JSON.stringify(this.manifest, null, 2) + '\n');
+			fs.renameSync(tmp, this.file);
+
+			// Where earlier builds emitted it, beside the tracker in public/.
+			fs.rmSync(path.join(compilation.outputOptions.path, path.basename(this.file)), { force: true });
 		});
 	}
 }
@@ -207,7 +224,7 @@ function jsConfig(moduleName, moduleDir, pkg, contributed = [], lazy = []) {
 		// source: the release tarball excludes modules/Base/src and ships public/, so
 		// public/ is the only place the notice actually reaches a user.
 		plugins: (pkg.bundleManifest
-			? [new BundleManifestPlugin(pkg.bundleManifest, pkg.name, lazy.map((l) => l.spec))]
+			? [new BundleManifestPlugin(path.resolve(moduleDir, pkg.bundleManifest), pkg.name, lazy.map((l) => l.spec))]
 			: []
 		).concat(pkg.licence
 			? [

@@ -13,3 +13,5 @@ public/
 /test-results/
 /playwright-report/
 owa-data/e2e-selfhost-logs/
+# The tracker build manifest (TrackerBundle::BUILD), written by npm run build.
+/modules/Base/build/

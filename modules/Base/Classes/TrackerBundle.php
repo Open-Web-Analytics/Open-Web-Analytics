@@ -41,8 +41,15 @@ class TrackerBundle {
     /** Where bundles are written, under OWA_DIR. */
     const DIR = 'public/tracker/';
 
-    /** The built tracker's directory and its manifest, under OWA_DIR. */
+    /** The built tracker's directory, under OWA_DIR. */
     const DIST = 'public/base/dist/';
+
+    /**
+     * The build's manifest, under OWA_DIR: outside the served tree (nothing a
+     * browser loads needs it), shipped with the code and replaced with it, and
+     * gitignored -- the build writes it beside nothing it could drift from.
+     */
+    const BUILD = 'modules/Base/build/';
     const MANIFEST = 'owa.tracker.manifest.json';
 
     /** A site id that may be a file name. */
@@ -50,11 +57,17 @@ class TrackerBundle {
 
     /** Absolute directories in place of OWA_DIR's, for tests. Null in use. */
     public static $distDir = null;
+    public static $buildDir = null;
     public static $outDir  = null;
 
     private static function distDir() {
 
         return self::$distDir ?? OWA_DIR . self::DIST;
+    }
+
+    private static function buildDir() {
+
+        return self::$buildDir ?? OWA_DIR . self::BUILD;
     }
 
     private static function outDir() {
@@ -91,7 +104,7 @@ class TrackerBundle {
      */
     public static function buildManifest() {
 
-        $file = self::distDir() . self::MANIFEST;
+        $file = self::buildDir() . self::MANIFEST;
 
         if ( ! is_readable( $file ) ) {
 
