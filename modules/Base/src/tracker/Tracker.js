@@ -208,14 +208,19 @@ class OWATracker  {
 	
 	    this.last_event  =  '';
 	    /**
-	     * The last scroll depth REPORTED, as a percentage.
+	     * SCROLL DEPTH, per page view (see checkScrollDepth()). All reset on an SPA
+	     * route change, because the new route is a new page.
 	     *
-	     * 0 means nothing has been sent for this page. Reset on an SPA route
-	     * change, because the new route is a new page and its depth starts
-	     * again -- `last_scroll` used to be assigned by the scroll handler and
-	     * never read by anything, which is how every scroll event queued.
+	     * scrollDeepest: the deepest threshold reached, as a percentage.
+	     * scrollReported: the deepest one sent; 0 means nothing has been.
+	     * scrollStart: where the page sat when it finished loading, or null before
+	     *   then. Moving away from it is what counts as a scroll.
+	     * scrollMoved: whether the visitor has scrolled since.
 	     */
-	    this.last_scroll = 0;
+	    this.scrollDeepest  = 0;
+	    this.scrollReported = 0;
+	    this.scrollStart    = null;
+	    this.scrollMoved    = false;
 	    /**
 	     * ENGAGEMENT. Two values, and the distinction is the whole design.
 	     *
@@ -359,20 +364,16 @@ class OWATracker  {
 	         */
 	        sessionLength: 1800,
 	        /**
-	         * Scroll depths, as percentages, that each raise ONE scroll event per
-	         * page view.
+	         * The depths, as percentages, a page view's scroll is reported at: the
+	         * deepest one reached, rounded down to a threshold.
 	         *
-	         * QUARTILES BY DEFAULT, ending at 90 rather than 100. A single 90% mark
-	         * answered only "did they reach the end", which is not a distribution:
-	         * nothing could say how far down people get. Every mark crossed is
-	         * reported, so the count at each mark reads as "how many reached at
-	         * least this far" and the four together are a depth funnel.
+	         * QUARTILES BY DEFAULT, ending at 90 rather than 100, so the report can
+	         * say how far down people get and not only whether they reached the
+	         * end. 90, not 100, because a sticky footer, a rounding pixel or a
+	         * trailing element keeps many pages from ever reading exactly 100.
 	         *
-	         * 90, not 100, because a sticky footer, a rounding pixel or a trailing
-	         * element keeps many pages from ever reading exactly 100.
-	         *
-	         * Up to four events per page view, and only on pages that scroll. A site
-	         * that wants the old single mark sets [90].
+	         * They are buckets, not events: a page view sends one scroll event, at
+	         * its deepest threshold (see checkScrollDepth()).
 	         *
 	         * @option
 	         */
@@ -2406,68 +2407,111 @@ class OWATracker  {
     }
 
     /**
-     * Raise a `scroll` event the first time the page passes a depth threshold.
+     * Note how deep the visitor has scrolled, and send it if nothing deeper is
+     * possible. Called once per frame while the page scrolls.
      *
-     * ONE EVENT PER PAGE PER THRESHOLD, not one per scroll tick. The handler
-     * fired on every scroll event and queued one each time -- `last_scroll` was
-     * assigned and never read, so nothing throttled it and nothing could: a
-     * timestamp throttle would still send a stream of them.
+     * ONE EVENT PER PAGE VIEW, at its deepest threshold. Every threshold used to
+     * be its own event -- four per page view by default, and all four at load on
+     * a page that fits the window, without a scroll. That made scroll the most
+     * frequent event of all.
      *
-     * Depth is the right unit rather than time or pixels. It is comparable
-     * across page lengths and viewport sizes, and it answers the question
-     * anyone actually asks of it: did they reach the bottom.
+     * GATED ON A SCROLL. Nothing is noted until the page has moved from where it
+     * sat when loading finished: a page that fits the window cannot scroll and
+     * reports nothing, and a position the browser restored on a back navigation
+     * is not something the visitor did. Once they have scrolled, the depth counts
+     * what was visible at load too -- a page 50px taller than the window reaches
+     * 100% after a 50px scroll.
      *
-     * The threshold list is an option. The default is quartiles -- 25, 50, 75
-     * and 90 -- so the marks read as a depth funnel; a site that wants the one
-     * event at 90%, where "read to the end" becomes true, sets [90].
+     * The last threshold is sent AT ONCE: no deeper value is possible, and it is
+     * the one that matters most. Anything shallower waits for the page to be
+     * hidden or left (flushScrollDepth()), so a visitor who reads to 75% sends
+     * one event and not three.
      *
      * @internal
      */
     checkScrollDepth() {
 
-        // A route change is settling; send() checks once its page view is out.
-        if ( this.routePending ) {
+        // A route change is settling; its page view goes first (see send()).
+        if ( this.routePending || this.scrollStart === null ) {
 
             return;
         }
 
-        var depth = this.getScrollDepth();
+        if ( ! this.scrollMoved ) {
 
-        if ( ! depth ) {
+            if ( this.getScrollingPosition().y === this.scrollStart ) {
 
-            return;
+                return;
+            }
+
+            this.scrollMoved = true;
         }
 
-        /*
-         * ASCENDING, whatever order the site gave. The walk below relies on it:
-         * last_scroll records the deepest mark reported, so with [90, 25] a jump to
-         * the bottom reported 90 and then skipped 25 for good, because 90 is not
-         * below 25.
-         *
-         * Every mark crossed is reported, not only the deepest -- so each mark's
-         * count reads directly as "how many reached at least this far", and a
-         * visitor who jumps to the bottom still counts as having passed halfway.
-         */
-        var thresholds = ( this.getOption( 'scrollThresholds' ) || [ 90 ] )
-            .map( Number )
-            .filter( function ( mark ) { return mark > 0 && mark <= 100; } )
-            .sort( function ( a, b ) { return a - b; } );
+        var thresholds = this.getScrollThresholds();
+        var depth      = this.getScrollDepth();
 
         for ( var i = 0; i < thresholds.length; i++ ) {
 
-            var mark = thresholds[ i ];
+            if ( depth >= thresholds[ i ] && this.scrollDeepest < thresholds[ i ] ) {
 
-            if ( depth >= mark && this.last_scroll < mark ) {
-
-                this.last_scroll = mark;
-
-                var event = this.makeEvent();
-                event.setEventType( 'scroll' );
-                event.set( 'scroll_depth', mark );
-
-                this.trackEvent( event );
+                this.scrollDeepest = thresholds[ i ];
             }
         }
+
+        if ( thresholds.length && this.scrollDeepest === thresholds[ thresholds.length - 1 ] ) {
+
+            this.flushScrollDepth();
+        }
+    }
+
+    /**
+     * Send the deepest threshold reached, if it is deeper than what was sent.
+     *
+     * Called when the page is hidden or left, on a route change, and by
+     * checkScrollDepth() at the last threshold. A visitor who comes back to a
+     * hidden page and scrolls further sends again, deeper: losing the depth was
+     * judged worse than a second event for the page view.
+     */
+    flushScrollDepth() {
+
+        if ( this.scrollDeepest <= this.scrollReported ) {
+
+            return;
+        }
+
+        this.scrollReported = this.scrollDeepest;
+
+        var event = this.makeEvent();
+        event.setEventType( 'scroll' );
+        event.set( 'scroll_depth', this.scrollDeepest );
+
+        return this.trackEvent( event );
+    }
+
+    /**
+     * Start a page view's scroll from where the page sits now: on load, and
+     * after a route's page view.
+     */
+    resetScrollDepth() {
+
+        this.scrollDeepest  = 0;
+        this.scrollReported = 0;
+        this.scrollMoved    = false;
+        this.scrollStart    = this.getScrollingPosition().y;
+    }
+
+    /**
+     * The scrollThresholds option, cleaned: numbers in 1..100, ascending
+     * whatever order the site gave, so the last is the deepest.
+     *
+     * @return {number[]}
+     */
+    getScrollThresholds() {
+
+        return ( this.getOption( 'scrollThresholds' ) || [ 90 ] )
+            .map( Number )
+            .filter( function ( mark ) { return mark > 0 && mark <= 100; } )
+            .sort( function ( a, b ) { return a - b; } );
     }
 
     /**
@@ -2699,6 +2743,7 @@ class OWATracker  {
             if ( document.visibilityState === 'hidden' ) {
 
                 that.flushPendingRouteView();
+                that.flushScrollDepth();
                 that.trackEngagement();
 
             } else {
@@ -2716,6 +2761,7 @@ class OWATracker  {
         window.addEventListener( 'pagehide', function () {
 
             that.flushPendingRouteView();
+            that.flushScrollDepth();
             that.trackEngagement();
 
         }, false );
@@ -2848,16 +2894,12 @@ class OWATracker  {
             that.trackSiteSearch();
 
             /*
-             * THE ROUTE'S DEPTH, measured as a loaded page's is: its marks start
-             * again, and a route that fits the viewport reports them now rather
-             * than waiting for a scroll that will never come. After the page
-             * view, in the order a loaded page sends them.
+             * THE ROUTE'S SCROLL starts from where it sits once its page view is
+             * out, as a loaded page's starts from where it sits at load.
              */
-            that.last_scroll = 0;
-
             if ( that.isScrollTrackingEnabled ) {
 
-                that.checkScrollDepth();
+                that.resetScrollDepth();
             }
         };
 
@@ -2878,6 +2920,7 @@ class OWATracker  {
             // leaving, so the time lands against the page it was spent on.
             if ( ! pending ) {
 
+                that.flushScrollDepth();
                 that.trackEngagement();
                 that.resetEngagement();
             }
@@ -4397,6 +4440,10 @@ class OWATracker  {
                     });
                 });
             });
+
+        } else {
+
+            this.continueSession( event );
         }
 
         /*
@@ -4433,6 +4480,106 @@ class OWATracker  {
 
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
+        }
+    }
+
+    /**
+     * Decide the session again for a later event on the same page.
+     *
+     * The block above decides it once, on the page's first event. A page left
+     * open past the inactivity window used to keep that session for every event
+     * after it, however long the tab sat: a click 40 minutes later carried the
+     * old session_id and stretched the session over the idle time. Now the next
+     * event, whatever it is, starts a new session, as a page load after the same
+     * gap would. The server needs nothing for it: any event carrying
+     * is_new_session_start raises the session_start.
+     *
+     * THE COOKIE AS WELL AS MEMORY. Memory holds this page's last request; the
+     * cookie holds the last request any tab of the site had accepted. A tab
+     * idle for 40 minutes while another tab of the same site was in use is in a
+     * live session, and if that tab has already started the next session, this
+     * one joins it rather than starting a third.
+     *
+     * A restarted session takes this page's campaign tags and referrer, which
+     * every event carries, so it is attributed as the page's own landing was.
+     */
+    continueSession( event ) {
+
+        var store  = this.storeName( 's' );
+        var now    = event.get( 'timestamp' ) || this.getTimestamp();
+        var mine   = OWA.getState( store, 'last_req' ) * 1 || 0;
+        var shared = OWA.getPersistedState( store, 'last_req' ) * 1 || 0;
+        var latest = Math.max( mine, shared );
+
+        if ( ! this.isNewSession( now, latest ) ) {
+
+            if ( shared > mine ) {
+
+                this.joinPersistedSession();
+            }
+
+            return;
+        }
+
+        var old_sid = OWA.getState( store, 'sid' );
+        var old_sts = OWA.getState( store, 'sts' );
+
+        OWA.setState( store, 'prior_last_req', latest );
+
+        if ( old_sid ) {
+
+            OWA.setState( store, 'prior_session_id', old_sid );
+        }
+
+        if ( old_sts ) {
+
+            OWA.setState( store, 'psts', old_sts );
+        }
+
+        OWA.setState( store, 'sts', now );
+        OWA.setState( store, 'sid', Util.generateRandomGuid(), true );
+
+        // The sequence counts events within a session.
+        OWA.setState( store, 'seq', '' );
+
+        this.isNewSessionFlag    = true;
+        this.pendingSessionStart = true;
+
+        this.setNumberPriorSessions( event );
+    }
+
+    /**
+     * Take the session another tab of this site has persisted, if it is not the
+     * one in memory.
+     *
+     * Only the values that change at a session boundary: everything else in the
+     * session store is this page's, or the same in both.
+     */
+    joinPersistedSession() {
+
+        var store = this.storeName( 's' );
+        var sid   = OWA.getPersistedState( store, 'sid' );
+
+        if ( ! sid || sid === OWA.getState( store, 'sid' ) ) {
+
+            return;
+        }
+
+        [ 'sid', 'sts', 'psts', 'prior_session_id', 'seq' ].forEach( function ( key ) {
+
+            var value = OWA.getPersistedState( store, key );
+
+            if ( value !== undefined && value !== '' ) {
+
+                OWA.setState( store, key, value );
+            }
+        } );
+
+        var nps = OWA.getPersistedState( this.storeName( 'v' ), 'nps' );
+
+        if ( nps !== undefined && nps !== '' ) {
+
+            OWA.setState( this.storeName( 'v' ), 'nps', nps, true );
         }
     }
 
@@ -5386,7 +5533,8 @@ class OWATracker  {
     }
 
     /**
-     * Raise a `scroll` event when the page passes a depth threshold.
+     * Report how far down each page view the visitor scrolls: one `scroll`
+     * event per page view, at its deepest threshold (see checkScrollDepth()).
      *
      * ITS OWN LISTENER. Scroll depth once shared a single `window.onscroll`
      * slot with another feature and fired only where that feature was active,
@@ -5394,7 +5542,7 @@ class OWATracker  {
      * unrelated feature's sample rate.
      *
      * Idempotent, like trackClicks(): the snippet pushes each command once, but a
-     * site can push one twice and two listeners would report every threshold twice.
+     * site can push one twice and two listeners would check every frame twice.
      *
      * @command
      */
@@ -5442,24 +5590,23 @@ class OWATracker  {
         window.addEventListener( 'scroll', onScroll, false );
 
         /*
-         * AND ONCE WITHOUT A SCROLL, because a page that fits in the viewport is
-         * read to the end without ever firing one -- and so never reported its
-         * depth at all.
+         * WHERE THE PAGE SITS ONCE IT HAS LOADED is what a scroll is measured
+         * from, so a position the browser restores on a back navigation does not
+         * count as one. At `load`, not now: the snippet can run this before the
+         * document is laid out.
          *
-         * At `load`, not now. The snippet can run this before the document is laid
-         * out, and a long page measured then has a small height, which reads as
-         * scrolled to the bottom -- a false event on exactly the pages that are
-         * least likely to be read to the end.
+         * No depth is reported here. A page that fits the window used to report
+         * every threshold at load without a scroll.
          */
         if ( typeof document !== 'undefined' && document.readyState === 'complete' ) {
 
-            this.checkScrollDepth();
+            this.resetScrollDepth();
 
         } else {
 
             window.addEventListener( 'load', function () {
 
-                that.checkScrollDepth();
+                that.resetScrollDepth();
 
             }, { once: true } );
         }
