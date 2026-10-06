@@ -3793,18 +3793,20 @@ turned on or off, nor on a screen opening; anything else is <code>cmd=publish-tr
 
 <h3 id="s232"><span class="num">2.31</span>One scroll event per page view, gated on a scroll <span class="chip c-dec">Decided 6&nbsp;Oct</span></h3>
 
-<p class="note"><strong>DECIDED 6&nbsp;Oct, not built.</strong> Replaces the event-per-threshold
-behaviour of <code>fc5e5589</code>. <code>scroll</code> had become the most frequent event on the app
-install. The current tracker's behaviour below is from the 28&nbsp;Sep work and is to be confirmed
-against <code>Tracker.js</code> before building.</p>
+<p class="note"><strong>DECIDED 6&nbsp;Oct, built on <code>feature/scroll-one-per-view</code>.</strong>
+Replaces the event-per-threshold behaviour of <code>fc5e5589</code>, which sent every threshold
+crossed &mdash; and checked once at <code>load</code>, so a page fitting the window sent all four
+(25/50/75/90) on every view with no scroll. <code>scroll</code> had become the most frequent event on
+the app install.</p>
 
-<p><strong>The rule.</strong> A page view sends <strong>at most one</strong> <code>scroll</code> event, and
-only if the visitor scrolled:</p>
+<p><strong>The rule.</strong> A page view sends one <code>scroll</code> event, at its deepest threshold,
+and only if the visitor scrolled:</p>
 <div class="scroll"><table>
 <thead><tr><th>When</th><th>Sent</th></tr></thead>
 <tbody>
 <tr><td>A scroll reaches the <strong>last</strong> configured threshold (90 by default)</td><td>At once, with that threshold. Nothing more for this page view</td></tr>
-<tr><td>The page is hidden (<code>visibilitychange</code>) or left (<code>pagehide</code>), whichever comes first, after a scroll that did not reach it</td><td>The deepest threshold reached, in the same beacon as <code>user_engagement</code></td></tr>
+<tr><td>The page is hidden (<code>visibilitychange</code>) or left (<code>pagehide</code>) after a scroll that did not reach it</td><td>The deepest threshold reached, as its own beacon beside <code>user_engagement</code> (the tracker sends one beacon per event)</td></tr>
+<tr><td>The visitor comes back to a hidden page and scrolls deeper</td><td><strong>Sent again, deeper.</strong> Losing the depth was judged worse than a second event for the page view. Not gated on the session: an event after a long idle behaves as every other event does (see below)</td></tr>
 <tr><td>A route change</td><td>Any unsent scroll for the old route, then the depth resets</td></tr>
 <tr><td>No scroll, or the first threshold never reached</td><td>Nothing</td></tr>
 </tbody></table></div>
@@ -3852,14 +3854,32 @@ no toolbar).</p>
 
 <h4>What changes downstream</h4>
 <ul>
-<li><strong>Scroll Depth report</strong>: &ldquo;reached 50%&rdquo; becomes a count of scroll events
-with <code>scroll_depth &gt;= 50</code>, cumulative, not a count of 50% events.</li>
+<li><strong>Scroll Depth report</strong>: counting scroll events by <code>scrollDepth</code> now reads as
+&ldquo;where each page view stopped&rdquo; (rows sum to page views that scrolled), not &ldquo;how many
+reached at least this far&rdquo;. The grids are titled <em>Deepest Point Reached</em>; the query
+engine has no running sum. <code>scrolledUsers</code> (distinct visitors with a scroll event) is added
+to them.</li>
 <li><strong>Goals</strong> on <code>scroll</code> with a depth condition need <code>&gt;=</code>; an
 <code>=</code> condition stops matching visitors who went deeper.</li>
 <li><strong>Rows already collected</strong> on v2 have one event per threshold. Either the cube build
 keeps the maximum per page view for them, or the release accepts the break. <span class="chip c-open">Open</span></li>
 <li>v1 has no scroll event (&sect;2.2), so the migrator is unaffected.</li>
 </ul>
+
+<h4>Sessions on a page left open <span class="chip c-open">Open</span></h4>
+
+<p><span class="chip c-meas">Measured</span> 6&nbsp;Oct (<code>idle.js</code>, page clock
+fast-forwarded): GA re-decides the session on <strong>every</strong> event. An event on the same page
+5&nbsp;minutes after its page view keeps the session; 31&nbsp;minutes after, it carries a new
+<code>sid</code>, <code>sct</code> 1&rarr;2 and <code>_ss=1</code> &mdash; a new session started by
+whatever the visitor did, with no reload and no page view.</p>
+
+<p>OWA's tracker decides the session in <code>manageState()</code> behind <code>stateInit</code>,
+which is set by the first event of a page load and never reset. Any event type can start a session,
+but only as the page's first; a click, scroll or <code>user_engagement</code> after a long idle keeps
+the old <code>session_id</code> and stretches that session over the idle time. Matching GA means
+re-deciding when the inactivity window has passed. That reopens the 21&ndash;22&nbsp;Aug decision not
+to rework the tracker's session model, so it is recorded here, not built.</p>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
