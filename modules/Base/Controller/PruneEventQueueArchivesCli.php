@@ -33,6 +33,18 @@ namespace OWA\Module\Base\Controller;
 
 class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Deletes archived files of the file-based event queues.',
+            'arguments'   => array(
+                'queues=<name>[,<name>...]' => 'The queues to prune. Defaults to every registered queue.',
+                'interval=<seconds>'        => 'Age beyond which an archive is deleted. Defaults to 86400.',
+            ),
+        );
+    }
+
     function __construct($params) {
 
         $this->setRequiredCapability('edit_modules');

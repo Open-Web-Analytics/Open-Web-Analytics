@@ -1,5 +1,6 @@
 {
     "title": "Average Order Value",
+    "description": "Average revenue per transaction, by day.",
     "metrics": "revenuePerTransaction",
     "widgets": [
         {

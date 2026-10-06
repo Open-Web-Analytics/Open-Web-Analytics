@@ -82,6 +82,22 @@ namespace OWA\Module\Base\Controller;
  */
 class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Rebuilds the reporting cubes from the raw event table, one partition at a time. With no property=, covers every existing cube and every Property with raw events in the range, creating a cube on a Property\'s first data. Dates select partitions, so a range is widened to the whole partitions it touches.',
+            'arguments'   => array(
+                'from=<yyyymmdd>' => 'First date to rebuild. Defaults to yesterday.',
+                'to=<yyyymmdd>'   => 'Last date to rebuild. Defaults to today.',
+                'days=<n>'        => 'The last n days, today included. Instead of from= and to=.',
+                'property=<id>'   => 'Rebuild only this Property\'s cube.',
+                '--dry-run'       => 'Print the statements a build would run, and run nothing.',
+                'steps=1'         => 'Print per-step timings and counts.',
+            ),
+        );
+    }
+
     /**
      * How long the per-cube build lock outlives proof of life.
      *

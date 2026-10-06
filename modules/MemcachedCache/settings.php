@@ -29,13 +29,15 @@ return array(
         // 'host:port' strings. No screen offers them; they are set from the
         // config file or stored directly.
         'memcachedServers' => array(
-            'storable' => true,
-            'autoload' => true,
+            'storable'    => true,
+            'autoload'    => true,
+            'description' => 'The memcached servers to use, as host:port strings. A server with no port uses 11211.',
         ),
 
         'memcachedPersistantConnections' => array(
-            'storable' => true,
-            'autoload' => true,
+            'storable'    => true,
+            'autoload'    => true,
+            'description' => 'Whether the connection to memcached is kept open and reused across requests.',
         ),
     ),
 );

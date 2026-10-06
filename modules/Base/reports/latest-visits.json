@@ -1,5 +1,6 @@
 {
     "title": "Latest Visits",
+    "description": "Visits by the visitor's address, landing page, source / medium, location and number of prior sessions.",
     "metrics": "sessions,pageViewsPerSession",
     "widgets": [
         {

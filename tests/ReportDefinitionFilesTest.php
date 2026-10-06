@@ -82,6 +82,9 @@ final class ReportDefinitionFilesTest extends TestCase
 
             'settings scalar' => array(
                 array( 'title' => 'Pages', 'settings' => 'metrics' ), 'must be an object' ),
+
+            'description not a string' => array(
+                array( 'title' => 'Pages', 'description' => array( 'Page views' ) ), '"description" must be a string' ),
         );
     }
 
@@ -91,6 +94,7 @@ final class ReportDefinitionFilesTest extends TestCase
         $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError( array(
             'title'       => 'Web Pages',
             'titleSuffix' => '',
+            'description' => 'Page views by page.',
             'settings'    => array( 'metrics' => 'pageViews' ),
         ) ) );
     }

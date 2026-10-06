@@ -1,5 +1,6 @@
 {
     "REMOTE_HOST": {
+        "description": "The visitor's network host name, from a reverse DNS lookup of their address. Usually empty: the web server fills it only when host name lookups are turned on.",
         "set_by": "request",
         "from": [
             "REMOTE_HOST"
@@ -17,6 +18,7 @@
         "note": "The visitor’s NETWORK host, reverse DNS of their address — not the page’s host and not this server’s. v1 reduced it to a registered domain through the Public Suffix List and reported it as the `host` dimension (\"the visitor came from some host\"); v2 gave that name to the page’s host, so this needs a column of its own. Usually empty in practice: Apache only fills REMOTE_HOST with HostnameLookups On, which is off by default."
     },
     "HTTP_USER_AGENT": {
+        "description": "The browser's User-Agent header, as received. Browser, operating system and device are derived from it.",
         "set_by": "request",
         "from": [
             "HTTP_USER_AGENT"
@@ -33,6 +35,7 @@
         ]
     },
     "language": {
+        "description": "The visitor's preferred language from the Accept-Language header, cut to its first five characters (for example en-US).",
         "set_by": "request",
         "from": [
             "HTTP_ACCEPT_LANGUAGE"
@@ -49,6 +52,7 @@
         ]
     },
     "screen_resolution": {
+        "description": "The device's screen size as WIDTHxHEIGHT in CSS pixels. Dropped if it is not in that shape.",
         "set_by": "client",
         "from": [
             "d_sr"
@@ -65,6 +69,7 @@
         "note": "The device's screen as WIDTHxHEIGHT in CSS pixels, read from window.screen and rounded. On every event, as the other page-environment values are: the wire is one beacon per event, so what a batched request would carry once rides each. The SCREEN, not the viewport -- the viewport is a click's frame and rides clicks only. Anything not shaped WIDTHxHEIGHT is dropped (screenResolution()), so a hand-built beacon cannot add a value to group by."
     },
     "ip_address": {
+        "description": "The visitor's IP address: the first public address in the proxy headers, else the connecting address. Anonymized when the Profile's anonymize_ips setting is on.",
         "set_by": "request",
         "from": [
             "HTTP_CLIENT_IP",
@@ -85,6 +90,7 @@
         ]
     },
     "ts": {
+        "description": "When OWA received the event, as a Unix timestamp in microseconds, stamped by the server.",
         "set_by": "request",
         "from": [
             "clock"
@@ -102,6 +108,7 @@
         "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
     },
     "page_location": {
+        "description": "The full URL of the page, query string included, exactly as the tracker sent it.",
         "set_by": "client",
         "from": [
             "p_l"
@@ -116,6 +123,7 @@
         "note": "The complete page URL, query included, with nothing stripped. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks on purpose: a filter here would defeat the column. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
     },
     "page_title": {
+        "description": "The page's title.",
         "set_by": "client",
         "from": [
             "p_t"
@@ -131,6 +139,7 @@
         ]
     },
     "fsts": {
+        "description": "When the visitor was first seen, as a Unix timestamp in seconds from the visitor's clock.",
         "set_by": "client",
         "from": [
             "v_fts"
@@ -144,6 +153,7 @@
         "callbacks": []
     },
     "psts": {
+        "description": "When the visitor's previous session started, as a Unix timestamp in seconds from the visitor's clock. Absent on a visitor's first session.",
         "set_by": "client",
         "from": [
             "s_pts"
@@ -157,6 +167,7 @@
         "callbacks": []
     },
     "sts": {
+        "description": "When the current session started, as a Unix timestamp in seconds from the visitor's clock.",
         "set_by": "client",
         "from": [
             "s_sts"
@@ -170,6 +181,7 @@
         "callbacks": []
     },
     "beacon_version": {
+        "description": "The format version of the beacon the tracker sent. Absent from trackers older than versioning.",
         "set_by": "client",
         "from": [
             "_v"
@@ -184,6 +196,7 @@
         "note": "The tracker's BEACON FORMAT generation, sent on every beacon and stored on the row. Not a contract and not consulted at ingest: it is the evidence for deciding when a compat bridge can be deleted, which is otherwise a guess about how long a customer's cache policy lets an old tracker live. NULL means a tracker from before versioning -- generation 0 -- which is every tracker in the wild at the time this shipped."
     },
     "event_seq": {
+        "description": "The event's position within its session, counted by the tracker. Absent from older trackers.",
         "set_by": "client",
         "from": [
             "e_sq"
@@ -198,6 +211,7 @@
         "note": "REQUEST scoped: the event's position in its session, counted on the device and stamped when the event is built. The cube sorts a session on this rather than on ts, because ts is edge receipt and a late beacon would otherwise sort after events that happened after it. Not required -- a tracker cached from before this sends nothing and the row keeps NULL, which the sort reads as 'no device order' rather than as position zero."
     },
     "num_prior_sessions": {
+        "description": "How many sessions the visitor had before this one; 0 on a first visit.",
         "set_by": "client",
         "from": [
             "v_nps"
@@ -211,6 +225,7 @@
         "callbacks": []
     },
     "is_new_session_start": {
+        "description": "Set on the one event that started a new session. OWA creates the session_start event from it.",
         "set_by": "client",
         "from": [
             "s_new"
@@ -225,6 +240,7 @@
         "note": "REQUEST scoped: rides exactly the one beacon that created the session, and is what SessionHandlers branches create-vs-update on."
     },
     "is_new_visitor_created": {
+        "description": "Set on the one event that created a new visitor. OWA creates the first_visit event from it.",
         "set_by": "client",
         "from": [
             "v_new"
@@ -239,6 +255,7 @@
         "note": "REQUEST scoped: marks the one request that minted the visitor. The first_visit materializer (Classes\\MaterializedEvents) raises first_visit from it at ingest, on whatever event carries it."
     },
     "HTTP_REFERER": {
+        "description": "The URL of the page that referred the visitor to this page, on every event of the page. Absent when the browser sent none.",
         "set_by": "client",
         "from": [
             "p_r"
@@ -253,6 +270,7 @@
         "note": "THE PAGE'S REFERRER, ON EVERY EVENT. It was briefly scoped to the page view on the grounds that nothing downstream read a click's copy -- true of today's reports, and the wrong test. A click row's referer_url is the PRIOR PAGE THAT DROVE THE EVENT, which is a question the raw store should be able to answer later; and it cannot be recovered by joining to the page_view for the same page, because one session can reach the same page twice from different referrers. Keeping the evidence is the raw store's job -- the same reason `params` rides every row so a dimension registered tomorrow can be backfilled.\nThe per-event cost is a consequence of sending one beacon per event. BATCHING is the fix for it -- page, referrer and session values carried once per request, with the batch's events carrying only what differs between them. Dropping the value was not.\npage_location (VARCHAR 1024) and page_title ride every event for a stronger reason still: they are read PER ROW. The heatmap groups clickX/clickY constrained on pagePath, and dom-clicks takes a pagePath, so a click has to carry its own page."
     },
     "target_url": {
+        "description": "The URL of the link that was clicked, without port, user name, password or fragment.",
         "set_by": "client",
         "from": [
             "el_lu"
@@ -269,6 +287,7 @@
         ]
     },
     "tagged_source": {
+        "description": "The campaign source the landing page's URL was tagged with, read by OWA from the URL. Absent when the URL carried no source tag.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -287,6 +306,7 @@
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_medium": {
+        "description": "The campaign medium the landing page's URL was tagged with, read by OWA from the URL. Absent when the URL carried no medium tag.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -305,6 +325,7 @@
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_campaign": {
+        "description": "The campaign name the landing page's URL was tagged with, read by OWA from the URL. Absent when the URL carried no campaign tag.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -323,6 +344,7 @@
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_ad": {
+        "description": "The ad the landing page's URL was tagged with, read by OWA from the URL. Absent when the URL carried no ad tag.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -341,6 +363,7 @@
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "tagged_terms": {
+        "description": "The search terms the landing page's URL was tagged with, read by OWA from the URL. Absent when the URL carried no terms tag.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -359,6 +382,7 @@
         "note": "What the landing URL was tagged with. A claim, not a conclusion, and one the SERVER reads: the tags are parsed out of landing_url for the Property’s own campaign keys, so a beacon cannot assert its own attribution. Neither wire contract has ever carried a tagged_* field. The answer over the claim — the tag if there was one, else the referrer classified — is the cube pass’s, on the cube row."
     },
     "prior_touch_source": {
+        "description": "The source of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
         "set_by": "event",
         "from": [
             "visitor_id"
@@ -377,6 +401,7 @@
         "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
     },
     "prior_touch_medium": {
+        "description": "The medium of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
         "set_by": "event",
         "from": [
             "visitor_id"
@@ -395,6 +420,7 @@
         "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
     },
     "prior_touch_campaign": {
+        "description": "The campaign of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
         "set_by": "event",
         "from": [
             "visitor_id"
@@ -413,6 +439,7 @@
         "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
     },
     "prior_touch_ad": {
+        "description": "The ad of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
         "set_by": "event",
         "from": [
             "visitor_id"
@@ -431,6 +458,7 @@
         "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
     },
     "prior_touch_referer_host": {
+        "description": "The referring host of the returning visitor's most recent non-direct visit before this session, from the visitor store. Absent when there was none.",
         "set_by": "event",
         "from": [
             "visitor_id"
@@ -449,6 +477,7 @@
         "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
     },
     "prior_touch_ts": {
+        "description": "When the returning visitor's most recent non-direct visit before this session happened, as a Unix timestamp in microseconds, from the visitor store. Absent when there was none.",
         "set_by": "event",
         "from": [
             "visitor_id"
@@ -467,6 +496,7 @@
         "note": "The visitor’s last non-direct touch before this session, read from the visitor store on the landing beacon of a returning visitor’s session (TrackingEventHelpers::priorTouch()). Evidence, not a reading: the cube decides whether it applies, by the Property’s attribution lookback, and classifies it as it classifies any session’s own tags and referrer (PLAN 2.29)."
     },
     "click_x": {
+        "description": "The horizontal position of the click, in pixels.",
         "set_by": "client",
         "from": [
             "c_x"
@@ -481,6 +511,7 @@
         "note": "Carried by dom.click only. Column type from base.click."
     },
     "click_y": {
+        "description": "The vertical position of the click, in pixels.",
         "set_by": "client",
         "from": [
             "c_y"
@@ -495,6 +526,7 @@
         "note": "Carried by dom.click only. Column type from base.click."
     },
     "page_width": {
+        "description": "The width of the browser window when the click happened, in pixels.",
         "set_by": "client",
         "from": [
             "p_w"
@@ -509,6 +541,7 @@
         "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x and click_y.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
     },
     "page_height": {
+        "description": "The height of the browser window when the click happened, in pixels.",
         "set_by": "client",
         "from": [
             "p_h"
@@ -523,6 +556,7 @@
         "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x and click_y.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
     },
     "dom_element_class": {
+        "description": "The class attribute of the clicked element. Absent when it has none.",
         "set_by": "client",
         "from": [
             "el_cl"
@@ -537,6 +571,7 @@
         "note": "Carried by dom.click only. Column type from base.click."
     },
     "dom_element_id": {
+        "description": "The id of the clicked element, or of the link containing it. Absent when it has none.",
         "set_by": "client",
         "from": [
             "el_id"
@@ -552,6 +587,7 @@
         "note": "The clicked element's id -- or, for a click inside a link, the link's. On file_download too, copied from the click that raised it, so two links to one file can be told apart. Absent, not '(not set)', when the element has none."
     },
     "dom_element_name": {
+        "description": "The name attribute of the clicked element. Absent when it has none.",
         "set_by": "client",
         "from": [
             "el_nm"
@@ -566,6 +602,7 @@
         "note": "Carried by dom.click only. Column type from base.click."
     },
     "dom_element_tag": {
+        "description": "The HTML tag of the clicked element, such as a or button.",
         "set_by": "client",
         "from": [
             "el_tg"
@@ -580,6 +617,7 @@
         "note": "Carried by dom.click only. Column type from base.click."
     },
     "dom_element_text": {
+        "description": "The text of the clicked link (a button's value, an image's alt text), with whitespace collapsed.",
         "set_by": "client",
         "from": [
             "el_tx"
@@ -595,6 +633,7 @@
         "note": "The link's text (an input's value for a button, an image's alt), with runs of whitespace collapsed to one space and trimmed, so an indented multi-line link is one value. On file_download too, copied from the click. Kept in params, not a column."
     },
     "ct_order_id": {
+        "description": "The order's transaction id. Required on a purchase or refund.",
         "set_by": "client",
         "from": [
             "o_id"
@@ -610,6 +649,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
     },
     "ct_order_source": {
+        "description": "Where the order was placed, as the site describes it.",
         "set_by": "client",
         "from": [
             "o_src"
@@ -624,6 +664,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
     },
     "coupon": {
+        "description": "The coupon code applied to the whole order.",
         "set_by": "client",
         "from": [
             "o_cpn"
@@ -639,6 +680,7 @@
         "note": "The order-level coupon code. A param, like order_source: discount reporting is part of the item design, and a column is width on every row."
     },
     "ct_gateway": {
+        "description": "The payment gateway used for the order.",
         "set_by": "client",
         "from": [
             "o_gw"
@@ -653,6 +695,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country."
     },
     "ct_total": {
+        "description": "The order total including tax and shipping, in major units, as the older addTransaction command sends it. Revenue is derived from it when no ct_value is sent.",
         "set_by": "client",
         "from": [
             "o_tot"
@@ -668,6 +711,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe.\nTHE ORDER TOTAL AS SENT, tax and shipping included. It has no column of its own: `revenue` is derived from it, less ct_tax and ct_shipping, which have their own. Converted to minor units by the purchase's currency (TrackingEventHelpers::toMinorUnits)."
     },
     "ct_tax": {
+        "description": "The tax on the order, sent in major units (12.50) and stored in the currency's minor units (1250).",
         "set_by": "client",
         "from": [
             "o_tax"
@@ -685,6 +729,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
     "ct_shipping": {
+        "description": "The shipping charge on the order, sent in major units and stored in the currency's minor units.",
         "set_by": "client",
         "from": [
             "o_shp"
@@ -702,6 +747,7 @@
         "note": "Carried by ecommerce.transaction only. Column type from base.commerce_transaction_fact, where the wire name differs from the column: ct_total is total_revenue, ct_country is billing_country. integer is the nearest type this vocabulary has to numeric -- it applies $var + 0, so 12.50 stays 12.5 rather than truncating -- and toMinorUnits() then converts it to what the column stores. The conversion used to happen in the row builder, which is the last place it could: a property whose value is not what its column stores is a property the registry cannot describe."
     },
     "ct_value": {
+        "description": "The order's value excluding tax and shipping, in major units, as trackPurchase and trackRefund send it.",
         "set_by": "client",
         "from": [
             "o_val"
@@ -718,6 +764,7 @@
         "note": "The purchase's value EXCLUDING tax and shipping, as trackPurchase() sends it. When present it IS the revenue; the legacy addTransaction() path sends only the order total, and revenue is derived from that instead. Sent separately rather than folded into ct_total so the server does not subtract what the browser added in floating point."
     },
     "revenue": {
+        "description": "The order's revenue excluding tax and shipping, in the currency's minor units; on a refund, the amount refunded. Calculated by OWA from the order values.",
         "set_by": "event",
         "from": [
             "ct_value",
@@ -740,6 +787,7 @@
         "note": "Revenue EXCLUDING tax and shipping, in minor units: ct_value when the purchase sent one (trackPurchase), else ct_total less ct_tax and ct_shipping (addTransaction). Tax and shipping have their own columns, so a revenue that included them counted them twice wherever the three were summed. AFTER the four it reads, because it reads their converted values. On a REFUND it is the amount refunded: the value sent, else the items' price times quantity, else the whole purchase's revenue, looked up by transaction id."
     },
     "ct_line_items": {
+        "description": "The order's line items, as a JSON list.",
         "set_by": "client",
         "from": [
             "o_items"
@@ -755,6 +803,7 @@
         "note": "Deliberately untyped. It arrives as a JSON string from the beacon but as an ARRAY when a PHP caller sets it directly, and cleanJson calls json_decode, which takes only a string. Declaring json here fataled every programmatic transaction. Enumerated so the wire surface is complete; coercion needs the polymorphism resolved first."
     },
     "event_type": {
+        "description": "The event's name: one of the event types OWA defines, or the site's own custom event name.",
         "set_by": "client",
         "from": [
             "e_t"
@@ -769,6 +818,7 @@
         "note": "What happened. A REAL tracking property: the beacon carries it, the endpoint admits it, and owa_event_raw.event_type stores it. Declared required:false with no default so nothing fabricates one.\nWHAT CHANGED IS WHO READS IT. log.php also passes it to setEventType(), which sets a class member, and Event::getEventType() used to fall back to this property when the member was empty. That made the bag a SOURCE of an event's identity, and for a non-tracking event that is wrong: EventRawHandlers::announce() copies a beacon's properties onto a fresh notice, so a base.new_session notice carries this property reading 'page_view'. The fallback is gone -- an event's type comes from its member, set at construction or by the endpoint -- and the property is what the beacon SENT, which is what the column records."
     },
     "site_id": {
+        "description": "The id of the tracked site the event belongs to. An event for a site the install does not have is refused.",
         "set_by": "client",
         "from": [
             "site"
@@ -783,6 +833,7 @@
         "note": "The tracked site. logEvent refuses an event naming a site this installation does not have. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
     },
     "session_id": {
+        "description": "The id of the session, created by the tracker.",
         "set_by": "client",
         "from": [
             "s_id"
@@ -797,6 +848,7 @@
         "note": "Minted by the tracker. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
     },
     "visitor_id": {
+        "description": "The id of the visitor, created by the tracker and kept in its visitor cookie.",
         "set_by": "client",
         "from": [
             "v_id"
@@ -811,6 +863,7 @@
         "note": "Minted by the tracker and held in the v store. string, not integer: the integer type applies $var + 0, and these are 19-digit BIGINT ids where that risks precision. Nothing needs them arithmetically."
     },
     "engagement_msec": {
+        "description": "Time the visitor spent on the page since the tracker last reported it, in milliseconds.",
         "set_by": "client",
         "from": [
             "e_ems"
@@ -826,6 +879,7 @@
         "note": "Time accrued on the current page since the last report, in milliseconds. A DELTA, not a session total, so losing one beacon costs one increment rather than one page. Summed at read time; the engaged threshold is applied there too and never at collection.\nEVERY EVENT, and this read [\"user_engagement\", \"page_view\"], which under-described the wire. addDefaultsToEvent() attaches the unreported delta to ANY event that does not already carry one, and consumeEngagementDelta() banks what it hands out -- so a click, a scroll and a purchase all carry it, and the same milliseconds cannot ride two beacons.\nIT IS CONDITIONAL, which is why the old list looked right: `if ( delta > 0 )` means a beacon sent with no time accrued omits it, so a contract fixture recorded in a headless test where no clock advances shows it on nothing at all. Advancing the clock is the only way to see the real shape -- see tests/js/EnhancedMeasurement.test.js.\nNOT MATERIALIZED (`\"materialize\": false`). A session_start or first_visit copies its values from the event that carried the flag; this one is time accrued before THAT event, and copied it was summed once per row -- a landing click's five seconds counted as fifteen."
     },
     "content_group": {
+        "description": "The content group the site assigned to the page. Absent when the page has none.",
         "set_by": "client",
         "from": [
             "p_cg"
@@ -840,6 +894,7 @@
         "note": "Author-assigned grouping of pages. Page-scoped: set per page, so it cannot leak onto the next one."
     },
     "consent_state": {
+        "description": "granted or denied, as the page declared it when the event was sent. Absent when the page declared nothing.",
         "set_by": "client",
         "from": [
             "v_cs"
@@ -854,6 +909,7 @@
         "note": "granted or denied, as the page declared it at send. Per event because it can change mid-session; absent stays absent, because no consent recorded is not the same as consent denied."
     },
     "user_id": {
+        "description": "The site's own id for a logged-in visitor. Not stored when the install's log_visitor_pii setting is off.",
         "set_by": "client",
         "from": [
             "u_id"
@@ -870,6 +926,7 @@
         "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, which is what makes it the only honest basis for joining a person's devices, and equally what makes it the thing log_visitor_pii gates: an install that turns visitor PII off must be able to stop storing it. gateUserId() DELETES the property rather than returning null, because a null is not written back and would leave the beacon's value in place. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
     },
     "currency": {
+        "description": "The ISO 4217 code of the order's currency. When the tracker sends none, the Property's currency setting.",
         "set_by": "client",
         "from": [
             "o_cur"
@@ -887,6 +944,7 @@
         "note": "The ISO 4217 code the purchase's amounts are in. On a purchase it is always set: the one sent (setCurrency(), or the purchase's own), else the Property's currencyISO3 setting. Amounts are converted to minor units by its exponent -- yen has none, the Kuwaiti dinar three (Classes\\Currency)."
     },
     "scroll_depth": {
+        "description": "The scroll threshold the visitor passed, as a percentage of the page.",
         "set_by": "client",
         "from": [
             "sc_d"
@@ -901,6 +959,7 @@
         "note": "The threshold passed, as a percentage: 25, 50, 75 or 90 by default. One event per threshold per page view, and EVERY threshold crossed is reported -- so counting scroll events grouped by the scrollDepth dimension reads as \"how many reached at least this far\", and a visitor who jumps straight to the bottom still counts at every level. The Scroll Depth report is that funnel, site-wide and by page.\nThe value is the MARK, not the exact depth: 95% reports as 90."
     },
     "search_term": {
+        "description": "The site-search term from the results page's URL.",
         "set_by": "client",
         "from": [
             "p_q"
@@ -915,6 +974,7 @@
         "note": "Site-search term, on a view_search_results event. A COLUMN, and no migration: Update034 creates owa_event_raw from the entity, and v2 has never shipped, so there is no install predating this column. It was a param, and a params key is unreportable in v2 until a site registers it as a CUSTOM dimension, so \"what do people search for\" cost one of a Property's twenty slots for a value OWA set itself. Site search is a question every install with a search box asks.\nThe third promotion, after file_name and file_extension. The element and form params stay in the bag because most installs will never group by them.\nThe tracker reads it from the URL, from siteSearchParams -- which ships q, s, search, query and keyword by default now. Both the empty default and the missing caller made this event unraisable on every install."
     },
     "file_name": {
+        "description": "The name of the downloaded file.",
         "set_by": "client",
         "from": [
             "f_nm"
@@ -929,6 +989,7 @@
         "note": "A COLUMN, not a param -- see Update054. A downloads report is a question every install asks, and in v2 a params key is unreportable until someone registers it as a CUSTOM dimension, which would have spent one of a Property's 20 slots on a value OWA set itself.\nThe element and form params deliberately stay in the bag: most installs will never group by them, and a column costs cube width on every row of every Property. MEASURED on MySQL 8.4: promoting nine of these took the custom-dimension ceiling from 62 to 37.\nTHE PATH, not the basename (/docs/guide.pdf, not guide.pdf). As the basename, /2024/report.pdf and /2025/report.pdf collapsed into one row of a downloads report. The host is deliberately dropped so the same document served from the site and from a CDN is one row; target_host on the same row says where it came from."
     },
     "file_extension": {
+        "description": "The extension of the downloaded file, one of the tracker's downloadExtensions.",
         "set_by": "client",
         "from": [
             "f_ext"
@@ -943,6 +1004,7 @@
         "note": "A COLUMN, not a param -- see file_name for why these two and not the element or form params. Bounded by the tracker's downloadExtensions option, which is what makes a download a download rather than any path with a dot in it, so the values are a short closed set rather than free text."
     },
     "form_id": {
+        "description": "The id of the form. Absent when it has none.",
         "set_by": "client",
         "from": [
             "fm_id"
@@ -958,6 +1020,7 @@
         "note": "On form_start / form_submit. Both id and name are carried because either may be absent."
     },
     "form_destination": {
+        "description": "The absolute URL the form submits to; the page itself when the form has no action.",
         "set_by": "client",
         "from": [
             "fm_dst"
@@ -973,6 +1036,7 @@
         "note": "Where the form submits, absolute. THE ONE FORM IDENTIFIER THAT CROSSES PAGES: two pages can each carry a form with no id and no name, and the action distinguishes them. A form with no action submits to the page itself, which is what the tracker falls back to."
     },
     "form_length": {
+        "description": "How many fields in the form a visitor can fill in, not counting buttons and hidden inputs.",
         "set_by": "client",
         "from": [
             "fm_len"
@@ -988,6 +1052,7 @@
         "note": "How many fields the visitor can fill in, so a form_start on a two-field signup and one on a fourteen-field application are distinguishable. BUTTONS AND HIDDEN INPUTS EXCLUDED -- a button is not a field to fill in, and counting it makes the number mean nothing in particular."
     },
     "first_field_id": {
+        "description": "The id of the first field the visitor changed. Absent when the form was submitted without a change.",
         "set_by": "client",
         "from": [
             "fm_ffid"
@@ -1002,6 +1067,7 @@
         "note": "The field whose change started the form. form_start ONLY, and absent on a form_start raised by a submit with no prior change: by the time a form is submitted, where the visitor started is not a property of the submission."
     },
     "first_field_name": {
+        "description": "The name of the first field the visitor changed. Absent when the form was submitted without a change.",
         "set_by": "client",
         "from": [
             "fm_ffnm"
@@ -1016,6 +1082,7 @@
         "note": "The name attribute of that field -- see first_field_id. Both, because either may be absent."
     },
     "first_field_type": {
+        "description": "The type of the first field the visitor changed, such as text, email, checkbox, select-one or textarea.",
         "set_by": "client",
         "from": [
             "fm_fft"
@@ -1030,6 +1097,7 @@
         "note": "The element's type property: the input type (text, email, checkbox ...), or select-one, select-multiple, textarea. Absent on a form_start raised by a submit, like the rest of the first-field properties."
     },
     "first_field_position": {
+        "description": "The position of the first field the visitor changed among the form's fillable fields, counting from 1.",
         "set_by": "client",
         "from": [
             "fm_ffp"
@@ -1044,6 +1112,7 @@
         "note": "Where that field sits among the fillable fields, ONE-BASED -- 'the first field' is position 1. On a long form this is a real signal: someone who begins at field nine skipped eight."
     },
     "form_submit_text": {
+        "description": "The label of the button that submitted the form. Absent when a script submitted it.",
         "set_by": "client",
         "from": [
             "fm_stx"
@@ -1058,6 +1127,7 @@
         "note": "The label of the control that sent the form. A form with Save and Save-and-publish is two different submissions and nothing else on the event tells them apart. Read from the submit event's `submitter`, which a script-dispatched submit does not have -- then it is absent rather than guessed."
     },
     "form_name": {
+        "description": "The name of the form. Absent when it has none.",
         "set_by": "client",
         "from": [
             "fm_nm"
@@ -1073,6 +1143,7 @@
         "note": "On form_start / form_submit."
     },
     "yyyymmdd": {
+        "description": "The date the event was received, as YYYYMMDD in the install's timezone.",
         "set_by": "event",
         "from": [
             "ts"
@@ -1088,6 +1159,7 @@
         ]
     },
     "host": {
+        "description": "The host name of the page, taken from its URL.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -1104,6 +1176,7 @@
         "note": "The PAGE’s host. Not HTTP_HOST, which is this server’s, and not REMOTE_HOST, which is the visitor’s network. Falls back to whatever the property already held; nothing on the wire can set it, since set_by event means admitRequestParams() refuses a beacon that names it."
     },
     "browser_type": {
+        "description": "The browser's name, from the user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1119,6 +1192,7 @@
         ]
     },
     "os": {
+        "description": "The operating system's name, from the user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1134,6 +1208,7 @@
         ]
     },
     "country": {
+        "description": "The visitor's country, looked up from their IP address.",
         "set_by": "event",
         "from": [
             "ip_address"
@@ -1149,6 +1224,7 @@
         ]
     },
     "city": {
+        "description": "The visitor's city, looked up from their IP address.",
         "set_by": "event",
         "from": [
             "ip_address"
@@ -1164,6 +1240,7 @@
         ]
     },
     "state": {
+        "description": "The visitor's state or region, looked up from their IP address.",
         "set_by": "event",
         "from": [
             "ip_address"
@@ -1179,6 +1256,7 @@
         ]
     },
     "country_code": {
+        "description": "The visitor's two-letter country code, looked up from their IP address.",
         "set_by": "event",
         "from": [
             "ip_address"
@@ -1194,6 +1272,7 @@
         ]
     },
     "page_path": {
+        "description": "The path of the page's URL, with the Profile's default page name and a trailing slash removed.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -1210,6 +1289,7 @@
         "note": "The path, canonicalised: the Profile’s default page and the trailing slash collapse. Set by its own callback off page_location, like every other property -- it used to be cut inside the row builder, which is how the registry came to declare a property nothing produced."
     },
     "page_query": {
+        "description": "The query string of the page's URL, without OWA's own parameters or campaign parameters.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -1226,6 +1306,7 @@
         "note": "The query string with the Profile’s dropped parameters removed -- owa_state and the campaign keys are OWA’s own plumbing and have no business in somebody’s page report. The tags stay recoverable: they are parsed out of page_location, which keeps them."
     },
     "referer_host": {
+        "description": "The host name of the referring page.",
         "set_by": "event",
         "from": [
             "HTTP_REFERER"
@@ -1242,6 +1323,7 @@
         "note": "The referrer’s host, and what the cube pass classifies source and medium from. Left alone beyond the host: it is somebody else’s URL, and canonicalising it against THIS site’s default page would be a category error."
     },
     "referer_query": {
+        "description": "The query string of the referring page's URL.",
         "set_by": "event",
         "from": [
             "HTTP_REFERER"
@@ -1258,6 +1340,7 @@
         "note": "The referrer’s query string, unfiltered -- see referer_host."
     },
     "target_host": {
+        "description": "The host name of the clicked link's URL.",
         "set_by": "event",
         "from": [
             "target_url"
@@ -1275,6 +1358,7 @@
         "note": "The click target’s host, so an outbound click is a comparison against host rather than a string test. Read after makeUrlCanonical() has filtered target_url, which the scopes settle: target_url is a client property and this is a derived one."
     },
     "is_outbound": {
+        "description": "Whether the clicked link leads off the site, decided by the tracker.",
         "set_by": "client",
         "from": [
             "el_lo"
@@ -1289,6 +1373,7 @@
         "note": "Whether the click left the site: the target's host against the page's. THE CLIENT DECIDES IT. It was derived on the server from target_url and page_location, which works only for a sender shaped like a browser -- a non-web client has neither, and still knows whether what it raised left the property. Deciding it on the client also removes an ordering dependency: a derived is_outbound reads the inputs of two OTHER derived properties, and setTrackerProperties() walks the registry in key order, so correctness rested on where the entry sat. And only the client can see the DOM -- an href rewritten by script is a string by the time the server has it.\nTWO VALUES, NOT THREE. is_goal_event's shape: the column is NOT NULL DEFAULT 0 and the question is asked of every row -- 'is this an outbound click?' -- so a page_view answering 0 is true rather than a claim about a target it never had. A NULLABLE boolean would group as three buckets and the formatter renders NULL and 0 both as 'No', which is the isNewVisitor pie with two slices called New (see config/dimensions.php).\nCLICK ONLY. file_download carries target_url as well, and a download is a file arriving rather than the visitor leaving; the click that raised it answers that question. Note `events` is read by the goal builder and propertiesForEvent() and does NOT gate the tracker, so classifyClickTarget() must not set it.\nA beacon from a tracker too old to send it stores 0. beacon_version on the same row says which generation wrote it.\nCompared on HOST against THIS page's host, not a configured domain: a site reached at both apex and www would otherwise call half its own links outbound."
     },
     "browser_version": {
+        "description": "The browser's version, from the user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1305,6 +1390,7 @@
         "note": "From the one user-agent parse in the row builder. It used to be read from a property resolved through an argument-less browscap accessor, which memoises the first parse in the process."
     },
     "os_version": {
+        "description": "The operating system's version, from the user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1320,6 +1406,7 @@
         ]
     },
     "device_type": {
+        "description": "desktop, mobile or tablet, from the user agent. Absent when the device cannot be identified.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1336,6 +1423,7 @@
         "note": "Derived, not read: ua-parser has no such field, and ‘Other’ is its word for no rule matching. The OS family is what tells a desktop from a phone, and NULL is what an unknown gets rather than a guess at desktop."
     },
     "device_brand": {
+        "description": "The device's manufacturer, from the user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1351,6 +1439,7 @@
         ]
     },
     "device_model": {
+        "description": "The device's model, from the user agent.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT"
@@ -1366,6 +1455,7 @@
         ]
     },
     "is_goal_event": {
+        "description": "Whether the event met one of the Property's goal events. Set by OWA at ingest.",
         "set_by": "event",
         "from": [
             "event_type"

@@ -1,5 +1,6 @@
 {
     "title": "Creative Performance",
+    "description": "Sessions by attributed ad and the landing page it led to.",
     "widgets": [
         {
             "type": "trend",

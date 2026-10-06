@@ -34,6 +34,18 @@ namespace OWA\Module\Base\Controller;
  */
 class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Prints one read-only report on the whole installation: versions, scheduler, retention, partitions and the other things that fail without an error. Exits 0 whatever it finds unless strict=1.',
+            'arguments'   => array(
+                'strict=1'   => 'Exit non-zero when anything is in a FAIL state, for monitoring.',
+                'no-color=1' => 'Plain output with no colour. Also off when NO_COLOR is set.',
+            ),
+        );
+    }
+
     /** Status ranks, worst last -- the summary reports the worst seen. */
     const OK   = 'ok';
     const WARN = 'warn';

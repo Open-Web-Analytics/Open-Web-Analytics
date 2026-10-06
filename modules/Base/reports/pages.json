@@ -1,5 +1,6 @@
 {
     "title": "Pages",
+    "description": "Page views and sessions by page path, query string, title and content group.",
     "metrics": "pageViews,sessions,pageViews",
     "widgets": [
         {

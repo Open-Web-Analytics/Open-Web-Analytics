@@ -31,6 +31,22 @@ namespace OWA\Module\Base\Controller;
  */
 
 class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
+
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Applies pending schema updates for every module, in order. When an update needs a choice from the operator, it stops and says what to run.',
+            'arguments'   => array(
+                'listpending'                  => 'List the modules with pending updates, and apply nothing.',
+                'apply=<module>.<sequence>'    => 'Apply one update.',
+                'rollback=<module>.<sequence>' => 'Roll back one update.',
+                '--force'                      => 'With apply=: apply out of sequence.',
+                'since=<cutoff>'               => 'For the 1.x history migration: migrate events newer than a date (yyyymmdd) or a period such as 2years.',
+                '--all'                        => 'For the 1.x history migration: migrate everything.',
+            ),
+        );
+    }
     
     function __construct($params) {
         define('OWA_UPDATING', true);

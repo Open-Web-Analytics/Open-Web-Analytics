@@ -38,6 +38,21 @@ namespace OWA\Module\Base\Controller;
  */
 class PartitionInitCli extends PartitionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Partitions the event tables of an installation that predates partitioning, with a lead of future partitions. A table already partitioned is skipped. The first run rewrites every table it converts.',
+            'arguments'   => array(
+                'granularity=<monthly|half-month|quarter-month>' => 'Partition size. Defaults to what each table is on, or monthly.',
+                'months-ahead=<n>'                               => 'How many months of future partitions to keep. Defaults to 12.',
+                'table=<name>'                                   => 'Partition only this table.',
+                '--force'                                        => 'Proceed when the plan needs more partitions than the ceiling allows.',
+                '--dry-run'                                      => 'Report the plan, and change nothing.',
+            ),
+        );
+    }
+
     function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {

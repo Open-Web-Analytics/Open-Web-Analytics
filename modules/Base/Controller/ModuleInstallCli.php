@@ -33,6 +33,17 @@ namespace OWA\Module\Base\Controller;
 
 class ModuleInstallCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Deprecated: does the same as activate.',
+            'arguments'   => array(
+                'module=<name>' => 'Required. The module\'s name.',
+            ),
+        );
+    }
+
     function __construct($params) {
 
         $this->setRequiredCapability('edit_modules');

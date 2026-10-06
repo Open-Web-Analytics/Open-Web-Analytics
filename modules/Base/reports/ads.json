@@ -1,5 +1,6 @@
 {
     "title": "Ad Performance",
+    "description": "Sessions by the ad of their attributed source, for sessions credited to an ad.",
     "widgets": [
         {
             "type": "trend",

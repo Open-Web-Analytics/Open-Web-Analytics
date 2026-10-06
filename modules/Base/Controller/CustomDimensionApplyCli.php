@@ -36,6 +36,17 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionApplyCli extends CustomDimensionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Adds the columns of newly registered custom dimensions to the reporting cubes, and drops those of deregistered ones. Runs on the scheduler as apply-custom-dimensions.',
+            'arguments'   => array(
+                'property=<id>' => 'Apply only this Property\'s. Defaults to every cube with something pending.',
+            ),
+        );
+    }
+
     /**
      * How long the lock outlives proof of life.
      *

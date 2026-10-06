@@ -1,5 +1,6 @@
 {
     "title": "Channels",
+    "description": "Sessions by the channel of their attributed source: Direct, Organic Search, Referral, Paid Search and the rest.",
     "widgets": [
         {
             "type": "trend",

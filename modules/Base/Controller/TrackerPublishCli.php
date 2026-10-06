@@ -22,6 +22,18 @@ namespace OWA\Module\Base\Controller;
  */
 class TrackerPublishCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Publishes the Profiles\' tracking bundles that are not current. Saves and cmd=update publish on their own; run it after a change neither sees, such as a config-file constant.',
+            'arguments'   => array(
+                'force=1'   => 'Publish every bundle, current or not.',
+                'site=<id>' => 'Publish only this Profile\'s bundle.',
+            ),
+        );
+    }
+
     /** How old the cache header check may get before a quiet run repeats it. */
     const CHECK_EVERY = 86400;
 

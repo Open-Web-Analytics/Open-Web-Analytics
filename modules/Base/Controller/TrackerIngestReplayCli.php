@@ -17,6 +17,17 @@ namespace OWA\Module\Base\Controller;
  */
 class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Sends the tracker-ingest dead letters that decode back to the intake. Runs on the scheduler daily as replay-tracker-ingest.',
+            'arguments'   => array(
+                'scheduled=1' => 'Set by the scheduler. Replays only dead letters not replayed before.',
+            ),
+        );
+    }
+
     /** A run's budget, in seconds. */
     const BUDGET = 120;
 

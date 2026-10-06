@@ -32,6 +32,17 @@ namespace OWA\Module\Base\Controller;
  */
 
 class ModuleDeactivateCli extends \OWA\Core\Controller\Cli {
+
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Deactivates a module.',
+            'arguments'   => array(
+                'module=<name>' => 'Required. The module\'s name.',
+            ),
+        );
+    }
     
     function __construct($params) {
     

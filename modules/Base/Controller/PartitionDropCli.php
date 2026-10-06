@@ -33,6 +33,22 @@ namespace OWA\Module\Base\Controller;
  */
 class PartitionDropCli extends PartitionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Drops partitions holding only data older than a cutoff. A partition that straddles the cutoff is kept, and the command reports the date before which data no longer exists. Not bound by the retention settings.',
+            'arguments'   => array(
+                'older-than=<cutoff>' => 'Required. A date (yyyymmdd) or a period back from today, such as 12months, 18m or 2years.',
+                'only=<raw|cubes>'    => 'Drop from the raw event tables only, or from every reporting cube only.',
+                'property=<id>'       => 'Drop only from this Property\'s cube.',
+                'table=<name>'        => 'Drop only from this table.',
+                '--force'             => 'Proceed when every historical partition of a table would be dropped.',
+                '--dry-run'           => 'Report what would be dropped, and change nothing.',
+            ),
+        );
+    }
+
     function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {

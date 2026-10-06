@@ -16,6 +16,15 @@ use OWA\Module\Base\Classes\NotificationManager;
  */
 class NotificationsFetchCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Fetches OWA\'s release announcements and stores the new ones as notifications. Runs on the scheduler daily as fetch-notifications.',
+            'arguments'   => array(),
+        );
+    }
+
     function action() {
 
         $url = \OWA\Core\CoreAPI::getSetting( 'base', 'owa_news_url' );

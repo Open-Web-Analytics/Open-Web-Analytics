@@ -1,5 +1,6 @@
 {
     "title": "Exit Pages",
+    "description": "The pages sessions ended on, with exits and exit rate.",
     "widgets": [
         {
             "type": "trend",

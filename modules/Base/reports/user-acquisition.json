@@ -1,5 +1,6 @@
 {
     "title": "User Acquisition",
+    "description": "New and total users by the channel and source / medium that first acquired them.",
     "metrics": "newUsers,totalUsers,sessions",
     "widgets": [
         {

@@ -1,5 +1,6 @@
 {
     "title": "Events",
+    "description": "Every event recorded on the site by name, with its count and the sessions and users that raised it.",
     "metrics": "eventCount,sessions,totalUsers",
     "widgets": [
         {

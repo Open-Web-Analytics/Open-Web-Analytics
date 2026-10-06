@@ -1,5 +1,6 @@
 {
     "title": "Page Detail: ",
+    "description": "Page views and sessions for one page over the period, with links to its heatmap and its element clicks.",
     "titleSuffix": "{pagePath}",
     "params": {
         "pagePath": {}

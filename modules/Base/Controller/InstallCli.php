@@ -32,6 +32,21 @@ namespace OWA\Module\Base\Controller;
 
 class InstallCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Installs OWA: applies the database schema, creates the admin user and adds the first tracked website. owa-config.php must exist first. The admin user\'s password is set to the database password from owa-config.php.',
+            'arguments'   => array(
+                'user_id=<name>'        => 'Required. The admin account\'s user name.',
+                'email_address=<email>' => 'Required. The admin account\'s email address, used for password recovery.',
+                'domain=<url>'          => 'Required. The domain of the first website to track.',
+                'description=<text>'    => 'A description of the first website.',
+                'site_family=<text>'    => 'A family name to group the first website under.',
+            ),
+        );
+    }
+
     function __construct($params) {
         define('OWA_INSTALLING', true);
         return parent::__construct($params);

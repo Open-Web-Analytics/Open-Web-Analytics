@@ -41,6 +41,21 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  */
 class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Downloads the MaxMind GeoLite2 database that IP lookups resolve against. Needs a MaxMind licence key.',
+            'arguments'   => array(
+                'license-key=<key>' => 'The licence key. Defaults to the module\'s db_license_key, then ws_license_key, setting.',
+                'edition=<name>'    => 'The edition to download: ' . implode( ', ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS )
+                                    . '. Defaults to the one the module reads.',
+                '--force'           => 'Download even when the local copy is as new as MaxMind\'s.',
+                '--dry-run'         => 'Report what would be downloaded, and write nothing.',
+            ),
+        );
+    }
+
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );

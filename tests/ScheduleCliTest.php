@@ -245,7 +245,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertSame('A job of ours.', $jobs['owa-test-described']['description']);
     }
 
-    /** The wiki's table: every job, its command, its schedule in words and its description. */
+    /** The markdown table: every job, the command line it runs, its schedule in words and its description. */
     public function testTheMarkdownTableListsEveryJob()
     {
         $lines = $this->callProtected($this->statusCli(['format' => 'markdown']), 'markdown');
@@ -253,7 +253,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $this->assertSame('| Job | Runs | Schedule | What it does |', $lines[0]);
         $this->assertCount(count($jobs) + 2, $lines);
-        $this->assertStringContainsString('| `drain-tracker-ingest` | `drain-tracker-ingest` | every minute | Ingests', implode("\n", $lines));
+        $this->assertStringContainsString('| `drain-tracker-ingest` | `drain-tracker-ingest scheduled=1` | every minute | Ingests', implode("\n", $lines));
     }
 
     /** Only these jobs ship; everything else is opt-in. */

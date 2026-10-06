@@ -49,7 +49,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * nothing anywhere saying why. The settings bag inside is deliberately not
      * checked -- see the class comment.
      */
-    const KNOWN_KEYS = array( 'title', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' );
+    const KNOWN_KEYS = array( 'title', 'description', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' );
 
     /**
      * How many rows a table CARD shows when it names no page size.
@@ -140,6 +140,13 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
             return sprintf( 'unknown key(s) %s; a report definition may use %s',
                 implode( ', ', $unknown ), implode( ', ', self::KNOWN_KEYS ) );
+        }
+
+        // One sentence saying what the report shows. Not interpolated and not
+        // drawn by the report yet; the wiki's report list reads it.
+        if ( isset( $definition['description'] ) && ! is_string( $definition['description'] ) ) {
+
+            return '"description" must be a string';
         }
 
         if ( isset( $definition['settings'] ) && ! is_array( $definition['settings'] ) ) {

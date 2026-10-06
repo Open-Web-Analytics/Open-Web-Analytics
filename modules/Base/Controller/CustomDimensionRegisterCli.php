@@ -45,6 +45,25 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionRegisterCli extends CustomDimensionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Registers a collected key as a custom dimension, adding a column to the Property\'s reporting cube. Existing rows are not backfilled; rebuild the range with cube-rebuild to fill them.',
+            'arguments'   => array(
+                'property=<id>'                 => 'Required. The Property.',
+                'key=<key>[,<key>...]'          => 'Required. The collected key, or several separated by commas, which are added in one table rebuild.',
+                'scope=<' . implode( '|', \OWA\Module\Base\Entity\CustomDimension::scopes() ) . '>'
+                    => 'Required. event reads the value from each event; user reads it from the visitor store.',
+                'type=<' . implode( '|', \OWA\Module\Base\Entity\CustomDimension::types() ) . '>'
+                    => 'The column type. Defaults to string.',
+                'label=<text>'                  => 'The name shown in reports. Only with a single key.',
+                '--defer'                       => 'Record the registration and leave the column to the next build or apply job.',
+                '--dry-run'                     => 'Report what would be registered, and change nothing.',
+            ),
+        );
+    }
+
     function action() {
 
         $property_id = $this->property();

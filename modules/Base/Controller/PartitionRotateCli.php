@@ -49,6 +49,23 @@ namespace OWA\Module\Base\Controller;
  */
 class PartitionRotateCli extends PartitionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Adds the partitions ahead, merges old periods, and drops what the retention settings say not to keep. Runs on the scheduler daily as rotate-partitions. How much is kept comes from the retention settings, not from an argument.',
+            'arguments'   => array(
+                'months-ahead=<n>'                               => 'How many months of future partitions to keep. Defaults to 12.',
+                'granularity=<monthly|half-month|quarter-month>' => 'Granularity for new lead partitions. Defaults to what each table is on.',
+                'table=<name>'                                   => 'Rotate only this table.',
+                '--dry-run'                                      => 'Report what a run would do now, and change nothing.',
+                'raw-months=<n>'                                 => 'With --dry-run: what keeping n months of raw events would do.',
+                'cube-months=<n>'                                => 'With --dry-run: what keeping n months in the cubes would do.',
+                'property=<id>'                                  => 'With --dry-run and cube-months=: try the window on this Property\'s cube.',
+            ),
+        );
+    }
+
     /**
      * How long this job's lock should be trusted without proof of life.
      *

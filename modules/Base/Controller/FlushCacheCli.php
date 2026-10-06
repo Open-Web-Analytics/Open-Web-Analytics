@@ -32,6 +32,15 @@ namespace OWA\Module\Base\Controller;
 
 class FlushCacheCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Empties OWA\'s object cache.',
+            'arguments'   => array(),
+        );
+    }
+
     function action() {
 
         $cache = \OWA\Core\CoreAPI::cacheSingleton();

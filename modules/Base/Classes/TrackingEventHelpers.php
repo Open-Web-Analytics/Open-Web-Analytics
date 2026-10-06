@@ -116,6 +116,9 @@ class TrackingEventHelpers {
     /** @var array|null the parsed config, read once per process */
     private static $property_config;
 
+    /** @var array property name => its `description`, kept aside from the definitions */
+    private static $property_descriptions = array();
+
     /**
      * Views of the registry, built once per process: it is read from a file
      * and never changes at runtime. Rebuilt per call, the v1 migration spent
@@ -204,11 +207,14 @@ class TrackingEventHelpers {
                     . json_last_error_msg() );
             }
 
-            /* 'note' documents the entry for whoever edits the file; it is not
-               part of the definition the pipeline consumes. */
+            /* 'note' documents the entry for whoever edits the file and
+               'description' for the wiki; neither is part of the definition
+               the pipeline consumes. */
             foreach ( $config as $property => $definition ) {
 
-                unset( $config[ $property ]['note'] );
+                self::$property_descriptions[ $property ] = (string) ( $definition['description'] ?? '' );
+
+                unset( $config[ $property ]['note'], $config[ $property ]['description'] );
             }
 
             self::$property_config = $config;
@@ -274,6 +280,24 @@ class TrackingEventHelpers {
         $all = self::allProperties();
 
         return (string) ( $all[ $property ]['column'] ?? '' );
+    }
+
+    /**
+     * What a property holds, in a sentence for an administrator, or '' when
+     * the property declares no description.
+     *
+     * The `description` key of the property's entry. It is not part of the
+     * definition the pipeline consumes, so propertyConfig() strips it from the
+     * definitions and keeps it here; the generated wiki reads it.
+     *
+     * @param  string $property
+     * @return string
+     */
+    public static function descriptionFor( $property ) {
+
+        self::allProperties();
+
+        return self::$property_descriptions[ $property ] ?? '';
     }
 
     /**

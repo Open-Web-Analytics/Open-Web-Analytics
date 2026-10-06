@@ -1,5 +1,6 @@
 {
     "title": "Visitors",
+    "description": "Users, new users and sessions, by browser, host and number of prior sessions.",
     "metrics": "totalUsers,newUsers,sessions",
     "widgets": [
         {

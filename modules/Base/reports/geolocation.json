@@ -1,5 +1,6 @@
 {
     "title": "Visitor Geolocation",
+    "description": "Sessions by the visitor's country.",
     "widgets": [
         {
             "type": "trend",

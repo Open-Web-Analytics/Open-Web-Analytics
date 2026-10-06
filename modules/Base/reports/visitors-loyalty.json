@@ -1,5 +1,6 @@
 {
     "title": "Visitor Loyalty",
+    "description": "Sessions by how many sessions the visitor had before.",
     "widgets": [
         {
             "type": "trend",

@@ -1,5 +1,6 @@
 {
     "title": "Host Names",
+    "description": "Sessions by the host the pages were served from.",
     "widgets": [
         {
             "type": "trend",

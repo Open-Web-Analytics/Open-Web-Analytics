@@ -1,5 +1,6 @@
 {
     "title": "Dom Clicks: ",
+    "description": "Clicks on one page, by the id and tag of the element clicked.",
     "titleSuffix": "{pagePath}",
     "params": {
         "pagePath": {}

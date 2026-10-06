@@ -1,5 +1,6 @@
 {
     "title": "Referring Web Sites",
+    "description": "Sessions referred by other web sites, by referring host.",
     "widgets": [
         {
             "type": "trend",

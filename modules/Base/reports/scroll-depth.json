@@ -1,5 +1,6 @@
 {
     "title": "Scroll Depth",
+    "description": "How far down page views were scrolled, site-wide and by page: each page view that scrolled counts once, at the deepest threshold it reached, with the users who scrolled.",
     "metrics": "eventCount",
     "widgets": [
         {

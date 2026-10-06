@@ -47,6 +47,17 @@ use UAParser\Util\Fetcher;
  */
 class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Downloads the latest user-agent patterns OWA identifies browsers and crawlers with, into owa-data/ua-parser/.',
+            'arguments'   => array(
+                '--dry-run' => 'Report what would be downloaded, and write nothing.',
+            ),
+        );
+    }
+
     function __construct( $params ) {
 
         // Same capability as the other maintenance commands: this rewrites a

@@ -1,5 +1,6 @@
 {
     "title": "Goals",
+    "description": "Goal conversions and the goal conversion rate per session, by day.",
     "metrics": "sessions,goalConversions,goalConversionRatePerSession",
     "widgets": [
         {

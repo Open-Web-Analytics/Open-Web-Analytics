@@ -42,6 +42,7 @@ return array(
          */
         'provisioned' => array(
             'storable' => true,
+            'internal' => true,
         ),
     ),
 );

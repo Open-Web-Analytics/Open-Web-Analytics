@@ -51,6 +51,8 @@ return array(
             'default'     => 'city_lite_db',
             'storable'    => true,
             'autoload'    => true,
+            'description' => 'How locations are resolved: city_lite_db reads the local GeoLite2 database, '
+                . 'geoip_city_isp_org_web_service queries the MaxMind web service.',
         ),
 
         /*
@@ -58,8 +60,15 @@ return array(
          * lookup_method selects it. No default -- a blank key is not a
          * credential -- and no chrome, because no screen offers them.
          */
-        'ws_license_key' => array( 'storable' => true ),
-        'ws_user_name'   => array( 'storable' => true ),
+        'ws_license_key' => array(
+            'storable'    => true,
+            'description' => 'The licence key for the MaxMind web service lookup. Also used to download the '
+                . 'database when db_license_key is empty.',
+        ),
+        'ws_user_name'   => array(
+            'storable'    => true,
+            'description' => 'The MaxMind account id for the web service lookup.',
+        ),
 
         /*
          * No autoload: read by the options screen and by the db update job,

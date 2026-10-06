@@ -1,5 +1,6 @@
 {
     "title": "Sources",
+    "description": "Sessions by attributed source and medium.",
     "widgets": [
         {
             "type": "trend",

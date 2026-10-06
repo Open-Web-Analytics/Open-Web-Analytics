@@ -1,5 +1,6 @@
 {
     "title": "Transactions Overview",
+    "description": "Each transaction by order id, with its revenue, tax, shipping and refunds.",
     "metrics": "sessions,transactions,transactionRevenue,taxRevenue,shippingRevenue,refunds,refundAmount,netRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate",
     "widgets": [
         {

@@ -58,6 +58,26 @@ class Cli extends \OWA\Core\AdminController {
     }
 
     /**
+     * What the command does and the arguments it reads.
+     *
+     * The wiki's CLI reference is generated from this
+     * (tests/tools/wiki/sections/cli.php), so every command declares its own:
+     * an inherited declaration would describe the parent. Static, because the
+     * constructor exits outside a CLI request and the generator must not run
+     * one to read it.
+     *
+     * Each argument is keyed as it is typed -- `property=<id>`, `--dry-run` --
+     * and the name before any `=`, without the dashes, is what the controller
+     * reads with getParam(). WikiDocsCliJobsTest holds the source to that name.
+     *
+     * @return array{description: string, arguments: array<string,string>}
+     */
+    public static function usage() {
+
+        return array( 'description' => '', 'arguments' => array() );
+    }
+
+    /**
      * What this command actually did: 'ok', 'refused' or 'failed'.
      *
      * doAction() returns $this->data and CLI actions return void, so until the

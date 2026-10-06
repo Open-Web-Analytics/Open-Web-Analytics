@@ -1,5 +1,6 @@
 {
     "title": "Page Types",
+    "description": "Sessions and page views by content group.",
     "metrics": "sessions,pageViews",
     "widgets": [
         {

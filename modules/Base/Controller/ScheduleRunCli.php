@@ -29,6 +29,21 @@ namespace OWA\Module\Base\Controller;
  */
 class ScheduleRunCli extends SchedulerCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Runs every scheduled job that is due. The one command that belongs in cron, every minute.',
+            'arguments'   => array(
+                '--dry-run'       => 'Report what would run, and change nothing.',
+                'job=<name>'      => 'With --force or --force-release: the job to act on.',
+                '--force'         => 'With job=: run the job now, whatever its schedule.',
+                '--force-release' => 'With job=: drop a lock left by a process that died.',
+                '--prune-orphans' => 'Forget the state of jobs that are no longer registered.',
+            ),
+        );
+    }
+
     /**
      * Wall-clock budget for starting new jobs, checked BEFORE each one and
      * never mid-job. Past it, the rest stay due and run at the next tick, so
