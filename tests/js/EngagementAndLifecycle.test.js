@@ -201,6 +201,27 @@ describe('engagement deltas', () => {
 describe('page lifecycle', () => {
 
     /*
+     * THE HELD DEPTH GOES WITH THE PAGE: on hide, since a phone may never fire
+     * pagehide, and on pagehide for a browser that unloads without hiding.
+     */
+    test('hiding the page sends the deepest depth reached', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
+        t.resetScrollDepth();
+        t.getScrollingPosition = () => ({ x: 0, y: 600 });
+        t.getScrollDepth = () => 78;
+        t.checkScrollDepth();
+
+        hidden = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+        window.dispatchEvent(new Event('pagehide'));
+
+        expect(sent.filter(e => e.event_type === 'scroll').map(e => e.scroll_depth)).toEqual([75]);
+    });
+
+    /*
      * A visible window behind another application, or on a second monitor, is
      * not being read. Blur pauses the clock and sends nothing; focus resumes it.
      */
@@ -539,15 +560,15 @@ describe('SPA route changes', () => {
     });
 
     /*
-     * A ROUTE'S DEPTH IS A PAGE'S DEPTH. A loaded page that fits the viewport
-     * reports its marks at load; a route that fits reported nothing, because
-     * only a scroll ever checked.
+     * A ROUTE'S SCROLL IS A PAGE'S SCROLL: measured from where the route sits
+     * once its page view is out, and nothing for a route that fits the window.
      */
-    test('a route that fits the viewport reports its marks, after its page view', () => {
+    test('a route that fits the viewport sends no scroll', () => {
         const t = newTracker();
         window.history.pushState({}, '', '/long-page');
 
         const sent = captureSends(t);
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
         t.getScrollDepth = () => 0;
         t.trackScroll();
         t.trackRouteChanges();
@@ -555,50 +576,71 @@ describe('SPA route changes', () => {
         window.history.pushState({}, '', '/short-route');
         t.getScrollDepth = () => 100;
         settle();
+        t.flushScrollDepth();
 
         const names = sent.map(e => e.event_type).filter(n => n !== 'user_engagement');
-        expect(names).toEqual(['page_view', 'scroll', 'scroll', 'scroll', 'scroll']);
-        expect(sent.filter(e => e.event_type === 'scroll').map(e => e.scroll_depth))
-            .toEqual([25, 50, 75, 90]);
+        expect(names).toEqual(['page_view']);
     });
 
-    test('scrolling while a route settles sends nothing before its page view', () => {
+    test('scrolling while a route settles counts from where its page view leaves it', () => {
         const t = newTracker();
         window.history.pushState({}, '', '/before-settle');
 
         const sent = captureSends(t);
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
         t.getScrollDepth = () => 0;
         t.trackScroll();
         t.trackRouteChanges();
 
         window.history.pushState({}, '', '/settling');
+        t.getScrollingPosition = () => ({ x: 0, y: 400 });
         t.getScrollDepth = () => 60;
         t.checkScrollDepth();
 
         expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(0);
 
         settle();
+        t.checkScrollDepth();
+        t.flushScrollDepth();
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(0);
 
-        const names = sent.map(e => e.event_type).filter(n => n !== 'user_engagement');
-        expect(names).toEqual(['page_view', 'scroll', 'scroll']);
+        t.getScrollingPosition = () => ({ x: 0, y: 900 });
+        t.getScrollDepth = () => 80;
+        t.checkScrollDepth();
+        t.flushScrollDepth();
+
+        expect(sent.filter(e => e.event_type === 'scroll').map(e => e.scroll_depth)).toEqual([75]);
     });
 
-    test('each route starts its marks again', () => {
+    test('leaving a route sends its deepest depth, and the next route starts again', () => {
         const t = newTracker();
-        window.history.pushState({}, '', '/read-to-end');
+        window.history.pushState({}, '', '/read-halfway');
 
         const sent = captureSends(t);
-        t.getScrollDepth = () => 100;
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
+        t.getScrollDepth = () => 0;
         t.trackScroll();
-        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(4);
-
         t.trackRouteChanges();
+
+        t.getScrollingPosition = () => ({ x: 0, y: 500 });
+        t.getScrollDepth = () => 55;
+        t.checkScrollDepth();
+        expect(sent.filter(e => e.event_type === 'scroll')).toHaveLength(0);
+
         window.history.pushState({}, '', '/next-route');
+        const scrolls = () => sent.filter(e => e.event_type === 'scroll');
+        expect(scrolls().map(e => e.scroll_depth)).toEqual([50]);
+
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
         t.getScrollDepth = () => 30;
         settle();
+        expect(t.scrollDeepest).toBe(0);
+        expect(t.scrollMoved).toBe(false);
 
-        const scrolls = sent.filter(e => e.event_type === 'scroll');
-        expect(scrolls.slice(4).map(e => e.scroll_depth)).toEqual([25]);
+        t.getScrollingPosition = () => ({ x: 0, y: 200 });
+        t.checkScrollDepth();
+        t.flushScrollDepth();
+        expect(scrolls().map(e => e.scroll_depth)).toEqual([50, 25]);
     });
 
     test('without scroll tracking, a route change sends no scroll event', () => {

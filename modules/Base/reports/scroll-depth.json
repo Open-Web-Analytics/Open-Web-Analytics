@@ -17,9 +17,9 @@
             "type": "grid",
             "id": "depth",
             "container": "depth-reached",
-            "title": "Depth Reached",
+            "title": "Deepest Point Reached",
             "query": {
-                "metrics": "eventCount",
+                "metrics": "eventCount,scrolledUsers",
                 "dimensions": "scrollDepth",
                 "sort": "scrollDepth"
             }
@@ -28,9 +28,9 @@
             "type": "grid",
             "id": "pages",
             "container": "depth-by-page",
-            "title": "Depth Reached by Page",
+            "title": "Deepest Point Reached by Page",
             "query": {
-                "metrics": "eventCount",
+                "metrics": "eventCount,scrolledUsers",
                 "dimensions": "pagePath,scrollDepth",
                 "sort": "eventCount-"
             }

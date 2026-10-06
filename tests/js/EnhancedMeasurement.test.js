@@ -6,9 +6,9 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * search, and a selector that actually identifies what was clicked.
  *
  * The scroll ones matter most. 1.x's handler queued an event on EVERY scroll
- * tick, and `last_scroll` was assigned and never read, so nothing throttled it
- * and a timestamp throttle would not have helped -- it would still be a stream.
- * Depth thresholds make it one event per page per mark.
+ * tick. v2 first made it one event per threshold, which was still four per page
+ * view and four at load on a page that fits the window; now it is one event per
+ * page view, at its deepest threshold, and only after a scroll.
  */
 
 function newTracker(options) {
@@ -40,58 +40,107 @@ beforeEach(() => {
 
 describe('scroll depth', () => {
 
-    test('one event when the page passes the threshold, and not again', () => {
-        const t = newTracker({ scrollThresholds: [90] });
-        const sent = captureSends(t);
-
-        pageOf(t, { height: 2000, viewport: 800, scrolled: 0 });
-        t.checkScrollDepth();
-        expect(sent).toHaveLength(0);
-
-        // bottom of the viewport at 1900 of 2000 = 95%
-        pageOf(t, { height: 2000, viewport: 800, scrolled: 1100 });
-        t.checkScrollDepth();
-
-        expect(sent).toHaveLength(1);
-        expect(sent[0].event_type).toBe('scroll');
-        expect(sent[0].scroll_depth).toBe(90);
-
-        // Scrolling further, and scrolling back and down again, is still one.
-        pageOf(t, { height: 2000, viewport: 800, scrolled: 1200 });
-        t.checkScrollDepth();
-        t.checkScrollDepth();
-
-        expect(sent).toHaveLength(1);
-    });
-
-    test('quartiles raise one event each, in order, and never repeat', () => {
-        const t = newTracker({ scrollThresholds: [25, 50, 75, 100] });
-        const sent = captureSends(t);
-
-        for (const scrolled of [0, 200, 700, 1200, 1200]) {
-            pageOf(t, { height: 2000, viewport: 800, scrolled });
+    /* A page loaded at `scrolled`, then moved to each position in turn. */
+    function scrollThrough(t, { height, viewport, from = 0 }, positions) {
+        pageOf(t, { height, viewport, scrolled: from });
+        t.resetScrollDepth();
+        for (const scrolled of positions) {
+            pageOf(t, { height, viewport, scrolled });
             t.checkScrollDepth();
         }
+    }
 
-        expect(sent.map(e => e.scroll_depth)).toEqual([25, 50, 75, 100]);
-    });
-
-    test('a page that fits on one screen is fully read from the start', () => {
-        const t = newTracker({ scrollThresholds: [90] });
-        const sent = captureSends(t);
-
-        pageOf(t, { height: 600, viewport: 800, scrolled: 0 });
-        t.checkScrollDepth();
-
-        expect(sent).toHaveLength(1);
-    });
-
-    test('a document with no measurable height raises nothing', () => {
+    test('nothing is sent while the visitor scrolls short of the last threshold', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
-        pageOf(t, { height: 0, viewport: 800, scrolled: 0 });
+        // bottom of the viewport at 1000, then 1400, of 2000 = 50%, 70%
+        scrollThrough(t, { height: 2000, viewport: 800 }, [200, 600]);
+
+        expect(sent).toHaveLength(0);
+    });
+
+    test('the deepest threshold reached is sent once, when it is flushed', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        scrollThrough(t, { height: 2000, viewport: 800 }, [200, 600, 300]);
+        t.flushScrollDepth();
+        t.flushScrollDepth();
+
+        expect(sent.map(e => [e.event_type, e.scroll_depth])).toEqual([['scroll', 50]]);
+    });
+
+    test('the last threshold is sent at once, and not again', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        // 1900 of 2000 = 95%
+        scrollThrough(t, { height: 2000, viewport: 800 }, [1100]);
+        expect(sent.map(e => e.scroll_depth)).toEqual([90]);
+
+        scrollThrough(t, { height: 2000, viewport: 800, from: 1100 }, []);
         t.checkScrollDepth();
+        t.flushScrollDepth();
+        expect(sent).toHaveLength(1);
+    });
+
+    test('a visitor who comes back and scrolls deeper sends again, deeper', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        scrollThrough(t, { height: 2000, viewport: 800 }, [200]);
+        t.flushScrollDepth();
+
+        pageOf(t, { height: 2000, viewport: 800, scrolled: 1100 });
+        t.checkScrollDepth();
+
+        expect(sent.map(e => e.scroll_depth)).toEqual([50, 90]);
+    });
+
+    test('a page that fits on one screen sends nothing', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        scrollThrough(t, { height: 600, viewport: 800 }, [0]);
+        t.flushScrollDepth();
+
+        expect(sent).toHaveLength(0);
+    });
+
+    /*
+     * A POSITION THE BROWSER RESTORED is where the page sat at load, so being
+     * there is not a scroll, however deep it is.
+     */
+    test('nothing counts until the page moves from where it loaded', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        scrollThrough(t, { height: 2000, viewport: 800, from: 1100 }, [1100]);
+        t.flushScrollDepth();
+
+        expect(sent).toHaveLength(0);
+    });
+
+    /*
+     * ONCE SCROLLED, what was visible at load counts too: a page 50px taller
+     * than the window reaches the end after a 50px scroll.
+     */
+    test('a short scroll on a page nearly fully visible reaches the last threshold', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        scrollThrough(t, { height: 770, viewport: 720 }, [50]);
+
+        expect(sent.map(e => e.scroll_depth)).toEqual([90]);
+    });
+
+    test('a document with no measurable height sends nothing', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+
+        scrollThrough(t, { height: 0, viewport: 800 }, [100]);
+        t.flushScrollDepth();
 
         expect(sent).toHaveLength(0);
     });
@@ -484,109 +533,85 @@ describe('scroll depth', () => {
     });
 
     /*
-     * THE DEFAULT IS QUARTILES ENDING AT 90. A single 90% mark answered only "did
-     * they reach the end"; nothing could say how far down people get. The tests
-     * around this one pin [90] themselves because they are about the mechanism,
-     * not the default.
+     * THE DEFAULT IS QUARTILES ENDING AT 90, as buckets: a page view reports the
+     * deepest one it reached.
      */
     test('the default thresholds are 25, 50, 75 and 90', () => {
         expect(newTracker().getOption('scrollThresholds')).toEqual([25, 50, 75, 90]);
     });
 
-    test('with the defaults, a jump to the bottom reports every level', () => {
+    test('with the defaults, a jump to the bottom is one event at 90', () => {
         const t = newTracker();
         const sent = captureSends(t);
 
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
+        t.resetScrollDepth();
+        t.getScrollingPosition = () => ({ x: 0, y: 1000 });
         t.getScrollDepth = () => 100;
         t.checkScrollDepth();
 
-        expect(sent.map((e) => e.scroll_depth)).toEqual([25, 50, 75, 90]);
+        expect(sent.map((e) => [e.event_type, e.scroll_depth])).toEqual([['scroll', 90]]);
     });
 
-    test('passing the threshold raises one scroll event carrying the depth', () => {
-        const t = newTracker({ scrollThresholds: [90] });
-        const sent = captureSends(t);
-
-        t.getScrollDepth = () => 95;
-        t.checkScrollDepth();
-
-        expect(sent).toHaveLength(1);
-        expect(sent[0].event_type).toBe('scroll');
-        expect(sent[0].scroll_depth).toBe(90);
-    });
-
-    /* ONE EVENT PER PAGE PER THRESHOLD, not one per scroll tick. */
-    test('a second scroll past the same threshold raises nothing', () => {
-        const t = newTracker({ scrollThresholds: [90] });
-        const sent = captureSends(t);
-
-        t.getScrollDepth = () => 95;
-        t.checkScrollDepth();
-        t.checkScrollDepth();
-
-        expect(sent).toHaveLength(1);
-    });
-
-    /*
-     * EVERY MARK CROSSED, in ascending order whatever order the site gave. With
-     * [90, 25] a jump to the bottom used to report 90 and then skip 25 for good,
-     * because last_scroll (90) is not below 25.
-     */
-    test('an unsorted list still reports every mark a jump crosses', () => {
+    /* The last threshold is the DEEPEST, whatever order the site gave. */
+    test('an unsorted list still treats its deepest mark as the last', () => {
         const t = newTracker({ scrollThresholds: [90, 25, 50] });
         const sent = captureSends(t);
 
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
+        t.resetScrollDepth();
+        t.getScrollingPosition = () => ({ x: 0, y: 500 });
+        t.getScrollDepth = () => 60;
+        t.checkScrollDepth();
+        expect(sent).toHaveLength(0);
+
         t.getScrollDepth = () => 100;
         t.checkScrollDepth();
-
-        expect(sent.map((e) => e.scroll_depth)).toEqual([25, 50, 90]);
+        expect(sent.map((e) => e.scroll_depth)).toEqual([90]);
     });
 
     test('marks outside 1..100 are ignored rather than reported', () => {
-        const t = newTracker({ scrollThresholds: [0, -5, 150, 50] });
-        const sent = captureSends(t);
-
-        t.getScrollDepth = () => 100;
-        t.checkScrollDepth();
-
-        expect(sent.map((e) => e.scroll_depth)).toEqual([50]);
+        expect(newTracker({ scrollThresholds: [0, -5, 150, 50] }).getScrollThresholds()).toEqual([50]);
     });
 
     /*
-     * A PAGE THAT FITS IN THE VIEWPORT is read to the end without a scroll event,
-     * so the depth is also checked once at load.
+     * NOTHING AT LOAD. A page that fits the window used to report every
+     * threshold here, without a scroll.
      */
-    test('a page already loaded is checked without waiting for a scroll', () => {
-        const t = newTracker({ scrollThresholds: [90] });
+    test('a page already loaded is measured from, not reported', () => {
+        const t = newTracker();
         const sent = captureSends(t);
 
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
         t.getScrollDepth = () => 100;
         t.trackScroll();
+        t.flushScrollDepth();
 
         expect(document.readyState).toBe('complete');
-        expect(sent.map((e) => e.event_type)).toEqual(['scroll']);
+        expect(t.scrollStart).toBe(0);
+        expect(sent).toHaveLength(0);
     });
 
     /*
-     * And NOT before load. A long page measured before layout has a small height,
-     * which reads as scrolled to the bottom.
+     * And the starting point is taken at load, not before: the snippet can run
+     * before the document is laid out or the browser has restored a position.
      */
-    test('a page still loading is checked at load, not before', () => {
-        const t = newTracker({ scrollThresholds: [90] });
-        const sent = captureSends(t);
+    test('a page still loading takes its starting point at load', () => {
+        const t = newTracker();
         const state = Object.getOwnPropertyDescriptor(Document.prototype, 'readyState');
 
         Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
 
         try {
-            t.getScrollDepth = () => 100;
+            t.getScrollingPosition = () => ({ x: 0, y: 0 });
             t.trackScroll();
 
-            expect(sent).toHaveLength(0);
+            expect(t.scrollStart).toBe(null);
 
+            t.getScrollingPosition = () => ({ x: 0, y: 700 });
             window.dispatchEvent(new Event('load'));
 
-            expect(sent.map((e) => e.event_type)).toEqual(['scroll']);
+            expect(t.scrollStart).toBe(700);
         } finally {
             delete document.readyState;
             if (state) { Object.defineProperty(Document.prototype, 'readyState', state); }
@@ -618,7 +643,7 @@ describe('scroll depth', () => {
 
         try {
             t.trackScroll();
-            checks = 0;   // the load-time check is not what this measures
+            expect(checks).toBe(0, 'loading checks nothing');
 
             for (let i = 0; i < 20; i++) {
                 listener();
@@ -637,13 +662,18 @@ describe('scroll depth', () => {
         }
     });
 
-    test('short of the threshold raises nothing', () => {
+    test('short of the only threshold, a scroll notes and sends nothing', () => {
         const t = newTracker({ scrollThresholds: [90] });
         const sent = captureSends(t);
 
+        t.getScrollingPosition = () => ({ x: 0, y: 0 });
+        t.resetScrollDepth();
+        t.getScrollingPosition = () => ({ x: 0, y: 300 });
         t.getScrollDepth = () => 40;
         t.checkScrollDepth();
+        t.flushScrollDepth();
 
+        expect(t.scrollMoved).toBe(true);
         expect(sent).toHaveLength(0);
     });
 });

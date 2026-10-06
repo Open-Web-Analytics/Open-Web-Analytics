@@ -302,6 +302,14 @@
             ]
         }
     ],
+    "scrolledUsers": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COUNT(DISTINCT CASE WHEN event.event_type = 'scroll' THEN event.visitor_id END)",
+            "alias": "scrolledUsers"
+        }
+    ],
     "sessions": [
         {
             "kind": "aggregate",
