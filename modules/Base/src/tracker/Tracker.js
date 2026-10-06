@@ -4200,6 +4200,10 @@ class OWATracker  {
                     });
                 });
             });
+
+        } else {
+
+            this.continueSession( event );
         }
 
         /*
@@ -4236,6 +4240,106 @@ class OWATracker  {
 
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
+        }
+    }
+
+    /**
+     * Decide the session again for a later event on the same page.
+     *
+     * The block above decides it once, on the page's first event. A page left
+     * open past the inactivity window used to keep that session for every event
+     * after it, however long the tab sat: a click 40 minutes later carried the
+     * old session_id and stretched the session over the idle time. Now the next
+     * event, whatever it is, starts a new session, as a page load after the same
+     * gap would. The server needs nothing for it: any event carrying
+     * is_new_session_start raises the session_start.
+     *
+     * THE COOKIE AS WELL AS MEMORY. Memory holds this page's last request; the
+     * cookie holds the last request any tab of the site had accepted. A tab
+     * idle for 40 minutes while another tab of the same site was in use is in a
+     * live session, and if that tab has already started the next session, this
+     * one joins it rather than starting a third.
+     *
+     * A restarted session takes this page's campaign tags and referrer, which
+     * every event carries, so it is attributed as the page's own landing was.
+     */
+    continueSession( event ) {
+
+        var store  = this.storeName( 's' );
+        var now    = event.get( 'timestamp' ) || this.getTimestamp();
+        var mine   = OWA.getState( store, 'last_req' ) * 1 || 0;
+        var shared = OWA.getPersistedState( store, 'last_req' ) * 1 || 0;
+        var latest = Math.max( mine, shared );
+
+        if ( ! this.isNewSession( now, latest ) ) {
+
+            if ( shared > mine ) {
+
+                this.joinPersistedSession();
+            }
+
+            return;
+        }
+
+        var old_sid = OWA.getState( store, 'sid' );
+        var old_sts = OWA.getState( store, 'sts' );
+
+        OWA.setState( store, 'prior_last_req', latest );
+
+        if ( old_sid ) {
+
+            OWA.setState( store, 'prior_session_id', old_sid );
+        }
+
+        if ( old_sts ) {
+
+            OWA.setState( store, 'psts', old_sts );
+        }
+
+        OWA.setState( store, 'sts', now );
+        OWA.setState( store, 'sid', Util.generateRandomGuid(), true );
+
+        // The sequence counts events within a session.
+        OWA.setState( store, 'seq', '' );
+
+        this.isNewSessionFlag    = true;
+        this.pendingSessionStart = true;
+
+        this.setNumberPriorSessions( event );
+    }
+
+    /**
+     * Take the session another tab of this site has persisted, if it is not the
+     * one in memory.
+     *
+     * Only the values that change at a session boundary: everything else in the
+     * session store is this page's, or the same in both.
+     */
+    joinPersistedSession() {
+
+        var store = this.storeName( 's' );
+        var sid   = OWA.getPersistedState( store, 'sid' );
+
+        if ( ! sid || sid === OWA.getState( store, 'sid' ) ) {
+
+            return;
+        }
+
+        [ 'sid', 'sts', 'psts', 'prior_session_id', 'seq' ].forEach( function ( key ) {
+
+            var value = OWA.getPersistedState( store, key );
+
+            if ( value !== undefined && value !== '' ) {
+
+                OWA.setState( store, key, value );
+            }
+        } );
+
+        var nps = OWA.getPersistedState( this.storeName( 'v' ), 'nps' );
+
+        if ( nps !== undefined && nps !== '' ) {
+
+            OWA.setState( this.storeName( 'v' ), 'nps', nps, true );
         }
     }
 
