@@ -3804,7 +3804,7 @@ only if the visitor scrolled:</p>
 <thead><tr><th>When</th><th>Sent</th></tr></thead>
 <tbody>
 <tr><td>A scroll reaches the <strong>last</strong> configured threshold (90 by default)</td><td>At once, with that threshold. Nothing more for this page view</td></tr>
-<tr><td>The page is hidden or left, after a scroll that did not reach it</td><td>The deepest threshold reached, in the same beacon as <code>user_engagement</code></td></tr>
+<tr><td>The page is hidden (<code>visibilitychange</code>) or left (<code>pagehide</code>), whichever comes first, after a scroll that did not reach it</td><td>The deepest threshold reached, in the same beacon as <code>user_engagement</code></td></tr>
 <tr><td>A route change</td><td>Any unsent scroll for the old route, then the depth resets</td></tr>
 <tr><td>No scroll, or the first threshold never reached</td><td>Nothing</td></tr>
 </tbody></table></div>
@@ -3818,8 +3818,8 @@ including what was visible at load &mdash; a page 50&nbsp;px taller than the win
 
 <h4>Why not GA's load-time event</h4>
 
-<p>GA fires <code>scroll</code> (90) once the window bottom is at 90% of the document, <em>including at
-load</em>: a 500&nbsp;px page in a 720&nbsp;px window sends one with no scrolling (probe
+<p>GA records <code>scroll</code> (90) once the window bottom is at 90% of the document, <em>including at
+load</em>: a 500&nbsp;px page in a 720&nbsp;px window produces one with no scrolling (probe
 <code>scroll2.js</code>, re-run 6&nbsp;Oct). The peteradamsphoto home page is a
 <code>vh</code>-sized layout 50&nbsp;px taller than the window &mdash; 93.5% visible at load at
 1280&times;720, 95.6% at 1920&times;1080 &mdash; so every view of it should send one. GA's own counts
@@ -3831,24 +3831,24 @@ for <code>/</code> say otherwise:</p>
 <tr><td>Mobile</td><td>17</td><td>55</td><td>31%</td></tr>
 </tbody></table></div>
 
-<p><span class="chip c-meas">Measured</span> 10 runs per case, the page fitting the window,
-hits fulfilled locally (<code>scroll4.js</code>):</p>
-<div class="scroll"><table>
-<thead><tr><th>Case</th><th>scroll sent</th></tr></thead>
-<tbody>
-<tr><td>Visible, navigates away 0 / 150 / 300 / 600&nbsp;ms after load</td><td>8 / 6 / 6 / 5 of 10</td></tr>
-<tr><td>Visible, navigates away 1 / 2&nbsp;s after load</td><td>9 / 8 of 10</td></tr>
-<tr><td>Loaded in a hidden tab, closed unseen</td><td><strong>0 of 10</strong></td></tr>
-<tr><td>Loaded hidden, shown after 3&nbsp;s</td><td>10 of 10</td></tr>
-</tbody></table></div>
+<p><span class="chip c-meas">Measured</span> with GA's transmissions recorded inside the page
+(<code>scroll5.js</code>, 10 runs per case, the page fitting the window): <strong>GA computes the depth
+at load but sends the scroll hit only at <code>pagehide</code></strong>, by
+<code>fetch(&hellip;,{keepalive:true})</code>. <code>page_view</code> goes at once; <code>scroll</code>
+and <code>user_engagement</code> wait for the page to go. It attempted the scroll in 30 of 30 runs
+&mdash; leaving after 300&nbsp;ms, after 2&nbsp;s, and a hidden tab closed unseen. An earlier
+network-only count (<code>scroll4.js</code>) showed 0&ndash;50% lost; that was Playwright aborting
+requests made during unload, not GA.</p>
 
-<p>The page view is sent every time; the scroll hit is lost on a navigation at some rate whatever the
-dwell, and never sent from a tab nobody looked at. On phones the <code>vh</code> layout is measured
-with the address bar hidden while the window at load has it showing, which plausibly puts the
-window bottom under 90% (not measured: headless emulation has no toolbar). GA's load-time event
-therefore measures window size and delivery luck as much as reading. Gating on a scroll removes the
-first; sending at the last threshold at once, rather than at hide, keeps the second small for the
-signal that matters most.</p>
+<p>So GA loses the event where <code>pagehide</code> never fires or the keepalive request does not get
+out: a tab discarded in the background, a phone browser backgrounded and killed, a browser quit or a
+machine slept. That fits mobile at 31% (inferred, not measured on devices). GA registers a
+<code>visibilitychange</code> listener but does not send on it. Hence the two choices above:
+<strong>the last threshold is sent at once</strong>, and a held depth goes out on
+<code>visibilitychange</code>&rarr;hidden as well as <code>pagehide</code>, whichever comes first.
+On phones the <code>vh</code> layout is also measured with the address bar hidden while the window at
+load has it showing, which can put the window bottom under 90% (not measured: headless emulation has
+no toolbar).</p>
 
 <h4>What changes downstream</h4>
 <ul>
