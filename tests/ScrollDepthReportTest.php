@@ -9,20 +9,20 @@ use OWA\Module\Base\Classes\Cube\Cubes;
 /**
  * The Scroll Depth report answers "how far down do people read".
  *
- * Every threshold a page view crosses raises its own scroll event, so counting
- * scroll events grouped by scrollDepth reads as "how many reached at least this
- * far" -- a depth funnel. This runs the report's OWN widget queries, read from
+ * A page view the visitor scrolled sends ONE scroll event, at the deepest
+ * threshold reached, so counting scroll events grouped by scrollDepth reads as
+ * "where each page view stopped", and the rows add up to the page views that
+ * scrolled. This runs the report's OWN widget queries, read from
  * reports/scroll-depth.json, against a fixture cube: a hand-copied query could
  * pass while the report itself asked for something else.
  *
- * THE FIXTURE IS A FUNNEL WITH NO TWO LEVELS ALIKE, so a count landing on the
- * wrong threshold, or a constraint that let page views through, cannot pass by
- * coincidence:
+ * NO TWO LEVELS ALIKE, so a count landing on the wrong threshold, or a
+ * constraint that let page views through, cannot pass by coincidence:
  *
- *   /a  4 views   one visitor to 90, one to 50, one to 25, one not at all
- *   /b  2 views   one visitor to 75, one not at all
+ *   /a  7 views   one to 90, two to 50, three to 25, one not at all
+ *   /b  5 views   four to 75, one not at all
  *
- *   site-wide     25 -> 4   50 -> 3   75 -> 2   90 -> 1
+ *   site-wide     25 -> 3   50 -> 2   75 -> 4   90 -> 1
  */
 final class ScrollDepthReportTest extends TestCase
 {
@@ -34,11 +34,9 @@ final class ScrollDepthReportTest extends TestCase
 
     /** page => depth each visitor reached (0 = viewed, never scrolled) */
     const READING = array(
-        '/a' => array( 90, 50, 25, 0 ),
-        '/b' => array( 75, 0 ),
+        '/a' => array( 90, 50, 50, 25, 25, 25, 0 ),
+        '/b' => array( 75, 75, 75, 75, 0 ),
     );
-
-    const THRESHOLDS = array( 25, 50, 75, 90 );
 
     public static function setUpBeforeClass(): void
     {
@@ -98,8 +96,8 @@ final class ScrollDepthReportTest extends TestCase
     }
 
     /**
-     * A page view per visitor, and one scroll event per threshold they crossed --
-     * which is what the tracker sends: every mark passed, not only the deepest.
+     * A page view per visitor, and one scroll event at the deepest threshold they
+     * reached -- which is what the tracker sends.
      */
     private static function seedRows(): void
     {
@@ -118,11 +116,8 @@ final class ScrollDepthReportTest extends TestCase
 
                 $rows = array( array( 'page_view', null ) );
 
-                foreach ( self::THRESHOLDS as $mark ) {
-
-                    if ( $reached >= $mark ) {
-                        $rows[] = array( 'scroll', $mark );
-                    }
+                if ( $reached ) {
+                    $rows[] = array( 'scroll', $reached );
                 }
 
                 foreach ( $rows as $row ) {
@@ -223,27 +218,32 @@ final class ScrollDepthReportTest extends TestCase
     }
 
     /**
-     * The funnel, site-wide, shallowest first.
+     * Where page views stopped, site-wide, shallowest first.
      *
-     * Four page views of /a and two of /b are in the fixture and none of them may
-     * reach this: the report is constrained to scroll events, and a page view
-     * counted here would inflate every level by the same six.
+     * Twelve page views are in the fixture and none of them may reach this: the
+     * report is constrained to scroll events, and a page view counted here would
+     * inflate every level.
      */
-    public function testDepthReachedIsAFunnelInThresholdOrder(): void
+    public function testDeepestPointReachedInThresholdOrder(): void
     {
-        $got = array();
+        $events = array();
+        $users  = array();
 
         foreach ( $this->runWidget( 'depth' ) as $row ) {
-            $got[ (int) $row['scrollDepth']['value'] ] = (int) $row['eventCount']['value'];
+            $events[ (int) $row['scrollDepth']['value'] ] = (int) $row['eventCount']['value'];
+            $users[ (int) $row['scrollDepth']['value'] ]  = (int) $row['scrolledUsers']['value'];
         }
 
-        $this->assertSame( array( 25 => 4, 50 => 3, 75 => 2, 90 => 1 ), $got,
-            'each level counts the visitors who reached at least that far, shallowest first' );
+        $this->assertSame( array( 25 => 3, 50 => 2, 75 => 4, 90 => 1 ), $events,
+            'each level counts the page views whose deepest point it was, shallowest first' );
+
+        $this->assertSame( $events, $users,
+            'one visitor per page view in the fixture, so scrolled users match' );
     }
 
     /**
-     * The same funnel per page -- which is where "how far do people read THIS"
-     * gets answered. /b has no 90 row because nobody reached it.
+     * The same per page -- which is where "how far do people read THIS" gets
+     * answered. /b has only a 75 row because every scroll on it stopped there.
      */
     public function testDepthByPageSplitsTheFunnelPerPage(): void
     {
@@ -261,8 +261,8 @@ final class ScrollDepthReportTest extends TestCase
         ksort( $got );
 
         $this->assertSame( array(
-            '/a' => array( 25 => 3, 50 => 2, 75 => 1, 90 => 1 ),
-            '/b' => array( 25 => 1, 50 => 1, 75 => 1 ),
+            '/a' => array( 25 => 3, 50 => 2, 90 => 1 ),
+            '/b' => array( 75 => 4 ),
         ), $got );
     }
 
@@ -276,6 +276,6 @@ final class ScrollDepthReportTest extends TestCase
         }
 
         $this->assertSame( 10, $total,
-            'ten scroll events in the fixture; six page views that must not be counted' );
+            'ten scroll events in the fixture; twelve page views that must not be counted' );
     }
 }
