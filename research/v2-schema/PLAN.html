@@ -151,6 +151,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s230">2.29 Attributed source: the last non-direct touch</a>
   <a href="#s231">2.30 Queues and jobs</a>
   <a href="#s232">2.31 One scroll event per page view</a>
+  <a href="#s233">2.32 A session can restart on the same page</a>
   <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
@@ -3866,7 +3867,7 @@ keeps the maximum per page view for them, or the release accepts the break. <spa
 <li>v1 has no scroll event (&sect;2.2), so the migrator is unaffected.</li>
 </ul>
 
-<h4>Sessions on a page left open <span class="chip c-open">Open</span></h4>
+<h4>Sessions on a page left open <span class="chip c-dec">Decided &mdash; &sect;2.32</span></h4>
 
 <p><span class="chip c-meas">Measured</span> 6&nbsp;Oct (<code>idle.js</code>, page clock
 fast-forwarded): GA re-decides the session on <strong>every</strong> event. An event on the same page
@@ -3880,6 +3881,46 @@ but only as the page's first; a click, scroll or <code>user_engagement</code> af
 the old <code>session_id</code> and stretches that session over the idle time. Matching GA means
 re-deciding when the inactivity window has passed. That reopens the 21&ndash;22&nbsp;Aug decision not
 to rework the tracker's session model, so it is recorded here, not built.</p>
+
+<h3 id="s233"><span class="num">2.32</span>A session can restart on the same page <span class="chip c-dec">Decided 6&nbsp;Oct</span></h3>
+
+<p class="note"><strong>DECIDED 6&nbsp;Oct, built on <code>feature/session-idle-restart</code>.</strong>
+Reopens the 21&ndash;22&nbsp;Aug decision not to rework the tracker's session model, on Peter's
+call, after measuring GA (&sect;2.31).</p>
+
+<p><strong>The rule.</strong> The tracker decides the session on <strong>every</strong> event, not only
+a page's first. An event arriving after the inactivity window (<code>sessionLength</code>, 30
+minutes) since the session's last request starts a new session, whatever the event: new
+<code>session_id</code>, <code>sts</code> = now, <code>psts</code> and <code>prior_session_id</code>
+from the session that ended, <code>nps</code> + 1, <code>event_seq</code> from 1, and
+<code>is_new_session_start</code> on that event. Before, <code>manageState()</code> decided once
+behind <code>stateInit</code>, so a click 40 minutes into a page kept the old id and stretched that
+session over the gap.</p>
+
+<p><strong>The last request is the later of memory and the cookie.</strong> Memory is this page's;
+the cookie is the last request any tab of the site had accepted. A tab idle 40 minutes while another
+tab was in use is in a live session and continues it; if that tab has already started the next
+session, this one <strong>joins</strong> it (<code>sid</code>, <code>sts</code>, <code>psts</code>,
+<code>prior_session_id</code>, <code>seq</code>, <code>nps</code> from the cookie) rather than
+starting a third.</p>
+
+<p><strong>Attribution as GA's wire suggests</strong> (Peter's call): the restarting event carries the
+page's own <code>page_location</code> and <code>HTTP_REFERER</code>, as every event does, so the
+session is attributed as the page's landing was &mdash; a campaign landing left open earns that
+campaign a second session. <span class="chip c-meas">Measured</span> <code>idle2.js</code>: GA's
+session-start hit 31 minutes in carried the same <code>dl</code> (with its <code>utm_*</code>) and
+<code>dr</code> as the landing.</p>
+
+<p><strong>No server change.</strong> Ingest raises <code>session_start</code> from any event carrying
+the flag (<code>MaterializedEvents::sessionStart()</code>), copies the carrier's properties, and
+records the last touch; nothing requires a page view for a session. Consequences in the cube: the
+restarted session's landing page is the open page (its first row); it has no
+<code>is_entrance</code>/<code>is_exit</code> row unless a page view follows, since those count page
+views; and <code>sessions</code>, being distinct <code>session_id</code>, counts it.</p>
+
+<p><strong>Known, not changed:</strong> engagement time accrues while a tab is visible and focused,
+idle or not, in OWA and in GA (&sect;2.31 probe: the <code>user_engagement</code> after the gap
+carried it and marked the new session engaged).</p>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
