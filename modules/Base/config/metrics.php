@@ -217,6 +217,21 @@ return array(
         ),
 
         /*
+         * Users who scrolled. A page view sends a scroll event only after the
+         * visitor has scrolled past the first threshold, so any scroll event
+         * counts; group by scrollDepth for how far they got.
+         */
+        'scrolledUsers' => array(
+            'label'       => 'Scrolled Users',
+            'description' => 'The number of distinct users who scrolled a page.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'distinct_count',
+            'data_type'   => 'integer',
+            'column'      => 'visitor_id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'scroll' ),
+        ),
+
+        /*
          * newVisitors has no `returningVisitors` twin, deliberately.
          *
          * To count returning users you take totalUsers and group it by the
