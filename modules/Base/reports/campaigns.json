@@ -1,5 +1,6 @@
 {
     "title": "Campaigns",
+    "description": "Sessions by attributed campaign, for sessions credited to a campaign.",
     "widgets": [
         {
             "type": "trend",

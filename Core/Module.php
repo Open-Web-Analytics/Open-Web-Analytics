@@ -772,6 +772,9 @@ abstract class Module {
      *
      *     $this->registerReport( 'recordings', [ 'controller' => 'acme.reportRecordings' ] );
      *
+     * A controller report states its one-sentence `description` in that array,
+     * as a JSON definition states it in the file.
+     *
      * That second form is what lets the registry be the single indirection for
      * every report. Conversion order stops mattering, because a config that says
      * "link to `document`" resolves whether `document` is JSON yet or not; and

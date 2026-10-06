@@ -32,6 +32,17 @@ namespace OWA\Module\Base\Controller;
  */
 
 class ModuleActivateCli extends \OWA\Core\Controller\Cli {
+
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Installs and activates a module.',
+            'arguments'   => array(
+                'module=<name>' => 'Required. The module\'s name.',
+            ),
+        );
+    }
     
     function __construct($params) {
     

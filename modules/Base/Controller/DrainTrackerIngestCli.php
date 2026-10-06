@@ -19,6 +19,18 @@ namespace OWA\Module\Base\Controller;
  */
 class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Ingests the beacons waiting in the tracker-ingest queue, until it is empty or the time budget runs out. Runs on the scheduler every minute.',
+            'arguments'   => array(
+                'seconds=<n>' => 'Time budget in seconds. Defaults to 45.',
+                'scheduled=1' => 'Set by the scheduler. A scheduled run refuses when tracker_ingest_drain is external.',
+            ),
+        );
+    }
+
     /** A scheduled run's budget: inside the minute, so runs do not queue up behind each other. */
     const BUDGET = 45;
 

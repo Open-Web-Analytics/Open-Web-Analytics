@@ -187,7 +187,10 @@ class Module extends \OWA\Core\Module {
 
     function registerReports() {
 
-        $this->registerReport( 'domstreams', array( 'controller' => 'domstream.reportDomstreams' ) );
+        $this->registerReport( 'domstreams', array(
+            'controller'  => 'domstream.reportDomstreams',
+            'description' => 'Session recordings, one row per recording and newest first, with its length and its counts of clicks and key presses.',
+        ) );
     }
 
     function registerNavigation() {

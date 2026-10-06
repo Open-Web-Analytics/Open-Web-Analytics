@@ -1,5 +1,6 @@
 {
     "title": "Dashboard",
+    "description": "The site's users, page views and engagement, with its top events, pages, channels, sources and visits.",
     "metrics": "sessions,totalUsers,pageViews,pageViewsPerSession",
     "widgets": [
         {

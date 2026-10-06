@@ -25,6 +25,15 @@ namespace OWA\Module\Base\Controller;
  * @author      Peter Adams <peter@openwebanalytics.com>
  */
 class ResetSecretsCli extends \OWA\Core\Controller\Cli {
+
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Replaces OWA_NONCE_KEY, OWA_NONCE_SALT, OWA_AUTH_KEY and OWA_AUTH_SALT in owa-config.php with new random values.',
+            'arguments'   => array(),
+        );
+    }
     /**
      *  constructor.
      * @param $params

@@ -1,5 +1,6 @@
 {
     "title": "Conversion Rate",
+    "description": "The share of sessions with a transaction, by day.",
     "metrics": "sessions,ecommerceConversionRate",
     "widgets": [
         {

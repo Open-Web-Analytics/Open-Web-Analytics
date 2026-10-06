@@ -33,12 +33,43 @@ import { Util } from '../../../Base/src/common/Util.js';
 const EVENT_NAME = 'domstream';
 
 const DEFAULTS = {
-    domstreamSampleRate: 100,       // percent of page loads recorded
-    domstreamFlushInterval: 3000,   // ms between chunks
-    domstreamMaxSamples: 200,       // samples per chunk
-    domstreamMaxChars: 24000,       // serialised size per chunk, under a beacon's limit
-    domstreamMaxDurationMsec: 1800000, // a recording stops after this
-    domstreamMoveInterval: 100,     // ms between pointer samples
+    /**
+     * Percent of page loads recorded, 0-100. setDomstreamSampleRate() sets it.
+     *
+     * @option
+     */
+    domstreamSampleRate: 100,
+    /**
+     * Milliseconds between the chunks of a recording.
+     *
+     * @option
+     */
+    domstreamFlushInterval: 3000,
+    /**
+     * Samples per chunk. A chunk is sent early when it reaches this.
+     *
+     * @option
+     */
+    domstreamMaxSamples: 200,
+    /**
+     * Serialised size of a chunk, in characters, kept under a beacon's limit.
+     * A chunk is sent early when it reaches this.
+     *
+     * @option
+     */
+    domstreamMaxChars: 24000,
+    /**
+     * Milliseconds after which a recording stops.
+     *
+     * @option
+     */
+    domstreamMaxDurationMsec: 1800000,
+    /**
+     * Minimum milliseconds between two pointer samples.
+     *
+     * @option
+     */
+    domstreamMoveInterval: 100,
 };
 
 const MODIFIERS = [ 'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'AltGraph' ];
@@ -304,13 +335,23 @@ OWATracker.registerPlugin( {
 
     methods: {
 
-        /** The snippet command: start recording this page load. */
+        /**
+         * Record this page load's pointer movement, scrolling, clicks and key
+         * presses (never which key), if it falls in domstreamSampleRate.
+         *
+         * @command
+         */
         trackDomStream() {
 
             return recorderFor( this ).start();
         },
 
-        /** Percent of page loads recorded, 0-100. */
+        /**
+         * Percent of page loads trackDomStream records, 0-100.
+         *
+         * @command
+         * @param {number} value
+         */
         setDomstreamSampleRate( value ) {
 
             this.setOption( 'domstreamSampleRate', value );

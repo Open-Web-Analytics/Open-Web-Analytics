@@ -1,5 +1,6 @@
 {
     "title": "Content Overview",
+    "description": "What was viewed: top pages, page titles, content groups, landing pages and clicked elements.",
     "metrics": "sessions,pageViews",
     "widgets": [
         {

@@ -23,6 +23,17 @@ namespace OWA\Module\Base\Controller;
  */
 class V1DropCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Reports the 1.x tracking tables and what they hold; with --drop, drops them. Refused until the 1.x history migration has run.',
+            'arguments'   => array(
+                '--drop' => 'Drop the tables.',
+            ),
+        );
+    }
+
     /** The schema at which the migration is complete. */
     const MIGRATED_SCHEMA = 62;
 

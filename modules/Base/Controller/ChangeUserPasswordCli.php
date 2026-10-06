@@ -32,6 +32,18 @@ namespace OWA\Module\Base\Controller;
  */
 class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 {
+
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Sets a user\'s password.',
+            'arguments'   => array(
+                'user=<user id>'      => 'Required. The user name of the account.',
+                'password=<password>' => 'Required. The new password, at least 6 characters.',
+            ),
+        );
+    }
     /**
      * @var \OWA\Module\Base\Classes\UserManager
      */

@@ -18,6 +18,17 @@ namespace OWA\Module\Base\Controller;
  */
 class StringsExtractCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Writes the English string catalogue, conf/strings/en.php, from the CoreAPI::t() calls in the code, and reports calls whose text is not a literal.',
+            'arguments'   => array(
+                'check=1' => 'Report whether the catalogue is current, and write nothing.',
+            ),
+        );
+    }
+
     function action() {
 
         $map    = \OWA\Core\Strings::extract( \OWA\Core\Strings::sourceRoots(), $problems );

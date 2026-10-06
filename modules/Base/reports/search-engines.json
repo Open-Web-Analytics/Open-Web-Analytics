@@ -1,5 +1,6 @@
 {
     "title": "Search Engines",
+    "description": "Sessions from organic search, by search engine.",
     "widgets": [
         {
             "type": "trend",

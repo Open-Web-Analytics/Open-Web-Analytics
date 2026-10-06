@@ -31,6 +31,19 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionDeregisterCli extends CustomDimensionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Removes a custom dimension from a Property, and drops its cube column with the values in it. The collected values stay in the raw events, so registering again and rebuilding brings them back.',
+            'arguments'   => array(
+                'property=<id>' => 'Required. The Property.',
+                'key=<key>'     => 'Required. The collected key to stop reporting on.',
+                '--defer'       => 'Remove the registration now and leave the column drop to the next build or apply job.',
+            ),
+        );
+    }
+
     function action() {
 
         $property_id = $this->property();

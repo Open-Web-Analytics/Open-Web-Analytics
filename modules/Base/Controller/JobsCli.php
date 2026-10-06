@@ -17,6 +17,18 @@ namespace OWA\Module\Base\Controller;
  */
 class JobsCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Lists the one-off job queue.',
+            'arguments'   => array(
+                'status=<pending|running|failed|done>' => 'List only jobs in this state.',
+                'limit=<n>'                            => 'How many to list. Defaults to 50.',
+            ),
+        );
+    }
+
     /** Which of the four this command is; the thin subclasses set it. */
     const MODE = 'list';
 

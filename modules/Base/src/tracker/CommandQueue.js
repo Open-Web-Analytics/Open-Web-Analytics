@@ -60,6 +60,22 @@ class CommandQueue {
         OWA.debug('cmd queue object name %s', obj_name);
         OWA.debug('cmd queue object method name %s', method);
 
+        /**
+         * Stop applying commands, from this one on, until `unpause-owa`.
+         * Commands pushed meanwhile are dropped, not held.
+         *
+         *   owa_cmds.push(['pause-owa']);
+         *
+         * @command pause-owa
+         */
+
+        /**
+         * Apply commands again after `pause-owa`.
+         *
+         *   owa_cmds.push(['unpause-owa']);
+         *
+         * @command unpause-owa
+         */
         if ( method === "pause-owa" ) {
 
             this.pause();
@@ -110,6 +126,14 @@ class CommandQueue {
                 OWA.debug('making global object named: %s', obj_name);
                 window[obj_name] = new OWATracker( identity );
             }
+
+            /**
+             * Create the tracker for a site. The same as setSiteId when it is
+             * the first command for a tracker.
+             *
+             * @command config
+             * @param {string} site_id
+             */
 
             // 'config' is a queue-level command, not a tracker method: it
             // exists to CREATE a tracker for a site. By the time we get here the
@@ -390,12 +414,14 @@ class CommandQueue {
         */
     }
 
+    /** @internal The `pause-owa` command. */
     pause() {
 
         this.is_paused = true;
         OWA.debug('Pausing Command Queue');
     }
 
+    /** @internal The `unpause-owa` command. */
     unpause() {
 
         this.is_paused = false;

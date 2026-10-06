@@ -1,5 +1,6 @@
 {
     "title": "Ecommerce",
+    "description": "Transactions, revenue and e-commerce conversion rate, by attributed source.",
     "metrics": "sessions,transactions,transactionRevenue,ecommerceConversionRate,revenuePerSession,revenuePerTransaction",
     "widgets": [
         {

@@ -28,6 +28,22 @@ namespace OWA\Module\Base\Controller;
  */
 class PartitionReorganizeCli extends PartitionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Changes the partition granularity of the event tables, one month at a time. On a reporting cube the daily front is left to partition-rotate.',
+            'arguments'   => array(
+                'granularity=<monthly|half-month|quarter-month>' => 'Required. The new partition size. daily is refused for a cube.',
+                'from=<yyyymmdd>'                                => 'Reorganize from this date.',
+                'to=<yyyymmdd>'                                  => 'Reorganize up to this date.',
+                'table=<name>'                                   => 'Reorganize only this table.',
+                '--force'                                        => 'Proceed when the result needs more partitions than the ceiling allows.',
+                '--dry-run'                                      => 'Report the plan, and change nothing.',
+            ),
+        );
+    }
+
     function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {

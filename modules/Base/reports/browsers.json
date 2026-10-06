@@ -1,5 +1,6 @@
 {
     "title": "Browser Types",
+    "description": "Sessions by browser, without its version.",
     "widgets": [
         {
             "type": "trend",

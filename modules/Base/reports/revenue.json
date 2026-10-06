@@ -1,5 +1,6 @@
 {
     "title": "Total Revenue",
+    "description": "Transaction revenue by day.",
     "metrics": "transactionRevenue",
     "widgets": [
         {

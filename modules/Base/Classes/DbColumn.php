@@ -104,6 +104,14 @@ class DbColumn {
 
      var $label;
 
+     /**
+      * What the column holds, in a sentence for an administrator. Documentation
+      * only: no statement reads it. The generated wiki does.
+      *
+      * @var string
+      */
+     var $description = '';
+
      var $index;
 
      var $default_value;
@@ -461,6 +469,11 @@ class DbColumn {
      function setLabel($label) {
 
          $this->label = $label;
+     }
+
+     function setDescription( $description ) {
+
+         $this->description = (string) $description;
      }
 
      function setForeignKey($entity, $column = 'id') {

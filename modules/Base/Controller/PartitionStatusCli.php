@@ -26,6 +26,17 @@ namespace OWA\Module\Base\Controller;
  */
 class PartitionStatusCli extends PartitionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Reports how each partitioned table is laid out: what it covers, at what granularity, how much of the partition ceiling it uses, what is in the catch-all and how long the lead lasts. Read-only.',
+            'arguments'   => array(
+                'table=<name>' => 'Report only this table.',
+            ),
+        );
+    }
+
     function action() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();

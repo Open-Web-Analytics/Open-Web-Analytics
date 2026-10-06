@@ -24,6 +24,17 @@ namespace OWA\Module\Base\Controller;
  */
 class ScheduleStatusCli extends SchedulerCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Reports what the scheduler is doing and, for a job that is behind, the first cause that explains it. Read-only.',
+            'arguments'   => array(
+                'format=markdown' => 'Print the registered jobs as a Markdown table instead.',
+            ),
+        );
+    }
+
     /** See JobStatus::MIN_GRACE. */
     const MIN_GRACE = \OWA\Module\Base\Classes\JobStatus::MIN_GRACE;
 
@@ -101,25 +112,47 @@ class ScheduleStatusCli extends SchedulerCli {
     }
 
     /**
-     * The registered jobs as a Markdown table, for the wiki:
+     * This install's jobs as a Markdown table:
      *
      *   php cli.php cmd=schedule-status format=markdown
      *
-     * Read from the registrations, so the page says what the code does. The
-     * schedule is this install's: spread jobs land on a minute derived from it.
+     * The schedule is this install's: spread jobs land on a minute derived from
+     * it, and OWA_SCHEDULED_JOBS is applied. The wiki's table is the same one
+     * over the registrations alone, with spread schedules described as spread
+     * (tests/tools/wiki/sections/jobs.php).
      *
      * @return string[]
      */
     protected function markdown() {
 
+        return self::markdownTable( $this->jobs(), function ( $job ) {
+            return $this->isDisabled( $job ) ? 'off' : \OWA\Core\Cron::describe( $job['schedule'] );
+        } );
+    }
+
+    /**
+     * Jobs as a Markdown table: name, the command line it runs, the schedule
+     * in words as $schedule gives it, and the description.
+     *
+     * @param array    $jobs      keyed by name
+     * @param callable $schedule  job => the schedule in words
+     * @return string[]
+     */
+    public static function markdownTable( array $jobs, callable $schedule ) {
+
         $lines = array( '| Job | Runs | Schedule | What it does |', '|---|---|---|---|' );
         $cell  = fn ( $v ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), (string) $v );
 
-        foreach ( $this->jobs() as $name => $job ) {
+        foreach ( $jobs as $name => $job ) {
 
-            $lines[] = sprintf( '| `%s` | `%s` | %s | %s |', $name, $job['command'],
-                $cell( $this->isDisabled( $job ) ? 'off' : \OWA\Core\Cron::describe( $job['schedule'] ) ),
-                $cell( $job['description'] ?? '' ) );
+            $args = array( $job['command'] );
+
+            foreach ( (array) ( $job['params'] ?? array() ) as $k => $v ) {
+                $args[] = $k . '=' . $v;
+            }
+
+            $lines[] = sprintf( '| `%s` | `%s` | %s | %s |', $name, $cell( implode( ' ', $args ) ),
+                $cell( $schedule( $job ) ), $cell( $job['description'] ?? '' ) );
         }
 
         return $lines;

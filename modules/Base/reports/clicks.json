@@ -1,5 +1,6 @@
 {
     "title": "Clicks",
+    "description": "Click events by page and by the id of the element clicked.",
     "metrics": "eventCount",
     "widgets": [
         {

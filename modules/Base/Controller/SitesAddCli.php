@@ -32,6 +32,23 @@ namespace OWA\Module\Base\Controller;
  */
 
 class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
+
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Adds a tracked website or app as a Profile, under an existing Property or a new one.',
+            'arguments'   => array(
+                'domain=<url>'         => 'Required for a website. Its domain.',
+                'name=<text>'          => 'Required unless propertyId= is given. Names the new Property.',
+                'propertyId=<id>'      => 'Add the Profile to this existing Property instead of creating one.',
+                'streamType=<web|app>' => 'What the Profile observes. Defaults to web.',
+                'appId=<id>'           => 'Required for an app. Its bundle ID or package name.',
+                'description=<text>'   => 'A description.',
+                'site_family=<text>'   => 'A family name to group it under.',
+            ),
+        );
+    }
     
 	function errorAction() {
 	

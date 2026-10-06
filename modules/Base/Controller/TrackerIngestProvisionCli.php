@@ -16,6 +16,15 @@ namespace OWA\Module\Base\Controller;
  */
 class TrackerIngestProvisionCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Creates the tracker-ingest queue and its dead-letter queue, or confirms they exist.',
+            'arguments'   => array(),
+        );
+    }
+
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );

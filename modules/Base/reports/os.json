@@ -1,5 +1,6 @@
 {
     "title": "Operating Systems",
+    "description": "Sessions by operating system, without its version.",
     "widgets": [
         {
             "type": "trend",

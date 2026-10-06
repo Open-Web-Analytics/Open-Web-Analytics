@@ -59,6 +59,9 @@ class EventRaw extends \OWA\Core\Entity {
         // beacon derives the same ids and collapses on the primary key.
         $this->setProperty( $this->column( 'id', OWA_DTD_BIGINT, false ) );
         $this->properties['id']->setPrimaryKey();
+        $this->properties['id']->setDescription(
+            'The event\'s id, derived from its site, visitor, session, timestamp and event name, '
+          . 'so a beacon delivered twice is stored once.' );
 
         /*
          * Wide enough for any name a site may give a custom event -- 40
@@ -101,6 +104,9 @@ class EventRaw extends \OWA\Core\Entity {
          * NULL on rows written before the column existed.
          */
         $this->setProperty( $this->column( 'created_at', OWA_DTD_BIGINT ) );
+        $this->properties['created_at']->setDescription(
+            'When the row reached this table, in microseconds. A build compares it with a partition\'s '
+          . 'build time to tell whether anything has arrived since. Not carried into the cube.' );
 
         $this->setProperty( $this->column( 'yyyymmdd', OWA_DTD_INT, false ) );
         $this->setPartitionColumn( 'yyyymmdd' );
@@ -387,6 +393,9 @@ class EventRaw extends \OWA\Core\Entity {
         // time, and nested arrays. Everything the release knows the name of
         // gets a column of its own.
         $this->setProperty( $this->column( 'params', OWA_DTD_JSON ) );
+        $this->properties['params']->setDescription(
+            'The event\'s values that have no column of their own, as a JSON document keyed by name: '
+          . 'custom variables and event properties, form and element details, and purchase line items.' );
 
         /*
          * THE VISITOR'S LAST NON-DIRECT TOUCH BEFORE THIS SESSION, as evidence:

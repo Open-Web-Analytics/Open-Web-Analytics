@@ -1,5 +1,6 @@
 {
     "title": "Site Search",
+    "description": "What visitors searched this site for, as searches and as the sessions that searched.",
     "metrics": "eventCount,sessions",
     "widgets": [
         {

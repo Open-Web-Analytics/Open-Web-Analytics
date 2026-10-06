@@ -337,16 +337,28 @@ class OWATracker  {
 	
 	    // Configuration options
 	    this.options = OWA.applyFilters('tracker.default_options', {
+	        /** @internal Not read by anything. */
 	        logClicks: true,
+	        /** @internal Not read by anything. */
 	        logPage: true,
+	        /** @internal Not read by anything. */
 	        encodeProperties: false,
-	        /*
+	        /**
 	         * Whether the #fragment is part of a page's URL. It is not, by
-	         * default -- see getCurrentUrl().
+	         * default -- see getCurrentUrl(). setTrackUrlFragments() sets it.
+	         *
+	         * @option
 	         */
 	        trackUrlFragments: false,
+	        /**
+	         * Seconds without an event after which the next event starts a new
+	         * session. A Profile's tracking bundle sets it from the install's
+	         * session length.
+	         *
+	         * @option
+	         */
 	        sessionLength: 1800,
-	        /*
+	        /**
 	         * Scroll depths, as percentages, that each raise ONE scroll event per
 	         * page view.
 	         *
@@ -361,12 +373,16 @@ class OWATracker  {
 	         *
 	         * Up to four events per page view, and only on pages that scroll. A site
 	         * that wants the old single mark sets [90].
+	         *
+	         * @option
 	         */
 	        scrollThresholds: [ 25, 50, 75, 90 ],
-	        /*
+	        /**
 	         * Extensions a click is treated as downloading. A list rather than
 	         * "anything with a dot", which reads every /v1.2/ path and every
 	         * .html as a download.
+	         *
+	         * @option
 	         */
 	        downloadExtensions: [
 	            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt',
@@ -374,8 +390,9 @@ class OWATracker  {
 	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi',
 	            'key', 'pps', 'mpeg', 'mpg', 'mid', 'midi', 'wma'
 	        ],
-	        /*
+	        /**
 	         * Query parameters that carry a site-search term, tried in order.
+	         * Set it with setSearchQueryParams(), which checks it is an array.
 	         *
 	         * DEFAULTS NOW, and there were none. The reasoning was that no
 	         * convention exists so a default would guess wrong -- and the cost of
@@ -387,12 +404,16 @@ class OWATracker  {
 	         * The guess is cheap and the miss is not. A page with ?q= that is not
 	         * a search is one spurious event; no defaults is no site-search
 	         * reporting anywhere, on any install. A site using ?kw= adds it.
+	         *
+	         * @option
 	         */
 	        siteSearchParams: [ 'q', 's', 'search', 'query', 'keyword' ],
+	        /** @internal Set by setCookieDomain(), which also normalises it. */
 	        cookie_domain: false,
-	        /*
-	         * How long each state store's cookie lives, by LOGICAL store name,
-	         * and whether any of them may outlive the browser session.
+	        /**
+	         * How long each state store's cookie lives, in days, by store:
+	         * `v` (the visitor) and `s` (the session). 0 ends the cookie when
+	         * the browser closes. A store not named keeps its shipped lifetime.
 	         *
 	         * Options rather than methods of their own: setOption() already
 	         * carries cookie_domain, campaignKeys, logger_endpoint, api_endpoint
@@ -411,8 +432,17 @@ class OWATracker  {
 	         * global 'v' and 'c' stores unconditionally. A second tracker on the
 	         * page would otherwise reset the first one's configured lifetime with
 	         * nothing to put it back.
+	         *
+	         * @option
 	         */
 	        stateStoreExpirations: {},
+	        /**
+	         * false makes every cookie this tracker writes end when the browser
+	         * closes.
+	         *
+	         * @option
+	         * @deprecated Use stateStoreExpirations `{v: 0, s: 0}`.
+	         */
 	        cookiePersistence: true,
 	        /*
 	         * campaignKeys WAS HERE, with six setters beside it.
@@ -429,13 +459,37 @@ class OWATracker  {
 	         * so a site calling setCampaignSourceKey('utm_source') renamed a key
 	         * nothing read and its campaigns silently stopped being attributed.
 	         */
+	        /**
+	         * The URL beacons are sent to. setLoggerEndpoint() sets it; empty
+	         * means the install's own log.php.
+	         *
+	         * @option
+	         */
 	        logger_endpoint: '',
+	        /** @internal Set by setApiEndpoint(). */
 	        api_endpoint: '',
+	        /** @internal Not read by anything. */
 	        maxCustomVars: 5,
+	        /**
+	         * The longest beacon URL, in characters, sent as a GET. A longer
+	         * event is sent as a POST body.
+	         *
+	         * @option
+	         */
 	        getRequestCharacterLimit: 2000
 	
 	    });
 	
+	    /**
+	     * Options the tracker sets for itself.
+	     *
+	     * @internal
+	     * @option baseUrl                 setEndpoint()
+	     * @option cookie_domain_set       setCookieDomain()
+	     * @option cookie_domain_declared  the command queue, from setCookieDomain()
+	     * @option logClicksAsTheyHappen   trackClicks()
+	     */
+
 	    // Endpoint URL of log service. needed for backwards compatability with old tags
 	    var endpoint = window.owa_baseUrl || OWA.config.baseUrl ;
 	    
@@ -719,18 +773,28 @@ class OWATracker  {
         return OWATracker._plugins;
     }
 
+    /**
+     * Log what the tracker does to the browser console.
+     *
+     * Applied before any other queued command, wherever it sits in the queue,
+     * so the tracker's construction is logged too.
+     *
+     * @command
+     * @param {boolean} bool  true to log, false to stop
+     */
     setDebug(bool) {
 
         OWA.setSetting('debug', bool);
     }
 
     /**
-     * Looks for shared state cookies passed on the URL from OWA running
-     * under anohter domain.
+     * Read visitor and session state passed on the URL by OWA running on
+     * another domain, as shareStateByLink() or shareStateByPost() sends it.
      *
-     * This method must be called explicitly before any of the tracking
-     * methods if you want shared state cookies ot be respected.
+     * Call it before any tracking command, or the state it reads arrives too
+     * late for them.
      *
+     * @command
      */
     checkForLinkedState() {
 
@@ -789,14 +853,15 @@ class OWATracker  {
     }
 
     /**
-     * Shares User State cross domains using GET string
-      *
-     * gets cookies and concatenates them together using:
-     * name1=encoded_value1.name2=encoded_value2
-     * then base64 encodes the entire string and appends it
-     * to an href
+     * Navigate to a URL on another domain, carrying this visitor's state on it
+     * so the OWA tracker there continues the same visitor and session.
      *
-     * @param    url    string
+     * The state is the visitor's cookies, concatenated as
+     * name1=encoded_value1.name2=encoded_value2, base64 encoded and appended to
+     * the URL. The page receiving it calls checkForLinkedState().
+     *
+     * @command
+     * @param {string} url  the destination
      */
     shareStateByLink(url) {
 
@@ -856,6 +921,13 @@ class OWATracker  {
         }
     }
 
+    /**
+     * Submit a form to another domain, carrying this visitor's state in its
+     * action URL, as shareStateByLink() does for a link.
+     *
+     * @command
+     * @param {HTMLFormElement} form  the form to submit
+     */
     shareStateByPost(form) {
 
         var state = this.createSharedStateValue();
@@ -869,6 +941,16 @@ class OWATracker  {
 
     }
 
+    /**
+     * The domain OWA's cookies are set on.
+     *
+     * Without an argument, the page's domain with any leading `www.` removed,
+     * so the cookies are shared by its subdomains. Given a domain, exactly that
+     * one. Applied when the tracker is built, wherever it sits in the queue.
+     *
+     * @command
+     * @param {string} [domain]  e.g. example.com
+     */
     setCookieDomain(domain) {
 
         var not_passed = false;
@@ -927,12 +1009,18 @@ class OWATracker  {
         return Util.crc32(domain);
     }
 
+    /**
+     * Whether stored state is stamped with a hash of the cookie domain.
+     *
+     * @internal
+     */
     setCookieDomainHashing(value) {
 	    
         this.hashCookiesToDomain = value;
         OWA.setSetting('hashCookiesToDomain', value);
     }
 
+    /** @internal Run by the tracker when it starts. */
     checkForOverlaySession() {
 
         // check to see if overlay sesson should be created
@@ -1036,7 +1124,7 @@ class OWATracker  {
     }
 
     /**
-     * Convienence method for setting page title
+     * The title reported for this page, in place of the document's title.
      *
      * Stored page-scoped rather than as a global event property on this
      * tracker. A page title is a fact about the PAGE, so a site that calls this
@@ -1044,6 +1132,9 @@ class OWATracker  {
      * one tracker cannot do that. Measured before this moved: two trackers on
      * one page, one reporting the title the site set and the other reporting
      * nothing at all.
+     *
+     * @command
+     * @param {string} title
      */
     setPageTitle(title) {
 
@@ -1051,12 +1142,15 @@ class OWATracker  {
     }
 
     /**
-     * Convienence method for setting page type
+     * A type for this page, such as `article` or `product`.
      *
      * Page-scoped, as setPageTitle(). Note there is no DOM fallback for this
      * one -- unlike page_title, nothing derives a page type -- so the setter is
      * the only source and losing it to a tracker-private copy loses it
      * entirely.
+     *
+     * @command
+     * @param {string} type
      */
     setPageType(type) {
 
@@ -1064,7 +1158,7 @@ class OWATracker  {
     }
 
     /**
-     * The person's display name, as a custom USER property.
+     * The person's display name, as a custom user property.
      *
      * @deprecated Use setUserProperty('user_name', value).
      *
@@ -1082,6 +1176,9 @@ class OWATracker  {
      * to the visitor store at INGEST, where it is recorded with when it was set
      * (§2.26.5). So what persists is a server record that can say "this was true
      * from here on" rather than a cookie that cannot.
+     *
+     * @command
+     * @param {string} value
      */
     setUserName( value ) {
 
@@ -1107,7 +1204,7 @@ class OWATracker  {
 
 
     /**
-     * The site's OWN id for a logged-in person.
+     * The site's own id for a logged-in person.
      *
      * NOT setUserName, which is a display NAME and a custom user property --
      * page-lifetime, and recorded server side with when it was set. user_id is the
@@ -1125,6 +1222,9 @@ class OWATracker  {
      *
      * Visitor-scoped so it survives the page, and cleared by passing nothing --
      * which is what a logout should call.
+     *
+     * @command
+     * @param {string} [value]  the id; nothing clears it
      */
     setUserId( value ) {
 
@@ -1147,6 +1247,9 @@ class OWATracker  {
      * site that wants one group for a whole section sets it on each page of
      * that section, which is also what makes it correct when someone lands
      * mid-section.
+     *
+     * @command
+     * @param {string} value
      */
     setContentGroup( value ) {
 
@@ -1159,6 +1262,9 @@ class OWATracker  {
      * Stored beside the amount rather than assumed, because without it a
      * multi-currency store sums minor units of different things and the total
      * is meaningless in a way no report can show.
+     *
+     * @command
+     * @param {string} value  e.g. USD
      */
     setCurrency( value ) {
 
@@ -1178,6 +1284,9 @@ class OWATracker  {
      * decision and its consent platform's; what this does is make the decision
      * visible in the data afterwards, so a question about a period can be
      * answered rather than assumed.
+     *
+     * @command
+     * @param {string} value  `granted` or `denied`
      */
     setConsentState( value ) {
 
@@ -1194,7 +1303,12 @@ class OWATracker  {
     }
 
     /**
-     * Sets the siteId to be appended to all logging events
+     * The site (Profile) id every event is sent for.
+     *
+     * Applied when the tracker is built, wherever it sits in the queue.
+     *
+     * @command
+     * @param {string} site_id
      */
     setSiteId(site_id) {
 	    
@@ -1351,6 +1465,15 @@ class OWATracker  {
         return this.siteId;
     }
 
+    /**
+     * The base URL of the OWA install, ending in `/`. Beacons go to its
+     * log.php unless setLoggerEndpoint() says otherwise.
+     *
+     * A tag that defines `owa_baseUrl` has set it already.
+     *
+     * @command
+     * @param {string} endpoint
+     */
     setEndpoint(endpoint) {
 
         endpoint = ('https:' == document.location.protocol ? window.owa_baseSecUrl || endpoint.replace(/http:/, 'https:') : endpoint );
@@ -1358,6 +1481,12 @@ class OWATracker  {
         OWA.config.baseUrl = endpoint;
     }
 
+    /**
+     * The URL beacons are sent to, when that is not the install's own log.php.
+     *
+     * @command
+     * @param {string} url  the directory log.php is in, ending in `/`
+     */
     setLoggerEndpoint(url) {
 
         this.setOption( 'logger_endpoint', this.forceUrlProtocol( url ) );
@@ -1370,6 +1499,13 @@ class OWATracker  {
         return url + 'log.php';
     }
 
+    /**
+     * The URL of the install's REST API, used by the overlays that draw report
+     * data on the page.
+     *
+     * @command
+     * @param {string} url
+     */
     setApiEndpoint(url) {
 
         this.setOption( 'api_endpoint', this.forceUrlProtocol( url ) );
@@ -1441,6 +1577,9 @@ class OWATracker  {
      * the fragment IS the page. It moves the route comparison with it, so
      * turning this on gives both the page views and the URLs to tell them
      * apart, and leaving it off gives neither.
+     *
+     * @command
+     * @param {boolean} value
      */
     setTrackUrlFragments( value ) {
 
@@ -2281,6 +2420,8 @@ class OWATracker  {
      * The threshold list is an option. The default is quartiles -- 25, 50, 75
      * and 90 -- so the marks read as a depth funnel; a site that wants the one
      * event at 90%, where "read to the end" becomes true, sets [90].
+     *
+     * @internal
      */
     checkScrollDepth() {
 
@@ -2408,6 +2549,8 @@ class OWATracker  {
      * Called when the page is hidden. The banked time is not SENT here -- the
      * hide-time event does that -- it just stops the clock, so a tab left open
      * in the background for an hour does not report an hour of reading.
+     *
+     * @internal
      */
     pauseEngagement() {
 
@@ -2486,6 +2629,8 @@ class OWATracker  {
      *
      * Final-page dwell is the one irreducible lossy attempt: a browser torn
      * down without firing pagehide reports nothing, and no transport fixes it.
+     *
+     * @internal
      */
     trackEngagement() {
 
@@ -2637,6 +2782,8 @@ class OWATracker  {
      * URL and is not a route change -- the guard below sees to that. A site
      * that routes on the hash turns trackUrlFragments on, which makes those
      * URLs differ again and the page views appear.
+     *
+     * @command
      */
     trackRouteChanges() {
 
@@ -2809,6 +2956,11 @@ class OWATracker  {
         return Math.round(new Date().getTime());
     }
 
+    /**
+     * The value of a tracker option, or undefined.
+     *
+     * @internal
+     */
     getOption(name) {
 
         if ( this.options.hasOwnProperty(name) ) {
@@ -2816,11 +2968,23 @@ class OWATracker  {
         }
     }
 
+    /**
+     * Set a tracker option. The options are listed under Tracker options.
+     *
+     * Any name is accepted, and one the tracker does not read changes nothing.
+     *
+     *   owa_cmds.push(['setOption', 'scrollThresholds', [50, 90]]);
+     *
+     * @command
+     * @param {string} name
+     * @param {*}      value
+     */
     setOption(name, value) {
 
         this.options[name] = value;
     }
 
+    /** @internal Does nothing; kept for old callers. */
     setLastEvent(event) {
 	    
         return;
@@ -2831,17 +2995,35 @@ class OWATracker  {
         while (new Date().getTime() < start + delay);
     }
 
+    /**
+     * Stop this tracker sending events until restart().
+     *
+     * Unlike the `pause-owa` command, commands are still applied; only
+     * sending stops.
+     *
+     * @command
+     */
     pause() {
 
         this.active = false;
     }
 
+    /**
+     * Resume sending after pause().
+     *
+     * @command
+     */
     restart() {
 	    
         this.active = true;
     }
 
-    // Event object Factory
+    /**
+     * A new, empty event object, for building an event by hand and sending it
+     * with trackEvent(). Called on the tracker object, not through the queue.
+     *
+     * @command
+     */
     makeEvent() {
         return new OwaEvent();
     }
@@ -2881,6 +3063,8 @@ class OWATracker  {
      * trafficAttributionMode were a browser deciding an answer nobody read.
      * What remains is the one thing that does ride the beacon and that the
      * server cannot derive: the referrer this session arrived on.
+     *
+     * @internal
      */
     setTrafficAttribution( event, callback ) {
 
@@ -2939,13 +3123,37 @@ class OWATracker  {
     
 
     /**
-	 * DEPRICATED. Functionality moved to server side.
+	 * Does nothing. Search engines are recognised by the server.
+	 *
+	 * @command
+	 * @deprecated Nothing. The server recognises search engines from conf/searchengines.php.
 	 */
     addOrganicSearchEngine( domain, query_param, prepend) {
 
         return;
     }
 
+    /**
+     * Open a purchase, to which addTransactionLineItem() adds items and which
+     * trackTransaction() sends.
+     *
+     * The city, state and country arguments are accepted and discarded, so
+     * existing calls keep their positions.
+     *
+     *   owa_cmds.push(['addTransaction', 'T-1001', 'Web store', 59.98, 4.90, 5.99, 'card']);
+     *   owa_cmds.push(['addTransactionLineItem', 'T-1001', 'SKU-1', 'Blue mug', 'Kitchen', 19.99, 2]);
+     *   owa_cmds.push(['trackTransaction']);
+     *
+     * trackPurchase() does the same in one call.
+     *
+     * @command
+     * @param {string} order_id
+     * @param {string} order_source  e.g. the store's name
+     * @param {number} total
+     * @param {number} tax
+     * @param {number} shipping
+     * @param {string} gateway       the payment method
+     */
     addTransaction( order_id, order_source, total, tax, shipping, gateway, city, state, country ) {
 	    
         this.ecommerce_transaction = new OwaEvent();
@@ -2988,6 +3196,14 @@ class OWATracker  {
      * REFUSED WITHOUT A TRANSACTION. It used to open one called 'none set', so an
      * item added out of order became a purchase of its own with no order id,
      * total or currency.
+     *
+     * @command
+     * @param {string} order_id
+     * @param {string} sku
+     * @param {string} product_name
+     * @param {string} category
+     * @param {number} unit_price
+     * @param {number} quantity
      */
     addTransactionLineItem( order_id, sku, product_name, category, unit_price, quantity ) {
 
@@ -3033,6 +3249,8 @@ class OWATracker  {
      *
      * @param {Object} purchase
      * @return {boolean} false when refused
+     *
+     * @command
      */
     trackPurchase( purchase ) {
 
@@ -3113,6 +3331,8 @@ class OWATracker  {
      *
      * @param {Object} refund
      * @return {boolean} false when refused
+     *
+     * @command
      */
     trackRefund( refund ) {
 
@@ -3223,6 +3443,11 @@ class OWATracker  {
         return isFinite( n ) ? n : null;
     }
 
+    /**
+     * Send the purchase addTransaction() opened.
+     *
+     * @command
+     */
     trackTransaction() {
 
         if ( this.ecommerce_transaction ) {
@@ -3252,6 +3477,8 @@ class OWATracker  {
      *
      * Reading 0 back out is safe on the wire: collectStateProperties() omits a
      * property only when it is undefined or '', never when it is falsy.
+     *
+     * @internal
      */
     setNumberPriorSessions( event, callback ) {
 
@@ -3275,6 +3502,7 @@ class OWATracker  {
         }
     }
 
+    /** @internal Part of the state an event is sent with. */
     setVisitorId( event, callback ) {
 
         var visitor_id =  OWA.getState( 'v', 'vid' );
@@ -3305,6 +3533,7 @@ class OWATracker  {
         }
     }
 
+    /** @internal Part of the state an event is sent with. */
     setFirstSessionTimestamp( event, callback ) {
 
         // set first session timestamp
@@ -3329,6 +3558,7 @@ class OWATracker  {
         }
     }
 
+    /** @internal Part of the state an event is sent with. */
     setLastRequestTime( event, callback ) {
 
         /*
@@ -3393,6 +3623,7 @@ class OWATracker  {
         }
     }
 
+    /** @internal Part of the state an event is sent with. */
     setSessionId( event, callback ) {
 	    
         var session_id = '';
@@ -3584,6 +3815,7 @@ class OWATracker  {
         }
     }
 
+    /** @internal Use setEventProperty() or setUserProperty(). */
     getGlobalEventProperty( name ) {
 
         if ( this.globalEventProperties.hasOwnProperty(name) ) {
@@ -3592,11 +3824,13 @@ class OWATracker  {
         }
     }
 
+    /** @internal Use setEventProperty() or setUserProperty(). */
     setGlobalEventProperty(name, value) {
 
         this.globalEventProperties[name] = value;
     }
 
+    /** @internal Use setEventProperty() or setUserProperty(). */
     deleteGlobalEventProperty( name ) {
 
         if ( this.globalEventProperties.hasOwnProperty( name ) ) {
@@ -3645,7 +3879,7 @@ class OWATracker  {
     static get PROPERTY_NAME_PATTERN() { return /^[A-Za-z][A-Za-z0-9_]{0,39}$/; }
 
     /**
-     * A custom value describing THIS event.
+     * A custom value describing this event.
      *
      * Rides every event this tracker sends for the life of the page, and lands
      * in `params` on the raw row. The server never has to guess the scope: the
@@ -3655,8 +3889,9 @@ class OWATracker  {
      * set here cannot outlive its own meaning
      * the way v1's persisted custom variables could.
      *
-     * @param  name   string  letters, digits and underscores; must start with a letter
-     * @param  value  string
+     * @command
+     * @param {string} name   letters, digits and underscores, starting with a letter, at most 40
+     * @param {string|number} value  a number is stored as a number
      */
     setEventProperty( name, value ) {
 
@@ -3681,7 +3916,7 @@ class OWATracker  {
     }
 
     /**
-     * A custom value describing the VISITOR.
+     * A custom value describing the visitor.
      *
      * Also page-lifetime on the client, and deliberately so: held in memory for
      * the page, stamped on each event, and persisted server side against the
@@ -3693,8 +3928,9 @@ class OWATracker  {
      * so what persists is a server record rather than a cookie that can outlive
      * the value it holds.
      *
-     * @param  name   string
-     * @param  value  string
+     * @command
+     * @param {string} name   as setEventProperty()
+     * @param {string|number} value
      */
     setUserProperty( name, value ) {
 
@@ -3740,10 +3976,11 @@ class OWATracker  {
      * table -- and never information; two calls with the same name now mean the
      * same property rather than colliding on a slot.
      *
-     * @param    slot    int        ignored; kept so existing calls still parse
-     * @param    name    string    the key of the custom variable.
-     * @param    value    string    the value of the varible
-     * @param    scope    string    the scope of the variable. can be page, session, or visitor
+     * @command
+     * @param {number} slot   ignored; kept so existing calls still parse
+     * @param {string} name
+     * @param {string} value
+     * @param {string} scope  `visitor` becomes a user property; anything else an event property
      */
     setCustomVar(slot, name, value, scope) {
 
@@ -3955,6 +4192,8 @@ class OWATracker  {
      * Applies default values for required properties 
      * to any event where the properties were not
      * already set globally or locally.
+     *
+     * @internal
      */
     addDefaultsToEvent( event, callback ) {
 
@@ -4039,6 +4278,7 @@ class OWATracker  {
      * were not already set locally by the method that
      * created the event.
      *
+     * @internal
      */
     addGlobalPropertiesToEvent( event, callback ) {
 
@@ -4303,6 +4543,18 @@ class OWATracker  {
      * logged with owa_cmds.push( ['trackCustomEvent', 'type', { ..props.. } ] ).
      * For advanced use that needs the Event object directly, makeEvent() +
      * trackEvent( event ) is still available.
+     *
+     *   owa_cmds.push(['trackCustomEvent', 'video_play', { eps_title: 'Intro', epn_seconds: 42 }]);
+     *
+     * The name starts with a letter, uses only letters, digits and underscores,
+     * is at most 40 characters, and is not one of OWA's own event names or
+     * prefixed `owa_`. Properties use the `eps_` (text) and `epn_` (number)
+     * prefixes.
+     *
+     * @command
+     * @param {string} event_type   the event's name
+     * @param {Object} [properties]
+     * @param {boolean} [block]     internal; leave unset
      */
     trackCustomEvent(event_type, properties, block) {
 
@@ -4495,6 +4747,14 @@ class OWATracker  {
     /** Reserved so a future first-class event cannot collide with a site's. */
     static get RESERVED_EVENT_PREFIX() { return 'owa_'; }
 
+    /**
+     * Send an event object built with makeEvent(). Called on the tracker
+     * object; from a tag, use trackCustomEvent().
+     *
+     * @command
+     * @param {Object} event
+     * @param {boolean} [block]  internal; leave unset
+     */
     trackEvent(event, block) {
         //OWA.debug('pre global event: %s', JSON.stringify(event));
 
@@ -4530,7 +4790,10 @@ class OWATracker  {
     }
     
     /**
-     * Logs a page view event
+     * Send a page view for this page.
+     *
+     * @command
+     * @param {string} [url]  the URL to report, in place of the page's own
      */
     trackPageView( url ) {
 
@@ -4583,6 +4846,12 @@ class OWATracker  {
      * An action name that is not a legal event name, or that collides with a
      * reserved one, is refused by trackCustomEvent() rather than silently
      * reshaped.
+     *
+     * @command
+     * @param {string} action_group
+     * @param {string} action_name  becomes the event name
+     * @param {string} [action_label]
+     * @param {number} [numeric_value]
      */
     trackAction(action_group, action_name, action_label, numeric_value) {
 
@@ -4676,6 +4945,8 @@ class OWATracker  {
      * Bound at the document with capture rather than per form, so forms added
      * to the page after load are covered without re-binding -- which is the
      * normal case on anything component-rendered.
+     *
+     * @command
      */
     trackForms() {
 
@@ -4924,6 +5195,8 @@ class OWATracker  {
      * to its first page view.
      *
      * @param {string[]} params  parameter names, tried in order
+     *
+     * @command
      */
     setSearchQueryParams( params ) {
 
@@ -4959,6 +5232,8 @@ class OWATracker  {
      * all common, and a site knows which one it uses.
      *
      * @param {Array} params  query parameter names, defaults to the option
+     *
+     * @command
      */
     trackSiteSearch( params ) {
 
@@ -5018,6 +5293,8 @@ class OWATracker  {
      * anyone reading a report, and it is the field most likely to carry a URL
      * with a token in it. Message, file and line answer "is my site broken"
      * without that risk.
+     *
+     * @command
      */
     trackExceptions() {
 
@@ -5063,12 +5340,29 @@ class OWATracker  {
         };
     }
 
+    /**
+     * Send a `click` event for each click on the page, and classify clicks on
+     * links to other sites and on downloads.
+     *
+     * @command
+     */
     trackClicks(handler) {
         // flag to tell handler to log clicks as they happen
         this.setOption('logClicksAsTheyHappen', true);
         this.bindClickEvents();
 
     }
+
+    /**
+     * Feature commands to skip, such as `trackScroll` or `trackForms`, even
+     * when the Profile's tracking bundle or features file turns them on. Set
+     * it before the feature runs; a feature already started is not stopped.
+     *
+     *   owa_cmds.push(['setOption', 'disabledFeatures', ['trackScroll', 'trackForms']]);
+     *
+     * @option disabledFeatures
+     * @default []
+     */
 
     /**
      * Whether the page turned this feature command off:
@@ -5101,6 +5395,8 @@ class OWATracker  {
      *
      * Idempotent, like trackClicks(): the snippet pushes each command once, but a
      * site can push one twice and two listeners would report every threshold twice.
+     *
+     * @command
      */
     trackScroll() {
 

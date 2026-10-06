@@ -58,24 +58,50 @@
 return array(
 
     // The page, and the two events a landing page view materializes beside it.
-    'page_view'     => array(),
-    'session_start' => array( 'materialized' => true ),
-    'first_visit'   => array( 'materialized' => true ),
+    'page_view'     => array(
+        'description' => 'A page was viewed. Sent by the trackPageView command, and again on each in-page route change when trackRouteChanges is on.',
+    ),
+    'session_start' => array(
+        'materialized' => true,
+        'description' => 'A session began. Not sent by the tracker: OWA creates it at ingest beside the event that started the session, usually a page_view.',
+    ),
+    'first_visit'   => array(
+        'materialized' => true,
+        'description' => 'A visitor was seen for the first time. Not sent by the tracker: OWA creates it at ingest beside the event that created the visitor.',
+    ),
 
     // Interaction.
-    'click'           => array(),
-    'scroll'          => array(),
-    'user_engagement' => array(),
+    'click'           => array(
+        'description' => 'An element on the page was clicked, including a middle-click on a link. Sent when trackClicks is on.',
+    ),
+    'scroll'          => array(
+        'description' => 'The visitor scrolled past a depth threshold on the page, one event per threshold crossed. Sent when trackScroll is on; the thresholds are the scrollThresholds option (25, 50, 75 and 90 percent by default).',
+    ),
+    'user_engagement' => array(
+        'description' => 'Time spent on the page that no other event has reported yet, sent when the page is hidden or left. Sent automatically; less than a second is not sent on its own.',
+    ),
 
     // What a click MEANT, and the rest of the automatically raised set.
-    'file_download'       => array(),
-    'form_start'          => array(),
-    'form_submit'         => array(),
-    'view_search_results' => array(),
+    'file_download'       => array(
+        'description' => 'A clicked link fetched a file whose extension is in the downloadExtensions option. Sent beside the click when trackClicks is on.',
+    ),
+    'form_start'          => array(
+        'description' => 'The visitor began filling in a form: the first change to one of its fields, or a submit with no change before it. Sent once per form per page when trackForms is on.',
+    ),
+    'form_submit'         => array(
+        'description' => 'A form was submitted. Sent when trackForms is on.',
+    ),
+    'view_search_results' => array(
+        'description' => 'A site-search results page was viewed, recognised by a search term in one of the siteSearchParams query parameters (q, s, search, query and keyword by default). Sent by the trackSiteSearch command, and on each in-page route change when trackRouteChanges is on.',
+    ),
 
     // Commerce.
-    'purchase' => array(),
-    'refund'   => array(),
+    'purchase' => array(
+        'description' => 'An order was completed. Sent by the trackPurchase command, which requires a transaction id, or by the older addTransaction and trackTransaction pair.',
+    ),
+    'refund'   => array(
+        'description' => 'An order, or some of its items, was refunded. Sent by the trackRefund command, which requires the transaction id of the purchase.',
+    ),
 );
 
 ?>

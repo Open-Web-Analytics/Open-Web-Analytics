@@ -1,5 +1,6 @@
 {
     "title": "Referring Search Terms",
+    "description": "Sessions from organic search by the search terms that brought them.",
     "widgets": [
         {
             "type": "trend",

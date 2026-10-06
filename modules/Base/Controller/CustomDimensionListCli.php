@@ -18,6 +18,17 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionListCli extends CustomDimensionsCli {
 
+    /** See \OWA\Core\Controller\Cli::usage(). */
+    public static function usage() {
+
+        return array(
+            'description' => 'Lists registered custom dimensions and how many more each Property has room for.',
+            'arguments'   => array(
+                'property=<id>' => 'List only this Property\'s. Defaults to every Property that has one.',
+            ),
+        );
+    }
+
     function action() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();

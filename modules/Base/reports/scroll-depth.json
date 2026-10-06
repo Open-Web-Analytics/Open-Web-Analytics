@@ -1,5 +1,6 @@
 {
     "title": "Scroll Depth",
+    "description": "Scroll events by the depth threshold passed, site-wide and by page; each row counts the page views that reached at least that far.",
     "metrics": "eventCount",
     "widgets": [
         {

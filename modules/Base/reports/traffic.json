@@ -1,5 +1,6 @@
 {
     "title": "Traffic Sources",
+    "description": "Where sessions came from: channels, sources, campaigns, countries and landing pages.",
     "metrics": "sessions",
     "widgets": [
         {

@@ -145,6 +145,11 @@ final class TrackingPropertyConfigTest extends TestCase
                     'note', $definition,
                     "$name carries its note into the registered definition; notes are for whoever "
                     . 'edits the file, not for the pipeline.' );
+
+                $this->assertArrayNotHasKey(
+                    'description', $definition,
+                    "$name carries its description into the registered definition; descriptions "
+                    . 'are for the wiki, not for the pipeline.' );
             }
         }
     }

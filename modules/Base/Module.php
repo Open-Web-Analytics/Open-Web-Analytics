@@ -624,7 +624,7 @@ class Module extends \OWA\Core\Module {
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array(),
             'Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods '
           . 'so the tables stay within the server\'s open-file limit. Deletes nothing unless told to keep '
-          . 'less history (keep= in OWA_SCHEDULED_JOBS).' );
+          . 'less history (raw_retention_months, and cube_retention_months per Property).' );
 
         /*
          * The tracking intake's drain (PLAN 2.30.4), every minute. A minute
@@ -953,7 +953,10 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         // Not configuration: it reads raw, not the cube (Classes\Realtime).
         $this->registerReport( 'model-comparison', 'reports/model-comparison.json' );
-        $this->registerReport( 'realtime', array( 'controller' => 'base.reportRealtime' ) );
+        $this->registerReport( 'realtime', array(
+            'controller'  => 'base.reportRealtime',
+            'description' => 'Activity on the site in the last thirty minutes, read from incoming events as they arrive and refreshed while the page is open.',
+        ) );
         $this->registerReport( 'document', 'reports/document.json' );
         /*
          * EVENTS, grouped by name, and it replaces the v1 action reports.

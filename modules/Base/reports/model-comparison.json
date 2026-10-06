@@ -1,5 +1,6 @@
 {
     "title": "Model Comparison",
+    "description": "Conversions, transactions and revenue credited to the channel that first acquired the user, beside the channel credited by the last touch in the attribution window.",
     "metrics": "goalConversions,transactions,transactionRevenue",
     "widgets": [
         {
