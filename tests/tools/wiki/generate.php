@@ -29,45 +29,59 @@
 
 const SECTIONS_DIR = __DIR__ . '/sections';
 
+/*
+ * Modules the wiki does not document, whatever is active. Hello is the sample
+ * module a developer copies, not a feature: its example report, settings and
+ * command would read as part of OWA. Every section that walks modules or what
+ * they register filters on this, because an install's own config or stored
+ * is_active rows can activate it.
+ */
+const OWA_WIKI_EXCLUDED_MODULES = array( 'hello' );
+
 require_once __DIR__ . '/../../../owa_env.php';
 
 // Boots without owa-config.php: the registry needs the DB driver's OWA_DTD_*
 // constants but no connection. Same guard install.php and tests/bootstrap.php use.
 if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( OWA_DIR . 'owa-config.php' ) ) {
     define( 'OWA_DB_TYPE', 'mysql' );
+}
 
-    /*
-     * Every shipped module, active or not: the wiki documents what ships, and a
-     * configless boot activates only base. OWA_ACTIVE_MODULES is the config
-     * file's own switch, so each module registers through the normal boot
-     * rather than being added to the service afterwards, when its metrics,
-     * dimensions and entities would already have been collected without it.
-     *
-     * Hello is left out. It is the sample module a developer copies, not a
-     * feature, and its example report, settings and command would read as
-     * part of OWA.
-     *
-     * The constant takes runtime names, which do not follow from the directory
-     * (FileCache is fileCache, MaxmindGeoip is maxmind_geoip), so each is read
-     * from its Module.php. Nothing can be instantiated to ask before boot.
-     */
-    if ( ! defined( 'OWA_ACTIVE_MODULES' ) ) {
+/*
+ * Every shipped module, active or not: the wiki documents what ships, and a
+ * configless boot activates only base. OWA_ACTIVE_MODULES is the config
+ * file's own switch, so each module registers through the normal boot
+ * rather than being added to the service afterwards, when its metrics,
+ * dimensions and entities would already have been collected without it.
+ *
+ * OWA_WIKI_EXCLUDED_MODULES are left out.
+ *
+ * Outside the configless guard: with an owa-config.php present the boot would
+ * otherwise document that install's active modules. The constant only adds, so
+ * stored is_active rows cannot remove one. Only when run as a script: a test
+ * that includes this file shares its process with the rest of the suite, which
+ * must keep the modules its own config activates.
+ *
+ * The constant takes runtime names, which do not follow from the directory
+ * (FileCache is fileCache, MaxmindGeoip is maxmind_geoip), so each is read
+ * from its Module.php. Nothing can be instantiated to ask before boot.
+ */
+if ( ! defined( 'OWA_ACTIVE_MODULES' )
+    && realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) === realpath( __FILE__ ) ) {
 
-        define( 'OWA_ACTIVE_MODULES', ( static function () {
+    define( 'OWA_ACTIVE_MODULES', ( static function () {
 
-            $names = array();
+        $names = array();
 
-            foreach ( glob( OWA_DIR . 'modules/*/Module.php' ) as $path ) {
+        foreach ( glob( OWA_DIR . 'modules/*/Module.php' ) as $path ) {
 
-                if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m )
-                    && $m[1] !== 'hello' ) {
-                    $names[] = $m[1];
-                }
+            if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m )
+                && ! in_array( $m[1], OWA_WIKI_EXCLUDED_MODULES, true ) ) {
+                $names[] = $m[1];
             }
+        }
 
-            return $names;
-        } )() );
-    }
+        return $names;
+    } )() );
 }
 
 require_once __DIR__ . '/../../../owa.php';

@@ -7,15 +7,17 @@
  * reader of the nav sees, in the nav's order. A registered report that no nav
  * entry points at is listed after, with the reports that link to it.
  *
- * Which modules contribute is decided by owa_wiki_boot(): every shipped module
- * but Hello.
+ * Every shipped module is active when the generator runs (generate.php); the
+ * reports of OWA_WIKI_EXCLUDED_MODULES are dropped here, since an install's
+ * config can activate one.
  */
 
 use OWA\Core\CoreAPI;
 
 return function () {
 
-    $registry = CoreAPI::getReportRegistry();
+    $registry = array_filter( CoreAPI::getReportRegistry(),
+        fn ( $entry ) => ! in_array( $entry['module'] ?? '', OWA_WIKI_EXCLUDED_MODULES, true ) );
     ksort( $registry );
 
     $code = fn ( $v ) => '`' . $v . '`';
