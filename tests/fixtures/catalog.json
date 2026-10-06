@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 37,
-        "metricImplementations": 37,
+        "metricNames": 38,
+        "metricImplementations": 38,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 87,
@@ -759,6 +759,34 @@
                     "name": "revenuePerUser",
                     "numerator": "transactionRevenue",
                     "precision": 0,
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "scrolledUsers": [
+            {
+                "name": "scrolledUsers",
+                "class": "base.configurableMetric",
+                "label": "Scrolled Users",
+                "group": "Site Usage",
+                "params": {
+                    "column": "visitor_id",
+                    "condition": [
+                        "event_type",
+                        "scroll"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of distinct users who scrolled a page.",
+                    "entity": "base.event",
+                    "group": "Site Usage",
+                    "label": "Scrolled Users",
+                    "metric_type": "distinct_count",
+                    "minuend": "",
+                    "name": "scrolledUsers",
+                    "numerator": "",
+                    "precision": "",
                     "subtrahend": "",
                     "subtrahend_column": ""
                 }
