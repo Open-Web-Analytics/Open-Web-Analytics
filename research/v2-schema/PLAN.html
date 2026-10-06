@@ -150,6 +150,7 @@ footer{margin-top:96px;padding-top:22px;border-top:1px solid var(--rule);
   <a href="#s229">2.28 URL canonicalisation</a>
   <a href="#s230">2.29 Attributed source: the last non-direct touch</a>
   <a href="#s231">2.30 Queues and jobs</a>
+  <a href="#s232">2.31 One scroll event per page view</a>
   <a href="#s226">2.25 Cutover sequence</a>
   <div class="navsec">Open issues</div>
   <a href="#s31">3.1 Everything still undecided</a>
@@ -3789,6 +3790,76 @@ from 1.x get theirs on the upgrade &mdash; in the run from the command line, or 
 update screen. A release that changes neither the tracker nor the schema asks for nothing. Not on a module
 turned on or off, nor on a screen opening; anything else is <code>cmd=publish-trackers</code> by hand.</li>
 </ol>
+
+<h3 id="s232"><span class="num">2.31</span>One scroll event per page view, gated on a scroll <span class="chip c-dec">Decided 6&nbsp;Oct</span></h3>
+
+<p class="note"><strong>DECIDED 6&nbsp;Oct, not built.</strong> Replaces the event-per-threshold
+behaviour of <code>fc5e5589</code>. <code>scroll</code> had become the most frequent event on the app
+install. The current tracker's behaviour below is from the 28&nbsp;Sep work and is to be confirmed
+against <code>Tracker.js</code> before building.</p>
+
+<p><strong>The rule.</strong> A page view sends <strong>at most one</strong> <code>scroll</code> event, and
+only if the visitor scrolled:</p>
+<div class="scroll"><table>
+<thead><tr><th>When</th><th>Sent</th></tr></thead>
+<tbody>
+<tr><td>A scroll reaches the <strong>last</strong> configured threshold (90 by default)</td><td>At once, with that threshold. Nothing more for this page view</td></tr>
+<tr><td>The page is hidden or left, after a scroll that did not reach it</td><td>The deepest threshold reached, in the same beacon as <code>user_engagement</code></td></tr>
+<tr><td>A route change</td><td>Any unsent scroll for the old route, then the depth resets</td></tr>
+<tr><td>No scroll, or the first threshold never reached</td><td>Nothing</td></tr>
+</tbody></table></div>
+
+<p><strong>A scroll is the page moving from where it sat when loading finished</strong>, not the
+first <code>scroll</code> event: the browser fires those for back/forward position restoration and
+<code>#anchor</code> jumps. Once gated, the depth reported is the deepest the window has reached,
+including what was visible at load &mdash; a page 50&nbsp;px taller than the window reports 90 after a
+50&nbsp;px scroll. A page that fits the window cannot scroll and never sends one.
+<code>tracker_scroll_thresholds</code> keeps its meaning as the buckets a depth is rounded down to.</p>
+
+<h4>Why not GA's load-time event</h4>
+
+<p>GA fires <code>scroll</code> (90) once the window bottom is at 90% of the document, <em>including at
+load</em>: a 500&nbsp;px page in a 720&nbsp;px window sends one with no scrolling (probe
+<code>scroll2.js</code>, re-run 6&nbsp;Oct). The peteradamsphoto home page is a
+<code>vh</code>-sized layout 50&nbsp;px taller than the window &mdash; 93.5% visible at load at
+1280&times;720, 95.6% at 1920&times;1080 &mdash; so every view of it should send one. GA's own counts
+for <code>/</code> say otherwise:</p>
+<div class="scroll"><table>
+<thead><tr><th></th><th>scroll</th><th>page_view</th><th>rate</th></tr></thead>
+<tbody>
+<tr><td>Desktop</td><td>73</td><td>113</td><td>65%</td></tr>
+<tr><td>Mobile</td><td>17</td><td>55</td><td>31%</td></tr>
+</tbody></table></div>
+
+<p><span class="chip c-meas">Measured</span> 10 runs per case, the page fitting the window,
+hits fulfilled locally (<code>scroll4.js</code>):</p>
+<div class="scroll"><table>
+<thead><tr><th>Case</th><th>scroll sent</th></tr></thead>
+<tbody>
+<tr><td>Visible, navigates away 0 / 150 / 300 / 600&nbsp;ms after load</td><td>8 / 6 / 6 / 5 of 10</td></tr>
+<tr><td>Visible, navigates away 1 / 2&nbsp;s after load</td><td>9 / 8 of 10</td></tr>
+<tr><td>Loaded in a hidden tab, closed unseen</td><td><strong>0 of 10</strong></td></tr>
+<tr><td>Loaded hidden, shown after 3&nbsp;s</td><td>10 of 10</td></tr>
+</tbody></table></div>
+
+<p>The page view is sent every time; the scroll hit is lost on a navigation at some rate whatever the
+dwell, and never sent from a tab nobody looked at. On phones the <code>vh</code> layout is measured
+with the address bar hidden while the window at load has it showing, which plausibly puts the
+window bottom under 90% (not measured: headless emulation has no toolbar). GA's load-time event
+therefore measures window size and delivery luck as much as reading. Gating on a scroll removes the
+first; sending at the last threshold at once, rather than at hide, keeps the second small for the
+signal that matters most.</p>
+
+<h4>What changes downstream</h4>
+<ul>
+<li><strong>Scroll Depth report</strong>: &ldquo;reached 50%&rdquo; becomes a count of scroll events
+with <code>scroll_depth &gt;= 50</code>, cumulative, not a count of 50% events.</li>
+<li><strong>Goals</strong> on <code>scroll</code> with a depth condition need <code>&gt;=</code>; an
+<code>=</code> condition stops matching visitors who went deeper.</li>
+<li><strong>Rows already collected</strong> on v2 have one event per threshold. Either the cube build
+keeps the maximum per page view for them, or the release accepts the break. <span class="chip c-open">Open</span></li>
+<li>v1 has no scroll event (&sect;2.2), so the migrator is unaffected.</li>
+</ul>
 
 <h3 id="s226"><span class="num">2.25</span>Cutover sequence <span class="chip c-dec">Decided</span></h3>
 
