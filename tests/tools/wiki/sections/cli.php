@@ -11,20 +11,28 @@ return function () {
 
     $out = "Run every command from the installation directory:\n\n"
          . "```bash\nphp cli.php cmd=<command> [argument=value ...] [--switch ...]\n```\n\n"
-         . "A switch can also be written `switch=1`.\n\n"
-         . "| Command | What it does | Capability | Module |\n|---|---|---|---|\n";
+         . "A switch can also be written `switch=1`.\n\n";
 
+    /*
+     * A LIST, NOT A TABLE. In a table the names sit in the narrowest column and
+     * GitHub wraps them at every hyphen -- custom-dimension-deregister over three
+     * lines -- and it strips the markup that would stop it. The capability and
+     * module are in each command's own section.
+     */
     foreach ( $commands as $command => $c ) {
 
         $first = preg_split( '/(?<=\.)\s/', $c['description'], 2 )[0];
 
-        $out .= sprintf( "| [`%s`](#%s) | %s | %s | %s |\n", $command, $command,
-            owa_wiki_cell( $first ), $c['capability'] ? '`' . $c['capability'] . '`' : '—', $c['module'] );
+        $out .= sprintf( "- [`%s`](#%s) — %s\n", $command, $command, $first );
     }
 
     foreach ( $commands as $command => $c ) {
 
         $out .= "\n### $command\n\n" . $c['description'] . "\n\n";
+
+        if ( $c['capability'] ) {
+            $out .= "Requires the `{$c['capability']}` capability.\n\n";
+        }
 
         // Base is always active; any other module's commands exist only while it is.
         if ( $c['module'] !== 'base' ) {
