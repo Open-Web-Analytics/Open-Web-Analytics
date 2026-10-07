@@ -264,6 +264,23 @@ function blocksIn( src ) {
 }
 
 /**
+ * A default the tracker takes from defaults.json (`DEFAULTS.name.slice()`) is
+ * that file's value; any other is the literal as written.
+ */
+function sharedDefault( value ) {
+
+    const m = String( value ).match( /^DEFAULTS\.([A-Za-z_$][\w$]*)(?:\.slice\(\))?$/ );
+
+    if ( ! m ) {
+        return value;
+    }
+
+    const defaults = JSON.parse( fs.readFileSync( path.join( ROOT, 'modules/Base/src/tracker/defaults.json' ), 'utf8' ) );
+
+    return JSON.stringify( defaults[ m[1] ] ).replace( /,/g, ', ' );
+}
+
+/**
  * The declared API.
  *
  * @return {{commands: object[], options: object[], internal: Set<string>}}
@@ -321,7 +338,7 @@ function readApi( files = sourceFiles() ) {
                     name: firstWord( tag( b, 'option' ) ) || b.subject.name,
                     module,
                     file: path.relative( ROOT, file ),
-                    default: tag( b, 'default' ) ?? ( b.subject.kind === 'key' ? b.subject.value : null ),
+                    default: tag( b, 'default' ) ?? ( b.subject.kind === 'key' ? sharedDefault( b.subject.value ) : null ),
                     description: b.description,
                     deprecated: tag( b, 'deprecated' ),
                 } );
