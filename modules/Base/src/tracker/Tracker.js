@@ -11,6 +11,7 @@ import { Util } from '../common/Util.js';
 import { OwaEvent } from './OwaEvent.js';
 import { Uri } from './Uri.js';
 import { toWire } from './WireNames.js';
+import DEFAULTS from './defaults.json';
  
 class OWATracker  {
 	
@@ -198,6 +199,13 @@ class OWATracker  {
 	     */
 	    this.formTrackingEnabled = false;
 	    /**
+	     * The commands the queue has applied to this tracker, by name, so
+	     * startFeatures() does not start one a second time.
+	     */
+	    this.commandsRun = {};
+	    /** Whether startFeatures() has run. */
+	    this.featuresStarted = false;
+	    /**
 	     * Latest click event
 	     */
 	    this.click  =  '';
@@ -377,7 +385,7 @@ class OWATracker  {
 	         *
 	         * @option
 	         */
-	        scrollThresholds: [ 25, 50, 75, 90 ],
+	        scrollThresholds: DEFAULTS.scrollThresholds.slice(),
 	        /**
 	         * Extensions a click is treated as downloading. A list rather than
 	         * "anything with a dot", which reads every /v1.2/ path and every
@@ -385,12 +393,7 @@ class OWATracker  {
 	         *
 	         * @option
 	         */
-	        downloadExtensions: [
-	            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt',
-	            'rtf', 'zip', 'gz', 'tar', 'rar', '7z', 'dmg', 'pkg', 'exe',
-	            'mp3', 'wav', 'mp4', 'mov', 'avi', 'wmv', 'epub', 'mobi',
-	            'key', 'pps', 'mpeg', 'mpg', 'mid', 'midi', 'wma'
-	        ],
+	        downloadExtensions: DEFAULTS.downloadExtensions.slice(),
 	        /**
 	         * Query parameters that carry a site-search term, tried in order.
 	         * Set it with setSearchQueryParams(), which checks it is an array.
@@ -408,7 +411,19 @@ class OWATracker  {
 	         *
 	         * @option
 	         */
-	        siteSearchParams: [ 'q', 's', 'search', 'query', 'keyword' ],
+	        siteSearchParams: DEFAULTS.siteSearchParams.slice(),
+	        /**
+	         * The features the tracker starts once the page's queued commands
+	         * have run: every one but Domstream and route changes, which a page
+	         * or its Profile turns on itself. Route changes stay off because a
+	         * single-page app that sends its own page view per route would count
+	         * each one twice. A Profile's tracking bundle sets it from the
+	         * Profile's settings; a page turns one off with disabledFeatures,
+	         * or replaces the list.
+	         *
+	         * @option
+	         */
+	        features: DEFAULTS.features.slice(),
 	        /** @internal Set by setCookieDomain(), which also normalises it. */
 	        cookie_domain: false,
 	        /**
@@ -5501,9 +5516,11 @@ class OWATracker  {
     }
 
     /**
-     * Feature commands to skip, such as `trackScroll` or `trackForms`, even
-     * when the Profile's tracking bundle or features file turns them on. Set
-     * it before the feature runs; a feature already started is not stopped.
+     * Feature commands to skip, such as `trackScroll` or `trackForms`, set on
+     * the page by its developer. It applies to whatever pushes the command: a
+     * Profile's tracking bundle, or a tag the developer does not control, such
+     * as a CMS plugin's. Set it before the feature runs; a feature already
+     * started is not stopped.
      *
      *   owa_cmds.push(['setOption', 'disabledFeatures', ['trackScroll', 'trackForms']]);
      *
@@ -5517,10 +5534,10 @@ class OWATracker  {
      *   owa_cmds.push(['setOption', 'disabledFeatures', ['trackScroll', 'trackForms']]);
      *
      * An option, like scrollThresholds, rather than a command of its own. The
-     * command queue skips a feature command this names. The bundle queues its
-     * features after the page's commands, and a legacy tag's Profile features
-     * arrive later still, so the option is set before they run; set after a
-     * feature has already started, it changes nothing.
+     * command queue skips a feature command this names, wherever it was
+     * pushed from. The bundle queues its features after the page's commands,
+     * so the option is set before they run; set after a feature has already
+     * started, it changes nothing.
      *
      * @param  {string} name a feature command, e.g. trackScroll
      * @return {boolean}
@@ -5530,6 +5547,44 @@ class OWATracker  {
         var disabled = this.getOption( 'disabledFeatures' );
 
         return Array.isArray( disabled ) && disabled.indexOf( String( name ) ) !== -1;
+    }
+
+    /**
+     * Start the features option's commands. Called once, when the queue has
+     * applied the commands the page (and its bundle) queued before the tracker
+     * loaded, so their setOption calls are in place.
+     *
+     * Skips a feature the page disabled, and one already run: trackSiteSearch
+     * sends an event each time it is called.
+     */
+    startFeatures() {
+
+        if ( this.featuresStarted ) {
+
+            return;
+        }
+
+        this.featuresStarted = true;
+
+        var features = this.getOption( 'features' );
+
+        if ( ! Array.isArray( features ) ) {
+
+            return;
+        }
+
+        for ( var i = 0; i < features.length; i++ ) {
+
+            var name = String( features[ i ] );
+
+            if ( this.isFeatureDisabled( name ) || this.commandsRun[ name ] || typeof this[ name ] !== 'function' ) {
+
+                continue;
+            }
+
+            this.commandsRun[ name ] = true;
+            this[ name ]();
+        }
     }
 
     /**

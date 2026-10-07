@@ -1,0 +1,11 @@
+{
+    "features": [ "trackClicks", "trackForms", "trackScroll", "trackSiteSearch", "trackExceptions" ],
+    "scrollThresholds": [ 25, 50, 75, 90 ],
+    "downloadExtensions": [
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "csv", "txt",
+        "rtf", "zip", "gz", "tar", "rar", "7z", "dmg", "pkg", "exe",
+        "mp3", "wav", "mp4", "mov", "avi", "wmv", "epub", "mobi",
+        "key", "pps", "mpeg", "mpg", "mid", "midi", "wma"
+    ],
+    "siteSearchParams": [ "q", "s", "search", "query", "keyword" ]
+}

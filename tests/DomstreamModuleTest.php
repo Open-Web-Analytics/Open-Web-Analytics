@@ -157,4 +157,17 @@ final class DomstreamModuleTest extends TestCase
                 "$report/$widget");
         }
     }
+
+    /**
+     * Recording is off until a Profile turns it on: the one feature the tracker
+     * does not start by itself, and its setting reads the same list.
+     */
+    public function testRecordingIsOffByDefault(): void
+    {
+        $settings = (require OWA_DIR . 'modules/Domstream/settings.php')['settings'];
+        $defaults = json_decode(file_get_contents(OWA_DIR . 'modules/Base/src/tracker/defaults.json'), true);
+
+        $this->assertFalse($settings['record']['default']);
+        $this->assertNotContains('trackDomStream', $defaults['features']);
+    }
 }

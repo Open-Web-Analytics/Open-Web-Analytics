@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 use OWA\Module\Base\Classes\TrackerBundle;
+use OWA\Module\Base\Classes\TrackerDefaults;
 
 /**
  * Profile tracking bundles (PLAN 2.24): composed from the build's own files,
@@ -50,7 +51,7 @@ final class TrackerBundleTest extends TestCase
             }
         }
 
-        foreach (array($this->out . TrackerBundle::FEATURES_DIR, $this->out, $this->dist) as $dir) {
+        foreach (array($this->out, $this->dist) as $dir) {
             foreach ((array) glob($dir . '*') as $f) {
                 @unlink($f);
             }
@@ -92,9 +93,29 @@ final class TrackerBundleTest extends TestCase
         $this->assertContains(array('setOption', 'scrollThresholds', array(25, 50, 75, 90)), $config['options']);
         $this->assertContains(array('setSearchQueryParams', array('q', 's', 'search', 'query', 'keyword')), $config['options']);
 
-        $this->assertSame(
-            array('trackPageView', 'trackClicks', 'trackForms', 'trackScroll', 'trackSiteSearch'),
-            array_values(array_diff(self::names($config['features']), array('trackDomStream'))));
+        $this->assertSame(array('trackPageView'),
+            array_values(array_diff(self::names($config['features']), array('trackDomStream'))),
+            'the page view is the one command; the tracker starts the rest');
+        $this->assertContains(array('setOption', 'features', array(
+            'trackClicks', 'trackForms', 'trackScroll', 'trackSiteSearch', 'trackExceptions')),
+            $config['options'], 'every feature but Domstream and route changes, on by default');
+    }
+
+    /** The Profile's defaults are the tracker's: both read defaults.json. */
+    public function testTheProfilesDefaultsAreTheTrackers(): void
+    {
+        $settings = (require OWA_DIR . 'modules/Base/settings.php')['settings'];
+        $json     = json_decode(file_get_contents(OWA_DIR . TrackerDefaults::FILE), true);
+
+        foreach (TrackerBundle::FEATURE_SETTINGS as $setting => $command) {
+            $this->assertSame(in_array($command, $json['features'], true), $settings[$setting]['default'], $setting);
+        }
+
+        $this->assertSame(implode(', ', $json['downloadExtensions']), $settings['tracker_download_extensions']['default']);
+        $this->assertSame(implode(', ', $json['scrollThresholds']), $settings['tracker_scroll_thresholds']['default']);
+        $this->assertSame(implode(', ', $json['siteSearchParams']), $settings['tracker_site_search_params']['default']);
+        $this->assertContains('mobi', $json['downloadExtensions']);
+        $this->assertContains('wma', $json['downloadExtensions'], 'the tracker\'s longer list, which the Profile\'s had drifted from');
     }
 
     /** The session window is the install's, so the tracker and the cube agree. */
@@ -115,7 +136,11 @@ final class TrackerBundleTest extends TestCase
 
         $config = TrackerBundle::config(self::SITE);
 
-        $this->assertNotContains('trackClicks', self::names($config['features']));
+        $features = array_values(array_filter($config['options'], fn ($c) => $c[0] === 'setOption' && $c[1] === 'features'));
+
+        $this->assertCount(1, $features);
+        $this->assertNotContains('trackClicks', $features[0][2]);
+        $this->assertContains('trackScroll', $features[0][2]);
         $this->assertContains(array('setOption', 'stateStoreExpirations', array('v' => 364, 's' => 0)), $config['options']);
         $this->assertContains(array('setTrackUrlFragments', true), $config['options']);
     }
@@ -487,113 +512,6 @@ final class TrackerBundleTest extends TestCase
             $this->dropScratchJobQueue($table);
             $this->restoreTrackerBuild($was);
         }
-    }
-
-    /* ---------------- a legacy tag's features ---------------- */
-
-    /**
-     * What an old tag gets: the bundle's behaviour features and the options they
-     * read -- not page views or clicks (the tag pushes its own), not a module's
-     * features (Domstream), not cookie or session options.
-     */
-    public function testALegacyTagGetsTheBehaviourFeaturesOnly(): void
-    {
-        static $registered = false;
-        if (!$registered) {
-            \OWA\Core\CoreAPI::registerFilter('tracker_bundle_config', array(self::class, 'addDomstreamFeatureForTest'), 999);
-            $registered = true;
-        }
-
-        self::$withDomstreamFeature = true;
-        try {
-            $legacy = TrackerBundle::legacyCommands(self::SITE);
-        } finally {
-            self::$withDomstreamFeature = false;
-        }
-
-        $names = self::names($legacy);
-
-        $this->assertSame(array('setSearchQueryParams', 'setOption', 'setOption', 'trackForms', 'trackScroll', 'trackSiteSearch'), $names,
-            'the defaults: forms, scroll and site search, with what they read');
-        $this->assertContains(array('setOption', 'scrollThresholds', array(25, 50, 75, 90)), $legacy);
-
-        foreach (array('trackPageView', 'trackClicks', 'trackDomStream', 'setSiteId', 'setCookieDomain') as $never) {
-            $this->assertNotContains($never, $names, "$never is not applied to a legacy tag");
-        }
-
-        foreach ($legacy as $command) {
-            if ($command[0] === 'setOption') {
-                $this->assertContains($command[1], TrackerBundle::LEGACY_OPTIONS);
-            }
-        }
-    }
-
-    private static bool $withDomstreamFeature = false;
-
-    public static function addDomstreamFeatureForTest($config)
-    {
-        if (self::$withDomstreamFeature) {
-            $config['features'][] = array('trackDomStream');
-            $config['options'][]  = array('setDomstreamSampleRate', 40);
-        }
-
-        return $config;
-    }
-
-    /** Published with the bundle: a script that pushes those commands onto the running queue. */
-    public function testTheFeaturesFileIsPublishedWithTheBundle(): void
-    {
-        $this->assertTrue(TrackerBundle::publish(self::SITE));
-
-        $file = $this->out . TrackerBundle::FEATURES_DIR . self::SITE . '.js';
-
-        $this->assertFileExists($file);
-        $this->assertSame(TrackerBundle::featuresSource(self::SITE), file_get_contents($file));
-        $this->assertStringContainsString('w.owa_cmds', file_get_contents($file));
-        $this->assertStringContainsString('["trackScroll"]', file_get_contents($file));
-        $this->assertStringNotContainsString('trackPageView', file_get_contents($file));
-        $this->assertSame(array(), glob($this->out . TrackerBundle::FEATURES_DIR . '*.tmp'));
-    }
-
-    /** A bundle published before the features file existed is not current, so the next run writes it. */
-    public function testABundleWithoutItsFeaturesFileIsNotCurrent(): void
-    {
-        TrackerBundle::publish(self::SITE);
-        unlink($this->out . TrackerBundle::FEATURES_DIR . self::SITE . '.js');
-
-        $this->assertFalse(TrackerBundle::isCurrent(self::SITE));
-        $this->assertSame(array(self::SITE => 'published'), TrackerBundle::publishStale(false, array(self::SITE)));
-        $this->assertFileExists($this->out . TrackerBundle::FEATURES_DIR . self::SITE . '.js');
-    }
-
-    /** A Profile that turns scroll off: its legacy tags stop getting it. */
-    public function testAProfileSettingReachesItsLegacyTags(): void
-    {
-        $this->requireDb();
-
-        try {
-            \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'base', 'tracker_scroll', false);
-
-            $this->assertNotContains('trackScroll', self::names(TrackerBundle::legacyCommands(self::SITE)));
-        } finally {
-            \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'base', 'tracker_scroll');
-        }
-    }
-
-    /** Removal and the orphan sweep take the features file with the bundle. */
-    public function testTheFeaturesFileGoesWithItsBundle(): void
-    {
-        TrackerBundle::publish(self::SITE);
-        $this->assertTrue(TrackerBundle::remove(self::SITE));
-        $this->assertFileDoesNotExist($this->out . TrackerBundle::FEATURES_DIR . self::SITE . '.js');
-
-        TrackerBundle::publish(self::SITE);
-        file_put_contents($this->out . TrackerBundle::FEATURES_DIR . 'gone-profile.js', '/* old */');
-
-        TrackerBundle::removeOrphans(array(self::SITE));
-
-        $this->assertFileDoesNotExist($this->out . TrackerBundle::FEATURES_DIR . 'gone-profile.js');
-        $this->assertFileExists($this->out . TrackerBundle::FEATURES_DIR . self::SITE . '.js');
     }
 
     public function testRemoveTakesDownOneBundle(): void

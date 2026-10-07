@@ -25,8 +25,9 @@ return array(
 
     'settings' => array(
         'record' => array(
-            // On, as the snippet has always recorded wherever the module is active.
-            'default'  => true,
+            // Off, like every feature the tracker does not start by itself
+            // (modules/Base/src/tracker/defaults.json): a Profile turns it on.
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackDomStream' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',

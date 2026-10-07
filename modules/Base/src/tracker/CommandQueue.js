@@ -152,6 +152,11 @@ class CommandQueue {
 
             } else if ( typeof window[obj_name][method] === 'function' ) {
 
+                if ( window[obj_name].commandsRun ) {
+
+                    window[obj_name].commandsRun[ method ] = true;
+                }
+
                 window[obj_name][method].apply(window[obj_name], args);
 
             } else {

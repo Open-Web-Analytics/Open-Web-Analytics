@@ -52,29 +52,6 @@ class TrackerBundle {
     const BUILD = 'modules/Base/build/';
     const MANIFEST = 'owa.tracker.manifest.json';
 
-    /**
-     * What an OLD tag gets from its Profile (features/<site id>.js).
-     *
-     * A 1.x tag loads the tracker by a fixed path and queues its own commands,
-     * so it never reads the bundle and the Profile's behaviour features -- on by
-     * default, as GA's enhanced measurement is -- never reached it. The tracker,
-     * started from a legacy path, loads this file to apply them.
-     *
-     * The behaviour features only. NOT page views or clicks: the old tag pushes
-     * its own, and a second trackPageView counts every page twice. NOT what a
-     * module adds through tracker_bundle_config: a module's feature can be far
-     * more intrusive than these, and an old tag opted into it explicitly when it
-     * wanted it. And of the options, only those these
-     * features read: a cookie or session option arriving after the first event
-     * would split the visitor's state.
-     */
-    const LEGACY_FEATURES = array( 'trackForms', 'trackScroll', 'trackSiteSearch', 'trackExceptions', 'trackRouteChanges' );
-    const LEGACY_OPTIONS  = array( 'scrollThresholds', 'downloadExtensions' );
-    const LEGACY_COMMANDS = array( 'setSearchQueryParams' );
-
-    /** The legacy tags' features files, under DIR. */
-    const FEATURES_DIR = 'features/';
-
     /** A site id that may be a file name. */
     const SITE_ID_PATTERN = '/^[A-Za-z0-9_-]{1,64}$/';
 
@@ -96,104 +73,6 @@ class TrackerBundle {
     private static function outDir() {
 
         return self::$outDir ?? OWA_DIR . self::DIR;
-    }
-
-    /**
-     * @param  string $site_id
-     * @return string|null the features file's path, or null for an id that cannot be a file name
-     */
-    public static function featuresPath( $site_id ) {
-
-        return preg_match( self::SITE_ID_PATTERN, (string) $site_id )
-            ? self::outDir() . self::FEATURES_DIR . $site_id . '.js'
-            : null;
-    }
-
-    /**
-     * The commands an old tag gets from its Profile: LEGACY_* of the bundle's.
-     *
-     * @param  string $site_id
-     * @return array list of commands
-     */
-    public static function legacyCommands( $site_id ) {
-
-        $config = self::config( $site_id );
-        $out    = array();
-
-        foreach ( $config['options'] as $command ) {
-
-            $name = (string) ( $command[0] ?? '' );
-
-            if ( ( $name === 'setOption' && in_array( (string) ( $command[1] ?? '' ), self::LEGACY_OPTIONS, true ) )
-                 || in_array( $name, self::LEGACY_COMMANDS, true ) ) {
-
-                $out[] = $command;
-            }
-        }
-
-        foreach ( $config['features'] as $command ) {
-
-            if ( in_array( (string) ( $command[0] ?? '' ), self::LEGACY_FEATURES, true ) ) {
-
-                $out[] = $command;
-            }
-        }
-
-        return $out;
-    }
-
-    /**
-     * The features file: pushes the legacy commands onto the running tracker's
-     * queue. A script, not JSON, so a page on another origin can load it with no
-     * CORS, as it loads the tracker. A page's disabledFeatures option is set by
-     * then, so a feature it turned off stays off.
-     *
-     * @param  string $site_id
-     * @return string
-     */
-    public static function featuresSource( $site_id ) {
-
-        $json = json_encode( self::legacyCommands( $site_id ), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP );
-
-        return '/* Open Web Analytics: what Profile ' . $site_id . " turns on for a legacy tag. */\n"
-             . '(function(w){var q=w.owa_cmds,c=' . $json . ';'
-             . 'if(!q||typeof q.push!=="function"){return;}'
-             . 'c.forEach(function(x){q.push(x);});})(window);' . "\n";
-    }
-
-    /** Write a file beside its final path and rename it into place. */
-    private static function writeAtomically( $path, $source ) {
-
-        $dir = dirname( $path );
-
-        if ( ! is_dir( $dir ) && ! @mkdir( $dir, 0755, true ) && ! is_dir( $dir ) ) {
-
-            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot create $dir." );
-
-            return false;
-        }
-
-        $tmp = $path . '.' . getmypid() . '.tmp';
-
-        if ( @file_put_contents( $tmp, $source ) !== strlen( $source ) ) {
-
-            @unlink( $tmp );
-            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot write $tmp." );
-
-            return false;
-        }
-
-        @chmod( $tmp, 0644 );
-
-        if ( ! @rename( $tmp, $path ) ) {
-
-            @unlink( $tmp );
-            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot move $tmp into $path." );
-
-            return false;
-        }
-
-        return true;
     }
 
     /**
@@ -288,23 +167,23 @@ class TrackerBundle {
             $options[] = array( 'setDebug', true );
         }
 
-        $features = array();
+        // The tracker starts its features option by itself (Tracker.startFeatures());
+        // the Profile says which. A page can still disable one or replace the list.
+        $started = array();
 
-        foreach ( array(
-            'tracker_page_views'    => 'trackPageView',
-            'tracker_clicks'        => 'trackClicks',
-            'tracker_forms'         => 'trackForms',
-            'tracker_scroll'        => 'trackScroll',
-            'tracker_site_search'   => 'trackSiteSearch',
-            'tracker_exceptions'    => 'trackExceptions',
-            'tracker_route_changes' => 'trackRouteChanges',
-        ) as $setting => $command ) {
+        foreach ( self::FEATURE_SETTINGS as $setting => $command ) {
 
             if ( $get( $setting ) ) {
 
-                $features[] = array( $command );
+                $started[] = $command;
             }
         }
+
+        $options[] = array( 'setOption', 'features', $started );
+
+        // The page view is the hit, not a feature the tracker starts: a command,
+        // and the preamble drops it when the page queues its own.
+        $features = $get( 'tracker_page_views' ) ? array( array( 'trackPageView' ) ) : array();
 
         $config = \OWA\Core\CoreAPI::filter( 'tracker_bundle_config',
             array( 'options' => $options, 'features' => $features, 'plugins' => array() ),
@@ -316,6 +195,16 @@ class TrackerBundle {
             'plugins'  => array_values( array_unique( (array) ( $config['plugins'] ?? array() ) ) ),
         );
     }
+
+    /** The Profile setting that turns each of the tracker's features on. */
+    const FEATURE_SETTINGS = array(
+        'tracker_clicks'        => 'trackClicks',
+        'tracker_forms'         => 'trackForms',
+        'tracker_scroll'        => 'trackScroll',
+        'tracker_site_search'   => 'trackSiteSearch',
+        'tracker_exceptions'    => 'trackExceptions',
+        'tracker_route_changes' => 'trackRouteChanges',
+    );
 
     /** What each of Base's feature commands records, as the Tracking Tag screen names it. */
     const FEATURE_LABELS = array(
@@ -330,7 +219,8 @@ class TrackerBundle {
 
     /**
      * What this Profile's tracker records, from its saved settings: a label for
-     * each feature config() turns on, in the order it turns them on.
+     * each feature config() turns on, the commands first, then the features
+     * option.
      *
      * A module labels the features it adds through the tracker_feature_labels
      * filter; one it does not label is named by its command.
@@ -343,9 +233,23 @@ class TrackerBundle {
         $labels = (array) \OWA\Core\CoreAPI::filter( 'tracker_feature_labels', self::FEATURE_LABELS );
         $out    = array();
 
-        foreach ( self::config( $site_id )['features'] as $feature ) {
+        $config   = self::config( $site_id );
+        $commands = array();
 
-            $command = (string) ( $feature[0] ?? '' );
+        foreach ( $config['features'] as $feature ) {
+
+            $commands[] = (string) ( $feature[0] ?? '' );
+        }
+
+        foreach ( $config['options'] as $option ) {
+
+            if ( ( $option[0] ?? '' ) === 'setOption' && ( $option[1] ?? '' ) === 'features' ) {
+
+                $commands = array_merge( $commands, array_map( 'strval', (array) ( $option[2] ?? array() ) ) );
+            }
+        }
+
+        foreach ( $commands as $command ) {
 
             if ( $command !== '' ) {
 
@@ -555,17 +459,7 @@ class TrackerBundle {
             fclose( $handle );
         }
 
-        if ( $first !== self::header( self::config( $site_id ), $manifest ) ) {
-
-            return false;
-        }
-
-        // The legacy tags' file goes with it: a bundle published before there
-        // was one, or a setting saved since, is not current until it matches.
-        $features = self::featuresPath( $site_id );
-
-        return is_readable( $features )
-            && (string) file_get_contents( $features ) === self::featuresSource( $site_id );
+        return $first === self::header( self::config( $site_id ), $manifest );
     }
 
     /**
@@ -593,8 +487,36 @@ class TrackerBundle {
             return false;
         }
 
-        return self::writeAtomically( $path, $source )
-            && self::writeAtomically( self::featuresPath( $site_id ), self::featuresSource( $site_id ) );
+        $dir = dirname( $path );
+
+        if ( ! is_dir( $dir ) && ! @mkdir( $dir, 0755, true ) && ! is_dir( $dir ) ) {
+
+            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot create $dir." );
+
+            return false;
+        }
+
+        $tmp = $path . '.' . getmypid() . '.tmp';
+
+        if ( @file_put_contents( $tmp, $source ) !== strlen( $source ) ) {
+
+            @unlink( $tmp );
+            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot write $tmp." );
+
+            return false;
+        }
+
+        @chmod( $tmp, 0644 );
+
+        if ( ! @rename( $tmp, $path ) ) {
+
+            @unlink( $tmp );
+            \OWA\Core\CoreAPI::notice( "Tracker bundle: cannot move the bundle into $path." );
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -686,19 +608,8 @@ class TrackerBundle {
             }
         }
 
-        foreach ( (array) glob( self::outDir() . self::FEATURES_DIR . '*.js' ) as $file ) {
-
-            $site_id = basename( $file, '.js' );
-
-            if ( preg_match( self::SITE_ID_PATTERN, $site_id ) && ! isset( $keep[ $site_id ] ) ) {
-
-                @unlink( $file );
-            }
-        }
-
         // A temporary file left by a run that died between write and rename.
-        foreach ( array_merge( (array) glob( self::outDir() . '*.js.*.tmp' ),
-                (array) glob( self::outDir() . self::FEATURES_DIR . '*.js.*.tmp' ) ) as $file ) {
+        foreach ( (array) glob( self::outDir() . '*.js.*.tmp' ) as $file ) {
 
             if ( filemtime( $file ) < time() - 3600 ) {
 
@@ -718,13 +629,7 @@ class TrackerBundle {
      */
     public static function remove( $site_id ) {
 
-        $path     = self::path( $site_id );
-        $features = self::featuresPath( $site_id );
-
-        if ( $features && is_file( $features ) ) {
-
-            @unlink( $features );
-        }
+        $path = self::path( $site_id );
 
         return $path && is_file( $path ) && @unlink( $path );
     }

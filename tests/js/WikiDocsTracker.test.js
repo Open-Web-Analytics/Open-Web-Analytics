@@ -33,8 +33,9 @@ function objectKeys( src, marker ) {
     const start = src.indexOf( '{', at );
     const literal = src.slice( start, api.literalEnd( src, start ) );
 
+    // A literal may read the tracker's defaults.json, imported as DEFAULTS.
     // eslint-disable-next-line no-new-func
-    return Object.keys( new Function( 'return ' + literal )() );
+    return Object.keys( new Function( 'DEFAULTS', 'return ' + literal )( JSON.parse( read( 'modules/Base/src/tracker/defaults.json' ) ) ) );
 }
 
 describe( 'wiki tracker reference', () => {
@@ -111,6 +112,16 @@ describe( 'wiki tracker reference', () => {
 
         expect( names.has( 'disabledFeatures' ) ).toBe( true );
         expect( [ ...names ].filter( ( name ) => ! isDeclaredOption( name ) ) ).toEqual( [] );
+    } );
+
+    test( 'a default taken from defaults.json is documented as that file\'s value', () => {
+
+        const defaults = JSON.parse( read( 'modules/Base/src/tracker/defaults.json' ) );
+        const option = ( name ) => declared.options.find( ( o ) => o.name === name );
+
+        expect( option( 'downloadExtensions' ).default ).toContain( '"wma"' );
+        expect( JSON.parse( option( 'downloadExtensions' ).default ) ).toEqual( defaults.downloadExtensions );
+        expect( JSON.parse( option( 'features' ).default ) ).toEqual( defaults.features );
     } );
 
     test( 'every command and option the server writes into a tag is documented', () => {

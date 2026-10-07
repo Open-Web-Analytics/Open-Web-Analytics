@@ -463,7 +463,7 @@ return array(
             'description' => 'Sends a page view when the page loads.',
         ),
         'tracker_clicks' => array(
-            'default'  => true,
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackClicks' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
@@ -471,7 +471,7 @@ return array(
             'description' => 'Sends a click event for each click, with the element clicked and where the link led.',
         ),
         'tracker_forms' => array(
-            'default'  => true,
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackForms' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
@@ -479,7 +479,7 @@ return array(
             'description' => 'Sends an event when a visitor starts and when they submit a form.',
         ),
         'tracker_scroll' => array(
-            'default'  => true,
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackScroll' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
@@ -487,7 +487,7 @@ return array(
             'description' => 'Sends one event per page view the visitor scrolls, at the deepest scroll threshold reached.',
         ),
         'tracker_site_search' => array(
-            'default'  => true,
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackSiteSearch' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
@@ -495,7 +495,7 @@ return array(
             'description' => 'Sends a search event when a page&rsquo;s URL carries one of the site search parameters.',
         ),
         'tracker_exceptions' => array(
-            'default'  => false,
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackExceptions' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
@@ -503,7 +503,7 @@ return array(
             'description' => 'Sends an event for each uncaught JavaScript error on the page.',
         ),
         'tracker_route_changes' => array(
-            'default'  => false,
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackRouteChanges' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
@@ -519,7 +519,7 @@ return array(
             'description' => 'Keeps the part of a URL after # in page locations, for sites whose pages are told apart by it.',
         ),
         'tracker_scroll_thresholds' => array(
-            'default'  => '25, 50, 75, 90',
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::text( 'scrollThresholds' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'text',
@@ -529,7 +529,7 @@ return array(
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.' ),
         ),
         'tracker_site_search_params' => array(
-            'default'  => 'q, s, search, query, keyword',
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::text( 'siteSearchParams' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'text',
@@ -539,7 +539,7 @@ return array(
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Site Search Parameters is a comma-separated list of URL parameter names.' ),
         ),
         'tracker_download_extensions' => array(
-            'default'  => 'pdf, doc, docx, xls, xlsx, ppt, pptx, csv, txt, rtf, zip, gz, tar, rar, 7z, dmg, pkg, exe, mp3, wav, mp4, mov, avi, wmv, epub, mobi',
+            'default'  => \OWA\Module\Base\Classes\TrackerDefaults::text( 'downloadExtensions' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'text',
