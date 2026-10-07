@@ -414,8 +414,8 @@ class OWATracker  {
 	        siteSearchParams: DEFAULTS.siteSearchParams.slice(),
 	        /**
 	         * The features the tracker starts once the page's queued commands
-	         * have run: every one but Domstream and route changes, which a page
-	         * or its Profile turns on itself. Route changes stay off because a
+	         * have run: every one but route changes and any a module adds, which
+	         * a page or its Profile turns on itself. Route changes stay off because a
 	         * single-page app that sends its own page view per route would count
 	         * each one twice. A Profile's tracking bundle sets it from the
 	         * Profile's settings; a page turns one off with disabledFeatures,
