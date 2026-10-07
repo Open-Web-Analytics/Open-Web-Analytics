@@ -484,7 +484,7 @@ return array(
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
             'label'    => 'Track Scroll Depth',
-            'description' => 'Sends an event as the visitor scrolls past each scroll threshold.',
+            'description' => 'Sends one event per page view the visitor scrolls, at the deepest scroll threshold reached.',
         ),
         'tracker_site_search' => array(
             'default'  => true,
@@ -524,7 +524,7 @@ return array(
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'text',
             'label'    => 'Scroll Thresholds',
-            'description' => 'The scroll depths, in percent of the page, that each send a scroll event. Separate them with commas.',
+            'description' => 'The scroll depths, in percent of the page, that a page view\'s deepest point is reported at. Separate them with commas.',
             'pattern'  => '/^(100|[1-9][0-9]?)(\\s*,\\s*(100|[1-9][0-9]?))*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.' ),
         ),

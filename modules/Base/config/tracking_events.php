@@ -75,7 +75,7 @@ return array(
         'description' => 'An element on the page was clicked, including a middle-click on a link. Sent when trackClicks is on.',
     ),
     'scroll'          => array(
-        'description' => 'The visitor scrolled past a depth threshold on the page, one event per threshold crossed. Sent when trackScroll is on; the thresholds are the scrollThresholds option (25, 50, 75 and 90 percent by default).',
+        'description' => 'How far down the page the visitor scrolled: one event per page view, at the deepest threshold reached, and only after a scroll. Sent at once on reaching the last threshold, otherwise when the page is hidden or left. Sent when trackScroll is on; the thresholds are the scrollThresholds option (25, 50, 75 and 90 percent by default).',
     ),
     'user_engagement' => array(
         'description' => 'Time spent on the page that no other event has reported yet, sent when the page is hidden or left. Sent automatically; less than a second is not sent on its own.',

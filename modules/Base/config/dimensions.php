@@ -376,7 +376,7 @@ return array(
              */
             'scrollDepth' => array( 'column' => 'scroll_depth', 'label' => 'Scroll Depth',
                 'family' => 'event', 'data_type' => 'integer',
-                'description' => 'How far down the page the visitor scrolled, as the percentage threshold passed.' ),
+                'description' => 'How far down the page the visitor scrolled: the deepest percentage threshold reached on the page view.' ),
 
             /*
              * THE CLICK'S COORDINATES, which the heatmap groups by.
