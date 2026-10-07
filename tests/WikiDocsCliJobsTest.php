@@ -60,7 +60,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
 
         foreach (array_unique(array_merge($active, array_keys($commands))) as $command) {
             $this->assertStringContainsString("\n### $command\n", $md, "cmd=$command has no section");
-            $this->assertStringContainsString("[`$command`](#$command)", $md, "cmd=$command is not in the table");
+            $this->assertStringContainsString("\n- [`$command`](#$command) — ", $md, "cmd=$command is not in the index");
         }
     }
 
@@ -111,6 +111,20 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
     {
         $this->assertSame([], \OWA\Module\Base\Controller\FlushCacheCli::usage()['arguments']);
         $this->assertMatchesRegularExpression('/### flush-cache\n\n.+\n\n```bash\nphp cli.php cmd=flush-cache\n```\n\nTakes no arguments\./', $this->section('cli'));
+    }
+
+    /*
+     * The index is a list: in a table GitHub wrapped the names at every hyphen.
+     * The capability moved into each command's section, so it has to be there.
+     */
+    public function testEachSectionStatesItsCapabilityAndTheIndexIsNotATable(): void
+    {
+        $md = $this->section('cli');
+
+        $this->assertStringNotContainsString('| Command |', $md);
+        $this->assertMatchesRegularExpression(
+            '/### custom-dimension-register\n\n.+\n\nRequires the `edit_modules` capability\.\n/', $md);
+        $this->assertDoesNotMatchRegularExpression('/### flush-cache\n\n.+\n\nRequires the /', $md);
     }
 
     public function testCapabilityIsReadUpTheClassChain(): void
