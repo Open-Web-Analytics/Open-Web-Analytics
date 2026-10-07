@@ -944,7 +944,7 @@
         "note": "The ISO 4217 code the purchase's amounts are in. On a purchase it is always set: the one sent (setCurrency(), or the purchase's own), else the Property's currencyISO3 setting. Amounts are converted to minor units by its exponent -- yen has none, the Kuwaiti dinar three (Classes\\Currency)."
     },
     "scroll_depth": {
-        "description": "The scroll threshold the visitor passed, as a percentage of the page.",
+        "description": "The deepest scroll threshold the visitor reached on the page view, as a percentage of the page.",
         "set_by": "client",
         "from": [
             "sc_d"

@@ -1930,7 +1930,7 @@
                 "column": "scroll_depth",
                 "family": "event",
                 "label": "Scroll Depth",
-                "description": "How far down the page the visitor scrolled, as the percentage threshold passed.",
+                "description": "How far down the page the visitor scrolled: the deepest percentage threshold reached on the page view.",
                 "foreign_key_name": "",
                 "data_type": "integer",
                 "denormalized": true
@@ -2984,7 +2984,7 @@
             "column": "scroll_depth",
             "family": "event",
             "label": "Scroll Depth",
-            "description": "How far down the page the visitor scrolled, as the percentage threshold passed.",
+            "description": "How far down the page the visitor scrolled: the deepest percentage threshold reached on the page view.",
             "foreign_key_name": "",
             "data_type": "integer",
             "denormalized": true

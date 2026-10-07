@@ -373,7 +373,7 @@ class OWATracker  {
 	         * trailing element keeps many pages from ever reading exactly 100.
 	         *
 	         * They are buckets, not events: a page view sends one scroll event, at
-	         * its deepest threshold (see checkScrollDepth()).
+	         * the deepest threshold it reached.
 	         *
 	         * @option
 	         */
@@ -5534,7 +5534,8 @@ class OWATracker  {
 
     /**
      * Report how far down each page view the visitor scrolls: one `scroll`
-     * event per page view, at its deepest threshold (see checkScrollDepth()).
+     * event per page view, at the deepest scrollThresholds mark reached, and only
+     * after the visitor has scrolled.
      *
      * ITS OWN LISTENER. Scroll depth once shared a single `window.onscroll`
      * slot with another feature and fired only where that feature was active,
