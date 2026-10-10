@@ -2304,8 +2304,16 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The referrer's host, and what the cube pass classifies source and medium
-     * from.
+     * The referring site's host, and what the cube pass classifies source and
+     * medium from.
+     *
+     * EMPTY WHEN THE REFERRER IS THE SITE ITSELF, by the rule a click uses
+     * (isSiteHost()): the page's own host, the cookie domain and its
+     * subdomains. A session that starts from one of the site's pages -- it
+     * expired between two page views, or restarted on an idle tab -- then reads
+     * as direct and inherits the visitor's last touch, rather than being a
+     * referral from the site to itself that displaces that touch. referer_url
+     * keeps the URL.
      *
      * The referrer is deliberately left alone beyond its host and query: it is
      * somebody else's URL, and collapsing it against THIS site's default page
@@ -2316,7 +2324,30 @@ class TrackingEventHelpers {
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
             $event->get( 'HTTP_REFERER' ) );
 
-        return $parts['host'];
+        if ( $parts['host'] === null ) {
+
+            return null;
+        }
+
+        // page_location, not the derived host: the registry walks in key
+        // order, so another derived property may not be set yet.
+        $page = \OWA\Module\Base\Classes\V2Event::parseUrl( $event->get( 'page_location' ) );
+
+        return self::isSiteHost( $parts['host'], $page['host'],
+            self::cookieDomain( (string) $event->getSiteId() ) ) ? null : $parts['host'];
+    }
+
+    /**
+     * The tracker_cookie_domain a site's tracker is given, empty for the
+     * default (the page's host without www.).
+     *
+     * @param  string $site_id
+     * @return string
+     */
+    static function cookieDomain( $site_id ) {
+
+        return $site_id === '' ? '' : trim( (string)
+            \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cookie_domain', 'profile', $site_id ) );
     }
 
     /** The referrer's query string, unfiltered -- see deriveRefererHost(). */
@@ -2375,29 +2406,70 @@ class TrackingEventHelpers {
      */
     static function isOutboundHost( $target_host, $page_host, $cookie_domain = '' ) {
 
-        $target = strtolower( trim( (string) $target_host ) );
-        $page   = strtolower( trim( (string) $page_host ) );
-
-        if ( $target === '' || $target === $page ) {
-
-            return false;
-        }
-
-        $domain = strtolower( ltrim( trim( (string) $cookie_domain ), '.' ) );
-
-        if ( $domain === '' ) {
-
-            $domain = strncmp( $page, 'www.', 4 ) === 0 ? substr( $page, 4 ) : $page;
-        }
-
-        // Nothing to compare against: no page and no configured domain.
-        if ( $domain === '' ) {
+        // Nothing to compare: no target, or no page and no configured domain.
+        if ( trim( (string) $target_host ) === ''
+             || self::siteDomain( $page_host, $cookie_domain ) === '' ) {
 
             return false;
         }
 
-        return $target !== $domain
-            && substr( $target, - ( strlen( $domain ) + 1 ) ) !== '.' . $domain;
+        return ! self::isSiteHost( $target_host, $page_host, $cookie_domain );
+    }
+
+    /**
+     * Whether $host is the site's own: the page's host, the cookie domain, or
+     * any subdomain of it -- the rule isOutboundHost() and deriveRefererHost()
+     * share. False when there is no host, or nothing to compare it against.
+     *
+     * A trailing dot is the same host (www.example.com. is www.example.com).
+     *
+     * @param  string|null $host
+     * @param  string|null $page_host
+     * @param  string|null $cookie_domain  tracker_cookie_domain; empty for the default
+     * @return bool
+     */
+    static function isSiteHost( $host, $page_host, $cookie_domain = '' ) {
+
+        $host = rtrim( strtolower( trim( (string) $host ) ), '.' );
+        $page = rtrim( strtolower( trim( (string) $page_host ) ), '.' );
+
+        if ( $host === '' ) {
+
+            return false;
+        }
+
+        if ( $host === $page ) {
+
+            return true;
+        }
+
+        $domain = self::siteDomain( $page, $cookie_domain );
+
+        return $domain !== ''
+            && ( $host === $domain || substr( $host, - ( strlen( $domain ) + 1 ) ) === '.' . $domain );
+    }
+
+    /**
+     * The domain that is the site: tracker_cookie_domain when set, else the
+     * page's host without www. -- as setCookieDomain() resolves it with nothing
+     * passed.
+     *
+     * @param  string|null $page_host
+     * @param  string|null $cookie_domain
+     * @return string empty when there is neither
+     */
+    private static function siteDomain( $page_host, $cookie_domain ) {
+
+        $domain = strtolower( trim( trim( (string) $cookie_domain ), '.' ) );
+
+        if ( $domain !== '' ) {
+
+            return $domain;
+        }
+
+        $page = rtrim( strtolower( trim( (string) $page_host ) ), '.' );
+
+        return strncmp( $page, 'www.', 4 ) === 0 ? substr( $page, 4 ) : $page;
     }
 
     /**

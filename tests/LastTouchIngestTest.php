@@ -135,9 +135,32 @@ final class LastTouchIngestTest extends IngestionTestCase
         $this->beacon($visitor, $session, 0, true, ['tags' => ['source' => 'newsletter', 'medium' => 'email']]);
         $first = $this->store($visitor)['last_touch_ts'];
 
-        $this->beacon($visitor, $session, 0, false, ['referrer' => 'https://owa-test-site/v2/a']);
+        $this->beacon($visitor, $session, 0, false, ['referrer' => 'https://www.example.net/a']);
 
         $this->assertSame($first, $this->store($visitor)['last_touch_ts']);
+    }
+
+    /**
+     * A session starting from one of the site's own pages -- one that expired
+     * between two page views, or restarted on an idle tab -- arrived from
+     * nowhere new: it records no touch, and inherits the one before it.
+     */
+    public function testASelfReferredSessionIsDirect(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $first = $this->beacon($visitor, $this->uniqueSessionId(), 0, true,
+            ['tags' => ['source' => 'newsletter', 'medium' => 'email']]);
+
+        $rows = $this->beacon($visitor, $this->uniqueSessionId(), 1, true,
+            ['referrer' => 'https://owa-test-site/v2/previous']);
+
+        $this->assertNull($rows['session_start']['referer_host'], 'the site is not its own referrer');
+        $this->assertSame('https://owa-test-site/v2/previous', $rows['session_start']['referer_url']);
+        $this->assertSame('newsletter', $rows['session_start']['prior_touch_source']);
+
+        $store = $this->store($visitor);
+        $this->assertSame('newsletter', $store['last_touch_source'], 'the real touch is not displaced');
+        $this->assertSame($first['page_view']['ts'], $store['last_touch_ts']);
     }
 
     /** A returning visitor's direct session is stamped with the touch before it. */

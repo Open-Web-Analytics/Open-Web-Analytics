@@ -1904,7 +1904,7 @@
                 "column": "referer_host",
                 "family": "traffic source",
                 "label": "Referring Site",
-                "description": "The host the user arrived from, as observed.",
+                "description": "The host the user arrived from, as observed. Empty when it was one of the site's own pages.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -2962,7 +2962,7 @@
             "column": "referer_host",
             "family": "traffic source",
             "label": "Referring Site",
-            "description": "The host the user arrived from, as observed.",
+            "description": "The host the user arrived from, as observed. Empty when it was one of the site's own pages.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

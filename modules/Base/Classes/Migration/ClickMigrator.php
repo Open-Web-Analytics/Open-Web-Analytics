@@ -57,8 +57,8 @@ class ClickMigrator extends FactMigrator {
 
         if ( ! array_key_exists( $site_id, $this->cookie_domains ) ) {
 
-            $this->cookie_domains[ $site_id ] = $site_id === '' ? '' : trim( (string)
-                \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cookie_domain', 'profile', $site_id ) );
+            $this->cookie_domains[ $site_id ] =
+                \OWA\Module\Base\Classes\TrackingEventHelpers::cookieDomain( $site_id );
         }
 
         return $this->cookie_domains[ $site_id ];
