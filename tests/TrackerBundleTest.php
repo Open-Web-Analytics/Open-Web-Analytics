@@ -19,15 +19,16 @@ final class TrackerBundleTest extends TestCase
 {
     private const SITE = 'zz-bundle-profile';
 
+    private string $root;
     private string $dist;
     private string $out;
     private ?string $suiteOut = null;
 
     protected function setUp(): void
     {
-        $root = sys_get_temp_dir() . '/owa-bundle-' . bin2hex(random_bytes(4));
-        $this->dist = $root . '/dist/';
-        $this->out  = $root . '/tracker/';
+        $this->root = sys_get_temp_dir() . '/owa-bundle-' . bin2hex(random_bytes(4));
+        $this->dist = $this->root . '/dist/';
+        $this->out  = $this->root . '/tracker/';
         mkdir($this->dist, 0700, true);
 
         $this->build('/*core*/', '/*chunk*/');
@@ -45,19 +46,32 @@ final class TrackerBundleTest extends TestCase
         TrackerBundle::$buildDir = null;
         TrackerBundle::$outDir  = $this->suiteOut;
 
-        if (owa_test_db_available()) {
-            foreach (array('tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments') as $key) {
-                \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'base', $key);
+        // The whole tree, dotfiles and subdirectories too, even when clearing a setting throws.
+        try {
+            if (owa_test_db_available()) {
+                foreach (array('tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments') as $key) {
+                    \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'base', $key);
+                }
             }
+        } finally {
+            self::removeTree($this->root);
+        }
+    }
+
+    private static function removeTree(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
         }
 
-        foreach (array($this->out, $this->dist) as $dir) {
-            foreach ((array) glob($dir . '*') as $f) {
-                @unlink($f);
-            }
-            @rmdir($dir);
+        foreach (new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST) as $item) {
+
+            $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
         }
-        @rmdir(dirname($this->dist));
+
+        @rmdir($dir);
     }
 
     /** A fixture build: a core and a domstream chunk, with a manifest that describes them. */
