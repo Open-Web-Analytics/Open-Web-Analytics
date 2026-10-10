@@ -1306,7 +1306,7 @@
         "note": "The query string with the Profile’s dropped parameters removed -- owa_state and the campaign keys are OWA’s own plumbing and have no business in somebody’s page report. The tags stay recoverable: they are parsed out of page_location, which keeps them."
     },
     "referer_host": {
-        "description": "The host name of the referring page.",
+        "description": "The host name of the referring page, empty when it is one of the site's own.",
         "set_by": "event",
         "from": [
             "HTTP_REFERER"
@@ -1320,7 +1320,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveRefererHost"
         ],
-        "note": "The referrer’s host, and what the cube pass classifies source and medium from. Left alone beyond the host: it is somebody else’s URL, and canonicalising it against THIS site’s default page would be a category error."
+        "note": "The referring site’s host, and what the cube pass classifies source and medium from. Empty when the referrer is the page’s own host, the cookie domain or a subdomain of it -- the rule a click uses -- so a session starting from the site’s own page reads as direct rather than as a referral from itself; referer_url keeps the URL. Left alone beyond the host: it is somebody else’s URL, and canonicalising it against THIS site’s default page would be a category error."
     },
     "referer_query": {
         "description": "The query string of the referring page's URL.",

@@ -142,11 +142,12 @@ return array(
              * Distinct from sessionSource beside it: that is the RESOLVED
              * source, which is the tag when a URL carried one and falls back to
              * direct when there was no referrer at all. This is the host as
-             * observed, and empty when the visit was direct.
+             * observed, and empty when the visit was direct or came from one
+             * of the site's own pages (TrackingEventHelpers::deriveRefererHost()).
              */
             'referrerHost' => array( 'column' => 'referer_host', 'label' => 'Referring Site',
                 'family' => 'traffic source',
-                'description' => 'The host the user arrived from, as observed.' ),
+                'description' => 'The host the user arrived from, as observed. Empty when it was one of the site\'s own pages.' ),
 
             'pageReferrer' => array( 'column' => 'referer_url', 'label' => 'Page Referrer',
                 'family' => 'content', 'description' => 'The page the user arrived from.' ),

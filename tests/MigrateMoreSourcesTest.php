@@ -64,7 +64,12 @@ final class MigrateMoreSourcesTest extends TestCase
             $db->query("DELETE FROM $t WHERE site_id = ?", [self::SITE]);
         }
         $db->query('DELETE FROM owa_visitor_acquisition WHERE site_id = ?', [self::SITE]);
-        $db->query('DELETE FROM owa_setting WHERE scope_id IN (?, ?)', [self::SITE, (string) self::PROPERTY]);
+        // Through the entity: Setting is cachable, and a row deleted under the
+        // cache makes the next setScopedSetting() update nothing and succeed.
+        foreach ((array) $db->get_results('SELECT id FROM owa_setting WHERE scope_id IN (?, ?)',
+                [self::SITE, (string) self::PROPERTY]) as $row) {
+            \OWA\Core\CoreAPI::entityFactory('base.setting')->delete(((array) $row)['id']);
+        }
         $db->query('DELETE FROM owa_site WHERE site_id = ?', [self::SITE]);
         $db->query('DELETE FROM owa_property WHERE id = ?', [self::PROPERTY]);
         \OWA\Core\CoreAPI::settingCacheFlush();
@@ -174,6 +179,40 @@ final class MigrateMoreSourcesTest extends TestCase
         (new ClickMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
 
         $this->assertSame(0, (int) $this->rows('click')[0]['is_outbound'],
+            'other.example is under the configured domain, example');
+    }
+
+    /** A page view whose referrer is $url, migrated; its raw row. */
+    private function referredView(string $url): array
+    {
+        $this->insert('referer', ['id' => '202', 'url' => $url]);
+        $this->fact('request', '1790000000000000811', ['referer_id' => '202', 'is_entry_page' => 1]);
+
+        (new RequestMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        return $this->rows('page_view')[0];
+    }
+
+    /** A referrer is the site's own by the click's rule: by default shop.example and under it. */
+    public function testASelfReferrerHasNoRefererHost(): void
+    {
+        $row = $this->referredView('https://art.shop.example/prints');
+
+        $this->assertNull($row['referer_host']);
+        $this->assertSame('https://art.shop.example/prints', $row['referer_url']);
+    }
+
+    public function testASiblingDomainIsAnotherSiteByDefault(): void
+    {
+        $this->assertSame('other.example', $this->referredView('https://other.example/post')['referer_host']);
+    }
+
+    public function testAConfiguredCookieDomainDecidesASelfReferrer(): void
+    {
+        $this->assertNotFalse(\OWA\Core\CoreAPI::setScopedSetting('property', (string) self::PROPERTY, 'base',
+            'tracker_cookie_domain', 'example'));
+
+        $this->assertNull($this->referredView('https://other.example/post')['referer_host'],
             'other.example is under the configured domain, example');
     }
 

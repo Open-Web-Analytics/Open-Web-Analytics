@@ -58,4 +58,21 @@ final class IsOutboundHostTest extends TestCase
     {
         $this->assertFalse(TrackingEventHelpers::isOutboundHost('www.site.example', 'blog.site.example', 'site.example'));
     }
+
+    /** A trailing dot is the same host, on either side. */
+    public function testATrailingDotIsTheSameHost(): void
+    {
+        $this->assertFalse(TrackingEventHelpers::isOutboundHost('www.site.example.', 'www.site.example'));
+        $this->assertFalse(TrackingEventHelpers::isOutboundHost('shop.site.example', 'www.site.example', 'site.example.'));
+    }
+
+    /** isSiteHost() is the same rule read the other way, and makes no claim about nothing. */
+    public function testIsSiteHostIsTheSameRule(): void
+    {
+        $this->assertTrue(TrackingEventHelpers::isSiteHost('shop.site.example', 'www.site.example'));
+        $this->assertTrue(TrackingEventHelpers::isSiteHost('other.example', 'www.site.example', 'example'));
+        $this->assertFalse(TrackingEventHelpers::isSiteHost('other.example', 'www.site.example'));
+        $this->assertFalse(TrackingEventHelpers::isSiteHost('', 'www.site.example'));
+        $this->assertFalse(TrackingEventHelpers::isSiteHost('www.site.example', ''));
+    }
 }

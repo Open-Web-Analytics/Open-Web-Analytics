@@ -460,6 +460,21 @@ final class MigrateRequestsTest extends TestCase
         $this->assertNull($this->rows()[0]['referer_host']);
     }
 
+    /** A referrer on the site's own domain is no referring site; the URL is kept. */
+    public function testASelfReferrerHasNoRefererHost(): void
+    {
+        $this->visit();
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_referer SET url = 'https://www.alice.example/blog/' WHERE id = 201");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $entry = array_values(array_filter($this->rows(), fn ($r) => $r['user_id'] === 'alice'))[0];
+
+        $this->assertNull($entry['referer_host']);
+        $this->assertSame('https://www.alice.example/blog/', $entry['referer_url']);
+    }
+
     private function tagged(): array
     {
         return array_values(array_filter($this->rows(), fn ($r) => $r['event_type'] === 'page_view'
