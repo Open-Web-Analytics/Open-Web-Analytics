@@ -159,6 +159,34 @@
             "alias": "exits"
         }
     ],
+    "formStarts": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'form_start' THEN 1 ELSE 0 END)",
+            "alias": "formStarts"
+        }
+    ],
+    "formSubmitRate": [
+        {
+            "kind": "ratio",
+            "numerator": "formSubmits",
+            "denominator": "formStarts",
+            "precision": 4,
+            "children": [
+                "formStarts",
+                "formSubmits"
+            ]
+        }
+    ],
+    "formSubmits": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "sum(CASE WHEN event.event_type = 'form_submit' THEN 1 ELSE 0 END)",
+            "alias": "formSubmits"
+        }
+    ],
     "goalConversionRatePerSession": [
         {
             "kind": "ratio",

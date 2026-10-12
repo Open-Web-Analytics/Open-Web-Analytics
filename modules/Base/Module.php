@@ -989,6 +989,13 @@ class Module extends \OWA\Core\Module {
          * searches and as the sessions that searched.
          */
         $this->registerReport( 'site-search', 'reports/site-search.json' );
+        /*
+         * FORMS STARTED AND SUBMITTED, by the page the form was on. Grouped by
+         * page and not by form: form_id, form_name and form_destination ride
+         * `params`, so grouping by one is a custom dimension the install
+         * registers.
+         */
+        $this->registerReport( 'forms', 'reports/forms.json' );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
         $this->registerReport( 'entry-pages', 'reports/entry-pages.json' );
@@ -1089,6 +1096,7 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'scroll-depth' ), 'Scroll Depth', 6);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'site-search' ), 'Site Search', 7);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'forms' ), 'Forms', 8);
 
 
         /*
