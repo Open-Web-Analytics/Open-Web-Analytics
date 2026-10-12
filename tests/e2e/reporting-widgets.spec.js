@@ -107,6 +107,48 @@ test.describe('every configured report renders in a browser', () => {
     });
 
     /**
+     * The Forms report constrains on a regular expression,
+     * eventName=~^form_(start|submit)$, the only shipped report that does. The
+     * pattern rides the widgets' query strings to the REST endpoint, so this
+     * watches those requests: each must carry the pattern intact and come back
+     * without an error.
+     */
+    test('the Forms report queries through its pattern constraint', async ({ page }) => {
+
+        const queries = [];
+
+        page.on('response', (r) => {
+            const url = decodeURIComponent(r.url());
+
+            if (url.includes('form_(start|submit)')) {
+                queries.push({ url, response: r });
+            }
+        });
+
+        await login(page);
+        await openConfiguredReport(page, { reportId: 'forms' });
+        await page.waitForLoadState('networkidle');
+
+        expect(queries.length, 'no request carried the Forms constraint').toBeGreaterThan(0);
+
+        for (const q of queries) {
+
+            expect(q.url, 'the pattern lost its anchors on the way')
+                .toContain('eventName=~^form_(start|submit)$');
+            // The REST endpoint answers a report query with 201.
+            expect(q.response.ok(), q.url).toBe(true);
+
+            const body = await q.response.json();
+
+            expect(body.error, q.url).toEqual([]);
+            expect(body.data.errors, q.url).toEqual([]);
+            expect(body.data.request_errors || [], q.url).toEqual([]);
+            // ...and the server read the same pattern the browser sent.
+            expect(body.data.queryParams.constraints).toBe('eventName=~^form_(start|submit)$');
+        }
+    });
+
+    /**
      * The widget types that only Traffic uses.
      *
      * `pie` and `metric-boxes` were added when traffic became configuration

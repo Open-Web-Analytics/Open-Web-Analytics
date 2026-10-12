@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 38,
-        "metricImplementations": 38,
+        "metricNames": 41,
+        "metricImplementations": 41,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 87,
@@ -389,6 +389,87 @@
                     "metric_type": "count",
                     "minuend": "",
                     "name": "exits",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "formStarts": [
+            {
+                "name": "formStarts",
+                "class": "base.configurableMetric",
+                "label": "Form Starts",
+                "group": "Site Usage",
+                "params": {
+                    "column": "id",
+                    "condition": [
+                        "event_type",
+                        "form_start"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of times a visitor began filling in a form.",
+                    "entity": "base.event",
+                    "group": "Site Usage",
+                    "label": "Form Starts",
+                    "metric_type": "count",
+                    "minuend": "",
+                    "name": "formStarts",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "formSubmitRate": [
+            {
+                "name": "formSubmitRate",
+                "class": "base.configurableMetric",
+                "label": "Form Submit Rate",
+                "group": "Site Usage",
+                "params": {
+                    "column": "",
+                    "condition": [],
+                    "data_type": "percentage",
+                    "denominator": "formStarts",
+                    "description": "Form submits as a share of form starts.",
+                    "entity": "base.event",
+                    "group": "Site Usage",
+                    "label": "Form Submit Rate",
+                    "metric_type": "ratio",
+                    "minuend": "",
+                    "name": "formSubmitRate",
+                    "numerator": "formSubmits",
+                    "precision": 4,
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "formSubmits": [
+            {
+                "name": "formSubmits",
+                "class": "base.configurableMetric",
+                "label": "Form Submits",
+                "group": "Site Usage",
+                "params": {
+                    "column": "id",
+                    "condition": [
+                        "event_type",
+                        "form_submit"
+                    ],
+                    "data_type": "integer",
+                    "denominator": "",
+                    "description": "The number of times a form was submitted.",
+                    "entity": "base.event",
+                    "group": "Site Usage",
+                    "label": "Form Submits",
+                    "metric_type": "count",
+                    "minuend": "",
+                    "name": "formSubmits",
                     "numerator": "",
                     "precision": "",
                     "subtrahend": "",

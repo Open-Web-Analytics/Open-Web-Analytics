@@ -118,6 +118,46 @@ return array(
         ),
 
         /*
+         * FORMS. The tracker raises one form_start per form per page view,
+         * including just before a submit that had no change event, so every
+         * submit has a start.
+         */
+        'formStarts' => array(
+            'label'       => 'Form Starts',
+            'description' => 'The number of times a visitor began filling in a form.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'form_start' ),
+        ),
+
+        'formSubmits' => array(
+            'label'       => 'Form Submits',
+            'description' => 'The number of times a form was submitted.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'count',
+            'data_type'   => 'integer',
+            'column'      => 'id',
+            'condition'   => array( 'column' => 'event_type', 'value' => 'form_submit' ),
+        ),
+
+        /*
+         * Submits are NOT deduplicated -- a form sent twice from one page view
+         * is two submits against one start -- so this can pass 100%.
+         */
+        'formSubmitRate' => array(
+            'label'       => 'Form Submit Rate',
+            'description' => 'Form submits as a share of form starts.',
+            'group'       => 'Site Usage',
+            'metric_type' => 'ratio',
+            'data_type'   => 'percentage',
+            'numerator'   => 'formSubmits',
+            'denominator' => 'formStarts',
+            'precision'   => 4,
+        ),
+
+        /*
          * ---- commerce ----------------------------------------------------
          *
          * All of it off two columns on the event row -- `revenue` in minor

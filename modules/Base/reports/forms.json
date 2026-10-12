@@ -1,0 +1,38 @@
+{
+    "title": "Forms",
+    "description": "Forms started and submitted, site-wide and by the page the form was on, with the share of starts that were submitted.",
+    "metrics": "formStarts,formSubmits,formSubmitRate",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "chartMetric": "formSubmits",
+            "query": {
+                "dimensions": "date",
+                "sort": "date",
+                "metrics": "formSubmits"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "pages",
+            "container": "forms-by-page",
+            "title": "Forms by Page",
+            "query": {
+                "metrics": "formStarts,formSubmits,formSubmitRate",
+                "dimensions": "pagePath",
+                "sort": "formSubmits-"
+            }
+        }
+    ],
+    "settings": {
+        "constraints": [
+            {
+                "dimension": "eventName",
+                "operator": "=~",
+                "value": "^form_(start|submit)$"
+            }
+        ]
+    }
+}
