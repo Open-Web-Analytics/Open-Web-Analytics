@@ -1127,8 +1127,13 @@ final class PropertyAdminScreensTest extends TestCase
             OWA_DIR . 'modules/Base/templates/site_control.php' );
 
         $this->assertSame(
-            2, substr_count( $template, 'owa_siteControlAdd' ),
+            2, substr_count( $template, 'class="owa_siteControlAdd' ),
             'Both the Properties and the Profiles column need a way to add one.' );
+
+        /* The Profile is added to the Property selected beside it. */
+        $this->assertStringContainsString(
+            "array( 'do' => 'base.sitesProfile', 'propertyId' => \$propertyId )", $template,
+            'The Profiles column adds a Profile without saying which Property it is for.' );
 
         /* Add is a different route from edit: no id. */
         $this->assertStringContainsString(

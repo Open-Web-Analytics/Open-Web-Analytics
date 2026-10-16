@@ -883,6 +883,13 @@ OWA.initSiteControl = function() {
 
             jQuery('.owa_siteControlProfileList').attr('hidden', 'hidden');
             jQuery('.owa_siteControlProfileList[data-property-index="' + index + '"]').removeAttr('hidden');
+
+            // "add new" Profile adds to the Property just chosen.
+            var addHref = jQuery(this).attr('data-add-profile-href');
+
+            if ( addHref ) {
+                jQuery('.owa_siteControlAddProfile').attr('href', addHref);
+            }
         });
 };
 

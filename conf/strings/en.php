@@ -139,6 +139,7 @@ return array(
     'Options saved.' => 'Options saved.',
     'Password is required.' => 'Password is required.',
     'Profile updated.' => 'Profile updated.',
+    'Property added. Add an Observation Profile to start collecting its data.' => 'Property added. Add an Observation Profile to start collecting its data.',
     'Property and its Observation Profiles deleted. An administrator can restore their data.' => 'Property and its Observation Profiles deleted. An administrator can restore their data.',
     'Property is required.' => 'Property is required.',
     'Recording %s failed. Nothing was changed on %s.' => 'Recording %s failed. Nothing was changed on %s.',

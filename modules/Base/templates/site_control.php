@@ -19,16 +19,48 @@
 $owa_hierarchy    = $view->site_hierarchy ?: array( 'organization' => array(), 'properties' => array() );
 $owa_current_site = $view->params['siteId'] ?? '';
 
-$owa_current = array( 'property' => '', 'profile' => '', 'site_id' => $owa_current_site );
+$owa_current = array( 'index' => null, 'property' => '', 'property_id' => '', 'profile' => '', 'site_id' => $owa_current_site );
 
-foreach ( $owa_hierarchy['properties'] as $owa_p ) {
+foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
     foreach ( $owa_p['profiles'] as $owa_prof ) {
         if ( $owa_prof['site_id'] === $owa_current_site ) {
-            $owa_current['property'] = $owa_p['name'];
-            $owa_current['profile']  = $owa_prof['name'];
+            $owa_current['index']       = $owa_i;
+            $owa_current['property']    = $owa_p['name'];
+            $owa_current['property_id'] = (string) $owa_p['id'];
+            $owa_current['profile']     = $owa_prof['name'];
         }
     }
 }
+
+/*
+ * A Property named by the screen wins over the current Profile's.
+ *
+ * A Property with no Profiles has no site to be found through, so the
+ * screens about it (its Details, the form adding its first Profile) would
+ * otherwise show whichever Property the fallback site belongs to. The
+ * Profile line is cleared when that site is not one of its Profiles.
+ */
+$owa_context_property = (string) ( $view->params['propertyId'] ?? '' );
+
+if ( $owa_context_property !== '' && $owa_context_property !== $owa_current['property_id'] ) {
+    foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
+        if ( (string) $owa_p['id'] === $owa_context_property ) {
+            $owa_current = array( 'index' => $owa_i, 'property' => $owa_p['name'], 'property_id' => $owa_context_property,
+                                  'profile' => '', 'site_id' => '' );
+        }
+    }
+}
+
+/*
+ * "add new" in the Profiles column adds to the Property selected beside it.
+ * Each Property row carries its own link; the script swaps it in when a row
+ * is chosen.
+ */
+$owa_add_profile_href = function ( $propertyId ) use ( $view ) {
+    return $view->makeLink( $propertyId !== ''
+        ? array( 'do' => 'base.sitesProfile', 'propertyId' => $propertyId )
+        : array( 'do' => 'base.sitesProfile' ) );
+};
 ?>
 <div id="owa_siteControl" class="owa_siteControl">
 
@@ -67,8 +99,9 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
             ), 'properties', '' ) as $owa_action ):?><a class="owa_siteControlAdd" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a><?php endforeach;?></div>
             <ul>
             <?php foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ):?>
-                <li class="owa_siteControlItem<?php echo $owa_p['name'] === $owa_current['property'] ? ' is-selected' : '';?>"
-                    data-property-index="<?php echo (int) $owa_i;?>">
+                <li class="owa_siteControlItem<?php echo $owa_i === $owa_current['index'] ? ' is-selected' : '';?>"
+                    data-property-index="<?php echo (int) $owa_i;?>"
+                    data-add-profile-href="<?php $view->safeHref( $owa_add_profile_href( (string) $owa_p['id'] ) );?>">
                     <span class="owa_siteControlItemName">
                         <?php $view->out( $owa_p['name'] );?>
                         <?php if ( $owa_p['domain'] ):?>
@@ -91,11 +124,11 @@ foreach ( $owa_hierarchy['properties'] as $owa_p ) {
         <div class="owa_siteControlColumn owa_siteControlProfiles">
             <div class="owa_siteControlColumnHead">Observation Profiles<?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', array(
                 array( 'id' => 'add', 'label' => 'add new', 'capability' => 'edit_sites',
-                       'href' => $view->makeLink( array( 'do' => 'base.sitesProfile' ) ) ),
-            ), 'profiles', '' ) as $owa_action ):?><a class="owa_siteControlAdd" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a><?php endforeach;?></div>
+                       'href' => $owa_add_profile_href( $owa_current['property_id'] ) ),
+            ), 'profiles', $owa_current['property_id'] ) as $owa_action ):?><a class="owa_siteControlAdd owa_siteControlAddProfile" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a><?php endforeach;?></div>
             <?php foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ):?>
             <ul class="owa_siteControlProfileList" data-property-index="<?php echo (int) $owa_i;?>"
-                <?php echo $owa_p['name'] === $owa_current['property'] ? '' : 'hidden';?>>
+                <?php echo $owa_i === $owa_current['index'] ? '' : 'hidden';?>>
                 <?php foreach ( $owa_p['profiles'] as $owa_prof ):?>
                 <li class="owa_siteControlItem<?php echo $owa_prof['site_id'] === $owa_current_site ? ' is-selected' : '';?>">
                     <?php

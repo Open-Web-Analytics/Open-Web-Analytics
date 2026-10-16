@@ -48,7 +48,9 @@ class SitesProfile extends \OWA\Core\View {
             $this->body->set('headline', 'New Observation Profile');
 
         }
-        if (isset($site['domain'])) {
+        // Keyed on the Profile, not on a domain: the add form can arrive with
+        // its Property's domain filled in.
+        if ($this->get('siteId')) {
             $this->t->set( 'page_title', 'Profile Details' );
         }
         else {

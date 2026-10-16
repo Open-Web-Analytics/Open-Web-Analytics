@@ -66,6 +66,8 @@ const FIXTURE = {
     // seeder, which teardown mops up if a test aborts mid-flow).
     newSiteDomain: 'https://owa-e2e-created.example.test',
     newSiteName: 'OWA E2E Created Site',
+    newPropertyDomain: 'owa-e2e-created-property.example.test',
+    newPropertyName: 'OWA E2E Created Property',
     newUserId: 'owa-e2e-created@example.test',
     // Traffic attribution DERIVED from the referring URLs in the $visits table
     // of seed_reporting_fixtures.php. The seeder sets only session_referer;

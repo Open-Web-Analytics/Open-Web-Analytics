@@ -316,6 +316,70 @@ test.describe('admin: site CRUD', () => {
             )
         ).toHaveCount(0);
     });
+
+    test('a new Property goes on to adding its first Profile', async ({ page }) => {
+        await adminLogin(page);
+
+        await gotoAction(page, 'base.propertyProfile'); // no propertyId => add
+        await page.fill('input[name="name"]', FIXTURE.newPropertyName);
+        await page.fill('input[name="domain"]', FIXTURE.newPropertyDomain);
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[type="submit"][value="Save Property"]').click(),
+        ]);
+
+        // Landed on the add-a-Profile form with the new Property chosen.
+        const url = new URL(page.url());
+        expect(url.searchParams.get('owa_do') || url.searchParams.get('do')).toBe('base.sitesProfile');
+
+        const picker = page.locator('#owa_profilePropertyId');
+        const chosen = picker.locator('option:checked');
+        await expect(chosen).toContainText(FIXTURE.newPropertyName);
+        const propertyId = await picker.inputValue();
+        expect(propertyId, 'the picker is still on "a new Property"').not.toBe('');
+
+        // A web Property's Profile starts on its domain, and needs no new name.
+        await expect(page.locator('#owa_streamType')).toHaveValue('web');
+        await expect(page.locator('input[name="domain"]')).toHaveValue(FIXTURE.newPropertyDomain);
+        await expect(page.locator('#owa_newPropertyFields')).toBeHidden();
+
+        // The site control is on the new Property, though it has no Profile.
+        await expect(page.locator('#owa_siteControlSummary .owa_siteControlProperty'))
+            .toHaveText(FIXTURE.newPropertyName);
+        const addHref = await page.locator('a.owa_siteControlAddProfile').getAttribute('href');
+        const addParams = new URL(addHref, page.url()).searchParams;
+        expect(addParams.get('owa_propertyId') || addParams.get('propertyId')).toBe(propertyId);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
+        ]);
+
+        // The Profile was created under the new Property, not a Property of its own.
+        const propertyRow = page.locator(
+            '.owa_siteControlProperties li.owa_siteControlItem',
+            { hasText: FIXTURE.newPropertyName },
+        );
+        await expect(propertyRow).toHaveCount(1);
+        const index = await propertyRow.getAttribute('data-property-index');
+        await expect(
+            page.locator(`.owa_siteControlProfiles ul[data-property-index="${index}"] li.owa_siteControlItem`),
+        ).toHaveCount(1);
+
+        // Choosing another Property in the fan-out moves "add new" to it.
+        await page.locator('#owa_siteControlSummary').click();
+        const other = page.locator('.owa_siteControlProperties li.owa_siteControlItem')
+            .filter({ hasNotText: FIXTURE.newPropertyName }).first();
+        await other.locator('.owa_siteControlItemName').click();
+        expect(await page.locator('a.owa_siteControlAddProfile').getAttribute('href'))
+            .toBe(await other.getAttribute('data-add-profile-href'));
+
+        // Remove it; teardown deletes the archived rows.
+        await gotoAction(page, 'base.propertyProfile', `&owa_propertyId=${propertyId}`);
+        await confirmAndWait(page, page.locator('input[value="Delete Property"]'));
+        await page.goto('?', { waitUntil: 'networkidle' });
+        await expect(propertyRow).toHaveCount(0);
+    });
 });
 
 test.describe('admin: user CRUD + site association', () => {
