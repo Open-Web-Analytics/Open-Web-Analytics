@@ -189,9 +189,12 @@ final class MessageCatalogueTest extends TestCase
             $source = (string) file_get_contents(
                 __DIR__ . '/../modules/Base/Controller/' . $name . '.php');
 
+            // From errorAction() on: a code set elsewhere is not the form's.
+            $source = substr($source, (int) strpos($source, 'function errorAction'));
+
             $this->assertTrue(
                 (bool) preg_match("/set\(\s*'error_code'\s*,\s*(\d+)/", $source, $m),
-                "$name sets no error code at all");
+                "$name sets no error code in errorAction()");
 
             $message = $messages[(int) $m[1]]['message'] ?? '';
 

@@ -81,8 +81,8 @@ $_owa_messages = [
     // Sites management
     3200 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Fill in all required fields.' )],
     3201 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Profile updated.' )],
-    3202 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Site added.' )],
-    3203 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The site could not be added.' )],
+    3202 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Observation Profile added.' )],
+    3203 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The Observation Profile could not be added.' )],
     // Archived, not deleted: nothing is destroyed, so the wording does not
     // say it was. 3205 is the Property's.
     3204 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Observation Profile deleted. An administrator can restore its data.' )],

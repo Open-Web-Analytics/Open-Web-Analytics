@@ -185,9 +185,9 @@ test.describe('admin: site CRUD', () => {
             page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
 
-        // sitesAdd redirects to base.reportingHome now. The roster is the site
-        // control's fan-out -- base.sites is gone -- so that is where what was
-        // just created has to show up.
+        // sitesAdd redirects to the new Profile's Tracking Tag. The roster is
+        // the site control's fan-out -- base.sites is gone -- so that is where
+        // what was just created has to show up.
         //
         // Matched without asserting visibility on purpose: the fan-out only
         // un-hides the profile list of the CURRENT Property, and a site added
@@ -354,6 +354,15 @@ test.describe('admin: site CRUD', () => {
             page.waitForNavigation({ waitUntil: 'networkidle' }),
             page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
+
+        // Landed on the new Profile's Tracking Tag, where its snippet is.
+        const tagUrl = new URL(page.url());
+        expect(tagUrl.searchParams.get('owa_do') || tagUrl.searchParams.get('do'), page.url())
+            .toBe('base.sitesInvocation');
+        const newSiteId = tagUrl.searchParams.get('owa_siteId') || tagUrl.searchParams.get('siteId');
+        expect(newSiteId).toBeTruthy();
+        await expect(page.locator('#owa_siteControlSummary .owa_siteControlId')).toHaveText(newSiteId);
+        await expect(page.locator('body')).toContainText(newSiteId);
 
         // The Profile was created under the new Property, not a Property of its own.
         const propertyRow = page.locator(
