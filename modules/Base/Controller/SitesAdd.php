@@ -85,7 +85,8 @@ class SitesAdd extends \OWA\Core\AdminController {
             }
         }
         
-        $this->set( 'site', $site->_getProperties() );
+        // createSite() answers null when it could not create one.
+        $this->set( 'site', $site ? $site->_getProperties() : array() );
         
     }
     
@@ -165,26 +166,28 @@ class SitesAdd extends \OWA\Core\AdminController {
     function success() {
 
         /*
-         * To the Profile that was just created, not to reporting.
+         * To the new Profile's Tracking Tag, not to reporting.
          *
-         * A new Profile's whole point is its tracking id, which lives on this
-         * screen -- landing on the dashboard means the one thing you came for
-         * is somewhere you now have to go and find. action() has already put the
-         * created row in 'site', so the id is here to redirect with.
+         * The tag is what a new Profile is for, and it has no data to report
+         * yet. action() has put the created row in 'site'.
+         *
+         * Read from $this->data, NOT $this->get(): get() reads the request.
+         * Through get() 'site' was always empty, so every new Profile fell
+         * through to base.reportingHome, the dashboard of the first site.
          */
-        $site = (array) $this->get( 'site' );
+        $site = (array) ( $this->data['site'] ?? array() );
 
         if ( ! empty( $site['site_id'] ) ) {
 
             $this->set( 'siteId', $site['site_id'] );
-            $this->setRedirectAction( 'base.sitesProfile' );
+            $this->setRedirectAction( 'base.sitesInvocation' );
+            $this->set( 'status_code', 3202 );
 
         } else {
 
-            $this->setRedirectAction( 'base.reportingHome' );
+            $this->setRedirectAction( 'base.sitesProfile' );
+            $this->set( 'error_code', 3203 );
         }
-
-        $this->set('status_code', 3202);
     }
 
     function errorAction() {
