@@ -152,8 +152,21 @@ class PropertyEdit extends \OWA\Core\AdminController {
         \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
 
         $this->set( 'propertyId', $propertyId );
-        $this->setRedirectAction( 'base.propertyProfile' );
-        $this->set( 'status_code', 3201 );
+
+        /*
+         * A new Property goes on to the form that adds its first Profile, with
+         * the Property already chosen. It collects nothing until it has one.
+         */
+        if ( $this->getParam( 'propertyId' ) ) {
+
+            $this->setRedirectAction( 'base.propertyProfile' );
+            $this->set( 'status_code', 3201 );
+
+        } else {
+
+            $this->setRedirectAction( 'base.sitesProfile' );
+            $this->set( 'status_code', 3212 );
+        }
     }
 
     /** The fieldsets the Property screen shows below its own fields. */

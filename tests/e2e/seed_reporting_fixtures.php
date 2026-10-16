@@ -265,6 +265,7 @@ const E2E_PROFILEPW_NAME = 'OWA E2E ProfilePw';
 // keeping the live install clean. Kept in lockstep with tests/e2e/fixtures.js.
 const E2E_NEW_SITE_DOMAIN = 'https://owa-e2e-created.example.test';
 const E2E_NEW_USER_ID     = 'owa-e2e-created@example.test';
+const E2E_NEW_PROPERTY_DOMAIN = 'owa-e2e-created-property.example.test';
 
 // ---- Boot OWA in logger role (same as log.php / the ingestion tests) ---------
 $owa_root = dirname(__DIR__, 2) . '/';
@@ -1279,6 +1280,17 @@ function teardown(): array
             $property = $cs->get('property_id');
             $cs->delete($cs->get('id'), 'id');
             unseedPropertyIfEmpty($property);
+        }
+    } catch (\Throwable $e) {}
+    // A Property the add-a-Property test created, archived or not, with its Profiles.
+    try {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom('owa_property');
+        $db->selectColumn('id');
+        $db->where('domain', E2E_NEW_PROPERTY_DOMAIN);
+        foreach ((array) $db->getAllRows() as $row) {
+            \OWA\Core\CoreAPI::entityFactory('base.site')->delete($row['id'], 'property_id');
+            unseedPropertyIfEmpty($row['id']);
         }
     } catch (\Throwable $e) {}
     try {

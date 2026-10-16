@@ -97,6 +97,7 @@ $_owa_messages = [
     // the cube build's lock, so the column is not there yet.
     3210 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Custom dimension registered. Its cube column is added within a few minutes and filled from then on; rebuild the cube to fill past data.' )],
     3211 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Custom dimension removed. Its cube column is dropped at the next build. The events are kept: registering it again and rebuilding restores it.' )],
+    3212 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Property added. Add an Observation Profile to start collecting its data.' )],
 
     // Install
     3300 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Could not connect to the database. Check the connection settings in the configuration file.' )],

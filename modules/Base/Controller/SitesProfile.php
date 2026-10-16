@@ -51,7 +51,11 @@ class SitesProfile extends \OWA\Core\AdminController {
             $this->set('edit', $this->getParam('edit'));
 
         } else {
-            $site_data = array();
+            $site_data = $this->defaultsForProperty( $this->getParam( 'propertyId' ) );
+            // Pre-selects the Property on the form and in the site control.
+            $this->set( 'propertyId', isset( $site_data['property_id'] ) ? $site_data['property_id'] : '' );
+            $this->set( 'params', array_merge( (array) $this->params, array(
+                'propertyId' => isset( $site_data['property_id'] ) ? $site_data['property_id'] : '' ) ) );
         }
 
 
@@ -68,6 +72,46 @@ class SitesProfile extends \OWA\Core\AdminController {
         $this->setSubview('base.sitesProfile');
     }
 
+    /**
+     * What a new Profile under a given Property starts with.
+     *
+     * An app Property's Profiles observe an app, and a web Property's
+     * Profiles usually observe its own domain, so both are filled in. The
+     * form still lets either be changed. An unknown or archived Property
+     * gives nothing, and the form falls back to creating a new one.
+     *
+     * @param  string $propertyId
+     * @return array
+     */
+    private function defaultsForProperty( $propertyId ) {
+
+        if ( ! $propertyId ) {
+
+            return array();
+        }
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+        $property->load( $propertyId );
+
+        if ( ! $property->wasPersisted() || $property->isArchived() ) {
+
+            return array();
+        }
+
+        if ( ! $property->isWebProperty() ) {
+
+            return array(
+                'property_id' => (string) $property->get( 'id' ),
+                'stream_type' => \OWA\Module\Base\Entity\Site::STREAM_APP,
+            );
+        }
+
+        return array(
+            'property_id' => (string) $property->get( 'id' ),
+            'stream_type' => \OWA\Module\Base\Entity\Site::STREAM_WEB,
+            'domain'      => (string) $property->get( 'domain' ),
+        );
+    }
 
 }
 
