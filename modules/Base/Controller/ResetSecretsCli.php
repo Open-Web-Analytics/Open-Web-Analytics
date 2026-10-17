@@ -30,7 +30,7 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return array(
-            'description' => 'Replaces OWA_NONCE_KEY, OWA_NONCE_SALT, OWA_AUTH_KEY and OWA_AUTH_SALT in owa-config.php with new random values.',
+            'description' => 'Replaces OWA_NONCE_KEY, OWA_NONCE_SALT, OWA_AUTH_KEY and OWA_AUTH_SALT in owa-config.php with new random values. Every application password stops working, as do signed-in sessions.',
             'arguments'   => array(),
         );
     }

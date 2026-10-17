@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 68;
+        $this->required_schema_version = 69;
         return parent::__construct();
     }
 
@@ -1278,6 +1278,8 @@ class Module extends \OWA\Core\Module {
                 'job_lock',
                 // One-off admin jobs, run by the scheduler (PLAN 2.30.5).
                 'job_queue',
+                // Application passwords for the REST API.
+                'app_password',
                 'site_user',
                 /*
                  * v2. Registered unconditionally so cmd=update creates them and
