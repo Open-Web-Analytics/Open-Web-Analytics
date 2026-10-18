@@ -83,6 +83,28 @@ return array(
                 . 'from their IP address.',
         ),
         'app_ns' => array( 'default' => '', 'description' => 'The prefix on the parameter names in OWA\'s own admin and report URLs. Empty by default, so they read do=base.reportingHome.' ),
+        'app_passwords_enabled' => array(
+            'default'  => true,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install' ),
+            'type'     => 'boolean',
+            'label'    => 'Allow Application Passwords',
+            'description' =>
+                'Whether REST API requests can authenticate with an application password. '
+                . 'Off refuses every one; the passwords are kept and work again when it is turned back on.',
+        ),
+        'app_passwords_require_https' => array(
+            'default'  => true,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install' ),
+            'type'     => 'boolean',
+            'label'    => 'Application Passwords Need HTTPS',
+            'description' =>
+                'Whether an application password is refused on a request that did not arrive over HTTPS. '
+                . 'Turn off only on a development install without TLS.',
+        ),
         'archive_old_events' => array( 'default' => true, 'description' => 'Whether the file event queue moves a processed batch file to its archive directory instead of deleting it. On by default.' ),
         'assets_url' => array( 'default' => '', 'internal' => true ),
         'async_log_dir' => array( 'default' => '', 'description' => 'The directory the file event queue writes its batch files to. Empty uses owa-data/logs/.' ),

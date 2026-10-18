@@ -135,6 +135,12 @@ class Auth extends \OWA\Core\Base {
             $this->setAuthMethod( 'overlay_token');
             $ret = $this->authByOverlayToken( \OWA\Core\CoreAPI::getRequestParam('overlayToken') );
             \OWA\Core\CoreAPI::debug('User authenticated via overlay token.');
+        } elseif ( $appPassword = $this->appPasswordCredential() ) {
+            // An application password in the Authorization header. Before the
+            // apiKey and the cookies, and a failure here does not fall through
+            // to either: the request named a credential and it did not hold.
+            $this->setAuthMethod( 'app_password' );
+            $ret = $this->authByAppPassword( $appPassword['token'], $appPassword['user_id'] );
         } elseif ( $apiKey ) {
             // auth user by api key
             $this->setAuthMethod( 'api_key');
@@ -218,6 +224,160 @@ class Auth extends \OWA\Core\Base {
         $this->_is_user = true;
 
         return true;
+    }
+
+    /**
+     * The application password a REST request carries, if it carries one.
+     *
+     * `Authorization: Bearer <token>`, or `Basic` with the user_id and the
+     * token. Only a value shaped like a token counts: a site behind HTTP Basic
+     * auth sends its own password on every request, including the reporting
+     * screens' REST calls, and that must not be read as a failed application
+     * password.
+     *
+     * Header only. A token in the URL ends up in server logs and Referer
+     * headers.
+     *
+     * @return array|null token, user_id (null for Bearer)
+     */
+    private function appPasswordCredential() {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) !== 'rest_api' ) {
+
+            return null;
+        }
+
+        $header = (string) ( \OWA\Core\CoreAPI::getServerParam( 'HTTP_AUTHORIZATION' )
+            ?: \OWA\Core\CoreAPI::getServerParam( 'REDIRECT_HTTP_AUTHORIZATION' ) );
+
+        $token   = '';
+        $user_id = null;
+
+        if ( preg_match( '/^Bearer\s+(\S+)\s*$/i', $header, $m ) ) {
+
+            $token = $m[1];
+
+        } elseif ( preg_match( '/^Basic\s+(\S+)\s*$/i', $header, $m ) ) {
+
+            $pair = (string) base64_decode( $m[1], true );
+            // The last colon: a token has none, a user_id might.
+            $at   = strrpos( $pair, ':' );
+
+            if ( $at !== false ) {
+
+                $user_id = substr( $pair, 0, $at );
+                $token   = substr( $pair, $at + 1 );
+            }
+
+        } elseif ( $header === '' && \OWA\Core\CoreAPI::getServerParam( 'PHP_AUTH_PW' ) ) {
+
+            // A server that parsed Basic auth itself and passed on only the parts.
+            $user_id = (string) \OWA\Core\CoreAPI::getServerParam( 'PHP_AUTH_USER' );
+            $token   = (string) \OWA\Core\CoreAPI::getServerParam( 'PHP_AUTH_PW' );
+        }
+
+        if ( ! \OWA\Module\Base\Classes\AppPasswords::looksLikeToken( $token ) ) {
+
+            return null;
+        }
+
+        return array( 'token' => $token, 'user_id' => $user_id );
+    }
+
+    /**
+     * Authenticate a REST request by an application password.
+     *
+     * The password acts as its user with that user's role now, so a role
+     * change or a deleted user takes effect on the next request. A read-only
+     * password authenticates only a GET.
+     *
+     * @param  string      $token
+     * @param  string|null $user_id the Basic auth user, which must be the password's own
+     * @return bool
+     */
+    function authByAppPassword( $token, $user_id = null ) {
+
+        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'app_passwords_enabled' ) ) {
+
+            \OWA\Core\CoreAPI::debug( 'Application passwords are turned off.' );
+
+            return false;
+        }
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'app_passwords_require_https' ) && ! \OWA\Core\Lib::isHttps() ) {
+
+            \OWA\Core\CoreAPI::debug( 'Application password refused: the request is not HTTPS.' );
+
+            return false;
+        }
+
+        $password = \OWA\Module\Base\Classes\AppPasswords::verify( $token );
+
+        if ( ! $password ) {
+
+            \OWA\Core\CoreAPI::debug( 'Application password not recognised.' );
+
+            return false;
+        }
+
+        if ( $user_id !== null && (string) $user_id !== (string) $password['user_id'] ) {
+
+            \OWA\Core\CoreAPI::debug( 'Application password belongs to a different user.' );
+
+            return false;
+        }
+
+        $method = \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType();
+
+        if ( $password['scope'] === \OWA\Module\Base\Classes\AppPasswords::SCOPE_READ
+             && ! in_array( $method, array( 'GET', 'HEAD' ), true ) ) {
+
+            \OWA\Core\CoreAPI::debug( "Read-only application password refused for a $method request." );
+
+            return false;
+        }
+
+        $this->u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+        $this->u->load( $password['user_id'], 'user_id' );
+
+        if ( ! $this->u->get( 'user_id' ) ) {
+
+            \OWA\Core\CoreAPI::debug( 'Application password names a user that no longer exists.' );
+
+            return false;
+        }
+
+        $cu = \OWA\Core\CoreAPI::getCurrentUser();
+        $cu->loadNewUserByObject( $this->u );
+        $cu->setAuthStatus( true );
+        $this->_is_user = true;
+
+        \OWA\Module\Base\Classes\AppPasswords::recordUse( $password['lookup_id'], self::lastPublicHop() );
+
+        return true;
+    }
+
+    /**
+     * The client address as the nearest proxy saw it.
+     *
+     * The rightmost public address in X-Forwarded-For, not the leftmost: each
+     * proxy appends, so the left end is whatever the client chose to send.
+     *
+     * @return string
+     */
+    private static function lastPublicHop() {
+
+        $chain = explode( ',', (string) \OWA\Core\CoreAPI::getServerParam( 'HTTP_X_FORWARDED_FOR' ) );
+
+        foreach ( array_reverse( $chain ) as $hop ) {
+
+            if ( \OWA\Core\Lib::isNotPrivateIp( trim( $hop ) ) ) {
+
+                return trim( $hop );
+            }
+        }
+
+        return (string) \OWA\Core\CoreAPI::getServerParam( 'REMOTE_ADDR' );
     }
 
     function authByApiKey( $key ) {

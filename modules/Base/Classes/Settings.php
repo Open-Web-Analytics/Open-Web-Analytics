@@ -2777,6 +2777,8 @@ namespace OWA\Module\Base\Classes;
                 'geolocation_service'                => '',
                 'report_wrapper'                    => 'wrapper_default.php',
                 'announce_visitors'                    => false,
+                'app_passwords_enabled'                => true,
+                'app_passwords_require_https'          => true,
                 'public_url'                        => '',
                 'base_url'                            => '',
                 'action_url'                        => '',
