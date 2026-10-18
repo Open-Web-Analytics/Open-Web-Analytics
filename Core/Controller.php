@@ -976,8 +976,8 @@ class Controller extends \OWA\Core\Base {
          * about you rather than about the tree, which is also why it is the one
          * every signed-in role can open.
          *
-         * One entry today. The group exists because user-level preferences land
-         * here as siblings of Profile rather than inside it.
+         * User-level preferences land here as siblings of Profile rather than
+         * inside it.
          */
         $nav['My Preferences'] = array(
             array(
@@ -986,6 +986,12 @@ class Controller extends \OWA\Core\Base {
                 'params'     => array(),
                 // What admin, analyst and viewer all carry and nothing else
                 // does -- the capability that means "signed in".
+                'capability' => 'view_site_list',
+            ),
+            array(
+                'do'         => 'base.myAppPasswords',
+                'label'      => 'Application Passwords',
+                'params'     => array(),
                 'capability' => 'view_site_list',
             ),
         );

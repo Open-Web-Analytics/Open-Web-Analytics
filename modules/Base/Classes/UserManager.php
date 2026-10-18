@@ -110,7 +110,8 @@ class UserManager extends \OWA\Core\Base {
      *
      * Grants first: if that succeeds and the user delete then fails, the user
      * keeps their account and loses their site access, which is recoverable by
-     * re-granting. The other order can leave access attached to nothing.
+     * re-granting. The other order can leave access attached to nothing. The
+     * same goes for their application passwords.
      */
     public function deleteUser($user_id) {
 
@@ -121,6 +122,14 @@ class UserManager extends \OWA\Core\Base {
 
             $this->deleteSiteAccessFor( $u->get('id') );
         }
+
+        /*
+         * Application passwords are keyed by user_id, which IS the username, so
+         * left behind they would authenticate as whoever is next given that
+         * username. Auth refuses a password whose user is missing, which covers
+         * only the time in between.
+         */
+        \OWA\Module\Base\Classes\AppPasswords::revokeAllForUser( $user_id );
 
         $ret = $u->delete($user_id, 'user_id');
 
