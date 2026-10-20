@@ -101,9 +101,9 @@ final class SettingsFormTest extends TestCase
         // The page's own, in order, then its group's: Base's tag fieldsets
         // first, then any an active module added.
         $this->assertSame(
-            array('Tracking Request Processing', 'Visitor Announcements', 'Reporting',
+            array('Tracking Request Processing', 'Visitor Announcements', 'Reporting', 'REST API',
                   'Page views', 'Clicks and downloads', 'Forms', 'Scroll depth', 'Site search', 'JavaScript errors', 'Visits and cookies'),
-            array_slice(array_column($sets, 'legend'), 0, 10),
+            array_slice(array_column($sets, 'legend'), 0, 11),
             'the page renders its fieldsets in the order it registered them');
     }
 
@@ -121,8 +121,8 @@ final class SettingsFormTest extends TestCase
             \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), 'legend');
 
         $this->assertContains("A Module's Tag Settings", $legends);
-        $this->assertSame('Page views', $legends[3], 'after the fieldsets of the module that owns the screen');
-        $this->assertGreaterThan(9, array_search("A Module's Tag Settings", $legends, true),
+        $this->assertSame('Page views', $legends[4], 'after the fieldsets of the module that owns the screen');
+        $this->assertGreaterThan(10, array_search("A Module's Tag Settings", $legends, true),
             "after Base's seven, which declare their order");
     }
 

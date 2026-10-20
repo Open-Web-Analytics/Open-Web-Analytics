@@ -384,6 +384,9 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.addSiteRest',                   'OWA\\Module\\Base\\Controller\\AddSiteRest',                  'Controller/AddSiteRest.php' );
         $this->registerAction( 'base.addUserRest',                   'OWA\\Module\\Base\\Controller\\AddUserRest',                  'Controller/AddUserRest.php' );
         $this->registerAction( 'base.changeUserPasswordCli',         'OWA\\Module\\Base\\Controller\\ChangeUserPasswordCli',        'Controller/ChangeUserPasswordCli.php' );
+        $this->registerAction( 'base.appPasswordCreateCli',          'OWA\\Module\\Base\\Controller\\AppPasswordCreateCli',         'Controller/AppPasswordCreateCli.php' );
+        $this->registerAction( 'base.appPasswordListCli',            'OWA\\Module\\Base\\Controller\\AppPasswordListCli',           'Controller/AppPasswordListCli.php' );
+        $this->registerAction( 'base.appPasswordRevokeCli',          'OWA\\Module\\Base\\Controller\\AppPasswordRevokeCli',         'Controller/AppPasswordRevokeCli.php' );
         $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight',                'Controller/CorsPreflight.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
@@ -505,6 +508,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.usersProfile',                  'OWA\\Module\\Base\\Controller\\UsersProfile',                 'Controller/UsersProfile.php' );
         $this->registerAction( 'base.myProfile',                 'OWA\\Module\\Base\\Controller\\MyProfile',                'Controller/MyProfile.php' );
         $this->registerAction( 'base.myProfileSave',             'OWA\\Module\\Base\\Controller\\MyProfileSave',            'Controller/MyProfileSave.php' );
+        $this->registerAction( 'base.myAppPasswords',            'OWA\\Module\\Base\\Controller\\MyAppPasswords',           'Controller/MyAppPasswords.php' );
+        $this->registerAction( 'base.myAppPasswordCreate',       'OWA\\Module\\Base\\Controller\\MyAppPasswordCreate',      'Controller/MyAppPasswordCreate.php' );
+        $this->registerAction( 'base.myAppPasswordRevoke',       'OWA\\Module\\Base\\Controller\\MyAppPasswordRevoke',      'Controller/MyAppPasswordRevoke.php' );
+        $this->registerAction( 'base.userAppPasswordRevoke',     'OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke',    'Controller/UserAppPasswordRevoke.php' );
         $this->registerAction( 'base.usersResetPassword',            'OWA\\Module\\Base\\Controller\\UsersResetPassword',           'Controller/UsersResetPassword.php' );
         $this->registerAction( 'base.usersRest',                     'OWA\\Module\\Base\\Controller\\UsersRest',                    'Controller/UsersRest.php' );
         $this->registerAction( 'base.usersSetPassword',              'OWA\\Module\\Base\\Controller\\UsersSetPassword',             'Controller/UsersSetPassword.php' );
@@ -538,6 +545,9 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');
         $this->registerCliCommand('partition-rotate', 'base.partitionRotateCli');
         $this->registerCliCommand('change-password', 'base.changeUserPasswordCli');
+        $this->registerCliCommand('app-password-create', 'base.appPasswordCreateCli');
+        $this->registerCliCommand('app-password-list', 'base.appPasswordListCli');
+        $this->registerCliCommand('app-password-revoke', 'base.appPasswordRevokeCli');
         $this->registerCliCommand('reset-secrets', 'base.resetSecretsCli');
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
@@ -780,7 +790,7 @@ class Module extends \OWA\Core\Module {
                 'group'          => 'General',
                 'order'          => 1,
                 'fieldsets'      => array(
-                    'base.tracking', 'base.announcements', 'base.reporting' ),
+                    'base.tracking', 'base.announcements', 'base.reporting', 'base.restApi' ),
                 'fieldset_groups' => array( 'tracking_tag' ) )
         );
 
@@ -816,6 +826,12 @@ class Module extends \OWA\Core\Module {
             'id'       => 'base.reporting',
             'legend'   => 'Reporting',
             'settings' => array( 'timezone', 'attribution_lookback_days' ),
+        ) );
+
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.restApi',
+            'legend'   => 'REST API',
+            'settings' => array( 'app_passwords_enabled', 'app_passwords_require_https' ),
         ) );
 
         // How long data is kept (Classes\Retention). Its own page: lowering the
