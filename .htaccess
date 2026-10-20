@@ -42,6 +42,19 @@
 
 </IfModule>
 
+# --- Pass the Authorization header to PHP ---------------------------------------------
+#
+# REST API application passwords arrive in the Authorization header. Apache withholds
+# that header from PHP-FPM (mod_proxy_fcgi), FastCGI and CGI unless the server sets
+# CGIPassAuth On, and without it every application password is answered 401. Copying
+# it into the environment reaches PHP under all of them; after the api/ rewrite it
+# arrives as REDIRECT_HTTP_AUTHORIZATION, which Auth reads as well. Under mod_php,
+# which already sees the header, this changes nothing. Needs the same AllowOverride
+# FileInfo as the rewrite rules below.
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase ^Authorization$ "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
 <IfModule mod_rewrite.c>
 
 RewriteEngine On

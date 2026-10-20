@@ -128,6 +128,27 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $this->assertSame($user['user_id'], $result['user_id']);
     }
 
+    /**
+     * Where .htaccess puts the header for PHP-FPM, after the api/ rewrite: the
+     * internal redirect renames HTTP_AUTHORIZATION, and Basic arrives with no
+     * PHP_AUTH_USER or PHP_AUTH_PW beside it.
+     */
+    public function testTheHeaderIsReadAfterARewriteRenamesIt(): void
+    {
+        list($user, $made) = $this->userWithPassword();
+
+        $bearer = array('REDIRECT_HTTP_AUTHORIZATION' => 'Bearer ' . $made['token']);
+        $basic  = array('REDIRECT_HTTP_AUTHORIZATION'
+            => 'Basic ' . base64_encode($user['user_id'] . ':' . $made['token']));
+
+        foreach (array('Bearer' => $bearer, 'Basic' => $basic) as $form => $server) {
+            $result = $this->authenticate($server);
+
+            $this->assertTrue($result['auth_status'], "$form in REDIRECT_HTTP_AUTHORIZATION did not authenticate.");
+            $this->assertSame($user['user_id'], $result['user_id']);
+        }
+    }
+
     public function testBasicAuthNeedsThePasswordsOwnUser(): void
     {
         list($user, $made) = $this->userWithPassword();
