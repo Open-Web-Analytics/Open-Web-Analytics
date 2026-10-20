@@ -664,3 +664,8 @@ a.owa-button:hover {
     font-size: 12px;
     word-break: break-all;
 }
+
+/* A command or path shown inline breaks where it must rather than widening the
+   page on a phone: the scheduler banner's crontab line is one long word. A
+   <pre> block keeps its lines and scrolls. */
+:not(pre) > code { overflow-wrap: anywhere; }

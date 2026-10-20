@@ -154,7 +154,9 @@
 .owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
 .owa_reportRevealControl {background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
 .owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
-/*.owa_reportPeriod {text-align: right;}*/
+/* The date range control, right of the report title. Below 600px it takes the
+   whole width instead (see the narrow-screen rules). */
+.owa_reportPeriod { float: right; }
 #owa_reportPeriodControl table {border: 1px solid #cccccc;  padding: 0px; border-collapse: collapse;}
 
 
@@ -2484,6 +2486,19 @@ li.constraintRow {
     margin: 0;
 }
 
+/* One card per row, under 620px of grid: the floor is there so cards beside
+   each other match, and with none beside it a card is as tall as its content.
+   A seven-row table no longer sits above 100px of empty panel. */
+@container owa-report (max-width: 619px) {
+
+    .owa .owa_reportGridItem.owa_widget-grid,
+    .owa .owa_reportGridItem.owa_widget-grid-card,
+    .owa .owa_reportGridItem.owa_widget-trend-card,
+    .owa .owa_reportGridItem.owa_widget-pie {
+        min-height: 0;
+    }
+}
+
 /* The heading sits at the top of the panel, so its own spacing is the panel's
    padding -- and its 3px rule goes.
  *
@@ -4449,7 +4464,7 @@ li.constraintRow {
     margin-bottom: 10px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
     .owa_realtimeEvents li {
         grid-template-columns: 70px minmax(0, 1fr);
     }
@@ -4461,10 +4476,16 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
- * Report navigation on a narrow screen
+ * Narrow screens: 900px and 600px
  *
- * The nav leaves the page so the report has the whole width, and slides in
- * over it from a menu button that stays in reach; choosing a report closes it
+ * The two widths every screen-width rule in the admin uses (owa.admin.css too):
+ * 900px, where the left column and the full header no longer fit beside the
+ * content, and 600px, a phone. The widget grid answers to its own container
+ * instead (owa-report, above), because its width depends on the nav as well.
+ *
+ * Below 900px the left nav -- the report menu, or a settings screen's -- leaves
+ * the page so the content has the whole width, and slides in over it from a
+ * menu button that stays in reach; choosing a link closes it
  * (owa.reportnav.js). Full width is unchanged: the button is hidden and the
  * nav is the left column it always was.
  * ------------------------------------------------------------------------- */
@@ -4488,8 +4509,33 @@ li.constraintRow {
     /* The report's card, closer to the edges: 40px each side was a tenth of the width. */
     .reportSectionContainer { margin: 8px; padding: 12px; }
 
-    /* The report's column only: settings screens use the same cell for their own nav. */
-    .owa_reportContainer .owa_reportLeftNavColumn { width: 0; padding: 0; }
+    /* The left column gives up its width, on reports and settings screens alike:
+       its contents are in the panel the menu button opens. */
+    .owa_reportLeftNavColumn { width: 0; padding: 0; }
+
+    .owa_hierarchyContent { padding-left: 0; }
+
+    /* The settings table takes the screen's width, not its widest content's.
+       Laid out automatically, a table cell grows to fit the breadcrumb (one
+       nowrap line) and every 400px field, and the page grew with it. Fixed,
+       the crumb ellipsises as it was written to and fields shrink to fit. */
+    .owa_hierarchyPage,
+    .owa_reportContainer > table { table-layout: fixed; }
+
+    .owa_hierarchyContent input,
+    .owa_hierarchyContent select,
+    .owa_hierarchyContent textarea { max-width: 100%; box-sizing: border-box; }
+
+    /* A fieldset's default min-width is min-content, so it holds the width of
+       its widest field however narrow the screen. */
+    .owa_hierarchyContent fieldset { min-width: 0; }
+
+    /* The date range panel: start calendar, end calendar and the presets wrap
+       onto as many lines as the width needs, instead of one 670px table row. */
+    #owa_reportPeriodFiltersContainer > tbody > tr { display: flex; flex-wrap: wrap; gap: 12px; }
+    #owa_reportPeriodFiltersContainer > tbody > tr > td,
+    #owa_reportPeriodFiltersContainer > tbody > tr > th { display: block; }
+    #owa_reportPeriodFiltersContainer .picker { padding-left: 0; }
 
     .owa_reportNavToggle {
         display: block;
@@ -4528,6 +4574,19 @@ li.constraintRow {
         transform: translateX(0);
         visibility: visible;
     }
+}
+
+@media (max-width: 600px) {
+
+    .owa_reportPeriod { float: none; margin-bottom: 8px; }
+
+    /* Its 480px floor keeps the measure on a desktop; on a phone it is wider
+       than the screen. */
+    .owa_hierarchyContent #panel { padding: 14px; min-width: 0; }
+
+    /* A data table wider than a phone scrolls inside its own box, as a
+       report's tables do inside their widgets, instead of widening the page. */
+    .owa_hierarchyContent table.management { display: block; max-width: 100%; overflow-x: auto; }
 }
 
 /* ---------------------------------------------------------------------------

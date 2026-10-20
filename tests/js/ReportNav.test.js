@@ -74,3 +74,25 @@ test('while closed, a click on the report is not the nav\'s business', () => {
     expect(handleClick(document.querySelector('a.under'), el.rail)).toBe(false);
     expect(el.isOpen()).toBe(false);
 });
+
+test('the menu button is labelled with the page\'s own words, open and closed', () => {
+    document.body.innerHTML = `
+        <div class="owa_reportNavRail" id="owa_reportNavRail">
+            <button class="owa_reportNavClose" aria-label="Hide the menu"></button>
+        </div>
+        <button class="owa_reportNavToggle" aria-controls="owa_reportNavRail" aria-expanded="false"
+                aria-label="Show the menu"><i></i></button>`;
+
+    const rail = document.getElementById('owa_reportNavRail');
+    const toggle = document.querySelector('.owa_reportNavToggle');
+
+    open(rail);
+    expect(toggle.getAttribute('aria-label')).toBe('Hide the menu');
+
+    close(rail);
+    expect(toggle.getAttribute('aria-label')).toBe('Show the menu');
+
+    open(rail);
+    close(rail);
+    expect(toggle.getAttribute('aria-label')).toBe('Show the menu');
+});
