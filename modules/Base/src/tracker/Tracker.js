@@ -460,6 +460,17 @@ class OWATracker  {
 	         * @deprecated Use stateStoreExpirations `{v: 0, s: 0}`.
 	         */
 	        cookiePersistence: true,
+	        /**
+	         * false sends events from browsers reporting Do Not Track or Global
+	         * Privacy Control. Read from the queue before the tracker is built
+	         * (tracker-dom.js), so it must be queued, not set on a running
+	         * tracker:
+	         *
+	         *   owa_cmds.push(['setOption', 'honorPrivacySignals', false]);
+	         *
+	         * @option
+	         */
+	        honorPrivacySignals: true,
 	        /*
 	         * campaignKeys WAS HERE, with six setters beside it.
 	         *
