@@ -221,7 +221,7 @@ class Controller extends \OWA\Core\Base {
 	
 	            if (!$nonce || !$this->verifyNonce($nonce)) {
 	                $this->e->debug('Nonce is not valid.');
-	                return $this->finishActionCall($this->nonceFailedAction());
+	                return $this->refused($this->nonceFailedAction());
 	            }
 	        }
 		}
@@ -240,7 +240,7 @@ class Controller extends \OWA\Core\Base {
                 if ( ! $nonce || ! $this->verifyNonce( $nonce, $this->get('version') . $this->get('module') . $this->get('do') ) ) {
                 
                     $this->e->debug('Nonce is missing or invalid.');
-                    return $this->finishActionCall($this->notAuthenticatedAction());
+                    return $this->refused($this->notAuthenticatedAction());
                 }
             }
         }
@@ -334,6 +334,24 @@ class Controller extends \OWA\Core\Base {
         $this->pre();
         /* PERFORM MAIN ACTION */
            return $this->finishActionCall($this->action());
+    }
+
+    /**
+     * Answers a request the controller declined to act on.
+     *
+     * success() is NOT called. Controllers override it to describe the outcome
+     * of an action that ran -- base.usersAdd redirects to the user list with
+     * "User added", a REST create answers 201 -- so routing a refused nonce
+     * through finishActionCall() reported a write that never happened, and
+     * replaced the refusal's own view and status code. post() is skipped for
+     * the same reason the validation-error path skips it.
+     *
+     * @param mixed $handlerResult what the refusal handler returned
+     * @return mixed
+     */
+    protected function refused( $handlerResult ) {
+
+        return ! empty( $handlerResult ) ? $handlerResult : $this->data;
     }
 
     /**
