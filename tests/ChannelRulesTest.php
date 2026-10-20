@@ -74,10 +74,10 @@ final class ChannelRulesTest extends TestCase
     {
         return [
             'typed or bookmarked'        => [null, null, null, null, '(direct)', '(none)', '(direct)', 'Direct'],
-            'a search engine'            => [null, null, null, 'www.google.com', 'www.google.com', 'organic', '(organic)', 'Organic Search'],
+            'a search engine'            => [null, null, null, 'www.google.com', 'google.com', 'organic', '(organic)', 'Organic Search'],
             'a social network'           => [null, null, null, 'm.facebook.com', 'm.facebook.com', 'referral', '(referral)', 'Organic Social'],
-            'a video site'               => [null, null, null, 'www.youtube.com', 'www.youtube.com', 'referral', '(referral)', 'Organic Video'],
-            'a shopping site'            => [null, null, null, 'www.amazon.com', 'www.amazon.com', 'referral', '(referral)', 'Organic Shopping'],
+            'a video site'               => [null, null, null, 'www.youtube.com', 'youtube.com', 'referral', '(referral)', 'Organic Video'],
+            'a shopping site'            => [null, null, null, 'www.amazon.com', 'amazon.com', 'referral', '(referral)', 'Organic Shopping'],
             'an AI assistant'            => [null, null, null, 'chatgpt.com', 'chatgpt.com', 'ai-agent', '(ai-agent)', 'AI Agent'],
             'an assistant on google.com' => [null, null, null, 'gemini.google.com', 'gemini.google.com', 'ai-agent', '(ai-agent)', 'AI Agent'],
             'tagged ai-assistant'        => ['partner', 'ai-assistant', 'autumn', null, 'partner', 'ai-assistant', 'autumn', 'AI Agent'],

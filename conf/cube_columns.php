@@ -30,7 +30,7 @@
  *   copy     a value lifted from a joined row. `text` collapses '' to NULL;
  *            the landing page columns do not use it, because a copy that edits
  *            its source can disagree with the row it came from.
- *   source   the tag, else the referring host, else direct.
+ *   source   the tag, else the referring host without a leading www., else direct.
  *   medium   the tag, else the referrer classified against the engine and
  *            social lists -- the reading that has to stay rebuildable.
  *   is_exit  the session's last event, once the session has closed.
@@ -62,7 +62,7 @@ return array(
         'kind' => 'source',
         'tag'  => 'session.tagged_source',
         'host' => 'session.referer_host',
-        'description' => 'Where the session came from: its tagged source, else the referring site\'s host, else (direct).',
+        'description' => 'Where the session came from: its tagged source, else the referring site\'s host without a leading www., else (direct).',
     ),
 
     'medium' => array(

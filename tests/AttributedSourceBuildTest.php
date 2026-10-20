@@ -193,9 +193,9 @@ final class AttributedSourceBuildTest extends TestCase
 
         $expected = [
             self::OWN_TAGS      => ['partner', 'cpc', 'autumn', 'Paid Other'],
-            self::OWN_REFERRER  => ['www.google.com', 'organic', '(organic)', 'Organic Search'],
+            self::OWN_REFERRER  => ['google.com', 'organic', '(organic)', 'Organic Search'],
             self::INHERITS      => ['newsletter', 'email', 'spring', 'Email'],
-            self::INHERITS_HOST => ['www.google.com', 'organic', '(organic)', 'Organic Search'],
+            self::INHERITS_HOST => ['google.com', 'organic', '(organic)', 'Organic Search'],
             self::TOO_OLD       => ['(direct)', '(none)', '(direct)', 'Direct'],
             self::NO_TOUCH      => ['(direct)', '(none)', '(direct)', 'Direct'],
         ];
@@ -221,7 +221,7 @@ final class AttributedSourceBuildTest extends TestCase
 
         $got = $this->attributed();
         $this->assertSame('(direct)', $got[self::INHERITS][0][0]);
-        $this->assertSame('www.google.com', $got[self::INHERITS_HOST][0][0]);
+        $this->assertSame('google.com', $got[self::INHERITS_HOST][0][0]);
     }
 
     /** Without a Property override, the install's setting applies, defaulting to 90. */

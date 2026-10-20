@@ -12,6 +12,11 @@ namespace OWA\Module\Base\Classes\Cube;
  * else (direct) -- in parentheses because OWA generated it: a visit tagged
  * utm_source=direct stays `direct`.
  *
+ * The host loses a leading www., so www.example.com and example.com are one
+ * source. Nothing else is cut: m.facebook.com and en.wikipedia.org stay apart,
+ * and a tagged source is used as tagged. referer_host in raw keeps the host as
+ * it arrived.
+ *
  * The reading, not the evidence. It lives in the cube rather than in raw
  * because the cube is rebuilt: a corrected classifier is re-applied by
  * rebuilding, where a value written at ingest would stay wrong.
@@ -56,10 +61,31 @@ class SourceStep extends Step {
         return array( $this->join );
     }
 
+    /**
+     * The source of a tagged value and a referring host, as SQL. Realtime reads
+     * the visitor store with it too, so the two never name a source differently.
+     *
+     * @param  string $tag  the tagged value, qualified
+     * @param  string $host the referring host, qualified
+     * @return string
+     */
+    public static function resolve( $tag, $host ) {
+
+        return sprintf( "COALESCE(NULLIF(TRIM(LOWER(%s)), ''), NULLIF(%s, ''), '(direct)')",
+            $tag, self::hostSource( $host ) );
+    }
+
+    /** A referring host as a source: lower case, without a leading www. */
+    private static function hostSource( $host ) {
+
+        $lower = sprintf( 'LOWER(%s)', $host );
+
+        return sprintf( "CASE WHEN %1\$s LIKE 'www.%%' THEN SUBSTRING(%1\$s, 5) ELSE %1\$s END", $lower );
+    }
+
     public function execute( Context $context ) {
 
-        $resolved = sprintf( "COALESCE(NULLIF(TRIM(LOWER(%s)), ''), NULLIF(LOWER(%s), ''), '(direct)')",
-            $this->tag, $this->host );
+        $resolved = self::resolve( $this->tag, $this->host );
 
         if ( $this->absent === null ) {
 
