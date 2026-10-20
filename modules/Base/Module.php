@@ -828,8 +828,11 @@ class Module extends \OWA\Core\Module {
             'settings' => array( 'timezone', 'attribution_lookback_days' ),
         ) );
 
+        // The group is what the wiki's Application Passwords page generates its
+        // settings table from (settings-rest_api); no page renders it by group.
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.restApi',
+            'group'    => 'rest_api',
             'legend'   => 'REST API',
             'settings' => array( 'app_passwords_enabled', 'app_passwords_require_https' ),
         ) );
