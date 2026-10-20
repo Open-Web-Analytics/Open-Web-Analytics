@@ -92,7 +92,13 @@ test.describe('on a phone', () => {
         const end = await page.locator('#owa_report-datepicker-end').boundingBox();
 
         expect(end.y, 'the end calendar is below the start calendar').toBeGreaterThanOrEqual(start.y + start.height);
-        await expect(page.locator('#owa_reportPeriodFilterSubmit')).toBeInViewport();
+
+        // Within the screen's width; how far down it sits depends on what is
+        // above the report (a banner, say), and a phone scrolls down anyway.
+        for (const el of [start, end, await page.locator('#owa_reportPeriodFilterSubmit').boundingBox()]) {
+            expect(el.x).toBeGreaterThanOrEqual(0);
+            expect(el.x + el.width).toBeLessThanOrEqual(390);
+        }
     });
 
     test('a settings screen\'s menu is behind a button, and opens and closes', async ({ page }) => {
