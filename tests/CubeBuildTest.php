@@ -283,7 +283,8 @@ final class CubeBuildTest extends TestCase
             'page_path'     => '/from-search',
             'page_title'    => 'From search',
             'referer_url'   => 'https://www.google.com/search?q=web+analytics',
-            'referer_host'  => 'google.com',
+            // As deriveRefererHost() stores it: the host as it arrived.
+            'referer_host'  => 'www.google.com',
             // No referer_query: modern engines send the host and nothing else,
             // which is the case the fallback has to answer NULL for.
         ]);
@@ -1005,6 +1006,51 @@ final class CubeBuildTest extends TestCase
         $this->assertSame('organic', $row['medium'], 'the medium of a recognised search engine');
         $this->assertSame('(organic)', $row['campaign'], 'an untagged campaign mirrors the medium');
         $this->assertSame('Organic Search', $row['channel']);
+    }
+
+    /**
+     * Only a leading www. is dropped. Another subdomain names a different part
+     * of a site (m.facebook.com, en.wikipedia.org), and a tagged source is
+     * what the person tagging wrote.
+     */
+    public function testOnlyALeadingWwwIsDroppedFromAReferringHost(): void
+    {
+        $cases = [
+            8881000000000021 => [['acq_referer_host' => 'WWW.Partner.Example'], 'partner.example'],
+            8881000000000023 => [['acq_referer_host' => 'm.facebook.com'], 'm.facebook.com'],
+            8881000000000025 => [['acq_referer_host' => 'wwwexample.org'], 'wwwexample.org'],
+            8881000000000027 => [['acq_source' => 'www.newsletter.example', 'acq_medium' => 'email',
+                                  'acq_referer_host' => 'www.mail.example'], 'www.newsletter.example'],
+        ];
+
+        foreach ($cases as $visitor => list($acquisition)) {
+            $entity = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
+            $entity->setProperties(array_merge([
+                'visitor_id'       => $visitor,
+                'site_id'          => self::SITE,
+                'acq_source'       => null,
+                'acq_medium'       => null,
+                'acq_campaign'     => null,
+                'acq_ad'           => null,
+                'acq_referer_host' => null,
+                'acq_ts'           => $this->t0,
+                'last_seen'        => (int) substr((string) $this->yyyymmdd, 0, 6),
+            ], $acquisition));
+            $this->assertTrue($entity->create(), "seeding visitor $visitor");
+
+            $this->seed('page_view', $visitor, $visitor + 1, $this->t0, [
+                'page_location' => 'https://example.test/www',
+                'page_path'     => '/www',
+                'page_title'    => 'www',
+            ]);
+        }
+
+        $this->rebuild();
+
+        foreach ($cases as $visitor => list($acquisition, $expected)) {
+            $this->assertSame($expected, $this->built('page_view', $visitor, $visitor + 1, $this->t0)['acq_source'],
+                'acquired from ' . json_encode($acquisition));
+        }
     }
 
     public function testNoReferrerAndNoTagsIsDirect(): void

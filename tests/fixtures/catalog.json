@@ -2115,7 +2115,7 @@
                 "column": "source",
                 "family": "traffic source",
                 "label": "Source",
-                "description": "Where this session came from -- the tag if there was one, otherwise the referring host.",
+                "description": "Where this session came from -- the tag if there was one, otherwise the referring host without a leading www.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3153,7 +3153,7 @@
             "column": "source",
             "family": "traffic source",
             "label": "Source",
-            "description": "Where this session came from -- the tag if there was one, otherwise the referring host.",
+            "description": "Where this session came from -- the tag if there was one, otherwise the referring host without a leading www.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

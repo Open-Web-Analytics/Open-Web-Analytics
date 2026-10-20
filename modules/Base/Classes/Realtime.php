@@ -232,7 +232,8 @@ class Realtime {
 
         }, $this->rows(
             "SELECT CASE WHEN a.acq_ts IS NULL THEN NULL"
-          . " ELSE COALESCE(NULLIF(a.acq_source, ''), NULLIF(a.acq_referer_host, ''), '(direct)') END AS source,"
+          . ' ELSE ' . \OWA\Module\Base\Classes\Cube\SourceStep::resolve( 'a.acq_source', 'a.acq_referer_host' )
+          . ' END AS source,'
           . ' a.acq_medium AS medium, a.acq_campaign AS campaign, COUNT(*) AS users'
           . ' FROM (SELECT DISTINCT visitor_id FROM {raw} r WHERE {window}) v'
           . ' LEFT JOIN ' . $store . ' a ON a.visitor_id = v.visitor_id'

@@ -239,7 +239,8 @@ final class RealtimeTest extends TestCase
     public function testFirstUserSourceIsTheStoresAcquisitionAsCollected(): void
     {
         $this->store(1, ['acq_source' => 'newsletter', 'acq_medium' => 'email', 'acq_campaign' => 'autumn', 'acq_ts' => 1]);
-        $this->store(2, ['acq_referer_host' => 'search.example', 'acq_ts' => 1]);
+        // Read as the cube reads it (Cube\SourceStep::resolve()): lower case, no www.
+        $this->store(2, ['acq_referer_host' => 'WWW.Search.Example', 'acq_ts' => 1]);
         $this->store(3, ['acq_ts' => 1]);
         // A row a user property made, with no acquisition behind it.
         $this->store(4, ['properties' => '{"plan":{"v":"pro","ts":1}}']);

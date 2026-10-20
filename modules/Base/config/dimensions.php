@@ -169,7 +169,7 @@ return array(
 
             // ---- traffic source, at session scope -------------------------
             'sessionSource' => array( 'column' => 'source', 'label' => 'Source',
-                'family' => 'traffic source', 'description' => 'Where this session came from -- the tag if there was one, otherwise the referring host.' ),
+                'family' => 'traffic source', 'description' => 'Where this session came from -- the tag if there was one, otherwise the referring host without a leading www.' ),
             'sessionMedium' => array( 'column' => 'medium', 'label' => 'Medium',
                 'family' => 'traffic source', 'description' => 'How this session arrived: the tagged medium, else organic, referral, ai-agent or (none) for a direct visit.' ),
             'sessionCampaign' => array( 'column' => 'campaign', 'label' => 'Campaign',
