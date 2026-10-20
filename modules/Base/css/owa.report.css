@@ -4586,8 +4586,10 @@ li.constraintRow {
     .owa_hierarchyContent #panel { padding: 14px; min-width: 0; }
 
     /* A data table wider than a phone scrolls inside its own box, as a
-       report's tables do inside their widgets, instead of widening the page. */
-    .owa_hierarchyContent table.management { display: block; max-width: 100%; overflow-x: auto; }
+       report's tables do inside their widgets, instead of widening the page.
+       Every screen's, not only settings': the custom reports roster is on a
+       report page, and its width is its data (an owner's address, a time). */
+    .owa table.management { display: block; max-width: 100%; overflow-x: auto; }
 
     /* A form laid out as a table, a label in each row's TH: the field column
        was clipped at the card's edge. Stacked, the label above its field. */
