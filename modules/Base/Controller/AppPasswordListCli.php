@@ -41,7 +41,9 @@ class AppPasswordListCli extends AppPasswordsCli {
 
         if ( ! $rows ) {
 
-            return $this->write( array( sprintf( '%s has no application passwords.', $user_id ) ) );
+            $this->write( array( sprintf( '%s has no application passwords.', $user_id ) ) );
+
+            return;
         }
 
         $lines = array( sprintf( '%-12s  %-5s  %-16s  %-16s  %-15s  %s',
