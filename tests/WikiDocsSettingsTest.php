@@ -187,6 +187,19 @@ final class WikiDocsSettingsTest extends TestCase
         $this->assertNull( self::rowFor( $out, 'timezone' ) );
     }
 
+    /** The wiki's Application Passwords page carries this group's table. */
+    public function testTheRestApiGroupListsTheApplicationPasswordSettings(): void
+    {
+        $out = self::generate( 'settings-rest_api' );
+
+        foreach ( array( 'app_passwords_enabled', 'app_passwords_require_https' ) as $key ) {
+            $this->assertNotNull( self::rowFor( $out, $key ), "$key is missing from the rest_api group" );
+        }
+
+        $this->assertStringContainsString( '**REST API**', $out );
+        $this->assertNull( self::rowFor( $out, 'timezone' ) );
+    }
+
     public function testAModuleArgumentGivesThatModulesTable(): void
     {
         $out = self::generate( 'settings-maxmind_geoip' );
