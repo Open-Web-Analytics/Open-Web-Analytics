@@ -35,13 +35,25 @@ class Updates extends \OWA\Core\Controller {
     // action that actually mutates the schema, is gated instead.
 
     function action() {
-        
+
+        $modules = \OWA\Core\CoreAPI::getModulesNeedingUpdates();
+
+        // Nothing pending: an empty list with an Apply button is a dead end, so
+        // go where index.php goes instead. A bookmark, or the page left open in
+        // a tab after the updates were applied, lands here.
+        if ( empty( $modules ) ) {
+
+            $this->setRedirectAction( \OWA\Core\CoreAPI::getSetting( 'base', 'start_page' ) );
+
+            return;
+        }
+
         $data = array();
-                
+
         $data['view_method'] = 'delegate';
         $data['view'] = 'base.updates';
-        $data['modules'] = \OWA\Core\CoreAPI::getModulesNeedingUpdates();
-        
+        $data['modules'] = $modules;
+
         return $data;
     }
 }

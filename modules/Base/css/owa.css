@@ -261,7 +261,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .setting .title {font-weight:bold; font-size:16px; padding: 2px 0 2px 0;}
 .setting .field {padding: 2px 0 2px 0;}
 /* A setting below the install: the control, then its Override switch (SettingsForm::scopedField). */
-.setting .owa-overridable {display:flex; align-items:center; gap:12px;}
+.setting .owa-overridable {display:flex; flex-wrap:wrap; align-items:center; gap:12px;}
 .setting .owa-overridable select[disabled], .setting .owa-overridable input[disabled] {opacity:.6;}
 .owa-override {display:inline-flex; align-items:center; gap:6px; font-size:var(--owa-text-sm, 12px); cursor:pointer; white-space:nowrap;}
 .owa-override input {appearance:none; -webkit-appearance:none; width:30px; height:16px; margin:0; border-radius:8px; background:#bbbbbb; position:relative; cursor:pointer; transition:background .15s;}
@@ -471,9 +471,26 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
    Stacked instead, which needs no assumption about the width.
    --------------------------------------------------------------------------- */
 
-.owa_installCard {
+.owa_installCard,
+.owa_updatesCard {
     max-width: 720px;
     text-align: left;
+}
+
+.owa_updatesCard h2 {
+    margin: 22px 0 8px 0;
+    font-size: 16px;
+    color: #333333;
+}
+
+.owa_updatesModules {
+    margin: 0 0 20px 0;
+    padding-left: 20px;
+}
+
+/* The button's own 25px top margin is the gap. */
+.owa_updatesCard .owa_installActions {
+    margin-top: 0;
 }
 
 /* The step's own heading, under the installer's title. Separated from it, or

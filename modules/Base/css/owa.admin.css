@@ -817,3 +817,26 @@
     .owa .owa_userMenuIcon { display: inline-block; font-size: 22px; }
 }
 
+
+/* A phone. With the notification badge showing, the bar is about 460px wide at
+ * the 900px sizes, so the help and bell buttons wrapped onto a second row. */
+@media (max-width: 600px) {
+
+    .owa #owa_header { padding: 4px 4px; }
+
+    .owa #owa_header .owa_logo img { height: 28px; }
+
+    .owa .owa_navigation li a { padding: 0 5px; font-size: 14px; }
+
+    .owa .owa_helpMenuToggle, .owa .owa_notificationToggle { width: 34px; height: 34px; line-height: 34px; font-size: 14px; }
+
+    .owa .owa_helpMenu { margin-right: 4px; }
+
+    .owa .owa_notificationBell { margin-right: 12px; }
+
+    .owa .owa_notificationBadge { right: -10px; }
+
+    .owa .owa_userMenuToggle { padding: 0 4px; }
+
+    .owa .owa_userMenuCaret { display: none; }
+}

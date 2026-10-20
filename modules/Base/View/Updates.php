@@ -33,9 +33,11 @@ class Updates extends \OWA\Core\View {
         
     function render($data) {
         
-        //switch wrapper if OWA is not embedded
-        // needed becasue this view might be rendered before anything else.
-        if (isset($this->config['is_embedded']) && $this->config['is_embedded'] != true) {
+        // The signed-out wrapper unless OWA is embedded: this view may be
+        // rendered before anything else. It tested isset() on a setting with no
+        // default, which is never set, so the page always took the signed-in
+        // wrapper -- its header without the stylesheet that lays the header out.
+        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ) {
             $this->t->set_template('wrapper_public.php');
         }
         

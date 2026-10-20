@@ -24,7 +24,7 @@ each carries its own tracking id.</div>
 
     <form method="POST">
 
-    <table class="management">
+    <table class="management owa_formTable">
         <?php if ($view->edit == true):?>
         <TR>
             <TH>Tracking ID:</TH>

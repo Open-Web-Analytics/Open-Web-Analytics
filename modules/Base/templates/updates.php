@@ -1,47 +1,32 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * Clear of the top nav.
+ * The signed-out card the login and install screens use, at the installer's
+ * width. It was an 800px box of its own, wider than a phone.
  *
- * The margin was 0 at the top, so the heading sat against the nav bar's lower
- * edge with nothing between them -- on the one screen a person reaches when
- * something is already wrong, which is a poor moment to look broken.
+ * Only reached with updates pending: base.updates redirects to the start page
+ * when there are none.
  */
 ?>
-<div id="updates" style="width:800px; margin: 30px auto 20px auto;">
-    <div class="" style="text-align:center;">
-        <h1>Open Web Analytics Updater</h1>
-    </div>
-    <br>
-    <div class="layout_subview" valign="top" style="text-align:left;">
+<div class="owa_publicCard owa_updatesCard">
 
-        <h2>Some Modules need to create or update their database tables.</h2>
+    <h1 class="owa_publicTitle">Open Web Analytics Updater</h1>
 
-        <P>Here is the list of modules that have updates that needs to be applied:</P>
+    <p class="owa_publicIntro">Some modules need to create or update their database tables.</p>
 
-        <P>
-        <UL>
+    <h2>Modules with updates to apply</h2>
 
-        <?php foreach ($view->modules as $k => $module): ?>
-
-            <LI><?php echo $module; ?></LI>
-
+    <ul class="owa_updatesModules">
+        <?php foreach ($view->modules as $module): ?>
+            <li><?php $view->out( $module ); ?></li>
         <?php endforeach;?>
+    </ul>
 
-        </UL>
-        </P>
-        <P><I>It is recommended that you backup your database before applying updates.</I></P>
-        <BR>
+    <p class="owa_publicIntro"><i>It is recommended that you back up your database before applying updates.</i></p>
 
-        <P>
-        <?php // 5th arg = $add_nonce. base.updatesApply mutates the schema, so
-              // the link must carry a nonce or its setNonceRequired() check fails. ?>
-        <a href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'), false, '', false, true);?>"><span class="owa-button">Apply updates</span></a>
-        </P>
-
+    <div class="owa_installActions">
+        <?php // No nonce: base.updatesApply takes none, see UpdatesApply (#979). ?>
+        <a class="owa-button" href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'));?>">Apply updates</a>
     </div>
 
 </div>
-
-
-
