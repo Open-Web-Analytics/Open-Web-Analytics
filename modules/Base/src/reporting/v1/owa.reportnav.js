@@ -28,11 +28,24 @@ function toggles( rail ) {
     return document.querySelectorAll( '.owa_reportNavToggle[aria-controls="' + rail.id + '"]' );
 }
 
+/**
+ * The menu button's state and label. The labels are the page's own -- the
+ * button's label as rendered, and the panel's close button's -- so a settings
+ * screen's menu is not called the report menu.
+ */
 function setExpanded( rail, expanded ) {
 
+    const closer = rail.querySelector( '.owa_reportNavClose' );
+    const hide = ( closer && closer.getAttribute( 'aria-label' ) ) || 'Hide the menu';
+
     toggles( rail ).forEach( function ( toggle ) {
+
+        if ( ! toggle.hasAttribute( 'data-owa-show-label' ) ) {
+            toggle.setAttribute( 'data-owa-show-label', toggle.getAttribute( 'aria-label' ) || 'Show the menu' );
+        }
+
         toggle.setAttribute( 'aria-expanded', expanded ? 'true' : 'false' );
-        toggle.setAttribute( 'aria-label', expanded ? 'Hide the report menu' : 'Show the report menu' );
+        toggle.setAttribute( 'aria-label', expanded ? hide : toggle.getAttribute( 'data-owa-show-label' ) );
     } );
 }
 

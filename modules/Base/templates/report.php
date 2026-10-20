@@ -95,7 +95,7 @@ jQuery(document).ready(function(){
 
                 <div class="reportSectionContainer">
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
-                    <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
+                    <div id="owa_timePeriodControl" class="owa_reportPeriod"></div>
                     <?php
                         /*
                          * Where Live View was. It re-polled widgets that read the

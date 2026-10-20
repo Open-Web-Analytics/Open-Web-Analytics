@@ -38,11 +38,7 @@ const FILTER_PERIOD_TMPL =
                 <div>End: <input type="text" id="owa_report-datepicker-end-display"  size="10"></div>
                 <div id="owa_report-datepicker-end"></div>
             </TD>
-            <TD>
-
-            </TD>
-
-            <TD valign="top">
+            <TD valign="top" class="owa_reportPeriodPresets">
                 Predefined Periods:<BR>
 
                 <SELECT id="owa_reportPeriodFilter" name="owa_reportPeriodFilter">
