@@ -5,7 +5,7 @@
 
     <legend>User Profile</legend>
 
-    <TABLE class="management">
+    <TABLE class="management owa_formTable">
 
         <form method="POST">
         <TR>

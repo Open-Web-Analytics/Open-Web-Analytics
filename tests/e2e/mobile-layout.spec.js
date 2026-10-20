@@ -24,6 +24,8 @@ const SCREENS = {
     'main configuration': '?owa_do=base.optionsGeneral',
     'profile settings': `?owa_do=base.sitesProfile&owa_siteId=${S}`,
     'tracking tag': `?owa_do=base.sitesInvocation&owa_siteId=${S}`,
+    'property profile': `?owa_do=base.propertyProfile&owa_siteId=${S}`,
+    'observation profile': `?owa_do=base.sitesProfile&owa_siteId=${S}`,
 };
 
 const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
@@ -131,6 +133,29 @@ test.describe('on a phone', () => {
         ]);
         expect(page.url()).toContain('base.optionsModules');
         await expect(page.locator('#owa_reportNavRail')).not.toBeInViewport();
+    });
+
+    test('the header keeps to one row', async ({ page }) => {
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+
+        const nav = await page.locator('#owa_header .owa_navigation').boundingBox();
+        for (const sel of ['.owa_helpMenuToggle', '.owa_notificationToggle', '.owa_userMenuToggle']) {
+            const box = await page.locator(`#owa_header ${sel}`).boundingBox();
+            expect(box.y, `${sel} wrapped below the links`).toBeLessThan(nav.y + nav.height);
+            expect(box.x + box.width).toBeLessThanOrEqual(390);
+        }
+    });
+
+    test('a form laid out as a table stacks each label above its field', async ({ page }) => {
+        await page.goto(`?owa_do=base.sitesProfile&owa_siteId=${S}`, { waitUntil: 'networkidle' });
+
+        const table = page.locator('table.owa_formTable');
+        const card = await table.boundingBox();
+        const label = await table.locator('th').first().boundingBox();
+        const field = await table.locator('td select, td input[type=text]').first().boundingBox();
+
+        expect(field.y, 'the field is beside its label').toBeGreaterThanOrEqual(label.y + label.height);
+        expect(field.x + field.width, 'the field runs past the card').toBeLessThanOrEqual(card.x + card.width);
     });
 
     test('a card on its own row is as tall as its content', async ({ page }) => {

@@ -423,11 +423,26 @@ class View extends \OWA\Core\Base {
 
     }
 
+    /**
+     * The ?version= a built asset is requested with.
+     *
+     * OWA_VERSION is 'master' in a source checkout, the same string for every
+     * build, so a browser kept the stylesheet and scripts it already had across
+     * a deploy. The built file's modification time changes with each build.
+     */
+    public static function assetVersion( $path ) {
+
+        $file  = \OWA\Core\CoreAPI::getSetting( 'base', 'public_path' ) . $path;
+        $mtime = is_file( $file ) ? filemtime( $file ) : false;
+
+        return $mtime ? OWA_VERSION . '.' . $mtime : OWA_VERSION;
+    }
+
     function setCss($path, $version = null, $deps = array(), $ie_only = false) {
 
         if ( ! $version ) {
-	        
-            $version = OWA_VERSION;
+
+            $version = self::assetVersion( $path );
         }
 
         $uid = $path;
@@ -446,8 +461,8 @@ class View extends \OWA\Core\Base {
     function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
 
         if (empty($version)) {
-	        
-            $version = OWA_VERSION;
+
+            $version = self::assetVersion( $path );
         }
 
         $uid = $name.$version;

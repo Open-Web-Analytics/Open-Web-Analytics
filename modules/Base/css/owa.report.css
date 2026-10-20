@@ -4513,7 +4513,8 @@ li.constraintRow {
        its contents are in the panel the menu button opens. */
     .owa_reportLeftNavColumn { width: 0; padding: 0; }
 
-    .owa_hierarchyContent { padding-left: 0; }
+    /* 8px each side, as a report's card has. */
+    .owa_hierarchyContent { padding-left: 8px; padding-right: 8px; }
 
     /* The settings table takes the screen's width, not its widest content's.
        Laid out automatically, a table cell grows to fit the breadcrumb (one
@@ -4587,6 +4588,18 @@ li.constraintRow {
     /* A data table wider than a phone scrolls inside its own box, as a
        report's tables do inside their widgets, instead of widening the page. */
     .owa_hierarchyContent table.management { display: block; max-width: 100%; overflow-x: auto; }
+
+    /* A form laid out as a table, a label in each row's TH: the field column
+       was clipped at the card's edge. Stacked, the label above its field. */
+    .owa_hierarchyContent table.management.owa_formTable,
+    .owa_hierarchyContent table.management.owa_formTable tbody,
+    .owa_hierarchyContent table.management.owa_formTable tr,
+    .owa_hierarchyContent table.management.owa_formTable th,
+    .owa_hierarchyContent table.management.owa_formTable td { display: block; overflow-x: visible; }
+
+    .owa_hierarchyContent #panel table.management.owa_formTable th { padding: 10px 10px 4px 10px; border-bottom: 0; }
+
+    .owa_hierarchyContent #panel table.management.owa_formTable td { padding-top: 0; }
 }
 
 /* ---------------------------------------------------------------------------
