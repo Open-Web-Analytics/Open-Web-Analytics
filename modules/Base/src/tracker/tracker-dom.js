@@ -20,17 +20,31 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
 
 (function() {
 
-    if ( OwaUtil.isBrowserTrackable() ) {
-
-        // execute commands global owa_cmds command queue
-        if ( typeof owa_cmds === 'undefined' ) {
+    // execute commands global owa_cmds command queue
+    if ( typeof owa_cmds === 'undefined' ) {
+        var q = new OwaCommandQueue();
+    } else {
+        if ( Array.isArray(owa_cmds) ) {
             var q = new OwaCommandQueue();
-        } else {
-            if ( Array.isArray(owa_cmds) ) {
-                var q = new OwaCommandQueue();
-                q.loadCmds( owa_cmds );
-            }
+            q.loadCmds( owa_cmds );
         }
+    }
+
+    /*
+     * honorPrivacySignals is read from the loaded queue, before process() runs
+     * any command, so a site that turns it off does so with the same setOption
+     * every other tracker option uses:
+     *
+     *   owa_cmds.push(['setOption', 'honorPrivacySignals', false]);
+     *
+     * Loading the queue sends nothing; when a signal is honoured, owa_cmds is
+     * left as the page's plain array and no command runs.
+     */
+    var honorPrivacySignals = q
+        ? q.optionFor( 'OWATracker', 'honorPrivacySignals' ) !== false
+        : true;
+
+    if ( OwaUtil.isBrowserTrackable( honorPrivacySignals ) ) {
 
         window['owa_cmds'] = q;
         window['owa_cmds'].process();
@@ -47,7 +61,7 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
 
         // Only for the automation case, and only here.
         //
-        // Do Not Track stays silent deliberately: it is a request from the
+        // A privacy signal stays silent deliberately: it is a request from the
         // person, it is expected, and announcing it every time would be noise.
         // Automation is different -- it is nearly always a crawler, but when it
         // is not, it is a developer driving their own site and wondering why

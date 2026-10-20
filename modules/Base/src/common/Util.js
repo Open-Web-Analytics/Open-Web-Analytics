@@ -766,7 +766,10 @@ class Util {
      * so a false here means nothing loads, nothing is sent, and no decision is
      * left to the server.
      *
-     * 1. Do Not Track, which is a request from the person.
+     * 1. A privacy signal, which is a request from the person: Do Not Track or
+     *    Global Privacy Control. honorPrivacySignals = false ignores both --
+     *    the tracker option of that name, read from the queue before anything
+     *    runs (tracker-dom.js).
      *
      * 2. WebDriver, which is a statement about the browser. A crawler that runs
      *    JavaScript is the only kind a JavaScript tracker ever sees, and it
@@ -783,16 +786,11 @@ class Util {
      * view; anything deliberately hiding from the flag would defeat a
      * fingerprint too.
      */
-    static isBrowserTrackable () {
-    
-        var dntProperties = ['doNotTrack', 'msDoNotTrack'];
-        
-        for (var i = 0, l = dntProperties.length; i < l; i++) {
-        
-            if ( navigator[ dntProperties[i] ] && navigator[ dntProperties[i] ] == "1" ) {
-                
-                return false;
-            }
+    static isBrowserTrackable ( honorPrivacySignals = true ) {
+
+        if ( honorPrivacySignals !== false && Util.sendsPrivacySignal() ) {
+
+            return false;
         }
 
         if ( navigator.webdriver === true && ! Util.automationIsAllowed() ) {
@@ -801,6 +799,25 @@ class Util {
         }
         
         return true;
+    }
+
+    /**
+     * Whether the browser asks not to be tracked: Do Not Track ("1", or the
+     * legacy msDoNotTrack) or Global Privacy Control (true).
+     */
+    static sendsPrivacySignal () {
+
+        var dntProperties = ['doNotTrack', 'msDoNotTrack'];
+
+        for (var i = 0, l = dntProperties.length; i < l; i++) {
+
+            if ( navigator[ dntProperties[i] ] && navigator[ dntProperties[i] ] == "1" ) {
+
+                return true;
+            }
+        }
+
+        return navigator.globalPrivacyControl === true;
     }
 
     /**

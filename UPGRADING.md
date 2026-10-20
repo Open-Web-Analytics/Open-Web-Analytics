@@ -32,6 +32,23 @@ Until it is applied, the admin screens show the update notice. Tracking is
 unaffected, and so are scheduled jobs unless the release also changes the
 schema, which stops them until it is applied.
 
+### The tracker honours Global Privacy Control as well as Do Not Track
+
+A browser reporting Global Privacy Control (`navigator.globalPrivacyControl`)
+is now treated like one reporting Do Not Track: the tracker runs no command and
+sends nothing.
+
+**Way back:** the tracker option `honorPrivacySignals`, queued before the page
+view, turns off both checks:
+
+```js
+owa_cmds.push(['setOption', 'honorPrivacySignals', false]);
+```
+
+It is read from the queue before any command runs, so queue it in the tag; a
+`setOption` on a tracker that is already running has no effect on it. Browsers
+under automation are still refused, as before.
+
 ### `OWA_DEBUG` replaces `OWA_ERROR_HANDLER`
 
 Debug mode is `define('OWA_DEBUG', true);` in `owa-config.php`. It writes debug
