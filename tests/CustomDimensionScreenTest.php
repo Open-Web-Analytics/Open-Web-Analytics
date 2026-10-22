@@ -363,7 +363,6 @@ final class CustomDimensionScreenTest extends TestCase
     private function renderList( array $overrides = [] ): string
     {
         return $this->render( 'custom_dimensions.php', array_merge( [
-            'siteId'     => 'site-a',
             'propertyId' => (string) self::PROPERTY,
             'dimensions' => [],
             'cube'       => $this->cube(),
@@ -373,7 +372,6 @@ final class CustomDimensionScreenTest extends TestCase
     private function renderRegister( array $overrides = [] ): string
     {
         return $this->render( 'custom_dimension_edit.php', array_merge( [
-            'siteId'            => 'site-a',
             'propertyId'        => (string) self::PROPERTY,
             'cube'              => $this->cube(),
             'used'              => 0,
@@ -435,10 +433,13 @@ final class CustomDimensionScreenTest extends TestCase
         $html = $this->renderRegister();
 
         foreach ( ['dimensionKey', 'label', 'scope', 'dataType', 'base.customDimensionSave',
-                   'propertyId', 'siteId'] as $needle ) {
+                   'propertyId'] as $needle ) {
 
             $this->assertStringContainsString( $needle, $html, "$needle is missing from the form" );
         }
+
+        // Addressed by its Property alone.
+        $this->assertStringNotContainsString( 'siteId', $html );
     }
 
     /**

@@ -19,7 +19,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
     function action() {
 
-        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
         $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
@@ -41,7 +41,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
         $this->set( 'conditions', $conditions );
         /* Whatever it resolved to, so the form saves the row it opened. */
         $this->set( 'goalEventId', $goalEvent->get( 'id' ) );
-        $this->set( 'siteId', $siteId );
+        $this->set( 'propertyId', $propertyId );
         /*
          * The trigger first, because the condition vocabulary depends on it: a
          * click carries element_id and a page view does not, and offering a
@@ -62,10 +62,10 @@ class GoalEventEdit extends \OWA\Core\AdminController {
         $this->set( 'conditionVocabulary', self::vocabulary() );
         $this->set( 'savedProperties', array_column( $conditions, 'condition_property' ) );
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $propertyId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 2 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.goalEventEdit' );
     }

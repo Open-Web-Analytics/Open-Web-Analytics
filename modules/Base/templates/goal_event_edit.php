@@ -207,7 +207,7 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
 
     <?php echo $view->createNonceFormField('base.goalEventSave');?>
-    <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->siteId );?>">
+    <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
     <input type="hidden" name="<?php echo $view->getNs();?>goalEventId" value="<?php $view->out( $view->goalEventId ?? '' );?>">
     <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventSave">
     <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Goal Event">
@@ -222,7 +222,7 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.goalEventDelete');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->siteId );?>">
+        <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
         <input type="hidden" name="<?php echo $view->getNs();?>goalEventId" value="<?php $view->out( $owa_ke['id'] );?>">
         <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventDelete">
         <input class="owa-button owa-button-danger" type="submit"

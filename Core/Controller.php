@@ -964,24 +964,25 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
-     * A Profile of the Property that the current user may see, or ''.
+     * The Property a Property screen is about.
      *
-     * Unlike resolveCurrentSiteId(), never falls back to another Property's.
+     * The one the request names; else the Property of the siteId it names,
+     * which is how these screens were addressed before they were Property
+     * screens, so old links still land; else the Property of the first Profile
+     * the user may see (resolveCurrentSiteId()).
      *
      * @param  string $propertyId
-     * @return string
+     * @param  string $siteId
+     * @return string '' only when the user may see no Profile at all
      */
-    protected function profileOfProperty( $propertyId ) {
+    protected function resolveCurrentPropertyId( $propertyId = '', $siteId = '' ) {
 
-        foreach ( (array) $this->getSitesAllowedForCurrentUser() as $site ) {
+        if ( (string) $propertyId !== '' ) {
 
-            if ( (string) $site->get( 'property_id' ) === (string) $propertyId ) {
-
-                return (string) $site->get( 'site_id' );
-            }
+            return (string) $propertyId;
         }
 
-        return '';
+        return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $this->resolveCurrentSiteId( $siteId ) );
     }
 
     /**
@@ -1089,14 +1090,6 @@ class Controller extends \OWA\Core\Base {
 
         if ( $propertyId ) {
 
-            /*
-             * Goal Events and Custom Dimensions belong to the Property but are
-             * addressed by a siteId, and resolve the Property from it. On a
-             * Property screen there is no Profile in context, so one of the
-             * Property's is named for them; with none, they are left out.
-             */
-            $propertySiteId = $siteId ?: $this->profileOfProperty( $propertyId );
-
             $nav['Property'] = array(
                 array( 'do' => 'base.propertyProfile', 'label' => 'Details',
                        'params' => array( 'propertyId' => $propertyId ),
@@ -1110,40 +1103,34 @@ class Controller extends \OWA\Core\Base {
                 array( 'do' => 'base.propertyProfiles', 'label' => 'Observation Profiles',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
-            );
-
-            if ( $propertySiteId ) {
-
                 /*
                  * Goal events describe a behaviour on the WEBSITE, so they
                  * belong here and every Profile of it inherits them.
                  */
-                $nav['Property'][] = array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
-                       'params' => array( 'siteId' => $propertySiteId ),
-                       'capability' => 'edit_settings' );
+                array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_settings' ),
                 /*
                  * Custom dimensions belong to the Property because the
                  * reporting cube does -- one cube per Property, so the column a
                  * registration adds is the Property's and two Properties may
                  * use the same key for different things.
                  */
-                $nav['Property'][] = array( 'do' => 'base.customDimensions', 'label' => 'Custom Dimensions',
-                       'params' => array( 'siteId' => $propertySiteId ),
-                       'capability' => 'edit_settings' );
-            }
-
-            $nav['Property'][] = array( 'do' => 'base.propertyRetention', 'label' => 'Data Retention',
-                   'params' => array( 'propertyId' => $propertyId ),
-                   'capability' => 'edit_settings' );
-
-            /*
-             * Access is granted to a WEBSITE, not to one way of observing it,
-             * so it belongs to the Property. Stored per Profile; PropertyGrants
-             * reads and writes it across all of them.
-             */
-            $nav['Property'][] = array( 'do' => 'base.propertyAccess', 'label' => 'Property Access Management',
-                   'params' => array( 'propertyId' => $propertyId ),
-                   'capability' => 'edit_sites' );
+                array( 'do' => 'base.customDimensions', 'label' => 'Custom Dimensions',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_settings' ),
+                array( 'do' => 'base.propertyRetention', 'label' => 'Data Retention',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_settings' ),
+                /*
+                 * Access is granted to a WEBSITE, not to one way of observing
+                 * it, so it belongs to the Property. Stored per Profile;
+                 * PropertyGrants reads and writes it across all of them.
+                 */
+                array( 'do' => 'base.propertyAccess', 'label' => 'Property Access Management',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_sites' ),
+            );
         }
 
         /*

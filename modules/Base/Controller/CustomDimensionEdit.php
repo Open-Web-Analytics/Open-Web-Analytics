@@ -32,7 +32,7 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
 
     function action() {
 
-        self::prepare( $this, $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) ) );
+        self::prepare( $this, $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ) );
     }
 
     /**
@@ -40,17 +40,13 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
      * errorAction(), which renders it again after a refusal.
      *
      * @param \OWA\Core\AdminController $controller
-     * @param string $siteId
+     * @param string $property_id
      * @param array  $submitted  what was typed, when a refused form comes back
      */
-    public static function prepare( $controller, $siteId, array $submitted = array() ) {
+    public static function prepare( $controller, $property_id, array $submitted = array() ) {
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->getByColumn( 'site_id', $siteId );
+        $property_id = (string) $property_id;
 
-        $property_id = (string) $site->get( 'property_id' );
-
-        $controller->set( 'siteId', $siteId );
         $controller->set( 'propertyId', $property_id );
         $controller->set( 'cube', CustomDimensions::cubeState( $property_id ) );
         $controller->set( 'used', count(
@@ -61,11 +57,11 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
             'dimensionKey' => '', 'scope' => '', 'dataType' => '', 'label' => '',
         ), $submitted ) );
 
-        $controller->set( 'params', array_merge( (array) $controller->params, array( 'siteId' => $siteId ) ) );
+        $controller->set( 'params', array_merge( (array) $controller->params, array( 'propertyId' => $property_id ) ) );
         $controller->set( 'site_hierarchy',
             $controller->getSiteHierarchy( $controller->getSitesAllowedForCurrentUser() ) );
         $controller->set( 'hierarchy_tier', 2 );
-        $controller->set( 'hierarchy_nav', $controller->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
+        $controller->set( 'hierarchy_nav', $controller->getHierarchyNav( '', $property_id ) );
         $controller->setView( 'base.optionsHierarchy' );
         $controller->setSubview( 'base.customDimensionEdit' );
     }

@@ -32,7 +32,7 @@ same way.</div>
 
     <legend>
         Goal Events <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.goalEventEdit', 'siteId' => $view->siteId ) );?>">Add New Goal Event</a>)</span>
+            'do' => 'base.goalEventEdit', 'propertyId' => $view->propertyId ) );?>">Add New Goal Event</a>)</span>
     </legend>
 
 <?php if ( empty( $view->goalEvents ) ):?>
@@ -85,7 +85,7 @@ same way.</div>
                 <td><?php echo $owa_ke['is_active'] ? 'Active' : 'Inactive';?></td>
                 <td>
                     <a href="<?php echo $view->makeLink( array( 'do' => 'base.goalEventEdit',
-                        'siteId' => $view->siteId, 'goalEventId' => $owa_ke['id'] ) );?>">Edit</a>
+                        'propertyId' => $view->propertyId, 'goalEventId' => $owa_ke['id'] ) );?>">Edit</a>
                 </td>
             </tr>
         <?php endforeach;?>

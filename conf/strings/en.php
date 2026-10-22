@@ -115,6 +115,8 @@ return array(
     'Error' => 'Error',
     'Fill in all required fields.' => 'Fill in all required fields.',
     'Give the application password a name.' => 'Give the application password a name.',
+    'Goal event deleted.' => 'Goal event deleted.',
+    'Goal event saved.' => 'Goal event saved.',
     'Goal saved.' => 'Goal saved.',
     'If an account exists for %s, password reset instructions have been sent to it.' => 'If an account exists for %s, password reset instructions have been sent to it.',
     'Log in to view this page.' => 'Log in to view this page.',
