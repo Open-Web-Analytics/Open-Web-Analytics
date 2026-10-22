@@ -79,7 +79,15 @@ test.describe('application password screens @selfhost-only', () => {
 
         expect(await status(request, token)).toBeLessThan(300);
 
-        // Reloading the list does not show the token again.
+        // The form redirected, so a reload is a GET: no second password, and
+        // the token is not shown again.
+        expect(page.url()).toContain('do=base.myAppPasswords');
+        await page.reload({ waitUntil: 'networkidle' });
+        await expect(page.locator('.owa_appPasswordToken')).toHaveCount(0);
+        await expect(page.locator('tr[data-lookup-id]', { hasText: 'e2e screen' })).toHaveCount(1);
+        expect(await page.content()).not.toContain(token.slice(12));
+
+        // Nor does navigating back to the list.
         await page.goto('?owa_do=base.myAppPasswords', { waitUntil: 'networkidle' });
         await expect(page.locator('.owa_appPasswordToken')).toHaveCount(0);
         expect(await page.content()).not.toContain(token.slice(12));

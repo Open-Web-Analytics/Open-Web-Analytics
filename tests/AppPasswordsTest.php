@@ -91,6 +91,35 @@ final class AppPasswordsTest extends TestCase
         $this->assertNull(AppPasswords::verify(''));
     }
 
+    /** A new token crosses its redirect sealed: opened only by its user, unaltered, and soon. */
+    public function testASealedTokenOpensOnlyForItsUserAndOnlyBriefly(): void
+    {
+        $made   = AppPasswords::create(self::USER, 'Reporting script');
+        $sealed = AppPasswords::sealReveal($made, self::USER);
+
+        $this->assertStringNotContainsString($made['token'], $sealed);
+        $this->assertSame($made, AppPasswords::openReveal($sealed, self::USER));
+
+        $this->assertNull(AppPasswords::openReveal($sealed, self::OTHER));
+        $this->assertNull(AppPasswords::openReveal($sealed, ''));
+        $this->assertNull(AppPasswords::openReveal('', self::USER));
+        $this->assertNull(AppPasswords::openReveal('not*base64', self::USER));
+
+        $flipped = $sealed;
+        $flipped[30] = $flipped[30] === 'A' ? 'B' : 'A';
+        $this->assertNull(AppPasswords::openReveal($flipped, self::USER));
+
+        // Sealed longer ago than REVEAL_TTL.
+        $key = new \ReflectionMethod(AppPasswords::class, 'revealKey');
+        $key->setAccessible(true);
+        $nonce = random_bytes(SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES);
+        $old   = json_encode(array('made' => $made, 'sealed_at' => time() - AppPasswords::REVEAL_TTL - 1));
+        $stale = sodium_bin2base64($nonce . sodium_crypto_aead_xchacha20poly1305_ietf_encrypt(
+            $old, self::USER, $nonce, $key->invoke(null)), SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+
+        $this->assertNull(AppPasswords::openReveal($stale, self::USER));
+    }
+
     public function testEachPasswordIsIndependent(): void
     {
         $one = AppPasswords::create(self::USER, 'First');

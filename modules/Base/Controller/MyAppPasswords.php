@@ -14,10 +14,14 @@ namespace OWA\Module\Base\Controller;
  * Like base.myProfile it takes no user_id. It always shows whoever is signed
  * in, so there is no account to authorise.
  *
- * base.myAppPasswordCreate extends this to draw the same screen with the new
- * token on it. That response is the only place a token is ever shown.
+ * base.myAppPasswordCreate redirects here with the new token sealed in the
+ * REVEAL_COOKIE cookie. The first GET to read it shows the token and expires
+ * the cookie, so that page is the only place a token is ever shown.
  */
 class MyAppPasswords extends \OWA\Core\Controller {
+
+    /** Without the install's namespace prefix, which is added to it. */
+    const REVEAL_COOKIE = 'app_password_reveal';
 
     function __construct( $params ) {
 
@@ -31,7 +35,10 @@ class MyAppPasswords extends \OWA\Core\Controller {
 
         $user_id = (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' );
 
-        $this->set( 'app_passwords', \OWA\Module\Base\Classes\AppPasswords::forUser( $user_id ) );
+        $app_passwords = \OWA\Module\Base\Classes\AppPasswords::forUser( $user_id );
+
+        $this->set( 'app_passwords', $app_passwords );
+        $this->set( 'new_app_password', $this->takeRevealed( $user_id, $app_passwords ) );
         $this->set( 'scopes', \OWA\Module\Base\Classes\AppPasswords::scopes() );
         $this->set( 'enabled', (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'app_passwords_enabled' ) );
         $this->set( 'require_https', (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'app_passwords_require_https' ) );
@@ -48,5 +55,65 @@ class MyAppPasswords extends \OWA\Core\Controller {
 
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.myAppPasswords' );
+    }
+
+    /**
+     * The password just made, read once from its cookie, or null.
+     *
+     * The cookie is expired whatever it holds. Nothing is shown for a password
+     * revoked since, or one sealed for someone else.
+     */
+    protected function takeRevealed( $user_id, array $app_passwords ) {
+
+        $name   = self::revealCookieName();
+        $sealed = (string) ( $_COOKIE[ $name ] ?? '' );
+
+        if ( $sealed === '' ) {
+
+            return null;
+        }
+
+        unset( $_COOKIE[ $name ] );
+        $this->writeRevealCookie( '', time() - 3600 );
+
+        $made = \OWA\Module\Base\Classes\AppPasswords::openReveal( $sealed, $user_id );
+
+        if ( ! $made || ! in_array( $made['lookup_id'] ?? null, array_column( $app_passwords, 'lookup_id' ), true ) ) {
+
+            return null;
+        }
+
+        // A cache that kept this page would keep the token.
+        if ( ! headers_sent() ) {
+
+            header( 'Cache-Control: no-store' );
+        }
+
+        return $made;
+    }
+
+    /**
+     * Host-only, HttpOnly and SameSite=Strict: only this install's own pages
+     * receive it, and no script can read it.
+     */
+    protected function writeRevealCookie( $value, $expires ) {
+
+        if ( headers_sent() ) {
+
+            return;
+        }
+
+        setcookie( self::revealCookieName(), $value, array(
+            'expires'  => $expires,
+            'path'     => '/',
+            'secure'   => \OWA\Core\Lib::isHttps(),
+            'httponly' => true,
+            'samesite' => 'Strict',
+        ) );
+    }
+
+    protected static function revealCookieName() {
+
+        return \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . self::REVEAL_COOKIE;
     }
 }

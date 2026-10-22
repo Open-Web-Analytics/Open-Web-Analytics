@@ -8,14 +8,14 @@ namespace OWA\Module\Base\Controller;
 //
 
 /**
- * Makes an application password for the signed-in user and shows its token.
+ * Makes an application password for the signed-in user, then redirects to the
+ * list, which shows its token once.
  *
- * NO REDIRECT ON SUCCESS. The token is drawn into this response, which is the
- * only time it exists outside the person's own copy. A redirect would have to
- * carry it in the URL, where it would land in the browser history, the access
- * logs and any Referer sent from the next page.
- *
- * A refusal redirects back to the list as usual: it has no secret to show.
+ * A redirect, so reloading the page that shows the token re-runs a GET rather
+ * than this POST and makes no second password. The token crosses the redirect
+ * sealed in a short-lived cookie (AppPasswords::sealReveal), never in the URL,
+ * where it would land in the browser history, the access logs and any Referer
+ * sent from the next page.
  */
 class MyAppPasswordCreate extends MyAppPasswords {
 
@@ -47,15 +47,11 @@ class MyAppPasswordCreate extends MyAppPasswords {
             return $this->refuse( 3216 );
         }
 
-        // A cache that kept this page would keep the token.
-        if ( ! headers_sent() ) {
+        $this->writeRevealCookie( \OWA\Module\Base\Classes\AppPasswords::sealReveal( $made, $user_id ),
+            time() + \OWA\Module\Base\Classes\AppPasswords::REVEAL_TTL );
 
-            header( 'Cache-Control: no-store' );
-        }
-
-        parent::action();
-
-        $this->set( 'new_app_password', $made );
+        $this->set( 'siteId', (string) $this->getParam( 'siteId' ) );
+        $this->setRedirectAction( 'base.myAppPasswords' );
     }
 
     private function refuse( $code ) {
