@@ -3688,6 +3688,16 @@ li.constraintRow {
     color: #bbbbbb;
 }
 
+.owa_hierarchyCrumb a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.owa_hierarchyCrumb a:hover {
+    color: #333333;
+    text-decoration: underline;
+}
+
 
 /* Grids inside the hierarchy pane.
  *
