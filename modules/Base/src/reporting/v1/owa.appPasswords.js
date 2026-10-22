@@ -6,8 +6,8 @@ import { OWA } from './owa.js';
  *
  * Add opens it; Create sends POST v1/apppasswords with the signed-in session
  * and the nonce makeApiLink() put in the button's data-api-url. The answer
- * carries the token, which the dialog shows once. Closing the dialog -- Done,
- * Escape, or the close button -- adds the new password's row to the roster.
+ * carries the token, which the dialog shows once, and the new password's row
+ * is added to the roster behind it.
  *
  * Nothing is posted to the page itself, so reloading it repeats nothing.
  */
@@ -63,7 +63,6 @@ function openAddDialog( apiUrl ) {
     var $form   = $dialog.find( '.owa_appPasswordForm' );
     var $result = $dialog.find( '.owa_appPasswordResult' );
     var $error  = $dialog.find( '.owa_appPasswordError' );
-    var made    = null;
     var busy    = false;
 
     $form.prop( 'hidden', false ).get( 0 ).reset();
@@ -114,7 +113,9 @@ function openAddDialog( apiUrl ) {
                     return;
                 }
 
-                made = res.json.data;
+                var made = res.json.data;
+
+                addRow( made );
 
                 $form.prop( 'hidden', true );
                 $result.find( '.owa_appPasswordResultName' ).text( made.name );
@@ -173,8 +174,6 @@ function openAddDialog( apiUrl ) {
             // The token is gone from the page once the dialog is.
             $dialog.find( '.owa_appPasswordToken' ).val( '' );
             $dialog.dialog( 'destroy' ).prop( 'hidden', true );
-
-            if ( made ) { addRow( made ); }
         }
     } );
 

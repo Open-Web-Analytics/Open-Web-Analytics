@@ -4,8 +4,8 @@
  * The signed-in user's application passwords.
  *
  * Add opens a dialog that creates the password over the REST API
- * (POST v1/apppasswords) and shows its token there, once. Closing the dialog
- * adds the row to the roster. Nothing is posted to this page, so a reload
+ * (POST v1/apppasswords) and shows its token there, once; the row is added to
+ * the roster when the answer arrives. Nothing is posted to this page, so a reload
  * repeats nothing. Only the token's hash is stored, so it is never drawn again.
  */
 $owa_passwords = (array) $view->app_passwords;

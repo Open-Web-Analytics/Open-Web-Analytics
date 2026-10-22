@@ -78,14 +78,14 @@ test.describe('application password screens @selfhost-only', () => {
         expect(token).toMatch(/^[0-9A-Za-z]{44}$/);
         expect(page.url()).toContain('do=base.myAppPasswords');
 
+        // The row is in the roster as soon as the answer is, behind the dialog.
         const row = page.locator(`tr[data-lookup-id="${token.slice(0, 12)}"]`);
-        await expect(row).toHaveCount(0);
-
-        // Closing the dialog adds the row.
-        await page.click('.owa_appPasswordDone');
-        await expect(dialog).toBeHidden();
         await expect(row).toContainText('e2e screen');
         await expect(row).toContainText('Read and write');
+
+        await page.click('.owa_appPasswordDone');
+        await expect(dialog).toBeHidden();
+        await expect(row).toHaveCount(1);
         expect(await page.content()).not.toContain(token.slice(12));
 
         expect(await status(request, token)).toBeLessThan(300);
@@ -103,7 +103,7 @@ test.describe('application password screens @selfhost-only', () => {
         expect(await status(request, token)).toBe(401);
     });
 
-    test('the dialog asks for a name, and Escape still adds what it made', async ({ page }) => {
+    test('the dialog asks for a name, and Escape closes it', async ({ page }) => {
         await loginAs(page, fx.user_id, fx.password);
         await page.goto('?owa_do=base.myAppPasswords', { waitUntil: 'networkidle' });
 
