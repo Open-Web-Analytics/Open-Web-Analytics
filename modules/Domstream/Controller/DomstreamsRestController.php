@@ -124,10 +124,18 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
         // repeated unbounded below rather than reported as no recording.
         $range = \OWA\Core\Db::factDateRangeFromId( $domstream_guid );
 
-        $fetch = function ( $bounds ) use ( $db, $d, $domstream_guid ) {
+        /*
+         * The site as well as the guid. view_reports was checked against the
+         * siteId on this request -- validate() requires one -- and a guid alone
+         * would play any site's recording.
+         */
+        $site_id = (string) $this->get( 'siteId' );
+
+        $fetch = function ( $bounds ) use ( $db, $d, $domstream_guid, $site_id ) {
 
             $db->select('*');
             $db->from( $d->getTableName() );
+            $db->where( 'site_id', $site_id );
             $db->where( 'domstream_guid', $domstream_guid );
 
             if ( $bounds ) {
@@ -147,6 +155,9 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
         }
         //print_r($ret);
         $combined = '';
+
+        // Null when nothing was found: the response is set from it either way.
+        $row = null;
 
         if ( $ret ) {
             // if rows then combine the events

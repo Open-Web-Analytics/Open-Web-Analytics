@@ -465,6 +465,15 @@ class ReportsRest extends \OWA\Core\ReportController {
     
     function report_clickstream() {
 
+        /*
+         * No site, no sessions. Db::where() drops a clause whose value is
+         * empty, so an empty siteId would otherwise mean every site's.
+         */
+        if ( (string) $this->get( 'siteId' ) === '' ) {
+
+            return \OWA\Core\CoreAPI::supportClassFactory( 'base', 'paginatedResultSet' );
+        }
+
         // get resultSet Manager instance
 		$rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 		
@@ -481,6 +490,14 @@ class ReportsRest extends \OWA\Core\ReportController {
         // mints from the browser's clock, making it a hint only. Hence the
         // retry below.
         $range = null;
+
+        /*
+         * The site, as well as the session. view_reports was checked against
+         * the siteId on this request, so that is the site whose sessions it
+         * may read; a session id alone would read any site's.
+         */
+        $rsm->db->where('request.site_id', $this->get( 'siteId' ) );
+        $rsm->setQueryStringParam('siteId', $this->get( 'siteId' ) );
 
         if ($this->get( 'sessionId' ) ) {
             $rsm->db->where('session_id', $this->get( 'sessionId' ) );
@@ -516,8 +533,10 @@ class ReportsRest extends \OWA\Core\ReportController {
             $retry->db->selectFrom('owa_request', 'request');
             $retry->db->selectColumn("*");
             $retry->db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'document', 'document_id', 'document.id');
+            $retry->db->where('request.site_id', $this->get( 'siteId' ) );
             $retry->db->where('session_id', $this->get( 'sessionId' ) );
             $retry->db->orderBy('timestamp','DESC');
+            $retry->setQueryStringParam('siteId', $this->get( 'siteId' ) );
             $retry->setQueryStringParam('sessionId', $this->get( 'sessionId' ) );
             $retry->setLimit( $resultsPerPage );
             $retry->setPage( $this->get('page') );
@@ -537,24 +556,7 @@ class ReportsRest extends \OWA\Core\ReportController {
      */
     function report_transaction_items() {
 
-        $t = \OWA\Core\CoreAPI::entityFactory( 'base.commerce_transaction_fact' );
-        $t->getbyColumn('order_id', $this->get( 'transactionId' ) );
-        $trans_detail = array();
-
-        $id = $t->get( 'id' );
-        if ( $id ) {
-            $trans_detail = $t->_getProperties();
-            // fetch line items
-            $db = \OWA\Core\CoreAPI::dbSingleton();
-
-            $db->selectFrom( 'owa_commerce_line_item_fact' );
-            $db->selectColumn( '*' );
-            $db->where( 'order_id', $this->get( 'transactionId' ) );
-            $lis = $db->getAllRows();
-            $trans_detail['line_items'] = $lis;
-        }
-
-        return $trans_detail;
+        return $this->transactionDetail( false );
     }
 
 	function report_transactions() {
@@ -598,22 +600,48 @@ class ReportsRest extends \OWA\Core\ReportController {
 
     function report_transaction()
     {
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom('owa_commerce_transaction_fact');
-        $db->selectColumn("*");
-        $db->where('order_id', $this->get('transactionId'));
+        return $this->transactionDetail( true );
+    }
 
-        $transaction = $db->getOneRow();
-        unset($db);
-        
+    /**
+     * One transaction and its line items, from the site this request names.
+     *
+     * By order id AND site: view_reports was checked against the siteId on
+     * this request, and an order id alone would read any site's orders.
+     *
+     * @param  bool  $emptyShape what a missing transaction answers with: the
+     *                           transaction report has always returned its line
+     *                           items key even then, transaction_items an empty
+     *                           array
+     * @return array
+     */
+    private function transactionDetail( $emptyShape ) {
+
+        $siteId = (string) $this->get( 'siteId' );
+        $order  = $this->get( 'transactionId' );
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom('owa_commerce_line_item_fact');
-        $db->selectColumn("*");
-        $db->where('order_id', $this->get('transactionId'));
+        $db->selectFrom( 'owa_commerce_transaction_fact' );
+        $db->selectColumn( '*' );
+        $db->where( 'order_id', $order );
+        $db->where( 'site_id', $siteId );
+
+        $transaction = $siteId !== '' ? $db->getOneRow() : null;
+        unset( $db );
+
+        if ( empty( $transaction ) ) {
+
+            return $emptyShape ? array( 'line_items' => array() ) : array();
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( 'owa_commerce_line_item_fact' );
+        $db->selectColumn( '*' );
+        $db->where( 'order_id', $order );
+        $db->where( 'site_id', $siteId );
 
         $transaction['line_items'] = $db->getAllRows();
-        unset($db);
-        
+
         return $transaction;
     }
 
