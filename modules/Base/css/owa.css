@@ -234,6 +234,12 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     font-size: 14px; 
 }
 
+/* The way back from an error page, under its banner and on the banner's margin. */
+.owa .owa_errorBack {
+    margin: 0 40px 20px 40px;
+    font-size: 14px;
+}
+
 .owa .status {
     background-color: #71ad2b;
     border-color: #519600;

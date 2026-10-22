@@ -50,29 +50,44 @@ class Error extends \OWA\Core\View {
             $this->t->set_template('wrapper_blank.php');
         endif;
 
-        // load body template
-        // generic_error.php reads error_msg from the body's own scope, so the
-        // controller's message has to be handed across or the template falls back
-        // to its placeholder and the reason for the error is lost.
-        if ( isset( $data['error_msg'] ) ) {
+        /*
+         * The message is shown ONCE, in the page's error banner (msgs.php in
+         * the wrapper), which reads a headline and a message. Controllers pass
+         * either getMsg()'s array or a plain string; a string reached the
+         * banner as something with neither key, so it drew an empty red box and
+         * the text was echoed again, unstyled, below it.
+         */
+        $this->t->set( 'error_msg', self::bannerMessage( $data['error_msg'] ?? null ) );
 
-            $msg = $data['error_msg'];
-
-            // Controllers set this from getMsg(), which returns headline/message.
-            if ( is_array( $msg ) ) {
-
-                $msg = implode( ' ', array_values( $msg ) );
-            }
-
-            $this->body->set( 'error_msg', $msg );
-        }
-
+        $this->body->set( 'back_url', (string) ( $data['error_back_url'] ?? '' ) );
         $this->body->set_template('generic_error.php');
 
-        return;
+        // The admin chrome's styles: the header's icons and the banner itself.
+        $this->setCss( 'base/css/font-awesome/css/all.min.css' );
+        $this->setCss( 'base/css/owa.reporting-css-combined.css' );
     }
 
+    /**
+     * An error message in the banner's shape.
+     *
+     * @param  mixed $msg getMsg()'s array, an array with 'msg', a string, or nothing
+     * @return array headline, message
+     */
+    public static function bannerMessage( $msg ) {
 
+        if ( is_array( $msg ) ) {
+
+            return array(
+                'headline' => (string) ( $msg['headline'] ?? \OWA\Core\CoreAPI::t( 'Error' ) ),
+                'message'  => (string) ( $msg['message'] ?? $msg['msg'] ?? '' ),
+            );
+        }
+
+        return array(
+            'headline' => \OWA\Core\CoreAPI::t( 'Error' ),
+            'message'  => $msg !== null && $msg !== '' ? (string) $msg : \OWA\Core\CoreAPI::t( 'Something went wrong.' ),
+        );
+    }
 }
 
 ?>
