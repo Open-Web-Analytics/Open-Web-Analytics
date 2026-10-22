@@ -104,8 +104,6 @@
 
     <input type="hidden" name="<?php echo $view->getNs(); ?>propertyId"
         value="<?php $view->out( $view->propertyId ); ?>">
-    <input type="hidden" name="<?php echo $view->getNs(); ?>siteId"
-        value="<?php $view->out( $view->siteId ); ?>">
     <input type="hidden" name="<?php echo $view->getNs(); ?>action"
         value="base.customDimensionSave">
     <?php echo $view->createNonceFormField( 'base.customDimensionSave' ); ?>

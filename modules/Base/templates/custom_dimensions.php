@@ -38,7 +38,7 @@
         Registered
         <?php if ( count( $view->dimensions ) < $view->cube['capacity'] ): ?>
         <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.customDimensionEdit', 'siteId' => $view->siteId ) ); ?>">Register New Custom Dimension</a>)</span>
+            'do' => 'base.customDimensionEdit', 'propertyId' => $view->propertyId ) ); ?>">Register New Custom Dimension</a>)</span>
         <?php endif; ?>
     </legend>
 
@@ -78,8 +78,6 @@
                         <?php echo $view->createNonceFormField( 'base.customDimensionDelete' ); ?>
                         <input type="hidden" name="<?php echo $view->getNs(); ?>propertyId"
                             value="<?php $view->out( $view->propertyId ); ?>">
-                        <input type="hidden" name="<?php echo $view->getNs(); ?>siteId"
-                            value="<?php $view->out( $view->siteId ); ?>">
                         <input type="hidden" name="<?php echo $view->getNs(); ?>dimensionKey"
                             value="<?php $view->out( $dimension['dimension_key'] ); ?>">
                         <input type="hidden" name="<?php echo $view->getNs(); ?>action"

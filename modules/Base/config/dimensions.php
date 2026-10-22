@@ -37,10 +37,11 @@ return array(
 
         /*
          * `date` and `siteId` are not here because a report asks for them: the
-         * ENGINE requires them. Every query constrains on the site and the
-         * period, and applyConstraints() resolves both through the dimension
-         * registry -- without them the cube refuses every query with "date is
-         * not a registered dimension".
+         * ENGINE requires them. Every query constrains on the period, a REST
+         * query naming a Profile constrains on the site too, and
+         * applyConstraints() resolves both through the dimension registry --
+         * without them the cube refuses every query with "date is not a
+         * registered dimension".
          *
          * Registered against the cube directly, NOT by appending it to
          * $fact_table_entities: every dimension in that array would then claim

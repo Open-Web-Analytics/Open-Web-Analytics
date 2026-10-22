@@ -28,8 +28,8 @@ class GoalEventDelete extends \OWA\Core\AdminController {
         $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
         $goalEvent->delete( $this->getParam( 'goalEventId' ) );
 
-        $this->set( 'siteId', $this->getParam( 'siteId' ) );
+        $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
         $this->setRedirectAction( 'base.goalEvents' );
-        $this->set( 'status_code', 3204 );
+        $this->set( 'status_code', 3220 );
     }
 }

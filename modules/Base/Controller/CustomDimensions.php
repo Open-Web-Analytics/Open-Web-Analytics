@@ -18,8 +18,7 @@ namespace OWA\Module\Base\Controller;
  * different things, which is the whole point -- v1's numbered slots forced one
  * namespace on an installation and cv3 meant something different on every site.
  *
- * ADDRESSED BY siteId even so, like the goal events screen, and resolves the
- * Property from it. Tier 2, because the screen is about the Property.
+ * Addressed by propertyId. Tier 2, because the screen is about the Property.
  */
 class CustomDimensions extends \OWA\Core\AdminController {
 
@@ -39,24 +38,18 @@ class CustomDimensions extends \OWA\Core\AdminController {
 
     function action() {
 
-        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $property_id = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->getByColumn( 'site_id', $siteId );
-
-        $property_id = (string) $site->get( 'property_id' );
-
-        $this->set( 'siteId', $siteId );
         $this->set( 'propertyId', $property_id );
         $this->set( 'dimensions',
             \OWA\Module\Base\Classes\Cube\Dimensions::forProperty( $property_id ) );
 
         $this->set( 'cube', self::cubeState( $property_id ) );
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $property_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 2 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $property_id ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.customDimensions' );
     }

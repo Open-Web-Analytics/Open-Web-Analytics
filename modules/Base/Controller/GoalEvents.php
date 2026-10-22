@@ -25,43 +25,20 @@ class GoalEvents extends \OWA\Core\AdminController {
 
     function action() {
 
-        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
-        $this->set( 'siteId', $siteId );
-        $this->set( 'goalEvents', self::listFor( $siteId ) );
+        $this->set( 'propertyId', $propertyId );
+        $this->set( 'goalEvents', self::listForProperty( $propertyId ) );
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $propertyId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         /*
-         * Tier 2: goal events belong to the Property. The screen is still
-         * addressed by a siteId and resolves the Property from it.
+         * Tier 2: goal events belong to the Property.
          */
         $this->set( 'hierarchy_tier', 2 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.goalEvents' );
-    }
-
-    /**
-     * The goal events of a Profile's Property.
-     *
-     * Rows, not slots: a Property with two goal events has two, and one with
-     * none has none rather than twenty blanks.
-     *
-     * @return array
-     */
-    public static function listFor( $siteId ) {
-
-        if ( ! $siteId ) {
-
-            return array();
-        }
-
-        /*
-         * By PROPERTY: goal events describe the website, and every Profile of
-         * it sees the same list.
-         */
-        return self::listForProperty( \OWA\Module\Base\Entity\GoalEvent::propertyFor( $siteId ) );
     }
 
     /**

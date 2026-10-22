@@ -9,7 +9,7 @@ class CustomDimensionEdit extends \OWA\Core\View {
         $this->t->set( 'page_title', 'New Custom Dimension' );
         $this->body->set_template( 'custom_dimension_edit.php' );
 
-        foreach ( array( 'siteId', 'propertyId', 'cube', 'scopes', 'types', 'submitted' ) as $key ) {
+        foreach ( array( 'propertyId', 'cube', 'scopes', 'types', 'submitted' ) as $key ) {
 
             $this->body->set( $key, $this->get( $key ) );
         }

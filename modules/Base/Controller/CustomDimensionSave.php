@@ -82,7 +82,7 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
     function errorAction() {
 
         CustomDimensionEdit::prepare( $this,
-            $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) ),
+            $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ),
             array(
                 'dimensionKey' => trim( (string) $this->getParam( 'dimensionKey' ) ),
                 'scope'        => (string) $this->getParam( 'scope' ),
@@ -104,7 +104,7 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
             ),
         ) );
 
-        $this->set( 'siteId', $this->getParam( 'siteId' ) );
+        $this->set( 'propertyId', $property_id );
         $this->setRedirectAction( 'base.customDimensions' );
 
         if ( ! $result['ok'] ) {

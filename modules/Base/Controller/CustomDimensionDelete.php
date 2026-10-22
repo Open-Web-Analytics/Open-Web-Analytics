@@ -44,7 +44,7 @@ class CustomDimensionDelete extends \OWA\Core\AdminController {
             (string) $this->getParam( 'propertyId' ),
             trim( (string) $this->getParam( 'dimensionKey' ) ) );
 
-        $this->set( 'siteId', $this->getParam( 'siteId' ) );
+        $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
         $this->setRedirectAction( 'base.customDimensions' );
 
         if ( ! $result['ok'] ) {

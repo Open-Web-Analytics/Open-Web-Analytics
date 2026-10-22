@@ -15,6 +15,18 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
     public function validate() {
 
+        // A goal event belongs to a Property; without one it would count nowhere.
+        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required', array(
+            'stopOnError' => true,
+            'errorMsg'    => $this->getMsg( 3218 ),
+        ) );
+
+        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists', array(
+            'entity'   => 'base.property',
+            'column'   => 'id',
+            'errorMsg' => $this->getMsg( 3218 ),
+        ) );
+
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
             array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
 
@@ -121,8 +133,8 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
     function action() {
 
-        $siteId = $this->getParam( 'siteId' );
-        $id     = $this->getParam( 'goalEventId' );
+        $propertyId = (string) $this->getParam( 'propertyId' );
+        $id         = $this->getParam( 'goalEventId' );
 
         $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
 
@@ -133,8 +145,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $this->getParam( 'value' ) );
 
-        $goalEvent->set( 'property_id',
-            \OWA\Module\Base\Entity\GoalEvent::propertyFor( $siteId ) );
+        $goalEvent->set( 'property_id', $propertyId );
         $goalEvent->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
         /*
          * ALWAYS once per session, whatever was submitted.
@@ -184,16 +195,16 @@ class GoalEventSave extends \OWA\Core\AdminController {
         } else {
 
             $goalEvent->set( 'id', $goalEvent->generateId(
-                'goal_event:' . $siteId . ':' . uniqid( '', true ) ) );
+                'goal_event:' . $propertyId . ':' . uniqid( '', true ) ) );
             $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
             $goalEvent->create();
         }
 
         $this->saveConditions( $goalEvent->get( 'id' ) );
 
-        $this->set( 'siteId', $siteId );
+        $this->set( 'propertyId', $propertyId );
         $this->setRedirectAction( 'base.goalEvents' );
-        $this->set( 'status_code', 3201 );
+        $this->set( 'status_code', 3219 );
     }
     private function saveConditions( $goalEventId ) {
 
@@ -260,7 +271,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
     }
     function errorAction() {
 
-        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
         /* Re-render the form with what was typed, rather than losing it. */
         $this->set( 'goalEvent', array(
@@ -296,7 +307,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $this->set( 'conditions', $conditions );
 
         $this->set( 'goalEventId', $this->getParam( 'goalEventId' ) );
-        $this->set( 'siteId', $siteId );
+        $this->set( 'propertyId', $propertyId );
         /*
          * The SUBMITTED trigger, so the re-rendered form offers the vocabulary of
          * the event the author had chosen -- not of the default. Falling back to
@@ -336,10 +347,10 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
 
         $this->set( 'savedProperties', $saved );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $propertyId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_tier', 2 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->set( 'error_code', 3002 );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.goalEventEdit' );

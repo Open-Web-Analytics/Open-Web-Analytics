@@ -14,7 +14,7 @@ class GoalEventEdit extends \OWA\Core\View {
 
         $this->body->set( 'goalEvent', $goalEvent );
         $this->body->set( 'goalEventId', $this->get( 'goalEventId' ) );
-        $this->body->set( 'siteId', $this->get( 'siteId' ) );
+        $this->body->set( 'propertyId', $this->get( 'propertyId' ) );
         $this->body->set( 'conditionProperties', $this->get( 'conditionProperties' ) );
 
         // Every trigger's properties, so the picker follows the event (owa.goalbuilder.js).
