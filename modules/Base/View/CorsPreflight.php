@@ -22,17 +22,28 @@ namespace OWA\Module\Base\View;
  * 
  */
 class CorsPreflight extends \OWA\Core\View\RestApi {
-        
+
+    /**
+     * The request headers the API reads: an application password, an API key
+     * and its signature, and a JSON body. Named rather than echoed back from
+     * Access-Control-Request-Headers, which granted whatever a page asked for.
+     */
+    const ALLOWED_HEADERS = 'Authorization, X-API-KEY, X-SIGNATURE, Content-Type';
+
+    /** The methods the API's routes answer. */
+    const ALLOWED_METHODS = 'GET, POST, DELETE, OPTIONS';
+
     function render() {
-        
-        // set the required HTTP_ACCESS_CONTROL_REQUEST_HEADERS
-        if ($this->get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS') ) {
-	        
-        	header("Access-Control-Allow-Headers: ". $this->get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS') );
-        }
-        
-        header("Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS, DELETE");
-        
+
+        /*
+         * The origin is granted, or not, in RestApi::pre() -- only a tracked
+         * site's origin gets Access-Control-Allow-Origin, so for any other the
+         * browser refuses whatever this allows.
+         */
+        header( 'Access-Control-Allow-Headers: ' . self::ALLOWED_HEADERS );
+        header( 'Access-Control-Allow-Methods: ' . self::ALLOWED_METHODS );
+        header( 'Access-Control-Max-Age: 600' );
+
         $this->setResponseData( '' );
     }
 }

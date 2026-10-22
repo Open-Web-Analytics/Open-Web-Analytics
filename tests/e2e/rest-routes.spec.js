@@ -28,6 +28,8 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { test, expect } = require('@playwright/test');
 
+const { FIXTURE } = require('./fixtures');
+
 const HELPER = path.join(__dirname, 'rest_e2e_helper.php');
 
 function helper(...args) {
@@ -349,5 +351,57 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
             expect(() => JSON.parse(body), 'the response did not parse as JSON').not.toThrow();
         });
 
+    });
+});
+
+/**
+ * A CORS preflight is answered, for a tracked site's origin only.
+ *
+ * A browser sends OPTIONS first for a cross-origin call carrying an
+ * Authorization or X-API-KEY header -- an application password used from a
+ * page. The preflight controller was looked up under a name nothing resolved
+ * any more, so every OPTIONS answered 500 and the browser never sent the call.
+ */
+test.describe('CORS preflight @selfhost-only', () => {
+
+    const preflight = (request, origin) => request.fetch(
+        routeUrl(installRoot(test.info().project.use.baseURL), 'base/v1/sites', '', null), {
+            method: 'OPTIONS',
+            headers: {
+                Origin: origin,
+                'Access-Control-Request-Method': 'GET',
+                'Access-Control-Request-Headers': 'authorization',
+            },
+        });
+
+    test('a tracked site\'s origin is allowed the headers the API reads', async ({ request }) => {
+        const res = await preflight(request, FIXTURE.siteDomain);
+        const h = res.headers();
+
+        expect(res.status()).toBe(200);
+        expect(h['access-control-allow-origin']).toBe(FIXTURE.siteDomain);
+        expect(h['access-control-allow-headers']).toContain('Authorization');
+        expect(h['access-control-allow-methods']).toContain('GET');
+    });
+
+    test('any other origin is not granted', async ({ request }) => {
+        const res = await preflight(request, 'https://not-a-tracked-site.example.org');
+
+        expect(res.status()).toBe(200);
+        expect(res.headers()['access-control-allow-origin']).toBeUndefined();
+    });
+
+    test('the allowed headers are named, not echoed from the request', async ({ request }) => {
+        const res = await request.fetch(
+            routeUrl(installRoot(test.info().project.use.baseURL), 'base/v1/sites', '', null), {
+                method: 'OPTIONS',
+                headers: {
+                    Origin: FIXTURE.siteDomain,
+                    'Access-Control-Request-Method': 'GET',
+                    'Access-Control-Request-Headers': 'x-anything-goes',
+                },
+            });
+
+        expect(res.headers()['access-control-allow-headers']).not.toContain('x-anything-goes');
     });
 });

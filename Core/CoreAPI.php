@@ -2716,10 +2716,15 @@ class CoreAPI {
             // get request method
             $request_method = $service->request->getRequestType();
 
-            // check to see if this is a CORS pre-flight Request
+            /*
+             * A CORS preflight. Built by class: it was looked up under its
+             * pre-PSR-4 name and file, which nothing resolves since the compat
+             * map went (#1091), so every OPTIONS request answered 500 and a
+             * browser refused the request it was asking about.
+             */
             if ($request_method == 'OPTIONS') {
 
-                $controller = \OWA\Core\Lib::simpleFactory( 'owa_corsPreflightController', 'controllers/corsPreflightController.php', [] );
+                $controller = new \OWA\Module\Base\Controller\CorsPreflight( array() );
                 return \OWA\Core\CoreAPI::runController( $controller );
             }
 
