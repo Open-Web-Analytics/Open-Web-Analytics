@@ -329,7 +329,7 @@ class Columns {
             return Context::SESSION . '.' . self::SESSION[ $name ];
         }
 
-        return Context::VISITOR . '.' . $name;
+        return ( $scope === 'profile' ? Context::PROFILE : Context::VISITOR ) . '.' . $name;
     }
 
     /**
@@ -340,7 +340,12 @@ class Columns {
 
         list( $scope, ) = $this->split( $source );
 
-        return $scope === 'session' ? Context::SESSION : Context::VISITOR;
+        if ( $scope === 'session' ) {
+
+            return Context::SESSION;
+        }
+
+        return $scope === 'profile' ? Context::PROFILE : Context::VISITOR;
     }
 
     /**
@@ -352,10 +357,10 @@ class Columns {
 
         $parts = explode( '.', (string) $source, 2 );
 
-        if ( count( $parts ) !== 2 || ! in_array( $parts[0], array( 'session', 'visitor' ), true ) ) {
+        if ( count( $parts ) !== 2 || ! in_array( $parts[0], array( 'session', 'visitor', 'profile' ), true ) ) {
 
             throw new \RuntimeException( sprintf(
-                '"%s" is not a cube source. Name one as session.<value> or visitor.<column>.',
+                '"%s" is not a cube source. Name one as session.<value>, visitor.<column> or profile.<column>.',
                 $source ) );
         }
 

@@ -221,6 +221,10 @@ return array(
         'description' => 'The session\'s ad if it arrived with tags or a referrer, else the ad of the visitor\'s last non-direct visit within the Property\'s attribution lookback.',
     ),
 
+    // The Profile's name as the build finds it; Profile ID is site_id, on raw.
+    'profile_name' => array( 'kind' => 'copy', 'from' => 'profile.name', 'text' => true,
+        'description' => 'The name of the Observation Profile the event was collected for, as it was when its day was last built.' ),
+
     // When the build wrote this partition, in microseconds. Constant within
     // one, which is what lets a report say how fresh its answer is.
     'built_at' => array( 'kind' => 'literal', 'value' => 'built_at',

@@ -105,6 +105,8 @@ return array(
             'description' => 'The day and hour together, as 2026092518 -- one value that sorts chronologically.' ),
         'siteId' => array( 'column' => 'site_id', 'label' => 'Profile ID',
             'family' => 'site', 'description' => 'The tracking id of the Observation Profile the event was collected for. Reports cover every Profile of a Property; this breaks them out.' ),
+        'profileName' => array( 'column' => 'profile_name', 'label' => 'Profile Name',
+            'family' => 'site', 'description' => 'The name of the Observation Profile the event was collected for, as it was when its day was last built.' ),
 
             // ---- the page -------------------------------------------------
             'pageLocation' => array( 'column' => 'page_location', 'label' => 'Page URL',
