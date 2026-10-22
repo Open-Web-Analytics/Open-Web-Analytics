@@ -132,18 +132,32 @@ final class ProfileSettingsScreenTest extends TestCase
     /**
      * The wiring: the screen saves through the switch. On stores the value even
      * when it equals the inherited one; off removes it.
+     *
+     * A field has a switch only when something above it holds a value, and
+     * nothing on this screen does by default -- the boolean it used,
+     * enableEcommerceReporting, is a Property setting now. So the Property is
+     * given a value first.
      */
     public function testTheOverrideSwitchDecidesWhatIsStored(): void
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
-        $key     = 'enableEcommerceReporting';
+        $key     = 'domain_aliases';
+
+        $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id );
+
+        if ( $property_id === '' ) {
+            $this->markTestSkipped( 'needs a Profile with a Property' );
+        }
+
+        $held = \OWA\Core\CoreAPI::getScopedSettingRow( 'property', $property_id, 'base', $key );
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
+        \OWA\Core\CoreAPI::setScopedSetting( 'property', $property_id, 'base', $key, 'alias.example.test' );
 
         $inherited = \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'];
 
-        $this->assertNotNull( $inherited, 'a boolean has a default, so it has a switch' );
+        $this->assertSame( 'alias.example.test', $inherited, 'the Property\'s value is what the Profile inherits' );
 
         $save = function ( array $params ) use ( $site_id ) {
 
@@ -153,11 +167,11 @@ final class ProfileSettingsScreenTest extends TestCase
 
         try {
             $save( array(
-                'config'   => array( 'base.enableEcommerceReporting' => $inherited ? '1' : '0' ),
-                'override' => array( 'base.enableEcommerceReporting' => '1' ),
+                'config'   => array( 'base.domain_aliases' => $inherited ),
+                'override' => array( 'base.domain_aliases' => '1' ),
             ) );
 
-            $this->assertSame( (bool) $inherited,
+            $this->assertSame( $inherited,
                 \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
                 'switched on, the value is this Profile\'s own even when it matches what it inherits' );
 
@@ -170,6 +184,12 @@ final class ProfileSettingsScreenTest extends TestCase
 
         } finally {
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
+
+            if ( $held === null ) {
+                \OWA\Core\CoreAPI::clearScopedSetting( 'property', $property_id, 'base', $key );
+            } else {
+                \OWA\Core\CoreAPI::setScopedSetting( 'property', $property_id, 'base', $key, $held );
+            }
         }
     }
 

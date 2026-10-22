@@ -8,23 +8,18 @@ class PropertyAccess extends \OWA\Core\View {
 
         $this->t->set( 'page_title', 'Property Access Management' );
         $this->body->set_template( 'property_access.php' );
-        $this->body->set( 'site', $this->get( 'site' ) );
-        $this->body->set( 'siteId', $this->get( 'siteId' ) );
+        $this->body->set( 'property', $this->get( 'property' ) );
+        $this->body->set( 'propertyId', $this->get( 'propertyId' ) );
 
         /*
-         * The template asks the ENTITY which users are assigned -- the grant
-         * rows are a relation, not a column, so the property bag cannot answer
-         * it. Without this the form rendered every checkbox unchecked, and
-         * submitting it would have revoked everyone, because the submit
-         * replaces the whole grant set.
+         * Who is granted, decided at the Property (PropertyGrants). Without it
+         * the form rendered every checkbox unchecked, and submitting it would
+         * have revoked everyone shown.
          */
-        $siteEntity = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $siteEntity->getByColumn( 'site_id', $this->get( 'siteId' ) );
-
-        $this->body->set( 'siteEntity', $siteEntity );
+        $this->body->set( 'grantedUserIds', array_map( 'intval', (array) $this->get( 'grantedUserIds' ) ) );
 
         /*
-         * Always an edit: this screen only exists for a site that already
+         * Always an edit: this screen only exists for a Property that already
          * exists. The flag is the site page's, which served add and edit from
          * one template.
          */

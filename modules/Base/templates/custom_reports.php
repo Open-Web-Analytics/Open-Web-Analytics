@@ -55,8 +55,8 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                 'do'              => $owa_isViz ? 'base.visualizations' : 'base.customReports',
                 'rosterMine'      => $which === 'mine' ? '1' : '0',
                 'rosterFavorites' => $which === 'favorites' ? '1' : '0',
-            // add_state, or siteId is dropped and the Profile the report links
-            // depend on is lost the moment anyone filters.
+            // add_state, or propertyId is dropped and the Property the report
+            // links depend on is lost the moment anyone filters.
             ), true );
         };
         $owa_active = $owa_favs ? 'favorites' : ( $owa_mine ? 'mine' : 'all' );

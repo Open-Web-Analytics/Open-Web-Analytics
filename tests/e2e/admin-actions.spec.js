@@ -185,13 +185,10 @@ test.describe('admin: site CRUD', () => {
             page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
 
-        // sitesAdd redirects to the new Profile's Tracking Tag. The roster is
-        // the site control's fan-out -- base.sites is gone -- so that is where
-        // what was just created has to show up.
-        //
-        // Matched without asserting visibility on purpose: the fan-out only
-        // un-hides the profile list of the CURRENT Property, and a site added
-        // on a new domain gets a Property of its own.
+        // sitesAdd redirects to the new Profile's Tracking Tag. The site
+        // control's fan-out lists Properties -- base.sites is gone -- so that is
+        // where the new Property has to show up, and its Profile is on the
+        // Property's Observation Profiles roster.
         await page.goto('?', { waitUntil: 'networkidle' });
 
         // The typed name and domain land on the PROPERTY. The Profile is named
@@ -213,28 +210,32 @@ test.describe('admin: site CRUD', () => {
         await expect(propertyRow.locator('.owa_siteControlDomain'))
             .toContainText(newSiteHost);
 
-        // Its Profiles hang off the list keyed on the same index.
-        const propertyIndex = await propertyRow.getAttribute('data-property-index');
-        const profileRow = page.locator(
-            `.owa_siteControlProfiles ul[data-property-index="${propertyIndex}"] li.owa_siteControlItem`,
-        );
-        await expect(profileRow, 'the new Property should have exactly one Profile')
-            .toHaveCount(1);
+        // The links are built by makeLink(), which prefixes params with the app
+        // namespace when one is configured -- so accept either spelling.
+        const paramOf = (href, name) => {
+            const params = new URL(href, page.url()).searchParams;
+            return params.get(`owa_${name}`) || params.get(name);
+        };
+
+        const propertyId = paramOf(
+            await propertyRow.locator('a.owa_siteControlEdit').getAttribute('href'), 'propertyId');
+        expect(propertyId, 'the site control must expose the new Property id').toBeTruthy();
+
+        const openRoster = () => gotoAction(page, 'base.propertyProfiles', `&owa_propertyId=${propertyId}`);
+        const profileRows = () => page.locator('table.owa_propertyProfiles tbody tr');
+
+        await openRoster();
+        await expect(profileRows(), 'the new Property should have exactly one Profile').toHaveCount(1);
 
         // --- EDIT --------------------------------------------------------------
-        // Read the identifier off the control rather than deriving it. site_id
+        // Read the identifier off the roster rather than deriving it. site_id
         // used to be md5(domain-as-typed), so the spec could compute what the
         // admin UI would store; identifiers are minted now, so the only thing
         // that knows this site's id is the page that just rendered it.
-        const editHref = await profileRow
-            .locator('a[href*="base.sitesProfile"]')
-            .first()
-            .getAttribute('href');
-        const editParams = new URL(editHref, page.url()).searchParams;
-        // The link is built by makeLink(), which prefixes params with the app
-        // namespace when one is configured -- so accept either spelling.
-        const createdSiteId = editParams.get('owa_siteId') || editParams.get('siteId');
-        expect(createdSiteId, 'the site control must expose the new site id').toBeTruthy();
+        const createdSiteId = paramOf(
+            await profileRows().locator('a', { hasText: 'Details' }).getAttribute('href'), 'siteId');
+        expect(createdSiteId, 'the roster must expose the new site id').toBeTruthy();
+        await expect(profileRows()).toContainText(createdSiteId);
 
         const newName = 'OWA E2E Renamed Profile';
         await gotoAction(page, 'base.sitesProfile', `&owa_siteId=${createdSiteId}&owa_edit=1`);
@@ -249,11 +250,10 @@ test.describe('admin: site CRUD', () => {
         await expect(page.locator('.panel_headline')).toHaveText('Profile Details');
         await expect(page.locator('input[name="name"]')).toHaveValue(newName);
 
+        await openRoster();
+        await expect(profileRows(), 'renaming a Profile must not rename its Property')
+            .toContainText(newName);
         await page.goto('?', { waitUntil: 'networkidle' });
-        await expect(
-            page.locator('.owa_siteControlProfiles li.owa_siteControlItem', { hasText: newName }),
-            'renaming a Profile must not rename its Property',
-        ).toHaveCount(1);
         await expect(propertyRow, 'the Property keeps its own name').toHaveCount(1);
 
         // --- DELETE ------------------------------------------------------------
@@ -292,11 +292,11 @@ test.describe('admin: site CRUD', () => {
             page.locator('.owa_confirmProceed').click(),
         ]);
 
-        // Gone from the fan-out.
+        // Back on the roster it was deleted from, which no longer lists it.
+        expect(paramOf(page.url(), 'do')).toBe('base.propertyProfiles');
+        await expect(profileRows()).toHaveCount(0);
+
         await page.goto('?', { waitUntil: 'networkidle' });
-        await expect(
-            page.locator('.owa_siteControlProfiles li.owa_siteControlItem', { hasText: newName })
-        ).toHaveCount(0);
 
         // Its Property SURVIVES, empty and still reachable.
         //
@@ -312,12 +312,9 @@ test.describe('admin: site CRUD', () => {
             .toHaveCount(1);
 
         // And it really is empty -- the Profile went, the Property did not.
-        const emptyIndex = await propertyRow.getAttribute('data-property-index');
-        await expect(
-            page.locator(
-                `.owa_siteControlProfiles ul[data-property-index="${emptyIndex}"] li.owa_siteControlItem`
-            )
-        ).toHaveCount(0);
+        await openRoster();
+        await expect(profileRows()).toHaveCount(0);
+        await expect(page.locator('.owa_emptyState')).toBeVisible();
     });
 
     test('a new Property goes on to adding its first Profile', async ({ page }) => {
@@ -348,10 +345,7 @@ test.describe('admin: site CRUD', () => {
 
         // The site control is on the new Property, though it has no Profile.
         await expect(page.locator('#owa_siteControlSummary .owa_siteControlProperty'))
-            .toHaveText(FIXTURE.newPropertyName);
-        const addHref = await page.locator('a.owa_siteControlAddProfile').getAttribute('href');
-        const addParams = new URL(addHref, page.url()).searchParams;
-        expect(addParams.get('owa_propertyId') || addParams.get('propertyId')).toBe(propertyId);
+            .toContainText(FIXTURE.newPropertyName);
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
@@ -364,8 +358,9 @@ test.describe('admin: site CRUD', () => {
             .toBe('base.sitesInvocation');
         const newSiteId = tagUrl.searchParams.get('owa_siteId') || tagUrl.searchParams.get('siteId');
         expect(newSiteId).toBeTruthy();
-        await expect(page.locator('#owa_siteControlSummary .owa_siteControlId')).toHaveText(newSiteId);
         await expect(page.locator('body')).toContainText(newSiteId);
+        await expect(page.locator('#owa_siteControlSummary .owa_siteControlProperty'))
+            .toContainText(FIXTURE.newPropertyName);
 
         // The Profile was created under the new Property, not a Property of its own.
         const propertyRow = page.locator(
@@ -373,18 +368,9 @@ test.describe('admin: site CRUD', () => {
             { hasText: FIXTURE.newPropertyName },
         );
         await expect(propertyRow).toHaveCount(1);
-        const index = await propertyRow.getAttribute('data-property-index');
-        await expect(
-            page.locator(`.owa_siteControlProfiles ul[data-property-index="${index}"] li.owa_siteControlItem`),
-        ).toHaveCount(1);
-
-        // Choosing another Property in the fan-out moves "add new" to it.
-        await page.locator('#owa_siteControlSummary').click();
-        const other = page.locator('.owa_siteControlProperties li.owa_siteControlItem')
-            .filter({ hasNotText: FIXTURE.newPropertyName }).first();
-        await other.locator('.owa_siteControlItemName').click();
-        expect(await page.locator('a.owa_siteControlAddProfile').getAttribute('href'))
-            .toBe(await other.getAttribute('data-add-profile-href'));
+        await gotoAction(page, 'base.propertyProfiles', `&owa_propertyId=${propertyId}`);
+        await expect(page.locator('table.owa_propertyProfiles tbody tr')).toHaveCount(1);
+        await expect(page.locator('table.owa_propertyProfiles tbody tr')).toContainText(newSiteId);
 
         // Remove it; teardown deletes the archived rows.
         await gotoAction(page, 'base.propertyProfile', `&owa_propertyId=${propertyId}`);
@@ -633,16 +619,14 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
 /**
  * THE FAN-OUT'S ROWS ARE CLICKABLE ACROSS THEIR WHOLE WIDTH.
  *
- * The row is a flex box: the name on the left, one or two secondary links on
- * the right. So the Profile's own link was as wide as its text -- 105px of a
- * 219px row -- and everything else was bare <li>, which carries no handler and
- * no href. A click on the padding, on the gap, or right of the name did
- * nothing, while cursor:pointer on the row said the whole width was live.
+ * The row is a flex box: the name on the left, a secondary link on the right.
+ * So a row's own link was as wide as its text and everything else was bare
+ * <li>, which carries no handler and no href. A click on the padding, on the
+ * gap, or right of the name did nothing, while cursor:pointer on the row said
+ * the whole width was live.
  *
- * The Properties column beside it never had the problem: it has no anchor and
- * its <li> carries a JavaScript handler, so it always answered everywhere. Two
- * columns side by side behaving differently is the part somebody notices before
- * they work out why, so both are asserted here.
+ * The control stops at the Property now -- a report is of a Property -- so the
+ * Properties column carries the stretched link.
  */
 test.describe('admin: the site control fan-out', () => {
 
@@ -654,7 +638,7 @@ test.describe('admin: the site control fan-out', () => {
         await expect(page.locator('#owa_siteControlPanel')).toBeVisible();
     });
 
-    /** Where a point lands: the Profile's link, the bare row, or nothing. */
+    /** Where a point lands: the row's link, the bare row, or nothing. */
     async function hitAt(page, columnClass, fraction) {
         return page.evaluate(([col, f]) => {
             const li = document.querySelector('.' + col + ' .owa_siteControlItem.is-selected')
@@ -679,32 +663,23 @@ test.describe('admin: the site control fan-out', () => {
         }, [columnClass, fraction]);
     }
 
-    test('a Profile row activates its link from edge to edge', async ({ page }) => {
+    test('a Property row activates its link from edge to edge', async ({ page }) => {
         for (const [where, fraction] of [['left edge', 0], ['middle', 0.5], ['right edge', 1]]) {
 
-            expect(await hitAt(page, 'owa_siteControlProfiles', fraction),
-                `the ${where} of a Profile row does not reach its link`).toBe('link');
+            expect(await hitAt(page, 'owa_siteControlProperties', fraction),
+                `the ${where} of a Property row does not reach its link`).toBe('link');
         }
     });
 
     /**
-     * And the secondary links still win inside that area.
+     * And the secondary link still wins inside that area.
      *
-     * "edit" sits within the region the row's own link now covers, so it
-     * needs to sit above it -- a secondary action you cannot click is a worse
-     * bug than the one being fixed. It is revealed on hover, so the row is
-     * hovered first.
+     * "edit" sits within the region the row's own link covers, so it needs to
+     * sit above it -- a secondary action you cannot click is a worse bug than
+     * the one being fixed. It is revealed on hover, so the row is hovered first.
      */
-    test('the secondary links stay reachable inside the stretched row', async ({ page }) => {
-        /*
-         * The SELECTED row, and scoped to the list that is actually on screen.
-         * The column holds one list per Property and all but one carry the
-         * hidden attribute, so an unscoped .first() picks a row in a hidden
-         * list -- which is not somewhere a person can hover.
-         */
-        const row = page.locator(
-            '.owa_siteControlProfiles .owa_siteControlProfileList:not([hidden]) '
-            + '.owa_siteControlItem').first();
+    test('the edit link stays reachable inside the stretched row', async ({ page }) => {
+        const row = page.locator('.owa_siteControlProperties .owa_siteControlItem').first();
 
         await expect(row).toBeVisible();
         await row.hover();
@@ -729,49 +704,23 @@ test.describe('admin: the site control fan-out', () => {
     });
 
     /**
-     * AND CLICKING A PROFILE ACTUALLY SWITCHES TO IT.
+     * AND CLICKING A PROPERTY OPENS ITS REPORTS.
      *
      * The hit tests above prove the pointer reaches the link. They do not prove
-     * the link goes anywhere, and it did not: it was built as
-     * makeLink( array( 'siteId' => ... ) ) with no `do`, which produces
-     * index.php?siteId=X. That URL lands on the default action, and the default
-     * action reads `site_id` -- the underscored spelling -- not `siteId`. So
-     * the chosen Profile was discarded and the fallback picked the first site
-     * the reader may see: every row in the column led to the same Profile.
-     *
-     * A switcher that does not switch, and three passing tests about where the
-     * pointer landed. This is the assertion that was missing.
+     * the link goes anywhere: a link with no `do` lands on the default action,
+     * which drops what it was given and picks the first site the reader may see.
      */
-    test('clicking a Profile switches to that Profile', async ({ page }) => {
-        const tileId = () =>
-            page.locator('#owa_siteControlSummary .owa_siteControlId').first().textContent();
+    test('clicking a Property opens its dashboard', async ({ page }) => {
+        const row = page.locator('.owa_siteControlProperties .owa_siteControlItem').last();
 
-        const before = (await tileId()).trim();
-
-        /*
-         * Whatever Profile list is ALREADY showing, rather than clicking a
-         * Property first.
-         *
-         * Clicking one picks which list is revealed, and on an install where
-         * the first Property has no Profiles under it that hides the list that
-         * was showing and reveals an empty one -- which is how this failed in
-         * CI while passing here, where every Property has a Profile. The claim
-         * being tested is "clicking a Profile lands on that Profile", and it
-         * needs a Profile to click, not a particular one.
-         */
-        const row = page.locator(
-            '.owa_siteControlProfiles .owa_siteControlProfileList:not([hidden]) '
-            + '.owa_siteControlItem').first();
-
-        await expect(row, 'no Profile list is showing, so there is nothing to click')
-            .toBeVisible();
+        await expect(row).toBeVisible();
 
         const href = await row.locator('a.owa_siteControlSelect').getAttribute('href');
-        const wanted = href.match(/siteId=([^&]+)/)[1];
+        const wanted = href.match(/propertyId=([^&]+)/)[1];
+        const name = (await row.locator('.owa_siteControlItemName').textContent()).trim();
 
-        expect(wanted, 'the Profile link carries no siteId').toBeTruthy();
-        expect(href, 'the Profile link names no action, so the default one runs and drops the siteId')
-            .toContain('do=');
+        expect(wanted, 'the Property link carries no propertyId').toBeTruthy();
+        expect(href, 'the Property link names no action').toContain('do=');
 
         // Clicked at the ROW's edge, not on the words -- so this covers the
         // stretch and the destination together, which is how someone uses it.
@@ -783,36 +732,12 @@ test.describe('admin: the site control fan-out', () => {
         ]);
 
         expect(page.url()).toContain(wanted);
-
-        const after = (await tileId()).trim();
-
-        // THE claim: you land on the Profile you picked. True whether or not
-        // that is the one you were already on.
-        expect(after, 'clicking a Profile did not land on that Profile').toBe(wanted);
-
-        /*
-         * And that it MOVED -- but only where there was somewhere to move to.
-         *
-         * CI's scratch install has a single Profile, so the one you can pick is
-         * the one you are on and "it changed" is unassertable there. Asserting
-         * it unconditionally passed on this box, which has several, and failed
-         * in CI for a reason that had nothing to do with the fix.
-         */
-        if (wanted !== before) {
-            expect(after, 'switching Profile left us on the Profile we came from')
-                .not.toBe(before);
-        }
+        expect(page.url()).not.toMatch(/siteId=/);
+        await expect(page.locator('#owa_siteControlSummary .owa_siteControlProperty')).toContainText(name);
     });
 
-    /** The Properties column answers across its whole row too, via its handler. */
-    test('a Property row answers from edge to edge', async ({ page }) => {
-        for (const [where, fraction] of [['left edge', 0], ['middle', 0.5], ['right edge', 1]]) {
-
-            // 'row only' is the right answer here: the column has no anchor,
-            // and the <li> itself is what carries the click handler.
-            expect(await hitAt(page, 'owa_siteControlProperties', fraction),
-                `the ${where} of a Property row reaches nothing at all`).toBe('row only');
-        }
+    test('the control offers no Profiles', async ({ page }) => {
+        await expect(page.locator('.owa_siteControlProfiles')).toHaveCount(0);
     });
 });
 
@@ -835,7 +760,7 @@ test.describe('admin: start_page default action', () => {
         await login(page);
 
         // start_page is base.reportingHome now, not the base.sites roster --
-        // that screen is gone and you land on the last Profile you looked at.
+        // that screen is gone and you land on the last Property you looked at.
         // Read the setting rather than hardcoding it, so this stays honest if
         // the default is repointed again.
         await page.goto('?owa_do=base.reportingHome', { waitUntil: 'networkidle' });
@@ -856,7 +781,7 @@ test.describe('admin: start_page default action', () => {
      * The start_page report itself -- reached by default, so a break here takes
      * out the admin UI's front door and every post-login redirect with it.
      */
-    test('the start_page lands on a report scoped to a Profile', async ({ page }) => {
+    test('the start_page lands on a report scoped to a Property', async ({ page }) => {
         await login(page);
         await page.goto('?', { waitUntil: 'networkidle' });
 
@@ -864,11 +789,11 @@ test.describe('admin: start_page default action', () => {
 
         // It used to be the base.sites roster and the assertion was that the
         // fixture site appeared as a ROW. The front door is a report now, so
-        // what has to be true is that it arrived scoped to a Profile: no
-        // siteId means makeNavigationMenu() returns false and there is no left
-        // nav at all, which is the failure this guards.
-        expect(page.url(), 'the front door must resolve to a Profile')
-            .toMatch(/siteId=/);
+        // what has to be true is that it arrived scoped to a Property: no scope
+        // means makeNavigationMenu() returns false and there is no left nav at
+        // all, which is the failure this guards.
+        expect(page.url(), 'the front door must resolve to a Property')
+            .toMatch(/propertyId=/);
 
         expect(body, 'the report chrome should carry the site control')
             .toContain('owa_siteControl');

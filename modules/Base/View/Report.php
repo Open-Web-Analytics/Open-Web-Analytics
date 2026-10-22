@@ -77,6 +77,7 @@ class Report extends \OWA\Core\View {
         $this->body->set('title_count', $this->get('title_count') );
 
         $this->body->set('currentSiteId', $this->get('currentSiteId'));
+        $this->body->set('currentPropertyId', $this->get('currentPropertyId'));
         // "Data as of" in the header, or null; see ReportController::pre().
         $this->body->set('report_as_of', $this->get('report_as_of') ?: null);
 
@@ -87,8 +88,9 @@ class Report extends \OWA\Core\View {
         // set link state used by report navigation
         $period = $this->get('period');
 
+        // The Property, which is what every report the nav links to is of.
         $link_state = array(
-            'siteId' => $this->get('currentSiteId')
+            'propertyId' => $this->get('currentPropertyId')
         );
 
         if ( $period->get() === 'date_range' ) {

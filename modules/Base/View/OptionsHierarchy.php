@@ -18,17 +18,21 @@ class OptionsHierarchy extends \OWA\Core\View {
         $this->body->set_template( 'options_hierarchy.php' );
         $this->body->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
         /*
-         * The breadcrumb and the tile both read params['siteId'] to know which
-         * Profile is current. Not every screen sets 'params' -- most set only
-         * 'siteId' -- so fall back to that rather than requiring each
-         * controller to remember, which is the kind of thing that silently
-         * leaves one screen without its context line.
+         * The breadcrumb and the tile both read params['propertyId'] and
+         * params['siteId'] to know which Property and Profile are current. Not
+         * every screen sets 'params' -- most set only 'siteId' or 'propertyId'
+         * -- so fall back to those rather than requiring each controller to
+         * remember, which is the kind of thing that silently leaves one screen
+         * without its context line.
          */
         $params = (array) $this->get( 'params' );
 
-        if ( empty( $params['siteId'] ) && $this->get( 'siteId' ) ) {
+        foreach ( array( 'siteId', 'propertyId' ) as $key ) {
 
-            $params['siteId'] = $this->get( 'siteId' );
+            if ( empty( $params[ $key ] ) && $this->get( $key ) ) {
+
+                $params[ $key ] = $this->get( $key );
+            }
         }
 
         $this->body->set( 'params', $params );

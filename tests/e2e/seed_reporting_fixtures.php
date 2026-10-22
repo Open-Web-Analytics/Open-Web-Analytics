@@ -72,9 +72,9 @@ const E2E_MEDIUM_REFERERS = [
     'referral'       => 1,   // news.ycombinator.com
 ];
 
-// E-commerce fixture. enableEcommerceReporting is a PER-SITE setting, so the
-// seeder turns it on for the fixture site -- the global base setting of the same
-// name has been false since it was introduced and is not what any report reads.
+// E-commerce fixture. enableEcommerceReporting is a PER-PROPERTY setting, so
+// the seeder turns it on for the fixture site's Property -- the install-wide
+// value has been false since it was introduced.
 // Two transactions with three line items between them: enough for the commerce
 // reports to have rows, and for productName to appear more than once so a
 // grouped dimension is not trivially one row per item.
@@ -455,11 +455,12 @@ function seed(): array
             : 'resumed a PARTIAL fixture (' . $existing . ' existing); tear down and re-seed for a '
               . 'deterministic set';
     }
-    // 4. E-commerce. The setting is per-site; enabling it is what makes the
-    //    e-commerce tab appear on the session-based reports and lets the
+    // 4. E-commerce. The setting is per Property; enabling it is what makes
+    //    the e-commerce tab appear on the session-based reports and lets the
     //    commerce reports return rows.
-    \OWA\Core\CoreAPI::persistSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting', true);
-    $out['ecommerce_enabled']   = (bool) \OWA\Core\CoreAPI::getSiteSetting(E2E_SITE_ID, 'enableEcommerceReporting');
+    $ecommerce_property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite(E2E_SITE_ID);
+    \OWA\Core\CoreAPI::setScopedSetting('property', $ecommerce_property, 'base', 'enableEcommerceReporting', true);
+    $out['ecommerce_enabled']   = (bool) \OWA\Core\CoreAPI::getSetting('base', 'enableEcommerceReporting', 'property', $ecommerce_property);
     $out['transactions_seeded'] = seedTransactions();
 
     // 5. Notifications for the header bell.

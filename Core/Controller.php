@@ -406,7 +406,7 @@ class Controller extends \OWA\Core\Base {
             }
 
             $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
-            if (!$currentUser->isCapable($this->getRequiredCapability(),$this->getCurrentSiteId())) {
+            if ( ! $this->isCurrentUserCapable( $currentUser ) ) {
                 \OWA\Core\CoreAPI::debug('User does not have capability required by this controller.');
                 $this->authenticatedButNotCapableAction();
                 //needed?
@@ -418,6 +418,18 @@ class Controller extends \OWA\Core\Base {
 
         }
         return true;
+    }
+
+    /**
+     * Whether the user holds this controller's capability for what the request
+     * is about. A site, here; ReportController answers for a Property.
+     *
+     * @param  \OWA\Module\Base\Classes\ServiceUser $currentUser
+     * @return bool
+     */
+    protected function isCurrentUserCapable( $currentUser ) {
+
+        return (bool) $currentUser->isCapable( $this->getRequiredCapability(), $this->getCurrentSiteId() );
     }
 
     // needed?
@@ -952,6 +964,27 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
+     * A Profile of the Property that the current user may see, or ''.
+     *
+     * Unlike resolveCurrentSiteId(), never falls back to another Property's.
+     *
+     * @param  string $propertyId
+     * @return string
+     */
+    protected function profileOfProperty( $propertyId ) {
+
+        foreach ( (array) $this->getSitesAllowedForCurrentUser() as $site ) {
+
+            if ( (string) $site->get( 'property_id' ) === (string) $propertyId ) {
+
+                return (string) $site->get( 'site_id' );
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * The settings nav for the hierarchy, shown under the site control.
      *
      * One group per tier, each holding that tier's screens. This is why the
@@ -962,11 +995,11 @@ class Controller extends \OWA\Core\Base {
      * Only the install-wide options live in the settings nav proper now, so
      * this is the whole of what hangs off the hierarchy.
      *
-     * @param string $siteId     the Profile in context, if any
+     * @param string $siteId     the Profile the SCREEN is about, if it is one
+     *                           of a Profile's own screens; '' otherwise. It
+     *                           is what adds the Observation Profile group
      * @param string $propertyId the Property in context; derived from the
-     *                           Profile when not given, because most screens
-     *                           know which site they are on and not which
-     *                           Property that implies
+     *                           Profile when not given
      * @return array group label => array of items
      */
     protected function getHierarchyNav( $siteId = '', $propertyId = '' ) {
@@ -1056,55 +1089,67 @@ class Controller extends \OWA\Core\Base {
 
         if ( $propertyId ) {
 
+            /*
+             * Goal Events and Custom Dimensions belong to the Property but are
+             * addressed by a siteId, and resolve the Property from it. On a
+             * Property screen there is no Profile in context, so one of the
+             * Property's is named for them; with none, they are left out.
+             */
+            $propertySiteId = $siteId ?: $this->profileOfProperty( $propertyId );
+
             $nav['Property'] = array(
                 array( 'do' => 'base.propertyProfile', 'label' => 'Details',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
                 /*
-                 * Goal events describe a behaviour on the WEBSITE, so they
-                 * belong here and every Profile of it inherits them. Counting
-                 * still happens per Profile, because a conversion is a flag on
-                 * a session and a session belongs to one.
-                 *
-                 * Addressed by siteId even so: the screen is reached from a
-                 * Profile in the nav, and it resolves the Property itself.
+                 * Where a Profile is reached from. The site control stops at
+                 * the Property, because reports are of a Property; a Profile's
+                 * own screens -- its details, how it observes, its tag -- are
+                 * reached through this roster.
                  */
-                array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
-                       'params' => array( 'siteId' => $siteId ),
-                       'capability' => 'edit_settings' ),
+                array( 'do' => 'base.propertyProfiles', 'label' => 'Observation Profiles',
+                       'params' => array( 'propertyId' => $propertyId ),
+                       'capability' => 'edit_sites' ),
+            );
+
+            if ( $propertySiteId ) {
+
+                /*
+                 * Goal events describe a behaviour on the WEBSITE, so they
+                 * belong here and every Profile of it inherits them.
+                 */
+                $nav['Property'][] = array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
+                       'params' => array( 'siteId' => $propertySiteId ),
+                       'capability' => 'edit_settings' );
                 /*
                  * Custom dimensions belong to the Property because the
                  * reporting cube does -- one cube per Property, so the column a
                  * registration adds is the Property's and two Properties may
                  * use the same key for different things.
-                 *
-                 * Addressed by siteId like the goal events beside it: reached
-                 * from a Profile, and it resolves the Property itself.
                  */
-                array( 'do' => 'base.customDimensions', 'label' => 'Custom Dimensions',
-                       'params' => array( 'siteId' => $siteId ),
-                       'capability' => 'edit_settings' ),
-                array( 'do' => 'base.propertyRetention', 'label' => 'Data Retention',
-                       'params' => array( 'propertyId' => $propertyId ),
-                       'capability' => 'edit_settings' ),
-            );
+                $nav['Property'][] = array( 'do' => 'base.customDimensions', 'label' => 'Custom Dimensions',
+                       'params' => array( 'siteId' => $propertySiteId ),
+                       'capability' => 'edit_settings' );
+            }
+
+            $nav['Property'][] = array( 'do' => 'base.propertyRetention', 'label' => 'Data Retention',
+                   'params' => array( 'propertyId' => $propertyId ),
+                   'capability' => 'edit_settings' );
 
             /*
              * Access is granted to a WEBSITE, not to one way of observing it,
-             * so it belongs to the Property. The grants are still stored per
-             * Profile, which is why this needs a siteId to render -- moving the
-             * storage is a migration and a change to how sitesEditAllowedUsers
-             * resolves them.
+             * so it belongs to the Property. Stored per Profile; PropertyGrants
+             * reads and writes it across all of them.
              */
-            if ( $siteId ) {
-
-                $nav['Property'][] = array(
-                    'do' => 'base.propertyAccess', 'label' => 'Property Access Management',
-                    'params' => array( 'siteId' => $siteId ),
-                    'capability' => 'edit_sites' );
-            }
+            $nav['Property'][] = array( 'do' => 'base.propertyAccess', 'label' => 'Property Access Management',
+                   'params' => array( 'propertyId' => $propertyId ),
+                   'capability' => 'edit_sites' );
         }
 
+        /*
+         * Only on a screen about a Profile. The caller passes a siteId when the
+         * screen is one of the Profile's own, and the Property otherwise.
+         */
         if ( $siteId ) {
 
             $nav['Observation Profile'] = array(

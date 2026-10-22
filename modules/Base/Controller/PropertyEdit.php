@@ -173,7 +173,10 @@ class PropertyEdit extends \OWA\Core\AdminController {
     private static function scopedFieldSets() {
 
         return array_merge(
-            array( \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ) ),
+            array(
+                \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
+                \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyReporting' ),
+            ),
             \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) );
     }
 

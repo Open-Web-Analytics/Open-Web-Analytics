@@ -305,19 +305,19 @@ final class ReportingReadinessTest extends TestCase
     {
         $down = $this->render('report_not_ready.php', [
             'readiness'            => Status::readinessFor('7', true, null),
-            'siteId'               => 'alice-site',
             'can_view_cube_status' => false,
         ]);
 
         $this->assertStringContainsString('Reports need the job scheduler.', $down);
         $this->assertStringContainsString('cmd=schedule-run', $down, 'the cron entry is shown');
-        $this->assertStringContainsString('base.sitesInvocation', $down);
+        // The tag question is per Profile, so it is asked from the Property's roster.
+        $this->assertStringContainsString('base.propertyProfiles', $down);
+        $this->assertStringContainsString('propertyId=7', $down);
         $this->assertStringNotContainsString('base.cubeStatusDetail', $down,
             'the status page is offered only to someone who can open it');
 
         $admin = $this->render('report_not_ready.php', [
             'readiness'            => Status::readinessFor('7', false, null),
-            'siteId'               => 'alice-site',
             'can_view_cube_status' => true,
         ]);
 
@@ -326,11 +326,10 @@ final class ReportingReadinessTest extends TestCase
 
         $orphan = $this->render('report_not_ready.php', [
             'readiness'            => Status::readinessFor('', false, null),
-            'siteId'               => 'alice-site',
             'can_view_cube_status' => true,
         ]);
 
-        $this->assertStringNotContainsString('base.sitesInvocation', $orphan,
+        $this->assertStringNotContainsString('base.propertyProfiles', $orphan,
             'with no Property there is no tag question to send anyone to');
     }
 }

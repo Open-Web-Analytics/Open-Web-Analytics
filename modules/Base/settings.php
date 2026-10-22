@@ -227,7 +227,8 @@ return array(
         'enableEcommerceReporting' => array(
             'default'  => false,
             'storable' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Not per Profile: a report is of a Property, and covers them all.
+            'scopes'   => array( 'install', 'property' ),
             'type'     => 'boolean',
             'label'    => 'e-commerce Reporting',
             'description' => 'Adds e-commerce metrics to reports.',

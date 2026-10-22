@@ -18,10 +18,8 @@ namespace OWA\Module\Base\Controller;
  * different things, which is the whole point -- v1's numbered slots forced one
  * namespace on an installation and cv3 meant something different on every site.
  *
- * ADDRESSED BY siteId even so, like the goal events screen: it is reached from
- * a Profile in the nav and resolves the Property itself, so the context line
- * above it stops at the Profile (tier 3) while getHierarchyNav() files the
- * ENTRY under Property, where the data lives.
+ * ADDRESSED BY siteId even so, like the goal events screen, and resolves the
+ * Property from it. Tier 2, because the screen is about the Property.
  */
 class CustomDimensions extends \OWA\Core\AdminController {
 
@@ -57,8 +55,8 @@ class CustomDimensions extends \OWA\Core\AdminController {
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_tier', 3 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId ) );
+        $this->set( 'hierarchy_tier', 2 );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.customDimensions' );
     }

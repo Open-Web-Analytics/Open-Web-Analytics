@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 69;
+        $this->required_schema_version = 70;
         return parent::__construct();
     }
 
@@ -319,13 +319,21 @@ class Module extends \OWA\Core\Module {
                 'domain_aliases',
                 'query_string_filters',
                 'default_page',
-                'enableEcommerceReporting',
             ),
         ) );
 
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.propertyAttribution',
             'settings' => array( 'attribution_lookback_days', 'campaignUtmParams' ),
+        ) );
+
+        /*
+         * What a Property's reports show. On the Property, not the Profile: a
+         * report is of the Property and covers every Profile in it.
+         */
+        $this->registerSettingsFieldSet( array(
+            'id'       => 'base.propertyReporting',
+            'settings' => array( 'enableEcommerceReporting' ),
         ) );
 
         // The Property's Data Retention screen (Classes\Retention).
@@ -427,6 +435,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.optionsRetention',              'OWA\\Module\\Base\\Controller\\OptionsRetention',             'Controller/OptionsRetention.php' );
         $this->registerAction( 'base.optionsRetentionUpdate',        'OWA\\Module\\Base\\Controller\\OptionsRetentionUpdate',       'Controller/OptionsRetentionUpdate.php' );
         $this->registerAction( 'base.propertyRetention',             'OWA\\Module\\Base\\Controller\\PropertyRetention',            'Controller/PropertyRetention.php' );
+        $this->registerAction( 'base.propertyProfiles',              'OWA\\Module\\Base\\Controller\\PropertyProfiles',             'Controller/PropertyProfiles.php' );
         $this->registerAction( 'base.propertyRetentionUpdate',       'OWA\\Module\\Base\\Controller\\PropertyRetentionUpdate',      'Controller/PropertyRetentionUpdate.php' );
         $this->registerAction( 'base.retentionPreviewRest',          'OWA\\Module\\Base\\Controller\\RetentionPreviewRest',         'Controller/RetentionPreviewRest.php' );
         $this->registerAction( 'base.overlayLauncher',               'OWA\\Module\\Base\\Controller\\OverlayLauncher',              'Controller/OverlayLauncher.php' );
@@ -466,6 +475,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.organizationProfile',           'OWA\\Module\\Base\\Controller\\OrganizationProfile',          'Controller/OrganizationProfile.php' );
         $this->registerAction( 'base.profileSettings',               'OWA\\Module\\Base\\Controller\\ProfileSettings',              'Controller/ProfileSettings.php' );
         $this->registerAction( 'base.propertyAccess',                'OWA\\Module\\Base\\Controller\\PropertyAccess',               'Controller/PropertyAccess.php' );
+        $this->registerAction( 'base.propertyAccessUpdate',          'OWA\\Module\\Base\\Controller\\PropertyAccessUpdate',         'Controller/PropertyAccessUpdate.php' );
         $this->registerAction( 'base.propertyDelete',                'OWA\\Module\\Base\\Controller\\PropertyDelete',                'Controller/PropertyDelete.php' );
         $this->registerAction( 'base.propertyEdit',                  'OWA\\Module\\Base\\Controller\\PropertyEdit',                  'Controller/PropertyEdit.php' );
         $this->registerAction( 'base.organizationEdit',              'OWA\\Module\\Base\\Controller\\OrganizationEdit',              'Controller/OrganizationEdit.php' );
@@ -478,7 +488,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.sitesAddCli',                   'OWA\\Module\\Base\\Controller\\SitesAddCli',                  'Controller/SitesAddCli.php' );
         $this->registerAction( 'base.sitesDelete',                   'OWA\\Module\\Base\\Controller\\SitesDelete',                  'Controller/SitesDelete.php' );
         $this->registerAction( 'base.sitesEdit',                     'OWA\\Module\\Base\\Controller\\SitesEdit',                    'Controller/SitesEdit.php' );
-        $this->registerAction( 'base.sitesEditAllowedUsers',         'OWA\\Module\\Base\\Controller\\SitesEditAllowedUsers',        'Controller/SitesEditAllowedUsers.php' );
         $this->registerAction( 'base.sitesEditSettings',             'OWA\\Module\\Base\\Controller\\SitesEditSettings',            'Controller/SitesEditSettings.php' );
         $this->registerAction( 'base.trackerPublishCli',             'OWA\\Module\\Base\\Controller\\TrackerPublishCli',            'Controller/TrackerPublishCli.php' );
         $this->registerAction( 'base.jobsCli',                       'OWA\\Module\\Base\\Controller\\JobsCli',                      'Controller/JobsCli.php' );

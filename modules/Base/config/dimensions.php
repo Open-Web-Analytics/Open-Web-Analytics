@@ -103,8 +103,8 @@ return array(
         'dateHour' => array( 'datePart' => 'dateHour', 'column' => 'ts', 'label' => 'Date + Hour',
             'family' => 'time', 'data_type' => 'integer',
             'description' => 'The day and hour together, as 2026092518 -- one value that sorts chronologically.' ),
-        'siteId' => array( 'column' => 'site_id', 'label' => 'Site ID',
-            'family' => 'site', 'description' => 'The Profile the event was collected for.' ),
+        'siteId' => array( 'column' => 'site_id', 'label' => 'Profile ID',
+            'family' => 'site', 'description' => 'The tracking id of the Observation Profile the event was collected for. Reports cover every Profile of a Property; this breaks them out.' ),
 
             // ---- the page -------------------------------------------------
             'pageLocation' => array( 'column' => 'page_location', 'label' => 'Page URL',

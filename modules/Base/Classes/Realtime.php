@@ -43,7 +43,10 @@ class Realtime {
     /** @var string[] every statement run, in order */
     public $statements = array();
 
-    private $site_id;
+    private $property_id;
+
+    /** @var string[] the Property's Profiles, which raw is keyed by */
+    private $site_ids;
 
     private $end;
 
@@ -52,12 +55,13 @@ class Realtime {
     private $days;
 
     /**
-     * @param string   $site_id
+     * @param string   $property_id
      * @param int|null $now_usec the window's end, microseconds; now by default
      */
-    public function __construct( $site_id, $now_usec = null ) {
+    public function __construct( $property_id, $now_usec = null ) {
 
-        $this->site_id = (string) $site_id;
+        $this->property_id = (string) $property_id;
+        $this->site_ids    = Cube\Cubes::siteIds( $this->property_id );
         $this->end     = $now_usec !== null ? (int) $now_usec : (int) round( microtime( true ) * 1000000 );
         $this->start   = $this->end - self::WINDOW_MINUTES * 60 * 1000000;
 
@@ -297,13 +301,13 @@ class Realtime {
         );
     }
 
-    /** The site's active goal events, the way GoalMarking loads them. */
+    /** The Property's active goal events, the way GoalMarking loads them. */
     private function activeGoals() {
 
-        $property_id = \OWA\Module\Base\Entity\GoalEvent::propertyFor( $this->site_id );
+        $property_id = $this->property_id;
 
         // No Property is no goals. An unguarded where() on an empty value would
-        // hand this site every Property's goal events.
+        // hand this one every Property's goal events.
         if ( ! $property_id ) {
 
             return array();
@@ -332,19 +336,27 @@ class Realtime {
     /**
      * Run one card's statement over the window.
      *
-     * {raw} is raw's table and {window} the site, day and time bounds.
+     * {raw} is raw's table and {window} the Profiles, day and time bounds.
      * Substituted by name rather than by sprintf, because a compiled goal
      * predicate can carry a LIKE pattern and its % would be read as a format.
      *
      * @param  string   $sql
      * @param  int|null $from   window start, microseconds; the window's own by default
-     * @param  array    $params bound after the site
+     * @param  array    $params bound after the Profiles
      * @return array[]
      */
     private function rows( $sql, $from = null, array $params = array() ) {
 
-        $window = sprintf( 'r.site_id = ? AND r.yyyymmdd BETWEEN %d AND %d AND r.ts > %d AND r.ts <= %d',
-            min( $this->days ), max( $this->days ), $from !== null ? (int) $from : $this->start, $this->end );
+        /*
+         * No Profiles is no rows, not no restriction: an empty IN list is a
+         * syntax error, and dropping the clause would read every Property.
+         */
+        $sites = $this->site_ids
+            ? 'r.site_id IN (' . implode( ', ', array_fill( 0, count( $this->site_ids ), '?' ) ) . ')'
+            : '1 = 0';
+
+        $window = sprintf( '%s AND r.yyyymmdd BETWEEN %d AND %d AND r.ts > %d AND r.ts <= %d',
+            $sites, min( $this->days ), max( $this->days ), $from !== null ? (int) $from : $this->start, $this->end );
 
         $sql = str_replace( array( '{raw}', '{window}' ),
             array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(), $window ), $sql );
@@ -352,7 +364,7 @@ class Realtime {
         $this->statements[] = $sql;
 
         return array_map( function ( $r ) { return (array) $r; },
-            (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, array_merge( array( $this->site_id ), $params ) ) );
+            (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, array_merge( $this->site_ids, $params ) ) );
     }
 }
 

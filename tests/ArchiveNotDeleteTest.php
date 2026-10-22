@@ -280,7 +280,8 @@ final class ArchiveNotDeleteTest extends TestCase
         $profileDelete = (string) file_get_contents(
             OWA_DIR . 'modules/Base/Controller/SitesDelete.php' );
 
-        $this->assertStringNotContainsString( 'base.property', $profileDelete,
+        // Quoted whole: the redirect names base.propertyProfiles, which is a screen.
+        $this->assertStringNotContainsString( "'base.property'", $profileDelete,
             'Deleting a Profile touches its Property, so removing the last Profile of a '
             . 'website would silently remove the website.' );
 

@@ -45,12 +45,12 @@ $owa_max        = (int) $view->get('max_widgets');
 
     <?php
         /*
-         * The site travels through the POST so the saved report's URL names
-         * one. Without it the author lands on -- and shares -- a link that only
-         * an admin can open: view_reports is only satisfied against a site.
+         * The Property travels through the POST so the saved report's URL names
+         * one. Without it the author lands on -- and shares -- a link that
+         * opens on whichever Property its reader looked at last.
          */
     ?>
-    <input type="hidden" name="siteId" value="<?php $view->out( $view->get('siteId') ); ?>" />
+    <input type="hidden" name="propertyId" value="<?php $view->out( $view->get('propertyId') ); ?>" />
 
     <?php /* The assembled definition. Written by the script below on submit. */ ?>
     <input type="hidden" name="customReportDefinition" id="customReportDefinition" value="" />

@@ -86,7 +86,7 @@ class UsersEdit extends \OWA\Core\AdminController {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
         $this->set( 'hierarchy_tier', 1 );
         $this->setView('base.optionsHierarchy');
         $this->setSubview('base.usersProfile');

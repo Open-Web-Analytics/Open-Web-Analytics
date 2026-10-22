@@ -14,9 +14,9 @@ use OWA\Tests\ReportCharacterizationHarness as Harness;
  * A report is not only its metrics and dimensions. Every one of them also gets
  * a site selector and a date-range picker, and those do not come from the
  * report -- they come from ReportController::pre(), which runs inside
- * doAction() once the user is authenticated. It sets `sites`, `currentSiteId`
- * and `period`, and folds siteId, period, startDate and endDate into the params
- * the view renders from.
+ * doAction() once the user is authenticated. It sets `sites`,
+ * `currentPropertyId`, `currentSiteId` and `period`, and folds propertyId,
+ * period, startDate and endDate into the params the view renders from.
  *
  * The characterization fixture does NOT cover any of this, deliberately: it
  * calls action() directly, so it records what each report declares for itself
@@ -37,7 +37,7 @@ use OWA\Tests\ReportCharacterizationHarness as Harness;
  * flat roster of every tracked site, and it inherited the report chrome and the
  * period refusal from ReportController -- a dependency invisible from its own
  * controller, which is why it was covered here. Reporting lands on the last
- * Profile viewed now, so there is no such page to hold the contract.
+ * Property viewed now, so there is no such page to hold the contract.
  */
 final class ReportChromeContractTest extends TestCase
 {
@@ -93,8 +93,11 @@ final class ReportChromeContractTest extends TestCase
             "$context: no site list, so the site filter renders empty" );
         $this->assertIsArray( $data['sites'], "$context: the site filter needs a list" );
 
+        $this->assertArrayHasKey( 'currentPropertyId', $data,
+            "$context: nothing tells the site control which Property is selected" );
+
         $this->assertArrayHasKey( 'currentSiteId', $data,
-            "$context: nothing tells the site filter which site is selected" );
+            "$context: nothing for the nav to check each link's capability against" );
 
         $this->assertArrayHasKey( 'period', $data,
             "$context: no time period, so the date picker has nothing to show" );
@@ -104,10 +107,14 @@ final class ReportChromeContractTest extends TestCase
         // The picker and the filter read these from params, not from the top
         // level -- and the report's own links carry them onward, which is how
         // the selection survives a drill-down.
-        foreach ( array( 'siteId', 'period', 'startDate', 'endDate' ) as $key ) {
+        foreach ( array( 'propertyId', 'period', 'startDate', 'endDate' ) as $key ) {
             $this->assertArrayHasKey( $key, $data['params'],
                 "$context: params.$key is missing, so the selection cannot travel" );
         }
+
+        // A report is of a Property; a siteId left in would travel as one Profile.
+        $this->assertArrayNotHasKey( 'siteId', $data['params'],
+            "$context: params.siteId survived, so its links would carry one Profile" );
 
         /*
          * templates/report.php builds the report object with `new OWA.report()`

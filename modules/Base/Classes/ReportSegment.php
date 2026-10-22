@@ -61,9 +61,8 @@ class ReportSegment {
     /**
      * Dimension groups the picker does not offer.
      *
-     * `site`: the report is already scoped to one site, and the site filter in
-     * the report chrome is where that is chosen. Offering siteId here is either
-     * redundant or a way to ask for a contradiction.
+     * `site` IS offered: a report is of a Property, so "the people seen on this
+     * Profile" is a segment worth asking for.
      *
      * `time`: the reporting period already bounds the report, and a date inside
      * the SEGMENT means something almost nobody intends -- the segment selects
@@ -71,7 +70,7 @@ class ReportSegment {
      * their activity across the whole period. It reads like "the report for
      * that day" and is not.
      */
-    const EXCLUDED_GROUPS = array( 'site', 'time' );
+    const EXCLUDED_GROUPS = array( 'time' );
 
     /** The dimension that names each kind of subject. */
     const SUBJECT_DIMENSIONS = array(
@@ -79,7 +78,7 @@ class ReportSegment {
         'session' => 'sessionId',
     );
 
-    private $siteId;
+    private $propertyId;
     private $period;
     private $startDate;
     private $endDate;
@@ -88,9 +87,12 @@ class ReportSegment {
     /** Why the segment selected nobody, when that was a refusal rather than a result. */
     private $error = null;
 
-    public function __construct( $siteId, $period, $startDate, $endDate, $constraints = '' ) {
+    /**
+     * @param string $propertyId the Property the report is of
+     */
+    public function __construct( $propertyId, $period, $startDate, $endDate, $constraints = '' ) {
 
-        $this->siteId      = $siteId;
+        $this->propertyId  = (string) $propertyId;
         $this->period      = $period;
         $this->startDate   = $startDate;
         $this->endDate     = $endDate;
@@ -153,7 +155,7 @@ class ReportSegment {
         $rsm = new ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray( 'sessions' );
-        $rsm->setSiteId( $this->siteId );
+        $rsm->setPropertyId( $this->propertyId );
         $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );
         $rsm->setLimit( 1 );
 
@@ -216,7 +218,7 @@ class ReportSegment {
 
         $rsm->metrics = $rsm->metricsStringToArray( 'sessions' );
         $rsm->setDimensions( $rsm->dimensionsStringToArray( $dimension ) );
-        $rsm->setSiteId( $this->siteId );
+        $rsm->setPropertyId( $this->propertyId );
         $rsm->setTimePeriod( $this->period, $this->startDate, $this->endDate );
         $rsm->setConstraints( $rsm->constraintsStringToArray( $this->constraints ) );
         $rsm->setLimit( self::LIMIT + 1 );

@@ -45,13 +45,26 @@ class ReportController extends \OWA\Core\AdminController {
      *
      * Opt-in, because most report controllers do not: the builders, the custom
      * report list and the REST controllers for sites and recordings all work
-     * with no cube. A screen that sets this is not drawn at all for a Profile
-     * whose Property has no cube yet -- it shows why instead, and nothing
+     * with no cube. A screen that sets this is not drawn at all for a Property
+     * with no cube yet -- it shows why instead, and nothing
      * queries a table that does not exist. See readiness in pre() and post().
      *
      * @var bool
      */
     protected $reads_reporting_data = false;
+
+    /**
+     * Whether a siteId on the request filters the report to that Profile.
+     *
+     * A report is of a Property, and every Profile in it. The REST API keeps a
+     * siteId as a Profile filter, so a client asking for one site's numbers
+     * still gets that site's numbers. A report SCREEN does not: a siteId there
+     * only names the Property, and the Profile dimension is how a screen breaks
+     * one out.
+     *
+     * @var bool
+     */
+    protected $filters_by_site = false;
 	
     /**
      * Constructor
@@ -96,6 +109,27 @@ class ReportController extends \OWA\Core\AdminController {
      * not come through a controller, and defence in depth is worth more than
      * the tidiness of removing it.
      */
+    /**
+     * Access to a report is access to its Property.
+     *
+     * Checked against the Property whenever the request names one, so a siteId
+     * beside it cannot carry a reader into a Property they may not see. Site
+     * access is held per Profile and any Profile of a Property grants the
+     * Property, so the check is made against one the reader may see.
+     */
+    protected function isCurrentUserCapable( $currentUser ) {
+
+        $propertyId = (string) $this->getParam( 'propertyId' );
+
+        if ( $propertyId === '' ) {
+
+            return parent::isCurrentUserCapable( $currentUser );
+        }
+
+        return (bool) $currentUser->isCapable( $this->getRequiredCapability(),
+            $currentUser->siteIdForProperty( $propertyId ) );
+    }
+
     function validate() {
 
         /*
@@ -176,8 +210,24 @@ class ReportController extends \OWA\Core\AdminController {
          */
         $this->set('site_hierarchy', $this->getSiteHierarchy( $sites ));
 
+        $propertyId = $this->resolvePropertyId( $sites );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
+
         /*
-         * Remember the Profile, so reporting resumes where it left off rather
+         * On a screen a siteId only named the Property. Dropped, so the links
+         * it builds and the queries it sends are of the Property.
+         */
+        if ( ! $this->filters_by_site ) {
+
+            unset( $this->params['siteId'], $this->params['site_id'] );
+        }
+
+        /*
+         * Remember the Property, so reporting resumes where it left off rather
          * than on a roster. Written on every report render -- the last one
          * looked at is the one to come back to, which is only knowable here.
          *
@@ -185,77 +235,32 @@ class ReportController extends \OWA\Core\AdminController {
          * making it account state would mean a write to the user table on every
          * report view and two machines fighting over one value.
          */
-        if ( $this->getParam( 'siteId' ) ) {
+        if ( $propertyId !== '' ) {
 
             \OWA\Core\CoreAPI::createCookie(
-                \OWA\Module\Base\Controller\ReportingHome::LAST_PROFILE_COOKIE,
-                $this->getParam( 'siteId' ),
+                \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE,
+                $propertyId,
                 time() + ( 3600 * 24 * 365 ) );
         }
 
+        $this->set( 'currentPropertyId', $propertyId );
+
         /*
-         * A REPORT IS ALWAYS OF A SITE, so one is resolved when the request
-         * names none.
-         *
-         * Reporting is per site: the nav's links carry a siteId, view_reports
-         * is satisfied against a particular site, and every query is scoped to
-         * one. A report page with no site is not a neutral state -- it is a
-         * page that cannot answer anything.
-         *
-         * What it DID was worse than empty. makeNavigationMenu() returns false
-         * without a currentSiteId, so the entire left-hand navigation vanished
-         * -- and the nav is how you leave the page. The report drew its title
-         * and its chrome, so nothing looked broken; there was simply no way out
-         * of it except the browser's back button.
-         *
-         * The way in was ordinary: save a custom report from a builder that was
-         * itself opened without a site, and the redirect lands here with none.
-         * The builder is a ReportController too, so resolving it HERE fixes the
-         * whole chain at once -- the builder's hidden siteId is filled, the
-         * save carries it, and the report it redirects to has one.
-         *
-         * The constructor scaffolded this and never did it:
-         *
-         *     if ( ! $siteId ) {
-         *         //$siteId = $this->getDefaultSiteId();
-         *     }
-         *
-         * It belongs here rather than there. The constructor runs before
-         * checkCapabilityAndAuthenticateUser(), so the current user's site
-         * grants are not loaded yet and "the sites this user may see" has no
-         * answer; pre() is documented as running once the user is loaded, and
-         * $sites above is that answer.
-         *
-         * The FIRST allowed site, which is the one the site filter already
-         * shows selected -- so the page agrees with its own control. Chosen
-         * from the allowed list rather than from the sites table, so this can
-         * only ever land on a site the reader could have picked themselves.
-         *
-         * A user with no sites at all still gets none. There is nothing to
-         * default to, and inventing one would be inventing access.
+         * A Profile of the Property the reader may see. Capabilities are held
+         * per site, and the nav checks each link's against this one; any
+         * Profile of a Property grants the Property, so which one is immaterial.
          */
-        $siteId = $this->getParam('siteId');
-
-        if ( ! $siteId && $sites ) {
-
-            $siteId = (string) array_key_first( $sites );
-
-            // The PARAM, not just the view value: pre() reads it again below
-            // for the metric sets, and everything downstream asks getParam().
-            $this->setParam( 'siteId', $siteId );
-        }
-
-        $this->set( 'currentSiteId', $siteId );
+        $this->set( 'currentSiteId', \OWA\Core\CoreAPI::getCurrentUser()->siteIdForProperty( $propertyId ) );
 
         /*
-         * IS REPORTING READY for this Profile? Asked once, here, by screens that
-         * draw cube data -- a cube exists only after a scheduled build, and a
-         * report on a Property without one would otherwise send every widget's
+         * IS REPORTING READY for this Property? Asked once, here, by screens
+         * that draw cube data -- a cube exists only after a scheduled build, and
+         * a report on a Property without one would otherwise send every widget's
          * query at a table that is not there. post() swaps the screen for the
          * reason. Null when ready.
          */
-        $this->set( 'reporting_readiness', $this->reads_reporting_data && $siteId
-            ? \OWA\Module\Base\Classes\Cube\Status::readiness( $siteId ) : null );
+        $this->set( 'reporting_readiness', $this->reads_reporting_data && $propertyId !== ''
+            ? \OWA\Module\Base\Classes\Cube\Status::readinessOfProperty( $propertyId ) : null );
 
         // pass full set of params to view
         $this->data['params'] = $this->params;
@@ -277,10 +282,10 @@ class ReportController extends \OWA\Core\AdminController {
          */
         $this->set( 'report_as_of', null );
 
-        if ( $siteId && self::showsAsOf( $this->reads_reporting_data,
+        if ( $propertyId !== '' && self::showsAsOf( $this->reads_reporting_data,
                 empty( $this->data['reporting_readiness'] ), $this->period->getEndDate()->getYyyymmdd() ) ) {
 
-            $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
+            $property_id = $propertyId;
 
             $this->set( 'report_as_of', array(
                 'timezone'    => (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'timezone' ) ?: date_default_timezone_get() ),
@@ -319,22 +324,20 @@ class ReportController extends \OWA\Core\AdminController {
         $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
         
         /*
-         * The metric sets this site offers -- site usage, and e-commerce if the
-         * site has it.
+         * The metric sets this Property offers -- site usage, and e-commerce if
+         * the Property has it.
          *
          * Derived by Core\MetricSets rather than built here: a report shows one
          * dimension measured several ways, and which ways exist depends on the
-         * site, not on the report. The interface draws them as tabs today,
+         * Property, not on the report. The interface draws them as tabs today,
          * which is why this used to be called $tabs; that is a presentation
          * choice and is expected to change.
          */
-        $siteId = $this->get('siteId');
-
-        $metricSets = \OWA\Core\MetricSets::forSite( $siteId );
+        $metricSets = \OWA\Core\MetricSets::forProperty( $propertyId );
 
         $tabs = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
 
-        if ( $siteId && ! \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'enableEcommerceReporting' ) ) {
+        if ( $propertyId !== '' && ! \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'property', $propertyId ) ) {
 
             unset( $nav['Ecommerce'] );
         }
@@ -376,7 +379,7 @@ class ReportController extends \OWA\Core\AdminController {
         /*
          * Reporting not ready: the report's own subview is replaced, so none of
          * its widgets is drawn and none asks for data. The chrome around it --
-         * the site control, the nav -- stays, so another Profile is one click
+         * the site control, the nav -- stays, so another Property is one click
          * away.
          */
         if ( ! empty( $this->data['reporting_readiness'] ) ) {
@@ -403,20 +406,62 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     /**
-     * Chooses a siteId from a list of AllowedSites
+     * The Property this report is of.
      *
-     * needed jsut in case a siteId is not passed on the request.
-     * @return string
+     * In order: the one the request names; the one its siteId belongs to; the
+     * one this browser last reported on, if the reader may still see it; the
+     * first the reader may see. A REPORT IS ALWAYS OF A PROPERTY: a report page
+     * with none has no nav (makeNavigationMenu() returns false without one)
+     * and no way off it but the back button.
+     *
+     * A named Property is not checked against $sites here. Access was checked
+     * against it before pre() ran (isCurrentUserCapable()), and an
+     * administrator may open a Property with no Profiles -- which has no site
+     * in $sites to be found through.
+     *
+     * @param  array  $sites site_id => site entity, the ones the reader may see
+     * @return string        '' only when the reader may see nothing
      */
-    protected function getDefaultSiteId() {
+    protected function resolvePropertyId( $sites ) {
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->select('site_id');
-        $db->from('owa_site');
-        $db->limit(1);
-        $ret = $db->getOneRow();
+        $named = (string) $this->getParam( 'propertyId' );
 
-        return $ret['site_id'];
+        if ( $named !== '' ) {
+
+            return $named;
+        }
+
+        $siteId = (string) $this->getParam( 'siteId' );
+
+        if ( $siteId !== '' ) {
+
+            return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
+        }
+
+        $allowed = array();
+
+        foreach ( (array) $sites as $site ) {
+
+            $allowed[] = (string) $site->get( 'property_id' );
+        }
+
+        $last = (string) \OWA\Core\CoreAPI::getStateParam(
+            \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE );
+
+        if ( $last !== '' && in_array( $last, $allowed, true ) ) {
+
+            return $last;
+        }
+
+        foreach ( $allowed as $propertyId ) {
+
+            if ( $propertyId !== '' && $propertyId !== '0' ) {
+
+                return $propertyId;
+            }
+        }
+
+        return '';
     }
 
     /**

@@ -50,15 +50,8 @@ async function addProfile(page) {
         page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
     ]);
 
-    await page.goto('?', { waitUntil: 'networkidle' });
-
-    const propertyRow = page.locator('.owa_siteControlProperties li.owa_siteControlItem',
-        { hasText: FIXTURE.newSiteName });
-    const index = await propertyRow.getAttribute('data-property-index');
-    const href = await page.locator(
-        `.owa_siteControlProfiles ul[data-property-index="${index}"] li.owa_siteControlItem a[href*="base.sitesProfile"]`)
-        .first().getAttribute('href');
-    const params = new URL(href, page.url()).searchParams;
+    // The save lands on the new Profile's Tracking Tag, which names it.
+    const params = new URL(page.url()).searchParams;
 
     return params.get('owa_siteId') || params.get('siteId');
 }
@@ -95,13 +88,20 @@ test.describe('reporting readiness', () => {
 
             expect(dataRequests, 'no widget asked for data').toEqual([]);
 
-            // The chrome stays, so another Profile is one click away.
+            // The chrome stays, so another Property is one click away.
             await expect(page.locator('.owa_siteControlProperties')).toHaveCount(1);
 
-            // And the tag question is answered where the tag is.
+            // And the tag question is answered where the tag is: each Profile's,
+            // from the Property's roster.
             await Promise.all([
                 page.waitForNavigation({ waitUntil: 'networkidle' }),
-                notice.getByRole('link', { name: 'Tracking Tag' }).click(),
+                notice.getByRole('link', { name: 'Observation Profiles' }).click(),
+            ]);
+
+            await Promise.all([
+                page.waitForNavigation({ waitUntil: 'networkidle' }),
+                page.locator('table.owa_propertyProfiles tbody tr', { hasText: siteId })
+                    .getByRole('link', { name: 'Tracking Tag' }).click(),
             ]);
 
             await expect(page.locator('.panel_headline')).toHaveText('Tracking Tag');

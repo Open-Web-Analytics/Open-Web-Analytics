@@ -97,21 +97,21 @@ class CustomReportSave extends \OWA\Core\AdminController {
         $this->set( 'reportId', 'custom-' . $result['id'] );
 
         /*
-         * The site travels with the redirect, and it has to.
+         * The Property travels with the redirect, and it has to.
          *
-         * view_reports is only satisfied against a PARTICULAR site, so a report
-         * URL naming no site is refused for everyone who is not an admin -- and
+         * view_reports is only satisfied against a PARTICULAR Property, so a
+         * report URL naming none is refused for everyone who is not an admin -- and
          * this URL is the one the author lands on and then copies to somebody
          * else. Without this the share link works for its author and for nobody
          * they send it to, which is the one failure mode this feature cannot
          * afford. Caught by the e2e suite, not by any unit test: it needs a real
          * user with a real site grant to reproduce.
          */
-        $siteId = (string) $this->getParam( 'siteId' );
+        $propertyId = (string) $this->getParam( 'propertyId' );
 
-        if ( $siteId !== '' ) {
+        if ( $propertyId !== '' ) {
 
-            $this->set( 'siteId', $siteId );
+            $this->set( 'propertyId', $propertyId );
         }
 
         $this->setRedirectAction( 'base.report' );

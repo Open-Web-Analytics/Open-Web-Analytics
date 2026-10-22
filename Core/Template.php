@@ -1063,12 +1063,15 @@ class Template extends TemplateEngine {
 
     /**
      * @param array        $links
-     * @param string       $currentSiteId
+     * @param string       $currentPropertyId the Property the report is of
      * @param array|string $current  the request's params, or just its action
+     * @param string       $accessSiteId a Profile of it the reader may see,
+     *                                   which each link's capability is checked
+     *                                   against; site access is held per Profile
      */
-    function makeNavigationMenu($links, $currentSiteId, $current = '') {
+    function makeNavigationMenu($links, $currentPropertyId, $current = '', $accessSiteId = '') {
 
-        if (!empty($links) && !empty($currentSiteId)) {
+        if (!empty($links) && !empty($currentPropertyId)) {
 
             /*
              * The WHOLE request, not just its action.
@@ -1089,7 +1092,7 @@ class Template extends TemplateEngine {
 
             $t = new \OWA\Core\Template;
             $t->set('links', $links);
-            $t->set('currentSiteId', $currentSiteId);
+            $t->set('currentSiteId', $accessSiteId);
 			$t->set('params', $params);
             // Only when there is some: the nav is built on screens that carry no
             // link state, and propagating an absent key is an undefined-key

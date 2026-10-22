@@ -1934,12 +1934,12 @@ final class CustomReportsTest extends TestCase
 
         $this->assertNotEmpty($data['subview'] ?? '', 'the report did not render');
 
-        foreach (array('sites', 'currentSiteId', 'period', 'dom_id') as $key) {
+        foreach (array('sites', 'currentPropertyId', 'currentSiteId', 'period', 'dom_id') as $key) {
             $this->assertArrayHasKey($key, $data,
                 "a custom report must come with $key like every other report");
         }
 
-        foreach (array('siteId', 'period', 'startDate', 'endDate') as $key) {
+        foreach (array('propertyId', 'period', 'startDate', 'endDate') as $key) {
             $this->assertArrayHasKey($key, $data['params'],
                 "params.$key is what carries the selection into the report's own links");
         }

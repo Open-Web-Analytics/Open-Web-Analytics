@@ -3199,7 +3199,7 @@ li.constraintRow {
     outline: none;
 }
 
-/* The three tiers, weighted by how specific each is to where you are. */
+/* The two tiers, weighted by how specific each is to where you are. */
 .owa_siteControlOrg {
     color: #999999;
     font-size: var(--owa-text-xs);
@@ -3214,26 +3214,12 @@ li.constraintRow {
     word-break: break-word;
 }
 
-.owa_siteControlProfile {
-    color: #666666;
-}
-
 /* A Property's domain, under its name in the fan-out. Grey and small: it is
    there to tell two similarly named Properties apart, not to be read first. */
 .owa_siteControlDomain {
     display: block;
     color: #999999;
     font-size: var(--owa-text-xs);
-    word-break: break-all;
-}
-
-/* The tracker id is a value to be READ and copied, so it is monospaced and
-   allowed to break -- it is the thing people open this control to find. */
-.owa_siteControlId {
-    display: block;
-    font-family: monospace;
-    font-size: var(--owa-text-xs);
-    color: #999999;
     word-break: break-all;
 }
 
@@ -3261,7 +3247,7 @@ li.constraintRow {
  * Below, the panel covered the report nav -- the thing you are usually about to
  * use next -- and pushed a 660px box down a 200px column so it hung over the
  * report. Beside it, the tile stays readable while you browse, and the panel
- * lands in the content area where there is room for three columns.
+ * lands in the content area where there is room for its columns.
  */
 .owa_siteControlPanel {
     /*
@@ -3278,7 +3264,7 @@ li.constraintRow {
     left: 100%;
     margin-left: 6px;
     z-index: 500;
-    width: 660px;
+    width: 440px;
     max-width: 90vw;
     background-color: #ffffff;
     border: 1px solid #a0a0a0;
@@ -3343,25 +3329,15 @@ li.constraintRow {
     word-break: break-word;
 }
 
-.owa_siteControlProfiles .owa_siteControlItem .owa_siteControlId {
-    display: block;
-    margin-top: 2px;
-}
-
 /*
- * THE WHOLE ROW PICKS THE PROFILE, not just the words.
+ * THE WHOLE ROW PICKS THE PROPERTY, not just the words.
  *
- * The row is a flex box holding the name and, at its right, one or two
- * secondary links -- so the anchor was as wide as the text and no wider: 105px
- * of a 219px row. Everything else was bare <li>, which carries no handler and
- * no href, so a click on the padding, on the gap, or anywhere right of the name
- * did nothing at all. With cursor:pointer on the row, it looked live for its
- * whole width and answered on half of it.
- *
- * The Properties column never had this: it has no anchor and its <li> carries a
- * JavaScript click handler, so it always responded across the full row. The two
- * columns sit side by side and behaved differently, which is the part a reader
- * notices before they work out why.
+ * The row is a flex box holding the name and, at its right, a secondary link
+ * -- so the anchor was as wide as the text and no wider. Everything else was
+ * bare <li>, which carries no handler and no href, so a click on the padding,
+ * on the gap, or anywhere right of the name did nothing at all. With
+ * cursor:pointer on the row, it looked live for its whole width and answered on
+ * half of it.
  *
  * Stretched with a pseudo-element rather than by making the anchor a block:
  * the flex layout that puts the secondary links on the right is worth keeping,
@@ -3393,8 +3369,8 @@ li.constraintRow {
     visibility: hidden;
     /*
      * ABOVE the stretched select, or the row's own link would swallow it --
-     * "goal events" and "edit" sit inside the area that now picks the Profile,
-     * and a secondary action you cannot reach is worse than one that is hidden.
+     * "edit" sits inside the area that picks the Property, and a secondary
+     * action you cannot reach is worse than one that is hidden.
      */
     position: relative;
     z-index: 1;
@@ -3405,6 +3381,12 @@ li.constraintRow {
     visibility: visible;
     color: #666666;
     text-decoration: underline;
+}
+
+/* A Property's Observation Profiles roster: each row's own screens. */
+.owa_propertyProfilesActions a {
+    margin-right: 1em;
+    white-space: nowrap;
 }
 
 /* The hierarchy's settings nav, under the site control. One group per tier, so

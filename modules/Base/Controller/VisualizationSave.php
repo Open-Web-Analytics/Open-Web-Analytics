@@ -264,11 +264,11 @@ class VisualizationSave extends \OWA\Core\AdminController {
         $this->set( 'reportId',
             \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $report->get( 'id' ) );
 
-        $siteId = (string) $this->getParam( 'siteId' );
+        $propertyId = (string) $this->getParam( 'propertyId' );
 
-        if ( $siteId !== '' ) {
+        if ( $propertyId !== '' ) {
 
-            $this->set( 'siteId', $siteId );
+            $this->set( 'propertyId', $propertyId );
         }
 
         $this->setRedirectAction( 'base.report' );
@@ -345,11 +345,11 @@ class VisualizationSave extends \OWA\Core\AdminController {
          */
         $this->set( 'validationErrors', json_encode( (array) $this->getValidationErrorMsgs() ) );
 
-        $siteId = (string) $this->getParam( 'siteId' );
+        $propertyId = (string) $this->getParam( 'propertyId' );
 
-        if ( $siteId !== '' ) {
+        if ( $propertyId !== '' ) {
 
-            $this->set( 'siteId', $siteId );
+            $this->set( 'propertyId', $propertyId );
         }
 
         $this->set( 'error_code', 3002 );

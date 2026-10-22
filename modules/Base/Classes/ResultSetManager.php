@@ -214,11 +214,27 @@ class ResultSetManager extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * Narrow the query to one Profile of its Property.
+     *
+     * A constraint, as any dimension filter is. Without a propertyId the
+     * Profile also names the Property whose cube is read.
+     */
     function setSiteId($siteId) {
 
         //used for urls
         $this->query_params['siteId'] = $siteId;
         $this->setConstraint('siteId', $siteId);
+    }
+
+    /**
+     * The Property this query is of: its cube holds every Profile in it.
+     *
+     * @param string $propertyId
+     */
+    function setPropertyId( $propertyId ) {
+
+        $this->query_params['propertyId'] = (string) $propertyId;
     }
 
     function getSiteId() {
@@ -283,7 +299,7 @@ class ResultSetManager extends \OWA\Core\Base {
      * THE CUBE HAS NO ONE TABLE. There is one per Property (Cube\Cubes), so
      * `Entity\Event` is a shape rather than a table and its getTableName()
      * throws until something says which Property. This is the place that knows:
-     * a query carries a siteId, and a site belongs to a Property.
+     * a query names its Property, or a siteId whose Property it is.
      *
      * Every entity in a query goes through here, so the binding cannot be
      * forgotten at one of the seven places an entity is built. An entity that
@@ -316,22 +332,28 @@ class ResultSetManager extends \OWA\Core\Base {
     }
 
     /**
-     * The Property behind this query's siteId.
+     * The Property this query is of: the one set, or else the siteId's.
      *
-     * Read from the CONSTRAINT rather than from getSiteId(): setSiteId() writes
-     * a constraint and a query param, and getSiteId() reads $params['siteId'],
-     * which a caller that only set the constraint never populates.
+     * The siteId is read from the CONSTRAINT rather than from getSiteId():
+     * setSiteId() writes a constraint and a query param, and getSiteId() reads
+     * $params['siteId'], which a caller that only set the constraint never
+     * populates.
      *
      * @return string the Property id, or ''
      */
     protected function propertyIdForRequest() {
 
+        if ( ! empty( $this->query_params['propertyId'] ) ) {
+
+            return (string) $this->query_params['propertyId'];
+        }
+
         return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $this->siteIdForRequest() );
     }
 
     /**
-     * The Profile this query is scoped to, read from the constraint for the
-     * reason propertyIdForRequest() gives.
+     * The Profile this query is narrowed to, if any, read from the constraint
+     * for the reason propertyIdForRequest() gives.
      *
      * @return string
      */
@@ -1646,10 +1668,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
 
         // The Property's currency, which is what its revenue was recorded in.
-        $siteId = $this->query_params['siteId'] ?? $this->getSiteId();
+        $propertyId = $this->propertyIdForRequest();
 
-        $currency = $siteId
-            ? \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'currencyISO3' )
+        $currency = $propertyId !== ''
+            ? \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3', 'property', $propertyId )
             : \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' );
 
         return \OWA\Core\Lib::formatCurrency(
@@ -2082,8 +2104,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if ( $bm && method_exists( $bm, 'getPropertyId' ) && $bm->getPropertyId() !== ''
                 && ! \OWA\Module\Base\Classes\Cube\Cubes::exists( $bm->getPropertyId() ) ) {
 
-            $this->resultSet->notReady = \OWA\Module\Base\Classes\Cube\Status::readiness(
-                $this->siteIdForRequest() );
+            $this->resultSet->notReady = \OWA\Module\Base\Classes\Cube\Status::readinessOfProperty(
+                $bm->getPropertyId() );
 
             return $this->resultSet;
         }

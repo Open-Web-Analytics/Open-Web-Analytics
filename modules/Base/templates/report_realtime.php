@@ -5,10 +5,10 @@
  * card from v1/realtime; nothing here reads data itself.
  */
 $owa_realtimeApi = $view->makeApiLink( array(
-    'do'      => 'realtime',
-    'module'  => 'base',
-    'version' => 'v1',
-    'siteId'  => $view->get( 'realtime_site_id' ),
+    'do'         => 'realtime',
+    'module'     => 'base',
+    'version'    => 'v1',
+    'propertyId' => $view->get( 'realtime_property_id' ),
 ) );
 ?>
 <div id="owa_realtime" class="owa_realtime">

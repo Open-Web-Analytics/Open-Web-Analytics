@@ -207,18 +207,18 @@ and where they left.</div>
     <input type="hidden" name="<?php echo $view->getNs();?>visualizationId" value="<?php $view->out( $view->visualizationId ?? '' );?>">
     <?php
         /*
-         * WHICH SITE, carried by the form.
+         * WHICH PROPERTY, carried by the form.
          *
          * The action is built with makeLink(), which does not add state unless
-         * asked -- so without this the save receives no siteId, redirects to
-         * the funnel without one, and the funnel counts against site_id = ''.
-         * It draws perfectly: right stages, right names, nought visitors.
+         * asked -- so without this the save receives no scope and redirects to
+         * the funnel without one, which then reports on whichever Property the
+         * reader looked at last.
          *
          * Unprefixed, like the custom report builder's, because that is the
          * name its save reads.
          */
     ?>
-    <input type="hidden" name="siteId" value="<?php $view->out( $view->get('siteId') );?>">
+    <input type="hidden" name="propertyId" value="<?php $view->out( $view->get('propertyId') );?>">
     <input class="owa-button" type="submit" id="owa_visualizationSubmit"
            name="<?php echo $view->getNs();?>submit_btn" value="Save Visualization">
 
@@ -245,7 +245,7 @@ and where they left.</div>
         <input type="hidden" name="<?php echo $view->getNs();?>customReportId" value="<?php $view->out( $owa_v['id'] );?>">
         <?php /* And the same for delete, which redirects to a roster -- and a
                  roster with no site has no left-hand nav at all. */ ?>
-        <input type="hidden" name="siteId" value="<?php $view->out( $view->get('siteId') );?>">
+        <input type="hidden" name="propertyId" value="<?php $view->out( $view->get('propertyId') );?>">
         <input class="owa-button owa-button-danger" type="submit"
                name="<?php echo $view->getNs();?>submit_btn" value="Delete Visualization"
                data-owa-confirm

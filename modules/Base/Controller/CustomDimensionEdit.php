@@ -64,8 +64,8 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
         $controller->set( 'params', array_merge( (array) $controller->params, array( 'siteId' => $siteId ) ) );
         $controller->set( 'site_hierarchy',
             $controller->getSiteHierarchy( $controller->getSitesAllowedForCurrentUser() ) );
-        $controller->set( 'hierarchy_tier', 3 );
-        $controller->set( 'hierarchy_nav', $controller->getHierarchyNav( $siteId ) );
+        $controller->set( 'hierarchy_tier', 2 );
+        $controller->set( 'hierarchy_nav', $controller->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
         $controller->setView( 'base.optionsHierarchy' );
         $controller->setSubview( 'base.customDimensionEdit' );
     }

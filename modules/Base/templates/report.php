@@ -72,14 +72,14 @@ jQuery(document).ready(function(){
                         /*
                          * The site control sits ABOVE the nav because it scopes
                          * it: every report in the menu below is a report of the
-                         * Profile named here.
+                         * Property named here.
                          */
                     ?>
                     <?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
                     <?php include('site_control.php');?>
                     <?php endif;?>
                     <div id="owa_reportNavPanel">
-                        <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentSiteId, $view->params ?? array());?>
+                        <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentPropertyId, $view->params ?? array(), $view->currentSiteId);?>
                     </div>
                 </div>
             </TD>

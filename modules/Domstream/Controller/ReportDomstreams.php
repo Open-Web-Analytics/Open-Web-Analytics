@@ -77,7 +77,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         if ( ! $this->segment ) {
 
             $this->segment = new \OWA\Module\Base\Classes\ReportSegment(
-                $this->getParam( 'siteId' ),
+                $this->getParam( 'propertyId' ),
                 $this->getParam( 'period' ),
                 $this->getParam( 'startDate' ),
                 $this->getParam( 'endDate' ),
@@ -100,8 +100,14 @@ class ReportDomstreams extends \OWA\Core\ReportController {
      */
     private function scopeClause( $page_path, $subjects ) {
 
-        $where  = array( 'site_id = ?' );
-        $params = array( (string) $this->getParam( 'siteId' ) );
+        /*
+         * Every Profile of the Property. None is no rows, not no restriction:
+         * an empty IN list is a syntax error, and dropping the clause would list
+         * every Property's recordings.
+         */
+        $sites  = \OWA\Module\Base\Classes\Cube\Cubes::siteIds( (string) $this->getParam( 'propertyId' ) );
+        $where  = array( $sites ? 'site_id IN (' . implode( ',', array_fill( 0, count( $sites ), '?' ) ) . ')' : '1 = 0' );
+        $params = $sites;
 
         $bounds = $this->segment()->bounds();
 
@@ -143,7 +149,9 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         $scope  = $this->scopeClause( $page_path, $subjects );
         $offset = ( max( 1, (int) $page ) - 1 ) * self::PER_PAGE;
 
+        // A recording is made on one Profile, and the player is asked by it.
         $sql = 'SELECT recording_id,'
+             . ' MIN(site_id) AS site_id,'
              . ' MIN(ts) AS started,'
              . ' MAX(offset_ms + duration_ms) AS length_ms,'
              . ' SUM(sample_count) AS samples,'
@@ -219,7 +227,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
 
         $api_url = $template->makeOverlayApiLink( array(
             'recording_id' => (string) $r['recording_id'],
-            'siteId'       => (string) $this->getParam( 'siteId' ),
+            'siteId'       => (string) $r['site_id'],
             'module'       => 'domstream',
             'version'      => 'v1',
             'do'           => 'domstreams',

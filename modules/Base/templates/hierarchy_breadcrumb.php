@@ -18,7 +18,8 @@
  * what the screen does.
  */
 $owa_h = $view->site_hierarchy ?: array( 'organization' => array(), 'properties' => array() );
-$owa_current_site = $view->params['siteId'] ?? '';
+$owa_current_site     = (string) ( $view->params['siteId'] ?? '' );
+$owa_current_property = (string) ( $view->params['propertyId'] ?? '' );
 
 $owa_crumbs = array();
 
@@ -43,18 +44,29 @@ if ( (int) $view->hierarchy_tier === 0 ) {
 
 $owa_tier = $view->hierarchy_tier === 0 ? 0 : (int) ( $view->hierarchy_tier ?: 3 );
 
+/*
+ * The Property the screen names, or else the one its Profile belongs to. The
+ * Profile crumb only on a Profile's own screens.
+ */
 foreach ( $owa_h['properties'] as $owa_p ) {
+
+    $owa_site_ids = array_column( $owa_p['profiles'], 'site_id' );
+
+    $owa_is_current = $owa_current_property !== ''
+        ? (string) $owa_p['id'] === $owa_current_property
+        : $owa_current_site !== '' && in_array( $owa_current_site, $owa_site_ids, true );
+
+    if ( ! $owa_is_current ) {
+        continue;
+    }
+
+    if ( $owa_tier >= 2 ) {
+        $owa_crumbs[] = array( 'label' => $owa_p['name'], 'note' => $owa_p['domain'] );
+    }
+
     foreach ( $owa_p['profiles'] as $owa_prof ) {
 
-        if ( $owa_prof['site_id'] !== $owa_current_site ) {
-            continue;
-        }
-
-        if ( $owa_tier >= 2 ) {
-            $owa_crumbs[] = array( 'label' => $owa_p['name'], 'note' => $owa_p['domain'] );
-        }
-
-        if ( $owa_tier >= 3 ) {
+        if ( $owa_tier >= 3 && $owa_prof['site_id'] === $owa_current_site ) {
             $owa_crumbs[] = array( 'label' => $owa_prof['name'], 'note' => $owa_prof['site_id'] );
         }
     }

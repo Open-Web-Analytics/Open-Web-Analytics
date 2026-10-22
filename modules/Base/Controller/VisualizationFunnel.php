@@ -441,8 +441,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         }
 
         $path = \OWA\Module\Base\Classes\V2Event::canonicalPath( $path,
-            (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'profile',
-                $this->getParam( 'siteId' ) ) );
+            (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'property',
+                $this->getParam( 'propertyId' ) ) );
 
         /*
          * PAGE VIEWS ONLY, as v1 counted. page_path is on every event -- a
@@ -590,18 +590,16 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * ingest does not write at all -- so the segment chose people and the
          * walk then found none of their events.
          *
-         * One cube per Property, so the table is resolved from the Profile the
-         * report is drawn for. A Profile with no Property has no cube to read,
-         * which is a funnel that cannot be counted rather than an empty one.
+         * One cube per Property, and the funnel is of the Property. A report
+         * that resolved no Property has no cube to read, which is a funnel
+         * that cannot be counted rather than an empty one.
          */
-        $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite(
-            $this->getParam( 'siteId' ) );
+        $property = (string) $this->getParam( 'propertyId' );
 
         if ( ! $property ) {
 
             $this->set( 'funnel_step_error',
-                'This Profile belongs to no Property, so there is no cube to count '
-                . 'the funnel against. Give it a Property and build.' );
+                'There is no Property to count the funnel against.' );
 
             return null;
         }
@@ -661,12 +659,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          */
         $params = array_merge( $params, $params );
 
-        /*
-         * site_id, not property: a cube holds every Profile under its Property,
-         * and a funnel is drawn for one Profile.
-         */
-        $where    = array( '( ' . implode( ' OR ', $any ) . ' )', $alias . '.site_id = ?' );
-        $params[] = (string) $this->getParam( 'siteId' );
+        // The cube is the Property's, so every row in it is in the funnel's scope.
+        $where = array( '( ' . implode( ' OR ', $any ) . ' )' );
 
         $bounds = $this->dateBounds();
 
@@ -961,7 +955,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         if ( ! $this->segment ) {
 
             $this->segment = new \OWA\Module\Base\Classes\ReportSegment(
-                $this->getParam( 'siteId' ),
+                $this->getParam( 'propertyId' ),
                 $this->getParam( 'period' ),
                 $this->getParam( 'startDate' ),
                 $this->getParam( 'endDate' ),

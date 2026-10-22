@@ -439,7 +439,7 @@ class Report extends \OWA\Core\Controller {
             (string) $report['id'], $user_id );
 
         $star = array(
-            // add_state TRUE, or the round trip drops siteId and period and the
+            // add_state TRUE, or the round trip drops propertyId and period and the
             // reader lands on a different view of the report than they left.
             // add_nonce TRUE, because the target action demands one.
             'url' => ( new \OWA\Core\Template() )->makeLink(

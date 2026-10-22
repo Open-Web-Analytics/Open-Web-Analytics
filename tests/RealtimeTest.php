@@ -17,6 +17,7 @@ final class RealtimeTest extends TestCase
 {
     const PROPERTY = 7789000000000001;
     const SITE     = 'realtime-fixture';
+    const SIBLING  = 'realtime-fixture-sibling';
     const VISITOR  = 8899300000000000;
 
     private static int $seq = 0;
@@ -43,14 +44,16 @@ final class RealtimeTest extends TestCase
             throw new \RuntimeException('seeding owa_property failed');
         }
 
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->setProperties([
-            'id' => self::PROPERTY * 10, 'site_id' => self::SITE, 'property_id' => self::PROPERTY,
-            'name' => 'Realtime fixture profile', 'domain' => 'example.test',
-        ]);
+        foreach ([self::SITE, self::SIBLING] as $i => $site_id) {
+            $site = \OWA\Core\CoreAPI::entityFactory('base.site');
+            $site->setProperties([
+                'id' => self::PROPERTY * 10 + $i, 'site_id' => $site_id, 'property_id' => self::PROPERTY,
+                'name' => 'Realtime fixture profile ' . $i, 'domain' => 'example.test',
+            ]);
 
-        if (!$site->create()) {
-            throw new \RuntimeException('seeding owa_site failed');
+            if (!$site->create()) {
+                throw new \RuntimeException('seeding owa_site failed');
+            }
         }
     }
 
@@ -73,8 +76,10 @@ final class RealtimeTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition'] as $entity) {
-            $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), self::SITE));
+            foreach ([self::SITE, self::SIBLING] as $site_id) {
+                $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
+                    \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $site_id));
+            }
         }
     }
 
@@ -91,8 +96,10 @@ final class RealtimeTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['base.event_raw', 'base.visitor_acquisition', 'base.site'] as $entity) {
-            $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
-                \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), self::SITE));
+            foreach ([self::SITE, self::SIBLING] as $site_id) {
+                $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
+                    \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $site_id));
+            }
         }
 
         $db->query(sprintf('DELETE FROM %s WHERE id = %d',
@@ -134,7 +141,7 @@ final class RealtimeTest extends TestCase
 
     private function realtime(): Realtime
     {
-        return new Realtime(self::SITE, $this->end);
+        return new Realtime((string) self::PROPERTY, $this->end);
     }
 
     public function testActiveUsersCountTheWindowsVisitorsOnly(): void
@@ -149,6 +156,27 @@ final class RealtimeTest extends TestCase
 
         $this->assertSame(3, $users['last30']);
         $this->assertSame(2, $users['last5']);
+    }
+
+    /** Realtime is of the Property: every Profile of it is counted. */
+    public function testEveryProfileOfThePropertyIsCounted(): void
+    {
+        $this->event(1, 1);
+        $this->event(2, 2, ['site_id' => self::SIBLING]);
+
+        $this->assertSame(2, $this->realtime()->summary()['activeUsers']['last30'],
+            'a visitor on the sibling Profile is missing');
+    }
+
+    /** A Property with no Profiles reads nothing, rather than every Property. */
+    public function testAPropertyWithNoProfilesReadsNothing(): void
+    {
+        $this->event(1, 1);
+
+        $realtime = new Realtime('7789000000000099', $this->end);
+
+        $this->assertSame(0, $realtime->summary()['activeUsers']['last30']);
+        $this->assertStringContainsString('1 = 0', $realtime->statements[0]);
     }
 
     public function testUsersPerMinuteAreOldestFirstEndingThisMinute(): void
@@ -166,7 +194,7 @@ final class RealtimeTest extends TestCase
     }
 
     /**
-     * EVERY STATEMENT CARRIES THE CLOSED WINDOW: the site, a day range that
+     * EVERY STATEMENT CARRIES THE CLOSED WINDOW: the Profiles, a day range that
      * prunes partitions, and a ts range site_ts can serve. Asserted on the SQL,
      * since a timing test on a fixture this small would pass either way.
      */
@@ -182,11 +210,11 @@ final class RealtimeTest extends TestCase
 
         foreach ($realtime->statements as $sql) {
             $this->assertMatchesRegularExpression(
-                '/r\.site_id = \? AND r\.yyyymmdd BETWEEN \d{8} AND \d{8} AND r\.ts > \d+ AND r\.ts <= \d+/', $sql, $sql);
+                '/r\.site_id IN \(\?(, \?)*\) AND r\.yyyymmdd BETWEEN \d{8} AND \d{8} AND r\.ts > \d+ AND r\.ts <= \d+/', $sql, $sql);
         }
 
         $explain = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            'EXPLAIN ' . $realtime->statements[0], [self::SITE]);
+            'EXPLAIN ' . $realtime->statements[0], [self::SITE, self::SIBLING]);
 
         $this->assertStringContainsString('site_ts', (string) ($explain['possible_keys'] ?? ''),
             'the window can be read through site_ts');

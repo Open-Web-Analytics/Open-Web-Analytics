@@ -57,6 +57,42 @@ final class DomstreamFixtures
         }
     }
 
+    /**
+     * A Property holding the given Profiles, for a list that reads every
+     * Profile of a Property. Rows only: nothing here needs a cube.
+     *
+     * @param string[] $sites
+     */
+    public static function property(int $property, array $sites): void
+    {
+        self::deleteProperty($property, $sites);
+
+        $row = \OWA\Core\CoreAPI::entityFactory('base.property');
+        $row->setProperties(['id' => $property, 'name' => 'Domstream fixture ' . $property,
+            'domain' => 'domstream.test', 'creation_date' => time()]);
+        $row->create();
+
+        foreach (array_values($sites) as $i => $site) {
+            $profile = \OWA\Core\CoreAPI::entityFactory('base.site');
+            $profile->setProperties(['id' => $property * 10 + $i, 'site_id' => $site,
+                'property_id' => $property, 'name' => 'Domstream fixture ' . $site,
+                'domain' => 'domstream.test']);
+            $profile->create();
+        }
+    }
+
+    /** @param string[] $sites */
+    public static function deleteProperty(int $property, array $sites): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ($sites as $site) {
+            $db->query('DELETE FROM owa_site WHERE site_id = ?', [$site]);
+        }
+
+        $db->query(sprintf('DELETE FROM owa_property WHERE id = %d', $property));
+    }
+
     public static function deleteSite(string $site): void
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();

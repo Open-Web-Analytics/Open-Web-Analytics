@@ -3,7 +3,7 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Where reporting starts: the last Profile you were looking at.
+ * Where reporting starts: the last Property you were looking at.
  *
  * This replaces base.sites, which was a flat roster of every tracked site with
  * a thumbnail, trend metrics and five management links per row. Its navigation
@@ -13,7 +13,7 @@ namespace OWA\Module\Base\Controller;
  * Landing straight on a report is the honest version of what it was for: you
  * came here to look at something, and the roster was a step in the way.
  *
- * The Profile is remembered in a cookie, written by ReportController when a
+ * The Property is remembered in a cookie, written by ReportController when a
  * report renders. Not a user column, because it is a per-browser convenience
  * rather than a property of the account -- two people sharing an account on two
  * machines should not fight over it, and it must not need a write to the user
@@ -21,8 +21,14 @@ namespace OWA\Module\Base\Controller;
  */
 class ReportingHome extends \OWA\Core\Controller {
 
-    /** The cookie ReportController writes. Short, like auth's 'u' and 'p'. */
-    const LAST_PROFILE_COOKIE = 'lp';
+    /**
+     * The cookie ReportController writes. Short, like auth's 'u' and 'p'.
+     *
+     * Not 'lp', which held a Profile when reports were of one: a value of the
+     * old kind is a site id, which no Property id equals, so it would only ever
+     * be ignored.
+     */
+    const LAST_PROPERTY_COOKIE = 'lpr';
 
     function __construct( $params ) {
 
@@ -39,23 +45,33 @@ class ReportingHome extends \OWA\Core\Controller {
 
     function action() {
 
-        $allowed = (array) $this->getSitesAllowedForCurrentUser();
+        $allowed = array();
 
-        $siteId = \OWA\Core\CoreAPI::getStateParam( self::LAST_PROFILE_COOKIE );
+        foreach ( (array) $this->getSitesAllowedForCurrentUser() as $site ) {
+
+            $propertyId = (string) $site->get( 'property_id' );
+
+            if ( $propertyId !== '' && $propertyId !== '0' ) {
+
+                $allowed[] = $propertyId;
+            }
+        }
+
+        $propertyId = (string) \OWA\Core\CoreAPI::getStateParam( self::LAST_PROPERTY_COOKIE );
 
         /*
          * Checked against what this user may see, not just for presence. A
-         * remembered Profile can have been deleted, or its grant revoked, or
+         * remembered Property can have been deleted, or its grant revoked, or
          * the cookie can belong to whoever used this browser last -- and
-         * redirecting to a Profile the viewer cannot open would answer a
+         * redirecting to a Property the viewer cannot open would answer a
          * capability failure instead of a report.
          */
-        if ( ! $siteId || ! array_key_exists( $siteId, $allowed ) ) {
+        if ( $propertyId === '' || ! in_array( $propertyId, $allowed, true ) ) {
 
-            $siteId = $this->resolveCurrentSiteId();
+            $propertyId = $allowed ? $allowed[0] : '';
         }
 
-        if ( ! $siteId ) {
+        if ( $propertyId === '' ) {
 
             /*
              * No Profiles at all -- a fresh install before the first one is
@@ -67,7 +83,7 @@ class ReportingHome extends \OWA\Core\Controller {
             return;
         }
 
-        $this->set( 'siteId', $siteId );
+        $this->set( 'propertyId', $propertyId );
         $this->set( 'reportId', 'dashboard' );
         $this->setRedirectAction( 'base.report' );
     }

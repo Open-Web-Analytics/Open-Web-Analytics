@@ -166,35 +166,33 @@ final class SiteListContractTest extends TestCase
     {
         /*
          * The reporting UI's site filter and the WordPress plugin's picker are
-         * the same problem twice: both label an option with `name` and submit
-         * `site_id` as its value, and both get their list from
+         * the same problem twice: both get their list from
          * getSitesAllowedForCurrentUser().
          *
-         * That shared source is what makes the hierarchy tractable. Once a
-         * Property can hold several profiles, "Observation Profile 1" is an
-         * ambiguous label in both places -- and composing it as
-         * "Property — Profile" AT THAT ONE METHOD fixes our UI and every
-         * already-deployed plugin without either consumer changing. Composing
-         * it in the templates instead would fix only ours.
+         * CORRECTED twice. This used to pin that both labelled with 'name', and
+         * then that our control navigated by site_id. It navigates by PROPERTY
+         * now -- a report is of a Property and covers every Profile in it -- so
+         * the plugin, which reports on one site, and our control no longer
+         * choose the same thing. What the plugin reads is unchanged: the site
+         * list, keyed by site_id.
          *
-         * CORRECTED: this used to pin that both labelled with 'name'. The
-         * plugin labels with site_id and domain, and our control no longer
-         * labels with a single field at all -- it shows Property, Profile and
-         * the tracking id. What still matters is that it navigates by site_id.
+         * The tracking id moved with the Profiles, to the Property's roster.
          *
-         * Pinned by reading the template, because the coupling is invisible
+         * Pinned by reading the templates, because the coupling is invisible
          * from PHP: nothing references the control's field names.
          */
         $template = file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
 
         $this->assertStringContainsString(
-            '\'siteId\' => $owa_prof[\'site_id\']', $template,
-            'The site control no longer navigates by site_id, so choosing a Profile cannot '
+            '\'propertyId\' => $owa_p[\'id\']', $template,
+            'The site control no longer navigates by Property, so choosing one cannot '
             . 'change what the report is of.' );
 
+        $roster = file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+
         $this->assertStringContainsString(
-            'owa_siteControlId', $template,
-            'The control no longer shows the tracking id -- the value someone opens it to find, '
+            '$owa_prof[\'site_id\']', $roster,
+            'The roster no longer shows the tracking id -- the value someone opens it to find, '
             . 'and the reason a flat list of "Observation Profile 1" was not enough.' );
     }
 

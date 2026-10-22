@@ -525,6 +525,7 @@ class View extends \OWA\Core\Base {
             'startDate' => null,
             'endDate' => null,
             'siteId' => null,
+            'propertyId' => null,
             'startTime' => null,
             'endTime' => null
         ];
