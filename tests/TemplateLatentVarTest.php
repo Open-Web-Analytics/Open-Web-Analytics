@@ -312,7 +312,7 @@ final class TemplateLatentVarTest extends TestCase
                     // empty picker is the case a foreach over an unset var
                     // would not distinguish from a missing one.
                     'goalEvents' => [],
-                    'siteId' => 'owa-e2e',
+                    'propertyId' => '7000000000000001',
                     'validation_errors' => [],
                     // The step cap, read from VisualizationSave so the form
                     // cannot offer a step the save then refuses.
@@ -374,7 +374,7 @@ final class TemplateLatentVarTest extends TestCase
                      * test exists because a template reading a var nobody set
                      * used to render blank rather than fail.
                      */
-                    'headline' => 'New Goal Event', 'siteId' => 'abc123',
+                    'headline' => 'New Goal Event', 'propertyId' => '7000000000000001',
                     'goalEvent' => [], 'goalEventId' => '',
                     'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path',
                         'description' => 'The path of the page.', 'carried' => true ] ],
