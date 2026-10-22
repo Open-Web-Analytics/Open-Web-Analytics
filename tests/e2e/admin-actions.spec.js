@@ -245,6 +245,9 @@ test.describe('admin: site CRUD', () => {
             page.waitForNavigation({ waitUntil: 'networkidle' }),
             page.locator('input[name="submit_btn"][value="Save Profile"]').click(),
         ]);
+        // The save returns to this Profile's details, not the add form.
+        await expect(page.locator('.panel_headline')).toHaveText('Profile Details');
+        await expect(page.locator('input[name="name"]')).toHaveValue(newName);
 
         await page.goto('?', { waitUntil: 'networkidle' });
         await expect(
