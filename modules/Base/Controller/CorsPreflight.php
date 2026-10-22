@@ -16,15 +16,16 @@ namespace OWA\Module\Base\Controller;
  *
  */
 class CorsPreflight extends \OWA\Core\Controller {
-    
+
+    /** Nothing to do: the answer is the headers the view sends. */
+    function action() {
+
+    }
+
     function success() {
 	    
 	    http_response_code(200);
-	    
-	    $service = \OWA\Core\CoreAPI::serviceSingleton();
-	    $this->set('HTTP_ACCESS_CONTROL_REQUEST_HEADERS', $service->request->getServerParam('HTTP_ACCESS_CONTROL_REQUEST_HEADERS') );
-	    $service->request->getRequestType();
-	    
+
         $this->setView( 'base.corsPreflight' );
     }
 }
