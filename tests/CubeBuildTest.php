@@ -222,7 +222,9 @@ final class CubeBuildTest extends TestCase
                     'id'          => $property_id * 10 + $i,
                     'site_id'     => $site_id,
                     'property_id' => $property_id,
-                    'name'        => 'Cube build fixture profile',
+                    // Named apart, so a build stamping one Profile's name on
+                    // every row is visible.
+                    'name'        => 'Cube build fixture profile ' . $site_id,
                     'domain'      => 'example.test',
                 ]);
 
@@ -711,6 +713,26 @@ final class CubeBuildTest extends TestCase
 
         $this->assertSame(1, (int) $row['n'],
             'the second profile of this Property is measured by the same cube');
+    }
+
+    /**
+     * Each row carries the name of the Profile it was collected for, read off
+     * the Profile row at build time -- Profile Name beside Profile ID.
+     */
+    public function testEachRowCarriesItsProfilesName(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $names = [];
+
+        foreach ((array) $db->get_results(sprintf(
+                'SELECT site_id, profile_name, COUNT(*) AS n FROM %s WHERE yyyymmdd = %d GROUP BY site_id, profile_name',
+                $this->cube(), $this->yyyymmdd)) as $row) {
+            $names[$row['site_id']][] = $row['profile_name'];
+        }
+
+        $this->assertSame(['Cube build fixture profile ' . self::SITE], $names[self::SITE] ?? null);
+        $this->assertSame(['Cube build fixture profile ' . self::OTHER_SITE], $names[self::OTHER_SITE] ?? null);
     }
 
     /**

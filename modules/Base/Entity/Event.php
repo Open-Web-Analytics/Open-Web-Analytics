@@ -288,6 +288,15 @@ class Event extends EventRaw {
         $this->setProperty( $this->column( 'attributed_campaign', OWA_DTD_VARCHAR255 ) );
         $this->setProperty( $this->resolved( 'attributed_channel', OWA_DTD_VARCHAR32 ) );
         $this->setProperty( $this->column( 'attributed_ad', OWA_DTD_VARCHAR255 ) );
+
+        /*
+         * THE PROFILE'S NAME, as it was when the row was built: the Profile ID
+         * dimension's readable twin, as GA4 has Stream ID and Stream name. A
+         * rename reaches past rows when their partitions are rebuilt. Nullable:
+         * a Profile with no name, or one deleted since, has none. LAST: Update071
+         * ADDs it.
+         */
+        $this->setProperty( $this->column( 'profile_name', OWA_DTD_VARCHAR255 ) );
     }
 
     /**

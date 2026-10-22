@@ -61,7 +61,7 @@ final class EventEntityTest extends TestCase
             'built_at', 'new_vs_returning', 'is_engaged_session', 'is_entrance',
             'channel', 'acq_channel',
             'attributed_source', 'attributed_medium', 'attributed_campaign', 'attributed_channel',
-            'attributed_ad',
+            'attributed_ad', 'profile_name',
         ], $derived);
     }
 
