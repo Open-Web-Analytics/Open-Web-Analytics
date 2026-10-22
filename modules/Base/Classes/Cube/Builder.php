@@ -1042,6 +1042,14 @@ class Builder {
                 Context::VISITOR, Context::RAW );
         }
 
+        // The Profile row, for what the cube carries about the Profile itself.
+        if ( isset( $required[ Context::PROFILE ] ) ) {
+
+            $joins .= sprintf( ' %s %s %s ON %s.site_id = %s.site_id',
+                OWA_SQL_JOIN_LEFT_OUTER, \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName(),
+                Context::PROFILE, Context::PROFILE, Context::RAW );
+        }
+
         if ( isset( $required[ Context::COMPUTED ] ) ) {
 
             $joins .= sprintf( ' %s %s %s ON %s.c_id = %s.id AND %s.c_yyyymmdd = %s.yyyymmdd',

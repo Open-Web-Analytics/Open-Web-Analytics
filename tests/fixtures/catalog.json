@@ -4,9 +4,9 @@
         "metricImplementations": 41,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 87,
-        "dimensionEntriesDenormalized": 87,
-        "accessorDimensionNames": 87
+        "dimensionNamesDenormalized": 88,
+        "dimensionEntriesDenormalized": 88,
+        "accessorDimensionNames": 88
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -1978,6 +1978,19 @@
                 "denormalized": true
             }
         },
+        "profileName": {
+            "base.event": {
+                "name": "profileName",
+                "entity": "base.event",
+                "column": "profile_name",
+                "family": "site",
+                "label": "Profile Name",
+                "description": "The name of the Observation Profile the event was collected for, as it was when its day was last built.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "referrerHost": {
             "base.event": {
                 "name": "referrerHost",
@@ -3037,6 +3050,17 @@
             "data_type": "integer",
             "denormalized": true
         },
+        "profileName": {
+            "name": "profileName",
+            "entity": "base.event",
+            "column": "profile_name",
+            "family": "site",
+            "label": "Profile Name",
+            "description": "The name of the Observation Profile the event was collected for, as it was when its day was last built.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
         "referrerHost": {
             "name": "referrerHost",
             "entity": "base.event",
@@ -3349,6 +3373,7 @@
                 "stateRegion"
             ],
             "site": [
+                "profileName",
                 "siteId"
             ],
             "time": [

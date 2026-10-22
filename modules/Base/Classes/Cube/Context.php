@@ -31,6 +31,9 @@ class Context {
     /** Alias of the side table the compute steps write. */
     const COMPUTED = 'c';
 
+    /** Alias of the Profile each raw row was collected for (owa_site). */
+    const PROFILE = 'p';
+
     /** @var array the partition being built: name, start, less_than */
     public $span;
 
