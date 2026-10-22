@@ -30,6 +30,7 @@
             </div>
         </TD>
         <TD class="layout_subview owa_hierarchyContent" valign="top">
+            <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
             <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail"
                     aria-expanded="false" aria-label="Show the menu">
                 <i class="fas fa-bars" aria-hidden="true"></i>

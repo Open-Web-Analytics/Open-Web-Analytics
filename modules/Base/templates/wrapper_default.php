@@ -18,11 +18,35 @@
         <div class="owa">
         <?php include($view->getTemplatePath('base', 'header.php'));?>
 
-        <?php include($view->getTemplatePath('base', 'msgs.php'));?>
+        <?php
+            /*
+             * The page's messages and the scheduler warning. A page with a left
+             * column marks where its content starts (View::BANNER_SLOT), and
+             * they go there, so they do not push the navigation down. Any other
+             * page gets them above its body.
+             */
+            ob_start();
+            include($view->getTemplatePath('base', 'msgs.php'));
+            include($view->getTemplatePath('base', 'scheduler_nag.php'));
+            $owa_banners = ob_get_clean();
 
-        <?php include($view->getTemplatePath('base', 'scheduler_nag.php'));?>
+            $owa_body = (string) $view->body;
+            $owa_slot = strpos( $owa_body, \OWA\Core\View::BANNER_SLOT );
 
-        <?php echo $view->body;?>
+            if ( $owa_slot !== false ) {
+
+                // Wrapped only when there is something to show, so a page with
+                // no message keeps its layout exactly.
+                $owa_in_column = trim( $owa_banners ) === ''
+                    ? '' : '<div class="owa_columnBanners">' . $owa_banners . '</div>';
+
+                $owa_body    = substr_replace( $owa_body, $owa_in_column, $owa_slot, strlen( \OWA\Core\View::BANNER_SLOT ) );
+                $owa_banners = '';
+            }
+
+            echo $owa_banners;
+            echo $owa_body;
+        ?>
 
         <?php include($view->getTemplatePath('base', 'footer.php'));?>
         </div>

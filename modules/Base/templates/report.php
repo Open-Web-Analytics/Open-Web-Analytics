@@ -85,6 +85,7 @@ jQuery(document).ready(function(){
             </TD>
             <?php endif;?>
             <TD valign="top" width="*">
+                <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
 
                 <?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
                 <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail"

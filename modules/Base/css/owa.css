@@ -240,6 +240,24 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     font-size: 14px;
 }
 
+/*
+ * Banners inside a page's content column (View::BANNER_SLOT), on the column's
+ * own edges rather than the page's 40px margins.
+ */
+.owa .owa_columnBanners {
+    padding: 20px 20px 0 20px;
+}
+
+.owa .owa_hierarchyContent .owa_columnBanners {
+    padding-left: 0;
+}
+
+.owa .owa_columnBanners .error,
+.owa .owa_columnBanners .status,
+.owa .owa_columnBanners .notice {
+    margin: 0 0 16px 0;
+}
+
 .owa .status {
     background-color: #71ad2b;
     border-color: #519600;
