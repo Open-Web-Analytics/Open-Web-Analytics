@@ -19,7 +19,7 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, logout } = require('./fixtures');
+const { FIXTURE, logout, adminLogin } = require('./fixtures');
 
 /** Submit the login form that is currently on screen. */
 async function submitLoginForm(page) {
@@ -106,5 +106,28 @@ test.describe('post-login redirect destination', () => {
         expect(url, 'it should stay on this installation').toContain(
             new URL(test.info().project.use.baseURL).host
         );
+    });
+});
+
+/**
+ * No admin page may be stored by a cache between the browser and OWA.
+ *
+ * Every page index.php answers belongs to whoever is signed in (#892). With no
+ * Cache-Control a host's page cache could keep one user's page and serve it to
+ * the next request for the same URL.
+ */
+test.describe('admin pages are not cacheable', () => {
+
+    test('the login page and a signed-in report both say private, no-store', async ({ page, request }) => {
+        const login = await request.get('index.php?owa_do=base.loginForm');
+
+        expect(login.headers()['cache-control']).toBe('private, no-store');
+
+        await adminLogin(page);
+
+        const report = await page.goto(
+            `index.php?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`);
+
+        expect(report.headers()['cache-control']).toBe('private, no-store');
     });
 });

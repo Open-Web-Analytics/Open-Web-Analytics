@@ -46,6 +46,14 @@ if (!$owa->isOwaInstalled()) {
 }
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
+
+    /*
+     * Every page this answers is the admin or the reports, for whoever is
+     * signed in. Without this a host's page cache could store one user's page
+     * and serve it to the next request for the same URL.
+     */
+    header( 'Cache-Control: private, no-store' );
+
     
     $params = [];
     
