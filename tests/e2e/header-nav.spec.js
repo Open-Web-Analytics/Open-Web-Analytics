@@ -14,7 +14,7 @@
  * a class name.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, loginAs } = require('./fixtures');
+const { FIXTURE, loginAs, adminLogin } = require('./fixtures');
 
 const toggle = '#owa_userMenuToggle';
 const panel  = '#owa_userMenuPanel';
@@ -402,5 +402,33 @@ test.describe('the top bar', () => {
         const nested = await page.locator('.owa_navigation li li').count();
 
         expect(nested).toBe(0);
+    });
+});
+
+/**
+ * A page's messages sit above its content column, not across the page.
+ *
+ * Above the whole page they pushed the left navigation down by their own height,
+ * so a save moved the menu someone was about to use.
+ */
+test.describe('messages and the left navigation', () => {
+
+    test('a status message after a save is in the content column, and the nav starts at the top', async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(`?owa_do=base.profileSettings&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[type="submit"][value="Save Settings"]').click(),
+        ]);
+
+        const status = page.locator('.owa_hierarchyContent .status');
+        await expect(status).toHaveCount(1);
+
+        const nav = await page.locator('.owa_reportLeftNavColumn').boundingBox();
+        const content = await page.locator('.owa_hierarchyContent').boundingBox();
+        const banner = await status.boundingBox();
+
+        expect(Math.abs(nav.y - content.y), 'the nav and the content start together').toBeLessThan(2);
+        expect(banner.x, 'the banner is in the content column').toBeGreaterThanOrEqual(content.x - 1);
     });
 });

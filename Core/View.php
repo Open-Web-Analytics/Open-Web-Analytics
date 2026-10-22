@@ -33,6 +33,13 @@ namespace OWA\Core;
 class View extends \OWA\Core\Base {
 
     /**
+     * Where a layout with a left column wants the page's messages: the top of
+     * its content column. wrapper_default.php puts them there instead of across
+     * the whole page.
+     */
+    const BANNER_SLOT = '<!-- owa:banners -->';
+
+    /**
      * Main view template object
      *
      * @var object
