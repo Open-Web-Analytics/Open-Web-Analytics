@@ -68,6 +68,31 @@ test.describe('a stale nonce on an authenticated session', () => {
     });
 
     /**
+     * Once, and inside the banner. The message reached the banner as a string,
+     * which drew an empty red box and echoed the text again, unstyled, below
+     * it -- and the page loaded none of the admin styles, so the header's
+     * icons were blank.
+     */
+    test('shows the reason once, in the error banner, on a styled page', async ({ page }) => {
+        await submitWithStaleNonce(page);
+
+        // Not the scheduler's warning, which a scratch install without cron also shows.
+        const banner = page.locator('.error:not(.owa-scheduler-nag)');
+
+        await expect(banner).toHaveCount(1);
+        await expect(banner).toContainText('This form is no longer valid');
+        await expect(banner).toContainText('Start again from the previous screen');
+        expect(await page.getByText('This form is no longer valid').count(), 'said once').toBe(1);
+
+        await expect(page.locator('link[href*="font-awesome"]')).toHaveCount(1);
+        await expect(page.locator('link[href*="owa.reporting-css-combined"]')).toHaveCount(1);
+
+        if (process.env.OWA_E2E_SCREENSHOT) {
+            await page.screenshot({ path: process.env.OWA_E2E_SCREENSHOT });
+        }
+    });
+
+    /**
      * Telling someone to start over is only actionable with the way back. The
      * form was submitted from base.optionsGeneral, so that is where the link
      * goes -- and loading it mints a nonce that will verify.
@@ -75,9 +100,12 @@ test.describe('a stale nonce on an authenticated session', () => {
     test('offers the way back to the screen the form came from', async ({ page }) => {
         await submitWithStaleNonce(page);
 
-        const back = page.locator('a[href*="base.optionsGeneral"]');
+        // By its text: the header's Settings link also goes to base.optionsGeneral,
+        // and matching that passed with no way back on the page at all.
+        const back = page.getByRole('link', { name: 'Return to the previous screen' });
 
         await expect(back, 'the originating screen should be linked').toHaveCount(1);
+        await expect(back).toHaveAttribute('href', /base\.optionsGeneral/);
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),

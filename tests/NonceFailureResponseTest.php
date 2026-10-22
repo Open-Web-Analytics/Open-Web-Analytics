@@ -106,7 +106,9 @@ final class NonceFailureResponseTest extends TestCase
 
     /**
      * "Start the action again" is only actionable if the way back is offered.
-     * The referring page is the screen that rendered the expired form.
+     * The referring page is the screen that rendered the expired form. It
+     * travels beside the message rather than inside it, so the error page can
+     * escape it where it lands.
      */
     public function testTheWayBackIsOffered()
     {
@@ -116,21 +118,40 @@ final class NonceFailureResponseTest extends TestCase
 
         $this->assertStringContainsString(
             'owa_do=base.optionsGeneral',
-            (string) ($data['error_msg'] ?? ''),
+            (string) ($data['error_back_url'] ?? ''),
             'the screen the form came from should be linked'
         );
+        $this->assertIsArray($data['error_msg'] ?? null, 'the message is headline and message, for the banner');
     }
 
-    /** The referrer reaches an href, so it cannot be trusted as markup. */
+    /**
+     * A form posting back to the URL it was rendered at has that URL as its
+     * referrer. That is the way back, and it used to be dropped as a self-link.
+     */
+    public function testAFormThatPostsToItsOwnUrlStillGetsTheWayBack()
+    {
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['HTTP_REFERER'] = \OWA\Core\Lib::get_current_url();
+
+        try {
+            $this->assertSame($_SERVER['HTTP_REFERER'], (string) ($this->respondTo(true)['error_back_url'] ?? ''));
+        } finally {
+            unset($_SERVER['REQUEST_METHOD']);
+        }
+    }
+
+    /** The referrer reaches an href, so the page escapes it. */
     public function testTheWayBackIsEscaped()
     {
-        $_SERVER['HTTP_REFERER'] =
-            'https://owa.example.test/owa/index.php?owa_do=base.reportingHome&x="><script>alert(1)</script>';
+        $t = new \OWA\Core\Template('base');
+        $t->set('back_url', 'https://owa.example.test/owa/index.php?owa_do=base.reportingHome&x="><script>alert(1)</script>');
+        $this->assertTrue($t->set_template('generic_error.php'));
 
-        $msg = (string) ($this->respondTo(true)['error_msg'] ?? '');
+        $html = $t->fetch();
 
-        $this->assertStringNotContainsString('<script>', $msg, 'markup must not survive into the page');
-        $this->assertStringNotContainsString('"><', $msg, 'the attribute must not be breakable');
+        $this->assertStringNotContainsString('<script>', $html, 'markup must not survive into the page');
+        $this->assertStringContainsString('x=&quot;&gt;&lt;script', $html, 'the attribute must not be breakable');
+        $this->assertStringContainsString('Return to the previous screen', $html);
     }
 
     /** Nothing to link to when the referrer is unusable; the message still stands. */
@@ -138,10 +159,10 @@ final class NonceFailureResponseTest extends TestCase
     {
         unset($_SERVER['HTTP_REFERER']);
 
-        $msg = (string) ($this->respondTo(true)['error_msg'] ?? '');
+        $data = $this->respondTo(true);
 
-        $this->assertNotSame('', $msg, 'the explanation is still required');
-        $this->assertStringNotContainsString('<a href', $msg, 'no link when there is nowhere to send them');
+        $this->assertNotEmpty($data['error_msg']['message'] ?? '', 'the explanation is still required');
+        $this->assertSame('', (string) ($data['error_back_url'] ?? ''), 'no link when there is nowhere to send them');
     }
 
     /** Not signed in: the login form is still the right answer. */

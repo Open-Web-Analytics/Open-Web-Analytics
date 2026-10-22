@@ -161,6 +161,7 @@ return array(
     'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.' => 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.',
     'Site Search Parameters is a comma-separated list of URL parameter names.' => 'Site Search Parameters is a comma-separated list of URL parameter names.',
     'Site domain is required.' => 'Site domain is required.',
+    'Something went wrong.' => 'Something went wrong.',
     'Step %s: %s' => 'Step %s: %s',
     'Step %s: choose a goal event.' => 'Step %s: choose a goal event.',
     'Step %s: enter a path such as /basket, not a full URL.' => 'Step %s: enter a path such as /basket, not a full URL.',

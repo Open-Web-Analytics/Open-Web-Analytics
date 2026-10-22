@@ -743,7 +743,14 @@ class Controller extends \OWA\Core\Base {
             return '';
         }
 
-        if ( $referer === \OWA\Core\Lib::get_current_url() ) {
+        /*
+         * A GET that names itself as its own referrer would link to itself. A
+         * POST is different: a form posting back to the URL it was rendered at
+         * has that URL as its referrer, and loading it again is exactly the way
+         * back -- which this used to drop, so the link never appeared.
+         */
+        if ( $referer === \OWA\Core\Lib::get_current_url()
+                && strtoupper( (string) ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) ) !== 'POST' ) {
 
             return '';
         }
@@ -793,27 +800,16 @@ class Controller extends \OWA\Core\Base {
 		} else {
 
 			$this->setView('base.error');
+			$this->set('error_msg', $this->getMsg(2005));
 
-			// generic_error.php echoes error_msg directly, so it has to be a
-			// string -- handing it the getMsg() array renders as "Array".
-			$msg = $this->getMsgAsString(2005);
-
-			// Telling someone to go back to where they started is only useful if
-			// they are given the way back. The screen that rendered the expired
-			// form is the referring page, and it will mint a fresh nonce.
-			$back = $this->getReferringPage();
-
-			if ( $back ) {
-
-				// $back is client-supplied and lands in an href, so it is escaped
-				// as an attribute rather than trusted the way a built URL is.
-				$msg .= sprintf(
-					' <a href="%s">Return to the previous screen</a>',
-					htmlspecialchars( $back, ENT_QUOTES, 'UTF-8' )
-				);
-			}
-
-			$this->set('error_msg', $msg);
+			/*
+			 * Telling someone to go back to where they started is only useful if
+			 * they are given the way back. The screen that rendered the expired
+			 * form is the referring page, and it will mint a fresh nonce. Passed
+			 * on its own, not inside the message: it is client-supplied, and the
+			 * error page escapes it as an attribute.
+			 */
+			$this->set('error_back_url', (string) $this->getReferringPage());
 		}
     }
 
