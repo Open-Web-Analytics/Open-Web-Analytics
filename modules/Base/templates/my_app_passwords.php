@@ -3,12 +3,15 @@
 /*
  * The signed-in user's application passwords.
  *
- * A token appears once, on the response to the create form, and is never
- * drawn again: only its hash is stored.
+ * Add opens a dialog that creates the password over the REST API
+ * (POST v1/apppasswords) and shows its token there, once. Closing the dialog
+ * adds the row to the roster. Nothing is posted to this page, so a reload
+ * repeats nothing. Only the token's hash is stored, so it is never drawn again.
  */
 $owa_passwords = (array) $view->app_passwords;
 $owa_scopes    = (array) $view->scopes;
-$owa_new       = $view->new_app_password;
+$owa_empty_row = array( 'lookup_id' => '', 'name' => '', 'scope' => '', 'created_at' => 0,
+                        'last_used_at' => 0, 'last_used_ip' => '' );
 ?>
 <DIV class="panel_headline">Application Passwords</DIV>
 <div id="panel">
@@ -16,16 +19,6 @@ $owa_new       = $view->new_app_password;
 <?php if ( ! $view->enabled ): ?>
 <div class="notice error" role="alert">Application passwords are turned off on this
 installation. Yours are kept, but every request that uses one is refused.</div>
-<?php endif; ?>
-
-<?php if ( $owa_new ): ?>
-<div class="notice owa_appPasswordNew" role="status">
-    <p><strong><?php $view->out( $owa_new['name'] ); ?></strong> is ready. Copy it now: it
-    will not be shown again.</p>
-    <p><input type="text" readonly class="owa_appPasswordToken" size="50"
-              aria-label="New application password"
-              value="<?php $view->out( $owa_new['token'] ); ?>"></p>
-</div>
 <?php endif; ?>
 
 <div class="owa_panelIntro">
@@ -38,10 +31,13 @@ installation. Yours are kept, but every request that uses one is refused.</div>
         $view->out( $view->api_url ); ?>?owa_rest_params=base/v1/sites"</code></pre>
 </div>
 
+<p><button type="button" class="owa-button owa_appPasswordAdd"
+           data-api-url="<?php $view->out( $view->makeApiLink( array(
+               'do' => 'apppasswords', 'module' => 'base', 'version' => 'v1' ) ) ); ?>">Add Application Password</button></p>
+
 <fieldset class="options">
 
-    <?php if ( $owa_passwords ): ?>
-    <table class="management owa_appPasswords">
+    <table class="management owa_appPasswords"<?php if ( ! $owa_passwords ): ?> hidden<?php endif; ?>>
         <thead>
             <tr>
                 <th>Name</th>
@@ -54,67 +50,48 @@ installation. Yours are kept, but every request that uses one is refused.</div>
         </thead>
         <tbody>
             <?php foreach ( $owa_passwords as $owa_row ): ?>
-            <tr data-lookup-id="<?php $view->out( $owa_row['lookup_id'] ); ?>">
-                <td><?php $view->out( $owa_row['name'] ); ?></td>
-                <td><?php $view->out( $owa_scopes[ $owa_row['scope'] ] ?? $owa_row['scope'] ); ?></td>
-                <td><?php $view->out( date( 'Y-m-d H:i', (int) $owa_row['created_at'] ) ); ?></td>
-                <td><?php $view->out( $owa_row['last_used_at'] ? date( 'Y-m-d H:i', (int) $owa_row['last_used_at'] ) : 'Never' ); ?></td>
-                <td><?php $view->out( (string) $owa_row['last_used_ip'] ); ?></td>
-                <td>
-                    <form method="post" style="margin:0" action="<?php echo $view->makeLink( array( 'do' => 'base.myAppPasswordRevoke' ) ); ?>">
-                        <?php echo $view->createNonceFormField( 'base.myAppPasswordRevoke' ); ?>
-                        <input type="hidden" name="lookup_id" value="<?php $view->out( $owa_row['lookup_id'] ); ?>">
-                        <input type="hidden" name="siteId" value="<?php $view->out( $view->siteId ); ?>">
-                        <button type="submit" class="owa-button owa-button-quiet owa_appPasswordRevoke"
-                                data-owa-confirm
-                                data-owa-confirm-title="Revoke this application password?"
-                                data-owa-confirm-body="Anything using &ldquo;<?php $view->out( $owa_row['name'] ); ?>&rdquo; stops working immediately."
-                                data-owa-confirm-proceed="Revoke">Revoke</button>
-                    </form>
-                </td>
-            </tr>
+            <?php include( 'my_app_password_row.php' ); ?>
             <?php endforeach; ?>
         </tbody>
     </table>
-    <?php else: ?>
-    <p class="owa_appPasswordsNone">You have no application passwords.</p>
-    <?php endif; ?>
+    <p class="owa_appPasswordsNone"<?php if ( $owa_passwords ): ?> hidden<?php endif; ?>>You have no application passwords.</p>
 </fieldset>
 
-<BR>
+<template id="owa_appPasswordRowTemplate">
+    <?php $owa_row = $owa_empty_row; include( 'my_app_password_row.php' ); ?>
+</template>
 
-<form method="post" name="owa_appPasswordCreate"
-      action="<?php echo $view->makeLink( array( 'do' => 'base.myAppPasswordCreate' ) ); ?>">
+<div id="owa_appPasswordDialog" class="owa_appPasswordDialog" title="Add an application password" hidden>
 
-    <fieldset name="owa-options" class="options">
-
-        <legend>Add an application password</legend>
-
+    <form class="owa_appPasswordForm" novalidate>
         <div class="setting">
-            <div class="title">Name</div>
+            <div class="title"><label for="owa_appPasswordName">Name</label></div>
             <div class="description">What will use it, so you know which one to revoke later.</div>
             <div class="field">
-                <input type="text" size="30" maxlength="255" name="name" required>
+                <input type="text" id="owa_appPasswordName" size="30" maxlength="255" name="name" required>
             </div>
         </div>
 
         <div class="setting">
-            <div class="title">Access</div>
+            <div class="title"><label for="owa_appPasswordScope">Access</label></div>
             <div class="description">Read only allows GET requests and nothing else.</div>
             <div class="field">
-                <select name="scope">
+                <select id="owa_appPasswordScope" name="scope">
                     <?php foreach ( $owa_scopes as $owa_scope => $owa_label ): ?>
                     <option value="<?php $view->out( $owa_scope ); ?>"><?php $view->out( $owa_label ); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
         </div>
+    </form>
 
-        <BR>
+    <div class="owa_appPasswordResult" hidden>
+        <p><strong class="owa_appPasswordResultName"></strong> is ready. Copy it now: it will not be
+        shown again.</p>
+        <p><input type="text" readonly class="owa_appPasswordToken" size="50"
+                  aria-label="New application password"></p>
+    </div>
 
-        <?php echo $view->createNonceFormField( 'base.myAppPasswordCreate' ); ?>
-        <input type="hidden" name="siteId" value="<?php $view->out( $view->siteId ); ?>">
-        <input class="owa-button" type="submit" value="Add Application Password">
-    </fieldset>
-</form>
+    <p class="owa_appPasswordError" role="alert" hidden></p>
+</div>
 </div>

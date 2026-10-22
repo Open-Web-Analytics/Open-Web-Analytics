@@ -3876,6 +3876,33 @@ li.constraintRow {
     padding: 18px 20px 4px 20px;
 }
 
+/* The Add dialog on the Application Passwords screen, in the confirm frame. */
+.owa_appPasswordDialog .setting {
+    margin: 0 0 14px 0;
+}
+
+.owa_appPasswordDialog .title {
+    font-weight: bold;
+    color: #333333;
+}
+
+.owa_appPasswordDialog .description {
+    color: #777777;
+    font-size: var(--owa-text-sm);
+    margin: 2px 0 6px 0;
+}
+
+.owa_appPasswordDialog .owa_appPasswordToken {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+}
+
+.owa_appPasswordDialog .owa_appPasswordError {
+    color: #b00020;
+    margin: 0 0 8px 0;
+}
+
 .owa_confirmDialog .owa_confirmBody {
     margin: 0;
     color: #555555;

@@ -81,6 +81,7 @@ return array(
     'Altering %s was refused. Server error 1118 means the cube row is full: de-register a custom dimension first.' => 'Altering %s was refused. Server error 1118 means the cube row is full: de-register a custom dimension first.',
     'An AWS region looks like us-east-1.' => 'An AWS region looks like us-east-1.',
     'Application password revoked.' => 'Application password revoked.',
+    'Application passwords are created from a signed-in browser session, or with cmd=app-password-create.' => 'Application passwords are created from a signed-in browser session, or with cmd=app-password-create.',
     'Apply these updates from the command line: <code>php cli.php cmd=update</code>' => 'Apply these updates from the command line: <code>php cli.php cmd=update</code>',
     'Bad request.' => 'Bad request.',
     'Base database schema installed.' => 'Base database schema installed.',

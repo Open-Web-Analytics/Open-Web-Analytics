@@ -106,6 +106,7 @@ $_owa_messages = [
     3218 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' )],
     3219 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Goal event saved.' )],
     3220 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Goal event deleted.' )],
+    3221 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Application passwords are created from a signed-in browser session, or with cmd=app-password-create.' )],
 
     // Install
     3300 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Could not connect to the database. Check the connection settings in the configuration file.' )],
