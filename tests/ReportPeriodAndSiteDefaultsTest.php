@@ -345,29 +345,23 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
     }
 
     /**
-     * There is no default site, and the code that would have supplied one is
-     * commented out at its only call site.
+     * The constructor does not choose a site.
      *
-     * Pinned as it stands rather than changed: making reports pick a site on
-     * the user's behalf is a product decision, not a refactor. This exists so
-     * the conversion does not accidentally introduce one, or accidentally
-     * remove the dead method under the impression it is live.
+     * A default is resolved in pre(), and it is a PROPERTY
+     * (ReportController::resolvePropertyId()): pre() runs once the user is
+     * loaded, so it can only land on one the reader may see. The constructor
+     * runs before that, so a siteId chosen there would be chosen blind.
      */
-    public function testAReportWithNoSiteIdDoesNotInventOne(): void
+    public function testTheConstructorDoesNotInventASite(): void
     {
         // Any ReportController would do; this is the one every configured
         // report now runs on, and ReportPages is no longer a class.
         $controller = new \OWA\Core\ConfiguredReport( array() );
 
         $this->assertEmpty( $controller->getParam( 'siteId' ),
-            'a report with no siteId must not choose a site silently' );
-
-        $source = (string) file_get_contents( OWA_DIR . 'Core/ReportController.php' );
-
-        $this->assertMatchesRegularExpression(
-            '#//\s*\$siteId\s*=\s*\$this->getDefaultSiteId\(\);#', $source,
-            'the default-site call is commented out; if it is restored, the '
-            . 'assertion above should change with it rather than be deleted' );
+            'a report with no siteId must not choose a site before the user is loaded' );
+        $this->assertEmpty( $controller->getParam( 'propertyId' ),
+            'nor a Property' );
     }
 
     public function testSiteIdIsAcceptedFromEitherSpelling(): void

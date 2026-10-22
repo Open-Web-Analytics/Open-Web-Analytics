@@ -296,29 +296,28 @@ test.describe('visualization: funnel', () => {
     });
 
     /**
-     * The segment picks PEOPLE, so two groups are deliberately not offered.
+     * The segment picks PEOPLE, so the time group is deliberately not offered:
+     * the period already bounds the funnel, and a date in the SEGMENT reads like
+     * "the funnel on that day" while actually meaning "everyone active that day,
+     * counted across the whole period".
      *
-     * site: the report is already scoped to one, and the site filter in the
-     * report chrome is where that is chosen.
-     *
-     * time: the period already bounds the funnel, and a date in the SEGMENT
-     * reads like "the funnel on that day" while actually meaning "everyone
-     * active that day, counted across the whole period".
+     * The site group IS offered. A funnel is of a Property, so "the people seen
+     * on this Profile" is a segment worth asking for.
      */
-    test('the filter does not offer site or time dimensions', async ({ page }) => {
+    test('the filter offers the Profile but not time dimensions', async ({ page }) => {
         await openFunnel(page);
 
         await page.locator('#funnelFilter .toggle-button').click();
 
         const picker = '#owa_filterBuilder-funnelFilter .constraintDimensionPicker';
 
-        // The groups themselves are gone, not just individual names.
-        await expect(page.locator(`${picker} optgroup[label="site"]`)).toHaveCount(0);
         await expect(page.locator(`${picker} optgroup[label="time"]`)).toHaveCount(0);
 
-        for (const name of ['siteId', 'siteDomain', 'siteName', 'date', 'day', 'month', 'year']) {
+        for (const name of ['date', 'day', 'month', 'year']) {
             await expect(page.locator(`${picker} option[value="${name}"]`)).toHaveCount(0);
         }
+
+        await expect(page.locator(`${picker} option[value="siteId"]`)).toHaveCount(1);
 
         // The groups that remain are still there -- this must not empty the picker.
         expect(await page.locator(`${picker} option[value="sessionMedium"]`).count()).toBeGreaterThan(0);

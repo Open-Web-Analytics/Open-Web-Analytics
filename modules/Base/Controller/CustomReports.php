@@ -197,10 +197,11 @@ class CustomReports extends \OWA\Core\ReportController {
          *
          * THE SITES FILTER STAYS, though it used to go with them on the same
          * reasoning -- that a custom report is site-agnostic, so the list reads
-         * the same whichever Profile is selected. The list does; the page does
-         * not. Every report link on it carries the current siteId (add_state),
-         * because a report opened from here has to open FOR somewhere. So the
-         * Profile is live on this screen and decides where these links land --
+         * the same whichever Property is selected. The list does; the page does
+         * not. Every report link on it carries the current propertyId
+         * (add_state), because a report opened from here has to open FOR
+         * somewhere. So the Property is live on this screen and decides where
+         * these links land --
          * hiding the control that shows it left that state invisible and
          * unchangeable, which is how it read as the tile going missing.
          */

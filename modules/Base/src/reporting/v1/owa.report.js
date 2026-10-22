@@ -213,10 +213,11 @@ OWA.report.prototype = {
     reload: function() {
     
         /*
-         * siteId is NOT read from a control any more. Choosing a Profile is a
-         * link in the site control, so the browser navigates and the new siteId
-         * arrives in the URL -- reload() reloads whatever is current, which is
-         * what its other caller (the period picker) actually wants.
+         * The Property is NOT read from a control any more. Choosing one is a
+         * link in the site control, so the browser navigates and the new
+         * propertyId arrives in the URL -- reload() reloads whatever is
+         * current, which is what its other caller (the period picker) actually
+         * wants.
          *
          * It read '#owa_reportSiteFilterSelect option:selected' until the site
          * control replaced that select. That lookup would now return undefined
@@ -309,9 +310,9 @@ OWA.report.prototype = {
         this.activeTab = panelId;
     },
 
-    getSiteId : function() {
+    getPropertyId : function() {
         
-        return this.getProperty('siteId');
+        return this.getProperty('propertyId');
     },
     
     getPeriod : function() {
@@ -775,8 +776,8 @@ OWA.initSiteControl = function() {
         /*
          * Bring each column's selection into view.
          *
-         * The columns scroll at 320px, and an install with many Properties or
-         * many Profiles opens the panel showing the TOP of each list -- so the
+         * The columns scroll at 320px, and an install with many Properties
+         * opens the panel showing the TOP of each list -- so the
          * one row that says where you are is below the fold, and the control
          * that exists to answer "where am I" does not.
          *
@@ -855,37 +856,6 @@ OWA.initSiteControl = function() {
          */
         $panel.on('click', 'a', function() {
             close();
-        });
-
-        /*
-         * Column 2 -> column 3. Selecting a Property shows ITS Profiles; the
-         * lists are all rendered and toggled rather than fetched, because the
-         * whole hierarchy is already on the page and a request per click would
-         * make browsing it feel slower than the select it replaced.
-         *
-         * Not bound to the edit link: that is a navigation away, and swapping
-         * column 3 underneath someone on their way out is just a flicker.
-         */
-        jQuery('.owa_siteControlProperties .owa_siteControlItem').on('click', function(e) {
-
-            if ( jQuery(e.target).hasClass('owa_siteControlEdit') ) {
-                return;
-            }
-
-            var index = jQuery(this).data('property-index');
-
-            jQuery('.owa_siteControlProperties .owa_siteControlItem').removeClass('is-selected');
-            jQuery(this).addClass('is-selected');
-
-            jQuery('.owa_siteControlProfileList').attr('hidden', 'hidden');
-            jQuery('.owa_siteControlProfileList[data-property-index="' + index + '"]').removeAttr('hidden');
-
-            // "add new" Profile adds to the Property just chosen.
-            var addHref = jQuery(this).attr('data-add-profile-href');
-
-            if ( addHref ) {
-                jQuery('.owa_siteControlAddProfile').attr('href', addHref);
-            }
         });
 };
 

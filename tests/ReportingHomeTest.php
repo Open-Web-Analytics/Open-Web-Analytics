@@ -48,17 +48,19 @@ final class ReportingHomeTest extends TestCase
             'base.report refuses a request with no reportId, so landing there without one '
             . 'turns the start page into a 400.' );
 
-        $this->assertNotEmpty( $data['siteId'] ?? null );
+        // A report is of a Property, so that is what the landing names.
+        $this->assertNotEmpty( $data['propertyId'] ?? null );
+        $this->assertArrayNotHasKey( 'siteId', $data );
     }
 
     /**
-     * The remembered Profile is checked against what the viewer may see.
+     * The remembered Property is checked against what the viewer may see.
      *
-     * A cookie can name a Profile that has been deleted, whose grant has been
+     * A cookie can name a Property that has been deleted, whose grant has been
      * revoked, or that belongs to whoever used this browser last. Trusting it
      * would answer a capability failure instead of a report.
      */
-    public function testARememberedProfileTheViewerCannotSeeIsIgnored(): void
+    public function testARememberedPropertyTheViewerCannotSeeIsIgnored(): void
     {
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'OWA database not reachable.' );
@@ -75,20 +77,20 @@ final class ReportingHomeTest extends TestCase
             $ns = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
 
             $cookies->setValue( $request, array_merge( (array) $original, array(
-                $ns . \OWA\Module\Base\Controller\ReportingHome::LAST_PROFILE_COOKIE
-                    => 'OWA-a-profile-that-does-not-exist',
+                $ns . \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE
+                    => '987654321987',
             ) ) );
 
             $data = $this->redirect();
 
             $this->assertNotSame(
-                'OWA-a-profile-that-does-not-exist', $data['siteId'] ?? null,
-                'A Profile named only by a cookie was trusted without checking the viewer '
+                '987654321987', $data['propertyId'] ?? null,
+                'A Property named only by a cookie was trusted without checking the viewer '
                 . 'can open it.' );
 
             $this->assertNotEmpty(
-                $data['siteId'] ?? null,
-                'It fell back to nothing rather than to a Profile the viewer has.' );
+                $data['propertyId'] ?? null,
+                'It fell back to nothing rather than to a Property the viewer has.' );
 
         } finally {
 
@@ -97,17 +99,17 @@ final class ReportingHomeTest extends TestCase
     }
 
     /** It is written where the answer is known: when a report renders. */
-    public function testTheProfileIsRememberedWhenAReportRenders(): void
+    public function testThePropertyIsRememberedWhenAReportRenders(): void
     {
         $src = (string) file_get_contents( OWA_DIR . 'Core/ReportController.php' );
 
         $this->assertStringContainsString(
-            'ReportingHome::LAST_PROFILE_COOKIE', $src,
-            'Nothing records the Profile, so reporting always resumes on the first one.' );
+            'ReportingHome::LAST_PROPERTY_COOKIE', $src,
+            'Nothing records the Property, so reporting always resumes on the first one.' );
 
         $this->assertStringContainsString(
-            "if ( \$this->getParam( 'siteId' ) )", $src,
-            'It would write an empty cookie on a report that resolved no site.' );
+            "if ( \$propertyId !== '' ) {\n\n            \\OWA\\Core\\CoreAPI::createCookie(", $src,
+            'It would write an empty cookie on a report that resolved no Property.' );
     }
 
     /** Nothing points at the retired roster. */

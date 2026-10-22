@@ -166,7 +166,7 @@ foreach ( $owa_steps as $owa_s ) {
 <?php else:?>
 <div class="owa_reportSectionContent">
     This visualization has no steps yet.
-    <a href="<?php echo $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id, 'siteId' => $view->get('siteId') ) ); ?>">Add some</a>.
+    <a href="<?php echo $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id ), true ); ?>">Add some</a>.
 </div>
 <?php endif;?>
 

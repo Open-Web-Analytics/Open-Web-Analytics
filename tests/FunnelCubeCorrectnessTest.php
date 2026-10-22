@@ -123,7 +123,7 @@ final class FunnelCubeCorrectnessTest extends TestCase
 
     private function funnel(array $steps, string $scope = 'visitor'): array
     {
-        $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(['siteId' => self::SITE, 'period' => 'today']);
+        $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(['propertyId' => (string) self::PROPERTY, 'period' => 'today']);
 
         $m = new ReflectionMethod($controller, 'countFunnel');
         $m->setAccessible(true);

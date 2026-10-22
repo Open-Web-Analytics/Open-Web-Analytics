@@ -65,7 +65,17 @@ class SitesDelete extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\TrackerBundle::remove( (string) $this->getParam( 'siteId' ) );
         }
 
-        $this->setRedirectAction('base.reportingHome');
+        // Back to the roster it was reached from, which no longer lists it.
+        if ( $site->get( 'property_id' ) ) {
+
+            $this->set( 'propertyId', (string) $site->get( 'property_id' ) );
+            $this->setRedirectAction( 'base.propertyProfiles' );
+
+        } else {
+
+            $this->setRedirectAction('base.reportingHome');
+        }
+
         $this->set('status_code', 3204);
     }
 }

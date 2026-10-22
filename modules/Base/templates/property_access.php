@@ -1,11 +1,12 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * Access is granted to a PROPERTY, not to one way of observing it, so this
- * sits under the Property even though the grants are stored per Profile.
- * 
- * The submit REPLACES the whole grant set -- a user omitted from the form
- * is revoked -- so it must always render every user, never a partial list.
+ * Access is granted to a PROPERTY, not to one way of observing it. The grants
+ * are stored per Profile; PropertyGrants shows a user as granted when any
+ * Profile is, and the save writes every Profile.
+ *
+ * The submit is a delta over the users it rendered, so it must render every
+ * user, never a partial list.
  */
 ?>
 <DIV class="panel_headline">Property Access Management</DIV>
@@ -31,7 +32,7 @@
             </tr>
             <?php foreach ($view->users as $user):
                 $isAdmin   = ( $user['role'] ?? '' ) === 'admin';
-                $isAllowed = $view->siteEntity->isUserAssigned( $user['id'] );
+                $isAllowed = in_array( (int) $user['id'], $view->grantedUserIds, true );
             ?>
             <tr class="owa-user-row">
                 <td>
@@ -59,10 +60,10 @@
         </table>
 
         <br>
-        <?php echo $view->createNonceFormField('base.sitesEditAllowedUsers');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] ?? '' );?>">
+        <?php echo $view->createNonceFormField('base.propertyAccessUpdate');?>
+        <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
         <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesEditAllowedUsers">
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.propertyAccessUpdate">
         <input type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Users" class="owa-button">
 
         <?php endif;?>

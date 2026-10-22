@@ -33,25 +33,20 @@ class GoalEvents extends \OWA\Core\AdminController {
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         /*
-         * TIER 3, the Profile, even though the goals themselves belong to the
-         * Property. The tier says how this screen is ADDRESSED, not where its
-         * data lives: it takes a siteId, is reached from a Profile, and
-         * resolves the Property itself, so the context line above it should
-         * stop at the Profile. getHierarchyNav() files the nav ENTRY under
-         * Property instead, because that is where the data lives; the two are
-         * answering different questions and are meant to differ.
+         * Tier 2: goal events belong to the Property. The screen is still
+         * addressed by a siteId and resolves the Property from it.
          */
-        $this->set( 'hierarchy_tier', 3 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId ) );
+        $this->set( 'hierarchy_tier', 2 );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.goalEvents' );
     }
 
     /**
-     * One Profile's goal events, newest slot last.
+     * The goal events of a Profile's Property.
      *
-     * Rows, not slots: a Profile with two goal events has two, and one with none
-     * has none rather than twenty blanks.
+     * Rows, not slots: a Property with two goal events has two, and one with
+     * none has none rather than twenty blanks.
      *
      * @return array
      */
@@ -64,14 +59,21 @@ class GoalEvents extends \OWA\Core\AdminController {
 
         /*
          * By PROPERTY: goal events describe the website, and every Profile of
-         * it sees the same list. The request carries a Profile because that is
-         * what the nav is scoped to.
-         *
-         * Guarded, because Db::where() drops an empty value rather than
-         * matching nothing -- an unparented Profile would list every goal event
-         * on the installation.
+         * it sees the same list.
          */
-        $propertyId = \OWA\Module\Base\Entity\GoalEvent::propertyFor( $siteId );
+        return self::listForProperty( \OWA\Module\Base\Entity\GoalEvent::propertyFor( $siteId ) );
+    }
+
+    /**
+     * A Property's goal events.
+     *
+     * Guarded, because Db::where() drops an empty value rather than matching
+     * nothing -- no Property would list every goal event on the installation.
+     *
+     * @param  string $propertyId
+     * @return array
+     */
+    public static function listForProperty( $propertyId ) {
 
         if ( ! $propertyId ) {
 

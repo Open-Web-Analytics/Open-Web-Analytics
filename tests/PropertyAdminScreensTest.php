@@ -298,29 +298,37 @@ final class PropertyAdminScreensTest extends TestCase
 
         $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
 
-        foreach ( array( 'owa_siteControlOrgs', 'owa_siteControlProperties',
-                         'owa_siteControlProfiles' ) as $column ) {
+        foreach ( array( 'owa_siteControlOrgs', 'owa_siteControlProperties' ) as $column ) {
 
             $this->assertStringContainsString(
                 $column, $template, "The control is missing its $column column." );
         }
 
         /*
-         * The tracker id is shown beside each Profile because it is what
-         * someone opens this control to find -- it is the value that goes in a
-         * tag, and having to open an edit screen to read it was the gap.
+         * It stops at the Property. A report is of a Property, so choosing a
+         * Profile there would choose nothing a report reads.
          */
+        $this->assertStringNotContainsString(
+            'owa_siteControlProfiles', $template,
+            'The control still offers Profiles to report on.' );
+
         $this->assertStringContainsString(
-            'owa_siteControlId', $template,
-            'A Profile is listed without its tracking id.' );
+            "'propertyId' => \$owa_p['id'],", $template,
+            'Choosing a Property does not open a report of it.' );
 
         $this->assertStringContainsString(
             "'do' => 'base.propertyProfile'", $template,
             'The Properties column offers no way to edit a Property.' );
 
+        /*
+         * The tracker id is listed beside each Profile on the roster, because
+         * it is the value that goes in a tag.
+         */
+        $roster = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+
         $this->assertStringContainsString(
-            "'do' => 'base.sitesProfile'", $template,
-            'The Profiles column offers no way to edit a Profile.' );
+            "\$owa_prof['site_id']", $roster,
+            'A Profile is listed without its tracking id.' );
     }
     /**
      * The settings nav is for install-wide configuration only.
@@ -466,12 +474,34 @@ final class PropertyAdminScreensTest extends TestCase
          * the control is for.
          */
         foreach ( array( 'base.organizationProfile' => 'the Organization',
-                         'base.propertyProfile'     => 'a Property',
-                         'base.sitesProfile'        => 'a Profile' ) as $action => $what ) {
+                         'base.propertyProfile'     => 'a Property' ) as $action => $what ) {
 
             $this->assertStringContainsString(
                 $action, $template,
                 "The control offers no way to reach $what, and the settings nav no longer does." );
+        }
+
+        /*
+         * A Profile is reached through its Property: the control stops there,
+         * the Property's nav carries the roster, and each row leads to the
+         * Profile's own screens.
+         */
+        $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
+        $method->setAccessible( true );
+
+        $property = array_column( (array) $method->invoke( $controller, '', 'p' )['Property'], 'label', 'do' );
+
+        $this->assertSame( 'Observation Profiles', $property['base.propertyProfiles'] ?? null,
+            'No way from a Property to its Profiles.' );
+
+        $roster = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+
+        foreach ( array( 'base.sitesProfile', 'base.profileSettings', 'base.sitesInvocation' ) as $action ) {
+
+            $this->assertStringContainsString( "'do' => '$action'", $roster,
+                "The roster does not lead to $action." );
         }
     }
 
@@ -652,14 +682,13 @@ final class PropertyAdminScreensTest extends TestCase
         $property = array_column( $nav['Property'], 'label', 'do' );
 
         $this->assertSame( 'Details', $property['base.propertyProfile'] ?? null );
+        $this->assertSame( 'Observation Profiles', $property['base.propertyProfiles'] ?? null );
         /*
          * Goal events sit under the PROPERTY, not the Profile.
          *
          * A behaviour worth counting is a fact about the website: two Profiles
          * of one Property both want the same signup counted, and defining it
-         * twice is how the two drift. Counting still happens per Profile,
-         * because a
-         * conversion is a flag on a session.
+         * twice is how the two drift.
          */
         $this->assertSame( 'Goal Events', $property['base.goalEvents'] ?? null );
         $this->assertArrayNotHasKey( 'base.goalEvents', $profile,
@@ -970,15 +999,17 @@ final class PropertyAdminScreensTest extends TestCase
             'The context line belongs ABOVE the page heading, not under the form.' );
 
         /*
-         * Most screens set only 'siteId', not 'params'. Requiring each
-         * controller to remember both is how one screen ends up without its
-         * context line, so the wrapper falls back.
+         * Most screens set only 'siteId' or 'propertyId', not 'params'.
+         * Requiring each controller to remember both is how one screen ends up
+         * without its context line, so the wrapper falls back.
          */
         $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
 
         $this->assertStringContainsString(
-            "\$params['siteId'] = \$this->get( 'siteId' )", $view,
-            'A screen that sets only siteId would render no context line.' );
+            "foreach ( array( 'siteId', 'propertyId' ) as \$key )", $view,
+            'A screen that sets only siteId or propertyId would render no context line.' );
+        $this->assertStringContainsString(
+            "\$params[ \$key ] = \$this->get( \$key );", $view );
     }
 
     /** One description per screen. */
@@ -1021,7 +1052,8 @@ final class PropertyAdminScreensTest extends TestCase
             'OrganizationProfile' => 1, 'Users'           => 1,
             'PropertyProfile'     => 2, 'PropertyAccess'  => 2,
             'SitesProfile'        => 3, 'ProfileSettings' => 3,
-            'SitesInvocation'     => 3, 'GoalEvents'    => 3,
+            'SitesInvocation'     => 3, 'GoalEvents'      => 2,
+            'PropertyProfiles'    => 2, 'CustomDimensions' => 2,
         );
 
         foreach ( $expected as $controller => $tier ) {
@@ -1114,35 +1146,33 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertStringNotContainsString( 'subview_content', $body );
     }
     /**
-     * The fan-out is where you add a tier, not just choose one.
+     * A Property is added from the fan-out, and a Profile from its Property's
+     * roster.
      *
-     * It replaced the Tracked Sites roster, which had an "Add New" link. With
-     * the roster gone and no link here, adding a Profile was reachable only by
-     * typing the action into the URL -- and adding a Property was not possible
-     * at all: PropertyProfile always loaded an existing row.
+     * The fan-out replaced the Tracked Sites roster, which had an "Add New"
+     * link. With that roster gone and no link here, adding a Property was not
+     * possible at all: PropertyProfile always loaded an existing row.
      */
-    public function testTheFanOutCanAddAPropertyAndAProfile(): void
+    public function testAPropertyAndAProfileCanBeAdded(): void
     {
         $template = (string) file_get_contents(
             OWA_DIR . 'modules/Base/templates/site_control.php' );
 
         $this->assertSame(
-            2, substr_count( $template, 'class="owa_siteControlAdd' ),
-            'Both the Properties and the Profiles column need a way to add one.' );
-
-        /* The Profile is added to the Property selected beside it. */
-        $this->assertStringContainsString(
-            "array( 'do' => 'base.sitesProfile', 'propertyId' => \$propertyId )", $template,
-            'The Profiles column adds a Profile without saying which Property it is for.' );
+            1, substr_count( $template, 'class="owa_siteControlAdd' ),
+            'The Properties column needs a way to add one.' );
 
         /* Add is a different route from edit: no id. */
         $this->assertStringContainsString(
             "array( 'do' => 'base.propertyProfile' )", $template,
             'The Properties column has no add link, only per-row edit links.' );
 
+        /* The Profile is added to the Property whose roster it is. */
+        $roster = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+
         $this->assertStringContainsString(
-            "array( 'do' => 'base.sitesProfile' )", $template,
-            'The Profiles column has no add link.' );
+            "'do' => 'base.sitesProfile', 'propertyId' => \$view->propertyId", $roster,
+            'The roster adds a Profile without saying which Property it is for.' );
     }
 
     /**

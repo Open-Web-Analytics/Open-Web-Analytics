@@ -8,14 +8,16 @@ namespace OWA\Module\Base\Controller;
 //
 
 /**
- * A site's last thirty minutes, from raw (Classes\Realtime).
+ * A Property's last thirty minutes, from raw (Classes\Realtime).
  *
- *   GET v1/realtime?siteId=<site>                    every card
- *   GET v1/realtime?siteId=<site>&visitorId=<id>     one visitor's events
+ *   GET v1/realtime?propertyId=<property>                  every card
+ *   GET v1/realtime?propertyId=<property>&visitorId=<id>   one visitor's events
  *
- * A ReportController for its access checks -- view_reports on the site named
- * -- and nothing else it offers: it reads no cube, so a site whose reports are
- * not ready yet still has a realtime view.
+ * A siteId names its Property instead, as on every report route.
+ *
+ * A ReportController for its access checks -- view_reports on the Property
+ * named -- and nothing else it offers: it reads no cube, so a Property whose
+ * reports are not ready yet still has a realtime view.
  */
 class RealtimeRest extends \OWA\Core\ReportController {
 
@@ -28,12 +30,13 @@ class RealtimeRest extends \OWA\Core\ReportController {
 
     function validate() {
 
-        $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'required', array( 'stopOnError' => true ) );
+        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ) ?: $this->getParam( 'siteId' ),
+            'required', array( 'stopOnError' => true ) );
     }
 
     function action() {
 
-        $realtime = new \OWA\Module\Base\Classes\Realtime( (string) $this->getParam( 'siteId' ) );
+        $realtime = new \OWA\Module\Base\Classes\Realtime( (string) $this->getParam( 'propertyId' ) );
         $visitor  = trim( (string) $this->getParam( 'visitorId' ) );
 
         $this->set( 'realtime', $visitor !== ''

@@ -13,7 +13,7 @@ class ReportRealtime extends \OWA\Core\View {
 
         $this->body->setTemplateFile( 'base', 'report_realtime.php' );
 
-        foreach ( array( 'realtime_site_id', 'realtime_timezone' ) as $key ) {
+        foreach ( array( 'realtime_property_id', 'realtime_timezone' ) as $key ) {
 
             $this->body->set( $key, $this->get( $key ) );
         }

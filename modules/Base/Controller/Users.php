@@ -66,7 +66,7 @@ class Users extends \OWA\Core\AdminController {
 	    $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
 	    /* Tier 1: this screen is about an Organization, so the context line stops there. */
 	    $this->set( 'hierarchy_tier', 1 );
-	    $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
+	    $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
 	    $this->setView('base.optionsHierarchy');
         $this->setSubview('base.users');
     }

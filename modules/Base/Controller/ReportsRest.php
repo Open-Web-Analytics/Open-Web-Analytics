@@ -6,6 +6,9 @@ namespace OWA\Module\Base\Controller;
 /**
  * Report REST Controller.
  *
+ * @param propertyId	string		the Property the report is of
+ * @param siteId		string		one of its Profiles, to filter to; names the
+ *								Property when propertyId is absent
  * @param report_name	string		'clickstream'
  * @param metrics	 	string		'foo,bar'
  * @param dimensions 	string		'dim1,dim2,dim3'
@@ -21,6 +24,9 @@ namespace OWA\Module\Base\Controller;
  * @param sort			string		'dim1,dim2'
  */
 class ReportsRest extends \OWA\Core\ReportController {
+
+	/** A siteId filters to that Profile, so a client asking for one site's numbers gets them. */
+	protected $filters_by_site = true;
 	
 	function __construct($params) {
 		
@@ -90,13 +96,16 @@ class ReportsRest extends \OWA\Core\ReportController {
 	function action() {
 
 		/*
-		 * Reporting not ready for this Profile: its Property has no cube yet.
+		 * Reporting not ready for this Property: it has no cube yet.
 		 * Answered before any result set is built, so nothing queries a table
 		 * that does not exist, and with the reason rather than empty rows -- a
 		 * client reading rows alone could not tell "not built yet" from zero.
 		 */
-		$readiness = $this->get( 'siteId' )
-			? \OWA\Module\Base\Classes\Cube\Status::readiness( $this->get( 'siteId' ) ) : null;
+		$propertyId = (string) ( $this->get( 'propertyId' )
+			?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( (string) $this->get( 'siteId' ) ) );
+
+		$readiness = $this->get( 'propertyId' ) || $this->get( 'siteId' )
+			? \OWA\Module\Base\Classes\Cube\Status::readinessOfProperty( $propertyId ) : null;
 
 		if ( $readiness ) {
 
@@ -214,7 +223,11 @@ class ReportsRest extends \OWA\Core\ReportController {
             $rsm->setConstraints( $rsm->constraintsStringToArray( $this->get( 'constraints' ) ) );
         }
 
-        //site_id
+        if ( $this->get('propertyId') ) {
+
+            $rsm->setPropertyId( $this->get('propertyId') );
+        }
+
         if ( $this->get('siteId') ) {
 	
             $rsm->setSiteId( $this->get('siteId' ) );

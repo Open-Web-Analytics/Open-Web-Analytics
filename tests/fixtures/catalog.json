@@ -2145,8 +2145,8 @@
                 "entity": "base.event",
                 "column": "site_id",
                 "family": "site",
-                "label": "Site ID",
-                "description": "The Profile the event was collected for.",
+                "label": "Profile ID",
+                "description": "The tracking id of the Observation Profile the event was collected for. Reports cover every Profile of a Property; this breaks them out.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -3179,8 +3179,8 @@
             "entity": "base.event",
             "column": "site_id",
             "family": "site",
-            "label": "Site ID",
-            "description": "The Profile the event was collected for.",
+            "label": "Profile ID",
+            "description": "The tracking id of the Observation Profile the event was collected for. Reports cover every Profile of a Property; this breaks them out.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true

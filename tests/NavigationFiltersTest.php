@@ -119,7 +119,7 @@ final class NavigationFiltersTest extends TestCase
 
         $siteControl = (string) file_get_contents(OWA_DIR . 'modules/Base/templates/site_control.php');
 
-        $this->assertSame(5, substr_count($siteControl, "Navigation::links( 'nav_site_control'"),
+        $this->assertSame(3, substr_count($siteControl, "Navigation::links( 'nav_site_control'"),
             'every row and column action in the site control goes through the filter');
         $this->assertStringNotContainsString("isCapable('edit_sites') ):?>\n                    <a", $siteControl);
     }

@@ -6,10 +6,10 @@ const { FIXTURE, login, openReport, openReportNoTabs } = require('./fixtures');
  *
  * WHY THIS EXISTS
  * ---------------
- * enableEcommerceReporting is a PER-SITE setting. There is a base setting of the
- * same name which has been false since it was introduced -- it carries a "move
- * to site settings" note -- and reading the wrong one is a silent failure: the
- * report still renders, it just quietly leaves the e-commerce columns out. That
+ * enableEcommerceReporting is a PER-PROPERTY setting. The install-wide value
+ * has been false since it was introduced, and reading the wrong one is a silent
+ * failure: the report still renders, it just quietly leaves the e-commerce
+ * columns out. That
  * is exactly what ReportCampaigns did until this suite was written, and nothing
  * caught it because every page still returned 200.
  *

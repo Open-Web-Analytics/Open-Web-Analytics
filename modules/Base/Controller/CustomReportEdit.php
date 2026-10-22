@@ -150,15 +150,14 @@ class CustomReportEdit extends \OWA\Core\ReportController {
                 : ( $report ? ! empty( $report['is_shared'] ) : false ) );
 
         /*
-         * The site the author is looking at, carried through the form.
+         * The Property the author is looking at, carried through the form.
          *
          * It ends up on the URL the author lands on after saving, which is the
-         * URL they share -- and a report URL naming no site is refused for
-         * everyone who is not an admin, because view_reports is only ever
-         * satisfied against a particular site. The form action alone does not
-         * carry it, so it travels as a field.
+         * URL they share, so it must name the Property the report was built
+         * on. The form action alone does not carry it, so it travels as a
+         * field.
          */
-        $this->set( 'siteId', $this->getParam( 'siteId' ) );
+        $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
 
         /*
          * Which fact tables each metric can be measured in.

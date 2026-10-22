@@ -62,11 +62,11 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
          */
         $this->set( 'reportId', Report::CUSTOM_PREFIX . $id );
 
-        $siteId = (string) $this->getParam( 'siteId' );
+        $propertyId = (string) $this->getParam( 'propertyId' );
 
-        if ( $siteId !== '' ) {
+        if ( $propertyId !== '' ) {
 
-            $this->set( 'siteId', $siteId );
+            $this->set( 'propertyId', $propertyId );
         }
 
         $this->setRedirectAction( 'base.report' );

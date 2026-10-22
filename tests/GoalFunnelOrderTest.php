@@ -295,7 +295,7 @@ final class GoalFunnelOrderTest extends TestCase
         $this->seed();
 
         $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(array(
-            'siteId' => self::SITE,
+            'propertyId' => (string) self::PROPERTY,
             'period' => 'today',
         ));
 

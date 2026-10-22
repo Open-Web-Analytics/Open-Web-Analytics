@@ -298,8 +298,106 @@ class ServiceUser extends \OWA\Core\Base {
             }
         }
 
-        $this->assignedSites = $list;
+        $this->assignedSites = self::withSiblingProfiles( $list );
         $this->isAssignedSitesListLoaded = true;
+    }
+
+    /**
+     * A grant on any Profile of a Property is a grant on the Property.
+     *
+     * Reports are of a Property, so a grant cannot stop at one of its Profiles:
+     * the cube holds them all. Grants are still stored per Profile, and an
+     * upgrade can leave the Profiles of one Property granted to different
+     * users -- 1.x sites sharing a domain become Profiles of one Property -- so
+     * the widening happens here, where access is read, rather than in the rows.
+     *
+     * Archived siblings stay out for the reason the loop above gives.
+     *
+     * @param  array $list site_id => Site entity
+     * @return array       the same, plus every live sibling Profile
+     */
+    public static function withSiblingProfiles( array $list ) {
+
+        $property_ids = array();
+
+        foreach ( $list as $site ) {
+
+            $property_id = (string) $site->get( 'property_id' );
+
+            if ( ctype_digit( $property_id ) && $property_id !== '0' ) {
+
+                $property_ids[ $property_id ] = true;
+            }
+        }
+
+        if ( ! $property_ids ) {
+
+            return $list;
+        }
+
+        $db   = \OWA\Core\CoreAPI::dbSingleton();
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        $rows = (array) $db->get_results( sprintf( 'SELECT * FROM %s WHERE property_id IN (%s)',
+            $site->getTableName(), implode( ', ', array_keys( $property_ids ) ) ) );
+
+        foreach ( $rows as $row ) {
+
+            if ( isset( $list[ $row['site_id'] ] ) ) {
+
+                continue;
+            }
+
+            $sibling = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+            $sibling->hydrate( (array) $row );
+
+            if ( $sibling->isArchived() ) {
+
+                continue;
+            }
+
+            $list[ $row['site_id'] ] = $sibling;
+        }
+
+        return $list;
+    }
+
+    /**
+     * A Profile of the Property this user may see, or '' when there is none.
+     *
+     * Site access is checked per Profile, and any Profile of a Property grants
+     * the Property (withSiblingProfiles()), so this is the site a Property's
+     * capability checks are made against.
+     *
+     * @param  string $propertyId
+     * @return string
+     */
+    public function siteIdForProperty( $propertyId ) {
+
+        if ( (string) $propertyId === '' ) {
+
+            return '';
+        }
+
+        $sites = $this->assignedSites;
+
+        // An administrator is assigned nothing and may see every Profile.
+        if ( $this->isAdmin() ) {
+
+            $ids = \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $propertyId );
+
+            return $ids ? (string) $ids[0] : '';
+        }
+
+        foreach ( $sites as $site_id => $site ) {
+
+            if ( (string) $site->get( 'property_id' ) === (string) $propertyId ) {
+
+                return (string) $site_id;
+            }
+        }
+
+        return '';
     }
 
     public function getAssignedSites() {

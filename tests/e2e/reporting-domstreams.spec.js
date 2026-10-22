@@ -163,12 +163,12 @@ test.describe('reporting: domstreams', () => {
         });
 
         /**
-         * The picker offers what the reporting stack offers, MINUS site and
-         * time: the report is already scoped to one site, and a date in the
-         * segment picks everyone active that day and then lists their
-         * recordings across the whole period.
+         * The picker offers what the reporting stack offers, MINUS time: a
+         * date in the segment picks everyone active that day and then lists
+         * their recordings across the whole period. The Profile is offered,
+         * because the list is of the Property.
          */
-        test('offers no site or time dimensions', async ({ page }) => {
+        test('offers the Profile but no time dimensions', async ({ page }) => {
             await openDomstreams(page);
             await page.waitForSelector('#domstreamFilter', { timeout: 20_000 });
 
@@ -182,9 +182,11 @@ test.describe('reporting: domstreams', () => {
             const names = await page.locator('#owa_filterBuilder-domstreamFilter option')
                 .evaluateAll((opts) => opts.map((o) => o.getAttribute('value')));
 
-            for (const excluded of ['siteId', 'siteDomain', 'siteName', 'date', 'day', 'month', 'year']) {
+            for (const excluded of ['date', 'day', 'month', 'year']) {
                 expect(names).not.toContain(excluded);
             }
+
+            expect(names).toContain('siteId');
 
             // ...and it is not passing because the picker is empty.
             expect(names).toContain('sessionMedium');

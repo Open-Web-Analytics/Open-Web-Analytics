@@ -203,8 +203,8 @@ class Status {
     }
 
     /**
-     * Whether a Profile's reports can be drawn, and if not, what to tell the
-     * reader. Null when its Property's cube exists.
+     * Whether a Profile's Property can be reported on, and if not, what to
+     * tell the reader. Null when the Property's cube exists.
      *
      * This answers "is reporting ready?", not "is the tag working?" -- that is
      * the Tracking Tag screen's question (SitesInvocation::lastEventReceived()).
@@ -217,7 +217,18 @@ class Status {
      */
     public static function readiness( $site_id ) {
 
-        $property_id = Cubes::propertyIdForSite( (string) $site_id );
+        return self::readinessOfProperty( Cubes::propertyIdForSite( (string) $site_id ) );
+    }
+
+    /**
+     * readiness() for a Property, which is what a report is of.
+     *
+     * @param string $property_id '' when there is none
+     * @return array|null
+     */
+    public static function readinessOfProperty( $property_id ) {
+
+        $property_id = (string) $property_id;
 
         if ( $property_id !== '' && Cubes::exists( $property_id ) ) {
 
@@ -275,7 +286,7 @@ class Status {
                 ? sprintf( \OWA\Core\CoreAPI::t( 'Reports appear after the first scheduled build with data. The next build is due %s.' ),
                     \OWA\Module\Base\Classes\JobStatus::readable( $next ) )
                 : \OWA\Core\CoreAPI::t( 'Reports appear after the first scheduled build with data.' ) )
-                . ' ' . \OWA\Core\CoreAPI::t( 'The Tracking Tag page shows whether data has arrived.' ),
+                . ' ' . \OWA\Core\CoreAPI::t( 'Each Observation Profile\'s Tracking Tag page shows whether data has arrived.' ),
             'cron'        => '',
             'property_id' => (string) $property_id,
         );

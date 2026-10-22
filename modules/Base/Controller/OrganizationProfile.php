@@ -43,8 +43,8 @@ class OrganizationProfile extends \OWA\Core\AdminController {
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         /* Tier 1: this screen is about an Organization, so the context line stops there. */
         $this->set( 'hierarchy_tier', 1 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav(
-            $siteId, $this->getParam( 'propertyId' ) ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '',
+            $this->getParam( 'propertyId' ) ?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.organizationProfile' );
     }

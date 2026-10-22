@@ -16,16 +16,16 @@ namespace OWA\Core;
 //
 
 /**
- * The metric sets a site offers.
+ * The metric sets a Property offers.
  *
  * A report shows one dimension measured several ways -- site usage, and
- * e-commerce where the site has it. Those are METRIC SETS. The interface currently draws them as
+ * e-commerce where the Property has it. Those are METRIC SETS. The interface currently draws them as
  * tabs; that is a presentation choice and is expected to change, so nothing
  * here is named after it.
  *
  * They are NOT configuration and a report cannot enumerate them: which sets
- * exist depends on the site. So they are derived here, per site, and merged
- * with whatever a report declares.
+ * exist depends on the Property a report is of. So they are derived here, per
+ * Property, and merged with whatever a report declares.
  *
  * There was one per goal GROUP too, measuring goal{N}Completions and
  * goalValueAll. Neither metric exists on v2, and goal groups were removed
@@ -52,7 +52,7 @@ class MetricSets {
     const DEFAULT_KEY = 'site_usage';
 
     /**
-     * Every metric set available for a site, keyed by name.
+     * Every metric set available for a Property, keyed by name.
      *
      * Each is: label, metrics, chartMetric.
      *
@@ -63,14 +63,14 @@ class MetricSets {
      * grid at all. Carrying it forward would be preserving a field that has
      * never had an effect.
      *
-     * @param string|int $siteId
+     * @param string|int $propertyId
      * @return array<string, array>
      */
-    public static function forSite( $siteId ) {
+    public static function forProperty( $propertyId ) {
 
         $sets = array();
 
-        if ( ! $siteId ) {
+        if ( ! $propertyId ) {
 
             return $sets;
         }
@@ -82,11 +82,11 @@ class MetricSets {
         );
 
         /*
-         * Goal conversions, when the site's Property has an active goal event to
+         * Goal conversions, when the Property has an active goal event to
          * convert on. v2's goalConversions counts the is_goal_event rows the
          * marking wrote, one flag per event however many goals it met.
          */
-        if ( self::hasActiveGoalEvent( $siteId ) ) {
+        if ( self::hasActiveGoalEvent( $propertyId ) ) {
 
             $sets['conversions'] = array(
                 'label'       => 'Conversions',
@@ -95,7 +95,7 @@ class MetricSets {
             );
         }
 
-        if ( \OWA\Core\CoreAPI::getSiteSetting( $siteId, 'enableEcommerceReporting' ) ) {
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'property', (string) $propertyId ) ) {
 
             $sets['ecommerce'] = array(
                 'label'       => 'e-commerce',
@@ -108,24 +108,17 @@ class MetricSets {
     }
 
     /**
-     * Whether a site's Property has at least one active goal event.
+     * Whether a Property has at least one active goal event.
      *
-     * @param string|int $siteId
+     * @param string|int $propertyId
      * @return bool
      */
-    protected static function hasActiveGoalEvent( $siteId ) {
-
-        $property = \OWA\Module\Base\Entity\GoalEvent::propertyFor( (string) $siteId );
-
-        if ( ! $property ) {
-
-            return false;
-        }
+    protected static function hasActiveGoalEvent( $propertyId ) {
 
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(
             sprintf( 'SELECT 1 AS present FROM %s WHERE property_id = ? AND is_active = 1 LIMIT 1',
                 \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName() ),
-            array( $property ) );
+            array( (string) $propertyId ) );
 
         return ! empty( $row['present'] );
     }
@@ -149,7 +142,7 @@ class MetricSets {
             $tabs[ $key ] = array(
                 'tab_label'        => $set['label'],
                 'metrics'          => $set['metrics'],
-                // Never read -- see forSite(). Present because the template
+                // Never read -- see forProperty(). Present because the template
                 // indexes it, and a missing key is a warning on every render.
                 'sort'             => '',
                 // Same reasoning as `sort` above: a set that arrives without one

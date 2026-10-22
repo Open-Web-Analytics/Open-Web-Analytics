@@ -5,28 +5,28 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Which metric sets a site offers.
+ * Which metric sets a Property offers.
  *
  * A report shows one dimension measured several ways. Those ways are metric
- * sets, and they are NOT configuration: which exist depends on the site, and a
- * new one appears the moment somebody adds a goal. That is why a report cannot
- * enumerate them and why this is derived per site.
+ * sets, and they are NOT configuration: which exist depends on the Property a
+ * report is of, and a new one appears the moment somebody adds a goal. That is
+ * why a report cannot enumerate them and why this is derived per Property.
  *
  * The interface draws them as tabs today. Nothing here is named after that,
  * because it is expected to change.
  */
 final class MetricSetsTest extends TestCase
 {
-    public function testASiteAlwaysOffersTheDefaultSet(): void
+    public function testAPropertyAlwaysOffersTheDefaultSet(): void
     {
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'reads site settings and goals' );
         }
 
-        $sets = \OWA\Core\MetricSets::forSite( 1 );
+        $sets = \OWA\Core\MetricSets::forProperty( 1 );
 
         $this->assertArrayHasKey( \OWA\Core\MetricSets::DEFAULT_KEY, $sets,
-            'every site measures usage, whatever else it has configured' );
+            'every Property measures usage, whatever else it has configured' );
 
         $default = $sets[ \OWA\Core\MetricSets::DEFAULT_KEY ];
 
@@ -38,16 +38,13 @@ final class MetricSetsTest extends TestCase
     }
 
     /**
-     * No site means no sets -- not a set with nothing in it.
-     *
-     * getSiteSetting() returns nothing without a site id and the goal manager
-     * would be built for a site that does not exist, so answering "none" is
-     * the honest result rather than a default set measuring nobody.
+     * No Property means no sets -- not a set with nothing in it, which would be
+     * a default set measuring nobody.
      */
-    public function testNoSiteOffersNoSets(): void
+    public function testNoPropertyOffersNoSets(): void
     {
-        $this->assertSame( array(), \OWA\Core\MetricSets::forSite( '' ) );
-        $this->assertSame( array(), \OWA\Core\MetricSets::forSite( 0 ) );
+        $this->assertSame( array(), \OWA\Core\MetricSets::forProperty( '' ) );
+        $this->assertSame( array(), \OWA\Core\MetricSets::forProperty( 0 ) );
     }
 
     /**
@@ -63,7 +60,7 @@ final class MetricSetsTest extends TestCase
             $this->markTestSkipped( 'reads site settings and goals' );
         }
 
-        $sets = \OWA\Core\MetricSets::forSite( 1 );
+        $sets = \OWA\Core\MetricSets::forProperty( 1 );
 
         $this->assertNotEmpty( $sets );
 
@@ -94,7 +91,7 @@ final class MetricSetsTest extends TestCase
             $this->markTestSkipped( 'reads site settings and goals' );
         }
 
-        foreach ( \OWA\Core\MetricSets::forSite( 1 ) as $key => $set ) {
+        foreach ( \OWA\Core\MetricSets::forProperty( 1 ) as $key => $set ) {
 
             $this->assertArrayNotHasKey( 'sort', $set,
                 "set '$key' carries a sort, which nothing reads" );
@@ -103,7 +100,7 @@ final class MetricSetsTest extends TestCase
 
     /**
      * The legacy shape is derived from the same source, so the two renderers
-     * cannot disagree about what a site offers while both exist.
+     * cannot disagree about what a Property offers while both exist.
      */
     public function testTheLegacyShapeIsDerivedNotDuplicated(): void
     {
@@ -129,7 +126,7 @@ final class MetricSetsTest extends TestCase
 
     /**
      * A report is handed the sets, so a widget renderer can read them without
-     * going back to the site.
+     * going back to the Property.
      */
     public function testAReportIsGivenItsMetricSets(): void
     {
@@ -137,12 +134,14 @@ final class MetricSetsTest extends TestCase
             $this->markTestSkipped( 'rendering a report loads the site list' );
         }
 
+        $property = $this->aPropertyWithAProfile();
+
         $user = \OWA\Core\CoreAPI::getCurrentUser();
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages', 'siteId' => '1', 'period' => 'last_thirty_days' ) ) )->doAction();
+            array( 'reportId' => 'pages', 'propertyId' => $property, 'period' => 'last_thirty_days' ) ) )->doAction();
 
         $this->assertArrayHasKey( 'metricSets', $data );
         $this->assertArrayHasKey( \OWA\Core\MetricSets::DEFAULT_KEY, $data['metricSets'] );
@@ -154,7 +153,7 @@ final class MetricSetsTest extends TestCase
     }
 
     /**
-     * A site with an active goal event offers the Conversions set, and no other.
+     * A Property with an active goal event offers the Conversions set, and no other.
      *
      * 1.x's goal groups each added a set measuring goal{N}Completions and
      * goalValueAll, which v2 does not have -- a migrated goal put an unresolvable
@@ -167,25 +166,10 @@ final class MetricSetsTest extends TestCase
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
-        $db->selectColumn( 'site_id, property_id' );
-
-        $site = array();
-
-        foreach ( (array) $db->getAllRows() as $row ) {
-            if ( ! empty( $row['property_id'] ) ) {
-                $site = $row;
-                break;
-            }
-        }
-
-        if ( empty( $site['property_id'] ) ) {
-            $this->markTestSkipped( 'Needs a Profile with a Property.' );
-        }
+        $site = array( 'property_id' => $this->aPropertyWithAProfile() );
 
         // Another active goal event on this Property already offers the set.
-        $before = in_array( 'conversions', array_keys( \OWA\Core\MetricSets::forSite( $site['site_id'] ) ), true );
+        $before = in_array( 'conversions', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true );
 
         $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
         $id   = $goal->generateId( 'goal_event:metric-sets-probe:' . uniqid( '', true ) );
@@ -200,7 +184,7 @@ final class MetricSetsTest extends TestCase
         $goal->create();
 
         try {
-            $keys = array_keys( \OWA\Core\MetricSets::forSite( $site['site_id'] ) );
+            $keys = array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) );
         } finally {
             \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
         }
@@ -210,7 +194,23 @@ final class MetricSetsTest extends TestCase
             'a set other than site usage, conversions and e-commerce appeared' );
 
         $this->assertSame( $before,
-            in_array( 'conversions', array_keys( \OWA\Core\MetricSets::forSite( $site['site_id'] ) ), true ),
+            in_array( 'conversions', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true ),
             'with the probe goal event gone, the set is as it was' );
+    }
+
+    /** A Property that has a Profile, or the test is skipped. */
+    private function aPropertyWithAProfile(): string
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
+        $db->selectColumn( 'property_id' );
+
+        foreach ( (array) $db->getAllRows() as $row ) {
+            if ( ! empty( $row['property_id'] ) ) {
+                return (string) $row['property_id'];
+            }
+        }
+
+        $this->markTestSkipped( 'Needs a Profile with a Property.' );
     }
 }

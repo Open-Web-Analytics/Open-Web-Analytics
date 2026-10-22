@@ -94,7 +94,7 @@ class MyProfile extends \OWA\Core\Controller {
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
         $this->set( 'hierarchy_tier', 0 );
 
         // Tier 0 because it belongs to no Organization, but it is not an

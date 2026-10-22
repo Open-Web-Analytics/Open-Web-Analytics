@@ -20,7 +20,7 @@ class CustomReportEdit extends \OWA\Core\View {
 
         $this->body->set_template( 'custom_report_edit.php' );
 
-        $this->body->set( 'siteId', $this->get( 'siteId' ) );
+        $this->body->set( 'propertyId', $this->get( 'propertyId' ) );
         $this->body->set( 'custom_report_id', $this->get( 'custom_report_id' ) );
         $this->body->set( 'custom_report_name', $this->get( 'custom_report_name' ) );
         $this->body->set( 'custom_report_definition', $this->get( 'custom_report_definition' ) );

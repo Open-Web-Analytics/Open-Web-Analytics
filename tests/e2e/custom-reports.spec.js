@@ -1596,20 +1596,20 @@ test.describe('custom reports', () => {
          * SAVING MUST NOT STRAND THE AUTHOR.
          *
          * The left-hand navigation is how you leave a report, and it vanished
-         * after every save: makeNavigationMenu() returns false without a
-         * currentSiteId, and the save redirect carried none, because the
-         * builder had been opened without one and its hidden siteId was empty.
+         * after every save: makeNavigationMenu() returns false without the
+         * report's scope, and the save redirect carried none, because the
+         * builder had been opened without one and its hidden field was empty.
          *
          * The report drew its title and all its chrome, so nothing looked
          * broken. There was simply no way off the page except the back button.
          *
-         * ReportController::pre() resolves a default site now, which fixes the
+         * ReportController::pre() resolves a default Property now, which fixes the
          * whole chain in one place -- the builder is a ReportController too, so
          * its hidden field is filled, the save carries it, and the report it
          * redirects to has one.
          */
         test('the navigation survives saving a report', async ({ page }) => {
-            // Opened with NO siteId, which is how the nav's own link reaches it
+            // Opened with NO scope, which is how the nav's own link reaches it
             // and the state the bug needed.
             await page.goto('?owa_do=base.customReportEdit', { waitUntil: 'networkidle' });
 
@@ -1619,9 +1619,9 @@ test.describe('custom reports', () => {
             expect(await navLinks.count(),
                 'the builder opened without a navigation').toBeGreaterThan(10);
 
-            // The site it resolved travels with the form, which is what carries
-            // it through the save.
-            await expect(page.locator('input[name="siteId"]')).not.toHaveValue('');
+            // The Property it resolved travels with the form, which is what
+            // carries it through the save.
+            await expect(page.locator('input[name="propertyId"]')).not.toHaveValue('');
 
             await page.fill('#customReportName', reportName('Navigated'));
             await onlyWidget(page, 'trend-card', { title: 'N', metrics: ['sessions'] });
@@ -2837,10 +2837,10 @@ test.describe('custom reports', () => {
         const name = await buildOne(page, 'Shared');
 
         // The URL the author lands on IS the share link, and it carries the
-        // site -- view_reports is only ever satisfied against a particular one.
+        // Property -- view_reports is only ever satisfied against a particular one.
         const url = page.url();
 
-        expect(url).toContain('siteId');
+        expect(url).toContain('propertyId');
 
         const reader = await browser.newContext();
         const theirs = await reader.newPage();

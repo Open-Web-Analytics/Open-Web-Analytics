@@ -3,14 +3,30 @@ const { FIXTURE, adminLogin } = require('./fixtures');
 
 /**
  * The Override switch on a setting rendered below the install
- * (SettingsForm::scopedField), driven in a real browser on the Profile's
- * Observation Settings screen: inheriting shows the value disabled with a
- * note naming the level; switching on makes it editable and saving stores it;
- * switching off and saving puts the Profile back to inheriting. A setting
- * with nothing set above it is a plain field with no switch.
+ * (SettingsForm::scopedField), driven in a real browser on the Property's
+ * Details screen: inheriting shows the value disabled with a note naming the
+ * level; switching on makes it editable and saving stores it; switching off
+ * and saving puts the Property back to inheriting. A setting with nothing set
+ * above it is a plain field with no switch.
+ *
+ * e-commerce reporting is the boolean it drives, and that is a Property
+ * setting: a report is of a Property and covers every Profile in it.
  */
 
-const SCREEN = `?owa_do=base.profileSettings&owa_siteId=${FIXTURE.siteId}`;
+const PROFILE_SCREEN = `?owa_do=base.profileSettings&owa_siteId=${FIXTURE.siteId}`;
+
+/** The fixture Profile's Property Details, read off the Property nav. */
+async function propertyScreen(page) {
+    await page.goto(PROFILE_SCREEN, { waitUntil: 'networkidle' });
+
+    const href = await page.locator('a[href*="do=base.propertyProfile&"]').first().getAttribute('href');
+    const params = new URL(href, page.url()).searchParams;
+    const propertyId = params.get('owa_propertyId') || params.get('propertyId');
+
+    expect(propertyId, 'the fixture Profile has a Property').toBeTruthy();
+
+    return `?owa_do=base.propertyProfile&owa_propertyId=${propertyId}`;
+}
 
 function controls(page) {
     return {
@@ -24,12 +40,22 @@ function controls(page) {
 async function save(page) {
     await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle' }),
-        page.locator('input[type="submit"][value="Save Settings"]').click(),
+        page.locator('input[type="submit"][value="Save Property"]').click(),
     ]);
 }
 
-test('a Profile setting inherits until its Override switch is on', async ({ page }) => {
+test('a Property setting inherits until its Override switch is on', async ({ page }) => {
     await adminLogin(page);
+
+    // default_page has nothing set above the Profile: a plain field, no switch to turn on.
+    await page.goto(PROFILE_SCREEN, { waitUntil: 'networkidle' });
+    await expect(page.locator('input[name="config[base.default_page]"]')).toBeEnabled();
+    await expect(page.locator('input[name="override[base.default_page]"]')).toHaveCount(0);
+
+    // And e-commerce is no longer offered per Profile.
+    await expect(page.locator('[name="config[base.enableEcommerceReporting]"]')).toHaveCount(0);
+
+    const SCREEN = await propertyScreen(page);
     await page.goto(SCREEN, { waitUntil: 'networkidle' });
 
     let c = controls(page);
@@ -44,14 +70,10 @@ test('a Profile setting inherits until its Override switch is on', async ({ page
 
     const inherited = await c.field.inputValue();
 
-    // default_page has nothing set above it: a plain field, no switch to turn on.
-    await expect(page.locator('input[name="config[base.default_page]"]')).toBeEnabled();
-    await expect(page.locator('input[name="override[base.default_page]"]')).toHaveCount(0);
-
     await expect(c.field).toBeDisabled();
     await expect(c.sw).not.toBeChecked();
     await expect(c.inheritNote).toBeVisible();
-    await expect(c.inheritNote).toHaveText(/^Currently set at the (install|Organization|Property) level\.$/);
+    await expect(c.inheritNote).toHaveText(/^Currently set at the (install|Organization) level\.$/);
     await expect(c.overrideNote).toBeHidden();
 
     try {

@@ -102,22 +102,21 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          *
          * The SAME list the Goal Events screen shows, from the same method, so
          * a funnel cannot offer one the admin screen does not have. They are
-         * the Property's, and this screen is reached with a Profile on the
-         * request -- listFor() resolves the one to the other.
+         * the Property's, and so is the report this screen builds.
          *
          * Inactive ones are offered too, and labelled. A funnel counts from the
          * facts rather than from stored conversions, so an inactive goal event
          * still has a meaningful answer: it is a condition, and the condition
          * held or it did not.
          */
-        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
+        $propertyId = (string) $this->getParam( 'propertyId' );
 
         /*
-         * The site, so the FORM can carry it.
+         * The Property, so the FORM can carry it.
          *
          * makeLink() does not add state unless it is asked to, so a form action
-         * built from it posts to a URL with no siteId on it -- and the save
-         * then redirects to the funnel without one. Everything drew: the right
+         * built from it posts to a URL with no scope on it -- and the save then
+         * redirects to the funnel without one. Everything drew: the right
          * stages, the right names, and `r.site_id = ''` behind them, so every
          * stage reported zero visitors and looked like a site nobody had used.
          *
@@ -125,9 +124,9 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          * the custom report builder does and one pattern is easier to keep
          * right than two.
          */
-        $this->set( 'siteId', $siteId );
+        $this->set( 'propertyId', $propertyId );
 
-        $this->set( 'goalEvents', \OWA\Module\Base\Controller\GoalEvents::listFor( $siteId ) );
+        $this->set( 'goalEvents', \OWA\Module\Base\Controller\GoalEvents::listForProperty( $propertyId ) );
 
         /*
          * The step cap, read from the controller that enforces it so the form

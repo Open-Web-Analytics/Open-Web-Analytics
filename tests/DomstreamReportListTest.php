@@ -20,6 +20,14 @@ final class DomstreamReportListTest extends TestCase
 {
     private const SITE = 'domstream-list-test-site';
 
+    /** A second Profile of the same Property. */
+    private const SIBLING = 'domstream-list-test-sibling';
+
+    /** High and fixed, like the funnel tests'. */
+    private const PROPERTY = 92000003;
+
+    private const REC_SIBLING = '9100000000000000004';
+
     private const REC_A = '9100000000000000001';
     private const REC_B = '9100000000000000002';
     private const REC_C = '9100000000000000003';
@@ -43,6 +51,8 @@ final class DomstreamReportListTest extends TestCase
     {
         if (function_exists('owa_test_db_available') && owa_test_db_available()) {
             DomstreamFixtures::deleteSite(self::SITE);
+            DomstreamFixtures::deleteSite(self::SIBLING);
+            DomstreamFixtures::deleteProperty(self::PROPERTY, [self::SITE, self::SIBLING]);
         }
     }
 
@@ -53,6 +63,8 @@ final class DomstreamReportListTest extends TestCase
         }
 
         DomstreamFixtures::deleteSite(self::SITE);
+        DomstreamFixtures::deleteSite(self::SIBLING);
+        DomstreamFixtures::property(self::PROPERTY, [self::SITE, self::SIBLING]);
 
         $base = mktime(9, 0, 0);
 
@@ -88,9 +100,9 @@ final class DomstreamReportListTest extends TestCase
     private function controller(array $params = [])
     {
         return new \OWA\Module\Domstream\Controller\ReportDomstreams($params + [
-            'siteId'    => self::SITE,
-            'startDate' => (string) date('Ymd'),
-            'endDate'   => (string) date('Ymd'),
+            'propertyId' => (string) self::PROPERTY,
+            'startDate'  => (string) date('Ymd'),
+            'endDate'    => (string) date('Ymd'),
         ]);
     }
 
@@ -211,6 +223,42 @@ final class DomstreamReportListTest extends TestCase
         $this->assertSame('Play', $row['play']['value']['label']);
         $this->assertSame(1280, $row['play']['value']['width']);
         $this->assertSame('https://domstream.test/page', $row['play']['value']['url']);
+    }
+
+    /**
+     * The list is of the Property: a recording on any of its Profiles is in
+     * it, and is played back through the Profile it was recorded on.
+     */
+    public function testEveryProfileOfThePropertyIsListed(): void
+    {
+        DomstreamFixtures::chunk(self::SIBLING, [
+            'recording_id'  => self::REC_SIBLING,
+            'session_id'    => '9100000000000000103',
+            'seq'           => 1,
+            'ts'            => mktime(9, 30, 0) * 1000000,
+            'page_location' => 'https://domstream.test/sibling',
+            'page_path'     => '/sibling',
+            'viewport_w'    => 1280,
+            'viewport_h'    => 800,
+        ]);
+
+        try {
+            $rows = $this->recordings();
+
+            $this->assertArrayHasKey(self::REC_SIBLING, $rows, 'a sibling Profile\'s recording is missing');
+            $this->assertCount(4, $rows);
+            $this->assertSame(self::SIBLING, (string) $rows[self::REC_SIBLING]['site_id']);
+            $this->assertSame(self::SITE, (string) $rows[self::REC_A]['site_id']);
+
+            // The player asks by the recording's own Profile.
+            $set = $this->call('asResultSet', [], [$rows[self::REC_SIBLING]]);
+            $overlay = base64_decode($set['resultsRows'][0]['play']['value']['overlay']);
+
+            $this->assertStringContainsString(self::SIBLING, $overlay,
+                'the player link does not name the Profile the recording was made on');
+        } finally {
+            DomstreamFixtures::deleteSite(self::SIBLING);
+        }
     }
 
     public function testLengthsBeyondADayStillRead(): void

@@ -1,14 +1,15 @@
 <?php
-
 namespace OWA\Module\Base\Controller;
 
 /**
  * Property Access Management.
  *
- * Access is granted to a WEBSITE, not to one way of observing it, so this sits
- * under the Property. The grants are still stored per Profile -- moving that is
- * a migration and a change to how sitesEditAllowedUsers resolves them -- but
- * the screen is where the concept belongs.
+ * Access is granted to a Property. The grants are stored per Profile, and
+ * Classes\PropertyGrants reads and writes them at the Property: a user granted
+ * any Profile is shown as granted, and a save is written to every Profile.
+ *
+ * Addressed by propertyId. A siteId is still accepted and names its Property,
+ * for links made before the screen moved.
  */
 class PropertyAccess extends \OWA\Core\AdminController {
 
@@ -21,17 +22,29 @@ class PropertyAccess extends \OWA\Core\AdminController {
 
     function action() {
 
-        $site_id = $this->getParam( 'siteId' );
+        $property_id = (string) $this->getParam( 'propertyId' );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->getByColumn( 'site_id', $site_id );
+        if ( $property_id === '' && $this->getParam( 'siteId' ) ) {
 
-        $this->set( 'site', $site->_getProperties() );
-        $this->set( 'siteId', $site_id );
+            $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $this->getParam( 'siteId' ) );
+        }
+
+        $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        if ( $property_id !== '' ) {
+
+            $property->load( $property_id );
+        }
+
+        $this->set( 'property', $property->_getProperties() );
+        $this->set( 'propertyId', $property_id );
+        $this->set( 'grantedUserIds', $property_id !== ''
+            ? \OWA\Module\Base\Classes\PropertyGrants::userIds( $property_id ) : array() );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $property_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         /* Tier 2: this screen is about a Property, so the context line stops there. */
         $this->set( 'hierarchy_tier', 2 );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $site_id ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $property_id ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.propertyAccess' );
     }
