@@ -89,8 +89,12 @@ class SitesEdit extends \OWA\Core\AdminController {
          * Back to the Profile that was edited, not to reporting. This sent
          * every rename to the dashboard, which reads as the save having thrown
          * the screen away -- and is not what the other two Profile editors do.
+         *
+         * 'edit' as well as the siteId: base.sitesProfile draws the add form
+         * without it, so a rename landed on "New Observation Profile".
          */
         $this->set( 'siteId', $this->getParam( 'siteId' ) );
+        $this->set( 'edit', true );
         $this->setRedirectAction( 'base.sitesProfile' );
         $this->set('status_code', 3201);
     }
