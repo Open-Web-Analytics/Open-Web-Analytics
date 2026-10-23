@@ -259,7 +259,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
-.owa_admin_nav li {list-style:none; margin:0px; padding:3px 3px 3px 3px;font-size:10px;}
+/* 2px at the sides, so a group's line starts 4px into the column, as a
+   settings nav item does (the column's 2px and .owa_hierarchyNav's 2px). */
+.owa_admin_nav li {list-style:none; margin:0px; padding:3px 2px;font-size:10px;}
 .owa_admin_nav_topmenu {
     padding:;
     border:0px solid #cccccc;
@@ -279,12 +281,15 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 	padding-left: 40px;
 }
 .owa_admin_nav_subgroup li {
-    padding-left: 0;
-    padding-right: 0;
+    padding: 0;
 }
+/* A report's row is a settings nav row (.owa_hierarchyNav li): 6px above and
+   below, 8px after the rule, 12px type at 1.3, so 28px tall with the rule its
+   full height. */
 .owa_admin_nav_subgroup_item {
-    padding: 3px 3px 3px 8px;
+    padding: 6px 6px 6px 8px;
     font-size: 12px;
+    line-height: 1.3;
 }
 .owa_admin_nav_topmenu_container {}
 /* 4px on the right, and a 20px chevron: with 10px and 28px, "Custom
@@ -312,7 +317,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     flex: none;
     margin-left: auto;
     width: 20px;
-    height: 28px;
+    /* The item's min-height: at 28px a group with a chevron stood 3px
+       taller than one without. */
+    height: 25px;
     padding: 0;
     border: 0;
     background: transparent;

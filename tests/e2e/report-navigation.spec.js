@@ -315,6 +315,51 @@ test.describe('report navigation', () => {
         }
     });
 
+    /**
+     * The spacing is the settings nav's. A report's row has the settings row's
+     * padding, line height and height, so its rule is as long; lines start as
+     * far into the column; and every group's row is one height, chevron or not
+     * (the 28px chevron made those 3px taller).
+     */
+    test('the spacing matches the settings nav', async ({ page }) => {
+        const row = (el) => {
+            const box = getComputedStyle(el);
+            const column = document.querySelector('.owa_reportLeftNavColumn').getBoundingClientRect();
+            return {
+                padding: box.padding,
+                lineHeight: box.lineHeight,
+                fontSize: box.fontSize,
+                height: Math.round(el.getBoundingClientRect().height),
+                inset: Math.round(el.getBoundingClientRect().x - column.x),
+            };
+        };
+
+        await logout(page);
+        await adminLogin(page);
+
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+        const settings = await page.locator('.owa_hierarchyNav li').first().evaluate(row);
+
+        await openReport(page, REPORT.id);
+
+        const reports = await page.locator('.owa_admin_nav_subgroup_item').evaluateAll(
+            (els, fn) => els.filter((el) => el.offsetParent).map(new Function(`return ${fn}`)()),
+            row.toString());
+        const groups = await page.locator('.owa_admin_nav_topmenu_item').evaluateAll(
+            (els, fn) => els.map(new Function(`return ${fn}`)()),
+            row.toString());
+
+        expect(reports.length).toBeGreaterThan(0);
+
+        for (const report of reports) {
+            expect({ padding: report.padding, lineHeight: report.lineHeight, fontSize: report.fontSize, height: report.height })
+                .toEqual({ padding: settings.padding, lineHeight: settings.lineHeight, fontSize: settings.fontSize, height: settings.height });
+        }
+
+        expect(new Set(groups.map((g) => g.height)).size, JSON.stringify(groups.map((g) => g.height))).toBe(1);
+        expect(new Set(groups.map((g) => g.inset))).toEqual(new Set([settings.inset]));
+    });
+
     /** The toggle still works by hand, for a group you are not in. */
     test('a closed group can still be opened by clicking it', async ({ page }) => {
         await openReport(page, REPORT.id);
