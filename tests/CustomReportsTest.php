@@ -50,6 +50,35 @@ final class CustomReportsTest extends TestCase
         }
 
         self::$created = array();
+
+        self::deleteFixtureOwnersReports();
+    }
+
+    /**
+     * Every report AUTHOR and OTHER own, not only the ids this run recorded:
+     * a run killed before tearDownAfterClass left its reports behind, and
+     * nothing ever removed them. Run before the class too, for that case.
+     */
+    public static function setUpBeforeClass(): void
+    {
+        if (function_exists('owa_test_db_available') && owa_test_db_available()) {
+            self::deleteFixtureOwnersReports();
+        }
+    }
+
+    private static function deleteFixtureOwnersReports(): void
+    {
+        foreach (array(self::AUTHOR, self::OTHER) as $owner) {
+
+            $db = \OWA\Core\CoreAPI::dbSingleton();
+            $db->selectFrom(\OWA\Core\CoreAPI::entityFactory('base.custom_report')->getTableName());
+            $db->selectColumn('id');
+            $db->where('user_id', $owner);
+
+            foreach ((array) $db->getAllRows() as $row) {
+                CustomReports::delete($row['id']);
+            }
+        }
     }
 
     private function requireDb(): void
