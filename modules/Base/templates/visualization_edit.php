@@ -256,7 +256,7 @@ and where they left.</div>
 </div>
 <?php endif;?>
 
-<script type="text/javascript">
+<script>
 jQuery( function () {
 
     /*

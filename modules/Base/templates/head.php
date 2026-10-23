@@ -9,9 +9,9 @@
 <?php if(!empty($view->js)): ?>
 <?php foreach ($view->js as $jsfile): ?>
 <?php if ($jsfile['ie_only']):?>
- <!--[if IE]><script language="javascript" type="text/javascript" src="<?php echo $jsfile['url'];?>"></script><![endif]-->
+ <!--[if IE]><script src="<?php echo $jsfile['url'];?>"></script><![endif]-->
 <?php else: ?>
-<script type="text/javascript" src="<?php echo $jsfile['url'];?>"></script>
+<script src="<?php echo $jsfile['url'];?>"></script>
 <?php endif;?>
 <?php endforeach; ?>
 <?php endif;?>
