@@ -131,3 +131,52 @@ test.describe('admin pages are not cacheable', () => {
         expect(report.headers()['cache-control']).toBe('private, no-store');
     });
 });
+
+/**
+ * A session cookie that no longer signs anyone in does not lock the browser
+ * out of the login form.
+ *
+ * The form refused the stale cookie by redirecting to the login form -- to
+ * itself -- nesting go= in go= until the URL was too long to serve: a 500 for
+ * anyone whose cookie had gone stale, on every screen.
+ */
+test.describe('a stale session cookie', () => {
+
+    test.beforeEach(async ({ context, baseURL }) => {
+        const url = new URL(baseURL);
+
+        // Where OWA writes them: under its cookie domain, which is what it
+        // clears.
+        await context.addCookies([
+            { name: 'owa_u', value: 'no-such-user', domain: '.' + url.hostname, path: '/' },
+            { name: 'owa_p', value: 'deadbeefdeadbeef', domain: '.' + url.hostname, path: '/' },
+        ]);
+    });
+
+    test('the login form renders, and the stale cookie is cleared', async ({ page, context }) => {
+        const response = await page.goto('?owa_do=base.loginForm', { waitUntil: 'domcontentloaded' });
+
+        expect(response.status()).toBe(200);
+        expect(response.request().redirectedFrom()).toBeNull();
+        expect(await onLoginForm(page)).toBe(1);
+        expect((await context.cookies()).find((c) => c.name === 'owa_p')).toBeUndefined();
+    });
+
+    test('a protected screen sends the browser to the login form once', async ({ page }) => {
+        const response = await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'domcontentloaded' });
+
+        expect(response.status()).toBe(200);
+        expect(await onLoginForm(page)).toBe(1);
+        // One hop: go= names the screen asked for, not another login form.
+        expect(decodeURIComponent(page.url())).not.toMatch(/go=[^&]*loginForm/);
+    });
+
+    test('signing in from there works', async ({ page }) => {
+        await adminLogin(page);
+
+        const response = await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'domcontentloaded' });
+
+        expect(response.status()).toBe(200);
+        expect(await onLoginForm(page)).toBe(0);
+    });
+});
