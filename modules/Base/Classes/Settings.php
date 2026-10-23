@@ -2916,7 +2916,7 @@ namespace OWA\Module\Base\Classes;
                 'scheduled_jobs'                    => array(),
                 'scheduler_enabled'                    => true,
                 'maxCustomVars'                        => 5, //sdk
-                'logo_image_path'                    => 'base/i/owa-logo-100w.png',
+                'logo_image_path'                    => 'base/i/owa-logo.svg',
                 // Content-derived dimension ids are 63-bit. This flag marks an
                 // installation whose existing ids are the old 32-bit crc32
                 // values, so it keeps deriving them until its data has been

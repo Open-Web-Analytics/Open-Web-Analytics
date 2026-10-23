@@ -281,7 +281,7 @@ return array(
          * identity field left in the release vocabulary -- see gateUserId().
          */
         'log_visitor_pii' => array( 'default' => true, 'description' => 'Whether the user_id an event carries is stored. Off removes it before the event is written.' ),
-        'logo_image_path' => array( 'default' => 'base/i/owa-logo-100w.png', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ),
+        'logo_image_path' => array( 'default' => 'base/i/owa-logo.svg', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ),
         'mailer-from' => array( 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host name OWA is served from.' ),
         'mailer-fromName' => array( 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ),
         'mailer-host' => array( 'default' => '', 'description' => 'The SMTP server host, used when mailer-use-smtp is on.' ),

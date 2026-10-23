@@ -103,6 +103,64 @@ test.describe('on a phone', () => {
         }
     });
 
+    /** One column: the presets, then each calendar the panel's full width. */
+    test('the date range panel is one column, calendars full width', async ({ page }) => {
+        await page.goto(report('pages'), { waitUntil: 'networkidle' });
+        await openPicker(page);
+
+        const presets = await page.locator('#owa_reportPeriodFilter').boundingBox();
+        const start = await page.locator('#owa_report-datepicker-start .ui-datepicker').boundingBox();
+        const end = await page.locator('#owa_report-datepicker-end .ui-datepicker').boundingBox();
+
+        expect(presets.y + presets.height, 'the presets come first').toBeLessThanOrEqual(start.y);
+        expect(Math.abs(start.x - end.x), 'the calendars share one column').toBeLessThan(2);
+
+        for (const calendar of [start, end]) {
+            expect(calendar.width, 'a calendar takes the column\'s width').toBeGreaterThan(390 * 0.8);
+        }
+    });
+
+    test('the menu takes the whole screen', async ({ page }) => {
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+        await page.locator('.owa_reportNavToggle').click();
+
+        // It slides in; measured once it has arrived.
+        const rail = page.locator('#owa_reportNavRail');
+        await expect.poll(async () => (await rail.boundingBox()).x).toBe(0);
+
+        expect((await rail.boundingBox()).width).toBe(390);
+    });
+
+    /**
+     * The Property chooser opens under its tile, inside the menu. Beside the
+     * tile, as on a desktop, it opened off the side of the screen.
+     */
+    test('the Property chooser opens on the screen, its columns stacked', async ({ page }) => {
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+        await page.locator('.owa_reportNavToggle').click();
+
+        const rail = page.locator('#owa_reportNavRail');
+        await expect.poll(async () => (await rail.boundingBox()).x).toBe(0);
+        await page.locator('#owa_siteControlSummary').click();
+
+        const tile = await page.locator('#owa_siteControlSummary').boundingBox();
+        const orgs = await page.locator('.owa_siteControlOrgs').boundingBox();
+        const properties = page.locator('.owa_siteControlProperties');
+        const props = await properties.boundingBox();
+
+        expect(orgs.y, 'under the tile').toBeGreaterThanOrEqual(tile.y + tile.height);
+        expect(props.y, 'Properties under Organization').toBeGreaterThanOrEqual(orgs.y + orgs.height - 1);
+
+        for (const column of [orgs, props]) {
+            expect(column.x).toBeGreaterThanOrEqual(0);
+            expect(column.x + column.width).toBeLessThanOrEqual(390);
+            expect(column.height, 'a stacked column with no height').toBeGreaterThan(20);
+        }
+
+        // The list scrolls the current Property into view, so that is the row to look for.
+        await expect(properties.locator('.owa_siteControlItem.is-selected')).toBeInViewport();
+    });
+
     test('a settings screen\'s menu is behind a button, and opens and closes', async ({ page }) => {
         await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
 
