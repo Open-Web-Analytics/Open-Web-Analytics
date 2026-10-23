@@ -104,7 +104,6 @@ final class ArchiveNotDeleteTest extends TestCase
     /** Archive a Profile and remember to put it back. */
     private function archiveProfile( string $siteId ): void
     {
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site = $this->site( $siteId );
 
         $this->archived[] = [ 'base.site', $site->get( 'id' ) ];
@@ -146,7 +145,6 @@ final class ArchiveNotDeleteTest extends TestCase
         $this->archiveProfile( $this->siteId );
         $this->assertFalse( \OWA\Core\CoreAPI::isSiteRegistered( $this->siteId ) );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site = $this->site( $this->siteId );
         $site->set( 'archived_date', 0 );
         $site->update();
@@ -172,7 +170,6 @@ final class ArchiveNotDeleteTest extends TestCase
         try {
             $this->archiveProfile( $this->siteId );
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
             $site = $this->site( $this->siteId );
 
             $this->assertTrue( $site->wasPersisted(),
@@ -192,7 +189,6 @@ final class ArchiveNotDeleteTest extends TestCase
     {
         $this->skipUnlessParented();
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site = $this->site( $this->siteId );
 
         $this->assertFalse( $site->isArchived(),
@@ -200,7 +196,6 @@ final class ArchiveNotDeleteTest extends TestCase
 
         $this->archiveProfile( $this->siteId );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site = $this->site( $this->siteId );
 
         $this->assertTrue( $site->isArchived() );
@@ -213,7 +208,6 @@ final class ArchiveNotDeleteTest extends TestCase
 
         $this->archiveProfile( $this->siteId );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site = $this->site( $this->siteId );
 
         $this->assertSame( 1756000000, (int) $site->get( 'archived_date' ),
@@ -239,7 +233,6 @@ final class ArchiveNotDeleteTest extends TestCase
 
         $this->archiveProfile( $this->siteId );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $site = $this->site( $this->siteId );
         $site->set( 'archived_date', 0 );
         $site->update();
