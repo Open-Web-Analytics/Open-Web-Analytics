@@ -144,7 +144,8 @@ function openAddDialog() {
         modal: true,
         resizable: false,
         draggable: false,
-        width: 480,
+        // Wide enough to show a whole token, within a phone's screen.
+        width: Math.min( 560, window.innerWidth - 32 ),
         dialogClass: 'owa_confirmDialogFrame owa_appPasswordDialogFrame',
         buttons: createButtons,
         close: function () {

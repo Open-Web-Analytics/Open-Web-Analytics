@@ -1,8 +1,11 @@
 /**
- * The copy button on a code block (Template::codeBlock()).
+ * Copy buttons: any element carrying data-owa-copy.
  *
- * Delegated from the document, so a block rendered after load is covered.
- * Copies the block's text exactly as shown.
+ * What it copies: the element named by its data-owa-copy-target selector (an
+ * input's value, or any other element's text), or else the code of the
+ * code block it sits in (Template::codeBlock()), exactly as shown.
+ *
+ * Delegated from the document, so a button rendered after load is covered.
  *
  * navigator.clipboard needs a secure context, and many installs are served
  * over plain http on a LAN, so the selection-and-execCommand path is kept as
@@ -55,7 +58,7 @@ function copyText( text ) {
 
 function show( button, state ) {
 
-    var label = button.querySelector( '.owa-codeBlock__copyLabel' );
+    var label = button.querySelector( '.owa-codeBlock__copyLabel, .owa-copyButton__label' );
     var icon  = button.querySelector( 'i' );
 
     button.setAttribute( 'data-owa-copy-state', state );
@@ -80,26 +83,36 @@ document.addEventListener( 'click', function ( e ) {
         return;
     }
 
-    var block = button.closest( '.owa-codeBlock' );
-    var code  = block ? block.querySelector( 'code' ) : null;
+    var target = button.getAttribute( 'data-owa-copy-target' );
+    var block  = button.closest( '.owa-codeBlock' );
+    var source = target ? document.querySelector( target ) : ( block ? block.querySelector( 'code' ) : null );
 
-    if ( ! code ) {
+    if ( ! source ) {
 
         return;
     }
 
-    copyText( code.textContent ).then( function () {
+    var isField = source.tagName === 'INPUT' || source.tagName === 'TEXTAREA';
+
+    copyText( isField ? source.value : source.textContent ).then( function () {
 
         show( button, 'copied' );
 
     }, function () {
 
-        // Leave the code selected so the keyboard shortcut finishes the job.
-        var range = document.createRange();
-        range.selectNodeContents( code );
-        var selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange( range );
+        // Leave the text selected so the keyboard shortcut finishes the job.
+        if ( isField ) {
+
+            source.select();
+
+        } else {
+
+            var range = document.createRange();
+            range.selectNodeContents( source );
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange( range );
+        }
 
         show( button, 'failed' );
     } );

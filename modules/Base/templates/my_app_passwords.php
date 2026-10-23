@@ -115,8 +115,14 @@ installation. Yours are kept, but every request that uses one is refused.</div>
     <div class="owa_appPasswordResult" hidden>
         <p><strong class="owa_appPasswordResultName"></strong> is ready. Copy it now: it will not be
         shown again.</p>
-        <p><input type="text" readonly class="owa_appPasswordToken" size="50"
-                  aria-label="New application password"></p>
+        <div class="owa_appPasswordTokenRow">
+            <input type="text" readonly class="owa_appPasswordToken" id="owa_appPasswordToken"
+                   aria-label="New application password" spellcheck="false" autocomplete="off">
+            <button type="button" class="owa-button owa-button-quiet owa-copyButton"
+                    data-owa-copy data-owa-copy-target="#owa_appPasswordToken"
+                    aria-label="Copy the application password"><i class="far fa-copy" aria-hidden="true"></i><span
+                    class="owa-copyButton__label">Copy</span></button>
+        </div>
     </div>
 
     <p class="owa_appPasswordError" role="alert" hidden></p>

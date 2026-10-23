@@ -90,6 +90,13 @@ test.describe('application password screens @selfhost-only', () => {
         expect(token).toMatch(/^[0-9A-Za-z]{44}$/);
         expect(page.url()).toContain('do=base.myAppPasswords');
 
+        // Copy puts the token on the clipboard and says so.
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        const copy = dialog.locator('.owa-copyButton');
+        await copy.click();
+        await expect(copy).toHaveText('Copied');
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(token);
+
         // The row is in the roster as soon as the answer is, behind the dialog.
         const row = page.locator(`tr[data-lookup-id="${token.slice(0, 12)}"]`);
         await expect(row).toContainText('e2e screen');

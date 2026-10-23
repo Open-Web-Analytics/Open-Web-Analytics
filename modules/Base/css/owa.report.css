@@ -3892,10 +3892,56 @@ li.constraintRow {
     margin: 2px 0 6px 0;
 }
 
+.owa_appPasswordDialog .owa_appPasswordTokenRow {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    margin: 12px 0 6px 0;
+}
+
 .owa_appPasswordDialog .owa_appPasswordToken {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
     box-sizing: border-box;
-    font-family: monospace;
+    padding: 10px 12px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    background: #f7f7f7;
+    color: #1f2328;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--owa-text-md);
+    line-height: 1.4;
+}
+
+/* A copy button beside a field (owa.copy.js). .owa-button's 25px top margin
+   and 18px type are for the foot of a form. */
+.owa-button.owa-copyButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 8px 14px;
+    font-size: var(--owa-text-md);
+    font-weight: normal;
+    white-space: nowrap;
+}
+
+.owa-button.owa-button-quiet.owa-copyButton {
+    background-color: #ffffff;
+    color: #555555;
+    border: 1px solid #cccccc;
+}
+
+/* Wide enough for "Copied", so the button keeps its size when it says so. */
+.owa-copyButton__label {
+    min-width: 3.4em;
+    text-align: left;
+}
+
+.owa-button.owa-copyButton[data-owa-copy-state="copied"],
+.owa-button.owa-copyButton[data-owa-copy-state="copied"]:hover {
+    color: #1a7f37;
+    border-color: #1a7f37;
 }
 
 .owa_appPasswordDialog .owa_appPasswordError {
