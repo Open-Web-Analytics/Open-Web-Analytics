@@ -769,7 +769,7 @@ class Controller extends \OWA\Core\Base {
          * has that URL as its referrer, and loading it again is exactly the way
          * back -- which this used to drop, so the link never appeared.
          */
-        if ( $referer === \OWA\Core\Lib::get_current_url()
+        if ( $referer === \OWA\Core\Lib::currentPublicUrl()
                 && strtoupper( (string) ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) ) !== 'POST' ) {
 
             return '';
@@ -864,7 +864,7 @@ class Controller extends \OWA\Core\Base {
 			// view controller does, so deep-linking to a report still resumes.
 			if ( ! $this->is_nonce_required ) {
 
-				$this->set('go', urlencode(\OWA\Core\Lib::get_current_url()));
+				$this->set('go', urlencode(\OWA\Core\Lib::currentPublicUrl()));
 
 			} else {
 
