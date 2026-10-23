@@ -179,8 +179,19 @@ test.describe('report navigation', () => {
         await expect(page.locator('#owa_reportNavPanel .is-current')).toHaveCount(1);
     });
 
-    /** A group's own report (Content's overview) marks the group's line, and opens it. */
-    test("a group's own report marks the group", async ({ page }) => {
+    /**
+     * A group's line is marked by its icon in the accent, not the rule: for
+     * the group's own report (Content's overview), which also opens it, and
+     * for the group holding the report you are on.
+     */
+    test("a group's line is marked by its icon", async ({ page }) => {
+        const icon = (item) => item.locator('.owa_nav_icon').evaluate((el) => {
+            const box = getComputedStyle(el);
+            return { colour: box.color, opacity: box.opacity };
+        });
+        const rule = (item) => item.evaluate((el) => getComputedStyle(el).borderLeftWidth);
+        const orange = { colour: logoOrange(), opacity: '1' };
+
         await openReport(page, 'content');
 
         const current = page.locator('#owa_reportNavPanel .is-current');
@@ -189,6 +200,19 @@ test.describe('report navigation', () => {
         await expect(current).toHaveClass(/owa_admin_nav_topmenu_item/);
         await expect(current).toContainText(REPORT.group);
         await expect(groupPanel(page, REPORT.group)).toBeVisible();
+        expect(await icon(current)).toEqual(orange);
+        expect(await rule(current)).toBe('0px');
+
+        await openReport(page, REPORT.id);
+
+        const holding = page.locator('.owa_admin_nav_topmenu_item.has-current');
+
+        expect(await icon(holding)).toEqual(orange);
+        expect(await rule(holding)).toBe('0px');
+
+        // Any other group's icon is not.
+        const other = page.locator('.owa_admin_nav_topmenu_item', { hasText: 'Ecommerce' });
+        expect((await icon(other)).colour).not.toBe(logoOrange());
     });
 
     /** The toggle still works by hand, for a group you are not in. */
