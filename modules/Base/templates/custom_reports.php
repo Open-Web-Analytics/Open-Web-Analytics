@@ -265,7 +265,7 @@ $owa_seesAll   = (bool) $view->get('sees_all');
     </ul>
 </div>
 
-<script type="text/javascript">
+<script>
 jQuery( function () {
 
     var dialog = jQuery( '#visualizationTypeDialog' );
