@@ -1147,6 +1147,53 @@ class TrackingEventHelpers {
     }
 
     /**
+     * The URL without the named query parameters.
+     *
+     * Pair by pair. The regex this replaces removed a filtered parameter and
+     * everything after it, matched a name inside a longer one ("id" in
+     * product_id), and read an empty name -- a trailing comma in the list --
+     * as every parameter. Names are trimmed, compared decoded and ignoring
+     * case, as before; the pairs kept are left as written, in their order.
+     *
+     * @param  string   $url
+     * @param  string[] $names
+     * @return string
+     */
+    public static function withoutQueryParams( $url, array $names ) {
+
+        $url  = (string) $url;
+        $at   = strpos( $url, '?' );
+        $drop = array();
+
+        foreach ( $names as $name ) {
+
+            $name = strtolower( trim( (string) $name ) );
+
+            if ( $name !== '' ) {
+
+                $drop[ $name ] = true;
+            }
+        }
+
+        if ( $at === false || ! $drop ) {
+
+            return $url;
+        }
+
+        $kept = array();
+
+        foreach ( explode( '&', substr( $url, $at + 1 ) ) as $pair ) {
+
+            if ( $pair !== '' && ! isset( $drop[ strtolower( urldecode( explode( '=', $pair, 2 )[0] ) ) ] ) ) {
+
+                $kept[] = $pair;
+            }
+        }
+
+        return substr( $url, 0, $at ) . ( $kept ? '?' . implode( '&', $kept ) : '' );
+    }
+
+    /**
      * Filter function Strips a URL of certain defined session or tracking params
      *
      * @return string
@@ -1171,51 +1218,19 @@ class TrackingEventHelpers {
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
 
-        $filter_string = $site->getSiteSetting( 'query_string_filters' );
+        // The install's filters, then the site's, then OWA's own params.
+        $ns      = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $filters = array_merge(
+            explode( ',', (string) \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ) ),
+            explode( ',', (string) $site->getSiteSetting( 'query_string_filters' ) ) );
 
-        if ($filter_string) {
-            $filters = str_replace(' ', '', $filter_string);
-            $filters = explode(',', $filter_string);
-        } else {
-            $filters = array();
+        foreach ( array( 'source', 'medium', 'campaign', 'ad', 'ad_type', 'overlay', 'state',
+                         \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ) ) as $param ) {
+
+            $filters[] = $ns . $param;
         }
 
-        // merge global filters
-        $global_filters = \OWA\Core\CoreAPI::getSetting('base', 'query_string_filters');
-        if ($global_filters) {
-            $global_filters = str_replace(' ', '', $global_filters);
-            $global_filters = explode(',', $global_filters);
-            $filters = array_merge($global_filters, $filters);
-        }
-
-        // OWA specific params to filter
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'source');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'medium');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'campaign');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'ad');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'ad_type');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'overlay');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'state');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').\OWA\Core\CoreAPI::getSetting('base', 'feed_subscription_param'));
-
-        //print_r($filters);
-
-        foreach ($filters as $filter => $value) {
-
-          $url = preg_replace(
-            '#\?' .
-            $value .
-            '=.*$|&' .
-            $value .
-            '=.*$|' .
-            $value .
-            '=.*&#msiU',
-            '',
-            $url
-          );
-
-        }
-
+        $url = self::withoutQueryParams( $url, $filters );
 
         //check for dangling '?'. this might occure if all params are stripped.
 
