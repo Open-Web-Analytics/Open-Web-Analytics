@@ -619,6 +619,11 @@ class Db extends \OWA\Core\Base {
 
     function _updateQuery() {
 
+        if ( $this->refusesUnfiltered( 'UPDATE' ) ) {
+
+            return false;
+        }
+
         $this->resetBindings();
 
         $params = $this->_fetchSqlParams('set_values');
@@ -655,11 +660,45 @@ class Db extends \OWA\Core\Base {
 
     function _deleteQuery() {
 
+        if ( $this->refusesUnfiltered( 'DELETE' ) ) {
+
+            return false;
+        }
+
         $this->resetBindings();
 
         $this->_setSql(sprintf(OWA_SQL_DELETE_ROW, $this->_sqlParams['table'], $this->_makeWhereClause()));
 
         return $this->_query();
+    }
+
+    /**
+     * A built DELETE or UPDATE with no WHERE is refused.
+     *
+     * where() drops a condition whose value is empty, so a caller passing an
+     * empty id built `DELETE FROM owa_user` and emptied the table. Every caller
+     * of deleteFrom() and updateTable() means to touch some rows, never all.
+     * The builder is reset, as after a query.
+     *
+     * @param  string $verb DELETE or UPDATE, for the notice
+     * @return bool   true when the statement was refused
+     */
+    private function refusesUnfiltered( $verb ) {
+
+        if ( $this->_fetchSqlParams( 'where' ) ) {
+
+            return false;
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf( 'Refusing %s on %s with no WHERE clause, from %s.',
+            $verb, $this->_sqlParams['table'] ?? '(no table)',
+            \OWA\Core\Lib::callSiteOutside( array( 'Db.php', 'Entity.php' ) ) ) );
+
+        $this->_sql_statement = '';
+        $this->_sqlParams = array();
+        $this->resetBindings();
+
+        return true;
     }
 
     function _fetchSqlParams($sql_params_name) {
