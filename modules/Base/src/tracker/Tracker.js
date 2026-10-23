@@ -818,49 +818,6 @@ class OWATracker  {
     }
 
     /**
-     * Change a value the tracker is about to use. The callback receives the
-     * value and returns it, changed or not. Filters with a lower priority run
-     * first.
-     *
-     * The filter that matters to a page is tracker.log_event_properties: the
-     * properties of each event, just before it is sent.
-     *
-     *   owa_cmds.push(['addFilter', 'tracker.log_event_properties', function (props) {
-     *       props.plan = 'trial';
-     *       return props;
-     *   }]);
-     *
-     * Filters belong to the page, not to one tracker, so every tracker on it
-     * applies them. Push it before trackPageView.
-     *
-     * @command
-     * @param {string}   tag       the filter
-     * @param {function} callback  takes the value, returns the value
-     * @param {number}   priority  default 10
-     */
-    addFilter(tag, callback, priority) {
-
-        OWA.addFilter(tag, callback, priority);
-    }
-
-    /**
-     * Run a callback when the tracker does something: tracker.pageView after a
-     * page view is sent, tracker.click after a click, with { tracker, event }
-     * or { tracker, click, domEvent }.
-     *
-     * Like filters, actions belong to the page, not to one tracker.
-     *
-     * @command
-     * @param {string}   tag       the action
-     * @param {function} callback  takes the action's arguments
-     * @param {number}   priority  default 10
-     */
-    addAction(tag, callback, priority) {
-
-        OWA.addAction(tag, callback, priority);
-    }
-
-    /**
      * Read visitor and session state passed on the URL by OWA running on
      * another domain, as shareStateByLink() or shareStateByPost() sends it.
      *
