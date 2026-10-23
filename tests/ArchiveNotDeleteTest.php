@@ -76,11 +76,35 @@ final class ArchiveNotDeleteTest extends TestCase
         }
     }
 
+    /**
+     * A Profile's row, loaded by its row id.
+     *
+     * Not by site_id: an entity is cached under the column it was loaded by,
+     * and update() clears the id entry only, so a reload by site_id after an
+     * archive read the stale copy. Not by generateId( $siteId ) either, which
+     * these tests used: row ids are not derived from site ids, so it found
+     * nothing, and update() on that empty entity wrote every row.
+     */
+    private function site( string $siteId ): \OWA\Core\Entity
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
+        $db->selectColumn( 'id' );
+        $db->where( 'site_id', $siteId );
+        $row = $db->getOneRow();
+
+        $this->assertNotEmpty( $row['id'] ?? null, "no row for site $siteId" );
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+        $site->load( $row['id'] );
+
+        return $site;
+    }
+
     /** Archive a Profile and remember to put it back. */
     private function archiveProfile( string $siteId ): void
     {
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $siteId ) );
+        $site = $this->site( $siteId );
 
         $this->archived[] = [ 'base.site', $site->get( 'id' ) ];
 
@@ -121,8 +145,7 @@ final class ArchiveNotDeleteTest extends TestCase
         $this->archiveProfile( $this->siteId );
         $this->assertFalse( \OWA\Core\CoreAPI::isSiteRegistered( $this->siteId ) );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $this->siteId ) );
+        $site = $this->site( $this->siteId );
         $site->set( 'archived_date', 0 );
         $site->update();
 
@@ -147,8 +170,7 @@ final class ArchiveNotDeleteTest extends TestCase
         try {
             $this->archiveProfile( $this->siteId );
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->load( $site->generateId( $this->siteId ) );
+            $site = $this->site( $this->siteId );
 
             $this->assertTrue( $site->wasPersisted(),
                 'The row was deleted, so there is nothing to restore.' );
@@ -167,16 +189,14 @@ final class ArchiveNotDeleteTest extends TestCase
     {
         $this->skipUnlessParented();
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $this->siteId ) );
+        $site = $this->site( $this->siteId );
 
         $this->assertFalse( $site->isArchived(),
             'A live Profile reads as archived, which would hide every site on the install.' );
 
         $this->archiveProfile( $this->siteId );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $this->siteId ) );
+        $site = $this->site( $this->siteId );
 
         $this->assertTrue( $site->isArchived() );
     }
@@ -188,8 +208,7 @@ final class ArchiveNotDeleteTest extends TestCase
 
         $this->archiveProfile( $this->siteId );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $this->siteId ) );
+        $site = $this->site( $this->siteId );
 
         $this->assertSame( 1756000000, (int) $site->get( 'archived_date' ),
             'The stamp did not survive, so nothing can say when this was archived.' );
@@ -214,8 +233,7 @@ final class ArchiveNotDeleteTest extends TestCase
 
         $this->archiveProfile( $this->siteId );
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $this->siteId ) );
+        $site = $this->site( $this->siteId );
         $site->set( 'archived_date', 0 );
         $site->update();
 
@@ -231,7 +249,7 @@ final class ArchiveNotDeleteTest extends TestCase
             . 'three-value warning in the comments is wrong and should go.' );
 
         $fresh = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $fresh->load( $fresh->generateId( $this->siteId ) );
+        $fresh = $this->site( $this->siteId );
 
         $this->assertFalse( $fresh->isArchived(),
             'A restored Profile reads as archived, so restoring does not work.' );
