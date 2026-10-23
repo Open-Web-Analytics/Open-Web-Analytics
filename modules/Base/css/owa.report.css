@@ -287,7 +287,10 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     font-size: 12px;
 }
 .owa_admin_nav_topmenu_container {}
-.owa_admin_nav_topmenu_item {display: flex; align-items: center; min-height:25px; padding: 10px; font-size: var(--owa-text-lg);  }
+/* 4px on the right, and a 20px chevron: with 10px and 28px, "Custom
+   Reports" in bold filled its room to the pixel in Chromium and wrapped in
+   Safari. */
+.owa_admin_nav_topmenu_item {display: flex; align-items: center; min-height:25px; padding: 10px 4px 10px 10px; font-size: var(--owa-text-lg);  }
 /* Icon and label side by side, so a label that wraps stays in its column
    rather than running back under the icon. */
 .owa_admin_nav_topmenu_item > span {
@@ -306,8 +309,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 /* A group's chevron, right of its name: down while closed, up while open. */
 .owa_admin_nav_topmenu_toggle {
+    flex: none;
     margin-left: auto;
-    width: 28px;
+    width: 20px;
     height: 28px;
     padding: 0;
     border: 0;

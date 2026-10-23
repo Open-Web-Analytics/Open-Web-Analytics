@@ -253,13 +253,16 @@ test.describe('report navigation', () => {
     });
 
     /**
-     * No group's label wraps, even in bold, and even beside a wide page.
-     * "Custom Reports" wrapped on its roster: the column is a table cell, and
-     * a roster of long names squeezed it from 200px to its min-content width,
-     * while the label was bold for being current. Every line is measured as
-     * current, with an unbreakable line widening the cell beside the column.
+     * Every group's label has room to spare, in bold, beside a wide page.
+     *
+     * "Custom Reports" wrapped twice. On its roster, a list of long names beside
+     * the column (a table cell) squeezed it below 200px. Then, bold for being
+     * current, it filled its room to the pixel in Chromium, and Safari's
+     * Helvetica wrapped it. "Does not wrap here" cannot catch the second, so
+     * each label must fit with 8px over, measured unwrapped, as current, with
+     * an unbreakable line widening the cell beside the column.
      */
-    test('no group label wraps, even when current and beside a wide page', async ({ page }) => {
+    test('every group label fits with room to spare, when current and beside a wide page', async ({ page }) => {
         await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
 
         const result = await page.evaluate(() => {
@@ -269,19 +272,40 @@ test.describe('report navigation', () => {
             wide.textContent = 'A Report With A Long Name '.repeat(80);
             column.nextElementSibling.appendChild(wide);
 
-            const wrapped = [...document.querySelectorAll('.owa_admin_nav_topmenu_item')]
-                .map((item) => {
-                    item.classList.add('is-current');
-                    const label = item.querySelector('a');
-                    return label.getClientRects().length > 1 ? label.textContent.trim() : null;
-                })
-                .filter(Boolean);
+            const labels = [...document.querySelectorAll('.owa_admin_nav_topmenu_item')].map((item) => {
+                item.classList.add('is-current');
 
-            return { width: Math.round(column.getBoundingClientRect().width), wrapped };
+                const label = item.querySelector('a');
+                const lines = label.getClientRects().length;
+
+                // The item's content box, less the icon, its gap and the chevron.
+                const box = getComputedStyle(item);
+                const icon = item.querySelector('.owa_nav_icon');
+                const chevron = item.querySelector('.owa_admin_nav_topmenu_toggle');
+                const room = item.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight)
+                    - icon.getBoundingClientRect().width - parseFloat(getComputedStyle(icon).marginRight)
+                    - (chevron ? chevron.getBoundingClientRect().width : 0);
+
+                // Its own width on one line: out of the flow, so it is not
+                // held to the room it is being measured against.
+                const probe = label.cloneNode(true);
+                probe.style.cssText = 'position:absolute; white-space:nowrap; visibility:hidden';
+                label.parentNode.appendChild(probe);
+                const needs = probe.getBoundingClientRect().width;
+                probe.remove();
+
+                return { name: label.textContent.trim(), lines, spare: Math.round((room - needs) * 10) / 10 };
+            });
+
+            return { width: Math.round(column.getBoundingClientRect().width), labels };
         });
 
         expect(result.width).toBeGreaterThanOrEqual(200);
-        expect(result.wrapped).toEqual([]);
+
+        for (const label of result.labels) {
+            expect(label.lines, label.name).toBe(1);
+            expect(label.spare, `${label.name} has ${label.spare}px to spare`).toBeGreaterThanOrEqual(8);
+        }
     });
 
     /** The toggle still works by hand, for a group you are not in. */
