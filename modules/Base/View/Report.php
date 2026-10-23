@@ -78,6 +78,9 @@ class Report extends \OWA\Core\View {
 
         // Set navigation
         $this->body->set('hideReportingNavigation', $this->get('hideReportingNavigation') );
+
+        // The page has a slide-out menu, so the header draws its button (header.php).
+        $this->t->set( 'nav_rail', ! $this->get( 'hideReportingNavigation' ) );
         $this->body->set('top_level_report_nav', $this->get('top_level_report_nav'));
 
         $this->body->set('hideSitesFilter', $this->get('hideSitesFilter') );

@@ -333,7 +333,7 @@ final class ReportNavigationLinkTest extends TestCase
      * That read as two unrelated-looking bugs. Nothing highlighted, because
      * nothing matched; and the left nav collapsed on every page load, because
      * .owa_admin_nav_subgroup is display:none in CSS and the only thing that
-     * opens a group is the script looking for .owa_current -- which was never
+     * opens a group is the script looking for a current item -- which was never
      * there.
      *
      * It worked before the conversion for the reason it broke after: a link was
@@ -362,7 +362,7 @@ final class ReportNavigationLinkTest extends TestCase
 
         $this->assertNotFalse( $html, 'the nav did not render' );
 
-        $this->assertStringContainsString( 'owa_current', (string) $html,
+        $this->assertStringContainsString( 'is-current', (string) $html,
             'no nav link was marked current, so the menu renders collapsed and unhighlighted' );
     }
 

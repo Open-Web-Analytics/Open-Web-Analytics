@@ -13,7 +13,7 @@
  * From there the two symptoms follow. Nothing highlighted, because nothing
  * matched. And the nav rendered collapsed on every page load, because
  * .owa_admin_nav_subgroup is display:none in CSS and the only thing that opens
- * a group is the script looking for .owa_current.
+ * a group is the script looking for a current item.
  *
  * It worked before the reports-as-config conversion for the same reason it
  * broke after: a link used to be a single action name, so comparing the action
@@ -24,7 +24,10 @@
  * actually open, since that is CSS plus a script.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, login } = require('./fixtures');
+const { FIXTURE, login, logout, adminLogin } = require('./fixtures');
+
+/** The reporting UI's selected colour, #1874CD: the selected tab, the Live View switch. */
+const REPORT_BLUE = 'rgb(24, 116, 205)';
 
 /** A report that lives inside a nav subgroup, and its group. */
 const REPORT = { id: 'pages', label: 'Pages', group: 'Content' };
@@ -82,7 +85,7 @@ test.describe('report navigation', () => {
     test('the open group says so, with a chevron right of its name', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        const item = page.locator('.owa_admin_nav_topmenu_item.owa_current');
+        const item = page.locator('.owa_admin_nav_topmenu_item.has-current');
         const toggle = item.locator('.owa_admin_nav_topmenu_toggle');
 
         await expect(item).toHaveClass(/is-open/);
@@ -99,7 +102,7 @@ test.describe('report navigation', () => {
     test('the current report is marked, and it is the right one', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        const current = page.locator('.owa_admin_nav_subgroup_item.owa_current');
+        const current = page.locator('.owa_admin_nav_subgroup_item.is-current');
 
         await expect(current).toHaveCount(1);
         await expect(current).toContainText(REPORT.label);
@@ -111,12 +114,12 @@ test.describe('report navigation', () => {
      */
     test('the mark follows the report being viewed', async ({ page }) => {
         await openReport(page, REPORT.id);
-        await expect(page.locator('.owa_admin_nav_subgroup_item.owa_current'))
+        await expect(page.locator('.owa_admin_nav_subgroup_item.is-current'))
             .toContainText(REPORT.label);
 
         await openReport(page, SIBLING.id);
 
-        const current = page.locator('.owa_admin_nav_subgroup_item.owa_current');
+        const current = page.locator('.owa_admin_nav_subgroup_item.is-current');
 
         await expect(current).toHaveCount(1);
         await expect(current).toContainText(SIBLING.label);
@@ -130,7 +133,231 @@ test.describe('report navigation', () => {
     test('only one group is current at a time', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        await expect(page.locator('.owa_admin_nav_topmenu_item.owa_current')).toHaveCount(1);
+        await expect(page.locator('.owa_admin_nav_topmenu_item.has-current')).toHaveCount(1);
+    });
+
+    /**
+     * The current report is marked as the settings nav marks the current
+     * screen, a 3px rule on its left and a bold label, but the rule and the
+     * label are the reporting blue rather than the settings nav's orange and grey. Measured against the settings
+     * nav itself, so the two cannot drift apart.
+     */
+    test('the current report is marked as the settings nav marks its screen, in blue', async ({ page }) => {
+        const mark = (el) => {
+            const box = getComputedStyle(el);
+            const link = getComputedStyle(el.querySelector('a'));
+            return {
+                rule: `${box.borderLeftWidth} ${box.borderLeftStyle} ${box.borderLeftColor}`,
+                weight: link.fontWeight,
+                colour: link.color,
+            };
+        };
+
+        // Settings screens are the admin's.
+        await logout(page);
+        await adminLogin(page);
+
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+        const settings = await page.locator('.owa_hierarchyNav li.is-current').evaluate(mark);
+
+        await openReport(page, REPORT.id);
+        const report = await page.locator('.owa_admin_nav_subgroup_item.is-current').evaluate(mark);
+
+        expect(report.rule).toBe(`3px solid ${REPORT_BLUE}`);
+        expect(report.rule.replace(REPORT_BLUE, '')).toBe(settings.rule.replace(/rgb\([^)]*\)/, ''));
+        expect(report.weight).toBe(settings.weight);
+        expect(report.colour).toBe(REPORT_BLUE);
+    });
+
+    /**
+     * Only the report is marked. The group holding it is open, with no rule of
+     * its own: the old grey fill was drawn on both, so two lines read as current.
+     */
+    test('only the line for the report you are on carries the mark', async ({ page }) => {
+        await openReport(page, REPORT.id);
+
+        const ruled = await page.locator('#owa_reportNavPanel *').evaluateAll((els, accent) =>
+            els.filter((el) => getComputedStyle(el).borderLeftColor === accent
+                && getComputedStyle(el).borderLeftWidth !== '0px').map((el) => el.textContent.trim()),
+        REPORT_BLUE);
+
+        expect(ruled).toEqual([REPORT.label]);
+        await expect(page.locator('#owa_reportNavPanel .is-current')).toHaveCount(1);
+    });
+
+    /**
+     * A group's line is marked by its icon in the blue, not the rule: for
+     * the group's own report (Content's overview), which also opens it, and
+     * for the group holding the report you are on.
+     */
+    test("a group's line is marked by its icon", async ({ page }) => {
+        const icon = (item) => item.locator('.owa_nav_icon').evaluate((el) => {
+            const box = getComputedStyle(el);
+            return { colour: box.color, opacity: box.opacity };
+        });
+        const rule = (item) => item.evaluate((el) => getComputedStyle(el).borderLeftWidth);
+        const blue = { colour: REPORT_BLUE, opacity: '1' };
+
+        await openReport(page, 'content');
+
+        const current = page.locator('#owa_reportNavPanel .is-current');
+
+        await expect(current).toHaveCount(1);
+        await expect(current).toHaveClass(/owa_admin_nav_topmenu_item/);
+        await expect(current).toContainText(REPORT.group);
+        await expect(groupPanel(page, REPORT.group)).toBeVisible();
+        expect(await icon(current)).toEqual(blue);
+        await expect(current.locator('a')).toHaveCSS('color', REPORT_BLUE);
+        expect(await rule(current)).toBe('0px');
+
+        await openReport(page, REPORT.id);
+
+        const holding = page.locator('.owa_admin_nav_topmenu_item.has-current');
+
+        expect(await icon(holding)).toEqual(blue);
+        expect(await rule(holding)).toBe('0px');
+
+        // Any other group's icon is not.
+        const other = page.locator('.owa_admin_nav_topmenu_item', { hasText: 'Ecommerce' });
+        expect((await icon(other)).colour).not.toBe(REPORT_BLUE);
+    });
+
+    /**
+     * Every group's label starts at one x, whatever its icon's glyph width
+     * (they ran from 20px to 30px, so the labels started anywhere in a 10px
+     * band), and a label that wraps stays beside its icon. A report's rule is
+     * at that x, under its group's label. Checked with a group's own report
+     * current as well, where the label is bold and the icon orange.
+     */
+    test('labels, icons and the report rule line up', async ({ page }) => {
+        for (const id of [REPORT.id, 'content']) {
+            await openReport(page, id);
+
+            const geometry = await page.evaluate(() => {
+                const groups = [...document.querySelectorAll('.owa_admin_nav_topmenu_item')].map((item) => {
+                    const icon = item.querySelector('.owa_nav_icon').getBoundingClientRect();
+                    const label = item.querySelector('a');
+                    const lines = [...label.getClientRects()];
+                    return {
+                        name: label.textContent.trim(),
+                        iconCentre: Math.round(icon.x + icon.width / 2),
+                        labelLefts: [...new Set(lines.map((r) => Math.round(r.x)))],
+                    };
+                });
+                const reports = [...document.querySelectorAll('.owa_admin_nav_subgroup_item')]
+                    .filter((el) => el.offsetParent)
+                    .map((el) => Math.round(el.getBoundingClientRect().x));
+                return { groups, reports };
+            });
+
+            const lefts = geometry.groups.flatMap((g) => g.labelLefts);
+
+            expect(new Set(geometry.groups.map((g) => g.iconCentre)).size, `${id}: icon centres`).toBe(1);
+            expect(new Set(lefts), `${id}: label starts ${JSON.stringify(geometry.groups)}`).toEqual(new Set([lefts[0]]));
+            expect(geometry.reports.length).toBeGreaterThan(0);
+            expect(new Set(geometry.reports), `${id}: report rules`).toEqual(new Set([lefts[0]]));
+        }
+    });
+
+    /**
+     * Every group's label has room to spare, in bold, beside a wide page.
+     *
+     * "Custom Reports" wrapped twice. On its roster, a list of long names beside
+     * the column (a table cell) squeezed it below 200px. Then, bold for being
+     * current, it filled its room to the pixel in Chromium, and Safari's
+     * Helvetica wrapped it. "Does not wrap here" cannot catch the second, so
+     * each label must fit with 8px over, measured unwrapped, as current, with
+     * an unbreakable line widening the cell beside the column.
+     */
+    test('every group label fits with room to spare, when current and beside a wide page', async ({ page }) => {
+        await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
+
+        const result = await page.evaluate(() => {
+            const column = document.querySelector('.owa_reportLeftNavColumn');
+            const wide = document.createElement('div');
+            wide.style.whiteSpace = 'nowrap';
+            wide.textContent = 'A Report With A Long Name '.repeat(80);
+            column.nextElementSibling.appendChild(wide);
+
+            const labels = [...document.querySelectorAll('.owa_admin_nav_topmenu_item')].map((item) => {
+                item.classList.add('is-current');
+
+                const label = item.querySelector('a');
+                const lines = label.getClientRects().length;
+
+                // The item's content box, less the icon, its gap and the chevron.
+                const box = getComputedStyle(item);
+                const icon = item.querySelector('.owa_nav_icon');
+                const chevron = item.querySelector('.owa_admin_nav_topmenu_toggle');
+                const room = item.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight)
+                    - icon.getBoundingClientRect().width - parseFloat(getComputedStyle(icon).marginRight)
+                    - (chevron ? chevron.getBoundingClientRect().width : 0);
+
+                // Its own width on one line: out of the flow, so it is not
+                // held to the room it is being measured against.
+                const probe = label.cloneNode(true);
+                probe.style.cssText = 'position:absolute; white-space:nowrap; visibility:hidden';
+                label.parentNode.appendChild(probe);
+                const needs = probe.getBoundingClientRect().width;
+                probe.remove();
+
+                return { name: label.textContent.trim(), lines, spare: Math.round((room - needs) * 10) / 10 };
+            });
+
+            return { width: Math.round(column.getBoundingClientRect().width), labels };
+        });
+
+        expect(result.width).toBeGreaterThanOrEqual(200);
+
+        for (const label of result.labels) {
+            expect(label.lines, label.name).toBe(1);
+            expect(label.spare, `${label.name} has ${label.spare}px to spare`).toBeGreaterThanOrEqual(8);
+        }
+    });
+
+    /**
+     * The spacing is the settings nav's. A report's row has the settings row's
+     * padding, line height and height, so its rule is as long; lines start as
+     * far into the column; and every group's row is one height, chevron or not
+     * (the 28px chevron made those 3px taller).
+     */
+    test('the spacing matches the settings nav', async ({ page }) => {
+        const row = (el) => {
+            const box = getComputedStyle(el);
+            const column = document.querySelector('.owa_reportLeftNavColumn').getBoundingClientRect();
+            return {
+                padding: box.padding,
+                lineHeight: box.lineHeight,
+                fontSize: box.fontSize,
+                height: Math.round(el.getBoundingClientRect().height),
+                inset: Math.round(el.getBoundingClientRect().x - column.x),
+            };
+        };
+
+        await logout(page);
+        await adminLogin(page);
+
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+        const settings = await page.locator('.owa_hierarchyNav li').first().evaluate(row);
+
+        await openReport(page, REPORT.id);
+
+        const reports = await page.locator('.owa_admin_nav_subgroup_item').evaluateAll(
+            (els, fn) => els.filter((el) => el.offsetParent).map(new Function(`return ${fn}`)()),
+            row.toString());
+        const groups = await page.locator('.owa_admin_nav_topmenu_item').evaluateAll(
+            (els, fn) => els.map(new Function(`return ${fn}`)()),
+            row.toString());
+
+        expect(reports.length).toBeGreaterThan(0);
+
+        for (const report of reports) {
+            expect({ padding: report.padding, lineHeight: report.lineHeight, fontSize: report.fontSize, height: report.height })
+                .toEqual({ padding: settings.padding, lineHeight: settings.lineHeight, fontSize: settings.fontSize, height: settings.height });
+        }
+
+        expect(new Set(groups.map((g) => g.height)).size, JSON.stringify(groups.map((g) => g.height))).toBe(1);
+        expect(new Set(groups.map((g) => g.inset))).toEqual(new Set([settings.inset]));
     });
 
     /** The toggle still works by hand, for a group you are not in. */

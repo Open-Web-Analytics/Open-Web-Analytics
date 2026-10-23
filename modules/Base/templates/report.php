@@ -20,13 +20,14 @@ jQuery(document).ready(function(){
 	 * collapsed on every page load, which is exactly what it did while the
 	 * current-link check could not see a reportId.
 	 *
-	 * Scoped to the TOP MENU item: the current report's own line carries
-	 * .owa_current too now, and a bare '.owa_current' would match both.
+	 * The group is the one whose own report is current (.is-current) or that
+	 * holds it (.has-current). Scoped to the TOP MENU item: the current
+	 * report's own line carries .is-current too.
 	 *
 	 * show(), not toggle(): the intent is "open the group I am in", and a toggle
 	 * would close it in any state where it had already been opened.
 	 */
-	var owaCurrentGroup = jQuery('.owa_admin_nav_topmenu_item.owa_current');
+	var owaCurrentGroup = jQuery('.owa_admin_nav_topmenu_item.is-current, .owa_admin_nav_topmenu_item.has-current');
 
 	if ( owaCurrentGroup.next('.owa_admin_nav_subgroup').length ) {
 
@@ -65,9 +66,13 @@ jQuery(document).ready(function(){
                      */
                 ?>
                 <div class="owa_reportNavRail" id="owa_reportNavRail">
-                    <button type="button" class="owa_reportNavClose" aria-label="Hide the report menu">
-                        <i class="fas fa-times" aria-hidden="true"></i>
-                    </button>
+                    <?php // On a narrow screen: the logo, which the header gives up to the menu button, and the close button. ?>
+                    <div class="owa_reportNavRailHead">
+                        <span class="owa_railLogo"><?php include( 'logo_image.php' );?></span>
+                        <button type="button" class="owa_reportNavClose" aria-label="Hide the report menu">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <?php
                         /*
                          * The site control sits ABOVE the nav because it scopes
@@ -90,13 +95,6 @@ jQuery(document).ready(function(){
             <?php endif;?>
             <TD valign="top" width="*">
                 <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
-
-                <?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
-                <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail"
-                        aria-expanded="false" aria-label="Show the report menu">
-                    <i class="fas fa-bars" aria-hidden="true"></i>
-                </button>
-                <?php endif;?>
 
                 <div class="reportSectionContainer">
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>

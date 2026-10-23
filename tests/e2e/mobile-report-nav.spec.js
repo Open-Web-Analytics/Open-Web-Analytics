@@ -86,7 +86,7 @@ test.describe('report nav on a phone', () => {
         await openReport(page, REPORT);
 
         const rows = await page.evaluate(() =>
-            ['.owa_logo', '.owa_navigation', '.owa_helpMenu', '.owa_notificationBell', '.owa_userMenu']
+            ['.owa_reportNavToggle', '.owa_navigation', '.owa_helpMenu', '.owa_notificationBell', '.owa_userMenu']
                 .map((s) => Math.round(document.querySelector(s).getBoundingClientRect().top)));
         expect(new Set(rows).size, `header item tops: ${rows}`).toBe(1);
 
@@ -104,6 +104,44 @@ test.describe('report nav on a phone', () => {
         expect(grid.narrowest, 'every column keeps a readable width').toBeGreaterThanOrEqual(60);
         expect(grid.scrolls, 'the table is wider than the phone, so its widget scrolls').toBe(true);
         expect(['auto', 'scroll']).toContain(grid.overflow);
+    });
+
+    /**
+     * The menu button is where the logo is at full width, at the left of the
+     * header, and the logo moves to the top of the menu. The button used to be
+     * under the header, at the top of the report.
+     */
+    test('the menu button has the logo\'s place, and the logo heads the menu', async ({ page }) => {
+        await openReport(page, REPORT);
+
+        const header = await page.locator('#owa_header').boundingBox();
+        const button = await toggle(page).boundingBox();
+
+        await expect(toggle(page)).toHaveCount(1);
+        expect(button.x, 'at the left of the header').toBeLessThan(16);
+        expect(button.y).toBeGreaterThanOrEqual(header.y);
+        expect(button.y + button.height).toBeLessThanOrEqual(header.y + header.height);
+        await expect(page.locator('#owa_header .owa_logo')).toBeHidden();
+
+        await toggle(page).click();
+        await expect(rail(page)).toBeInViewport();
+
+        const logo = page.locator('#owa_reportNavRail .owa_railLogo img');
+        await expect(logo).toBeVisible();
+
+        const box = await logo.boundingBox();
+        const close = await rail(page).locator('.owa_reportNavClose').boundingBox();
+        expect(box.x, 'at the left of the menu').toBeLessThan(20);
+        expect(Math.abs((box.y + box.height / 2) - (close.y + close.height / 2)), 'beside the close button').toBeLessThan(4);
+    });
+
+    /** A screen with no slide-out menu has no button, and keeps its logo. */
+    test('a screen without a menu keeps its logo', async ({ page }) => {
+        await page.goto(`?owa_do=base.error&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
+
+        await expect(page.locator('#owa_header')).toHaveCount(1);
+        await expect(toggle(page)).toHaveCount(0);
+        await expect(page.locator('#owa_header .owa_logo')).toBeVisible();
     });
 
     test('choosing a report goes to it with the nav closed', async ({ page }) => {
@@ -133,6 +171,8 @@ test.describe('report nav at desktop width', () => {
 
         await expect(toggle(page)).toBeHidden();
         await expect(rail(page).locator('.owa_reportNavClose')).toBeHidden();
+        await expect(rail(page).locator('.owa_railLogo')).toBeHidden();
+        await expect(page.locator('#owa_header .owa_logo')).toBeVisible();
         await expect(rail(page)).toBeInViewport();
         await expect(page.locator('#owa_reportNavPanel a', { hasText: OTHER.label })).toBeVisible();
         await shot(page, 'desktop');
