@@ -325,11 +325,12 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa_admin_nav_topmenu_toggle:hover { color: #333333; }
 
 /* Rest, hover and current as in the settings nav (.owa_hierarchyNav): grey
-   links, darker on hover, and the report you are on in a bold label. A
-   report's line is marked by the accent rule, as a settings screen is; the
-   transparent rule keeps its label from shifting by the 3px when it becomes
-   current. A group's line is marked by its icon in the accent, for the
-   group's own report and for the group holding the current one. */
+   links, darker on hover, and the report you are on in a bold label. The
+   label and the mark are the reporting blue, #1874CD, as on the selected tab
+   and the Live View switch, not the settings nav's orange. A report's line
+   is marked by a rule; the transparent rule keeps its label from shifting by
+   the 3px when it becomes current. A group's line is marked by its icon, for
+   the group's own report and for the group holding the current one. */
 .owa_admin_nav_subgroup_item {
     border-left: 3px solid transparent;
 }
@@ -345,18 +346,18 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa_admin_nav_subgroup_item.is-current {
-    border-left-color: var(--owa-accent);
+    border-left-color: #1874CD;
 }
 
 .owa_admin_nav_topmenu_item.is-current a,
 .owa_admin_nav_subgroup_item.is-current a {
-    color: #505050;
+    color: #1874CD;
     font-weight: bold;
 }
 
 .owa_admin_nav_topmenu_item.is-current .owa_nav_icon,
 .owa_admin_nav_topmenu_item.has-current .owa_nav_icon {
-    color: var(--owa-accent);
+    color: #1874CD;
     opacity: 1;
 }
 

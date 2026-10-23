@@ -24,7 +24,10 @@
  * actually open, since that is CSS plus a script.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, login, logout, adminLogin, logoOrange } = require('./fixtures');
+const { FIXTURE, login, logout, adminLogin } = require('./fixtures');
+
+/** The reporting UI's selected colour, #1874CD: the selected tab, the Live View switch. */
+const REPORT_BLUE = 'rgb(24, 116, 205)';
 
 /** A report that lives inside a nav subgroup, and its group. */
 const REPORT = { id: 'pages', label: 'Pages', group: 'Content' };
@@ -135,10 +138,11 @@ test.describe('report navigation', () => {
 
     /**
      * The current report is marked as the settings nav marks the current
-     * screen: the accent rule on its left and a bold label. Measured against
-     * the settings nav itself, so the two cannot drift apart.
+     * screen, a 3px rule on its left and a bold label, but the rule and the
+     * label are the reporting blue rather than the settings nav's orange and grey. Measured against the settings
+     * nav itself, so the two cannot drift apart.
      */
-    test('the current report is marked the way the settings nav marks its screen', async ({ page }) => {
+    test('the current report is marked as the settings nav marks its screen, in blue', async ({ page }) => {
         const mark = (el) => {
             const box = getComputedStyle(el);
             const link = getComputedStyle(el.querySelector('a'));
@@ -159,8 +163,10 @@ test.describe('report navigation', () => {
         await openReport(page, REPORT.id);
         const report = await page.locator('.owa_admin_nav_subgroup_item.is-current').evaluate(mark);
 
-        expect(settings.rule).toBe(`3px solid ${logoOrange()}`);
-        expect(report).toEqual(settings);
+        expect(report.rule).toBe(`3px solid ${REPORT_BLUE}`);
+        expect(report.rule.replace(REPORT_BLUE, '')).toBe(settings.rule.replace(/rgb\([^)]*\)/, ''));
+        expect(report.weight).toBe(settings.weight);
+        expect(report.colour).toBe(REPORT_BLUE);
     });
 
     /**
@@ -173,14 +179,14 @@ test.describe('report navigation', () => {
         const ruled = await page.locator('#owa_reportNavPanel *').evaluateAll((els, accent) =>
             els.filter((el) => getComputedStyle(el).borderLeftColor === accent
                 && getComputedStyle(el).borderLeftWidth !== '0px').map((el) => el.textContent.trim()),
-        logoOrange());
+        REPORT_BLUE);
 
         expect(ruled).toEqual([REPORT.label]);
         await expect(page.locator('#owa_reportNavPanel .is-current')).toHaveCount(1);
     });
 
     /**
-     * A group's line is marked by its icon in the accent, not the rule: for
+     * A group's line is marked by its icon in the blue, not the rule: for
      * the group's own report (Content's overview), which also opens it, and
      * for the group holding the report you are on.
      */
@@ -190,7 +196,7 @@ test.describe('report navigation', () => {
             return { colour: box.color, opacity: box.opacity };
         });
         const rule = (item) => item.evaluate((el) => getComputedStyle(el).borderLeftWidth);
-        const orange = { colour: logoOrange(), opacity: '1' };
+        const blue = { colour: REPORT_BLUE, opacity: '1' };
 
         await openReport(page, 'content');
 
@@ -200,19 +206,20 @@ test.describe('report navigation', () => {
         await expect(current).toHaveClass(/owa_admin_nav_topmenu_item/);
         await expect(current).toContainText(REPORT.group);
         await expect(groupPanel(page, REPORT.group)).toBeVisible();
-        expect(await icon(current)).toEqual(orange);
+        expect(await icon(current)).toEqual(blue);
+        await expect(current.locator('a')).toHaveCSS('color', REPORT_BLUE);
         expect(await rule(current)).toBe('0px');
 
         await openReport(page, REPORT.id);
 
         const holding = page.locator('.owa_admin_nav_topmenu_item.has-current');
 
-        expect(await icon(holding)).toEqual(orange);
+        expect(await icon(holding)).toEqual(blue);
         expect(await rule(holding)).toBe('0px');
 
         // Any other group's icon is not.
         const other = page.locator('.owa_admin_nav_topmenu_item', { hasText: 'Ecommerce' });
-        expect((await icon(other)).colour).not.toBe(logoOrange());
+        expect((await icon(other)).colour).not.toBe(REPORT_BLUE);
     });
 
     /**
