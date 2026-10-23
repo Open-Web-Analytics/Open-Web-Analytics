@@ -140,8 +140,7 @@ $state  = (string) ( $status['state'] ?? '' );
     <?php echo $view->codeBlock( $view->bundle_tag, 'HTML' ); ?>
 
     <h3>Sending details from a page</h3>
-    <p class="owa-tagScreen__lede">The tag works as it is. To add what the tracker cannot see for itself &mdash; the
-    section of the site a page belongs to, who is signed in, a purchase &mdash; queue commands on
+    <p class="owa-tagScreen__lede">The tag works as it is. To send what the tracker cannot see for itself, such as the section of the site a page belongs to, who is signed in, or a purchase, queue commands on
     <code>owa_cmds</code> before the tag. See the
     <a href="<?php echo $view->makeWikiLink( 'Javascript-Tracker' ); ?>">JavaScript tracker reference</a> for every command.</p>
 

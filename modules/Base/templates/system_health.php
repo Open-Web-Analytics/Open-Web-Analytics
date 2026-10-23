@@ -13,9 +13,7 @@ $owa_s = (array) $view->sections;
 <div id="panel">
 
 <div class="owa_panelIntro">
-    OWA's background work -- the scheduler and its jobs, the queue of one-off jobs, the queue
-    incoming beacons go through, and the Profiles' tracking bundles -- and, last, the installation itself. <b>Action needed</b> means something has stopped until someone acts;
-    <b>Attention</b> means something worth a look that the next run, or time, may resolve.
+    The scheduler and its jobs, the job queue, the beacon queue, the Profiles' tracking bundles, and the installation. <b>Action needed</b> means something has stopped until someone acts; <b>Attention</b> means something to look at that the next run, or time, may resolve.
 </div>
 
 <?php foreach ( array( 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ) as $owa_key ): ?>

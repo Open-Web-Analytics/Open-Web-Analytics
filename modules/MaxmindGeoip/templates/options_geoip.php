@@ -20,8 +20,7 @@
             <?php echo htmlspecialchars( basename( (string) $view->db_file ), ENT_QUOTES, 'UTF-8' ); ?>
             is in place, last updated
             <?php echo htmlspecialchars( gmdate( 'j M Y', (int) $view->db_updated ), ENT_QUOTES, 'UTF-8' ); ?>.
-            MaxMind publish updates twice a week. A database that is out of date does not fail &mdash;
-            it answers with locations that have since changed hands, and the reports look normal.
+            MaxMind publish updates twice a week. An out-of-date database does not fail: it returns locations that may have changed since, and reports show no sign of it.
         <?php else: ?>
             <strong>No database is installed</strong>, so lookups cannot resolve a location.
             Expected at <?php echo htmlspecialchars( (string) $view->db_file, ENT_QUOTES, 'UTF-8' ); ?>.

@@ -15,9 +15,7 @@
 ?>
 <DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
 <div id="panel">
-<div class="owa_panelIntro">An Observation Profile defines how OWA observes and
-analyzes a Property. You may have more than one Observation Profile per Property, as
-each carries its own tracking id.</div>
+<div class="owa_panelIntro">An Observation Profile collects data for a Property under its own tracking id. A Property can have more than one.</div>
 <fieldset>
 
     <legend>Observation Profile</legend>
@@ -167,10 +165,7 @@ each carries its own tracking id.</div>
 <div class="owa_dangerZone">
     <div class="owa_dangerZoneTitle">Delete this Observation Profile</div>
     <div class="owa_dangerZoneBody">
-        This Profile stops observing and disappears from reporting. The Property
-        it observes is not affected, and neither is any other Profile of that
-        Property &mdash; if this is the last one, the Property is left empty and
-        you can add new Profiles to it.
+        The Profile stops collecting data and is removed from reports. Its Property and the Property's other Profiles are not affected. If this is the Property's last Profile, the Property is left with none, and you can add new ones.
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.sitesDelete');?>

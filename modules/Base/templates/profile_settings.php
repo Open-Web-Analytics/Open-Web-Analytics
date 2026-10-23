@@ -9,7 +9,7 @@
 ?>
 <DIV class="panel_headline">Observation Settings</DIV>
 <div id="panel">
-<div class="owa_panelIntro">How this Observation Profile watches its Property. A Profile is one way of observing a Property &mdash; these settings define what it records and what it ignores. They apply to this Profile only; another Profile on the same Property can observe it differently.</div>
+<div class="owa_panelIntro">What this Observation Profile records and ignores. These settings apply to this Profile only; other Profiles of the same Property can use different ones.</div>
 <form method="post" name="owa_options">
 
     <?php

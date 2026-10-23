@@ -131,8 +131,7 @@ track.</p>
             constant to choose a timezone from this page.</span>
             <?php } else { ?>
             <span class="owa_installHint">Statistics are bucketed into days using this
-            timezone. <strong>Changing it later is not retroactive</strong> &mdash; existing data
-            keeps the day boundaries it was recorded with.</span>
+            timezone. <strong>Changing it later is not retroactive</strong>: existing data keeps the day boundaries it was recorded with.</span>
             <?php } ?>
         </div>
 

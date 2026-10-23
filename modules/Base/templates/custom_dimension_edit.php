@@ -37,8 +37,7 @@
 
     <div class="setting">
         <div class="title"><label for="owa-cd-key">Name</label></div>
-        <div class="description">Exactly the name your tracker sets it under &mdash;
-            <code>setEventProperty('plan', ...)</code> is <code>plan</code>.
+        <div class="description">The name your tracker sets it under, exactly: for <code>setEventProperty('plan', ...)</code>, <code>plan</code>.
             Letters, digits and underscores, starting with a letter.</div>
         <div class="field">
             <input class="owa_largeFormField" type="text" id="owa-cd-key"
@@ -97,9 +96,7 @@
     </div>
 
     <div class="owa_panelIntro">
-        Nothing already collected is filled in automatically &mdash; a new dimension is empty
-        for past events and filled from now on. To reach back over data you already have,
-        rebuild the cube for the range you want.
+        A new dimension is filled in for events from now on. To fill it for earlier events, rebuild the cube for that date range.
     </div>
 
     <input type="hidden" name="<?php echo $view->getNs(); ?>propertyId"
