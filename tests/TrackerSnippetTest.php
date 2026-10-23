@@ -119,6 +119,18 @@ final class TrackerSnippetTest extends TestCase
     }
 
     /**
+     * A bare <script> (#916). JavaScript is the default type, and a validator
+     * warns about naming it on a page the site owner is checking.
+     */
+    public function testTheScriptTagNamesNoType(): void
+    {
+        $html = $this->render();
+
+        $this->assertStringContainsString( '<script>', $html );
+        $this->assertStringNotContainsString( 'text/javascript', $html );
+    }
+
+    /**
      * Vacuity guard.
      *
      * Every assertion above is a substring check against rendered markup, and
