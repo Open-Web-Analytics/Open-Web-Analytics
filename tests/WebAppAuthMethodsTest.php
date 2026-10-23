@@ -42,12 +42,15 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
 
     protected function setUp(): void
     {
-        parent::setUp();
-
+        // Saved BEFORE parent::setUp(), which skips the test when there is no
+        // database. tearDown() still runs then, and restoring a $_SERVER that
+        // was never saved set it to null for every test after this one.
         $this->saved = array(
             'mode'   => \OWA\Core\CoreAPI::getSetting('base', 'request_mode'),
             'server' => $_SERVER,
         );
+
+        parent::setUp();
 
         // A refusal on a screen builds its go= URL from the request.
         $_SERVER['HTTP_HOST']   = 'owa.example.com';
