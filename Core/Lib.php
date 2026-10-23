@@ -1638,6 +1638,33 @@ class Lib {
     // - 0 (0 as an integer)
     //- 0.0 (0 as a float)
     //- "0" (0 as a string)
+    /**
+     * Where a call came from: the first frame outside the given files, as a
+     * path under the install and a line. For a notice that should name the
+     * caller rather than the place that noticed.
+     *
+     * @param  string[] $skip basenames of the files to look past
+     * @return string   'path:line', or '' when every frame is skipped
+     */
+    public static function callSiteOutside( array $skip ) {
+
+        foreach ( debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 12 ) as $frame ) {
+
+            $file = $frame['file'] ?? '';
+
+            if ( $file === '' || $file === __FILE__ || in_array( basename( $file ), $skip, true ) ) {
+                continue;
+            }
+
+            $root = defined( 'OWA_DIR' ) ? OWA_DIR : '';
+
+            return ( $root !== '' && strpos( $file, $root ) === 0 ? substr( $file, strlen( $root ) ) : $file )
+                . ':' . ( $frame['line'] ?? 0 );
+        }
+
+        return '';
+    }
+
     public static function isEmpty($value) {
 
         if ( empty( $value ) && ! is_numeric( $value ) ) {

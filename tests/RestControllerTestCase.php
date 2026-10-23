@@ -155,6 +155,12 @@ abstract class RestControllerTestCase extends TestCase
 
     protected function trackForCleanup(string $entity, $value, string $col = 'id'): void
     {
+        // An empty value names no row. Passed on, Entity::delete() once
+        // turned it into DELETE with no WHERE and emptied the table.
+        if ($value === null || $value === '' || $value === false) {
+            return;
+        }
+
         $this->cleanup[] = ['entity' => $entity, 'value' => $value, 'col' => $col];
     }
 

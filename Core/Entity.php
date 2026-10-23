@@ -991,13 +991,23 @@ class Entity {
      *
      */
     function delete($value = '', $col = 'id') {
-        
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->deleteFrom($this->getTableName());
-        
+
         if (empty($value)) {
             $value = $this->get('id');
         }
+
+        // Nothing to name the row by. Db refuses the unfiltered DELETE this
+        // would build too; refusing here says which entity asked.
+        if ( \OWA\Core\Lib::isEmpty( $value ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to delete from %s: no %s given, from %s.',
+                $this->getTableName(), $col, \OWA\Core\Lib::callSiteOutside( array( 'Entity.php' ) ) ) );
+
+            return false;
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->deleteFrom($this->getTableName());
         
         $db->where($col, $value);
 
