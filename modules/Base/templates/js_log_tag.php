@@ -55,7 +55,7 @@ if ( $owa_tracker_host && $owa_wraps_in_script ) {
 <?php } ?>
 <?php if ( isset($view->options) && ! $view->getValue( 'no_script_wrapper', $view->options ) ) { ?>
 <!-- Start Open Web Analytics Tracker -->
-<script type="text/javascript">
+<script>
 //<![CDATA[
 <?php } ?>
 var owa_baseUrl = '<?php $view->out( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ); ?>';
