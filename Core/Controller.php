@@ -390,12 +390,28 @@ class Controller extends \OWA\Core\Base {
     // ideally this auth check should happen earlier by I believe there is a race condtion so this might be the
     // earliest it can happen. The u and p params will only be present if the user has logged in.
     protected function checkCapabilityAndAuthenticateUser($capability) {
-        if ( ( !empty($capability) && ! \OWA\Core\CoreAPI::isEveryoneCapable( $capability ) ) || ( \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p') ) ) {
+        $needs_user = ! empty( $capability ) && ! \OWA\Core\CoreAPI::isEveryoneCapable( $capability );
+
+        if ( $needs_user || ( \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p') ) ) {
             /* PERFORM AUTHENTICATION */
             $auth = \OWA\Core\Auth::get_instance();
             if (!\OWA\Core\CoreAPI::isCurrentUserAuthenticated()) {
                 $status = $auth->authenticateUser();
                 if ($status['auth_status'] != true) {
+
+                    /*
+                     * A session cookie that no longer signs anyone in, on a
+                     * screen anyone may open. Refusing it sent the browser to
+                     * the login form, which is such a screen, so the form
+                     * refused it again and redirected to itself until the URL
+                     * was too long to serve. The cookie is cleared and the
+                     * request goes on signed out.
+                     */
+                    if ( ! $needs_user ) {
+                        $auth->deleteCredentials();
+                        return true;
+                    }
+
                     $this->notAuthenticatedAction();
                     return false;
                 }
