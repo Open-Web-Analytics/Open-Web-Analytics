@@ -198,6 +198,60 @@ final class GoalEventStorageTest extends TestCase
             . 'for ever without saying so.' );
     }
 
+    /**
+     * An @ in a regex condition is part of the pattern (#909).
+     *
+     * The pattern is delimited by @, so an email address in it used to end it
+     * early: it never matched, and the save form called it invalid.
+     */
+    public function testAnAtSignInARegexIsPartOfThePattern(): void
+    {
+        $ge = \OWA\Module\Base\Entity\GoalEvent::class;
+
+        $this->assertTrue(  $ge::compare( '/signup?email=user@example.com', 'regex', 'user@example\.com' ) );
+        $this->assertFalse( $ge::compare( '/signup?email=user.example.com', 'regex', 'user@example\.com' ) );
+        $this->assertTrue(  $ge::compare( 'a@b', 'regex', '@' ) );
+        $this->assertTrue(  $ge::compare( 'x@@y', 'regex', 'x@@y' ) );
+
+        // Already escaped by the author: left as written.
+        $this->assertTrue(  $ge::compare( 'user@example', 'regex', 'user\@example' ) );
+        // An escaped backslash, then a bare @.
+        $this->assertTrue(  $ge::compare( 'a\@b', 'regex', 'a\\\\@b' ) );
+
+        $this->assertSame( '@user\@example@i', $ge::regexPattern( 'user@example' ) );
+        $this->assertSame( '@user\@example@i', $ge::regexPattern( 'user\@example' ) );
+    }
+
+    /** ...and the form accepts it, while still refusing a pattern that cannot compile. */
+    public function testTheSaveFormAcceptsAnAtSign(): void
+    {
+        $this->assertNotContains( 'The regular expression is not valid.', $this->saveErrors( 'user@example\.com' ) );
+        $this->assertContains( 'The regular expression is not valid.', $this->saveErrors( '(' ) );
+    }
+
+    /** The validation messages GoalEventSave raises for one regex condition. */
+    private function saveErrors( string $pattern ): array
+    {
+        // A real Property and a name, so validation reaches the conditions.
+        $save = new \OWA\Module\Base\Controller\GoalEventSave( array(
+            'propertyId'        => $this->propertyId,
+            'name'              => 'Signup by email',
+            'conditionOperator' => array( 'regex' ),
+            'conditionValue'    => array( $pattern ),
+        ) );
+        $save->validate();
+
+        $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
+        $v->setAccessible( true );
+        $validator = $v->getValue( $save );
+        $validator->doValidations();
+
+        return array_map( static function ( $msg ) {
+
+            return is_array( $msg ) ? (string) ( $msg['message'] ?? '' ) : (string) $msg;
+        }, array_values( (array) $validator->getErrorMsgs() ) );
+    }
+
     /** Several conditions, combined with all or any. */
     public function testConditionsCombineWithAllOrAny(): void
     {

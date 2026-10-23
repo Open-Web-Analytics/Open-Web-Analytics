@@ -75,6 +75,23 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
+     * An author's regex condition as a PHP pattern: delimited by @,
+     * case-insensitive.
+     *
+     * An @ in the pattern -- an email address, say -- would end it early, so
+     * one not already escaped is escaped. "\@" is left as written; "\\@" is an
+     * escaped backslash before a bare @, which gets escaped too. The database
+     * side (GoalEventPredicate, REGEXP) takes the pattern undelimited.
+     *
+     * @param  string $pattern what the author typed
+     * @return string
+     */
+    public static function regexPattern( $pattern ) {
+
+        return '@' . preg_replace( '/(?<!\\\\)((?:\\\\\\\\)*)@/', '$1\\\\@', (string) $pattern ) . '@i';
+    }
+
+    /**
      * Does one value satisfy one comparison?
      *
      * The single place a condition is decided, so the goal event's own test,
@@ -117,7 +134,7 @@ class GoalEvent extends \OWA\Core\Entity {
                  * worse than the condition simply not matching.
                  */
                 return $target !== ''
-                    && @preg_match( '@' . $target . '@i', $value ) === 1;
+                    && @preg_match( self::regexPattern( $target ), $value ) === 1;
 
             case self::MATCH_GT:
             case self::MATCH_LT:
