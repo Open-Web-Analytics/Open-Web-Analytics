@@ -75,14 +75,24 @@ test.describe('report navigation', () => {
         await expect(groupPanel(page, 'Ecommerce')).toBeHidden();
     });
 
-    /** The caret agrees with the panel, rather than pointing the wrong way. */
-    test('the open group points its caret down', async ({ page }) => {
+    /**
+     * The chevron agrees with the panel: it says the group is open, and it is
+     * on the right of the group's name.
+     */
+    test('the open group says so, with a chevron right of its name', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        const caret = page.locator('.owa_admin_nav_topmenu_item.owa_current .owa_admin_nav_topmenu_toggle');
+        const item = page.locator('.owa_admin_nav_topmenu_item.owa_current');
+        const toggle = item.locator('.owa_admin_nav_topmenu_toggle');
 
-        await expect(caret).toHaveClass(/fa-caret-down/);
-        await expect(caret).not.toHaveClass(/fa-caret-right/);
+        await expect(item).toHaveClass(/is-open/);
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(toggle.locator('i')).toHaveClass(/fa-chevron-down/);
+
+        const name = await item.locator('.owa_admin_nav_topmenu_item_text').boundingBox();
+        const chevron = await toggle.boundingBox();
+
+        expect(chevron.x).toBeGreaterThan(name.x + name.width);
     });
 
     /** The symptom reported as "no longer highlights the current report". */
@@ -132,8 +142,12 @@ test.describe('report navigation', () => {
 
         await expect(ecommerce.locator('.owa_admin_nav_subgroup')).toBeHidden();
 
-        await ecommerce.locator('.owa_admin_nav_topmenu_toggle').click();
+        const toggle = ecommerce.locator('.owa_admin_nav_topmenu_toggle');
+
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await toggle.click();
 
         await expect(ecommerce.locator('.owa_admin_nav_subgroup')).toBeVisible();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     });
 });

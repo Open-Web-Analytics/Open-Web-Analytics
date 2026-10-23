@@ -31,18 +31,18 @@ jQuery(document).ready(function(){
 	if ( owaCurrentGroup.next('.owa_admin_nav_subgroup').length ) {
 
 		owaCurrentGroup.next('.owa_admin_nav_subgroup').show();
-		owaCurrentGroup.children('.owa_admin_nav_topmenu_toggle')
-			.removeClass('fa-caret-right').addClass('fa-caret-down');
+		owaCurrentGroup.addClass('is-open')
+			.children('.owa_admin_nav_topmenu_toggle').attr('aria-expanded', 'true');
 	}
-	
-    // report side navigaion panels - toggle
+
+    // A group's chevron opens and closes its reports.
     jQuery('.owa_admin_nav_topmenu_toggle').click(function () {
-	    
-	    if ( jQuery(this).parent().siblings('.owa_admin_nav_subgroup').length ) { 
-			 jQuery(this).parent().siblings('.owa_admin_nav_subgroup').toggle();
-			 jQuery(this).toggleClass('fa-caret-right fa-caret-down');
-		}
-		
+
+        var item = jQuery(this).parent();
+        var open = ! item.siblings('.owa_admin_nav_subgroup').toggle().is(':hidden');
+
+        item.toggleClass('is-open', open);
+        jQuery(this).attr('aria-expanded', open ? 'true' : 'false');
     });
     
 });

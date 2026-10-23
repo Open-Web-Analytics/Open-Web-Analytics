@@ -3,6 +3,7 @@
 
     <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
     <span class="owa_logo"><?php if ( $owa_logo ): ?><img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?></span>
+    <span class="owa_headerRule" aria-hidden="true"></span>
     <?php
     /*
      * The Property chooser, beside the logo, on screens that are about a
@@ -42,7 +43,8 @@
              */
             ?>
             <?php if ( ! empty( $owa_link['icon'] ) ):?>
-            <LI><a class="owa_navIcon" href="<?php $view->safeHref( $owa_link['href'] );?>" aria-label="<?php $view->out( $owa_link['label'] );?>" title="<?php $view->out( $owa_link['label'] );?>"><i class="<?php $view->out( $owa_link['icon'] );?>" aria-hidden="true"></i></a></LI>
+            <?php $owa_is_current = $owa_link['id'] === (string) $view->get( 'nav_section' ); ?>
+            <LI><a class="owa_navIcon<?php echo $owa_is_current ? ' is-current' : '';?>"<?php echo $owa_is_current ? ' aria-current="page"' : '';?> href="<?php $view->safeHref( $owa_link['href'] );?>" aria-label="<?php $view->out( $owa_link['label'] );?>" title="<?php $view->out( $owa_link['label'] );?>"><i class="<?php $view->out( $owa_link['icon'] );?>" aria-hidden="true"></i></a></LI>
             <?php else:?>
             <LI><a href="<?php $view->safeHref( $owa_link['href'] );?>"><?php $view->out( $owa_link['label'] );?></a></LI>
             <?php endif;?>
