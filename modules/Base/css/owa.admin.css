@@ -794,7 +794,7 @@
 
     .owa #owa_header .owa_logo img { height: 36px; width: auto; vertical-align: middle; }
 
-    .owa .owa_navigation { height: 44px; }
+    .owa .owa_navigation, .owa .owa_headerRule { height: 44px; }
 
     .owa .owa_navigation ul { gap: 0; }
 

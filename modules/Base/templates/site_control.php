@@ -51,7 +51,7 @@ foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
             <span class="owa_siteControlDomain"><?php $view->out( $owa_current['domain'] );?></span>
             <?php endif;?>
         </div>
-        <i class="fa fa-caret-down owa_siteControlCaret" aria-hidden="true"></i>
+        <i class="fas fa-chevron-down owa_siteControlCaret" aria-hidden="true"></i>
     </div>
 
     <div id="owa_siteControlPanel" class="owa_siteControlPanel" hidden>

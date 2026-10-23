@@ -274,12 +274,24 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     font-size: 12px;
 }
 .owa_admin_nav_topmenu_container {}
-.owa_admin_nav_topmenu_item {background-color:;height:25px; vertical-align: middle; font-weight: ; padding: 10px;font-size:16px;  }
+.owa_admin_nav_topmenu_item {display: flex; align-items: center; height:25px; padding: 10px;font-size:16px;  }
 .owa_admin_nav_topmenu_item_text {}
+
+/* A group's chevron, right of its name: down while closed, up while open. */
 .owa_admin_nav_topmenu_toggle {
-	width:15px;height:20px;
-	
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #777777;
+    font-size: 12px;
+    cursor: pointer;
 }
+.owa_admin_nav_topmenu_toggle i { transition: transform 0.12s ease; }
+.owa_admin_nav_topmenu_item.is-open .owa_admin_nav_topmenu_toggle i { transform: rotate(180deg); }
+.owa_admin_nav_topmenu_toggle:hover { color: #333333; }
 
 .owa_piechart {
 	
@@ -3300,9 +3312,12 @@ li.constraintRow {
 
 .owa_siteControlCaret {
     position: absolute;
-    right: 8px;
-    top: 10px;
-    color: #999999;
+    right: 9px;
+    top: 50%;
+    margin-top: -6px;
+    color: #777777;
+    font-size: 12px;
+    line-height: 12px;
     transition: transform 0.12s ease;
 }
 

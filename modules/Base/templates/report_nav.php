@@ -21,17 +21,6 @@
 
                     if ( $owa_current ) { echo ' owa_current'; }
                     ?>">
-                    <span class="owa_admin_nav_topmenu_toggle 
-                    
-                    <?php 
-	                    
-	                    if ( array_key_exists('subgroup', $l)) { 
-		                    echo 'fa fa-caret-right'; 
-		                } else { 
-			                echo 'fa fa-blank';
-			            }
-			      
-                    ?>"></span>
               
                     <?php
                         // An entry that declares no icon gets the default: on a narrow
@@ -39,6 +28,17 @@
                         $owa_icon = trim( (string) ( $l['icon_class'] ?? '' ) ) ?: \OWA\Core\Module::DEFAULT_NAV_ICON;
                     ?>
                     <span title="<?php $view->out( strip_tags( (string) $l['anchortext'] ) ); ?>"><i class="owa_nav_icon <?php $view->out( $owa_icon ); ?>" aria-hidden="true"></i><a class=" owa_admin_nav_topmenu_item_text" id="owa_admin_nav_topmenu_item_<?php echo $kl;?>" href="<?php echo $view->makeLink($view->navLinkParams($l), true);?>"><?php echo $l['anchortext'];?></a></span>
+                    <?php if ( ! empty( $l['subgroup'] ) ): ?>
+                    <?php
+                    /*
+                     * Right of the name: a chevron that points down while the
+                     * group is closed and up while it is open (report.php).
+                     */
+                    ?>
+                    <button type="button" class="owa_admin_nav_topmenu_toggle" aria-expanded="false"
+                            aria-controls="owa_admin_nav_subgroup_<?php echo $kl;?>"
+                            aria-label="<?php $view->out( strip_tags( (string) $l['anchortext'] ) ); ?> reports"><i class="fas fa-chevron-down" aria-hidden="true"></i></button>
+                    <?php endif; ?>
                     
 
                 </div>

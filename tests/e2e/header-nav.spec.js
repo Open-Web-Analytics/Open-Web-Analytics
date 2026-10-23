@@ -411,24 +411,65 @@ test.describe('the top bar', () => {
         expect(x.chooser.right).toBeLessThanOrEqual(x.nav + 1);
     });
 
-    /** A thin rule between the logo and the icons, three quarters of the bar's height. */
-    test('a separator stands between the logo and the icons', async ({ page }) => {
+    /** A thin rule directly right of the logo, three quarters of the bar's height. */
+    test('a separator stands right of the logo', async ({ page }) => {
         const rule = await page.evaluate(() => {
-            const nav  = document.querySelector('.owa_navigation');
-            const css  = getComputedStyle(nav, '::before');
+            const el   = document.querySelector('.owa_headerRule');
+            const css  = getComputedStyle(el, '::before');
+            const box  = el.getBoundingClientRect();
             const logo = document.querySelector('.owa_logo').getBoundingClientRect();
-            const icon = document.querySelector('.owa_navigation li a').getBoundingClientRect();
+            const next = document.querySelector('#owa_header #owa_siteControl, .owa_navigation li a').getBoundingClientRect();
 
             return {
                 width: parseFloat(css.width),
-                ratio: parseFloat(css.height) / nav.getBoundingClientRect().height,
-                between: logo.right <= nav.getBoundingClientRect().left + 1 && nav.getBoundingClientRect().left < icon.left,
+                ratio: parseFloat(css.height) / box.height,
+                between: logo.right <= box.left + 1 && box.right <= next.left,
             };
         });
 
         expect(rule.width).toBe(1);
         expect(rule.ratio).toBeCloseTo(0.75, 2);
         expect(rule.between).toBe(true);
+    });
+
+    /** Each icon's glyph is centred on the same line as the pills on the right. */
+    test('the icons are vertically centred with the other pills', async ({ page }) => {
+        const centres = await page.evaluate(() => {
+            const mid = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+
+            return {
+                pill: mid(document.querySelector('.owa_helpMenuToggle')),
+                glyphs: [...document.querySelectorAll('.owa_navigation li a i')].map(mid),
+                heights: [...document.querySelectorAll('.owa_navigation li a')].map((a) => a.getBoundingClientRect().height),
+            };
+        });
+
+        for (const g of centres.glyphs) {
+            expect(Math.abs(g - centres.pill)).toBeLessThan(1.5);
+        }
+        expect(new Set(centres.heights)).toEqual(new Set([40]));
+    });
+
+    /** One dark grey; orange for the section you are in and on hover. */
+    test('the icons are grey, and orange when current or hovered', async ({ page }) => {
+        const colours = () => page.locator('.owa_navigation li a').evaluateAll((as) =>
+            as.map((a) => [a.getAttribute('aria-label'), getComputedStyle(a).color, a.getAttribute('aria-current')]));
+
+        const GREY = 'rgb(80, 80, 80)';
+        const ORANGE = 'rgb(255, 165, 0)';
+
+        // A report: Analytics is current.
+        expect(await colours()).toEqual([
+            ['Analytics', ORANGE, 'page'], ['Settings', GREY, null], ['Donate', GREY, null]]);
+
+        await page.getByRole('link', { name: 'Donate', exact: true }).hover();
+        await expect.poll(async () => (await colours())[2][1]).toBe(ORANGE);
+
+        // A settings screen: Settings is current.
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+        await page.mouse.move(0, 400);
+        expect(await colours()).toEqual([
+            ['Analytics', GREY, null], ['Settings', ORANGE, 'page'], ['Donate', GREY, null]]);
     });
 
     /**

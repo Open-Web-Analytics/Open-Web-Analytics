@@ -62,6 +62,9 @@ class Report extends \OWA\Core\View {
         $this->body->set('sites', $this->get('sites') );
         $this->body->set('site_hierarchy', $this->get('site_hierarchy') );
 
+        // The header marks Analytics as the section you are in.
+        $this->t->set( 'nav_section', 'analytics' );
+
         // The Property chooser is drawn in the header (header.php).
         if ( ! $this->get( 'hideSitesFilter' ) ) {
 

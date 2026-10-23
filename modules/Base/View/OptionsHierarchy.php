@@ -37,6 +37,9 @@ class OptionsHierarchy extends \OWA\Core\View {
 
         $this->body->set( 'params', $params );
 
+        // The header marks Settings as the section you are in.
+        $this->t->set( 'nav_section', 'settings' );
+
         // The Property chooser is drawn in the header (header.php), from these.
         $this->t->set( 'params', $params );
         $this->t->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
