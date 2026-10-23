@@ -7,9 +7,9 @@ require_once __DIR__ . '/AjaxRequestTrait.php';
 /**
  * Core\Controller\Ajax: an internal JSON endpoint for a signed-in browser.
  *
- * Every rule is the controller pipeline's own, declared rather than written
- * per endpoint: POST only, cookies the only accepted credential
- * (setAuthMethods), a nonce, and a JSON answer for every refusal.
+ * Every rule is the controller pipeline's own rather than written per
+ * endpoint: POST only, cookies the only accepted credential (inherited from
+ * AdminController), a nonce, and a JSON answer for every refusal.
  */
 final class AjaxControllerTest extends RestControllerTestCase
 {
@@ -218,15 +218,20 @@ final class AjaxControllerTest extends RestControllerTestCase
         $this->assertNotSame('redirect', $data['view_method'] ?? null);
     }
 
-    /** The accepted methods are the controller's declaration, not a check of its own. */
-    public function testTheRuleIsDeclared(): void
+    /** The rule is AdminController's, inherited rather than written here. */
+    public function testTheRuleIsInherited(): void
     {
-        $c = $this->endpoint();
+        $c    = $this->endpoint();
+        $mode = \OWA\Core\CoreAPI::getSetting('base', 'request_mode');
 
-        $p = new \ReflectionProperty(\OWA\Core\Controller::class, 'auth_methods');
-        $p->setAccessible(true);
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
 
-        $this->assertSame(array('cookies'), $p->getValue($c));
-        $this->assertTrue((bool) $c->is_nonce_required);
+        try {
+            $this->assertInstanceOf(\OWA\Core\AdminController::class, $c);
+            $this->assertSame(array('cookies'), $c->acceptedAuthMethods());
+            $this->assertTrue((bool) $c->is_nonce_required);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'request_mode', $mode);
+        }
     }
 }

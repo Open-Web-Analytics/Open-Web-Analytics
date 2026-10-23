@@ -28,7 +28,7 @@ namespace OWA\Module\Base\Controller;
  *
  * @since owa 1.8.0
  */
-class MyProfile extends \OWA\Core\Controller {
+class MyProfile extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 

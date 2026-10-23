@@ -105,8 +105,8 @@ class Controller extends \OWA\Core\Base {
     var $is_nonce_required = false;
 
     /**
-     * The authentication methods this controller accepts, or null for any.
-     * See setAuthMethods().
+     * The authentication methods this controller declares, or null for its
+     * class's default. See setAuthMethods() and acceptedAuthMethods().
      *
      * @var string[]|null
      */
@@ -406,14 +406,21 @@ class Controller extends \OWA\Core\Base {
             /* PERFORM AUTHENTICATION */
             $auth = \OWA\Core\Auth::get_instance();
             if (!\OWA\Core\CoreAPI::isCurrentUserAuthenticated()) {
-                $status = $auth->authenticateUser( $this->auth_methods );
+                $status = $auth->authenticateUser( $this->acceptedAuthMethods() );
                 if ($status['auth_status'] != true) {
                     $this->notAuthenticatedAction();
                     return false;
                 }
-            } elseif ( $this->auth_methods !== null
-                       && ! in_array( $auth->getAuthMethod(), $this->auth_methods, true ) ) {
-                // Signed in earlier in this request by a method this controller does not accept.
+            } elseif ( $this->acceptedAuthMethods() !== null
+                       && $auth->getAuthMethod()
+                       && ! in_array( $auth->getAuthMethod(), $this->acceptedAuthMethods(), true ) ) {
+                /*
+                 * Signed in earlier in this request by a credential this
+                 * controller does not accept. A user signed in with no method
+                 * was put there by code in this process -- the CLI, a module's
+                 * auth_status filter, a host embedding OWA -- not by anything
+                 * the request carried, which is what the list governs.
+                 */
                 $this->notAuthenticatedAction();
                 return false;
             }
@@ -915,6 +922,17 @@ class Controller extends \OWA\Core\Base {
     function setAuthMethods( array $methods ) {
 
         $this->auth_methods = array_values( $methods );
+    }
+
+    /**
+     * The authentication methods this request may use: the controller's
+     * declaration, or null for any. AdminController narrows it to the session.
+     *
+     * @return string[]|null
+     */
+    function acceptedAuthMethods() {
+
+        return $this->auth_methods;
     }
 
     function getSetting($module, $name) {

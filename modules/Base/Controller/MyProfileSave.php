@@ -25,7 +25,7 @@ namespace OWA\Module\Base\Controller;
  *
  * @since owa 1.8.0
  */
-class MyProfileSave extends \OWA\Core\Controller {
+class MyProfileSave extends \OWA\Core\AdminController {
 
     /** Shortest new password accepted, matching base.usersChangePassword. */
     const MIN_PASSWORD_LENGTH = 6;

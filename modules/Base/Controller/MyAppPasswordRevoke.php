@@ -13,7 +13,7 @@ namespace OWA\Module\Base\Controller;
  * The user comes from the session, so a lookup id that belongs to someone
  * else revokes nothing. base.userAppPasswordRevoke is the admin's version.
  */
-class MyAppPasswordRevoke extends \OWA\Core\Controller {
+class MyAppPasswordRevoke extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 

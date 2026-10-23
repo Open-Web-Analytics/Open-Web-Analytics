@@ -14,7 +14,7 @@ namespace OWA\Module\Base\Controller;
  * never sees a token: what they get is the list of names and when each was
  * last used, which is enough to decide one should go.
  */
-class UserAppPasswordRevoke extends \OWA\Core\Controller {
+class UserAppPasswordRevoke extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 

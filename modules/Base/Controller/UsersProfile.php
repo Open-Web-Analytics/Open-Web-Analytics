@@ -31,12 +31,12 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersProfile extends \OWA\Core\Controller {
+class UsersProfile extends \OWA\Core\AdminController {
 
     function __construct($params) {
 
         $this->setRequiredCapability('edit_users');
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {
