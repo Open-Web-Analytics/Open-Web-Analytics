@@ -2713,49 +2713,30 @@ class TrackingEventHelpers {
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load( $site->generateId( $site_id ) );
 
-        $filter_string = $site->getSiteSetting( 'query_string_filters' );
+        // The install's filters, then the site's, then OWA's own params.
+        $ns      = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $filters = array_merge(
+            explode( ',', (string) \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ) ),
+            explode( ',', (string) $site->getSiteSetting( 'query_string_filters' ) ) );
 
-        if ($filter_string) {
-            $filters = str_replace(' ', '', $filter_string);
-            $filters = explode(',', $filter_string);
-        } else {
-            $filters = array();
+        foreach ( array( 'source', 'medium', 'campaign', 'ad', 'ad_type', 'overlay', 'state',
+                         \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ) ) as $param ) {
+
+            $filters[] = $ns . $param;
         }
 
-        // merge global filters
-        $global_filters = \OWA\Core\CoreAPI::getSetting('base', 'query_string_filters');
-        if ($global_filters) {
-            $global_filters = str_replace(' ', '', $global_filters);
-            $global_filters = explode(',', $global_filters);
-            $filters = array_merge($global_filters, $filters);
-        }
+        /*
+         * Pair by pair, as page_query is (V2Event::filterQuery). The regex this
+         * replaces removed a filtered parameter and everything after it, matched
+         * a name inside a longer one ("id" in product_id), and read an empty
+         * name -- a trailing comma in the list -- as every parameter.
+         */
+        $at = strpos( $url, '?' );
 
-        // OWA specific params to filter
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'source');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'medium');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'campaign');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'ad');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'ad_type');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'overlay');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').'state');
-        array_push($filters, \OWA\Core\CoreAPI::getSetting('base', 'ns').\OWA\Core\CoreAPI::getSetting('base', 'feed_subscription_param'));
+        if ( $at !== false ) {
 
-        //print_r($filters);
-
-        foreach ($filters as $filter => $value) {
-
-          $url = preg_replace(
-            '#\?' .
-            $value .
-            '=.*$|&' .
-            $value .
-            '=.*$|' .
-            $value .
-            '=.*&#msiU',
-            '',
-            $url
-          );
-
+            $query = \OWA\Module\Base\Classes\V2Event::filterQuery( substr( $url, $at + 1 ), $filters );
+            $url   = substr( $url, 0, $at ) . ( $query === null ? '' : '?' . $query );
         }
 
 
