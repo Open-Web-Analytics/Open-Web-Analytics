@@ -237,6 +237,39 @@ class Lib {
 	}
 	
     /**
+     * The current request's URL as the browser addressed it: public_url, then
+     * the request's path below this installation.
+     *
+     * Behind a reverse proxy on a sub-path, the request reaching PHP is not
+     * the one the browser made -- https://example.com/owa/index.php arrives as
+     * http://localhost:3508/index.php -- so get_current_url() names a page the
+     * browser cannot reach. public_url is where the install says it lives;
+     * SCRIPT_NAME says where it sits on this server, and the rest of
+     * REQUEST_URI is the same on both sides.
+     *
+     * For sending the browser back to this page (the login's go=). A request
+     * signature is checked against get_current_url(), the URL the request was
+     * actually made to.
+     *
+     * @return string
+     */
+    public static function currentPublicUrl() {
+
+        $public = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
+
+        if ( $public === '' ) {
+
+            return self::get_current_url();
+        }
+
+        $uri  = (string) ( $_SERVER['REQUEST_URI'] ?? '' );
+        $base = rtrim( str_replace( '\\', '/', dirname( (string) ( $_SERVER['SCRIPT_NAME'] ?? '/' ) ) ), '/' ) . '/';
+        $rest = strpos( $uri, $base ) === 0 ? substr( $uri, strlen( $base ) ) : ltrim( $uri, '/' );
+
+        return rtrim( $public, '/' ) . '/' . $rest;
+    }
+
+    /**
      * Assembles the current URL from request params
      *
      * @return string
