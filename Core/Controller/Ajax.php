@@ -9,11 +9,10 @@ namespace OWA\Core\Controller;
  * only by a signed-in browser:
  *
  *  - POST only (405).
- *  - The session cookies are the only credential accepted
- *    (setAuthMethods). Authentication is the controller pipeline's own; the
- *    other methods are simply not tried, so a login form's user_id and
- *    password cannot sign anyone in or set cookies here, and an API key or an
- *    application password is not read.
+ *  - The session cookies are the only credential accepted, as on every
+ *    AdminController (acceptedAuthMethods). The other methods are not tried,
+ *    so a login form's user_id and password cannot sign anyone in or set
+ *    cookies here, and an API key or an application password is not read.
  *  - A nonce is required, checked like any admin form's.
  *  - Every outcome is JSON, including the refusals that answer a screen with a
  *    redirect or an HTML page: 401 not signed in, 403 not capable or a bad
@@ -30,7 +29,6 @@ class Ajax extends \OWA\Core\AdminController {
         parent::__construct( $params );
 
         $this->setNonceRequired();
-        $this->setAuthMethods( array( 'cookies' ) );
     }
 
     function doAction() {

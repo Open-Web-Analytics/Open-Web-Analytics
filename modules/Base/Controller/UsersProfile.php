@@ -31,7 +31,7 @@ namespace OWA\Module\Base\Controller;
  * @since        owa 1.0.0
  */
 
-class UsersProfile extends \OWA\Core\Controller {
+class UsersProfile extends \OWA\Core\AdminController {
 
     function __construct($params) {
 

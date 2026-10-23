@@ -17,7 +17,7 @@ namespace OWA\Module\Base\Controller;
  * base.myAppPasswordCreate extends this to draw the same screen with the new
  * token on it. That response is the only place a token is ever shown.
  */
-class MyAppPasswords extends \OWA\Core\Controller {
+class MyAppPasswords extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 

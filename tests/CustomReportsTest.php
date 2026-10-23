@@ -32,11 +32,27 @@ final class CustomReportsTest extends TestCase
     /** @var string[] ids to clean up */
     private static $created = array();
 
+    /** @var string the request mode before the test */
+    private $mode;
+
     protected function setUp(): void
     {
         $user = \OWA\Core\CoreAPI::getCurrentUser();
         $user->setRole('admin');
         $user->setAuthStatus(true);
+
+        // Signed in as a browser is: by the session, the only method a screen
+        // accepts. In web_app mode, which a REST test earlier in the run may
+        // have left switched to rest_api.
+        \OWA\Core\Auth::get_instance()->auth_method = 'cookies';
+        $this->mode = \OWA\Core\CoreAPI::getSetting('base', 'request_mode');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+    }
+
+    protected function tearDown(): void
+    {
+        \OWA\Core\Auth::get_instance()->auth_method = null;
+        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', $this->mode);
     }
 
     public static function tearDownAfterClass(): void

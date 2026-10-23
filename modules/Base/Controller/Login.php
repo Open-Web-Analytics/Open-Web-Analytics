@@ -21,6 +21,15 @@ namespace OWA\Module\Base\Controller;
 
 class Login extends \OWA\Core\Controller {
 
+    function __construct( $params ) {
+
+        parent::__construct( $params );
+
+        // The one screen that signs someone in. The session is accepted too,
+        // after the form, as authenticateUser() has always ordered them.
+        $this->setAuthMethods( array( 'login_form', 'cookies' ) );
+    }
+
     public function validate()
     {
         $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError' => true]);
@@ -29,7 +38,7 @@ class Login extends \OWA\Core\Controller {
     function action() {
 
         $auth = \OWA\Core\Auth::get_instance();
-        $status = $auth->authenticateUser();
+        $status = $auth->authenticateUser( $this->acceptedAuthMethods() );
         $go = \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam('go') );
         // if authentication is successfull
         if ($status['auth_status'] == true) {

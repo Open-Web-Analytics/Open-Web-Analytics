@@ -19,7 +19,7 @@ namespace OWA\Module\Base\Controller;
  * machines should not fight over it, and it must not need a write to the user
  * table on every report view.
  */
-class ReportingHome extends \OWA\Core\Controller {
+class ReportingHome extends \OWA\Core\AdminController {
 
     /**
      * The cookie ReportController writes. Short, like auth's 'u' and 'p'.

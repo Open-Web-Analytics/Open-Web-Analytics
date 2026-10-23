@@ -14,7 +14,7 @@ namespace OWA\Module\Base\Controller;
  * to report ids before a single report becomes JSON, and each conversion after
  * that changes one registry entry rather than every link pointing at it.
  */
-class Report extends \OWA\Core\Controller {
+class Report extends \OWA\Core\AdminController {
 
     /**
      * The reserved id space for user-authored reports: `custom-<row id>`.

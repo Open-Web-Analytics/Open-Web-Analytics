@@ -57,7 +57,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
     public function testAWebWriteWithoutANonceShowsTheRefusal(string $class, int $successCode): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
-        $this->authenticateAs('admin');
+        $this->authenticateAsBrowser('admin');
 
         $controller = new $class($this->newUserParams());
         $data = $controller->doAction();
@@ -79,7 +79,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
     public function testNoUserIsAddedWithoutANonce(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
-        $this->authenticateAs('admin');
+        $this->authenticateAsBrowser('admin');
 
         $params = $this->newUserParams();
         (new \OWA\Module\Base\Controller\UsersAdd($params))->doAction();
@@ -91,7 +91,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
     public function testWithANonceTheUserIsAdded(): void
     {
         \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
-        $this->authenticateAs('admin');
+        $this->authenticateAsBrowser('admin');
 
         $params = $this->newUserParams();
         $params['nonce'] = \OWA\Core\CoreAPI::createNonce('base.usersAdd');
