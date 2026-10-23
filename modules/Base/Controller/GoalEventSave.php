@@ -77,7 +77,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
             $pattern = trim( (string) ( ( (array) $this->getParam( 'conditionValue' ) )[ $i ] ?? '' ) );
 
-            if ( $pattern !== '' && @preg_match( '@' . $pattern . '@i', '' ) === false ) {
+            if ( $pattern !== '' && @preg_match( \OWA\Module\Base\Entity\GoalEvent::regexPattern( $pattern ), '' ) === false ) {
 
                 $this->addValidation( 'conditionValue', '', 'required', array(
                     'errorMsg' => 'That is not a valid regular expression, so it would never match.',
