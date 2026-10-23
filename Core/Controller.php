@@ -749,7 +749,7 @@ class Controller extends \OWA\Core\Base {
             return '';
         }
 
-        if ( $referer === \OWA\Core\Lib::get_current_url() ) {
+        if ( $referer === \OWA\Core\Lib::currentPublicUrl() ) {
 
             return '';
         }
@@ -854,7 +854,7 @@ class Controller extends \OWA\Core\Base {
 			// view controller does, so deep-linking to a report still resumes.
 			if ( ! $this->is_nonce_required ) {
 
-				$this->set('go', urlencode(\OWA\Core\Lib::get_current_url()));
+				$this->set('go', urlencode(\OWA\Core\Lib::currentPublicUrl()));
 
 			} else {
 
