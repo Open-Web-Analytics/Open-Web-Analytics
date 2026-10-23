@@ -505,13 +505,17 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 .owa_publicFooter {
     margin-top: 40px;
-    text-align: center;
+    text-align: right;
     color: #909090;
     font-size: 12px;
 }
 
-.owa_publicFooter a {
+/* The application's footer: the product and its version, right-aligned. */
+.owa_footer {
+    padding: 16px 20px;
+    text-align: right;
     color: #909090;
+    font-size: 12px;
 }
 
 

@@ -141,6 +141,7 @@ return array(
     'OWA\'s Job Scheduler may have stopped.' => 'OWA\'s Job Scheduler may have stopped.',
     'Observation Profile added.' => 'Observation Profile added.',
     'Observation Profile deleted. An administrator can restore its data.' => 'Observation Profile deleted. An administrator can restore its data.',
+    'Open Web Analytics version %s' => 'Open Web Analytics version %s',
     'Options reset to their defaults.' => 'Options reset to their defaults.',
     'Options saved.' => 'Options saved.',
     'Password is required.' => 'Password is required.',
