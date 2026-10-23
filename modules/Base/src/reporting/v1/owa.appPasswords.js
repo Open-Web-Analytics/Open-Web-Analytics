@@ -4,38 +4,15 @@ import { OWA } from './owa.js';
 /**
  * The Add dialog on the Application Passwords screen (my_app_passwords.php).
  *
- * Add opens it; Create sends POST v1/apppasswords with the signed-in session
- * and the nonce makeApiLink() put in the button's data-api-url. The answer
- * carries the token, which the dialog shows once, and the new password's row
+ * Add opens it; Create sends its form, nonce included, with fetch() to
+ * base.myAppPasswordCreateAjax (Core\Controller\Ajax). The answer carries
+ * the token, which the dialog shows once, and the new password's row
  * is added to the roster behind it.
  *
  * Nothing is posted to the page itself, so reloading it repeats nothing.
  */
 
 var FALLBACK_ERROR = 'The application password could not be created.';
-
-/** The first message in a REST error envelope, whichever shape it took. */
-function errorMessage( json ) {
-
-    var found = '';
-
-    $.each( ( json && json.error ) || [], function ( i, item ) {
-
-        if ( found || ! item ) { return; }
-
-        if ( typeof item === 'string' ) { found = item; return; }
-
-        if ( item.message ) { found = item.message; return; }
-
-        // validation_errors: field => message
-        $.each( item, function ( field, msg ) {
-
-            if ( ! found && typeof msg === 'string' ) { found = msg; }
-        } );
-    } );
-
-    return found || FALLBACK_ERROR;
-}
 
 /** A roster row for a password just made, from the page's own row template. */
 function addRow( made ) {
@@ -57,7 +34,7 @@ function addRow( made ) {
     $( '.owa_appPasswordsNone' ).prop( 'hidden', true );
 }
 
-function openAddDialog( apiUrl ) {
+function openAddDialog() {
 
     var $dialog = $( '#owa_appPasswordDialog' );
     var $form   = $dialog.find( '.owa_appPasswordForm' );
@@ -92,11 +69,12 @@ function openAddDialog( apiUrl ) {
         $error.prop( 'hidden', true );
         $( '.owa_appPasswordCreate' ).prop( 'disabled', true );
 
-        fetch( apiUrl, {
+        var form = $form.get( 0 );
+
+        fetch( form.action, {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: $.param( { name: name, scope: $form.find( '[name="scope"]' ).val() } )
+            body: new URLSearchParams( new FormData( form ) )
         } )
             .then( function ( r ) {
 
@@ -109,7 +87,7 @@ function openAddDialog( apiUrl ) {
 
                 if ( ! res.ok || ! res.json.data || ! res.json.data.token ) {
 
-                    showError( errorMessage( res.json ) );
+                    showError( res.json.error || FALLBACK_ERROR );
                     return;
                 }
 
@@ -185,7 +163,7 @@ $( function () {
     $( document ).on( 'click', '.owa_appPasswordAdd', function ( event ) {
 
         event.preventDefault();
-        openAddDialog( this.getAttribute( 'data-api-url' ) );
+        openAddDialog();
     } );
 } );
 

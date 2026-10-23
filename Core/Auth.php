@@ -107,9 +107,21 @@ class Auth extends \OWA\Core\Base {
     /**
      * Used by controllers to check if the user exists and if they are priviledged.
      *
-     * @param string $necessary_role
+     * $methods limits which credentials are tried: a branch whose method is
+     * not listed is skipped, so its credential is never read and the request
+     * is judged on the ones the caller accepts. A login form's user_id and
+     * password on a cookies-only endpoint are then plain parameters, not a
+     * sign-in that writes the session cookies. Null tries every method, in
+     * the order below. See Controller::setAuthMethods().
+     *
+     * @param string[]|null $methods login_form, overlay_token, app_password, api_key, cookies
      */
-    function authenticateUser() {
+    function authenticateUser( $methods = null ) {
+
+        $accepts = function ( $method ) use ( $methods ) {
+
+            return $methods === null || in_array( $method, (array) $methods, true );
+        };
 		
 		$apiKey = \OWA\Core\CoreAPI::getRequestParam('apiKey') ?: \OWA\Core\CoreAPI::getServerParam( 'HTTP_X_API_KEY' );
 	
@@ -118,13 +130,13 @@ class Auth extends \OWA\Core\Base {
 	        \OWA\Core\CoreAPI::debug('User is already authenticated.');
             $ret = true;
         
-        } elseif (\OWA\Core\CoreAPI::getRequestParam('user_id') && \OWA\Core\CoreAPI::getRequestParam('password')) {
+        } elseif ($accepts('login_form') && \OWA\Core\CoreAPI::getRequestParam('user_id') && \OWA\Core\CoreAPI::getRequestParam('password')) {
             // auth user by login form input
             $this->setAuthMethod( 'login_form');
             $ret = $this->authByInput(\OWA\Core\CoreAPI::getRequestParam('user_id'), \OWA\Core\CoreAPI::getRequestParam('password'));
              \OWA\Core\CoreAPI::debug('User authenticated via form input.');
     
-        } elseif ( \OWA\Core\CoreAPI::getRequestParam('overlayToken') ) {
+        } elseif ( $accepts('overlay_token') && \OWA\Core\CoreAPI::getRequestParam('overlayToken') ) {
             // auth by a scoped, short-lived overlay token.
             //
             // Checked BEFORE the apiKey branch so that a request carrying both
@@ -135,19 +147,19 @@ class Auth extends \OWA\Core\Base {
             $this->setAuthMethod( 'overlay_token');
             $ret = $this->authByOverlayToken( \OWA\Core\CoreAPI::getRequestParam('overlayToken') );
             \OWA\Core\CoreAPI::debug('User authenticated via overlay token.');
-        } elseif ( $appPassword = $this->appPasswordCredential() ) {
+        } elseif ( $accepts('app_password') && ( $appPassword = $this->appPasswordCredential() ) ) {
             // An application password in the Authorization header. Before the
             // apiKey and the cookies, and a failure here does not fall through
             // to either: the request named a credential and it did not hold.
             $this->setAuthMethod( 'app_password' );
             $ret = $this->authByAppPassword( $appPassword['token'], $appPassword['user_id'] );
-        } elseif ( $apiKey ) {
+        } elseif ( $accepts('api_key') && $apiKey ) {
             // auth user by api key
             $this->setAuthMethod( 'api_key');
             $ret = $this->authByApiKey( $apiKey );
             \OWA\Core\CoreAPI::debug('User authenticated via api key.');
     
-        } elseif (\OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')) {
+        } elseif ($accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')) {
             // auth user by cookies
             $this->setAuthMethod( 'cookies');
             $ret = $this->authByCookies(\OWA\Core\CoreAPI::getStateParam('u'), \OWA\Core\CoreAPI::getStateParam('p'));

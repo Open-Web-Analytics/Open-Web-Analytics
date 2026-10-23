@@ -518,7 +518,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.myProfile',                 'OWA\\Module\\Base\\Controller\\MyProfile',                'Controller/MyProfile.php' );
         $this->registerAction( 'base.myProfileSave',             'OWA\\Module\\Base\\Controller\\MyProfileSave',            'Controller/MyProfileSave.php' );
         $this->registerAction( 'base.myAppPasswords',            'OWA\\Module\\Base\\Controller\\MyAppPasswords',           'Controller/MyAppPasswords.php' );
-        $this->registerAction( 'base.appPasswordCreateRest',      'OWA\\Module\\Base\\Controller\\AppPasswordCreateRest',   'Controller/AppPasswordCreateRest.php' );
+        $this->registerAction( 'base.myAppPasswordCreateAjax',   'OWA\\Module\\Base\\Controller\\MyAppPasswordCreateAjax',  'Controller/MyAppPasswordCreateAjax.php' );
         $this->registerAction( 'base.myAppPasswordRevoke',       'OWA\\Module\\Base\\Controller\\MyAppPasswordRevoke',      'Controller/MyAppPasswordRevoke.php' );
         $this->registerAction( 'base.userAppPasswordRevoke',     'OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke',    'Controller/UserAppPasswordRevoke.php' );
         $this->registerAction( 'base.usersResetPassword',            'OWA\\Module\\Base\\Controller\\UsersResetPassword',           'Controller/UsersResetPassword.php' );
@@ -783,7 +783,6 @@ class Module extends \OWA\Core\Module {
 		$this->registerRestApiRoute( 'v1', 'realtime', 'GET', 'OWA\\Module\\Base\\Controller\\RealtimeRest', 'Controller/RealtimeRest.php' );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'POST', 'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest', 'Controller/NotificationMarkReadRest.php', [ 'params_order' => ['notificationId'] ] );
 		$this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', 'Controller/NotificationDismissRest.php', [ 'params_order' => ['notificationId'] ] );
-		$this->registerRestApiRoute( 'v1', 'apppasswords', 'POST', 'OWA\\Module\\Base\\Controller\\AppPasswordCreateRest', 'Controller/AppPasswordCreateRest.php' );
 		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', 'Controller/ReportsRest.php', [ 'params_order' => ['report_name'] ] );
 		$this->registerRestApiRoute( 'v1', 'retentionPreview', 'GET', 'OWA\\Module\\Base\\Controller\\RetentionPreviewRest', 'Controller/RetentionPreviewRest.php' );
     }

@@ -69,7 +69,19 @@ test.describe('application password screens @selfhost-only', () => {
         await expect(dialog).toBeVisible();
         await dialog.locator('input[name="name"]').fill('e2e screen');
         await dialog.locator('select[name="scope"]').selectOption('full');
-        await page.click('.owa_appPasswordCreate');
+        const [response] = await Promise.all([
+            page.waitForResponse((r) => r.url().includes('base.myAppPasswordCreateAjax')),
+            page.click('.owa_appPasswordCreate'),
+        ]);
+
+        // An internal endpoint: JSON, not sniffable, not cacheable, same origin only.
+        expect(response.status()).toBe(201);
+        expect(response.request().method()).toBe('POST');
+        const headers = response.headers();
+        expect(headers['content-type']).toContain('application/json');
+        expect(headers['x-content-type-options']).toBe('nosniff');
+        expect(headers['cache-control']).toContain('no-store');
+        expect(headers['access-control-allow-origin']).toBeUndefined();
 
         // The token is in the dialog, and the page never left the list.
         const tokenField = dialog.locator('.owa_appPasswordToken');
