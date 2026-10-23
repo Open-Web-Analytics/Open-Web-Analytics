@@ -453,8 +453,26 @@ function configuredReportIds() {
     return ids.sort();
 }
 
+/**
+ * The orange in the logo, as getComputedStyle() reports it. The UI's accent
+ * (--owa-accent) must be this colour, so the specs read it from the SVG rather
+ * than repeating a value that can drift from it.
+ */
+function logoOrange() {
+    const fs = require('fs');
+    const path = require('path');
+
+    const svg = fs.readFileSync(path.join(__dirname, '..', '..', 'modules', 'Base', 'i', 'owa-logo.svg'), 'utf8');
+    const hex = [...new Set(svg.match(/#[0-9a-f]{6}\b/gi).map((h) => h.toLowerCase()))]
+        .find((h) => parseInt(h.slice(1, 3), 16) > 200 && parseInt(h.slice(5, 7), 16) < 100);
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
 module.exports = {
     FIXTURE,
+    logoOrange,
     login,
     loginAs,
     adminLogin,
