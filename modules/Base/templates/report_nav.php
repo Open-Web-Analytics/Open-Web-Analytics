@@ -11,15 +11,17 @@
                     // Every report answers to do=base.report, so a link is only
                     // "current" when its reportId matches too -- comparing the
                     // action alone now highlights every report at once.
-                    $owa_current = $view->navLinkIsCurrent( $l, $view->params );
-
-                    if ( ! $owa_current && array_key_exists( 'subgroup', $l ) ) {
+                    //
+                    // As in the settings nav, only the screen you are on is
+                    // marked (is-current). A group holding it is has-current,
+                    // which opens the group (report.php) and draws nothing.
+                    if ( $view->navLinkIsCurrent( $l, $view->params ) ) {
+                        echo ' is-current';
+                    } elseif ( array_key_exists( 'subgroup', $l ) ) {
                         foreach ( $l['subgroup'] as $owa_sub ) {
-                            if ( $view->navLinkIsCurrent( $owa_sub, $view->params ) ) { $owa_current = true; break; }
+                            if ( $view->navLinkIsCurrent( $owa_sub, $view->params ) ) { echo ' has-current'; break; }
                         }
                     }
-
-                    if ( $owa_current ) { echo ' owa_current'; }
                     ?>">
               
                     <?php
@@ -62,7 +64,7 @@
                             ?>
                             <div class="owa_admin_nav_subgroup_item<?php
                                 if ( $view->navLinkIsCurrent( $sgl, $view->params ) ) {
-                                    echo ' owa_current';
+                                    echo ' is-current';
                                 }
                             ?>">
                                 <a href="<?php echo $view->makeLink($view->navLinkParams($sgl), true);?>"><?php echo $sgl['anchortext'];?></a>

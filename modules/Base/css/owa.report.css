@@ -293,6 +293,36 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa_admin_nav_topmenu_item.is-open .owa_admin_nav_topmenu_toggle i { transform: rotate(180deg); }
 .owa_admin_nav_topmenu_toggle:hover { color: #333333; }
 
+/* Rest, hover and current as in the settings nav (.owa_hierarchyNav): grey
+   links, darker on hover, and the screen you are on marked by the accent rule
+   and a bold label. The transparent rule keeps the label from shifting by the
+   3px when it becomes current. */
+.owa_admin_nav_topmenu_item,
+.owa_admin_nav_subgroup_item {
+    border-left: 3px solid transparent;
+}
+
+.owa_admin_nav_topmenu_item a,
+.owa_admin_nav_subgroup_item a {
+    color: #666666;
+}
+
+.owa_admin_nav_topmenu_item:hover a,
+.owa_admin_nav_subgroup_item:hover a {
+    color: #505050;
+}
+
+.owa_admin_nav_topmenu_item.is-current,
+.owa_admin_nav_subgroup_item.is-current {
+    border-left-color: var(--owa-accent);
+}
+
+.owa_admin_nav_topmenu_item.is-current a,
+.owa_admin_nav_subgroup_item.is-current a {
+    color: #505050;
+    font-weight: bold;
+}
+
 .owa_piechart {
 	
 	width:250px;

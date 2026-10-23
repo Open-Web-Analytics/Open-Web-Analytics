@@ -13,7 +13,7 @@
  * From there the two symptoms follow. Nothing highlighted, because nothing
  * matched. And the nav rendered collapsed on every page load, because
  * .owa_admin_nav_subgroup is display:none in CSS and the only thing that opens
- * a group is the script looking for .owa_current.
+ * a group is the script looking for a current item.
  *
  * It worked before the reports-as-config conversion for the same reason it
  * broke after: a link used to be a single action name, so comparing the action
@@ -24,7 +24,7 @@
  * actually open, since that is CSS plus a script.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, login } = require('./fixtures');
+const { FIXTURE, login, logout, adminLogin, logoOrange } = require('./fixtures');
 
 /** A report that lives inside a nav subgroup, and its group. */
 const REPORT = { id: 'pages', label: 'Pages', group: 'Content' };
@@ -82,7 +82,7 @@ test.describe('report navigation', () => {
     test('the open group says so, with a chevron right of its name', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        const item = page.locator('.owa_admin_nav_topmenu_item.owa_current');
+        const item = page.locator('.owa_admin_nav_topmenu_item.has-current');
         const toggle = item.locator('.owa_admin_nav_topmenu_toggle');
 
         await expect(item).toHaveClass(/is-open/);
@@ -99,7 +99,7 @@ test.describe('report navigation', () => {
     test('the current report is marked, and it is the right one', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        const current = page.locator('.owa_admin_nav_subgroup_item.owa_current');
+        const current = page.locator('.owa_admin_nav_subgroup_item.is-current');
 
         await expect(current).toHaveCount(1);
         await expect(current).toContainText(REPORT.label);
@@ -111,12 +111,12 @@ test.describe('report navigation', () => {
      */
     test('the mark follows the report being viewed', async ({ page }) => {
         await openReport(page, REPORT.id);
-        await expect(page.locator('.owa_admin_nav_subgroup_item.owa_current'))
+        await expect(page.locator('.owa_admin_nav_subgroup_item.is-current'))
             .toContainText(REPORT.label);
 
         await openReport(page, SIBLING.id);
 
-        const current = page.locator('.owa_admin_nav_subgroup_item.owa_current');
+        const current = page.locator('.owa_admin_nav_subgroup_item.is-current');
 
         await expect(current).toHaveCount(1);
         await expect(current).toContainText(SIBLING.label);
@@ -130,7 +130,65 @@ test.describe('report navigation', () => {
     test('only one group is current at a time', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        await expect(page.locator('.owa_admin_nav_topmenu_item.owa_current')).toHaveCount(1);
+        await expect(page.locator('.owa_admin_nav_topmenu_item.has-current')).toHaveCount(1);
+    });
+
+    /**
+     * The current report is marked as the settings nav marks the current
+     * screen: the accent rule on its left and a bold label. Measured against
+     * the settings nav itself, so the two cannot drift apart.
+     */
+    test('the current report is marked the way the settings nav marks its screen', async ({ page }) => {
+        const mark = (el) => {
+            const box = getComputedStyle(el);
+            const link = getComputedStyle(el.querySelector('a'));
+            return {
+                rule: `${box.borderLeftWidth} ${box.borderLeftStyle} ${box.borderLeftColor}`,
+                weight: link.fontWeight,
+                colour: link.color,
+            };
+        };
+
+        // Settings screens are the admin's.
+        await logout(page);
+        await adminLogin(page);
+
+        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
+        const settings = await page.locator('.owa_hierarchyNav li.is-current').evaluate(mark);
+
+        await openReport(page, REPORT.id);
+        const report = await page.locator('.owa_admin_nav_subgroup_item.is-current').evaluate(mark);
+
+        expect(settings.rule).toBe(`3px solid ${logoOrange()}`);
+        expect(report).toEqual(settings);
+    });
+
+    /**
+     * Only the report is marked. The group holding it is open, with no rule of
+     * its own: the old grey fill was drawn on both, so two lines read as current.
+     */
+    test('only the line for the report you are on carries the mark', async ({ page }) => {
+        await openReport(page, REPORT.id);
+
+        const ruled = await page.locator('#owa_reportNavPanel *').evaluateAll((els, accent) =>
+            els.filter((el) => getComputedStyle(el).borderLeftColor === accent
+                && getComputedStyle(el).borderLeftWidth !== '0px').map((el) => el.textContent.trim()),
+        logoOrange());
+
+        expect(ruled).toEqual([REPORT.label]);
+        await expect(page.locator('#owa_reportNavPanel .is-current')).toHaveCount(1);
+    });
+
+    /** A group's own report (Content's overview) marks the group's line, and opens it. */
+    test("a group's own report marks the group", async ({ page }) => {
+        await openReport(page, 'content');
+
+        const current = page.locator('#owa_reportNavPanel .is-current');
+
+        await expect(current).toHaveCount(1);
+        await expect(current).toHaveClass(/owa_admin_nav_topmenu_item/);
+        await expect(current).toContainText(REPORT.group);
+        await expect(groupPanel(page, REPORT.group)).toBeVisible();
     });
 
     /** The toggle still works by hand, for a group you are not in. */
