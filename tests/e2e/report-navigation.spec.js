@@ -252,6 +252,38 @@ test.describe('report navigation', () => {
         }
     });
 
+    /**
+     * No group's label wraps, even in bold, and even beside a wide page.
+     * "Custom Reports" wrapped on its roster: the column is a table cell, and
+     * a roster of long names squeezed it from 200px to its min-content width,
+     * while the label was bold for being current. Every line is measured as
+     * current, with an unbreakable line widening the cell beside the column.
+     */
+    test('no group label wraps, even when current and beside a wide page', async ({ page }) => {
+        await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
+
+        const result = await page.evaluate(() => {
+            const column = document.querySelector('.owa_reportLeftNavColumn');
+            const wide = document.createElement('div');
+            wide.style.whiteSpace = 'nowrap';
+            wide.textContent = 'A Report With A Long Name '.repeat(80);
+            column.nextElementSibling.appendChild(wide);
+
+            const wrapped = [...document.querySelectorAll('.owa_admin_nav_topmenu_item')]
+                .map((item) => {
+                    item.classList.add('is-current');
+                    const label = item.querySelector('a');
+                    return label.getClientRects().length > 1 ? label.textContent.trim() : null;
+                })
+                .filter(Boolean);
+
+            return { width: Math.round(column.getBoundingClientRect().width), wrapped };
+        });
+
+        expect(result.width).toBeGreaterThanOrEqual(200);
+        expect(result.wrapped).toEqual([]);
+    });
+
     /** The toggle still works by hand, for a group you are not in. */
     test('a closed group can still be opened by clicking it', async ({ page }) => {
         await openReport(page, REPORT.id);
