@@ -6,6 +6,16 @@ import { OWATracker } from './Tracker.js';
 class CommandQueue {
 
     /**
+     * Commands addressed to OWA itself rather than to a tracker -- the 1.x
+     * form, ['OWA.addFilter', ...]. Filters and actions are page-wide, so the
+     * tracker's addFilter and addAction land in the same place.
+     */
+    static get OWA_COMMANDS() {
+
+        return [ 'addFilter', 'addAction' ];
+    }
+
+    /**
      * Split a queued command into the object it targets and the method to call.
      *
      * 'trackPageView'        -> OWATracker.trackPageView   (the default tracker)
@@ -111,7 +121,23 @@ class CommandQueue {
 
         // check to see if the command queue has been paused
         // used to stop tracking
-        if ( ! this.is_paused && method !== "unpause-owa") {
+        if ( ! this.is_paused && obj_name === 'OWA' ) {
+
+            /*
+             * OWA is not a tracker's name. Left to the code below, it made a
+             * second tracker called OWA and then skipped the command as one
+             * that tracker did not have.
+             */
+            if ( CommandQueue.OWA_COMMANDS.includes( method ) ) {
+
+                OWA[ method ].apply( OWA, args );
+
+            } else {
+
+                OWA.debug( 'Skipping unknown command OWA.%s', method );
+            }
+
+        } else if ( ! this.is_paused && method !== "unpause-owa") {
 
             // is OWATracker created?
             if ( typeof window[obj_name] == "undefined" ) {
