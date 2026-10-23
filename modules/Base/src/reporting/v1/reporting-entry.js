@@ -85,6 +85,8 @@ import './owa.kpibox.js';
 // The confirmation an irreversible action gets. Imported after owa.js like the
 // rest; it augments OWA and delegates one document-level handler.
 import './owa.confirm.js';
+// The Add dialog on the Application Passwords screen.
+import './owa.appPasswords.js';
 import './owa.settingsoverride.js';
 // The confirmation before a Data Retention save, worded by the server.
 import './owa.retention.js';

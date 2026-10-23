@@ -63,33 +63,55 @@ test.describe('application password screens @selfhost-only', () => {
         await page.goto('?owa_do=base.myAppPasswords', { waitUntil: 'networkidle' });
         await expect(page.locator('.owa_hierarchyNav a', { hasText: 'Application Passwords' })).toBeVisible();
 
-        await page.fill('input[name="name"]', 'e2e screen');
-        await page.selectOption('select[name="scope"]', 'full');
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.click('input[value="Add Application Password"]'),
+        const dialog = page.locator('#owa_appPasswordDialog');
+
+        await page.click('.owa_appPasswordAdd');
+        await expect(dialog).toBeVisible();
+        await dialog.locator('input[name="name"]').fill('e2e screen');
+        await dialog.locator('select[name="scope"]').selectOption('full');
+        const [response] = await Promise.all([
+            page.waitForResponse((r) => r.url().includes('base.myAppPasswordCreateAjax')),
+            page.click('.owa_appPasswordCreate'),
         ]);
 
-        const token = await page.locator('.owa_appPasswordToken').inputValue();
-        expect(token).toMatch(/^[0-9A-Za-z]{44}$/);
+        // An internal endpoint: JSON, not sniffable, not cacheable, same origin only.
+        expect(response.status()).toBe(201);
+        expect(response.request().method()).toBe('POST');
+        const headers = response.headers();
+        expect(headers['content-type']).toContain('application/json');
+        expect(headers['x-content-type-options']).toBe('nosniff');
+        expect(headers['cache-control']).toContain('no-store');
+        expect(headers['access-control-allow-origin']).toBeUndefined();
 
+        // The token is in the dialog, and the page never left the list.
+        const tokenField = dialog.locator('.owa_appPasswordToken');
+        await expect(tokenField).toBeVisible();
+        const token = await tokenField.inputValue();
+        expect(token).toMatch(/^[0-9A-Za-z]{44}$/);
+        expect(page.url()).toContain('do=base.myAppPasswords');
+
+        // Copy puts the token on the clipboard and says so.
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        const copy = dialog.locator('.owa-copyButton');
+        await copy.click();
+        await expect(copy).toHaveText('Copied');
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(token);
+
+        // The row is in the roster as soon as the answer is, behind the dialog.
         const row = page.locator(`tr[data-lookup-id="${token.slice(0, 12)}"]`);
         await expect(row).toContainText('e2e screen');
         await expect(row).toContainText('Read and write');
 
-        expect(await status(request, token)).toBeLessThan(300);
-
-        // The form redirected, so a reload is a GET: no second password, and
-        // the token is not shown again.
-        expect(page.url()).toContain('do=base.myAppPasswords');
-        await page.reload({ waitUntil: 'networkidle' });
-        await expect(page.locator('.owa_appPasswordToken')).toHaveCount(0);
-        await expect(page.locator('tr[data-lookup-id]', { hasText: 'e2e screen' })).toHaveCount(1);
+        await page.click('.owa_appPasswordDone');
+        await expect(dialog).toBeHidden();
+        await expect(row).toHaveCount(1);
         expect(await page.content()).not.toContain(token.slice(12));
 
-        // Nor does navigating back to the list.
-        await page.goto('?owa_do=base.myAppPasswords', { waitUntil: 'networkidle' });
-        await expect(page.locator('.owa_appPasswordToken')).toHaveCount(0);
+        expect(await status(request, token)).toBeLessThan(300);
+
+        // A reload is the GET it always was: one password, and no token.
+        await page.reload({ waitUntil: 'networkidle' });
+        await expect(page.locator('tr[data-lookup-id]', { hasText: 'e2e screen' })).toHaveCount(1);
         expect(await page.content()).not.toContain(token.slice(12));
         await expect(row).toContainText(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
 
@@ -98,6 +120,35 @@ test.describe('application password screens @selfhost-only', () => {
         await expect(page.getByText('Application password revoked.')).toBeVisible();
         await expect(row).toHaveCount(0);
         expect(await status(request, token)).toBe(401);
+    });
+
+    test('the dialog asks for a name, and Escape closes it', async ({ page }) => {
+        await loginAs(page, fx.user_id, fx.password);
+        await page.goto('?owa_do=base.myAppPasswords', { waitUntil: 'networkidle' });
+
+        const dialog = page.locator('#owa_appPasswordDialog');
+
+        await page.click('.owa_appPasswordAdd');
+        await page.click('.owa_appPasswordCreate');
+        await expect(dialog.locator('.owa_appPasswordError')).toHaveText('Give the application password a name.');
+        await expect(dialog.locator('.owa_appPasswordToken')).toBeHidden();
+
+        await dialog.locator('input[name="name"]').fill('e2e escape');
+        await dialog.locator('input[name="name"]').press('Enter');
+        await expect(dialog.locator('.owa_appPasswordToken')).toBeVisible();
+        const token = await dialog.locator('.owa_appPasswordToken').inputValue();
+
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+
+        const row = page.locator(`tr[data-lookup-id="${token.slice(0, 12)}"]`);
+        await expect(row).toContainText('e2e escape');
+        await expect(row).toContainText('Read only');
+
+        // The added row revokes like a drawn one: its form carries the page's nonce.
+        await confirmAndWait(page, row.locator('.owa_appPasswordRevoke'));
+        await expect(page.getByText('Application password revoked.')).toBeVisible();
+        await expect(row).toHaveCount(0);
     });
 
     test('an admin revokes another user\'s password from their user screen', async ({ page, request }) => {

@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/bootstrap_owa.php';
 require_once __DIR__ . '/RestControllerTestCase.php';
+require_once __DIR__ . '/AjaxRequestTrait.php';
 
 use OWA\Module\Base\Classes\AppPasswords;
 
@@ -15,6 +16,8 @@ use OWA\Module\Base\Classes\AppPasswords;
  */
 final class AppPasswordScreensTest extends RestControllerTestCase
 {
+    use AjaxRequestTrait;
+
     /** @var string[] users whose passwords to delete */
     private $users = array();
 
@@ -23,6 +26,8 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         foreach ($this->users as $user_id) {
             AppPasswords::revokeAllForUser($user_id);
         }
+
+        $this->signedInBy(null);
 
         parent::tearDown();
     }
@@ -87,108 +92,82 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $this->assertArrayNotHasKey('secret_hash', $data['app_passwords'][0]);
     }
 
-    /**
-     * Creating redirects; the list shows the token once.
-     *
-     * Rendering the token in the POST's own response meant a reload re-sent
-     * the POST and made a second password. The token crosses the redirect in
-     * a sealed cookie, not the URL, and the first GET expires it.
-     */
-    public function testCreatingRedirectsAndTheListShowsTheTokenOnce(): void
+    /** The Add dialog's request, from a signed-in browser session. */
+    private function create(array $params, bool $nonce = true): array
+    {
+        $this->signedInBy('cookies');
+
+        $params += array('do' => 'base.myAppPasswordCreateAjax');
+
+        if ($nonce) {
+            $params['nonce'] = self::nonceFor('base.myAppPasswordCreateAjax');
+        }
+
+        return $this->ajax(new \OWA\Module\Base\Controller\MyAppPasswordCreateAjax($params));
+    }
+
+    /** The answer carries the token; the hash never leaves the server. */
+    public function testCreatingAnswersWithTheToken(): void
     {
         $me = $this->signIn();
 
-        $create = $this->capturing(\OWA\Module\Base\Controller\MyAppPasswordCreate::class,
-            array('name' => 'Export script', 'scope' => 'read'));
-        $create->action();
-        $data = $this->data($create);
+        $r = $this->create(array('name' => 'Export script', 'scope' => 'read'));
+        $made = $r['json']['data'];
 
-        $this->assertSame('redirect', $data['view_method']);
-        $this->assertSame('base.myAppPasswords', $data['do']);
-        $this->assertCount(1, $create->cookies);
-        $this->assertGreaterThan(time(), $create->cookies[0][1]);
-
-        $made = AppPasswords::openReveal($create->cookies[0][0], $me['user_id']);
+        $this->assertSame(201, $r['status']);
+        $this->assertNull($r['json']['error']);
         $this->assertTrue(AppPasswords::looksLikeToken($made['token']));
-        $this->assertStringNotContainsString(substr($made['token'], AppPasswords::LOOKUP_LENGTH),
-            json_encode($data), 'The token rode in the redirect URL.');
-
-        $name = \OWA\Core\CoreAPI::getSetting('base', 'ns') . 'app_password_reveal';
-        $_COOKIE[$name] = $create->cookies[0][0];
-
-        $list = $this->capturing(\OWA\Module\Base\Controller\MyAppPasswords::class);
-        $list->action();
-        $shown = $this->data($list);
-
-        $this->assertSame($made['token'], $shown['new_app_password']['token']);
-        $this->assertSame(array('Export script'), array_column($shown['app_passwords'], 'name'),
-            'The list under the token already includes it.');
-        $this->assertLessThan(time(), $list->cookies[0][1], 'The first GET did not expire the cookie.');
+        $this->assertSame('Export script', $made['name']);
+        $this->assertSame('Read only', $made['scope_label']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $made['created_display']);
+        $this->assertSame(substr($made['token'], 0, 12), $made['lookup_id']);
+        $this->assertArrayNotHasKey('secret_hash', $made);
 
         $row = AppPasswords::verify($made['token']);
         $this->assertSame($me['user_id'], $row['user_id']);
         $this->assertSame('read', $row['scope']);
-
-        // A reload: no token, and still one password.
-        $again = $this->run_(\OWA\Module\Base\Controller\MyAppPasswords::class);
-        $this->assertNull($again['new_app_password']);
-        $this->assertCount(1, $again['app_passwords']);
     }
 
-    /** A sealed token is shown only to its user, and not once revoked. */
-    public function testTheListShowsNoTokenItShouldNot(): void
+    /**
+     * A browser session only: a leaked application password or API key cannot
+     * mint a successor that outlives revoking it. The rule is Ajax's; this
+     * checks the endpoint inherits it.
+     */
+    public function testOnlyABrowserSessionCanCreate(): void
     {
-        $me    = $this->signIn();
-        $other = $this->other();
-        $name  = \OWA\Core\CoreAPI::getSetting('base', 'ns') . 'app_password_reveal';
+        $me = $this->signIn();
 
-        $theirs = AppPasswords::create($other['user_id'], 'Theirs', AppPasswords::SCOPE_FULL);
-        $_COOKIE[$name] = AppPasswords::sealReveal($theirs, $other['user_id']);
-        $this->assertNull($this->run_(\OWA\Module\Base\Controller\MyAppPasswords::class)['new_app_password']);
+        foreach (array('app_password', 'api_key') as $method) {
 
-        $mine = AppPasswords::create($me['user_id'], 'Mine', AppPasswords::SCOPE_FULL);
-        AppPasswords::revoke($mine['lookup_id'], $me['user_id']);
-        $_COOKIE[$name] = AppPasswords::sealReveal($mine, $me['user_id']);
-        $this->assertNull($this->run_(\OWA\Module\Base\Controller\MyAppPasswords::class)['new_app_password']);
+            $this->signedInBy($method);
+            $c = new \OWA\Module\Base\Controller\MyAppPasswordCreateAjax(array(
+                'do' => 'base.myAppPasswordCreateAjax', 'name' => 'Successor', 'scope' => 'full',
+                'nonce' => self::nonceFor('base.myAppPasswordCreateAjax')));
 
-        $this->assertArrayNotHasKey($name, $_COOKIE);
-    }
-
-    /** The create or list controller, with its cookie writes recorded instead of sent. */
-    private function capturing(string $class, array $params = array())
-    {
-        if ($class === \OWA\Module\Base\Controller\MyAppPasswordCreate::class) {
-
-            return new class($params) extends \OWA\Module\Base\Controller\MyAppPasswordCreate {
-                public $cookies = array();
-
-                protected function writeRevealCookie($value, $expires)
-                {
-                    $this->cookies[] = array($value, $expires);
-                }
-            };
+            $this->assertSame(401, $this->ajax($c)['status'], $method);
         }
 
-        return new class($params) extends \OWA\Module\Base\Controller\MyAppPasswords {
-            public $cookies = array();
+        $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
+    }
 
-            protected function writeRevealCookie($value, $expires)
-            {
-                $this->cookies[] = array($value, $expires);
-            }
-        };
+    public function testWithoutTheNonceNothingIsCreated(): void
+    {
+        $me = $this->signIn();
+
+        $r = $this->create(array('name' => 'Export script', 'scope' => 'read'), false);
+
+        $this->assertSame(403, $r['status']);
+        $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
     }
 
     public function testANameIsRequired(): void
     {
         $me = $this->signIn();
 
-        $data = $this->run_(\OWA\Module\Base\Controller\MyAppPasswordCreate::class,
-            array('name' => '   ', 'scope' => 'read'));
+        $r = $this->create(array('name' => '   ', 'scope' => 'read'));
 
-        $this->assertSame('redirect', $data['view_method']);
-        $this->assertSame('base.myAppPasswords', $data['do']);
-        $this->assertSame(3215, $data['error_code']);
+        $this->assertSame(422, $r['status']);
+        $this->assertSame('Give the application password a name.', $r['json']['error']);
         $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
     }
 
@@ -196,11 +175,25 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         $me = $this->signIn();
 
-        $data = $this->run_(\OWA\Module\Base\Controller\MyAppPasswordCreate::class,
-            array('name' => 'Admin script', 'scope' => 'admin'));
+        $r = $this->create(array('name' => 'Admin script', 'scope' => 'admin'));
 
-        $this->assertSame(3216, $data['error_code']);
+        $this->assertSame(422, $r['status']);
+        $this->assertSame('The application password could not be created.', $r['json']['error']);
         $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
+    }
+
+    /** Not a REST route: an application password cannot reach it at all. */
+    public function testItIsNotARestRoute(): void
+    {
+        foreach ((array) \OWA\Core\CoreAPI::serviceSingleton()->getAllRestApiRoutes() as $versions) {
+            foreach ((array) $versions as $names) {
+                foreach ((array) $names as $methods) {
+                    foreach ((array) $methods as $meta) {
+                        $this->assertStringNotContainsString('AppPasswordCreate', (string) ($meta['class_name'] ?? ''));
+                    }
+                }
+            }
+        }
     }
 
     public function testRevokingYourOwn(): void
@@ -272,7 +265,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         return array(
             'the list'     => array(\OWA\Module\Base\Controller\MyAppPasswords::class, 'view_site_list', false),
-            'create'       => array(\OWA\Module\Base\Controller\MyAppPasswordCreate::class, 'view_site_list', true),
+            'create'       => array(\OWA\Module\Base\Controller\MyAppPasswordCreateAjax::class, 'view_site_list', true),
             'revoke own'   => array(\OWA\Module\Base\Controller\MyAppPasswordRevoke::class, 'view_site_list', true),
             'admin revoke' => array(\OWA\Module\Base\Controller\UserAppPasswordRevoke::class, 'edit_users', true),
         );
@@ -282,7 +275,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         $actions = (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap('actions');
 
-        foreach (array('base.myAppPasswords', 'base.myAppPasswordCreate',
+        foreach (array('base.myAppPasswords', 'base.myAppPasswordCreateAjax',
                        'base.myAppPasswordRevoke', 'base.userAppPasswordRevoke') as $action) {
 
             $this->assertArrayHasKey($action, $actions);
@@ -317,34 +310,57 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         return array('my screen' => array('my_app_passwords.php'));
     }
 
-    public function testTheScreenDrawsTheNewTokenOnce(): void
+    /**
+     * The screen posts nothing to itself. Add opens the dialog, whose form is
+     * sent to base.myAppPasswordCreateAjax with its nonce; a new row is cloned
+     * from the template, so it gets the same revoke form as a drawn one.
+     */
+    public function testTheScreenAddsThroughTheDialog(): void
     {
         $vars = array(
-            'app_passwords'    => array(array('lookup_id' => 'abcdefghijkl', 'name' => 'Export script',
+            'app_passwords' => array(array('lookup_id' => 'abcdefghijkl', 'name' => 'Export script',
                 'scope' => 'read', 'created_at' => time(), 'last_used_at' => null, 'last_used_ip' => null)),
-            'scopes'           => AppPasswords::scopes(),
-            'enabled'          => true,
-            'require_https'    => true,
-            'api_url'          => 'https://owa.example.com/api/index.php',
-            'new_app_password' => array('name' => 'Export script', 'token' => str_repeat('T', 44)),
-            'siteId'           => '',
+            'scopes'        => AppPasswords::scopes(),
+            'enabled'       => true,
+            'require_https' => true,
+            'api_url'       => 'https://owa.example.com/api/index.php',
+            'siteId'        => '',
         );
 
         $html = $this->render('my_app_passwords.php', $vars);
 
-        $this->assertSame(1, substr_count($html, str_repeat('T', 44)));
-        $this->assertStringContainsString('name="lookup_id" value="abcdefghijkl"', $html);
+        // The dialog's form is sent with fetch(); nothing is posted to the screen itself.
+        $this->assertMatchesRegularExpression(
+            '#<form method="post" class="owa_appPasswordForm" novalidate\s+action="[^"]*do=base\.myAppPasswordCreateAjax"#',
+            html_entity_decode($html));
+        $dialog = substr($html, strpos($html, 'id="owa_appPasswordDialog"'));
+        $this->assertStringContainsString('name="nonce"', $dialog);
+        $this->assertStringContainsString('<button type="button" class="owa-button owa_appPasswordAdd">', $html);
+        $this->assertStringContainsString('id="owa_appPasswordDialog"', $html);
+        $this->assertStringContainsString('class="owa_appPasswordToken"', $html);
+
+        $this->assertStringContainsString('name="lookup_id" data-field="lookup_id" value="abcdefghijkl"', $html);
         $this->assertStringContainsString('Never', $html);
 
-        $vars['new_app_password'] = null;
-        $this->assertStringNotContainsString(str_repeat('T', 44), $this->render('my_app_passwords.php', $vars));
+        $template = substr($html, strpos($html, '<template id="owa_appPasswordRowTemplate">'));
+        $template = substr($template, 0, strpos($template, '</template>'));
+        $this->assertStringContainsString('base.myAppPasswordRevoke', $template);
+        $this->assertStringContainsString('name="nonce"', $template);
+        $this->assertStringContainsString('data-field="name"', $template);
+
+        $this->assertMatchesRegularExpression('/<p class="owa_appPasswordsNone" hidden>/', $html);
+
+        $vars['app_passwords'] = array();
+        $empty = $this->render('my_app_passwords.php', $vars);
+        $this->assertMatchesRegularExpression('/<table class="management owa_appPasswords" hidden>/', $empty);
+        $this->assertMatchesRegularExpression('/<p class="owa_appPasswordsNone">/', $empty);
     }
 
     public function testTheScreenSaysWhenTheyAreTurnedOff(): void
     {
         $html = $this->render('my_app_passwords.php', array(
             'app_passwords' => array(), 'scopes' => AppPasswords::scopes(), 'enabled' => false,
-            'require_https' => false, 'api_url' => '', 'new_app_password' => null, 'siteId' => '',
+            'require_https' => false, 'api_url' => '', 'siteId' => '',
         ));
 
         $this->assertStringContainsString('turned off on this', $html);

@@ -518,7 +518,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.myProfile',                 'OWA\\Module\\Base\\Controller\\MyProfile',                'Controller/MyProfile.php' );
         $this->registerAction( 'base.myProfileSave',             'OWA\\Module\\Base\\Controller\\MyProfileSave',            'Controller/MyProfileSave.php' );
         $this->registerAction( 'base.myAppPasswords',            'OWA\\Module\\Base\\Controller\\MyAppPasswords',           'Controller/MyAppPasswords.php' );
-        $this->registerAction( 'base.myAppPasswordCreate',       'OWA\\Module\\Base\\Controller\\MyAppPasswordCreate',      'Controller/MyAppPasswordCreate.php' );
+        $this->registerAction( 'base.myAppPasswordCreateAjax',   'OWA\\Module\\Base\\Controller\\MyAppPasswordCreateAjax',  'Controller/MyAppPasswordCreateAjax.php' );
         $this->registerAction( 'base.myAppPasswordRevoke',       'OWA\\Module\\Base\\Controller\\MyAppPasswordRevoke',      'Controller/MyAppPasswordRevoke.php' );
         $this->registerAction( 'base.userAppPasswordRevoke',     'OWA\\Module\\Base\\Controller\\UserAppPasswordRevoke',    'Controller/UserAppPasswordRevoke.php' );
         $this->registerAction( 'base.usersResetPassword',            'OWA\\Module\\Base\\Controller\\UsersResetPassword',           'Controller/UsersResetPassword.php' );

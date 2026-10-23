@@ -105,6 +105,14 @@ class Controller extends \OWA\Core\Base {
     var $is_nonce_required = false;
 
     /**
+     * The authentication methods this controller accepts, or null for any.
+     * See setAuthMethods().
+     *
+     * @var string[]|null
+     */
+    protected $auth_methods = null;
+
+    /**
      * Constructor
      *
      * @param array $params
@@ -398,11 +406,16 @@ class Controller extends \OWA\Core\Base {
             /* PERFORM AUTHENTICATION */
             $auth = \OWA\Core\Auth::get_instance();
             if (!\OWA\Core\CoreAPI::isCurrentUserAuthenticated()) {
-                $status = $auth->authenticateUser();
+                $status = $auth->authenticateUser( $this->auth_methods );
                 if ($status['auth_status'] != true) {
                     $this->notAuthenticatedAction();
                     return false;
                 }
+            } elseif ( $this->auth_methods !== null
+                       && ! in_array( $auth->getAuthMethod(), $this->auth_methods, true ) ) {
+                // Signed in earlier in this request by a method this controller does not accept.
+                $this->notAuthenticatedAction();
+                return false;
             }
 
             $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
@@ -891,6 +904,17 @@ class Controller extends \OWA\Core\Base {
     function setNonceRequired() {
 
         $this->is_nonce_required = true;
+    }
+
+    /**
+     * Accept only these authentication methods. Auth::authenticateUser() does
+     * not try the others, so their credentials are never read.
+     *
+     * @param string[] $methods login_form, overlay_token, app_password, api_key, cookies
+     */
+    function setAuthMethods( array $methods ) {
+
+        $this->auth_methods = array_values( $methods );
     }
 
     function getSetting($module, $name) {

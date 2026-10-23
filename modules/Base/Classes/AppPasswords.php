@@ -47,12 +47,6 @@ class AppPasswords {
     /** Separates this HMAC from any other made with the same key. */
     const HMAC_CONTEXT = 'owa-app-password:';
 
-    /** Separates the key that seals a new token for its one showing. */
-    const REVEAL_CONTEXT = 'owa-app-password-reveal';
-
-    /** A sealed new token can be opened for this long, in seconds. */
-    const REVEAL_TTL = 300;
-
     /** Columns safe to hand back: everything but the hash. */
     const PUBLIC_COLUMNS = 'lookup_id, user_id, name, scope, created_at, last_used_at, last_used_ip';
 
@@ -241,79 +235,6 @@ class AppPasswords {
             'UPDATE %s SET last_used_at = ?, last_used_ip = ? WHERE lookup_id = ?'
           . ' AND (last_used_at IS NULL OR last_used_at <= ?)', self::table() ),
             array( $now, substr( (string) $ip, 0, 45 ), (string) $lookup_id, $now - self::USE_THROTTLE ) );
-    }
-
-    /**
-     * A new password, encrypted for the one page that shows it.
-     *
-     * Creating one redirects to the list, so the token crosses a request. It
-     * travels encrypted and bound to its user, in a cookie rather than the URL,
-     * which would put it in the browser history and the access logs.
-     *
-     * @param  array  $made as create() returns it
-     * @param  string $user_id
-     * @return string
-     */
-    public static function sealReveal( array $made, $user_id ) {
-
-        $nonce = random_bytes( SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES );
-        $plain = json_encode( array( 'made' => $made, 'sealed_at' => time() ) );
-
-        return sodium_bin2base64(
-            $nonce . sodium_crypto_aead_xchacha20poly1305_ietf_encrypt(
-                $plain, (string) $user_id, $nonce, self::revealKey() ),
-            SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING );
-    }
-
-    /**
-     * The password sealReveal() sealed, or null when the value is not one
-     * this install sealed for this user within REVEAL_TTL.
-     *
-     * @param  string $sealed
-     * @param  string $user_id
-     * @return array|null as create() returns it
-     */
-    public static function openReveal( $sealed, $user_id ) {
-
-        if ( ! self::key() || (string) $user_id === '' ) {
-
-            return null;
-        }
-
-        try {
-
-            $raw = sodium_base642bin( (string) $sealed, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING );
-
-        } catch ( \SodiumException $e ) {
-
-            return null;
-        }
-
-        $n = SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES;
-
-        if ( strlen( $raw ) <= $n ) {
-
-            return null;
-        }
-
-        $plain = sodium_crypto_aead_xchacha20poly1305_ietf_decrypt(
-            substr( $raw, $n ), (string) $user_id, substr( $raw, 0, $n ), self::revealKey() );
-
-        $data = $plain === false ? null : json_decode( $plain, true );
-
-        if ( ! is_array( $data ) || ! is_array( $data['made'] ?? null )
-             || time() - (int) ( $data['sealed_at'] ?? 0 ) > self::REVEAL_TTL ) {
-
-            return null;
-        }
-
-        return $data['made'];
-    }
-
-    /** 32 bytes for the AEAD, derived from the auth key. */
-    private static function revealKey() {
-
-        return hash_hmac( 'sha256', self::REVEAL_CONTEXT, self::key(), true );
     }
 
     /** The table: the entity's, or a test's scratch copy. */

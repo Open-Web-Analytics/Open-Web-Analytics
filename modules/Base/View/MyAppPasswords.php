@@ -17,7 +17,7 @@ class MyAppPasswords extends \OWA\Core\View {
         $this->body->set_template( 'my_app_passwords.php' );
 
         foreach ( array( 'app_passwords', 'scopes', 'enabled', 'require_https', 'api_url',
-                         'new_app_password', 'siteId' ) as $name ) {
+                         'siteId' ) as $name ) {
 
             $this->body->set( $name, $this->get( $name ) );
         }

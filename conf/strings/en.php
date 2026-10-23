@@ -200,6 +200,7 @@ return array(
     'The report definition is not valid JSON: %s' => 'The report definition is not valid JSON: %s',
     'The report metric set' => 'The report metric set',
     'The request names no route.' => 'The request names no route.',
+    'The request was not valid.' => 'The request was not valid.',
     'The scheduler last ran %s. Check that the cron entry still exists and that its user can run cli.php. Details: cli.php cmd=schedule-status' => 'The scheduler last ran %s. Check that the cron entry still exists and that its user can run cli.php. Details: cli.php cmd=schedule-status',
     'The server refused to create the database: %s. Give this user permission to create databases, or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO <this user>; then choose "Use an existing database".' => 'The server refused to create the database: %s. Give this user permission to create databases, or have an administrator run CREATE DATABASE `%s` CHARACTER SET %s; GRANT ALL ON `%s`.* TO <this user>; then choose "Use an existing database".',
     'The site or user does not exist.' => 'The site or user does not exist.',
@@ -216,6 +217,7 @@ return array(
     'This Property has room for %d custom dimensions and already has %d. De-register one first.' => 'This Property has room for %d custom dimensions and already has %d. De-register one first.',
     'This Property has room for %d custom dimensions on this server (usually %d) and already has %d. De-register one first.' => 'This Property has room for %d custom dimensions on this server (usually %d) and already has %d. De-register one first.',
     'This form is no longer valid' => 'This form is no longer valid',
+    'This request must be a POST.' => 'This request must be a POST.',
     'This saved report cannot be drawn: %s Edit the report to fix it.' => 'This saved report cannot be drawn: %s Edit the report to fix it.',
     'Those details could not be saved.' => 'Those details could not be saved.',
     'Tracker Cookie Domain is a domain name, such as example.com.' => 'Tracker Cookie Domain is a domain name, such as example.com.',
@@ -226,6 +228,7 @@ return array(
     'User added.' => 'User added.',
     'User profile saved.' => 'User profile saved.',
     'Widget %d' => 'Widget %d',
+    'You are signed out. Sign in again and retry.' => 'You are signed out. Sign in again and retry.',
     'Your account does not have access to this page.' => 'Your account does not have access to this page.',
     'Your role cannot change the account email address.' => 'Your role cannot change the account email address.',
 );
