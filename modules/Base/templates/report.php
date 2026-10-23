@@ -66,9 +66,13 @@ jQuery(document).ready(function(){
                      */
                 ?>
                 <div class="owa_reportNavRail" id="owa_reportNavRail">
-                    <button type="button" class="owa_reportNavClose" aria-label="Hide the report menu">
-                        <i class="fas fa-times" aria-hidden="true"></i>
-                    </button>
+                    <?php // On a narrow screen: the logo, which the header gives up to the menu button, and the close button. ?>
+                    <div class="owa_reportNavRailHead">
+                        <span class="owa_railLogo"><?php include( 'logo_image.php' );?></span>
+                        <button type="button" class="owa_reportNavClose" aria-label="Hide the report menu">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <?php
                         /*
                          * The site control sits ABOVE the nav because it scopes
@@ -91,13 +95,6 @@ jQuery(document).ready(function(){
             <?php endif;?>
             <TD valign="top" width="*">
                 <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
-
-                <?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
-                <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail"
-                        aria-expanded="false" aria-label="Show the report menu">
-                    <i class="fas fa-bars" aria-hidden="true"></i>
-                </button>
-                <?php endif;?>
 
                 <div class="reportSectionContainer">
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>

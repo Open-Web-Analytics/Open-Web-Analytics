@@ -14,17 +14,21 @@
 ?>
 <?php
 /*
- * On a narrow screen the left column leaves the page and slides in from a menu
- * button, as the report nav does (report.php, owa.reportnav.js).
+ * On a narrow screen the left column leaves the page and slides in from the
+ * menu button in the header, as the report nav does (report.php,
+ * owa.reportnav.js).
  */
 ?>
 <table width="100%" cellpadding="0" cellspacing="0" class="owa_hierarchyPage">
     <TR>
         <TD valign="top" class="owa_reportLeftNavColumn">
             <div class="owa_reportNavRail" id="owa_reportNavRail">
-                <button type="button" class="owa_reportNavClose" aria-label="Hide the menu">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
+                <div class="owa_reportNavRailHead">
+                    <span class="owa_railLogo"><?php include( 'logo_image.php' );?></span>
+                    <button type="button" class="owa_reportNavClose" aria-label="Hide the menu">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                </div>
                 <?php // The Property chooser, on a narrow screen (see report.php). ?>
                 <div class="owa_railSiteControl"></div>
                 <?php include('hierarchy_nav.php');?>
@@ -32,10 +36,6 @@
         </TD>
         <TD class="layout_subview owa_hierarchyContent" valign="top">
             <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
-            <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail"
-                    aria-expanded="false" aria-label="Show the menu">
-                <i class="fas fa-bars" aria-hidden="true"></i>
-            </button>
             <?php include('hierarchy_breadcrumb.php');?>
             <?php echo $view->subview;?>
         </TD>

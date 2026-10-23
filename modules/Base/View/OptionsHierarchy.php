@@ -40,6 +40,9 @@ class OptionsHierarchy extends \OWA\Core\View {
         // The header marks Settings as the section you are in.
         $this->t->set( 'nav_section', 'settings' );
 
+        // The page has a slide-out menu, so the header draws its button (header.php).
+        $this->t->set( 'nav_rail', true );
+
         // The Property chooser is drawn in the header (header.php), from these.
         $this->t->set( 'params', $params );
         $this->t->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );

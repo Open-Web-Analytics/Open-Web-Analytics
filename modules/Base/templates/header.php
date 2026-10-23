@@ -1,8 +1,21 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <div id="owa_header">
 
-    <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
-    <span class="owa_logo"><?php if ( $owa_logo ): ?><img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?></span>
+    <?php
+    /*
+     * The slide-out menu's button, on a screen that has one (the report and
+     * settings views set nav_rail). Below 900px it takes the logo's place and
+     * the logo moves to the top of the slide-out (logo_image.php); at full
+     * width it is hidden (owa.report.css, owa.reportnav.js).
+     */
+    ?>
+    <?php if ( $view->get( 'nav_rail' ) ):?>
+    <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail" aria-expanded="false"
+            aria-label="<?php echo $view->get( 'nav_section' ) === 'analytics' ? 'Show the report menu' : 'Show the menu';?>">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+    </button>
+    <?php endif;?>
+    <span class="owa_logo"><?php include( 'logo_image.php' );?></span>
     <span class="owa_headerRule" aria-hidden="true"></span>
     <?php
     /*

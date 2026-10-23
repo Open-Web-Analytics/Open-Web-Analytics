@@ -4728,7 +4728,7 @@ li.constraintRow {
  * (owa.reportnav.js). Full width is unchanged: the button is hidden and the
  * nav is the left column it always was.
  * ------------------------------------------------------------------------- */
-.owa_reportNavToggle, .owa_reportNavClose { display: none; }
+.owa_reportNavToggle, .owa_reportNavClose, .owa_reportNavRailHead { display: none; }
 
 @media (max-width: 900px) {
 
@@ -4777,21 +4777,34 @@ li.constraintRow {
     #owa_reportPeriodFiltersContainer > tbody > tr > th { display: block; }
     #owa_reportPeriodFiltersContainer .picker { padding-left: 0; }
 
-    .owa_reportNavToggle {
-        display: block;
-        position: sticky;
-        top: 0;
-        z-index: 150;
+    /* The menu button has the logo's place in the header, and the logo moves
+       to the top of the slide-out (.owa_reportNavRailHead). A screen with no
+       slide-out has no button, and keeps its logo. */
+    #owa_header .owa_reportNavToggle {
+        float: left;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 44px;
         height: 44px;
-        margin-bottom: 6px;
-        border: 1px solid #dddddd;
-        border-radius: 4px;
-        background: #ffffff;
-        font-size: 18px;
+        margin-right: 4px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font-size: 22px;
         color: #555555;
         cursor: pointer;
     }
+
+    #owa_header .owa_reportNavToggle + .owa_logo { display: none; }
+
+    .owa_reportNavRailHead {
+        display: flex;
+        align-items: center;
+        padding: 4px 8px;
+    }
+
+    .owa_railLogo img { height: 36px; width: auto; display: block; }
 
     .owa_reportNavRail {
         position: fixed;

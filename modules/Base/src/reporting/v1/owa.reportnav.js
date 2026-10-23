@@ -2,14 +2,14 @@
  * The report nav on a narrow screen: a panel behind a menu button.
  *
  * Below the breakpoint (owa.report.css) the nav leaves the page, so the report
- * has the whole width, and slides in over it from the menu button, which stays
- * in reach as the page scrolls. Choosing a report closes it again, as do its
+ * has the whole width, and slides in over it from the menu button in the
+ * header, in the logo's place (header.php). Choosing a report closes it again, as do its
  * close button (the open panel covers the menu button), a tap outside it and
  * Escape. At full width none of this runs: every handler asks
  * the media query first, so the desktop nav is untouched.
  *
  *   <div class="owa_reportNavRail" id="owa_reportNavRail">...</div>
- *   <button class="owa_reportNavToggle" aria-controls="owa_reportNavRail">...</button>
+ *   <button class="owa_reportNavToggle" aria-controls="owa_reportNavRail">...</button>  (header.php)
  */
 
 export const NARROW = '(max-width: 900px)';
