@@ -412,8 +412,15 @@ class Controller extends \OWA\Core\Base {
                     return false;
                 }
             } elseif ( $this->acceptedAuthMethods() !== null
+                       && $auth->getAuthMethod()
                        && ! in_array( $auth->getAuthMethod(), $this->acceptedAuthMethods(), true ) ) {
-                // Signed in earlier in this request by a method this controller does not accept.
+                /*
+                 * Signed in earlier in this request by a credential this
+                 * controller does not accept. A user signed in with no method
+                 * was put there by code in this process -- the CLI, a module's
+                 * auth_status filter, a host embedding OWA -- not by anything
+                 * the request carried, which is what the list governs.
+                 */
                 $this->notAuthenticatedAction();
                 return false;
             }

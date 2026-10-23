@@ -140,20 +140,8 @@ final class MetricSetsTest extends TestCase
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
-        // As a browser is: by the session, the only method a screen accepts,
-        // in web_app mode, which a REST test earlier in the run may have left
-        // switched to rest_api.
-        \OWA\Core\Auth::get_instance()->auth_method = 'cookies';
-        $mode = \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' );
-        \OWA\Core\CoreAPI::setSetting( 'base', 'request_mode', 'web_app' );
-
-        try {
-            $data = (array) ( new \OWA\Module\Base\Controller\Report(
-                array( 'reportId' => 'pages', 'propertyId' => $property, 'period' => 'last_thirty_days' ) ) )->doAction();
-        } finally {
-            \OWA\Core\Auth::get_instance()->auth_method = null;
-            \OWA\Core\CoreAPI::setSetting( 'base', 'request_mode', $mode );
-        }
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => 'pages', 'propertyId' => $property, 'period' => 'last_thirty_days' ) ) )->doAction();
 
         $this->assertArrayHasKey( 'metricSets', $data );
         $this->assertArrayHasKey( \OWA\Core\MetricSets::DEFAULT_KEY, $data['metricSets'] );

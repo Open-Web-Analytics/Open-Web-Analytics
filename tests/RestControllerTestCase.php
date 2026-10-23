@@ -182,23 +182,6 @@ abstract class RestControllerTestCase extends TestCase
         return $fixture;
     }
 
-    /**
-     * Authenticate as a signed-in browser is: by the session cookies, the only
-     * method an admin screen accepts (AdminController::acceptedAuthMethods).
-     * For tests that drive a screen in web_app mode. Not for REST: there a
-     * cookie-authenticated request must carry a nonce.
-     *
-     * @return array{id:mixed, user_id:string, api_key:string}
-     */
-    protected function authenticateAsBrowser(string $role): array
-    {
-        $fixture = $this->authenticateAs($role);
-
-        \OWA\Core\Auth::get_instance()->auth_method = 'cookies';
-
-        return $fixture;
-    }
-
     protected function resetCurrentUser(): void
     {
         $anon = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -207,8 +190,6 @@ abstract class RestControllerTestCase extends TestCase
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->loadNewUserByObject($anon);
-
-        \OWA\Core\Auth::get_instance()->auth_method = null;
 
         // Force the authenticated flag off (setAuthStatus has no "false" path,
         // and the current-user object is a process singleton).

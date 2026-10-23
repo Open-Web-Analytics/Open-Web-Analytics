@@ -150,6 +150,22 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $this->assertFalse($screen->ran);
     }
 
+    /**
+     * Signed in by code in this process -- the CLI, a module's auth_status
+     * filter, a host embedding OWA -- with no request credential at all. The
+     * list governs what a request may present, so this is not refused.
+     */
+    public function testAUserSignedInByCodeIsNotARequestCredential(): void
+    {
+        $this->authenticateAs('viewer');
+        $this->signedInBy(null);
+
+        $screen = $this->screen();
+        $screen->doAction();
+
+        $this->assertTrue($screen->ran);
+    }
+
     public function testTheSessionOpensTheScreen(): void
     {
         $this->authenticateAs('viewer');
@@ -227,11 +243,9 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
             $plain[] = $do;
         }
 
-        sort($plain);
-        $expected = self::PLAIN;
-        sort($expected);
-
-        $this->assertSame($expected, $plain,
+        // A subset, not equal: a module's actions are registered only while it
+        // is active (domstream.processEvent on an install without Domstream).
+        $this->assertSame(array(), array_values(array_diff($plain, self::PLAIN)),
             'A plain Controller accepts any credential. Make a signed-in screen an AdminController, '
             . 'or name it in PLAIN with its reason.');
     }
