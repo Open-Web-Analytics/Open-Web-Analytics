@@ -37,12 +37,11 @@ const fs = require('fs');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
 
-// A real single-label origin. Chromium enforces RFC 6265 cookie-domain rules
-// here exactly as it would for a developer running their site on localhost.
-const LOCALHOST_ORIGIN = 'http://localhost/';
-const HARNESS_URL = LOCALHOST_ORIGIN + 'tests/e2e/localhost_cookie_harness.html';
-const TRACKER_URL = LOCALHOST_ORIGIN + 'public/base/dist/owa.tracker.js';
-
+// Real single-label origins. Chromium enforces RFC 6265 cookie-domain rules
+// here exactly as it would for a developer running their site on one. localhost
+// is special-cased by browsers in places, so an ordinary single-label host
+// (#869: server01, an intranet name) runs the same checks. Every request is
+// fulfilled by a route, so neither name has to resolve.
 const HARNESS_HTML = fs.readFileSync(
     path.join(__dirname, 'localhost_cookie_harness.html'), 'utf8'
 );
@@ -50,11 +49,17 @@ const TRACKER_JS = fs.readFileSync(
     path.join(__dirname, '..', '..', 'public', 'base', 'dist', 'owa.tracker.js'), 'utf8'
 );
 
-test.describe('tracker state cookies on a single-label host (localhost)', () => {
+for (const HOST of ['localhost', 'server01']) {
+
+const ORIGIN = `http://${HOST}/`;
+const HARNESS_URL = ORIGIN + 'tests/e2e/localhost_cookie_harness.html';
+const TRACKER_URL = ORIGIN + 'public/base/dist/owa.tracker.js';
+
+test.describe(`tracker state cookies on a single-label host (${HOST})`, () => {
 
     test.beforeEach(async ({ context }) => {
         // Fulfill the document and the built tracker from disk so the whole page
-        // runs at http://localhost with no OWA server. The log.php beacon has
+        // runs at that origin with no OWA server. The log.php beacon has
         // nowhere to go -> empty 200 so the pixel GET doesn't hang; the cookie
         // write happens first and client-side.
         await context.route(HARNESS_URL + '**', (route) =>
@@ -68,8 +73,8 @@ test.describe('tracker state cookies on a single-label host (localhost)', () => 
         );
     });
 
-    test('the visitor and session cookies persist on localhost', async ({ context, page }) => {
-        await page.goto(HARNESS_URL + '?base=' + encodeURIComponent(LOCALHOST_ORIGIN),
+    test('the visitor and session cookies persist', async ({ context, page }) => {
+        await page.goto(HARNESS_URL + '?base=' + encodeURIComponent(ORIGIN),
             { waitUntil: 'load' });
 
         await page.waitForFunction(
@@ -88,29 +93,29 @@ test.describe('tracker state cookies on a single-label host (localhost)', () => 
         const SESSION_COOKIE = 'owa_s_e2e-localhost-harness';
 
         await expect.poll(async () => {
-            const cookies = await context.cookies(LOCALHOST_ORIGIN);
+            const cookies = await context.cookies(ORIGIN);
             return cookies.map((c) => c.name);
         }, { timeout: 10_000 }).toEqual(
             expect.arrayContaining(['owa_v', SESSION_COOKIE])
         );
 
-        const cookies = await context.cookies(LOCALHOST_ORIGIN);
+        const cookies = await context.cookies(ORIGIN);
         const visitor = cookies.find((c) => c.name === 'owa_v');
         const session = cookies.find((c) => c.name === SESSION_COOKIE);
-        expect(visitor, 'visitor cookie owa_v was not persisted on localhost').toBeTruthy();
-        expect(session, `session cookie ${SESSION_COOKIE} was not persisted on localhost`).toBeTruthy();
+        expect(visitor, `visitor cookie owa_v was not persisted on ${HOST}`).toBeTruthy();
+        expect(session, `session cookie ${SESSION_COOKIE} was not persisted on ${HOST}`).toBeTruthy();
 
         // and the pre-split shared name is genuinely gone, not merely unasserted
         expect(cookies.find((c) => c.name === 'owa_s')).toBeUndefined();
     });
 
-    test('the visitor id is stable across page loads on localhost', async ({ context, page }) => {
+    test('the visitor id is stable across page loads', async ({ context, page }) => {
         const beacons = [];
         page.on('request', (req) => {
             if (req.url().includes('log.php')) beacons.push(req.url());
         });
 
-        const url = HARNESS_URL + '?base=' + encodeURIComponent(LOCALHOST_ORIGIN);
+        const url = HARNESS_URL + '?base=' + encodeURIComponent(ORIGIN);
         for (let i = 0; i < 2; i++) {
             await page.goto(url, { waitUntil: 'load' });
             await page.waitForFunction(
@@ -130,3 +135,5 @@ test.describe('tracker state cookies on a single-label host (localhost)', () => 
         expect(vids[vids.length - 1]).toBe(vids[0]);
     });
 });
+
+}
