@@ -12,7 +12,7 @@ div {margin:0;}
 }
 
 .owa a:hover {
-    color: orange;
+    color: var(--owa-accent, #f47a17);
 }
 
 .owa .section {
@@ -129,7 +129,7 @@ div {margin:0;}
 .owa .owa_navigation li a.owa_navIcon:hover,
 .owa .owa_navigation li a.owa_navIcon:focus-visible,
 .owa .owa_navigation li a.owa_navIcon.is-current {
-    color: orange;
+    color: var(--owa-accent, #f47a17);
     background-color: transparent;
 }
 
@@ -156,7 +156,7 @@ div {margin:0;}
 .form-instructions {position: relative; left: 150px; font-size:12px; color: #9f9f9f;}
 .owa-button {
     border-radius:4px;
-    background-color:orange;
+    background-color:var(--owa-accent, #f47a17);
     padding:15px 30px 15px 30px;
     color:#ffffff;
     font-size:18px;
@@ -210,7 +210,7 @@ div {margin:0;}
 .inline_h2_grey {font-size:20px; color:#cccccc;}
 .inline_h3 {font-size:16px;}
 .inline_h4 {font-size:14px;}
-.headline {font-size:20px; background-color:orange;color:#ffffff;border-color:#000000;padding:8px; font-weight:bold;margin: 0px 0px 0px 0px;}
+.headline {font-size:20px; background-color:var(--owa-accent, #f47a17);color:#ffffff;border-color:#000000;padding:8px; font-weight:bold;margin: 0px 0px 0px 0px;}
 .panel_headline {font-size:18px; background-color:#efefef;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
 .sub-legend {font-size:16px;font-weight:bold; }
 
@@ -237,7 +237,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 /* FORMATING */
 .owa_largeFormField { font-size:18px;}
-.active_wizard_step {background-color:orange; color:#ffffff;border:1px solid #9f9f9f; padding:5px; font-weight:bold; font-size:16px;}
+.active_wizard_step {background-color:var(--owa-accent, #f47a17); color:#ffffff;border:1px solid #9f9f9f; padding:5px; font-weight:bold; font-size:16px;}
 .wizard_step {font-weight:bold; font-size:16px;}
 .visitor_info_box {width:40px; height:40px; text-align:center; padding:7px;}
 .owa_visitSummaryLeftCol {width:auto;}

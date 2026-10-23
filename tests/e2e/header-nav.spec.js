@@ -14,7 +14,7 @@
  * a class name.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, loginAs, adminLogin } = require('./fixtures');
+const { FIXTURE, loginAs, adminLogin, logoOrange } = require('./fixtures');
 
 const toggle = '#owa_userMenuToggle';
 const panel  = '#owa_userMenuPanel';
@@ -450,13 +450,13 @@ test.describe('the top bar', () => {
         expect(new Set(centres.heights)).toEqual(new Set([40]));
     });
 
-    /** One dark grey; orange for the section you are in and on hover. */
+    /** One dark grey; the logo's orange for the section you are in and on hover. */
     test('the icons are grey, and orange when current or hovered', async ({ page }) => {
         const colours = () => page.locator('.owa_navigation li a').evaluateAll((as) =>
             as.map((a) => [a.getAttribute('aria-label'), getComputedStyle(a).color, a.getAttribute('aria-current')]));
 
         const GREY = 'rgb(80, 80, 80)';
-        const ORANGE = 'rgb(255, 165, 0)';
+        const ORANGE = logoOrange();
 
         // A report: Analytics is current.
         expect(await colours()).toEqual([

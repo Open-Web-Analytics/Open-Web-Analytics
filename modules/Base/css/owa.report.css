@@ -114,7 +114,7 @@
 
 }
 .owa_moreLinks a:hover, .owa .moreLink a:hover {
-    border-bottom:2px solid orange;
+    border-bottom:2px solid var(--owa-accent);
 }
 
 .owa_moreLinks li a, .owa_moreLinks a, .owa .moreLink a  {
@@ -199,7 +199,7 @@ table#owa_reportPeriodLabelContainer {
 
 }
 
-.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid orange; text-align: left; padding:5px; margin-bottom:5px;}
+.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid var(--owa-accent); text-align: left; padding:5px; margin-bottom:5px;}
 
 .owa_metricInfobox, .owa .action_infobox {
     color:#505050;
@@ -238,7 +238,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     white-space:nowrap;
 }
 
-.owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid orange;}
+.owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid var(--owa-accent);}
 
 .kpiInfobox {
     min-width:200px;
@@ -433,9 +433,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa_nextPageControl:hover, .owa_previousPageControl:hover{
-    color: orange;
+    color: var(--owa-accent);
     padding:;
-    border: 1px solid orange;
+    border: 1px solid var(--owa-accent);
 }
 
 .owa_nextPageControl, .owa_previousPageControl {
@@ -758,7 +758,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa .submit-button {
     border-radius:4px;
-    background-color:orange;
+    background-color:var(--owa-accent);
     padding:10px 10px 10px 10px;
     color:#ffffff;
     font-size:14px;
@@ -823,7 +823,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .dimensionPicker .dimensionListItem:hover {
 
     font-weight: bold;
-    background-color: orange;
+    background-color: var(--owa-accent);
 }
 
 .dimensionPicker h4 {
@@ -3189,6 +3189,9 @@ li.constraintRow {
     --owa-text-md: 13px;
     --owa-text-sm: 12px;
     --owa-text-xs: 11px;
+
+    /* The orange in the logo (modules/Base/i/owa-logo.svg). */
+    --owa-accent: #f47a17;
 }
 
 /* ---------------------------------------------------------------------------
@@ -3200,7 +3203,7 @@ li.constraintRow {
  * page every time someone opens it.
  *
  * Colours are the ones already in this file: #505050 text, #666 secondary,
- * #ccc borders, white ground, orange as the accent (the same left-rule idiom as
+ * #ccc borders, white ground, --owa-accent (the logo's orange) as the accent (the same left-rule idiom as
  * .owa_visitSummaryInfobox).
  * ------------------------------------------------------------------------ */
 
@@ -3272,7 +3275,7 @@ li.constraintRow {
 .owa_siteControlSummary {
     background-color: #ffffff;
     border: 1px solid #cccccc;
-    border-left: 5px solid orange;
+    border-left: 5px solid var(--owa-accent);
     padding: 8px 22px 8px 10px;
     cursor: pointer;
     position: relative;
@@ -3282,7 +3285,7 @@ li.constraintRow {
 .owa_siteControlSummary:hover,
 .owa_siteControlSummary:focus {
     border-color: #a0a0a0;
-    border-left-color: orange;
+    border-left-color: var(--owa-accent);
     outline: none;
 }
 
@@ -3416,7 +3419,7 @@ li.constraintRow {
 }
 
 .owa_siteControlItem.is-selected {
-    border-left-color: orange;
+    border-left-color: var(--owa-accent);
     background-color: #fbfbfb;
 }
 
@@ -3542,7 +3545,7 @@ li.constraintRow {
 /* The accent rule replaces the transparent one, so the label must not shift by
    the 3px when it becomes current. */
 .owa_hierarchyNav li.is-current {
-    border-left-color: orange;
+    border-left-color: var(--owa-accent);
 }
 
 .owa_hierarchyNav li.is-current a {

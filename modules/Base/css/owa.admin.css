@@ -51,7 +51,7 @@
 
 .owa .genericHorizontalList li a:hover {
 
-    border-bottom: 2px solid orange;
+    border-bottom: 2px solid var(--owa-accent, #f47a17);
 }
 
 /* ---------------------------------------------------------------------------

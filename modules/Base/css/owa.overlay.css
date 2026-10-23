@@ -5,7 +5,7 @@
     padding:3px;
     margin: 0px;
     background-color:#ffffff;
-    border: 2px solid orange;
+    border: 2px solid var(--owa-accent, #f47a17);
     border-right:0px;
     opacity: 1;
     z-index: 999999;
@@ -18,9 +18,9 @@
 
 #owa_overlay_logo {background-image:url('../i/owa_logo_72w.jpg'); width:62px;height:35px; float:left; padding-right:10px; margin-right:5px;}
 .owa_overlay_control {vertical-align:middle; height:auto; float:left; padding:0 10px 0 10px; border-left:1px solid #9f9f9f; font-weight: bold; color: #9f9f9f; font-family: sans-serif;}
-.active {color: #FF8C00;}
+.active {color: var(--owa-accent, #f47a17);}
 div.owa_overlay_control:hover {
-    color:#FF8C00;
+    color:var(--owa-accent, #f47a17);
 }
 
 div.jGrowl div.jGrowl-notification {
@@ -86,6 +86,6 @@ body > div.jGrowl.center {
     top:10px;
     right:0px;
     background-image:url('../i/owa_logo_72w.jpg'); width:70px;height:35px;
-    border: 2px solid orange;
+    border: 2px solid var(--owa-accent, #f47a17);
     border-right:0px;
 }

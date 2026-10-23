@@ -11,7 +11,7 @@
  * that dropped one would look perfect and lock people out.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE } = require('./fixtures');
+const { FIXTURE, logoOrange } = require('./fixtures');
 
 test.describe('the signed-out pages', () => {
 
@@ -50,7 +50,7 @@ test.describe('the signed-out pages', () => {
 
         const background = await button.evaluate((el) => getComputedStyle(el).backgroundColor);
 
-        expect(background).toBe('rgb(255, 165, 0)');
+        expect(background).toBe(logoOrange());
 
         /*
          * White at rest, blue on hover. It used to go BLACK on hover, which is
