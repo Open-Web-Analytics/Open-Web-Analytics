@@ -215,6 +215,43 @@ test.describe('report navigation', () => {
         expect((await icon(other)).colour).not.toBe(logoOrange());
     });
 
+    /**
+     * Every group's label starts at one x, whatever its icon's glyph width
+     * (they ran from 20px to 30px, so the labels started anywhere in a 10px
+     * band), and a label that wraps stays beside its icon. A report's rule is
+     * at that x, under its group's label. Checked with a group's own report
+     * current as well, where the label is bold and the icon orange.
+     */
+    test('labels, icons and the report rule line up', async ({ page }) => {
+        for (const id of [REPORT.id, 'content']) {
+            await openReport(page, id);
+
+            const geometry = await page.evaluate(() => {
+                const groups = [...document.querySelectorAll('.owa_admin_nav_topmenu_item')].map((item) => {
+                    const icon = item.querySelector('.owa_nav_icon').getBoundingClientRect();
+                    const label = item.querySelector('a');
+                    const lines = [...label.getClientRects()];
+                    return {
+                        name: label.textContent.trim(),
+                        iconCentre: Math.round(icon.x + icon.width / 2),
+                        labelLefts: [...new Set(lines.map((r) => Math.round(r.x)))],
+                    };
+                });
+                const reports = [...document.querySelectorAll('.owa_admin_nav_subgroup_item')]
+                    .filter((el) => el.offsetParent)
+                    .map((el) => Math.round(el.getBoundingClientRect().x));
+                return { groups, reports };
+            });
+
+            const lefts = geometry.groups.flatMap((g) => g.labelLefts);
+
+            expect(new Set(geometry.groups.map((g) => g.iconCentre)).size, `${id}: icon centres`).toBe(1);
+            expect(new Set(lefts), `${id}: label starts ${JSON.stringify(geometry.groups)}`).toEqual(new Set([lefts[0]]));
+            expect(geometry.reports.length).toBeGreaterThan(0);
+            expect(new Set(geometry.reports), `${id}: report rules`).toEqual(new Set([lefts[0]]));
+        }
+    });
+
     /** The toggle still works by hand, for a group you are not in. */
     test('a closed group can still be opened by clicking it', async ({ page }) => {
         await openReport(page, REPORT.id);

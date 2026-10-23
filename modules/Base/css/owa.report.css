@@ -264,17 +264,41 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     
 }
 
+/*
+ * A group's label starts 40px in: 10px padding, a 20px icon column, a 10px
+ * gap. Every icon gets the same column whatever its glyph's width, so every
+ * label starts at the same x. A report's rule sits at that x too, under its
+ * group's label: the subgroup is indented by the same 40px, and its li drops
+ * the side padding .owa_admin_nav li gives it.
+ */
 .owa_admin_nav_subgroup {
 	display: none;
-	padding-left:45px;
+	padding-left: 40px;
+}
+.owa_admin_nav_subgroup li {
+    padding-left: 0;
+    padding-right: 0;
 }
 .owa_admin_nav_subgroup_item {
-	
-    padding:3px 3px 3px 10px;
+    padding: 3px 3px 3px 8px;
     font-size: 12px;
 }
 .owa_admin_nav_topmenu_container {}
-.owa_admin_nav_topmenu_item {display: flex; align-items: center; height:25px; padding: 10px;font-size:16px;  }
+.owa_admin_nav_topmenu_item {display: flex; align-items: center; min-height:25px; padding: 10px;font-size:16px;  }
+/* Icon and label side by side, so a label that wraps stays in its column
+   rather than running back under the icon. */
+.owa_admin_nav_topmenu_item > span {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.owa_admin_nav_topmenu_item .owa_nav_icon {
+    flex: none;
+    width: 20px;
+    margin-right: 10px;
+    padding-right: 0;
+    text-align: center;
+}
 .owa_admin_nav_topmenu_item_text {}
 
 /* A group's chevron, right of its name: down while closed, up while open. */
