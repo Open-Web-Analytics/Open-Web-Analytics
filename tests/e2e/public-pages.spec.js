@@ -36,6 +36,18 @@ test.describe('the signed-out pages', () => {
         }
     });
 
+    /** The footer names the product, right-aligned, with no version for a visitor. */
+    test('the footer is the product name, right-aligned, without a version', async ({ page }) => {
+        for (const action of ['base.loginForm', 'base.passwordResetForm']) {
+            await page.goto(`?owa_do=${action}`, { waitUntil: 'networkidle' });
+
+            const footer = page.locator('.owa_publicFooter');
+
+            expect((await footer.innerText()).trim()).toBe('Open Web Analytics');
+            await expect(footer).toHaveCSS('text-align', 'right');
+        }
+    });
+
     /** They are styled at all, which is the thing that was actually wrong. */
     test('the card is painted, not a bare form on a white page', async ({ page }) => {
         await page.goto('?owa_do=base.loginForm', { waitUntil: 'networkidle' });

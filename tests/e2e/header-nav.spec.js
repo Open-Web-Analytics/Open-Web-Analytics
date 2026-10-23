@@ -484,6 +484,38 @@ test.describe('the top bar', () => {
 });
 
 /**
+ * The footer: "Open Web Analytics version <n>", right-aligned, in place of the
+ * two "Web Analytics powered by Open Web Analytics" links. The version only for
+ * a signed-in user; this footer also draws on screens a visitor can reach.
+ */
+test.describe('the footer', () => {
+
+    const footerText = async (page) => (await page.locator('.owa_footer').innerText()).trim();
+
+    test('names the product and its version, right-aligned', async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(`?owa_do=base.reportingHome&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
+
+        const footer = page.locator('.owa_footer');
+
+        expect(await footerText(page)).toMatch(/^Open Web Analytics version \S+$/);
+        await expect(footer.locator('a')).toHaveCount(0);
+        await expect(footer).toHaveCSS('text-align', 'right');
+    });
+
+    test.describe('signed out', () => {
+
+        test.use({ storageState: { cookies: [], origins: [] } });
+
+        test('names the product without its version', async ({ page }) => {
+            await page.goto(`?owa_do=base.error&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
+
+            expect(await footerText(page)).toBe('Open Web Analytics');
+        });
+    });
+});
+
+/**
  * A page's messages sit above its content column, not across the page.
  *
  * Above the whole page they pushed the left navigation down by their own height,

@@ -49,10 +49,8 @@
                 <?php echo $view->body;?>
             </div>
 
-            <div class="owa_publicFooter">
-                <a href="http://www.openwebanalytics.com">Web Analytics</a>
-                powered by <a href="http://www.openwebanalytics.com">Open Web Analytics</a>
-            </div>
+            <?php // No version: these screens are for visitors who are not signed in. ?>
+            <div class="owa_publicFooter">Open Web Analytics</div>
         </div>
 
     </body>
