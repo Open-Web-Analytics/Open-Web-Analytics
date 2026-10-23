@@ -5,12 +5,6 @@ import { OWATracker } from './Tracker.js';
 
 class CommandQueue {
 
-    /**
-     * Split a queued command into the object it targets and the method to call.
-     *
-     * 'trackPageView'        -> OWATracker.trackPageView   (the default tracker)
-     * 'siteB.trackPageView'  -> siteB.trackPageView        (a named one)
-     */
     static parseCmd( cmd ) {
 
         if ( ! cmd || ! cmd[0] ) {
@@ -95,7 +89,18 @@ class CommandQueue {
 
         // check to see if the command queue has been paused
         // used to stop tracking
-        if ( ! this.is_paused && method !== "unpause-owa") {
+        if ( obj_name === 'OWA' ) {
+
+            /*
+             * OWA is not a tracker's name. Before the tracker became ES
+             * modules, ['OWA.addFilter', ...] reached a global OWA; there is
+             * none now, and the queue offers no OWA commands. Left to the code
+             * below, the name made a second tracker called OWA and then skipped
+             * the command as one that tracker did not have.
+             */
+            OWA.debug( 'Skipping %s.%s: OWA takes no commands, only trackers do', obj_name, method );
+
+        } else if ( ! this.is_paused && method !== "unpause-owa") {
 
             // is OWATracker created?
             if ( typeof window[obj_name] == "undefined" ) {
