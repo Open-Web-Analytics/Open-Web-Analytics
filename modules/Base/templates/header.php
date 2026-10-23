@@ -3,6 +3,16 @@
 
     <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
     <span class="owa_logo"><?php if ( $owa_logo ): ?><img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?></span>
+    <?php
+    /*
+     * The Property chooser, beside the logo, on screens that are about a
+     * Property (the report and hierarchy views set site_hierarchy). On a narrow
+     * screen owa.report.js moves it into the slide-out menu.
+     */
+    ?>
+    <?php if ( $view->get( 'site_hierarchy' ) ):?>
+    <div class="owa_headerSiteControl"><?php include( 'site_control.php' );?></div>
+    <?php endif;?>
      &nbsp
     <?php
         /*

@@ -3204,6 +3204,59 @@ li.constraintRow {
     font-size: var(--owa-text-sm);
 }
 
+/* In the header, beside the logo: two lines (Organization, Property; the
+   domain is in the panel), and the panel drops down under the tile rather than
+   opening beside it as it did in the left column. On a narrow screen the
+   chooser is in the slide-out menu (OWA.placeSiteControl). */
+.owa_headerSiteControl {
+    float: left;
+    display: flex;
+    align-items: center;
+    height: 55px;
+    margin-right: 14px;
+    line-height: normal;
+}
+
+.owa_headerSiteControl .owa_siteControl {
+    margin: 0;
+    width: 240px;
+}
+
+.owa_headerSiteControl .owa_siteControlSummary {
+    padding: 5px 24px 5px 10px;
+}
+
+.owa_headerSiteControl .owa_siteControlSummary .owa_siteControlDomain {
+    display: none;
+}
+
+/* One line each in the bar; the panel names a Property in full. */
+.owa_headerSiteControl .owa_siteControlSummary .owa_siteControlOrg,
+.owa_headerSiteControl .owa_siteControlSummary .owa_siteControlProperty {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The left column started with the chooser, whose margin spaced it from the
+   header; it starts with its nav now. */
+.owa_railSiteControl {
+    height: 20px;
+}
+
+.owa_headerSiteControl .owa_siteControlPanel {
+    top: 100%;
+    left: 0;
+    margin: 4px 0 0 0;
+}
+
+@media (max-width: 900px) {
+
+    .owa_headerSiteControl { display: none; }
+
+    .owa_railSiteControl { height: auto; }
+}
+
 .owa_siteControlSummary {
     background-color: #ffffff;
     border: 1px solid #cccccc;

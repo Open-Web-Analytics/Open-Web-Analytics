@@ -62,6 +62,12 @@ class Report extends \OWA\Core\View {
         $this->body->set('sites', $this->get('sites') );
         $this->body->set('site_hierarchy', $this->get('site_hierarchy') );
 
+        // The Property chooser is drawn in the header (header.php).
+        if ( ! $this->get( 'hideSitesFilter' ) ) {
+
+            $this->t->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
+        }
+
         $this->body->set('dom_id', $this->get( 'dom_id' ) );
         // add if here
         $this->subview->body->set('dom_id', $this->get( 'dom_id' ) );

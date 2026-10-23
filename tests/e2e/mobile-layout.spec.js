@@ -143,6 +143,10 @@ test.describe('on a phone', () => {
         await expect.poll(async () => (await rail.boundingBox()).x).toBe(0);
         await page.locator('#owa_siteControlSummary').click();
 
+        // Moved from the header into the menu, not drawn twice.
+        await expect(page.locator('#owa_siteControl')).toHaveCount(1);
+        await expect(page.locator('.owa_railSiteControl #owa_siteControl')).toHaveCount(1);
+
         const tile = await page.locator('#owa_siteControlSummary').boundingBox();
         const orgs = await page.locator('.owa_siteControlOrgs').boundingBox();
         const properties = page.locator('.owa_siteControlProperties');

@@ -517,7 +517,11 @@ final class PropertyAdminScreensTest extends TestCase
         $wrapper = (string) file_get_contents(
             OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
 
-        $this->assertStringContainsString( "include('site_control.php')", $wrapper );
+        // The control is drawn in the header; the wrapper keeps the slot it
+        // moves into on a narrow screen.
+        $this->assertStringContainsString( 'owa_railSiteControl', $wrapper );
+        $this->assertStringContainsString( "include( 'site_control.php' )",
+            (string) file_get_contents( OWA_DIR . 'modules/Base/templates/header.php' ) );
         $this->assertStringNotContainsString(
             'view->panels', $wrapper,
             'The hierarchy wrapper renders the settings panels.' );
@@ -648,13 +652,21 @@ final class PropertyAdminScreensTest extends TestCase
         $wrapper = (string) file_get_contents(
             OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
 
-        $this->assertStringContainsString( "include('site_control.php')", $wrapper );
+        // In the slide-out menu the control sits above the nav: the tile says
+        // which thing the nav is about.
+        $this->assertStringContainsString( 'owa_railSiteControl', $wrapper );
         $this->assertStringContainsString( "include('hierarchy_nav.php')", $wrapper );
 
         $this->assertLessThan(
             strpos( $wrapper, 'hierarchy_nav.php' ),
-            strpos( $wrapper, 'site_control.php' ),
+            strpos( $wrapper, 'owa_railSiteControl' ),
             'The nav is above the tile; the tile is what says which thing the nav is about.' );
+
+        // On a desktop it is in the header, right of the logo and left of the nav.
+        $header = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/header.php' );
+
+        $this->assertLessThan( strpos( $header, 'site_control.php' ), strpos( $header, 'owa_logo' ) );
+        $this->assertLessThan( strpos( $header, 'owa_navigation' ), strpos( $header, 'site_control.php' ) );
     }
     /**
      * Each tier's screens are separate pages, not sections of one.

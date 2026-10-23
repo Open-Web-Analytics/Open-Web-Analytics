@@ -396,6 +396,21 @@ test.describe('the top bar', () => {
         expect(new Set(geometry.widths).size).toBe(1);
     });
 
+    /** The Property chooser is in the bar, right of the logo and left of the separator. */
+    test('the Property chooser sits between the logo and the icons', async ({ page }) => {
+        const x = await page.evaluate(() => ({
+            logo: document.querySelector('.owa_logo').getBoundingClientRect().right,
+            chooser: document.querySelector('#owa_header #owa_siteControl')?.getBoundingClientRect(),
+            nav: document.querySelector('.owa_navigation').getBoundingClientRect().left,
+            inRail: !!document.querySelector('.owa_railSiteControl #owa_siteControl'),
+        }));
+
+        expect(x.chooser, 'no chooser in the header').toBeTruthy();
+        expect(x.inRail).toBe(false);
+        expect(x.chooser.left).toBeGreaterThanOrEqual(x.logo);
+        expect(x.chooser.right).toBeLessThanOrEqual(x.nav + 1);
+    });
+
     /** A thin rule between the logo and the icons, three quarters of the bar's height. */
     test('a separator stands between the logo and the icons', async ({ page }) => {
         const rule = await page.evaluate(() => {

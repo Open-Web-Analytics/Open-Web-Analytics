@@ -75,9 +75,13 @@ jQuery(document).ready(function(){
                          * Property named here.
                          */
                     ?>
-                    <?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
-                    <?php include('site_control.php');?>
-                    <?php endif;?>
+                    <?php
+                        /*
+                         * The Property chooser is in the header; on a narrow
+                         * screen owa.report.js moves it here, into the menu.
+                         */
+                    ?>
+                    <div class="owa_railSiteControl"></div>
                     <div id="owa_reportNavPanel">
                         <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentPropertyId, $view->params ?? array(), $view->currentSiteId);?>
                     </div>

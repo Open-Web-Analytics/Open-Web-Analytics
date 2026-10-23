@@ -871,6 +871,45 @@ OWA.initSiteControl = function() {
         });
 };
 
+/*
+ * The Property chooser is drawn in the header, beside the logo. Where the left
+ * column becomes the slide-out menu (900px and narrower, as in owa.report.css)
+ * it belongs in the menu instead. The one element moves, so its ids and its
+ * handlers stay as they are.
+ */
+OWA.placeSiteControl = function() {
+
+    var control = document.getElementById('owa_siteControl');
+    var header  = document.querySelector('.owa_headerSiteControl');
+    var rail    = document.querySelector('.owa_railSiteControl');
+
+    if ( ! control || ! header || ! rail || ! window.matchMedia || OWA.siteControlPlaced ) {
+        return;
+    }
+
+    OWA.siteControlPlaced = true;
+
+    var narrow = window.matchMedia('(max-width: 900px)');
+
+    function place() {
+
+        var home = narrow.matches ? rail : header;
+
+        if ( control.parentNode !== home ) {
+            home.appendChild( control );
+        }
+    }
+
+    place();
+
+    if ( narrow.addEventListener ) {
+        narrow.addEventListener( 'change', place );
+    } else {
+        narrow.addListener( place );
+    }
+};
+
 jQuery(document).ready(function() {
+    OWA.placeSiteControl();
     OWA.initSiteControl();
 });
