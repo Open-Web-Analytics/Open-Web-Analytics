@@ -97,11 +97,15 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
         $params['nonce'] = \OWA\Core\CoreAPI::createNonce('base.usersAdd');
         $params['do'] = 'base.usersAdd';
 
+        // By the user_id this test chose, before the request: the row id is
+        // empty if the add fails, and cleaning up by an empty id emptied
+        // owa_user when this test failed once.
+        $this->trackForCleanup('base.user', $params['user_id'], 'user_id');
+
         $data = (new \OWA\Module\Base\Controller\UsersAdd($params))->doAction();
 
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->load($params['user_id'], 'user_id');
-        $this->trackForCleanup('base.user', $u->get('id'), 'id');
 
         $this->assertSame(3000, $data['status_code'] ?? null);
         $this->assertNotEmpty($u->get('id'));
