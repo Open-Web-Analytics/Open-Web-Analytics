@@ -330,6 +330,9 @@ function seed(): array
 {
     $out = fixtureInfo();
 
+    // 0. Reports a previous run saved and did not get to remove.
+    $out['stale_reports_removed'] = unseedFixtureUsersReports();
+
     // 1. Site. createNewSite() is still idempotent -- it now recognises the
     //    domain by lookup rather than by deriving its identifier -- and the
     //    identifier is pinned so the specs can reference it without a query.
@@ -693,6 +696,38 @@ function unseedBreakdownReport(): int
 
             \OWA\Module\Base\Classes\CustomReports::delete($row['id']);
             $removed++;
+        }
+    }
+
+    return $removed;
+}
+
+/**
+ * Every custom report a fixture user owns.
+ *
+ * The specs save reports through the builder, named "E2E <label> <time>", and
+ * never delete them. Against the self-host runner's scratch DB that is
+ * harmless, but against an install's own DB each run of custom-reports.spec.js
+ * left about thirty, and the dev install had collected over a thousand. A
+ * report owned by a fixture user is a fixture, so they go by owner. Run by
+ * seed() too, so a run killed before teardown is cleared by the next one.
+ */
+function unseedFixtureUsersReports(): int
+{
+    $removed = 0;
+
+    foreach ([E2E_USER_ID, E2E_OTHERS_REPORT_OWNER, E2E_ADMIN_ID, E2E_PWUSER_ID, E2E_PROFILEPW_ID, E2E_NEW_USER_ID] as $owner) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom('owa_custom_report');
+        $db->selectColumn('id');
+        $db->where('user_id', $owner);
+
+        foreach ((array) $db->getAllRows() as $row) {
+
+            if (\OWA\Module\Base\Classes\CustomReports::delete($row['id'])) {
+                $removed++;
+            }
         }
     }
 
@@ -1180,7 +1215,7 @@ function teardown(): array
 
     $removed['owa_notification'] = unseedNotifications() . ' fixture notification(s) removed';
     $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport()
-        + unseedFunnelVisualization() ) . ' fixture report(s) removed';
+        + unseedFunnelVisualization() + unseedFixtureUsersReports() ) . ' fixture report(s) removed';
 
     /*
      * The fixture goal event, and the conditions hanging off it.
