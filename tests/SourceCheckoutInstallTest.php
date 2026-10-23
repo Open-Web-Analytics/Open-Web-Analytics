@@ -189,7 +189,7 @@ final class SourceCheckoutInstallTest extends TestCase
     {
         $out = $this->runInstaller( 'base.installCheckEnv' );
 
-        $this->assertStringNotContainsString( 'owa-logo-100w.png', $out,
+        $this->assertStringNotContainsString( 'owa-logo', $out,
             'the logo <img> must not be emitted when public/ was never built' );
 
         $this->assertStringContainsString( 'Open Web Analytics', $out,

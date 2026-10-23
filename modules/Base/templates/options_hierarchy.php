@@ -25,7 +25,8 @@
                 <button type="button" class="owa_reportNavClose" aria-label="Hide the menu">
                     <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
-                <?php include('site_control.php');?>
+                <?php // The Property chooser, on a narrow screen (see report.php). ?>
+                <div class="owa_railSiteControl"></div>
                 <?php include('hierarchy_nav.php');?>
             </div>
         </TD>

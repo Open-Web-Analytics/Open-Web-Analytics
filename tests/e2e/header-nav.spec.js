@@ -112,12 +112,19 @@ test.describe('the top bar', () => {
      * menu rather than spending half the bar navigating away from it.
      */
     test('the bar offers Analytics, Settings and Donate', async ({ page }) => {
-        expect(await page.locator('.owa_navigation li a').allInnerTexts())
+        const links = page.locator('.owa_navigation li a');
+
+        // Icons, each named by its aria-label and its tooltip.
+        expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute('aria-label'))))
             .toEqual(['Analytics', 'Settings', 'Donate']);
+        expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute('title'))))
+            .toEqual(['Analytics', 'Settings', 'Donate']);
+        expect(await links.evaluateAll((as) => as.map((a) => a.querySelector('i').className)))
+            .toEqual(['fas fa-chart-line', 'fas fa-cog', 'fas fa-hands-helping']);
 
         // Analytics still goes where Reporting went: base.reportingHome, which
         // resolves to the dashboard, so the landing page is what to assert.
-        await page.locator('.owa_navigation li a', { hasText: 'Analytics' }).click();
+        await page.getByRole('link', { name: 'Analytics', exact: true }).click();
         await page.waitForLoadState('networkidle');
 
         expect(page.url()).toContain('reportId=dashboard');
@@ -367,7 +374,7 @@ test.describe('the top bar', () => {
      * between the words were all different widths. Sized by their text with one
      * padding value, the gaps are equal and the widths are not.
      */
-    test('the nav links are evenly spaced and sized by their text', async ({ page }) => {
+    test('the nav icons are one size and evenly spaced', async ({ page }) => {
         const geometry = await page.evaluate(() => {
             const links = [...document.querySelectorAll('.owa_navigation li a')];
             const gaps  = [];
@@ -385,13 +392,43 @@ test.describe('the top bar', () => {
         });
 
         expect(geometry.count).toBeGreaterThan(2);
-
-        // One gap, repeated.
         expect(new Set(geometry.gaps).size).toBe(1);
+        expect(new Set(geometry.widths).size).toBe(1);
+    });
 
-        // ...and the boxes are NOT all one width, which is what says they are
-        // sized by their text rather than by a fixed em value.
-        expect(new Set(geometry.widths).size).toBeGreaterThan(1);
+    /** The Property chooser is in the bar, right of the logo and left of the separator. */
+    test('the Property chooser sits between the logo and the icons', async ({ page }) => {
+        const x = await page.evaluate(() => ({
+            logo: document.querySelector('.owa_logo').getBoundingClientRect().right,
+            chooser: document.querySelector('#owa_header #owa_siteControl')?.getBoundingClientRect(),
+            nav: document.querySelector('.owa_navigation').getBoundingClientRect().left,
+            inRail: !!document.querySelector('.owa_railSiteControl #owa_siteControl'),
+        }));
+
+        expect(x.chooser, 'no chooser in the header').toBeTruthy();
+        expect(x.inRail).toBe(false);
+        expect(x.chooser.left).toBeGreaterThanOrEqual(x.logo);
+        expect(x.chooser.right).toBeLessThanOrEqual(x.nav + 1);
+    });
+
+    /** A thin rule between the logo and the icons, three quarters of the bar's height. */
+    test('a separator stands between the logo and the icons', async ({ page }) => {
+        const rule = await page.evaluate(() => {
+            const nav  = document.querySelector('.owa_navigation');
+            const css  = getComputedStyle(nav, '::before');
+            const logo = document.querySelector('.owa_logo').getBoundingClientRect();
+            const icon = document.querySelector('.owa_navigation li a').getBoundingClientRect();
+
+            return {
+                width: parseFloat(css.width),
+                ratio: parseFloat(css.height) / nav.getBoundingClientRect().height,
+                between: logo.right <= nav.getBoundingClientRect().left + 1 && nav.getBoundingClientRect().left < icon.left,
+            };
+        });
+
+        expect(rule.width).toBe(1);
+        expect(rule.ratio).toBeCloseTo(0.75, 2);
+        expect(rule.between).toBe(true);
     });
 
     /**

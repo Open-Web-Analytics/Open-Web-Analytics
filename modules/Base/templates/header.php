@@ -3,6 +3,16 @@
 
     <?php $owa_logo = $view->makeImageLinkIfPresent( \OWA\Core\CoreAPI::getSetting( 'base', 'logo_image_path' ) ); ?>
     <span class="owa_logo"><?php if ( $owa_logo ): ?><img src="<?php echo $owa_logo; ?>" alt="Open Web Analytics"><?php else: ?>Open Web Analytics<?php endif; ?></span>
+    <?php
+    /*
+     * The Property chooser, beside the logo, on screens that are about a
+     * Property (the report and hierarchy views set site_hierarchy). On a narrow
+     * screen owa.report.js moves it into the slide-out menu.
+     */
+    ?>
+    <?php if ( $view->get( 'site_hierarchy' ) ):?>
+    <div class="owa_headerSiteControl"><?php include( 'site_control.php' );?></div>
+    <?php endif;?>
      &nbsp
     <?php
         /*
@@ -12,17 +22,30 @@
          */
         $owa_header_links = \OWA\Core\Navigation::links( 'nav_header', array(
             array( 'id' => 'analytics', 'label' => 'Analytics', 'capability' => 'view_site_list',
+                   'icon' => 'fas fa-chart-line',
                    'href' => $view->makeLink( array( 'do' => 'base.reportingHome' ) ) ),
             array( 'id' => 'settings', 'label' => 'Settings', 'capability' => 'edit_settings',
+                   'icon' => 'fas fa-cog',
                    'href' => $view->makeLink( array( 'do' => 'base.optionsGeneral' ) ) ),
             array( 'id' => 'donate', 'label' => 'Donate',
+                   'icon' => 'fas fa-hands-helping',
                    'href' => 'https://github.com/sponsors/padams' ),
         ) );
     ?>
     <span class="owa_navigation">
         <UL>
             <?php foreach ( $owa_header_links as $owa_link ):?>
+            <?php
+            /*
+             * An icon, named by aria-label and a tooltip. An entry a module adds
+             * without one shows its label, as every entry used to.
+             */
+            ?>
+            <?php if ( ! empty( $owa_link['icon'] ) ):?>
+            <LI><a class="owa_navIcon" href="<?php $view->safeHref( $owa_link['href'] );?>" aria-label="<?php $view->out( $owa_link['label'] );?>" title="<?php $view->out( $owa_link['label'] );?>"><i class="<?php $view->out( $owa_link['icon'] );?>" aria-hidden="true"></i></a></LI>
+            <?php else:?>
             <LI><a href="<?php $view->safeHref( $owa_link['href'] );?>"><?php $view->out( $owa_link['label'] );?></a></LI>
+            <?php endif;?>
             <?php endforeach;?>
         </UL>
     </span>

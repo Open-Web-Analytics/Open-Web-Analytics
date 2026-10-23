@@ -36,6 +36,10 @@ class OptionsHierarchy extends \OWA\Core\View {
         }
 
         $this->body->set( 'params', $params );
+
+        // The Property chooser is drawn in the header (header.php), from these.
+        $this->t->set( 'params', $params );
+        $this->t->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
         $this->body->set( 'hierarchy_nav', $this->get( 'hierarchy_nav' ) );
 
         /*

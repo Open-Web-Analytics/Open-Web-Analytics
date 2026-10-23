@@ -736,6 +736,39 @@ test.describe('admin: the site control fan-out', () => {
         await expect(page.locator('#owa_siteControlSummary .owa_siteControlProperty')).toContainText(name);
     });
 
+    /**
+     * Rows scroll UNDER the column heading, not over it.
+     *
+     * The column is shrunk and scrolled so this holds whatever the number of
+     * Properties, then the point at the heading's centre is asked what is on
+     * top there.
+     */
+    test('a scrolled column keeps its heading on top', async ({ page }) => {
+        const onTop = await page.evaluate(() => {
+            const column = document.querySelector('.owa_siteControlProperties');
+            const head = column.querySelector('.owa_siteControlColumnHead');
+
+            column.style.maxHeight = '90px';
+            column.scrollTop = 40;
+
+            const r = head.getBoundingClientRect();
+            const n = document.elementFromPoint(r.left + 12, r.top + r.height / 2);
+
+            return { scrolled: column.scrollTop > 0, head: !!(n && n.closest('.owa_siteControlColumnHead')) };
+        });
+
+        expect(onTop.scrolled, 'the column did not scroll, so this proves nothing').toBe(true);
+        expect(onTop.head, 'a row is painted over the column heading').toBe(true);
+    });
+
+    /** The closed tile reads Property first: the Organization is a quiet label above it. */
+    test('the tile names its Property larger than its Organization', async ({ page }) => {
+        const size = (sel) => page.locator(sel).evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+
+        expect(await size('#owa_siteControlSummary .owa_siteControlProperty'))
+            .toBeGreaterThan(await size('#owa_siteControlSummary .owa_siteControlOrg') + 3);
+    });
+
     test('the control offers no Profiles', async ({ page }) => {
         await expect(page.locator('.owa_siteControlProfiles')).toHaveCount(0);
     });

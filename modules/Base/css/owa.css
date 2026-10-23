@@ -36,7 +36,7 @@ div {margin:0;}
 .active_nav_link {background-color:#cccccc;}
 .host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
 #owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
-.owa_logo {float:left;padding-right:30px;  vertical-align: middle;line-height:normal;}
+.owa_logo {float:left;padding-right:14px;  vertical-align: middle;line-height:normal;}
 /* The top bar's links.
  *
  * Each link used to be a 9em box, floated, whatever its text: "Donate" sat in
@@ -61,6 +61,16 @@ div {margin:0;}
     display: flex;
     align-items: center;
     height: 55px;
+}
+/* A thin rule between the logo and the navigation, three quarters of the bar's
+   height. */
+.owa_navigation::before {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 75%;
+    margin-right: 10px;
+    background-color: #d4d4d4;
 }
 .owa_navigation ul {
     list-style: none;
@@ -96,6 +106,17 @@ div {margin:0;}
 /* A filled hover rather than an underline that appears from nowhere: the link
    is a box, so the box responds. The orange stays for the current item, where
    it means something. */
+/* An icon link: a square, one size for every icon, named by its aria-label.
+   .owa and the class outrank the narrow-screen rules for text links. */
+.owa .owa_navigation li a.owa_navIcon {
+    width: 40px;
+    height: 36px;
+    padding: 0;
+    line-height: 36px;
+    text-align: center;
+    font-size: 19px;
+}
+
 .owa_navigation li a:hover {
 	background-color: #f0f2f5;
 	color: #124a6b;

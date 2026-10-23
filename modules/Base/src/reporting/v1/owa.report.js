@@ -11,8 +11,10 @@ import { OWA } from './owa.js';
 const FILTER_PERIOD_TMPL =
 `<div class="timePeriodControlContainer">
 
-    <table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0">
+    <table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0"
+           role="button" tabindex="0" aria-controls="owa_reportPeriodFiltersContainer" aria-expanded="false">
         <TR>
+            <TD class="owa_reportPeriodIcon"><i class="far fa-calendar-alt" aria-hidden="true"></i></TD>
             <TD class="owa_reportPeriodLabelText">
 
                 <span>
@@ -20,7 +22,7 @@ const FILTER_PERIOD_TMPL =
                 </span>
             </TD>
 
-            <TD class="owa_reportRevealControl"></TD>
+            <TD class="owa_reportRevealControl"><i class="fas fa-chevron-down" aria-hidden="true"></i></TD>
         </TR>
     </table>
 
@@ -591,8 +593,18 @@ OWA.report.timePeriodControl.prototype = {
             jQuery(that.dom_id).jqoteapp(FILTER_PERIOD_TMPL, data, '*');
     
             // register show/hide controls event handler
-            jQuery("#owa_reportPeriodLabelContainer").click(function() {
-                jQuery('#owa_reportPeriodFiltersContainer').toggle();
+            // Enter and space as well as a click: the control is a button.
+            jQuery("#owa_reportPeriodLabelContainer").on('click keydown', function( e ) {
+
+                if ( e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ' ) {
+                    return;
+                }
+
+                e.preventDefault();
+
+                var open = ! jQuery('#owa_reportPeriodFiltersContainer').toggle().is(':hidden');
+
+                jQuery(this).toggleClass('is-open', open).attr('aria-expanded', open ? 'true' : 'false');
             });
             
             // bind handler to change start date picker when user enters date by hand.
@@ -859,6 +871,45 @@ OWA.initSiteControl = function() {
         });
 };
 
+/*
+ * The Property chooser is drawn in the header, beside the logo. Where the left
+ * column becomes the slide-out menu (900px and narrower, as in owa.report.css)
+ * it belongs in the menu instead. The one element moves, so its ids and its
+ * handlers stay as they are.
+ */
+OWA.placeSiteControl = function() {
+
+    var control = document.getElementById('owa_siteControl');
+    var header  = document.querySelector('.owa_headerSiteControl');
+    var rail    = document.querySelector('.owa_railSiteControl');
+
+    if ( ! control || ! header || ! rail || ! window.matchMedia || OWA.siteControlPlaced ) {
+        return;
+    }
+
+    OWA.siteControlPlaced = true;
+
+    var narrow = window.matchMedia('(max-width: 900px)');
+
+    function place() {
+
+        var home = narrow.matches ? rail : header;
+
+        if ( control.parentNode !== home ) {
+            home.appendChild( control );
+        }
+    }
+
+    place();
+
+    if ( narrow.addEventListener ) {
+        narrow.addEventListener( 'change', place );
+    } else {
+        narrow.addListener( place );
+    }
+};
+
 jQuery(document).ready(function() {
+    OWA.placeSiteControl();
     OWA.initSiteControl();
 });

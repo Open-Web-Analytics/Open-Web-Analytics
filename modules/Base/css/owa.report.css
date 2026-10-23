@@ -164,8 +164,30 @@
 
 /*#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}*/
 #owa_reportPeriodFiltersContainer .picker { padding-left:15px;}
-#owa_reportPeriodLabelContainer {border: 1px solid #cccccc;  padding: 0px; width:100%;}
-.owa_reportPeriodLabelText {padding:5px; font-size:14px; color:#999999; text-align: center;}
+/* The date range control: a calendar, the range, a chevron that turns over
+   while the panel under it is open. */
+table#owa_reportPeriodLabelContainer {
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    border-collapse: separate;
+    background-color: #ffffff;
+    padding: 0px;
+    width: 100%;
+    cursor: pointer;
+}
+#owa_reportPeriodLabelContainer:hover,
+#owa_reportPeriodLabelContainer:focus { border-color: #a0a0a0; outline: none; }
+.owa_reportPeriodIcon { width: 30px; padding-left: 10px; color: #777777; font-size: 15px; }
+.owa_reportPeriodLabelText { padding: 7px 4px; font-size: 14px; color: #505050; text-align: left; white-space: nowrap; }
+#owa_reportPeriodLabelContainer .owa_reportRevealControl {
+    width: 30px;
+    padding-right: 6px;
+    background: none;
+    color: #777777;
+    font-size: 12px;
+}
+#owa_reportPeriodLabelContainer .owa_reportRevealControl i { transition: transform 0.12s ease; }
+#owa_reportPeriodLabelContainer.is-open .owa_reportRevealControl i { transform: rotate(180deg); }
 
 #owa_reportNavPanel {}
 #report_top_level_nav_ul {width:;}
@@ -3182,6 +3204,59 @@ li.constraintRow {
     font-size: var(--owa-text-sm);
 }
 
+/* In the header, beside the logo: two lines (Organization, Property; the
+   domain is in the panel), and the panel drops down under the tile rather than
+   opening beside it as it did in the left column. On a narrow screen the
+   chooser is in the slide-out menu (OWA.placeSiteControl). */
+.owa_headerSiteControl {
+    float: left;
+    display: flex;
+    align-items: center;
+    height: 55px;
+    margin-right: 14px;
+    line-height: normal;
+}
+
+.owa_headerSiteControl .owa_siteControl {
+    margin: 0;
+    width: 240px;
+}
+
+.owa_headerSiteControl .owa_siteControlSummary {
+    padding: 5px 24px 5px 10px;
+}
+
+.owa_headerSiteControl .owa_siteControlSummary .owa_siteControlDomain {
+    display: none;
+}
+
+/* One line each in the bar; the panel names a Property in full. */
+.owa_headerSiteControl .owa_siteControlSummary .owa_siteControlOrg,
+.owa_headerSiteControl .owa_siteControlSummary .owa_siteControlProperty {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The left column started with the chooser, whose margin spaced it from the
+   header; it starts with its nav now. */
+.owa_railSiteControl {
+    height: 20px;
+}
+
+.owa_headerSiteControl .owa_siteControlPanel {
+    top: 100%;
+    left: 0;
+    margin: 4px 0 0 0;
+}
+
+@media (max-width: 900px) {
+
+    .owa_headerSiteControl { display: none; }
+
+    .owa_railSiteControl { height: auto; }
+}
+
 .owa_siteControlSummary {
     background-color: #ffffff;
     border: 1px solid #cccccc;
@@ -3202,7 +3277,7 @@ li.constraintRow {
 /* The two tiers, weighted by how specific each is to where you are. */
 .owa_siteControlOrg {
     color: #999999;
-    font-size: var(--owa-text-xs);
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -3210,7 +3285,7 @@ li.constraintRow {
 .owa_siteControlProperty {
     color: #505050;
     font-weight: bold;
-    font-size: var(--owa-text-md);
+    font-size: var(--owa-text-lg);
     word-break: break-word;
 }
 
@@ -3293,6 +3368,12 @@ li.constraintRow {
     background-color: #fbfbfb;
     position: sticky;
     top: 0;
+    /*
+     * Above the rows it stays on top of. Each row is position:relative and its
+     * edit link z-index 1, so rows scrolling up painted over a head with no
+     * z-index of its own.
+     */
+    z-index: 2;
 }
 
 .owa_siteControlColumn ul {
@@ -4640,11 +4721,46 @@ li.constraintRow {
         transform: translateX(0);
         visibility: visible;
     }
+
+    /* The site control's fan-out opens UNDER its tile, in the rail, with its
+       columns stacked. Beside the tile, as on a desktop, it was off the side
+       of the screen. */
+    .owa_siteControl.is-open .owa_siteControlPanel {
+        position: static;
+        flex-direction: column;
+        width: auto;
+        max-width: none;
+        margin: 6px 0 0 0;
+        box-shadow: none;
+    }
+
+    /* flex: none -- the desktop's 1 1 0 shares out a width, and stacked it
+       shared out a height the panel does not have, so every column was 0. */
+    .owa_siteControlColumn {
+        flex: none;
+        border-right: 0;
+        border-bottom: 1px solid #efefef;
+        max-height: 50vh;
+    }
+
+    .owa_siteControlColumn:last-child { border-bottom: 0; }
 }
 
 @media (max-width: 600px) {
 
     .owa_reportPeriod { float: none; margin-bottom: 8px; }
+
+    /* The menu takes the whole screen: beside a sliver of page it was 280px of
+       menu next to something too narrow to read. */
+    .owa_reportNavRail { width: 100%; max-width: none; box-shadow: none; }
+
+    /* The date range in one column, so each calendar can take the full width.
+       The presets first: picking one is the usual way to change the range. */
+    #owa_reportPeriodFiltersContainer { width: 100%; }
+    #owa_reportPeriodFiltersContainer > tbody > tr { flex-direction: column; }
+    #owa_reportPeriodFiltersContainer > tbody > tr > td { width: 100%; box-sizing: border-box; }
+    #owa_reportPeriodFiltersContainer .owa_reportPeriodPresets { order: -1; }
+    #owa_reportPeriodFiltersContainer .ui-datepicker { width: 100%; box-sizing: border-box; }
 
     /* Its 480px floor keeps the measure on a desktop; on a phone it is wider
        than the screen. */
