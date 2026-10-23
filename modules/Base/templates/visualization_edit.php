@@ -46,9 +46,7 @@ and where they left.</div>
 
     <div class="setting">
         <div class="title">Visibility</div>
-        <div class="description">Anyone you send the link to can open this either way &mdash;
-        a visualization shows nothing its reader could not already query. This decides whose
-        <em>list</em> it appears on.</div>
+        <div class="description">Whose <em>list</em> it appears on. Anyone you send the link to can open it either way, since it shows nothing its reader could not already query.</div>
         <div class="field">
             <label>
                 <input type="checkbox" value="1"
@@ -61,9 +59,7 @@ and where they left.</div>
 
     <div class="setting">
         <div class="title">Type</div>
-        <div class="description">What kind of visualization this is. Each kind computes its own
-        numbers, so it decides what this form asks for &mdash; which is why it is chosen before
-        the form opens and cannot be changed afterwards.</div>
+        <div class="description">What kind of visualization this is. The kind decides what this form asks for, so it is chosen before the form opens and cannot be changed.</div>
         <div class="field">
             <span class="owa_statedValue">
                 <i class="<?php $view->out( (string) $view->visualizationTypeIcon );?>"
@@ -89,10 +85,7 @@ and where they left.</div>
 
     <div class="setting">
         <div class="title">Steps <span class="owa_builderRequired">Required</span></div>
-        <div class="description">In order, first to last. A step is either a page &mdash; matched
-        on its path &mdash; or one of this Property's goal events, which counts a step exactly
-        where that goal event would have counted a conversion. A step with nothing chosen is
-        ignored, so a row left blank costs nothing.</div>
+        <div class="description">In order, first to last. A step is a page, matched on its path, or one of this Property's goal events, which counts wherever that goal event would count a conversion. A row left blank is ignored.</div>
         <div class="field">
             <ul class="constraintList owa_goalEventFunnel" id="owa_goalEventFunnel" data-owa-repeatable>
             <?php
@@ -236,8 +229,7 @@ and where they left.</div>
 <div class="owa_dangerZone">
     <div class="owa_dangerZoneTitle">Delete this visualization</div>
     <div class="owa_dangerZoneBody">
-        It disappears from the Visualizations list. Nothing it counted is removed &mdash; a
-        visualization computes from events that stay exactly as they are.
+        It is removed from the Visualizations list. The events it counted are not affected.
     </div>
     <form method="post"
           action="<?php echo $view->makeLink( array( 'do' => 'base.customReportDelete' ) );?>">

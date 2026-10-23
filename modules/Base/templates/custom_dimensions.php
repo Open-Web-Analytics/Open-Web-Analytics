@@ -18,9 +18,7 @@
 <div id="panel">
 
 <div class="owa_panelIntro">
-    Values your site sets on an event or a visitor become reportable by being registered here.
-    Everything you send is stored either way &mdash; registering is what gives a value a column
-    of its own so reports can group by it.
+    Register a value your site sets on an event or a visitor to report on it. Every value is stored whether or not it is registered; registering gives it a column in the reporting cube, so reports can group by it.
 </div>
 
 <?php if ( ! $view->cube['exists'] ): ?>

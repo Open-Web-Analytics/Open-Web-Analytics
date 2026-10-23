@@ -54,8 +54,7 @@ $owa_minPassword  = (int) $view->min_password_length;
         <div class="setting">
             <div class="title">Email address</div>
             <div class="description">Where password resets are sent.<?php
-                if ( ! $owa_mayEditEmail ): ?> Changing it is not something your role can
-                do &mdash; ask an administrator.<?php endif; ?></div>
+                if ( ! $owa_mayEditEmail ): ?> Your role cannot change it; ask an administrator.<?php endif; ?></div>
             <div class="field">
                 <?php
                     /*

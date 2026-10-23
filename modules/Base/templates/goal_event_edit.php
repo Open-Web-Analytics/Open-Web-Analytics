@@ -32,9 +32,7 @@ the event, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Name</div>
-        <div class="description">What this is called in reports. In v2 this becomes the
-        event's own name, so it is worth choosing something you would want to see in a
-        report &mdash; "Signup Completed" rather than "Goal 3".</div>
+        <div class="description">The goal event's name, as reports show it: "Signup Completed" rather than "Goal 3".</div>
         <div class="field">
             <input class="owa_largeFormField" type="text" maxlength="255"
                    name="<?php echo $view->getNs();?>name"
@@ -45,10 +43,7 @@ the event, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Counts when</div>
-        <div class="description">Which event can count as this goal, and what it has to
-        carry. The properties offered are the ones the chosen event carries &mdash; a
-        click's target cannot be tested on a page view. A goal event with no conditions
-        matches nothing.</div>
+        <div class="description">Which event counts as this goal, and the values it must carry. Only properties the chosen event carries are offered: a page view has no click target, for example. A goal event with no conditions matches nothing.</div>
         <div class="field">
             <?php
             /*
@@ -153,10 +148,7 @@ the event, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Count</div>
-        <div class="description">How often a match counts. A conversion is recorded against the
-        <em>session</em> &mdash; one column per goal on the session row &mdash; so once per session
-        is the only thing this release can actually measure. Once per event arrives with per-event
-        recording.</div>
+        <div class="description">How often a match counts: once per session.</div>
         <div class="field">
             <?php
                 /*
@@ -217,8 +209,7 @@ the event, how to compare it, and what to compare it to.</div>
 <div class="owa_dangerZone">
     <div class="owa_dangerZoneTitle">Delete this goal event</div>
     <div class="owa_dangerZoneBody">
-        It stops counting and disappears from reports. Events already counted under it are
-        not removed &mdash; what was recorded stays recorded.
+        It stops counting and is removed from reports. The events it has already counted are kept.
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.goalEventDelete');?>

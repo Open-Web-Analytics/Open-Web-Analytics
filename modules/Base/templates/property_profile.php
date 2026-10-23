@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
 <div id="panel">
-<div class="owa_panelIntro">A Property is the thing being measured. The Observation Profiles beneath it are the ways it is watched, and each carries its own tracking id.</div>
+<div class="owa_panelIntro">A Property is what reports are about. Its Observation Profiles collect its data, each under its own tracking id.</div>
 
     <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyEdit' ) );?>">
         <?php echo $view->createNonceFormField( 'base.propertyEdit' );?>
@@ -41,9 +41,7 @@
                 <?php $view->out( $owa_types[ \OWA\Module\Base\Entity\Property::TYPE_WEB ] );?>
             </option>
         </select>
-        <span class="form-instructions">Chosen once. It decides which identifier this Property is
-        known by, and every Observation Profile beneath it is set up against that &mdash; so it
-        cannot be changed afterwards. Apps arrive with app stream support.</span>
+        <span class="form-instructions">Chosen once: it sets the identifier this Property is known by, and its Observation Profiles are set up against that identifier. Apps arrive with app stream support.</span>
         <?php else:?>
         <span class="owa_statedValue"><?php $view->out( $owa_types[ $owa_type ] ?? $owa_type );?></span>
         <?php
@@ -58,9 +56,7 @@
              */
         ?>
         <input type="hidden" name="<?php echo $view->getNs();?>propertyType" value="<?php $view->out( $owa_type );?>">
-        <span class="form-instructions">Chosen when this Property was created, and not editable
-        &mdash; every Observation Profile beneath it is set up against the identifier it
-        implies.</span>
+        <span class="form-instructions">Chosen when this Property was created. It cannot be changed, because the Property's Observation Profiles are set up against the identifier it sets.</span>
         <?php endif;?>
         <BR><BR>
 
