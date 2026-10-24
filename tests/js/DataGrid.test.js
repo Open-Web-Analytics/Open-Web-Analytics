@@ -209,6 +209,22 @@ describe('the table', () => {
         expect($root.find('tr.owa_gridRow').first().find('td[data-column="sessions"]').text()).toBe('60');
     });
 
+    test('a card draws each row\'s first metric as a bar against the largest', () => {
+        const { $root } = draw(resultSet(), { compact: true, showExplorerControls: false });
+
+        expect($root.find('.owa_gridTable').hasClass('is-compact')).toBe(true);
+        expect($root.find('tr.owa_gridRow').length).toBe(3);
+        expect($root.find('tr.owa_gridBarRow .owa_gridBarFill').map((i, el) => el.style.width).get())
+            .toEqual(['100%', '50%', '16.7%']);
+        expect($root.find('tr.owa_gridBarRow td').first().attr('colspan')).toBe('3');
+    });
+
+    test('a grid that is not a card has no bars', () => {
+        const { $root } = draw(resultSet());
+
+        expect($root.find('.owa_gridBarRow').length).toBe(0);
+    });
+
     test('no rows, and no filters: the period has no data', () => {
         const { $root } = draw(resultSet({ rows: [] }));
 

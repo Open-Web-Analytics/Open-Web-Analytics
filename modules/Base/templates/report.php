@@ -62,29 +62,6 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                 <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
 
                 <div class="reportSectionContainer">
-                    <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
-                    <div id="owa_timePeriodControl" class="owa_reportPeriod"></div>
-                    <?php
-                        /*
-                         * Where Live View was. It re-polled widgets that read the
-                         * cube, which moves only at a build, so it refreshed
-                         * nothing; the reader needs when the numbers were built.
-                         * The time arrives with the widgets' results.
-                         */
-                        $owa_asOf = $view->get( 'report_as_of' );
-                    ?>
-                    <?php if ( $owa_asOf ): ?>
-                    <div id="owa_reportAsOf" class="owa_reportAsOf<?php echo $owa_asOf['warning'] ? ' owa_reportAsOfStale' : ''; ?>"
-                         data-timezone="<?php $view->out( $owa_asOf['timezone'] ); ?>">
-                        Data as of <span class="owa_reportAsOfTime">&hellip;</span>
-                        <?php if ( $owa_asOf['warning'] ): ?>
-                            &mdash; <?php $view->out( $owa_asOf['warning'] ); ?><?php if ( $owa_asOf['can_view'] ): ?>
-                            (<a href="<?php echo $view->makeLink( array( 'do' => 'base.cubeStatusDetail',
-                                'propertyId' => $owa_asOf['property_id'] ) ); ?>">details</a>)<?php endif; ?>
-                        <?php endif; ?>
-                    </div>
-                    <?php endif; ?>
-                    <?php endif;?>
                     <?php
                         /*
                          * Actions belonging to the SCREEN, on the title's line.
@@ -93,8 +70,7 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                          * as markup a controller echoes, so a controller cannot
                          * put arbitrary HTML into the report header.
                          *
-                         * Floated right like the period picker, which is what
-                         * puts them on the title's line rather than under it.
+                         * Beside the period picker, opposite the title.
                          */
                     ?>
                     <?php
@@ -122,28 +98,6 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                         $owa_titleButtons = array_values( array_filter( $owa_titleActions,
                             function ( $a ) { return empty( $a['iconOnly'] ); } ) );
                     ?>
-                    <?php if ( $owa_titleButtons ): ?>
-                    <div class="owa_titleActions">
-                        <?php foreach ( $owa_titleButtons as $owa_action ): ?>
-                        <?php
-                            /*
-                             * An optional class, so an action can be HOOKED as
-                             * well as followed. The visualizations roster asks
-                             * which kind first, in a modal, and needs something
-                             * to bind to -- while the href stays a real link,
-                             * so the action still works with no JavaScript.
-                             */
-                        ?>
-                        <a class="owa_button<?php
-                            if ( ! empty( $owa_action['class'] ) ): ?> <?php
-                                $view->out( $owa_action['class'] ); endif; ?>"
-                           href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
-                            if ( ! empty( $owa_action['icon'] ) ): ?><i class="fa <?php
-                                $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon"></i><?php
-                            endif; ?><?php $view->out( $owa_action['label'] ); ?></a>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
 
                     <?php
                         /*
@@ -166,6 +120,9 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                             && $owa_titleCount !== null
                             && $owa_titleCount !== '';
                     ?>
+                    <?php // The title and when its numbers are from; the period and the screen's actions opposite. ?>
+                    <div class="owa_reportHead">
+                    <div class="owa_reportHeadText">
                     <div class="owa_reportTitle"><?php echo $view->title;
                         ?><?php if ( $owa_hasCount ): ?><span
                             class="owa_titleCount"><?php $view->out( $owa_titleCount ); ?></span><?php
@@ -190,6 +147,57 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                              */
                             $view->out( $owa_mark['icon'] ); ?>"></i></a><?php
                         endforeach; ?></div>
+                    <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
+                    <?php
+                        /*
+                         * Where Live View was. It re-polled widgets that read the
+                         * cube, which moves only at a build, so it refreshed
+                         * nothing; the reader needs when the numbers were built.
+                         * The time arrives with the widgets' results.
+                         */
+                        $owa_asOf = $view->get( 'report_as_of' );
+                    ?>
+                    <?php if ( $owa_asOf ): ?>
+                    <div id="owa_reportAsOf" class="owa_reportAsOf<?php echo $owa_asOf['warning'] ? ' owa_reportAsOfStale' : ''; ?>"
+                         data-timezone="<?php $view->out( $owa_asOf['timezone'] ); ?>">
+                        Data as of <span class="owa_reportAsOfTime">&hellip;</span>
+                        <?php if ( $owa_asOf['warning'] ): ?>
+                            &mdash; <?php $view->out( $owa_asOf['warning'] ); ?><?php if ( $owa_asOf['can_view'] ): ?>
+                            (<a href="<?php echo $view->makeLink( array( 'do' => 'base.cubeStatusDetail',
+                                'propertyId' => $owa_asOf['property_id'] ) ); ?>">details</a>)<?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+                    <?php endif;?>
+                    </div>
+                    <div class="owa_reportHeadControls">
+                    <?php if ( $owa_titleButtons ): ?>
+                    <div class="owa_titleActions">
+                        <?php foreach ( $owa_titleButtons as $owa_action ): ?>
+                        <?php
+                            /*
+                             * An optional class, so an action can be HOOKED as
+                             * well as followed. The visualizations roster asks
+                             * which kind first, in a modal, and needs something
+                             * to bind to -- while the href stays a real link,
+                             * so the action still works with no JavaScript.
+                             */
+                        ?>
+                        <a class="owa_button<?php
+                            if ( ! empty( $owa_action['class'] ) ): ?> <?php
+                                $view->out( $owa_action['class'] ); endif; ?>"
+                           href="<?php $view->out( $owa_action['url'], false ); ?>"><?php
+                            if ( ! empty( $owa_action['icon'] ) ): ?><i class="fa <?php
+                                $view->out( $owa_action['icon'] ); ?> owa_titleActionIcon"></i><?php
+                            endif; ?><?php $view->out( $owa_action['label'] ); ?></a>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
+                    <div id="owa_timePeriodControl" class="owa_reportPeriod"></div>
+                    <?php endif;?>
+                    </div>
+                    </div>
 
                     <div class="clear"></div>
                     <?php echo $view->subview;?>

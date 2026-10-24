@@ -18,10 +18,17 @@ OWA.areaChart = function( options ) {
         timeformat: "%m/%d",
         showGrid: true,
         showLegend: true,
-        showDots: true,
-        lineWidth: 4,
+        showDots: false,
+        lineWidth: 2.5,
         autoResizeCharts: true,
-        fillColor: "rgba(202,225,255, 0.6)",
+        fillColor: "rgba(24, 116, 205, 0.07)",
+
+        /*
+         * The plot's furniture, kept quiet so the line is what is read:
+         * horizontal rules only, and the axis labels in the page's grey.
+         */
+        gridColor: "#6b7280",
+        tickColor: "#eef0f3",
 
         /*
          * One colour per line, and the SAME ones the pie uses.
@@ -252,9 +259,11 @@ OWA.areaChart.prototype = {
                 yaxis: this.yAxis( resultSet, y_name, dataseries ),
                 xaxis:{
                     ticks: num_ticks,
-                    tickDecimals: null
+                    tickDecimals: null,
+                    tickLength: 0
                 },
-                grid: {show: this.options.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null},
+                grid: {show: this.options.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null,
+                       color: this.options.gridColor, tickColor: this.options.tickColor},
                 series: {
                     points: { show: this.options.showDots, fill: this.options.showDots },
 
@@ -380,10 +389,12 @@ OWA.areaChart.prototype = {
                         timeformat: zero.x_type === 'yyyymm'
                             ? this.options.monthFormat
                             : this.options.timeformat,
-                        ticks: Math.min( 10, zero.points.length )
+                        ticks: Math.min( 10, zero.points.length ),
+                        tickLength: 0
                     },
                     grid: { show: this.options.showGrid, hoverable: true,
-                            borderWidth: 0, borderColor: null },
+                            borderWidth: 0, borderColor: null,
+                            color: this.options.gridColor, tickColor: this.options.tickColor },
                     series: {
                         points: { show: false },
                         lines: { show: true, fill: true, lineWidth: this.options.lineWidth }
@@ -406,7 +417,8 @@ OWA.areaChart.prototype = {
                     yaxis: { min: 0, max: 1, ticks: [ 0, 1 ] },
                     xaxis: { min: 0, max: 1, ticks: [] },
                     grid:  { show: this.options.showGrid, hoverable: false,
-                             borderWidth: 0, borderColor: null },
+                             borderWidth: 0, borderColor: null,
+                             color: this.options.gridColor, tickColor: this.options.tickColor },
                     series: { lines: { show: false }, points: { show: false } },
                     legend: { show: false }
                 };

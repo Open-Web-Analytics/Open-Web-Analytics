@@ -1428,7 +1428,7 @@ final class ReportDefinitionFormatTest extends TestCase
             'the title must reach the box as its label' );
 
         $this->assertStringNotContainsString(
-            '<div class="owa_reportSectionHeader">Visits From Search Engines</div>', $html,
+            '<span class="owa_reportSectionTitle">Visits From Search Engines</span>', $html,
             'a widget that draws its own label must not also get the generic header' );
     }
 
@@ -1770,7 +1770,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $this->assertSame( 1,
             substr_count( $this->reportLinksHtml(),
-                '<div class="owa_reportSectionHeader">Related Reports</div>' ),
+                '<span class="owa_reportSectionTitle">Related Reports</span>' ),
             'the title must be rendered once, not once per renderer that knows about it' );
     }
 
@@ -1783,7 +1783,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->reportLinksHtml( array( 'showTitle' => false ) );
 
-        $this->assertStringNotContainsString( 'owa_reportSectionHeader">Related Reports', $html,
+        $this->assertStringNotContainsString( 'owa_reportSectionTitle">Related Reports', $html,
             'showTitle must hide a report-links title like any other' );
 
         // Hidden, not lost: the links it names are still rendered.

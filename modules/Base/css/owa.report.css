@@ -5,11 +5,13 @@
 #report_header {width:100%; margin: 0 0 20px 0; }
 
 .owa_reportTitle, .report_headline {
-    font-size:26px;
-    padding:5px 5px 5px 0px;
-    font-weight:bold;
-    color:#505050;
-    margin-bottom:20px;
+    font-size:30px;
+    line-height:1.25;
+    letter-spacing:-0.01em;
+    padding:0;
+    font-weight:600;
+    color:#111827;
+    margin:0;
 }
 
 .titleSuffix {
@@ -20,15 +22,18 @@
 
 .owa_reportContainer {width:auto; background-color: ; height:;}
 .owa_reportElement {width:100%; text-align:center; vertical-align: top;}
+/* A section's name, and the link to its full report on the same line. */
 .owa_reportSectionHeader, .section_header {
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
     width:auto;
-    padding-top:5px;
-    padding-bottom:10px;
-    margin: 10px 0 10px 0;
-    font-size: 18px;
-    font-weight: ;
-    color: #666666;
-    border-top: 3px solid #cccccc;
+    padding:0;
+    margin:0 0 16px 0;
+    font-size:16px;
+    font-weight:600;
+    color:#111827;
 }
 
 .owa_reportHeadline {
@@ -39,18 +44,15 @@
     color: #505050;
 }
 
+/* The report itself: no panel, the page is white (wrapper_default.php). */
 .reportSectionContainer {
-    margin: 20px;
-    padding: 20px;
-    background-color: #ffffff;
-   
-    
+    margin: 0;
+    padding: 32px 40px 96px;
 }
 
 .owa_reportSectionContent {
     margin: 0 10px 0 10px;
     padding:0px 7px 7px 0px;
-    background-color: #ffffff;
     width:auto;
 }
 
@@ -130,11 +132,43 @@
 .owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
 /* The date range control, right of the report title. Below 600px it takes the
    whole width instead (see the narrow-screen rules). */
-.owa_reportPeriod { float: right; }
+/* The title and its as-of line on the left; the period picker and the
+   screen's actions on the right, level with the foot of the title. */
+.owa_reportHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.owa_reportHeadText {
+    min-width: 0;
+}
+
+.owa_reportHeadControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.owa_reportPeriod { position: relative; }
 #owa_reportPeriodControl table {border: 1px solid #cccccc;  padding: 0px; border-collapse: collapse;}
 
 
-#owa_reportPeriodFiltersContainer {background-color: #efefef; width:100%;}
+/* The period panel drops down under the picker, over the report, rather than
+   pushing the header open. */
+#owa_reportPeriodFiltersContainer {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 50;
+    width: auto;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
+}
 
 /*#owa_reportPeriodFiltersContainer td, th {padding:7px; text-align: left;}*/
 #owa_reportPeriodFiltersContainer .picker { padding-left:15px;}
@@ -170,12 +204,17 @@ table#owa_reportPeriodLabelContainer {
 
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid var(--owa-accent); text-align: left; padding:5px; margin-bottom:5px;}
 
+/*
+ * A metric's figure: its name, then the number, with nothing round them. The
+ * one a chart above is drawing is underlined in the chart's colour.
+ */
 .owa_metricInfobox, .owa .action_infobox {
-    color:#505050;
-    background-color: #ffffff;
+    color:#111827;
+    background-color: transparent;
     text-align: left;
-    border: 1px solid #cccccc;
-    padding:0px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding:0 0 16px;
     margin:3px;
     min-width:110px;
     width:100%;
@@ -184,26 +223,27 @@ table#owa_reportPeriodLabelContainer {
 }
 
 .owa_metricInfobox p, .owa_metricInfobox span, .owa .action_infobox {
-    padding:0px 7px 0px 7px;
+    padding:0;
     margin:0px;
 
 }
 
 p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .action_name  {
-    color:#666666;
-    font-size:12px;
-    padding-top:6px;
+    color:#6b7280;
+    font-size:13px;
+    padding-top:0;
     margin-bottom:0px;
 }
 
 p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_infobox .action_value {
-    color:#505050;
-    font-size:28px;
+    color:#111827;
+    font-size:34px;
+    letter-spacing:-0.02em;
     padding-bottom: 0px;
-    font-family: "Helvetica";
-    margin-top:5px;
-    font-weight: bold;
-    line-height: normal;
+    margin-top:8px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
     white-space:nowrap;
 }
 
@@ -412,28 +452,64 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     text-transform: capitalize;
 }
 
-/* The selected tab, in the trend's blue.
- *
- * jQuery-UI's base theme paints an active widget #007fff, which is a different
- * blue from the one the chart beside it draws its total in. Two blues within a
- * few pixels of each other read as an accident. #1874CD is OWA.areaChart's
- * totalColor -- the colour the report already means "this one".
- *
- * The anchor is coloured too: .ui-state-active sets a colour on the LI, and
- * the anchor inside it carries its own. */
-/* border-COLOR, not the border shorthand: the tabs widget zeroes the bottom
-   border width on every li so the active one merges into the panel below it,
-   and a shorthand here would put that edge back. */
+/*
+ * Tabs as a row of words over a rule, the selected one underlined in the
+ * trend's blue (OWA.areaChart's totalColor) -- no box round the bar or the
+ * panel under it.
+ */
+.owa .ui-tabs.ui-widget-content,
+.owa .ui-tabs {
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.owa .ui-tabs .ui-tabs-nav {
+    display: flex;
+    gap: 24px;
+    margin: 0 0 32px;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid #eef0f3;
+    border-radius: 0;
+    background: transparent;
+}
+
+.owa .ui-tabs .ui-tabs-nav li,
+.owa .ui-tabs .ui-tabs-nav li.ui-state-default {
+    float: none;
+    margin: 0 0 -1px;
+    padding: 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+}
+
+.owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor {
+    padding: 0 0 12px;
+    color: #4b5563;
+}
+
+.owa .ui-tabs .ui-tabs-nav li:hover .ui-tabs-anchor {
+    color: #111827;
+}
+
 .owa .ui-tabs .ui-tabs-nav li.ui-tabs-active,
 .owa .ui-tabs .ui-tabs-nav li.ui-tabs-active.ui-state-active {
-    border-color: #1874CD;
-    background: #1874CD;
+    border-bottom-color: #1874CD;
+    background: transparent;
 }
 
 .owa .ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
 .owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:link,
 .owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:visited {
-    color: #ffffff;
+    color: #1874CD;
+    font-weight: 600;
+}
+
+.owa .ui-tabs .ui-tabs-panel {
+    padding: 0;
 }
 
 /* The Live View switch is the same kind of thing -- a two-segment control
@@ -920,7 +996,8 @@ li.constraintRow {
 .owa img.loading { 
     margin: 5px 5px 5px 30px
 }
-.owa #trend-chart {
+/* A class, not the id: a widget's own rules size its chart. */
+.owa .owa_trendChart {
     min-height: 125px
 }
 .owa #trend-metrics {
@@ -1020,7 +1097,11 @@ li.constraintRow {
     container-name: owa-report;
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 20px;
+
+    /* A share of the width between columns, up to 48px: there are eleven
+       gaps between twelve columns, and at a fixed 48px they alone come to
+       528px -- wider than a phone, with every track empty. */
+    gap: 64px min(48px, 3.5%);
 
     /* EVERY WIDGET IN A ROW IS THE SAME HEIGHT.
      *
@@ -1242,37 +1323,18 @@ li.constraintRow {
 }
 
 .owa .owa_metricBoxesSelectable .owa_metricInfobox:hover {
-    background-color: #f5faff;
+    border-bottom-color: #d1d5db;
 }
 
-/*
- * The one being charted. A left edge in the chart's own colour, so the box and
- * the filled area it describes are visibly the same thing.
- */
-/*
- * The one being charted. A strip along the TOP in the chart's own colour, so
- * the box and the line it describes are visibly the same thing -- and so the
- * mark reads as a tab over the number rather than as an edge beside it.
- *
- * The colour only. The strip itself is reserved on every box above, which is
- * what keeps the row from stepping when the reader picks a different metric.
- */
-.owa .owa_metricInfobox.owa_metricInfoboxCharted {
-    /*
-     * An INSET BAR, not a thicker border.
-     *
-     * A 3px top border on the charted box alone would stand it 2px taller than
-     * its neighbours and step the row -- and reserving the 3px on every box
-     * took away the 1px grey top the others had, so every box but one read as
-     * open at the top. An inset shadow paints the same bar inside the box's own
-     * edge: no geometry changes and nothing loses a border.
-     */
-    box-shadow: inset 0 3px 0 #1874CD;
-    background-color: #f5faff;
+/* The one being charted: underlined in the chart's own colour, so the figure
+   and the line it describes are visibly the same thing. */
+.owa .owa_metricInfobox.owa_metricInfoboxCharted,
+.owa .owa_metricBoxesSelectable .owa_metricInfobox.owa_metricInfoboxCharted:hover {
+    border-bottom-color: #1874CD;
 }
 
 .owa .owa_metricInfobox.owa_metricInfoboxCharted .owa_metricInfoboxLabel {
-    font-weight: bold;
+    color: #111827;
 }
 
 /*
@@ -2001,7 +2063,6 @@ li.constraintRow {
 }
 
 .owa .owa_titleActions {
-    float: right;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -2251,7 +2312,7 @@ li.constraintRow {
 .owa .metricInfoboxesContainer {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 32px;
     align-items: stretch;
 }
 
@@ -2277,95 +2338,21 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
- * Card widgets: the panel
+ * Widgets have no panels
  *
- * A card and a pie are PANELS -- a bounded thing you read at a glance and then
- * follow to the full report. A full-width table or trend is not; it is the page
- * itself, and putting a box round it would be drawing a box round everything.
- *
- * So the chrome goes on the types that are cards. `owa_widget-<type>` comes
- * from Core\ReportGrid::classesFor, which is what lets a stylesheet say
- * "every card" instead of naming each one's container id.
- *
- * THE FLOOR IS THE POINT. align-items:stretch already makes a row uniform, but
- * a row that happens to hold only short widgets was still short -- and a card
- * with two rows in it drew a panel barely taller than its own heading. The
- * min-height is what makes a card the same object whether or not the data
- * filled it, which is the whole reason it is a card and not a table.
- *
- * A floor, not a fixed height: a card given more than it expected grows rather
- * than clipping, and pagination is what keeps that bounded (see
- * ConfiguredReport::DEFAULT_CARD_ROWS).
+ * A widget is a section of the page: its name, then what it shows, with
+ * whitespace between it and the next. `owa_widget-<type>` comes from
+ * Core\ReportGrid::classesFor.
  * ------------------------------------------------------------------------- */
 
-.owa .owa_reportGridItem.owa_widget-grid,
-.owa .owa_reportGridItem.owa_widget-grid-card,
-.owa .owa_reportGridItem.owa_widget-trend-card,
-.owa .owa_reportGridItem.owa_widget-pie {
-    min-height: 320px;
+/* A column, with the body taking what the row gives it beyond its content. */
 
-    /* Explicit rather than inherited: .owa_reportSectionContent sets a white
-       background already, but a panel that depends on an ancestor's colour is
-       a panel that changes when the page behind it does. */
-    background-color: #ffffff;
-
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-
-    /* Room on every side. .owa_reportSectionContent's own padding is
-       `0 7px 7px 0` -- nothing at the top or the left -- which was invisible
-       without a border and puts the heading against the edge with one. */
-    padding: 16px;
-
-    /* The section content's side margins are the grid's gap here, and 10px of
-       margin plus a border reads as a panel inset from its own column. */
+/* The grid's gaps are the space between widgets, so a widget adds none of
+   its own to the margins .owa_reportSectionContent gives it. */
+.owa .owa_reportGrid > .owa_reportGridItem {
     margin: 0;
+    padding: 0;
 }
-
-/* One card per row, under 620px of grid: the floor is there so cards beside
-   each other match, and with none beside it a card is as tall as its content.
-   A seven-row table no longer sits above 100px of empty panel. */
-@container owa-report (max-width: 619px) {
-
-    .owa .owa_reportGridItem.owa_widget-grid,
-    .owa .owa_reportGridItem.owa_widget-grid-card,
-    .owa .owa_reportGridItem.owa_widget-trend-card,
-    .owa .owa_reportGridItem.owa_widget-pie {
-        min-height: 0;
-    }
-}
-
-/* The heading sits at the top of the panel, so its own spacing is the panel's
-   padding -- and its 3px rule goes.
- *
- * That rule is how a section announces itself on a page with no boxes on it:
- * a line above the words, separating this section from the last. Inside a
- * bordered panel there is already a line above the words -- the panel's own top
- * edge, 16px higher -- so the rule reads as a second, shorter border with a gap
- * between them. The panel says what the rule was saying. */
-.owa .owa_reportGridItem.owa_widget-grid > .owa_reportSectionHeader,
-.owa .owa_reportGridItem.owa_widget-grid-card > .owa_reportSectionHeader,
-.owa .owa_reportGridItem.owa_widget-trend-card > .owa_reportSectionHeader,
-.owa .owa_reportGridItem.owa_widget-pie > .owa_reportSectionHeader {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
-}
-
-/* ---------------------------------------------------------------------------
- * ...and the footer sits on the panel's floor.
- *
- * A panel has a floor under its height, so a table with four rows in it leaves
- * space below them -- and the pager and the "View Full Report" link were
- * landing in the middle of it, against the last row, with the rest of the
- * panel empty underneath. They belong at the bottom: they are what you do
- * NEXT, and next is the end of the thing.
- *
- * A column, with the body taking the slack. Every panel is a flex column and
- * the widget's body grows into whatever the rows do not use, so anything after
- * it is pushed to the bottom edge -- and the pager, which lives INSIDE the
- * body, is pushed to the bottom of that.
- * ------------------------------------------------------------------------- */
 
 .owa .owa_reportGridItem.owa_widget-grid,
 .owa .owa_reportGridItem.owa_widget-grid-card,
@@ -2387,17 +2374,24 @@ li.constraintRow {
     min-width: 0;
 }
 
-/* The "View Full Report" link is a sibling of the body rather than inside it,
-   so it needs saying separately -- and it goes UNDER the pager, which is the
-   order they read in: page through what is here, then go and see all of it. */
-.owa .owa_reportGridItem .owa_moreLinks {
-    margin-top: auto;
+/* The link to a widget's full report, on its heading's line. */
+.owa .owa_reportSectionHeader .owa_moreLinks {
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+    font-weight: normal;
+    white-space: nowrap;
 }
 
-/* ...but not when the body is already taking the slack, or the two would fight
-   over it and the link would sit a row's height off the floor. */
-.owa .owa_reportGridItem .owa_widgetBody ~ .owa_moreLinks {
-    margin-top: 0;
+.owa .owa_reportSectionHeader .owa_moreLinks a {
+    font-size: 13px;
+    color: #1874CD;
+}
+
+.owa .owa_reportSectionHeader .owa_moreLinks a:hover {
+    border-bottom: 0;
+    color: #0f5596;
+    text-decoration: underline;
 }
 
 /* ---------------------------------------------------------------------------
@@ -2584,33 +2578,7 @@ li.constraintRow {
  * the shape behind them second. A full-width trend is the other way round
  * because there the chart IS the thing; half a row is not enough chart for that
  * to be true.
- *
- * The boxes lose their borders, which is the whole visual difference. Two
- * bordered boxes stacked above a plot read as three separate panels; without
- * them the figure and its shape read as one thing, which is what a card is.
  * ------------------------------------------------------------------------- */
-
-.owa .owa_trendCardMetrics .owa_metricInfobox {
-    /* Borderless. The charted marker is painted inside the box rather than on
-       its edge, so there is nothing here for it to depend on. */
-    border: 0;
-    background-color: transparent;
-}
-
-/* The tint goes with the border. What marks the charted box is the accent
-   below, not a panel behind it. */
-.owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
-    background-color: transparent;
-}
-
-/* ...except this one bar, which is not decoration: it is the only thing saying
-   WHICH metric the plot underneath is drawing, and a card whose boxes cannot
-   say that has boxes that say nothing. Along the top, at the chart's own
-   colour, so the box and the line are visibly the same thing. Inherited from
-   the rule above -- restated here only because the tint is not wanted. */
-.owa .owa_trendCardMetrics .owa_metricInfobox.owa_metricInfoboxCharted {
-    box-shadow: inset 0 3px 0 #1874CD;
-}
 
 /* Room between the numbers and the plot they describe -- without the box
    borders there is no edge to separate them. */
@@ -2636,12 +2604,23 @@ li.constraintRow {
     min-height: 130px;
 }
 
-/* Four metrics across half a row is about 110px a box, and 28px digits do not
-   fit that -- "0:02:24" alone is wider. Sized down so the row a card can
-   actually hold is a row a reader can actually read; still the largest thing in
-   the widget, which is what makes it the headline. */
-.owa .owa_trendCardMetrics .owa_metricInfoboxLargeNumber {
+/* Four metrics across half a row is about 110px a box, and 34px digits do not
+   fit that -- "0:02:24" alone is wider. Sized down in a card narrower than the
+   row; still the largest thing in the widget, which is what makes it the
+   headline. */
+.owa .owa_widget-trend-card:not(.owa_span-12) .owa_trendCardMetrics .owa_metricInfoboxLargeNumber {
     font-size: 22px;
+}
+
+/* A trend card the width of the report has the room for a chart that is. */
+.owa .owa_widget-trend-card.owa_span-12 .owa_trendChart {
+    min-height: 260px;
+}
+
+/* A pie's legend sits beside the circle and can reach past the widget's edge,
+   which the sideways scroll every widget has would cut off. */
+.owa .owa_reportGridItem.owa_widget-pie {
+    overflow: visible;
 }
 
 /* The boxes share what the row has rather than each taking a fixed slice: the
@@ -4010,11 +3989,9 @@ li.constraintRow {
  * up on their own.
  */
 .owa_reportAsOf {
-    float: right;
-    clear: right;
-    margin: 4px 0 0 0;
-    font-size: 11px;
-    color: #999999;
+    margin: 8px 0 0 0;
+    font-size: 14px;
+    color: #6b7280;
     visibility: hidden;
 }
 
@@ -4391,7 +4368,7 @@ li.constraintRow {
 
 @media (max-width: 600px) {
 
-    .owa_reportPeriod { float: none; margin-bottom: 8px; }
+    .owa_reportHead { margin-bottom: 24px; }
 
     /* The menu takes the whole screen: beside a sliver of page it was 280px of
        menu next to something too narrow to read. */
@@ -4399,7 +4376,8 @@ li.constraintRow {
 
     /* The date range in one column, so each calendar can take the full width.
        The presets first: picking one is the usual way to change the range. */
-    #owa_reportPeriodFiltersContainer { width: 100%; }
+    #owa_reportPeriodFiltersContainer { width: 100%; position: static; box-shadow: none; }
+    .owa_reportHeadControls, .owa_reportPeriod { width: 100%; }
     #owa_reportPeriodFiltersContainer > tbody > tr { flex-direction: column; }
     #owa_reportPeriodFiltersContainer > tbody > tr > td { width: 100%; box-sizing: border-box; }
     #owa_reportPeriodFiltersContainer .owa_reportPeriodPresets { order: -1; }

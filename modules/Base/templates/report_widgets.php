@@ -339,8 +339,23 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         && ! empty( $owa_w['title'] )
         && ( ! array_key_exists( 'showTitle', $owa_w ) || $owa_w['showTitle'] );
 ?>
+<?php
+    /*
+     * "View Full Report" -- a link from a summary widget to the report that
+     * shows the whole thing. On the heading's line when there is a heading,
+     * under the widget when there is not.
+     *
+     * A property of the widget rather than a sibling report-links widget,
+     * because it describes THIS widget. As a sibling it could be reordered
+     * away from the grid it refers to and mean nothing.
+     */
+    $owa_more = ! empty( $owa_w['more'] );
+?>
 <?php if ( $owa_showTitle ): ?>
-        <div class="owa_reportSectionHeader"><?php $view->out( $owa_w['title'] ); ?></div>
+        <div class="owa_reportSectionHeader"><span class="owa_reportSectionTitle"><?php $view->out( $owa_w['title'] ); ?></span><?php
+            if ( $owa_more ): ?><span class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
+                'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
+                $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></span><?php endif; ?></div>
 <?php endif; ?>
 
 <?php if ( in_array( ( $owa_w['type'] ?? '' ), array( 'trend', 'trend-card' ), true ) ): ?>
@@ -758,22 +773,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
 <?php endif; ?>
 
-<?php if ( ! empty( $owa_w['more'] ) ): ?>
-        <?php
-            /*
-             * "View Full Report" -- a link from a summary widget to the report
-             * that shows the whole thing.
-             *
-             * A property of the widget rather than a sibling report-links
-             * widget, because it describes THIS widget. As a sibling it could
-             * be reordered away from the grid it refers to and mean nothing.
-             */
-        ?>
-        <div class="owa_genericHorizonalList owa_moreLinks">
-            <ul><li><a href="<?php echo $view->makeLink( array(
-                'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
-                $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></li></ul>
-        </div>
+<?php if ( $owa_more && ! $owa_showTitle ): ?>
+        <div class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
+            'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
+            $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></div>
 <?php endif; ?>
 
     </div>
