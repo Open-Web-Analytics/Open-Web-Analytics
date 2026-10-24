@@ -114,6 +114,28 @@ in selection, but note that the driver interface gained an optional `$params`
 argument on `query()`, `get_results()` and `get_row()`. A driver that overrides
 those with the old signature will need it added.
 
+### The navigation is a rail of sections and a column of pages
+
+The report sections are a rail at the left, with Settings at its foot; the
+current section's reports are the column beside it. Settings screens use the
+same rail and column. The header no longer carries Analytics, Settings or
+Donate: Donate is in the help menu.
+
+For module and template authors:
+
+- `Template::makeNavigationMenu()` and the `report_nav.php` and
+  `hierarchy_nav.php` templates are removed. `Template::navRail()`,
+  `settingsColumn()` and `profileTabs()` build the navigation, and
+  `nav_shell.php` draws it.
+- Navigation a module registers with `addNavigationSubGroup()` and
+  `addNavigationLinkInSubGroup()` appears as before: a group is a section of the
+  rail and its links are its column. A group may set `overview_label` to name
+  its own entry in the column, which is "Overview" otherwise.
+- `nav_header` still adds entries to the header, which has none of its own.
+- A settings page registered into the `Observation Profile` section is a tab of
+  the Profile's page rather than an entry in the column. The hierarchy nav has a
+  new `Profiles` section: one entry per Profile of the Property, and Add profile.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

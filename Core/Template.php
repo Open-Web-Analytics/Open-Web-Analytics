@@ -1062,53 +1062,281 @@ class Template extends TemplateEngine {
     }
 
     /**
-     * @param array        $links
-     * @param string       $currentPropertyId the Property the report is of
-     * @param array|string $current  the request's params, or just its action
-     * @param string       $accessSiteId a Profile of it the reader may see,
-     *                                   which each link's capability is checked
-     *                                   against; site access is held per Profile
+     * The rail: one entry per report section, then Settings at its foot.
+     *
+     * Each entry carries its own reports as `items`, which are the column
+     * beside the rail when the section is current and the flyout when it is
+     * not. A section with no reports under it (Dashboard, Realtime) has none,
+     * and opens no column.
+     *
+     * The section's own report heads its items, as "Overview" unless the
+     * section names it (overview_label). An item pointing where the section
+     * itself does is dropped, so it is not listed twice.
+     *
+     * @param array  $nav        the Reports navigation group
+     * @param string $propertyId the Property every report link is of
+     * @param array  $params     the request's params, to mark what is current
+     * @param string $accessSiteId a Profile of the Property, which each link's
+     *                           capability is checked against
+     * @param bool   $inSettings whether this screen is a settings screen
+     * @return array[] id, label, icon, href, current, items, foot
      */
-    function makeNavigationMenu($links, $currentPropertyId, $current = '', $accessSiteId = '') {
+    public function navRail( $nav, $propertyId, $params = array(), $accessSiteId = '', $inSettings = false ) {
 
-        if (!empty($links) && !empty($currentPropertyId)) {
+        $user  = $this->getCurrentUser();
+        $state = $propertyId !== '' && $propertyId !== null ? array( 'propertyId' => $propertyId ) : array();
+        $rail  = array();
 
-            /*
-             * The WHOLE request, not just its action.
-             *
-             * Every report answers to do=base.report now, so the action alone no
-             * longer says which report is being looked at -- navLinkIsCurrent
-             * compares a link's full ref, and a report link carries a reportId
-             * the action cannot supply. Passing only the action meant no report
-             * link was ever current, which read as two separate bugs: nothing
-             * highlighted, and the left nav collapsing on every page load
-             * (.owa_admin_nav_subgroup is display:none until the script opens
-             * the group holding .owa_current, and there was never one).
-             *
-             * A string is still accepted, because that is what this took for
-             * fifteen years and a third-party template may still pass one.
-             */
-            $params = is_array( $current ) ? $current : array( 'do' => $current );
+        foreach ( (array) $nav as $key => $section ) {
 
-            $t = new \OWA\Core\Template;
-            $t->set('links', $links);
-            $t->set('currentSiteId', $accessSiteId);
-			$t->set('params', $params);
-            // Only when there is some: the nav is built on screens that carry no
-            // link state, and propagating an absent key is an undefined-key
-            // warning -- which CI treats as a failure.
-            if ( isset( $this->caller_params['link_state'] ) ) {
+            if ( ! $user->isCapable( $section['priviledge'] ?? '', $accessSiteId ) ) {
 
-                $t->caller_params['link_state'] = $this->caller_params['link_state'];
+                continue;
             }
 
-            $t->set_template('report_nav.php');
-            return $t->fetch();
-        } else {
+            $own   = $this->navLinkParams( $section );
+            $items = array();
+
+            if ( ! empty( $section['subgroup'] ) ) {
+
+                $items[] = array(
+                    'label'   => (string) ( $section['overview_label'] ?? 'Overview' ),
+                    'href'    => $this->makeLink( array_merge( $state, $own ), true ),
+                    'current' => ! $inSettings && $this->navLinkIsCurrent( $section, $params ),
+                );
+
+                foreach ( $section['subgroup'] as $link ) {
+
+                    if ( $this->navLinkParams( $link ) == $own
+                         || ! $user->isCapable( $link['priviledge'] ?? '', $accessSiteId ) ) {
+
+                        continue;
+                    }
+
+                    $items[] = array(
+                        'label'   => strip_tags( (string) $link['anchortext'] ),
+                        'href'    => $this->makeLink( array_merge( $state, $this->navLinkParams( $link ) ), true ),
+                        'current' => ! $inSettings && $this->navLinkIsCurrent( $link, $params ),
+                    );
+                }
+            }
+
+            $current = ! $inSettings && $this->navLinkIsCurrent( $section, $params );
+
+            foreach ( $items as $item ) {
+
+                $current = $current || $item['current'];
+            }
+
+            $rail[] = array(
+                'id'      => (string) $key,
+                'label'   => strip_tags( (string) $section['anchortext'] ),
+                'icon'    => trim( (string) ( $section['icon_class'] ?? '' ) ) ?: \OWA\Core\Module::DEFAULT_NAV_ICON,
+                'href'    => $this->makeLink( array_merge( $state, $own ), true ),
+                'current' => $current,
+                'items'   => $items,
+                'foot'    => false,
+            );
+        }
+
+        /*
+         * Settings, at the foot. Everyone signed in has a settings screen of
+         * their own (My preferences), so the gear is there for every reader and
+         * opens the first screen they may use.
+         */
+        if ( $user->isCapable( 'view_site_list' ) ) {
+
+            $rail[] = array(
+                'id'      => 'settings',
+                'label'   => 'Settings',
+                'icon'    => 'fas fa-cog',
+                'href'    => $this->makeLink( array(
+                    'do' => $user->isCapable( 'edit_settings' ) ? 'base.optionsGeneral' : 'base.myProfile' ) ),
+                'current' => (bool) $inSettings,
+                'items'   => array(),
+                'foot'    => true,
+            );
+        }
+
+        return $rail;
+    }
+
+    /**
+     * The column beside the rail on a report screen: the current section's
+     * pages, or null when it has none.
+     *
+     * @param array[] $rail as navRail() returns it
+     * @return array|null title, groups
+     */
+    public static function reportColumn( $rail ) {
+
+        foreach ( (array) $rail as $section ) {
+
+            if ( $section['current'] && $section['items'] ) {
+
+                return array(
+                    'title'  => $section['label'],
+                    'groups' => array( array( 'heading' => '', 'items' => $section['items'] ) ),
+                );
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The settings column: the hierarchy nav's groups, headed by level.
+     *
+     * The keys of the hierarchy nav are what modules register into, so they
+     * stay as they are; this is where they get the headings people read.
+     * 'Observation Profile' is not a group of the column: its pages are the
+     * tabs of the Profile's own page (profileTabs()).
+     *
+     * An entry is current when the request is its action with its params, or
+     * one of the actions it also answers for (`current_for`) -- a Profile's
+     * entry is current on every one of its tabs.
+     *
+     * @param array $hierarchyNav as Controller::getHierarchyNav() returns it
+     * @param array $params       the request's params
+     * @return array[] heading, items (label, href, current)
+     */
+    public function settingsColumn( $hierarchyNav, $params = array() ) {
+
+        $headings = array(
+            'My Preferences' => 'My preferences',
+            'Instance'       => 'Server configuration',
+        );
+
+        $user    = $this->getCurrentUser();
+        $groups  = array();
+
+        foreach ( (array) $hierarchyNav as $key => $entries ) {
+
+            if ( $key === 'Observation Profile' ) {
+
+                continue;
+            }
+
+            $items = array();
+
+            foreach ( (array) $entries as $entry ) {
+
+                if ( ! empty( $entry['capability'] ) && ! $user->isCapable( $entry['capability'] ) ) {
+
+                    continue;
+                }
+
+                $items[] = array(
+                    'label'   => (string) $entry['label'],
+                    'href'    => $this->makeLink( array_merge( array( 'do' => $entry['do'] ), (array) ( $entry['params'] ?? array() ) ) ),
+                    'current' => self::settingsEntryIsCurrent( $entry, $params ),
+                );
+            }
+
+            if ( $items ) {
+
+                $groups[] = array( 'heading' => $headings[ $key ] ?? (string) $key, 'items' => $items );
+            }
+        }
+
+        /*
+         * One mark at most. Two entries can claim the same request -- Add
+         * profile and a Profile's Details are both base.sitesProfile -- and the
+         * first that matches is the one the reader is on.
+         */
+        $marked = false;
+
+        foreach ( $groups as $g => $group ) {
+
+            foreach ( $group['items'] as $i => $item ) {
+
+                if ( $item['current'] && $marked ) {
+
+                    $groups[ $g ]['items'][ $i ]['current'] = false;
+                }
+
+                $marked = $marked || $item['current'];
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * The tabs of a Profile's page: the hierarchy nav's 'Observation Profile'
+     * group, on a screen that is one of them. Empty anywhere else.
+     *
+     * @param array $hierarchyNav
+     * @param array $params
+     * @return array[] label, href, current
+     */
+    public function profileTabs( $hierarchyNav, $params = array() ) {
+
+        $entries = (array) ( $hierarchyNav['Observation Profile'] ?? array() );
+        $user    = $this->getCurrentUser();
+        $tabs    = array();
+        $onOne   = false;
+
+        foreach ( $entries as $entry ) {
+
+            if ( ! empty( $entry['capability'] ) && ! $user->isCapable( $entry['capability'] ) ) {
+
+                continue;
+            }
+
+            $current = ( $params['do'] ?? '' ) === $entry['do'];
+            $onOne   = $onOne || $current;
+
+            // A module's registered tab names no Profile; it is this one's.
+            $linkParams = (array) ( $entry['params'] ?? array() );
+
+            if ( ! isset( $linkParams['siteId'] ) && ! empty( $params['siteId'] ) ) {
+
+                $linkParams['siteId'] = $params['siteId'];
+            }
+
+            $tabs[] = array(
+                'label'   => (string) $entry['label'],
+                'href'    => $this->makeLink( array_merge( array( 'do' => $entry['do'] ), $linkParams ) ),
+                'current' => $current,
+            );
+        }
+
+        return $onOne ? $tabs : array();
+    }
+
+    /**
+     * Whether a settings nav entry is the screen being looked at.
+     *
+     * Its action, or one it also answers for, and every param it names --
+     * `edit` aside, which says how the screen is opened rather than which
+     * thing it is about.
+     *
+     * @param array $entry  a hierarchy nav entry
+     * @param array $params the request's params
+     * @return bool
+     */
+    public static function settingsEntryIsCurrent( $entry, $params ) {
+
+        $do = (string) ( $params['do'] ?? '' );
+
+        if ( $do !== $entry['do'] && ! in_array( $do, (array) ( $entry['current_for'] ?? array() ), true ) ) {
 
             return false;
         }
 
+        $wanted = (array) ( $entry['params'] ?? array() );
+        unset( $wanted['edit'] );
+
+        foreach ( $wanted as $key => $value ) {
+
+            if ( (string) ( $params[ $key ] ?? '' ) !== (string) $value ) {
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     function displaySparkline($id, $data, $width = '100px', $height = '35px') {

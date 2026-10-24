@@ -1,0 +1,315 @@
+/* ---------------------------------------------------------------------------
+ * The navigation: rail and column (nav_shell.php).
+ *
+ * The rail holds the sections, icon over label, with Settings at its foot.
+ * Beside it, the column lists the current section's pages. A section with no
+ * pages under it has no column, and the page has the width.
+ *
+ * Current is a pale blue fill with the label in the reporting blue, in the
+ * rail and the column alike.
+ * ------------------------------------------------------------------------- */
+
+.owa_navShell {
+    display: flex;
+    box-sizing: border-box;
+    background: #ffffff;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.owa_navShell ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* The rail. */
+.owa_rail {
+    flex: 0 0 88px;
+    box-sizing: border-box;
+    padding: 20px 0;
+    border-right: 1px solid #eef0f3;
+}
+
+.owa_railList {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+}
+
+.owa_railEntry {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Settings, at the foot of the rail. */
+.owa_railEntry.is-foot {
+    margin-top: auto;
+}
+
+.owa_navShell .owa_railItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 64px;
+    padding: 10px 0;
+    border-radius: 10px;
+    color: #4b5563;
+    font-size: 11px;
+    line-height: 1.25;
+    text-align: center;
+    text-decoration: none;
+}
+
+.owa_railIcon {
+    font-size: 18px;
+    line-height: 20px;
+}
+
+.owa_navShell .owa_railItem:hover,
+.owa_navShell .owa_railEntry:hover > .owa_railItem {
+    background: #f3f5f8;
+    color: #111827;
+}
+
+.owa_navShell .owa_railItem.is-current,
+.owa_navShell .owa_railItem.is-current:hover {
+    background: #eef4fb;
+    color: #1874CD;
+    font-weight: 600;
+}
+
+/* A section's pages, shown while it is hovered. It starts at the right edge of
+   the rail item, so the pointer can cross to it without leaving the entry. */
+.owa_railFlyout {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 76px;
+    z-index: 30;
+    width: 240px;
+    box-sizing: border-box;
+    padding: 8px;
+    background: #ffffff;
+    border: 1px solid #eef0f3;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12);
+    text-align: left;
+}
+
+.owa_railEntry:hover > .owa_railFlyout,
+.owa_railEntry:focus-within > .owa_railFlyout {
+    display: block;
+}
+
+.owa_railFlyoutTitle {
+    padding: 6px 12px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* The column. */
+.owa_navColumn {
+    flex: 0 0 248px;
+    box-sizing: border-box;
+    padding: 24px 12px;
+    border-right: 1px solid #eef0f3;
+    overflow-y: auto;
+}
+
+.owa_navColumnHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 0 0 12px 12px;
+}
+
+.owa_navColumnTitle {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 24px;
+    color: #111827;
+}
+
+.owa_navColumnToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    margin-top: -4px;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: #4b5563;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.owa_navColumnToggle:hover {
+    background: #f3f5f8;
+    color: #111827;
+}
+
+.owa_navColumnToggle i {
+    transition: transform 0.12s ease;
+}
+
+.owa_navColumnHeading {
+    margin: 20px 12px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.owa_navColumnBody > .owa_navColumnHeading:first-child {
+    margin-top: 4px;
+}
+
+.owa_navShell .owa_navColumnItem {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.3;
+    color: #374151;
+    text-decoration: none;
+}
+
+.owa_navShell .owa_navColumnItem:hover {
+    background: #f3f5f8;
+    color: #111827;
+}
+
+.owa_navShell .owa_navColumnItem.is-current,
+.owa_navShell .owa_navColumnItem.is-current:hover {
+    background: #eef4fb;
+    color: #1874CD;
+    font-weight: 600;
+}
+
+/* Hidden, the column keeps only its chevron, turned to point back out. */
+.owa_navShell.is-collapsed .owa_navColumn {
+    flex-basis: 48px;
+    padding: 24px 8px;
+    overflow: hidden;
+}
+
+.owa_navShell.is-collapsed .owa_navColumnHead {
+    padding: 0;
+}
+
+.owa_navShell.is-collapsed .owa_navColumnTitle,
+.owa_navShell.is-collapsed .owa_navColumnBody {
+    display: none;
+}
+
+.owa_navShell.is-collapsed .owa_navColumnToggle i {
+    transform: rotate(180deg);
+}
+
+/* At full width the navigation stays in view as the page scrolls, and is as
+   tall as the window less the header (#owa_header, 81px), so Settings at the
+   foot of the rail is in view on arrival. */
+@media (min-width: 901px) {
+
+    .owa_reportNavRail {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .owa_navShell {
+        height: calc(100vh - 81px);
+        min-height: 560px;
+    }
+}
+
+/* Narrow: all of it is in the slide-out (owa.report.css), which is as wide as
+   the rail and column. No flyouts there, and the column always shows. */
+@media (max-width: 900px) {
+
+    .owa_reportNavRail {
+        width: auto;
+    }
+
+    .owa_navShell {
+        min-height: calc(100vh - 52px);
+    }
+
+    .owa_railFlyout,
+    .owa_railEntry:hover > .owa_railFlyout,
+    .owa_railEntry:focus-within > .owa_railFlyout {
+        display: none;
+    }
+
+    .owa_navColumnToggle {
+        display: none;
+    }
+
+    .owa_navShell.is-collapsed .owa_navColumn {
+        flex-basis: 248px;
+        padding: 24px 12px;
+        overflow-y: auto;
+    }
+
+    .owa_navShell.is-collapsed .owa_navColumnHead {
+        padding: 0 0 12px 12px;
+    }
+
+    .owa_navShell.is-collapsed .owa_navColumnTitle,
+    .owa_navShell.is-collapsed .owa_navColumnBody {
+        display: block;
+    }
+}
+
+@media (max-width: 600px) {
+
+    /* The whole screen, as owa.report.css has it; the rule above is later. */
+    .owa_reportNavRail {
+        width: 100%;
+    }
+
+    .owa_navColumn,
+    .owa_navShell.is-collapsed .owa_navColumn {
+        flex: 1 1 auto;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * A page's tabs: a Profile's page is its tag, how it observes, and its details.
+ * ------------------------------------------------------------------------- */
+
+.owa_pageTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin: 0 0 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.owa .owa_pageTab {
+    margin-bottom: -1px;
+    padding: 0 0 12px;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    color: #4b5563;
+    text-decoration: none;
+}
+
+.owa .owa_pageTab:hover {
+    color: #111827;
+}
+
+.owa .owa_pageTab.is-current {
+    border-bottom-color: #1874CD;
+    color: #111827;
+    font-weight: 600;
+}

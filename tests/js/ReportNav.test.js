@@ -1,4 +1,4 @@
-import { handleClick, open, close, OPEN } from '../../modules/Base/src/reporting/v1/owa.reportnav.js';
+import { handleClick, open, close, OPEN, setColumnHidden, COLUMN_KEY } from '../../modules/Base/src/reporting/v1/owa.reportnav.js';
 
 /**
  * The report nav behind a menu button on a narrow screen (owa.reportnav.js):
@@ -95,4 +95,56 @@ test('the menu button is labelled with the page\'s own words, open and closed', 
     open(rail);
     close(rail);
     expect(toggle.getAttribute('aria-label')).toBe('Show the menu');
+});
+
+function renderShell() {
+    document.body.innerHTML = `
+        <div class="owa_navShell has-column" id="owa_navShell">
+            <nav class="owa_rail"></nav>
+            <nav class="owa_navColumn">
+                <button type="button" class="owa_navColumnToggle" aria-expanded="true" aria-label="Hide this column"></button>
+            </nav>
+        </div>`;
+
+    return {
+        shell: document.getElementById('owa_navShell'),
+        toggle: document.querySelector('.owa_navColumnToggle'),
+    };
+}
+
+test('the chevron hides the column, says so, and the choice is remembered', () => {
+    window.localStorage.removeItem(COLUMN_KEY);
+    const el = renderShell();
+
+    setColumnHidden(el.shell, true);
+
+    expect(el.shell.classList.contains('is-collapsed')).toBe(true);
+    expect(el.toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(el.toggle.getAttribute('aria-label')).toBe('Show this column');
+    expect(window.localStorage.getItem(COLUMN_KEY)).toBe('1');
+});
+
+test('showing the column again forgets the choice', () => {
+    window.localStorage.setItem(COLUMN_KEY, '1');
+    const el = renderShell();
+    el.shell.classList.add('is-collapsed');
+
+    setColumnHidden(el.shell, false);
+
+    expect(el.shell.classList.contains('is-collapsed')).toBe(false);
+    expect(el.toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(el.toggle.getAttribute('aria-label')).toBe('Hide this column');
+    expect(window.localStorage.getItem(COLUMN_KEY)).toBeNull();
+});
+
+test('a column still hides when storage is refused', () => {
+    const el = renderShell();
+    const setItem = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('denied');
+    });
+
+    expect(() => setColumnHidden(el.shell, true)).not.toThrow();
+    expect(el.shell.classList.contains('is-collapsed')).toBe(true);
+
+    setItem.mockRestore();
 });

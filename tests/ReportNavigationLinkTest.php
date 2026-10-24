@@ -320,27 +320,17 @@ final class ReportNavigationLinkTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * The nav menu is handed the whole request, not just its action.
+     * The rail is handed the whole request, not just its action.
      *
      * THE BUG THIS EXISTS FOR
      *
      * navLinkIsCurrent() compares every key of a link's ref, and a report link
-     * is {do: base.report, reportId: pages}. makeNavigationMenu() was building
-     * the params it compares against as array('do' => $current_action) -- one
-     * key -- so `reportId` was never present and NO report link was ever
-     * current.
-     *
-     * That read as two unrelated-looking bugs. Nothing highlighted, because
-     * nothing matched; and the left nav collapsed on every page load, because
-     * .owa_admin_nav_subgroup is display:none in CSS and the only thing that
-     * opens a group is the script looking for a current item -- which was never
-     * there.
-     *
-     * It worked before the conversion for the reason it broke after: a link was
-     * a single action name, so comparing the action alone was comparing the
-     * whole ref.
+     * is {do: base.report, reportId: pages}. The old menu built the params it
+     * compared against as array('do' => $current_action) -- one key -- so
+     * `reportId` was never present and NO report link was ever current:
+     * nothing highlighted, and the menu collapsed on every page load.
      */
-    public function testTheNavIsGivenTheWholeRequestNotJustTheAction(): void
+    public function testTheRailIsGivenTheWholeRequestNotJustTheAction(): void
     {
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'building the nav loads modules and the current user' );
@@ -357,13 +347,18 @@ final class ReportNavigationLinkTest extends TestCase
             $this->markTestSkipped( 'no reporting navigation is registered' );
         }
 
-        $html = $this->template()->makeNavigationMenu(
-            $nav, $siteId, array( 'do' => 'base.report', 'reportId' => 'pages' ) );
+        $rail = $this->template()->navRail(
+            $nav, 'some-property', array( 'do' => 'base.report', 'reportId' => 'pages' ), $siteId );
 
-        $this->assertNotFalse( $html, 'the nav did not render' );
+        $current = array_values( array_filter( $rail, function ( $s ) { return $s['current']; } ) );
 
-        $this->assertStringContainsString( 'is-current', (string) $html,
-            'no nav link was marked current, so the menu renders collapsed and unhighlighted' );
+        $this->assertCount( 1, $current, 'exactly one section is current' );
+        $this->assertSame( 'Content', $current[0]['label'] );
+
+        $marked = array_values( array_filter( $current[0]['items'], function ( $i ) { return $i['current']; } ) );
+
+        $this->assertCount( 1, $marked, 'exactly one report in the column is current' );
+        $this->assertSame( 'Pages', $marked[0]['label'] );
     }
 
     /**
@@ -392,32 +387,6 @@ final class ReportNavigationLinkTest extends TestCase
             $template->navLinkIsCurrent( $link,
                 array( 'do' => 'base.report', 'reportId' => 'entry-pages' ) ),
             'a different report must not' );
-    }
-
-    /**
-     * A string is still accepted, because that is what this took for fifteen
-     * years and a third-party template may still pass one.
-     */
-    public function testAStringIsStillAcceptedAsTheCurrentRequest(): void
-    {
-        if ( ! owa_test_db_available() ) {
-            $this->markTestSkipped( 'building the nav loads modules and the current user' );
-        }
-
-        $user = \OWA\Core\CoreAPI::getCurrentUser();
-        $user->setRole( 'admin' );
-        $user->setAuthStatus( true );
-
-        $siteId = $this->anySiteId();
-        $nav    = (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' );
-
-        if ( ! $nav ) {
-            $this->markTestSkipped( 'no reporting navigation is registered' );
-        }
-
-        $this->assertNotFalse(
-            $this->template()->makeNavigationMenu( $nav, $siteId, 'base.report' ),
-            'passing an action string must still render a menu' );
     }
 
     // ------------------------------------------------------------------

@@ -115,7 +115,7 @@ test.describe('the realtime screen', () => {
         await page.goto(`?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`,
             { waitUntil: 'networkidle' });
 
-        const labels = (await page.locator('#owa_reportNavPanel a.owa_admin_nav_topmenu_item_text').allTextContents())
+        const labels = (await page.locator('.owa_rail .owa_railLabel').allTextContents())
             .map((t) => t.trim()).filter(Boolean);
 
         expect(labels.indexOf('Realtime'), labels.join(' | ')).toBe(labels.indexOf('Dashboard') + 1);

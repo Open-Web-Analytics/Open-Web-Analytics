@@ -1138,7 +1138,7 @@ test.describe('custom reports', () => {
             await expect(page.locator('#owa_reportAsOf')).toHaveCount(0);
 
             // ...but it IS inside the reporting UI, so the nav is there.
-            await expect(page.locator('#owa_reportNavPanel')).toHaveCount(1);
+            await expect(page.locator('#owa_navShell')).toHaveCount(1);
         });
 
         /** Columns sort, and the active one says which way. */
@@ -1613,11 +1613,11 @@ test.describe('custom reports', () => {
             // and the state the bug needed.
             await page.goto('?owa_do=base.customReportEdit', { waitUntil: 'networkidle' });
 
-            const navLinks = page.locator('#owa_reportNavPanel a');
+            const navLinks = page.locator('#owa_navShell .owa_railItem');
 
             // The builder itself is a reporting screen and needs its nav too.
             expect(await navLinks.count(),
-                'the builder opened without a navigation').toBeGreaterThan(10);
+                'the builder opened without a navigation').toBeGreaterThan(5);
 
             // The Property it resolved travels with the form, which is what
             // carries it through the save.
@@ -1635,7 +1635,7 @@ test.describe('custom reports', () => {
 
             // ...and can still get anywhere from it.
             expect(await navLinks.count(),
-                'the navigation vanished after saving').toBeGreaterThan(10);
+                'the navigation vanished after saving').toBeGreaterThan(5);
         });
 
         /**
