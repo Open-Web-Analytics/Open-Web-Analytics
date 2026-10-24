@@ -127,10 +127,14 @@ class CustomReports {
         'funnel' => 'fas fa-filter',
     );
 
+    /*
+     * `pie` draws ranked share bars now (OWA.shareChart). The key stays, since
+     * saved reports and shipped definitions name it.
+     */
     const WIDGET_TYPES = array(
         'grid'          => 'Table',
         'grid-card'     => 'Table card',
-        'pie'           => 'Pie chart',
+        'pie'           => 'Share chart',
         'trend'         => 'Trend chart',
         'trend-card'    => 'Trend card',
         'metric-boxes'  => 'Info boxes',
@@ -147,7 +151,7 @@ class CustomReports {
     const WIDGET_TYPE_HINTS = array(
         'grid'          => 'A full-width table. Several metrics and dimensions, and the reader can regroup and filter it.',
         'grid-card'     => 'A narrow table of one metric by one dimension. No controls; its rows can link to the report that details them.',
-        'pie'           => 'Share of one metric across the values of one dimension.',
+        'pie'           => 'Each value of one dimension as its share of one metric, ranked, with the rest as Other.',
         'trend'         => 'One metric over time, as a chart. Always by date.',
         'trend-card'    => 'A half-width version: its totals sit above the chart, it cannot be broken out by a dimension, and it names its own metrics.',
         'metric-boxes'  => 'Totals for the period, one box per metric.',
@@ -164,7 +168,7 @@ class CustomReports {
     const WIDGET_TYPE_ICONS = array(
         'grid'          => 'fas fa-table',
         'grid-card'     => 'fas fa-list-alt',
-        'pie'           => 'fas fa-chart-pie',
+        'pie'           => 'fas fa-chart-bar',
         'trend'         => 'fas fa-chart-area',
         'trend-card'    => 'fas fa-chart-line',
         'metric-boxes'  => 'fas fa-th-large',

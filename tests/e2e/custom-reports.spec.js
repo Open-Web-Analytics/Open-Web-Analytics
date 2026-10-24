@@ -249,6 +249,11 @@ test.describe('custom reports', () => {
             expect(types.slice().sort()).toEqual(
                 ['grid', 'grid-card', 'metric-boxes', 'pie', 'trend', 'trend-card']);
 
+            // `pie` is the stored key; it draws ranked bars and says so.
+            await expect(page.locator('.owa_typeChoice[data-type="pie"] .owa_typeChoiceName'))
+                .toHaveText('Share chart');
+            await expect(page.locator('.owa_typeChoice[data-type="pie"] i.fa-chart-bar')).toHaveCount(1);
+
             // Each says what it is for -- "Table" beside "Table card" is a
             // distinction nobody can make from the names alone.
             for (const hint of await page.locator('.owa_typeChoiceHint').allInnerTexts()) {
@@ -1868,14 +1873,14 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * A pie draws ONE metric and has to be told which.
+         * A share chart draws ONE metric and has to be told which.
          *
          * It was not: the builder wrote chartMetric for a trend and not for a
-         * pie, so a pie built here came out with options.pieChart.metric empty
-         * and drew nothing at all -- which looks like a site with no data.
+         * pie, so a pie built here came out with its metric empty and drew
+         * nothing at all -- which looks like a site with no data.
          */
-        test('a pie built here charts the metric it was given', async ({ page }) => {
-            const name = reportName('Pie');
+        test('a share chart built here charts the metric it was given', async ({ page }) => {
+            const name = reportName('Share');
 
             await openBuilder(page);
             await page.fill('#customReportName', name);
@@ -1896,14 +1901,18 @@ test.describe('custom reports', () => {
             // The definition names the metric...
             const charted = await page.evaluate(() => {
                 const key = Object.keys(window).find((k) => /^w1$/.test(k));
-                return key ? window[key].options.pieChart.metric : null;
+                return key ? window[key].options.shareChart.metric : null;
             });
 
             expect(charted).toBe('pageViews');
 
-            // ...and a chart actually drew, which an empty metric would not.
-            await expect(page.locator('.owa_reportGridItem canvas').first())
-                .toBeVisible({ timeout: 20_000 });
+            // ...and it drew ranked rows with their shares, which an empty
+            // metric would not.
+            const rows = page.locator('.owa_shareChart .owa_shareRow');
+
+            await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+            await expect(rows.first().locator('.owa_shareValue')).toHaveText(/^\d+%$/);
+            await expect(page.locator('.owa_shareChart')).toContainText('/');
         });
 
         /*
@@ -2010,11 +2019,7 @@ test.describe('custom reports', () => {
             expect(chart.labels).toContain('organic');
 
             /*
-             * A colour each, and the PIE's colours.
-             *
-             * A report shows traffic sources as a pie and the same sources as
-             * lines over time; giving them different palettes makes the reader
-             * do work the colour was supposed to save. One shared list, in
+             * A colour each, from the shared palette (OWA.chartColors), in
              * order, with the total keeping the blue a trend has always been.
              */
             expect(new Set(chart.colors).size).toBe(chart.colors.length);
@@ -2186,7 +2191,7 @@ test.describe('custom reports', () => {
 
             await openBuilder(page);
             await page.fill('#customReportName', name);
-            // A pie, because a grid has no width to set -- it is full width by
+            // A share chart, because a grid has no width to set -- it is full width by
             // type. This test is about a span surviving the round trip, so it
             // uses a type that still has one.
             await onlyWidget(page, 'pie', {
@@ -2396,6 +2401,12 @@ test.describe('custom reports', () => {
             // ...and on the same row, which is what stacking would break.
             expect(Math.abs(second.y - first.y)).toBeLessThan(10);
             expect(Math.abs(third.y - first.y)).toBeLessThan(10);
+
+            // Each box is labelled with its metric; the title is the heading.
+            const labels = await page.locator('.owa_metricInfoboxLabel').allInnerTexts();
+            expect(labels).toHaveLength(3);
+            expect(labels).not.toContain('Totals');
+            await expect(page.locator('.owa_reportSectionTitle', { hasText: 'Totals' })).toBeVisible();
         });
 
         /**
@@ -2505,6 +2516,8 @@ test.describe('custom reports', () => {
                 const star = page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]');
 
                 await expect(star).toBeVisible();
+                // Not shared, so no tag beside the title.
+                await expect(page.locator('.owa_reportTitle .owa_titleTag')).toHaveCount(0);
                 // OUTLINE when it is not yours: FA5 splits solid from regular, and
                 // the FA4 spelling (fa-star-o) is defined nowhere in 5.13 -- it
                 // rendered an empty box, which is how this shipped invisible.
@@ -2527,6 +2540,8 @@ test.describe('custom reports', () => {
                 // Back on the report, now starred.
                 const starred = page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]');
                 await expect(starred.locator('i.fas.fa-star')).toHaveCount(1);
+                // Gold when it is on, as on the list.
+                await expect(starred.locator('i.fas.fa-star')).toHaveCSS('color', 'rgb(201, 154, 6)');
 
                 // And again, to clear it -- it is a toggle, not a one-way mark.
                 await starred.click();
@@ -2634,6 +2649,9 @@ test.describe('custom reports', () => {
                 await addWidget(page, 'grid', { metrics: ['pageViews'], dimensions: ['pagePath'] });
                 await page.click('#customReportSubmit');
                 await page.waitForLoadState('networkidle');
+
+                // Saving lands on the report, which says Shared beside its title.
+                await expect(page.locator('.owa_reportTitle .owa_titleTag')).toHaveText('Shared');
 
                 await openRoster(page);
 

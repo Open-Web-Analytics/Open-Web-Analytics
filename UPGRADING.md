@@ -172,6 +172,21 @@ For module and template authors:
   under it, and `current_for` (sets of params; a value ending in `*` matches by
   prefix) to be current on other screens.
 
+### Pie charts are share charts
+
+A `pie` widget draws each value's share of its metric as a ranked list: the five
+largest, then the rest as Other, each with its percentage and a bar. This
+applies to the Dashboard, Traffic and custom reports. The widget type is still
+`pie` in a report definition, so saved reports need no change; the builder
+calls it "Share chart".
+
+For module and template authors:
+
+- `OWA.pieChart` and flot's pie plugin are removed. `OWA.shareChart` draws the
+  list, and a result set explorer's `options.pieChart` and `makePieChart` are
+  now `options.shareChart` and `makeShareChart`. `valueLabels` and `numSlices`
+  work as before.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

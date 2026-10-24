@@ -1433,12 +1433,38 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
-     * A pie charts the dimension it queries.
+     * With several metrics each box keeps its metric's name, and the title is
+     * the heading over them. Lent to every box, it labelled four different
+     * totals "Totals".
+     */
+    public function testSeveralMetricBoxesKeepTheirNamesUnderTheTitle(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Boxes',
+            'widgets' => array(
+                array( 'type' => 'metric-boxes', 'id' => 'totals', 'container' => 'totals',
+                       'title' => 'Totals',
+                       'query' => array( 'metrics' => 'sessions, pageViews' ) ),
+            ),
+        ), array() );
+
+        $this->assertStringContainsString( '\'makeMetricBoxes\', \'\', ""', $html,
+            'no box may be labelled with the title' );
+
+        $this->assertStringContainsString(
+            '<span class="owa_reportSectionTitle">Totals</span>', $html,
+            'the title is the heading over the boxes' );
+    }
+
+    /**
+     * A pie widget is a share chart of the dimension it queries.
      *
      * Naming the dimension a second time in the widget would be a way for the
      * chart and the query it charts to disagree.
      */
-    public function testAPieChartsTheDimensionItQueries(): void
+    public function testAPieIsAShareChartOfTheDimensionItQueries(): void
     {
         $this->requireDbAsAdmin();
 
@@ -1452,9 +1478,11 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ), array() );
 
-        $this->assertStringContainsString( "medium.options.pieChart.dimension = 'medium';", $html );
-        $this->assertStringContainsString( "medium.options.pieChart.metric = 'sessions';", $html );
-        $this->assertStringContainsString( "'makePieChart'", $html );
+        $this->assertStringContainsString( "medium.options.shareChart.dimension = 'medium';", $html );
+        $this->assertStringContainsString( "medium.options.shareChart.metric = 'sessions';", $html );
+        $this->assertStringContainsString( "'makeShareChart'", $html );
+        $this->assertStringContainsString( 'owa_shareBody', $html );
+        $this->assertStringNotContainsString( 'makePieChart', $html );
 
         $this->assertSame( 'medium', $this->queryFor( $html, 'mediumurl' )['dimensions'] ?? null,
             'the charted dimension must be the queried one' );

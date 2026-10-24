@@ -47,7 +47,7 @@ describe('reporting bundle build integrity', () => {
     // the rest augment it. Order here is the ESM import order in reporting-entry.js.
     const OWA_MODULES = [
         'owa.js', 'owa.report.js', 'owa.resultSetExplorer.js', 'owa.sparkline.js',
-        'owa.areachart.js', 'owa.piechart.js', 'owa.kpibox.js',
+        'owa.areachart.js', 'owa.sharechart.js', 'owa.kpibox.js',
     ];
 
     test('the reporting entry point exists', () => {
@@ -86,8 +86,8 @@ describe('reporting bundle build integrity', () => {
     });
 
     test('reporting-entry imports the vendor plugins in load-bearing order', () => {
-        // Order matters: jquery-migrate before the plugins; flot core -> time ->
-        // resize -> pie, with time.js before the OWA area chart (xaxis.mode:"time");
+        // Order matters: jquery-migrate before the plugins; flot core -> time,
+        // with time.js before the OWA area chart (xaxis.mode:"time");
         // and the OWA namespace modules last. Assert the relative sequence.
         //
         // Match only the `import ...` lines, not the whole file: the header docblock
@@ -102,7 +102,6 @@ describe('reporting bundle build integrity', () => {
             'jquery-sparkline',
             "'jquery.flot'",                    // flot core
             'jquery.flot/jquery.flot.time.js',
-            'jquery.flot/jquery.flot.pie.js',
             'jQote2/jquery.jqote2.min.js',
             './owa.js',
             './owa.report.js',
@@ -118,6 +117,15 @@ describe('reporting bundle build integrity', () => {
         // time.js must precede areachart (the whole reason it is imported at all).
         expect(entry.indexOf('jquery.flot.time.js'))
             .toBeLessThan(entry.indexOf('./owa.areachart.js'));
+    });
+
+    // A share chart is ranked bars (owa.sharechart.js); nothing draws a pie.
+    test('flot\'s pie plugin is not imported', () => {
+        const entry = fs.readFileSync(entryPath, 'utf8')
+            .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
+
+        expect(entry).not.toContain('jquery.flot.pie');
+        expect(fs.existsSync(path.join(srcDir, 'owa.piechart.js'))).toBe(false);
     });
 
     test('flot\'s resize plugin is not imported, and stays that way', () => {
