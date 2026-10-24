@@ -23,11 +23,11 @@
             "outputDir": "../../public/base/css",
             "files": [
                 "css/jquery-ui.css",
-                "css/ui.jqgrid.css",
                 "css/chosen.css",
                 "css/owa.css",
                 "css/owa.admin.css",
                 "css/owa.report.css",
+                "css/owa.grid.css",
                 "css/owa.shell.css"
             ],
             "copy": [

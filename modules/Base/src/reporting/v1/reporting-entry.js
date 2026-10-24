@@ -68,7 +68,6 @@ import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis
  * without the window changing, which is most of them on a container-query grid.
  */
 import 'jquery.flot/jquery.flot.pie.js';
-import 'free-jqgrid/dist/jquery.jqgrid.min.js';
 // jQote2 has no npm package -> stays vendored, imported as a side-effect module.
 import './includes/jquery/jQote2/jquery.jqote2.min.js';
 

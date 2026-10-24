@@ -2396,6 +2396,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $dims;
     }
 
+    /**
+     * The metrics that can be computed on this entity, by group.
+     *
+     * Each carries its metric_type so the grid can tell a count, whose rows
+     * are each a share of the total, from a ratio or an average, whose rows
+     * are not.
+     */
     function getAllRelatedMetrics( $entity ) {
 
         // No entity, nothing related to it -- same reason as
@@ -2435,7 +2442,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             'name'             => $metric_name,
                             'label'         => $implementation['label'],
                             'description'    => $implementation['description'],
-                            'group'            => $implementation['group']
+                            'group'            => $implementation['group'],
+                            'metric_type'    => $implementation['params']['metric_type'] ?? ''
                         );
 
                         continue;
@@ -2450,7 +2458,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                             'name'             => $metric_name,
                             'label'         => $implementation['label'],
                             'description'    => $implementation['description'],
-                            'group'            => $implementation['group']
+                            'group'            => $implementation['group'],
+                            'metric_type'    => $implementation['params']['metric_type'] ?? ''
                         );
 
                         continue;

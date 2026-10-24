@@ -9,8 +9,8 @@ const { execSync } = require('child_process');
  * This file's production moved from the PHP-CLI `cmd=build` controller
  * (base.build / owa_buildController, formerly driven by base/module.php
  * registerBuildPackages) to webpack (reportingCssConfig in webpack.config.js):
- *   - The seven source CSS files are the webpack entry, in the SAME cascade order
- *     the PHP package used: jquery-ui, ui.jqgrid, chosen, owa, owa.admin, owa.report.
+ *   - The seven source CSS files are the webpack entry, in cascade order: jquery-ui,
+ *     chosen, owa, owa.admin, owa.report, owa.grid, owa.shell.
  *   - mini-css-extract-plugin emits the combined file under the SAME name to the
  *     SAME directory (modules/Base/css/), and css-loader runs with url:false so
  *     every url() is passed through verbatim -- combined with the css/ output dir,
@@ -39,8 +39,8 @@ describe('reporting CSS build integrity', () => {
     // The seven source stylesheets, in the cascade order the entry lists them.
     // Order is load-bearing: later files intentionally override earlier ones.
     const CSS_SOURCES = [
-        'jquery-ui.css', 'ui.jqgrid.css', 'chosen.css',
-        'owa.css', 'owa.admin.css', 'owa.report.css', 'owa.shell.css',
+        'jquery-ui.css', 'chosen.css',
+        'owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css',
     ];
 
     // The reporting-css package as declared in base's build manifest.
@@ -108,10 +108,10 @@ describe('reporting CSS build integrity', () => {
             if (css === null) return;
             // One distinctive token per source proves it made it into the combine.
             expect(css).toMatch(/\.ui-datepicker/);        // jquery-ui.css
-            expect(css).toMatch(/\.ui-jqgrid/);            // ui.jqgrid.css
             expect(css).toMatch(/\.chosen-container/);     // chosen.css
             expect(css).toMatch(/#owa/);                   // owa.css (OWA app ids)
             expect(css).toMatch(/\.ui-selectmenu-button/); // bundled selectmenu (jquery-ui 1.13)
+            expect(css).toMatch(/\.owa_gridTable/);       // owa.grid.css
             expect(css).toMatch(/\.owa_navShell/);        // owa.shell.css
         });
 

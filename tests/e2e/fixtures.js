@@ -281,7 +281,7 @@ async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
     );
     // The reporting bundle builds charts/grids/selects from AJAX result sets
     // after load; wait for the load-bearing widgets rather than a blind sleep.
-    await page.waitForSelector('tr.jqgrow', { timeout: 20_000 });
+    await page.waitForSelector('tr.owa_gridRow', { timeout: 20_000 });
 }
 
 /**
@@ -319,7 +319,7 @@ async function openReportNoTabs(page, { reportId, period = 'last_thirty_days' } 
         `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
-    await page.waitForSelector('.ui-jqgrid', { timeout: 20_000 });
+    await page.waitForSelector('.owa_gridTable', { timeout: 20_000 });
 }
 
 /**

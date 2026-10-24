@@ -125,7 +125,6 @@ class Report extends \OWA\Core\View {
         /*
 		$this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
         $this->setCss('base/css/jquery.ui.selectmenu.css');
-        $this->setCss('base/css/ui.jqgrid.css');
         $this->setCss('base/css/chosen/chosen.css');
         $this->setCss("base/css/owa.admin.css");
         $this->setCss("base/css/owa.report.css");

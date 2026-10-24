@@ -136,6 +136,27 @@ For module and template authors:
   the Profile's page rather than an entry in the column. The hierarchy nav has a
   new `Profiles` section: one entry per Profile of the Property, and Add profile.
 
+### The report grid is a plain table, and jqGrid is gone
+
+A report's grid (`OWA.dataGrid`) draws its own table. Above it are the Filter
+button, a chip per filter, and Rows per page, Go to and the pager. The dimension
+headings are pickers, with a plus to add a second dimension. A Total row comes
+first, and each count shows its share of the total.
+
+For module and template authors:
+
+- free-jqgrid and `ui.jqgrid.css` are no longer bundled. The table is
+  `.owa_gridTable`, a data row is `tr.owa_gridRow`, and a cell carries its column
+  name as `data-column`.
+- `OWA.dimensionSelectors` is removed. `OWA.constraintBuilder` remains, for
+  screens that build their own filter control.
+- The formatters a report names in `formatters` are `OWA.dataGrid.formatters`
+  rather than jqGrid's `fmatter`; they take the same arguments.
+- Grid options: `showRowNumbers` is on by default; `compact` is new (no row
+  numbers, Total row or shares, for a card); `minGridWidth` is gone.
+- The grid's element also publishes `page_change` (page, resultsPerPage).
+- Each entry of a result set's `relatedMetrics` carries its `metric_type`.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

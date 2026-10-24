@@ -103,7 +103,6 @@ describe('reporting bundle build integrity', () => {
             "'jquery.flot'",                    // flot core
             'jquery.flot/jquery.flot.time.js',
             'jquery.flot/jquery.flot.pie.js',
-            'free-jqgrid/dist/jquery.jqgrid.min.js',
             'jQote2/jquery.jqote2.min.js',
             './owa.js',
             './owa.report.js',

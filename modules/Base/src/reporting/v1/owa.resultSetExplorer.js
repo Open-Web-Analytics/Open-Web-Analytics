@@ -151,21 +151,21 @@ OWA.resultSetExplorer = function(dom_id, options) {
         },
         grid: {
             /*
-             * OFF by default.
-             *
-             * The column numbered the rows on screen, which is not a fact about
-             * the data -- it renumbers when the sort changes and starts again
-             * at 1 on page two, so it never identifies anything. It cost a
-             * column of width in every grid on every report, and width is what
-             * a widget three columns wide has least of.
-             *
-             * Still an option: a caller that wants them can ask.
+             * Each row's place in the whole list, so the first row of page
+             * two is 11 at ten a page.
              */
-            showRowNumbers: false,
+            showRowNumbers: true,
+            /*
+             * A card: one metric against one dimension at a quarter of the
+             * row (report_widgets.php). No row numbers, no Total row and no
+             * shares, which would take the room its one value column has.
+             */
+            compact: false,
             excludeColumns: [],
             columnFormatters: {},
             /*
-             * The dimension chooser and the Filter control above a grid.
+             * The Filter control, the dimension pickers in the headings, and
+             * Rows per page and Go to.
              *
              * On by default -- that is what an EXPLORER is. Off for a grid whose
              * rows were computed rather than queried: the goal funnel's steps
@@ -174,18 +174,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
              * or a new constraint. Drawing the controls anyway offers the reader
              * choices that cannot do anything.
              */
-            showExplorerControls: true,
-
-            /*
-             * How narrow the grid may be refitted to before it stops shrinking
-             * and the widget scrolls instead.
-             *
-             * Six columns need six columns' worth of pixels; past that,
-             * squeezing does not make the table readable. Matched to the
-             * widget width floor in owa.report.css so the two agree about when
-             * a widget has run out of room.
-             */
-            minGridWidth: 280
+            showExplorerControls: true
         },
         template: {
             template: '',
@@ -337,6 +326,25 @@ OWA.resultSetExplorer.prototype = {
 
     },
 
+    /**
+     * Show this page, at this many rows a page.
+     *
+     * @param int page           1 is the first
+     * @param int resultsPerPage
+     */
+    changePage : function ( page, resultsPerPage ) {
+
+        var url = new OWA.uri( this.resultSet.self );
+
+        url.setQueryParam( OWA.util.appNs( 'page' ), page );
+
+        if ( resultsPerPage ) {
+            url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), resultsPerPage );
+        }
+
+        this.getNewResultSet( url.getSource() );
+    },
+
     getOption : function(name) {
 
         return this.options[name];
@@ -443,63 +451,10 @@ OWA.resultSetExplorer.prototype = {
             that.changeConstraints(constraints);
         });
 
-        this.watchGridWidth( dom_id );
-    },
-
-    /**
-     * Refit the grid when the layout changes its widget's width.
-     *
-     * `autowidth: true` fits the grid to its container ONCE, when it is built,
-     * and jqGrid never looks again. So a grid built at 1285px stayed 1285px
-     * inside a widget that had since become 712px -- it did not overflow the
-     * page, because the widget scrolls; it just quietly became a table you had
-     * to scroll sideways to read. That is the "widgets collapse when the window
-     * is resized" symptom -- the widget shrank and the grid did not.
-     *
-     * setGridWidth re-runs the same shrinkToFit distribution the initial build
-     * used, so the columns keep the proportions sizeColumnsToContent worked out.
-     * This changes the total, not the shares.
-     *
-     * A FLOOR, unlike the chart. A chart has no irreducible width and should
-     * simply be as wide as the room it is given; a table of six columns needs
-     * six columns' worth of pixels, and past that the honest answer is to stop
-     * shrinking and let the widget scroll. Squeezing further does not make a
-     * table readable, it makes every column too narrow to read at once.
-     *
-     * ON THE EXPLORER, not on the dataGrid, because the explorer is the object
-     * that survives. createGrid() builds a NEW dataGrid on every refresh, so an
-     * observer owned by one of those is never disconnected -- it goes on firing
-     * against a table that has since been replaced, and calls setGridWidth on
-     * an element jqGrid has not initialised yet. That threw
-     * "Cannot read properties of undefined" on every resize.
-     */
-    watchGridWidth : function ( dom_id ) {
-
-        if ( this.unwatchGridWidth ) {
-
-            this.unwatchGridWidth();
-        }
-
-        var that = this;
-
-        this.unwatchGridWidth = OWA.onWidthChange( dom_id, function ( width ) {
-
-            var grid = jQuery( '#' + dom_id + '_grid' );
-
-            /*
-             * jqGrid hangs `grid` off the table element once it has built it,
-             * and this can fire in the window between the table being appended
-             * and that happening. Asking an uninitialised table to resize is
-             * the error above, not a no-op.
-             */
-            if ( ! grid.length || ! grid[0].grid ) {
-
-                return;
-            }
-
-            grid.jqGrid( 'setGridWidth',
-                Math.max( width, that.options.grid.minGridWidth || 0, grid.data( 'owaFloor' ) || 0 ), true );
-        } );
+        // Rows per page and Go to.
+        jQuery( "#" + dom_id ).bind( 'page_change', function(event, page, resultsPerPage) {
+            that.changePage(page, resultsPerPage);
+        });
     },
 
     /**
@@ -1240,972 +1195,1020 @@ jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
 };
 
 /**
- * Data Grid UI control Class
+ * The grid of a result set's rows, drawn as a table.
+ *
+ *   - a bar above it: the Filter button and a chip per filter, then rows per
+ *     page, Go to, and the pager
+ *   - the dimension columns' headings are pickers: choose another dimension in
+ *     its place, remove it (not the first), or add one beside it
+ *   - the metric columns' headings sort; a metric with a description shows it
+ *     as the heading's tooltip
+ *   - a Total row first, from the result set's aggregates, and on each row a
+ *     count's share of that total
+ *
+ * Every change is published as an event on the grid's element, and the
+ * explorer that owns the grid refetches (createGrid() binds them):
+ *
+ *   page_forward, page_back
+ *   page_change           (page, resultsPerPage)
+ *   dimension_list_change (dims)
+ *   sort_column_change    (column, 'asc'|'desc')
+ *   constraint_change     (the constraints string)
+ *
+ * The rows are built from the result set and nothing else, so a refetch
+ * redraws the whole grid rather than patching it.
  *
  * @param    target_dom_id    string    dom id where the control should be created.
  * @param     options            obj        config object
- *
  */
 
 OWA.dataGrid = function(target_dom_id, options) {
 
     this.dom_id = target_dom_id;
-    this.options = options;
+    this.options = jQuery.extend( {
+        showRowNumbers: true,
+        compact: false,
+        excludeColumns: [],
+        columnFormatters: {},
+        showExplorerControls: true
+    }, options || {} );
     this.init = false;
-    this.gridColumnOrder = [];
-    this.columnLinks = '';
-    this.constraintPicker = '';
-    this.previousDimensionName = '';
+    this.resultSet = null;
+    this.popover = null;
+};
+
+/** What Rows per page offers. A result set's own size is added when it is not one of them. */
+OWA.dataGrid.PAGE_SIZES = [ 10, 25, 50, 100 ];
+
+/*
+ * How many dimensions the headings let you choose between.
+ *
+ * Not a data limit -- the grid will group by more, and some shipped widgets
+ * do. A grid already grouped by more (Latest Visits groups by seven) is
+ * something the report author did on purpose, and a two-slot control over it
+ * could only take dimensions away, so its headings are plain.
+ */
+OWA.dataGrid.MAX_DIMENSIONS = 2;
+
+/*
+ * The metric kinds whose rows are each a share of the total. A ratio or an
+ * average is not: two rows' bounce rates do not add up to the site's.
+ */
+OWA.dataGrid.SHARE_TYPES = [ 'count', 'distinct_count', 'sum' ];
+
+/*
+ * The filter conditions, as the server parses them (ResultSetManager's
+ * constraint_operators): the first operator in this order found in a clause is
+ * the one it means, so a value may contain any operator that comes later.
+ */
+OWA.dataGrid.OPERATORS = [ '==', '!=', '>=', '<=', '>', '<', '=~', '!~', '=@', '!@' ];
+
+/*
+ * "(not set)" is the label for an empty value, and the server reads
+ * `==(not set)` and `!=(not set)` as "is empty" and "has a value". Each key is
+ * the whole tail of a clause.
+ */
+OWA.dataGrid.EMPTY_TESTS = { '!=(not set)': 'has a value', '==(not set)': 'is not set' };
+
+/** How a filter reads on its chip. */
+OWA.dataGrid.OPERATOR_PHRASES = {
+    '==': 'is',
+    '!=': 'is not',
+    '>=': 'at least',
+    '<=': 'at most',
+    '>':  'greater than',
+    '<':  'less than',
+    '=~': 'matches',
+    '!~': 'does not match',
+    '=@': 'contains',
+    '!@': 'does not contain'
+};
+
+/** What the Add a filter dialog offers, for a dimension and for a metric. */
+OWA.dataGrid.CONDITIONS = {
+    dimension: [
+        [ '=@', 'Contains' ],
+        [ '==', 'Exactly matches' ],
+        [ '!=', "Doesn't match" ],
+        [ '!=(not set)', 'Has a value' ],
+        [ '==(not set)', 'Is not set' ]
+    ],
+    metric: [
+        [ '>', 'Greater than' ],
+        [ '<', 'Less than' ],
+        [ '==', 'Equals' ]
+    ]
+};
+
+/**
+ * A constraints string as a list of {name, operator, value}.
+ *
+ * An empty test keeps "(not set)" in its operator, so writing the list back
+ * gives the same string.
+ *
+ * @param  string str  e.g. "pagePath=@/blog/,pageViews>50"
+ * @return array
+ */
+OWA.dataGrid.parseConstraints = function ( str ) {
+
+    var list = [];
+
+    String( str || '' ).split( ',' ).forEach( function ( clause ) {
+
+        if ( ! clause ) {
+            return;
+        }
+
+        for ( var i = 0; i < OWA.dataGrid.OPERATORS.length; i++ ) {
+
+            var op  = OWA.dataGrid.OPERATORS[ i ];
+            var at  = clause.indexOf( op );
+
+            if ( at > 0 ) {
+
+                var value = clause.slice( at + op.length );
+
+                if ( OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( op + value ) ) {
+                    op    = op + value;
+                    value = '';
+                }
+
+                list.push( { name: clause.slice( 0, at ), operator: op, value: value } );
+
+                return;
+            }
+        }
+    } );
+
+    return list;
+};
+
+/** The list parseConstraints() returns, as a constraints string. */
+OWA.dataGrid.formatConstraints = function ( list ) {
+
+    return ( list || [] ).map( function ( c ) {
+        return c.name + c.operator + ( c.value || '' );
+    } ).join( ',' );
+};
+
+/**
+ * Which rows a page shows, and of how many.
+ *
+ * The server reads up to ten pages ahead (ResultSetManager over-queries by
+ * ten times the page size), so resultsTotal counts the rows from this page's
+ * first one to at most ten pages on. Short of that it is exact; at it, there
+ * may be more, and the total is a lower bound.
+ *
+ * @return object {start, end, total, more}
+ */
+OWA.dataGrid.range = function ( rs ) {
+
+    var per      = parseInt( rs.resultsPerPage, 10 ) || 0;
+    var page     = parseInt( rs.page, 10 ) || 1;
+    var returned = parseInt( rs.resultsReturned, 10 ) || 0;
+    var fetched  = parseInt( rs.resultsTotal, 10 ) || returned;
+    var offset   = per * ( page - 1 );
+
+    return {
+        start: returned ? offset + 1 : 0,
+        end:   offset + returned,
+        total: offset + fetched,
+        more:  per > 0 && fetched >= per * 10
+    };
+};
+
+/** A row's share of the total, "16.5%", or '' when there is none to give. */
+OWA.dataGrid.share = function ( value, total ) {
+
+    var v = parseFloat( value );
+    var t = parseFloat( total );
+
+    if ( isNaN( v ) || isNaN( t ) || t <= 0 ) {
+        return '';
+    }
+
+    return ( Math.round( v / t * 1000 ) / 10 ).toFixed( 1 ) + '%';
+};
+
+/*
+ * The formatters a report can name for a column (a definition's `formatters`).
+ *
+ * Named, not supplied: the definition never carries a function, which is the
+ * gate on it ever being user-authored. Each is given the cell
+ * ({value, formatted_value, ...}), {colModel: {realColName}} and the row, and
+ * returns the cell's HTML.
+ *
+ * The cell's HTML is markup, so anything interpolated into it is escaped. The
+ * last two keep a local esc(): their tests pull the formatter's source out and
+ * eval() it on its own, where the global OWA does not exist.
+ */
+OWA.dataGrid.formatters = {
+
+    // A dimension with a link.
+    urlFormatter : function(cellvalue, options, rowdata) {
+        var name = options.colModel.realColName;
+
+        if ( rowdata[name].link && rowdata[name].link.length > 0 ) {
+            return '<a href="' + OWA.util.escapeHtml( rowdata[name].link ) + '">'
+                 + OWA.util.escapeHtml( cellvalue.formatted_value )
+                 + '</a>';
+        }
+    },
+
+    useServerFormatter : function(cellvalue, options, rowdata) {
+        var name = options.colModel.realColName;
+        return OWA.util.escapeHtml( rowdata[name].formatted_value );
+    },
+
+    /*
+     * The attribution history stored on a session: a JSON array of
+     * {md, sr, cn, ad, at, st}, oldest first. Every one of these six values
+     * arrives from a URL parameter on a tracked page.
+     */
+    attributionList : function(cellvalue) {
+
+        // Cells arrive as {value, formatted_value}; the JSON is in .value.
+        var raw = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
+                ? cellvalue.value
+                : cellvalue;
+
+        if ( ! raw ) {
+            return '(none)';
+        }
+
+        var list = raw;
+
+        if ( typeof list === 'string' ) {
+            try {
+                list = JSON.parse( list );
+            } catch ( e ) {
+                return '(none)';
+            }
+        }
+
+        if ( ! Array.isArray( list ) || ! list.length ) {
+            return '(none)';
+        }
+
+        var esc = function( v ) {
+            return String( v )
+                .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
+                .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
+                .replace( /'/g, '&#39;' );
+        };
+
+        var fields = [
+            [ 'md', 'Medium' ], [ 'sr', 'Source' ], [ 'cn', 'Campaign' ],
+            [ 'ad', 'Ad' ], [ 'at', 'Ad Type' ], [ 'st', 'Search Terms' ]
+        ];
+
+        return list.map( function( item, i ) {
+
+            var parts = fields
+                .filter( function( f ) { return item && item[ f[0] ]; } )
+                .map( function( f ) {
+                    return '<i>' + f[1] + ':</i> ' + esc( item[ f[0] ] );
+                } );
+
+            return '<b>Attribution ' + ( i + 1 ) + ':</b><br>'
+                 + parts.join( ' -&gt; ' ) + '<br>';
+        } ).join( '' );
+    },
+
+    /*
+     * A link that opens a page in an overlay session. The cell carries only
+     * DATA -- {overlay, url, width, height, label} -- and this builds the
+     * anchor: the page with the overlay's parameters on the fragment, which is
+     * how the overlay reaches the tracker on that page, and the viewport it
+     * was recorded in as data attributes.
+     */
+    overlayLink : function( cellvalue ) {
+
+        var data = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
+                 ? cellvalue.value
+                 : cellvalue;
+
+        if ( typeof data === 'string' ) {
+            try {
+                data = JSON.parse( data );
+            } catch ( e ) {
+                return '';
+            }
+        }
+
+        if ( ! data || ! data.url || ! data.overlay ) {
+            return '';
+        }
+
+        var esc = function( v ) {
+            return String( v )
+                .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
+                .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
+                .replace( /'/g, '&#39;' );
+        };
+
+        return '<a class="owa_overlayLink" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
+             + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
+             + '" data-height="' + esc( parseInt( data.height, 10 ) || 0 )
+             + '">' + esc( data.label || 'Open' ) + '</a>';
+    }
 };
 
 OWA.dataGrid.prototype = {
 
-    generate : function(resultSet) {
-        OWA.debug( 'hi from generate');
-        var that = this;
+    generate : function( resultSet ) {
 
-        // custom formattter functions.
-        jQuery.extend(jQuery.fn.fmatter , {
-            // urlFormatter allows for a single param substitution.
-            /*
-             * A formatter's return value becomes the cell's HTML, so anything
-             * interpolated into it is markup until it is escaped. The two
-             * formatters below this already did that with a local esc(); these
-             * two did not.
-             *
-             * Those locals stay local deliberately. Their tests pull the
-             * formatter's source out and eval() it on its own, where the global
-             * OWA does not exist -- so pointing them at the shared helper turns
-             * a passing test into a ReferenceError. Not worth reshaping a test
-             * that is doing something reasonable.
-             */
-            urlFormatter : function(cellvalue, options, rowdata) {
-                var name = options.colModel.realColName;
-                OWA.debug(options.rowId-1+' '+name);
+        if ( this.init !== true ) {
 
-                if ( rowdata[name].link.length > 0 ) {
-                    return '<a href="' + OWA.util.escapeHtml( rowdata[name].link ) + '">'
-                         + OWA.util.escapeHtml( cellvalue.formatted_value )
-                         + '</a>';
-                }
-            },
-
-            useServerFormatter : function(cellvalue, options, rowdata) {
-                var name = options.colModel.realColName;
-                return OWA.util.escapeHtml( rowdata[name].formatted_value );
-            },
-
-            /*
-             * The attribution history stored on a session: a JSON array of
-             * {md, sr, cn, ad, at, st}, oldest first.
-             *
-             * Named, not supplied. A report definition names this formatter and
-             * the widget resolves the name -- the definition never carries a
-             * function, which is the gate on it ever being user-authored. Same
-             * reason excludeColumns became a list of names.
-             *
-             * The markup was a jqote template fetched by DOM id
-             * (#attributionCell). It is here instead because a formatter and
-             * the markup it renders are one thing, and because this is the only
-             * place the fields can be escaped: jqote does not escape, and every
-             * one of these six values arrives from a URL parameter on a tracked
-             * page.
-             */
-            attributionList : function(cellvalue) {
-
-                // Cells arrive as {value, formatted_value}; the JSON is in .value.
-                var raw = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
-                        ? cellvalue.value
-                        : cellvalue;
-
-                if ( ! raw ) {
-                    return '(none)';
-                }
-
-                var list = raw;
-
-                if ( typeof list === 'string' ) {
-                    try {
-                        list = JSON.parse( list );
-                    } catch ( e ) {
-                        return '(none)';
-                    }
-                }
-
-                if ( ! Array.isArray( list ) || ! list.length ) {
-                    return '(none)';
-                }
-
-                var esc = function( v ) {
-                    return String( v )
-                        .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
-                        .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
-                        .replace( /'/g, '&#39;' );
-                };
-
-                var fields = [
-                    [ 'md', 'Medium' ], [ 'sr', 'Source' ], [ 'cn', 'Campaign' ],
-                    [ 'ad', 'Ad' ], [ 'at', 'Ad Type' ], [ 'st', 'Search Terms' ]
-                ];
-
-                return list.map( function( item, i ) {
-
-                    var parts = fields
-                        .filter( function( f ) { return item && item[ f[0] ]; } )
-                        .map( function( f ) {
-                            return '<i>' + f[1] + ':</i> ' + esc( item[ f[0] ] );
-                        } );
-
-                    return '<b>Attribution ' + ( i + 1 ) + ':</b><br>'
-                         + parts.join( ' -&gt; ' ) + '<br>';
-                } ).join( '' );
-            },
-
-            /*
-             * A link that opens a page in an overlay session.
-             *
-             * Named, not supplied: a report names this formatter and the cell
-             * carries only DATA -- {overlay, url, width, height, label}. A report
-             * that assembled the anchor itself would be handing the grid markup,
-             * and the grid has no way to tell markup it built from markup it was
-             * given.
-             *
-             * The href is the page with the overlay's parameters on the
-             * fragment, which is how the overlay reaches the tracker on that
-             * page. The viewport travels as data attributes, for an overlay that
-             * needs the window sized to the geometry it was recorded in.
-             */
-            overlayLink : function( cellvalue ) {
-
-                var data = ( cellvalue && typeof cellvalue === 'object' && ! Array.isArray( cellvalue ) )
-                         ? cellvalue.value
-                         : cellvalue;
-
-                if ( typeof data === 'string' ) {
-                    try {
-                        data = JSON.parse( data );
-                    } catch ( e ) {
-                        return '';
-                    }
-                }
-
-                if ( ! data || ! data.url || ! data.overlay ) {
-                    return '';
-                }
-
-                var esc = function( v ) {
-                    return String( v )
-                        .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
-                        .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
-                        .replace( /'/g, '&#39;' );
-                };
-
-                return '<a class="owa_overlayLink" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
-                     + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
-                     + '" data-height="' + esc( parseInt( data.height, 10 ) || 0 )
-                     + '">' + esc( data.label || 'Open' ) + '</a>';
-            }
-
-        });
-
-        // load grid control
-
-        // happens with first results set when loading from URL.
-        if (this.init !== true) {
-
-            this.display(resultSet);
-
-        } else {
-
-            this.refresh(resultSet);
-        }
-
-        // hide the built in jqgrid loading divs.
-        jQuery("#load_"+that.dom_id+"_grid").hide();
-        jQuery("#load_"+that.dom_id+"_grid").css("z-index", 101);
-
-        // check to see if we need ot hide the previous page control.
-        if (resultSet.page == 1) {
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').show();
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
-        } else if (resultSet.page == resultSet.total_pages) {
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').hide();
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
-        } else {
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').show();
-        }
-        //alert(resultSet.page + ' ' + resultSet.total_pages);
-
-    },
-
-
-    /**
-     * creates the entire grid for the first time
-     * @private
-     */
-    display : function( resultSet ) {
-
-        if (resultSet.resultsReturned > 0) {
-
-            // listen for changes to result set
             this.subscribeToDataUpdates();
-            this.injectDomElements(resultSet);
-            this.setGridOptions(resultSet);
-            this.addAllRowsToGrid(resultSet);
-            this.makeGridPagination(resultSet);
             this.init = true;
-
-        } else {
-            var dom_id = this.dom_id;
-            jQuery("#" + dom_id).html("No data is available for this time period.");
         }
-    },
 
-    /**
-     * refreshes the grid
-     * @private
-     */
-    refresh : function(resultSet) {
-
-        var that = this;
-        // unload current grid jut in case columns have changed
-        jQuery("#" + that.dom_id + '_grid').jqGrid('GridUnload', "#gbox_" + that.dom_id + '_grid');
-        // setup grid columns/options again
-        this.setGridOptions(resultSet);
-        jQuery("#"+that.dom_id + ' _grid').jqGrid('clearGridData',true);
-        this.addAllRowsToGrid(resultSet);
+        this.resultSet = resultSet;
+        this.render( resultSet );
     },
 
     // listens for changes to parent resultSet object
     subscribeToDataUpdates : function() {
 
         var that = this;
-        // listen for data changes
-        jQuery( '#' + that.dom_id ).bind('new_result_set', function(event, resultSet) {
-            that.generate(resultSet);
-        });
+
+        jQuery( '#' + that.dom_id ).bind( 'new_result_set', function( event, resultSet ) {
+            that.generate( resultSet );
+        } );
     },
 
-    makeGridPagination : function(resultSet) {
+    /** Publish a change for the explorer to refetch with. */
+    emit : function ( name, args ) {
 
-        if (resultSet.more) {
+        this.closePopover();
+        jQuery( '#' + this.dom_id ).trigger( name, args || [] );
+    },
 
-            var that = this;
+    render : function ( rs ) {
 
-            var p = '';
-            p = p + '<LI class="owa_previousPageControl">';
-            p = p + '<span>&laquo</span></LI>';
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
-            //style button
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').button();
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl > .ui-button-text').css('line-height', '0.5');
-            // bind click
-            jQuery(".owa_previousPageControl").bind('click', function() {that.pageGrid('back');});
+        var $root = jQuery( '#' + this.dom_id );
+        var $grid = $root.children( '.owa_grid' );
 
-            var pn = '';
-            pn = pn + '<LI class="owa_nextPageControl">';
-            pn = pn + '<span>&raquo</span></LI>';
-
-            jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL').append(pn);
-            // style button
-            //style button
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').button();
-            jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl > .ui-button-text').css('line-height', '0.5');
-            //bind click
-            jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_nextPageControl').bind('click', function() {that.pageGrid('forward');});
-
-            if (resultSet.page == 1) {
-                jQuery("#" + that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_previousPageControl').hide();
-            }
-
+        if ( ! $grid.length ) {
+            $grid = jQuery( '<div class="owa_grid"></div>' ).appendTo( $root );
         }
-    },
 
-    pageGrid : function (direction) {
+        this.closePopover();
+        $grid.empty();
 
-        var that = this;
-        // valid event names are 'page_forward' and 'page_back'
-        jQuery('#' + that.dom_id).trigger('page_' + direction, []);
-    },
+        var rows = rs.resultsRows || [];
+        var $bar = this.controls( rs );
 
-    addAllRowsToGrid :function(resultSet) {
-
-        var that = this;
-        // uses the built in jqgrid loading divs. just giveit a message and show it.
-        jQuery("#load_"+that.dom_id+"_grid").html('Loading...');
-        jQuery("#load_"+that.dom_id+"_grid").show();
-        jQuery("#load_"+that.dom_id+"_grid").css("z-index", 1000);
-        // add data to grid.
-        //
-        // The grid is constructed with datatype:'local' so it never auto-fetches
-        // on init -- OWA always hand-feeds the fetched result set through
-        // addJSONData below. Under the old jqGrid 3.6.5, addJSONData always parsed
-        // its argument with the configured jsonReader. free-jqgrid's addJSONData
-        // instead picks its reader from the CURRENT datatype: 'local' uses
-        // localReader (which ignores jsonReader and reads nothing from OWA's
-        // {resultsRows:[...]} shape -> 0 rows), while 'json' uses jsonReader. So
-        // flip to 'json' for the manual parse, then restore 'local' so nothing
-        // triggers a background reload afterward.
-        var grid = jQuery("#"+that.dom_id + '_grid');
-        grid.jqGrid('setGridParam', { datatype: 'json' });
-        grid[0].addJSONData(resultSet);
-        grid.jqGrid('setGridParam', { datatype: 'local' });
-        // dispay new count
-        this.displayRowCount(resultSet);
-    },
-
-    displayRowCount : function(resultSet) {
-
-        if (resultSet.total_pages > 1) {
-
-            var start = '';
-            var end = '';
-            if (resultSet.page === 1) {
-                start = 1;
-                end = resultSet.resultsReturned;
-            } else {
-                start = ((resultSet.page -1)  * resultSet.resultsPerPage) + 1;
-                end = ((resultSet.page -1) * resultSet.resultsPerPage) + resultSet.resultsReturned;
-            }
-
-            var that = this;
-            //jQuery("#"+that.dom_id + '_grid').jqGrid('setGridParam', { rowNum: start } );
-
-            var p = '<li class="owa_rowCount">';
-            p += 'Results: '+ start + ' - ' + end;
-            p = p + '</li>';
-
-
-            //alert ("#"+that.dom_id + '_grid' + ' > .owa_rowCount');
-            var check = jQuery("#"+that.dom_id + ' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html();
-            //alert(check);
-            if (check === null)    {
-                jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL').append(p);
-            } else {
-                jQuery("#"+that.dom_id +' > .owa_resultsExplorerBottomControls > UL > .owa_rowCount').html(p);
-            }
+        if ( $bar ) {
+            $grid.append( $bar );
         }
-    },
 
-    injectDomElements : function(resultSet) {
+        if ( ! rows.length ) {
 
-        // A grid whose data was computed rather than queried has nothing to
-        // explore FROM -- see options.grid.showExplorerControls.
-        // NOT this.options.grid: createGrid() hands the explorer's grid options
-        // straight in as `options`, so inside a dataGrid they ARE this.options.
-        var showControls = this.options.showExplorerControls !== false;
+            $grid.append( jQuery( '<p class="owa_gridEmpty"></p>' ).text(
+                this.constraints( rs ).length
+                    ? OWA.l( 'No rows match these filters.' )
+                    : OWA.l( 'No data is available for this time period.' ) ) );
 
-        var p = '';
-        if ( showControls ) {
-            p += '<div class="owa_genericHorizontalList explorerTopControls"><ul></ul><div style="clear:both;"></div></div>';
-        }
-        p += '<div style="clear:both;"></div>';
-        p += '<table id="'+ this.dom_id + '_grid"></table>';
-        p += '<div class="owa_genericHorizontalList owa_resultsExplorerBottomControls"><ul></ul></div>';
-        p += '<div style="clear:both;"></div>';
-
-        var that = this;
-        jQuery('#'+that.dom_id).append(p);
-
-        if ( ! showControls ) {
-
-            // The grid element is in place; the controls that would sit above
-            // it are the part being skipped.
             return;
         }
 
-        // add top level controls
-        // secondard dimension picker
-        jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append(
-            OWA.util.sprintf(
-                '<li class="controlItem"><span id="%s"></span></li>',
-                this.dom_id + '_grid_secondDimensionChooser'
-            )
-        );
+        var $table = jQuery( '<table class="owa_gridTable"></table>' )
+            .append( this.head( rs ) )
+            .append( this.body( rs ) );
 
-        /*
-         * What the grid is grouped by, as pills.
-         *
-         * The dimensions the grid ALREADY has come from its own URL, so the
-         * control shows the real state rather than an empty slot beside it.
-         * Adding or removing one rewrites the list and refetches -- which is
-         * what the single select did too, one dimension at a time.
-         */
-        /*
-         * relatedDimensions is {family: [ {name, label}, ... ]} -- a LIST per
-         * family. Passed through as it is: the family grouping is what makes
-         * seventy dimensions findable, and reading the key as a NAME gave every
-         * option an array index for a value, so choosing "Date" asked the grid
-         * to group by "7".
-         */
-        /*
-         * A dimension the grid queries but does not SHOW is not part of this
-         * control.
-         *
-         * Six shipped grids group by a label and its url or id together and
-         * exclude the second from the columns -- top content is grouped by
-         * pageTitle AND pagePath, and pagePath is there only so the rows can
-         * link somewhere. The bar drew a picker for it all the same, so a grid
-         * showing one column offered two pickers, the second naming a column
-         * the reader cannot see.
-         *
-         * Split rather than dropped: the hidden ones still have to travel with
-         * every refetch, or the first regroup would take pagePath out of the
-         * query and the row links would quietly stop being links.
-         */
-        var allDimensions = this.getDimensions( resultSet ).filter( Boolean );
-        var excluded      = this.options.excludeColumns || [];
-
-        var hiddenDimensions = allDimensions.filter( function ( name ) {
-            return excluded.indexOf( name ) !== -1;
-        } );
-
-        var shownDimensions = allDimensions.filter( function ( name ) {
-            return excluded.indexOf( name ) === -1;
-        } );
-
-        var dimensionControls = new OWA.dimensionSelectors(
-            '#' + this.dom_id + '_grid_secondDimensionChooser',
-            {
-                choices: resultSet.relatedDimensions || {},
-                selected: shownDimensions,
-                hidden: hiddenDimensions,
-                onChange: function ( dims ) {
-                    jQuery( '#' + that.dom_id ).trigger( 'dimension_list_change', [ dims ] );
-                }
-            }
-        );
-
-        dimensionControls.display();
-
-        /*
-         * Built ONCE, and deliberately not refreshed on refetch.
-         *
-         * The widget's metrics are locked -- there is no control to change them
-         * -- so the metric reduction has already pinned the fact table before
-         * this control exists. relatedDimensions IS the set of dimensions
-         * related to that table, so every option offered here is one the table
-         * can answer, and choosing one cannot invalidate it.
-         *
-         * Measured rather than assumed: the browsers widget resolves to
-         * base.session on the site_usage metric set, because pagesPerVisit,
-         * visitDuration and bounceRate exist only there. Adding a request-only
-         * dimension like pagePath does not move the table to the request -- it
-         * makes the query illegal, which is why pagePath is not in the 70
-         * dimensions this control offers in the first place.
-         */
-
-
-        // inject constraint builder
-        // secondard dimension picker
-        jQuery('#'+that.dom_id + ' > .explorerTopControls > ul').append('<li class="controlItem"><span class="constraintPicker"></span></li>');
-        // constraint builder selector
-        var cb_button_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPickerButton';
-        var cb_cont_selector = '#'+ this.dom_id + ' > .explorerTopControls > ul > .controlItem > .constraintPicker';
-
-        // turn into button
-        jQuery(cb_button_selector).button();
-
-        // make object
-        this.constraintPicker = new OWA.constraintBuilder(cb_cont_selector, {});
-
-        this.constraintPicker.setRelatedDimensions( resultSet.relatedDimensions, [] );
-        this.constraintPicker.setRelatedMetrics( resultSet.relatedMetrics, [] );
-        // add current constraints to this method call
-        var resultSet_url = new OWA.uri( resultSet.self );
-        var cur_con = resultSet_url.getQueryParam(OWA.util.appNs('constraints'));
-        this.constraintPicker.display(cur_con);
-
-        // listen for the constraint change event
-        jQuery( cb_cont_selector).bind('constraint_change', function(event, constraints) {
-            // propigate the event up one level where result set explorer might be listening
-            jQuery( '#' + that.dom_id ).trigger('constraint_change', [constraints]);
-        });
+        $grid.append( jQuery( '<div class="owa_gridScroll"></div>' ).append( $table ) );
     },
 
-    setGridOptions : function(resultSet) {
+    /**
+     * The columns, from the first row: dimensions first, then metrics, each in
+     * the order the result set has them, without the excluded ones.
+     */
+    columns : function ( rs ) {
 
-        var that = this;
+        var first    = ( rs.resultsRows || [] )[ 0 ] || {};
+        var excluded = this.options.excludeColumns || [];
+        var dims     = [];
+        var metrics  = [];
 
-        var columns = [];
+        for ( var name in first ) {
 
-        var columnDef = '';
+            if ( ! first.hasOwnProperty( name ) || excluded.indexOf( name ) !== -1 ) {
+                continue;
+            }
 
-        // reset grid column order
-        this.gridColumnOrder = [];
+            var cell = first[ name ] || {};
+            var col  = {
+                name:  name,
+                label: cell.label || name,
+                kind:  cell.result_type === 'dimension' ? 'dimension' : 'metric',
+                link:  !! cell.link
+            };
 
-        for (var column in resultSet.resultsRows[0]) {
+            ( col.kind === 'dimension' ? dims : metrics ).push( col );
+        }
 
-            // check to see if we should exclude any columns
-            if (this.options.excludeColumns.length > 0) {
+        return dims.concat( metrics );
+    },
 
-                for (var i=0;i<=this.options.excludeColumns.length -1;i++) {
-                    // if column name is not on the exclude list then add it.
-                    if (this.options.excludeColumns[i] != column) {
-                        // add column
-                        columnDef = this.makeGridColumnDef(resultSet.resultsRows[0][column]);
-                        columns.push(columnDef);
-                        // set grid column order
-                        this.gridColumnOrder.push( resultSet.resultsRows[0][column].name );
+    /** What the grid is grouped by, from its own URL, split into the shown and the excluded. */
+    dimensionLists : function ( rs ) {
+
+        var all      = this.getDimensions( rs ).filter( Boolean );
+        var excluded = this.options.excludeColumns || [];
+
+        return {
+            shown:  all.filter( function ( n ) { return excluded.indexOf( n ) === -1; } ),
+            hidden: all.filter( function ( n ) { return excluded.indexOf( n ) !== -1; } )
+        };
+    },
+
+    rowNumbers : function () {
+
+        return !! this.options.showRowNumbers && ! this.options.compact;
+    },
+
+    /** Whether the dimension headings are pickers. */
+    dimensionsEditable : function ( rs ) {
+
+        return this.options.showExplorerControls !== false
+            && !! rs.self
+            && this.dimensionLists( rs ).shown.length <= OWA.dataGrid.MAX_DIMENSIONS;
+    },
+
+    constraints : function ( rs ) {
+
+        if ( ! rs.self ) {
+            return [];
+        }
+
+        return OWA.dataGrid.parseConstraints(
+            new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'constraints' ) ) );
+    },
+
+    /** {name: {label, description, metric_type}} for every metric the result set relates. */
+    metricInfo : function ( rs ) {
+
+        var info = {};
+
+        jQuery.each( rs.relatedMetrics || {}, function ( group, list ) {
+            jQuery.each( list || [], function ( i, m ) {
+                if ( m && m.name ) {
+                    info[ m.name ] = m;
+                }
+            } );
+        } );
+
+        return info;
+    },
+
+    /** A dimension's or metric's label, for a chip or a heading. */
+    labelOf : function ( rs, name ) {
+
+        var label = '';
+
+        jQuery.each( [ rs.relatedDimensions || {}, rs.relatedMetrics || {} ], function ( i, families ) {
+            jQuery.each( families, function ( family, list ) {
+                jQuery.each( list || [], function ( j, d ) {
+                    if ( d && d.name === name && ! label ) {
+                        label = d.label || d.name;
+                    }
+                } );
+            } );
+        } );
+
+        return label || ( rs.labels && rs.labels[ name ] ) || name;
+    },
+
+    // ---- the bar ---------------------------------------------------------
+
+    controls : function ( rs ) {
+
+        var that     = this;
+        var explore  = this.options.showExplorerControls !== false && !! rs.self;
+        var pages    = parseInt( rs.total_pages, 10 ) || 1;
+        var page     = parseInt( rs.page, 10 ) || 1;
+        var paged    = pages > 1 || page > 1;
+
+        if ( ! explore && ! paged ) {
+            return null;
+        }
+
+        var $bar = jQuery( '<div class="owa_gridControls"></div>' );
+
+        if ( explore ) {
+
+            var $filters = jQuery( '<div class="owa_gridFilters"></div>' ).appendTo( $bar );
+
+            var $add = jQuery( '<button type="button" class="owa_gridButton owa_gridFilterButton"'
+                + ' aria-haspopup="dialog" aria-expanded="false">'
+                + '<i class="fas fa-filter" aria-hidden="true"></i></button>' )
+                .append( document.createTextNode( OWA.l( 'Filter' ) ) )
+                .on( 'click', function () { that.openFilter( jQuery( this ) ); } );
+
+            $filters.append( $add );
+
+            this.constraints( rs ).forEach( function ( c, index ) {
+                $filters.append( that.chip( rs, c, index ) );
+            } );
+        }
+
+        // A page with no rows has nothing to page through: the filters are
+        // what there is to change.
+        if ( ! ( rs.resultsRows || [] ).length ) {
+            return $bar;
+        }
+
+        var $paging = jQuery( '<div class="owa_gridPaging"></div>' ).appendTo( $bar );
+        var per     = parseInt( rs.resultsPerPage, 10 ) || 0;
+
+        if ( explore && per ) {
+
+            var sizes = OWA.dataGrid.PAGE_SIZES.slice();
+
+            if ( sizes.indexOf( per ) === -1 ) {
+                sizes.push( per );
+                sizes.sort( function ( a, b ) { return a - b; } );
+            }
+
+            var $size = jQuery( '<select class="owa_gridPageSize"></select>' );
+
+            sizes.forEach( function ( n ) {
+                $size.append( jQuery( '<option>' ).val( n ).text( n ).prop( 'selected', n === per ) );
+            } );
+
+            $size.on( 'change', function () {
+                that.emit( 'page_change', [ 1, parseInt( jQuery( this ).val(), 10 ) ] );
+            } );
+
+            $paging.append( jQuery( '<label class="owa_gridPagingItem"></label>' )
+                .text( OWA.l( 'Rows per page' ) + ' ' ).append( $size ) );
+        }
+
+        if ( explore && pages > 1 ) {
+
+            var $goto = jQuery( '<input type="number" class="owa_gridGoTo" min="1" inputmode="numeric">' )
+                .attr( 'max', pages ).val( page );
+
+            var go = function () {
+
+                var n = Math.min( pages, Math.max( 1, parseInt( $goto.val(), 10 ) || 1 ) );
+
+                if ( n !== page ) {
+                    that.emit( 'page_change', [ n, per ] );
+                } else {
+                    $goto.val( page );
+                }
+            };
+
+            $goto.on( 'change', go ).on( 'keydown', function ( e ) {
+                if ( e.which === 13 ) { e.preventDefault(); go(); }
+            } );
+
+            $paging.append( jQuery( '<label class="owa_gridPagingItem"></label>' )
+                .text( OWA.l( 'Go to' ) + ' ' ).append( $goto ) );
+        }
+
+        var r = OWA.dataGrid.range( rs );
+
+        var $pager = jQuery( '<span class="owa_gridPager"></span>' );
+
+        var $prev = jQuery( '<button type="button" class="owa_gridIconButton owa_gridPrev">'
+            + '<i class="fas fa-chevron-left" aria-hidden="true"></i></button>' )
+            .attr( 'aria-label', OWA.l( 'Previous page' ) )
+            .prop( 'disabled', ! rs.previous )
+            .on( 'click', function () { that.emit( 'page_back' ); } );
+
+        var $next = jQuery( '<button type="button" class="owa_gridIconButton owa_gridNext">'
+            + '<i class="fas fa-chevron-right" aria-hidden="true"></i></button>' )
+            .attr( 'aria-label', OWA.l( 'Next page' ) )
+            .prop( 'disabled', ! rs.next )
+            .on( 'click', function () { that.emit( 'page_forward' ); } );
+
+        var text = r.start + '–' + r.end + ' ' + OWA.l( 'of' ) + ' ' + r.total + ( r.more ? '+' : '' );
+
+        $pager.append( $prev )
+              .append( jQuery( '<span class="owa_gridRange" aria-live="polite"></span>' ).text( text ) )
+              .append( $next );
+
+        $paging.append( $pager );
+
+        return $bar;
+    },
+
+    chip : function ( rs, c, index ) {
+
+        var that   = this;
+        var phrase = OWA.dataGrid.EMPTY_TESTS[ c.operator ]
+                  || OWA.dataGrid.OPERATOR_PHRASES[ c.operator ]
+                  || c.operator;
+
+        var $text = jQuery( '<span class="owa_gridChipText"></span>' )
+            .text( this.labelOf( rs, c.name ) + ' ' + OWA.l( phrase ) + ( c.value !== '' ? ' ' : '' ) );
+
+        if ( c.value !== '' ) {
+            $text.append( jQuery( '<strong></strong>' ).text( c.value ) );
+        }
+
+        var $remove = jQuery( '<button type="button" class="owa_gridChipRemove">'
+            + '<i class="fas fa-times" aria-hidden="true"></i></button>' )
+            .attr( 'aria-label', OWA.l( 'Remove this filter' ) )
+            .on( 'click', function () {
+
+                var list = that.constraints( rs );
+
+                list.splice( index, 1 );
+                that.emit( 'constraint_change', [ OWA.dataGrid.formatConstraints( list ) ] );
+            } );
+
+        return jQuery( '<span class="owa_gridChip"></span>' ).append( $text ).append( $remove );
+    },
+
+    // ---- the table -------------------------------------------------------
+
+    head : function ( rs ) {
+
+        var that     = this;
+        var columns  = this.columns( rs );
+        var info     = this.metricInfo( rs );
+        var editable = this.dimensionsEditable( rs );
+        var lists    = this.dimensionLists( rs );
+        var dims     = columns.filter( function ( c ) { return c.kind === 'dimension'; } );
+        var $tr      = jQuery( '<tr></tr>' );
+
+        if ( this.rowNumbers() ) {
+            $tr.append( jQuery( '<th scope="col" class="owa_gridRowNum"></th>' ).attr( 'aria-label', OWA.l( 'Row' ) ) );
+        }
+
+        columns.forEach( function ( col ) {
+
+            var $th = jQuery( '<th scope="col"></th>' ).attr( 'data-column', col.name );
+            var sorted = rs.sortColumn === col.name;
+
+            $th.addClass( col.kind === 'dimension' ? 'owa_gridDim' : 'owa_gridMetric' );
+
+            if ( col.kind === 'dimension' && col === dims[ dims.length - 1 ] ) {
+                $th.addClass( 'owa_gridDimEnd' );
+            }
+
+            if ( sorted ) {
+                $th.addClass( 'is-sorted' );
+            }
+
+            $th.attr( 'aria-sort', sorted ? ( rs.sortOrder === 'desc' ? 'descending' : 'ascending' ) : 'none' );
+
+            var slot = lists.shown.indexOf( col.name );
+
+            if ( col.kind === 'dimension' && editable && slot !== -1 ) {
+
+                $th.append( that.dimensionHeading( rs, col, slot, lists, col === dims[ dims.length - 1 ] ) );
+
+            } else {
+
+                $th.append( that.sortHeading( rs, col, info[ col.name ] ) );
+            }
+
+            $tr.append( $th );
+        } );
+
+        return jQuery( '<thead></thead>' ).append( $tr );
+    },
+
+    sortHeading : function ( rs, col, meta ) {
+
+        var that   = this;
+        var sorted = rs.sortColumn === col.name;
+        var desc   = sorted && rs.sortOrder === 'desc';
+
+        var $label = jQuery( '<span class="owa_gridSortLabel"></span>' ).text( col.label );
+
+        var $button = jQuery( '<button type="button" class="owa_gridSort"></button>' );
+
+        if ( sorted ) {
+            $button.append( '<i class="fas ' + ( desc ? 'fa-arrow-down' : 'fa-arrow-up' ) + '" aria-hidden="true"></i>' );
+        }
+
+        $button.append( $label );
+
+        if ( meta && meta.description ) {
+            $label.addClass( 'has-description' );
+            $button.attr( 'title', meta.description );
+        }
+
+        /*
+         * A metric sorts largest first, a dimension A to Z; a second click on
+         * the sorted column turns it round.
+         */
+        $button.on( 'click', function () {
+
+            var order = sorted
+                ? ( desc ? 'asc' : 'desc' )
+                : ( col.kind === 'metric' ? 'desc' : 'asc' );
+
+            that.emit( 'sort_column_change', [ col.name, order ] );
+        } );
+
+        return $button;
+    },
+
+    dimensionHeading : function ( rs, col, slot, lists, last ) {
+
+        var that  = this;
+        var $head = jQuery( '<span class="owa_gridDimHead"></span>' );
+
+        var $pick = jQuery( '<button type="button" class="owa_gridButton owa_gridDimButton"'
+            + ' aria-haspopup="dialog" aria-expanded="false"></button>' )
+            .text( col.label )
+            .append( ' <i class="fas fa-chevron-down" aria-hidden="true"></i>' )
+            .on( 'click', function () { that.openDimensions( jQuery( this ), rs, slot ); } );
+
+        $head.append( $pick );
+
+        // The first is what the report is about, and stays.
+        if ( slot > 0 ) {
+
+            $head.append( jQuery( '<button type="button" class="owa_gridIconButton owa_gridDimRemove">'
+                + '<i class="fas fa-times" aria-hidden="true"></i></button>' )
+                .attr( 'aria-label', OWA.l( 'Remove' ) + ' ' + col.label )
+                .on( 'click', function () {
+
+                    var shown = lists.shown.slice();
+
+                    shown.splice( slot, 1 );
+                    that.emit( 'dimension_list_change', [ shown.concat( lists.hidden ) ] );
+                } ) );
+        }
+
+        if ( last && lists.shown.length < OWA.dataGrid.MAX_DIMENSIONS ) {
+
+            $head.append( jQuery( '<button type="button" class="owa_gridIconButton owa_gridDimAdd"'
+                + ' aria-haspopup="dialog" aria-expanded="false">'
+                + '<i class="fas fa-plus" aria-hidden="true"></i></button>' )
+                .attr( 'aria-label', OWA.l( 'Add a dimension' ) )
+                .on( 'click', function () { that.openDimensions( jQuery( this ), rs, lists.shown.length ); } ) );
+        }
+
+        return $head;
+    },
+
+    body : function ( rs ) {
+
+        var that      = this;
+        var columns   = this.columns( rs );
+        var info      = this.metricInfo( rs );
+        var aggs      = rs.aggregates || {};
+        var dimCount  = columns.filter( function ( c ) { return c.kind === 'dimension'; } ).length;
+        var offset    = OWA.dataGrid.range( rs ).start - 1;
+        var $tbody    = jQuery( '<tbody></tbody>' );
+        var formatters = this.options.columnFormatters || {};
+
+        var totals = ! this.options.compact && columns.some( function ( c ) {
+            return c.kind === 'metric' && aggs[ c.name ];
+        } );
+
+        if ( totals ) {
+
+            var $total = jQuery( '<tr class="owa_gridTotal"></tr>' );
+            var lead   = dimCount + ( this.rowNumbers() ? 1 : 0 );
+
+            if ( lead ) {
+                $total.append( jQuery( '<td class="owa_gridDim owa_gridDimEnd"></td>' )
+                    .attr( 'colspan', lead ).text( OWA.l( 'Total' ) ) );
+            }
+
+            columns.forEach( function ( c ) {
+
+                if ( c.kind !== 'metric' ) {
+                    return;
+                }
+
+                var agg = aggs[ c.name ];
+
+                $total.append( jQuery( '<td class="owa_gridMetric"></td>' ).attr( 'data-column', c.name )
+                    .text( agg ? ( agg.formatted_value !== undefined && agg.formatted_value !== ''
+                        ? agg.formatted_value : agg.value ) : '' ) );
+            } );
+
+            $tbody.append( $total );
+        }
+
+        ( rs.resultsRows || [] ).forEach( function ( row, i ) {
+
+            var $tr = jQuery( '<tr class="owa_gridRow"></tr>' );
+
+            if ( i % 2 === 1 ) {
+                $tr.addClass( 'is-alt' );
+            }
+
+            if ( that.rowNumbers() ) {
+                $tr.append( jQuery( '<td class="owa_gridRowNum"></td>' ).text( offset + i + 1 ) );
+            }
+
+            columns.forEach( function ( c, ci ) {
+
+                var cell = row[ c.name ] || { value: '', formatted_value: '' };
+                var $td  = jQuery( '<td></td>' ).attr( 'data-column', c.name );
+
+                if ( c.kind === 'dimension' ) {
+
+                    $td.addClass( 'owa_gridDim' );
+
+                    if ( ci === dimCount - 1 ) {
+                        $td.addClass( 'owa_gridDimEnd' );
+                    }
+
+                } else {
+
+                    $td.addClass( 'owa_gridMetric' );
+                }
+
+                $td.html( that.cellHtml( c, cell, row, i, formatters ) );
+
+                var meta = info[ c.name ];
+                var agg  = aggs[ c.name ];
+
+                if ( c.kind === 'metric' && meta && agg && ! that.options.compact
+                     && OWA.dataGrid.SHARE_TYPES.indexOf( meta.metric_type ) !== -1 ) {
+
+                    var share = OWA.dataGrid.share( cell.value, agg.value );
+
+                    if ( share ) {
+                        $td.append( ' ' ).append( jQuery( '<span class="owa_gridShare"></span>' ).text( '(' + share + ')' ) );
                     }
                 }
 
-            } else {
-                // add column
-                columnDef = this.makeGridColumnDef(resultSet.resultsRows[0][column]);
-                columns.push(columnDef);
-                // set grid column order
-                this.gridColumnOrder.push( resultSet.resultsRows[0][column].name );
-            }
-        }
+                $tr.append( $td );
+            } );
 
+            $tbody.append( $tr );
+        } );
 
-        /*
-         * Give each column room in proportion to what is actually in it.
-         *
-         * jqGrid has no content-based sizing: with autowidth and shrinkToFit it
-         * divides the available width among the flexible columns in proportion
-         * to their DECLARED widths -- and every dimension column declares none,
-         * which jqGrid reads as its default 150. Identical declarations mean
-         * identical shares, so Latest Visits gave a full entry URL exactly as
-         * much room as priorVisitCount and truncated it.
-         *
-         * Measured before the grid is built rather than adjusted after: the
-         * rows are already here, and resizing a rendered grid means a second
-         * layout the reader can see happen.
-         */
-        this.sizeColumnsToContent( resultSet, columns );
-
-        jQuery('#' + that.dom_id + '_grid').jqGrid({
-            jsonReader: {
-                repeatitems: false,
-                root: "resultsRows",
-                cell: '',
-                id: '',
-                page: 'page',
-                total: 'total_pages',
-                records: 'resultsReturned'
-            },
-            afterInsertRow: function(rowid, rowdata, rowelem) {return;},
-            datatype: 'local',
-            colModel: columns,
-            rownumbers: that.options.showRowNumbers,
-            viewrecords: true,
-            rowNum: resultSet.resultsReturned,
-            height: '100%',
-            autowidth: true,
-            hoverrows: false,
-            // Defaulted, not passed straight through. A sort that does not
-            // resolve comes back null here, and jqGrid calls .toLowerCase() on
-            // sortorder while building the grid -- "Cannot read properties of
-            // null (reading 'toLowerCase')", thrown before the grid finishes.
-            // The page still renders, so the only trace is the browser console.
-            //
-            // Defence in depth, NOT the fix for any current bug: the one
-            // occurrence of this had a misspelt metric in report_ecommerce.php
-            // ('transactionsRevenue' for 'transactionRevenue') and correcting
-            // that clears it on its own -- verified by removing this default and
-            // re-running, which still passes. Kept because a caller typo should
-            // not be able to throw out of grid construction.
-            sortname: resultSet.sortColumn || '',
-            sortorder: resultSet.sortOrder || 'asc',
-            onSortCol: function( index, iCol, sortorder ) {
-
-                //that.sortGrid( index, sortorder );
-                jQuery('#' + that.dom_id).trigger('sort_column_change', [index, sortorder]);
-                return 'stop';
-            }
-        });
-
-        // set header css
-        for (var y=0;y < columns.length;y++) {
-            var css = {};
-            //if dimension column then left align
-            if ( columns[y].classes == 'owa_dimensionGridCell' ) {
-                css['text-align'] = 'left';
-            } else {
-                css['text-align'] = 'right';
-            }
-            // if sort column then bold.
-            if (resultSet.sortColumn +'' === columns[y].name) {
-                //css.fontWeight = 'bold';
-            }
-            // set the css. no way to just set a class...
-            jQuery('#' + that.dom_id + '_grid').jqGrid('setLabel', columns[y].name, '',css);
-        }
-
-        /*
-         * Not narrower than its columns can be read at.
-         *
-         * autowidth fits the grid to its widget, and on a phone that left the
-         * fixed metric columns their 100px each and squeezed every dimension
-         * column to a character or two. The floor is the fixed columns plus a
-         * readable share for each flexible one; past it the widget scrolls
-         * sideways rather than the columns shrinking. watchGridWidth() keeps
-         * to the same floor on a resize.
-         */
-        var grid = jQuery('#' + that.dom_id + '_grid');
-        var floor = this.readableWidth( columns );
-
-        grid.data( 'owaFloor', floor );
-
-        if ( grid.jqGrid( 'getGridParam', 'width' ) < floor ) {
-
-            grid.jqGrid( 'setGridWidth', floor, true );
-        }
-
+        return $tbody;
     },
 
-    /**
-     * The narrowest a grid of these columns can be and still be read.
-     *
-     * A fixed column at its width; a flexible one at what its content measured
-     * (sizeColumnsToContent), up to READABLE -- a long URL should not set the
-     * floor, it should be the column that ellipsizes.
-     *
-     * @param {Array} columns jqGrid column definitions
-     * @return {number} pixels
-     */
-    readableWidth : function ( columns ) {
+    /** A cell's HTML, through the formatter its column names or its kind implies. */
+    cellHtml : function ( col, cell, row, i, formatters ) {
 
-        var READABLE = 120;
-        var total = this.options.showRowNumbers ? 25 : 0;
+        var name = formatters.hasOwnProperty( col.name ) ? formatters[ col.name ]
+                 : ( col.link ? 'urlFormatter' : 'useServerFormatter' );
 
-        for ( var c = 0; c < columns.length; c++ ) {
+        var fn   = OWA.dataGrid.formatters[ name ] || OWA.dataGrid.formatters.useServerFormatter;
+        var html = fn( cell, { colModel: { realColName: col.name }, rowId: i + 1 }, row );
 
-            var def = columns[c];
-
-            if ( def.hidden ) {
-
-                continue;
-            }
-
-            total += def.fixed ? ( def.width || 100 ) : Math.min( def.width || 150, READABLE );
+        if ( html === undefined || html === null ) {
+            html = OWA.util.escapeHtml( cell.formatted_value );
         }
 
-        return total;
+        return html;
     },
 
-    // private
+    // ---- popovers --------------------------------------------------------
+
     /**
-     * The widest thing each flexible column has to show, in pixels.
+     * One popover at a time, anchored under the control that opened it.
      *
-     * Sets `width` on the column definitions in place. shrinkToFit still has
-     * the last word -- these are proportions, not promises -- so the grid goes
-     * on fitting its widget instead of growing a horizontal scrollbar, and a
-     * column with long values simply gets a bigger share of the row.
-     *
-     * Only the FLEXIBLE columns. Metric columns are declared fixed at 100 and
-     * right-aligned, and jqGrid leaves fixed columns out of the distribution
-     * entirely, so measuring them would change nothing and widening them would
-     * take the room this is trying to find.
+     * Fixed rather than absolute: a grid sits inside a widget that scrolls
+     * sideways when its table is wide, and an absolutely placed popover is
+     * cut off by that box. A fixed one is placed against the window and kept
+     * under its control as the page scrolls.
      */
-    sizeColumnsToContent : function ( resultSet, columns ) {
+    openPopover : function ( $trigger, label, $content ) {
 
-        var measure = this.textMeasurer();
+        var that = this;
 
-        if ( ! measure ) {
+        if ( this.popover && this.popover.trigger[0] === $trigger[0] ) {
+            this.closePopover();
+            return null;
+        }
 
-            // No canvas to measure with. jqGrid's equal shares are the same
-            // behaviour as before, which is a worse layout and not a broken one.
+        this.closePopover();
+
+        var $pop = jQuery( '<div class="owa_gridPop" role="dialog"></div>' )
+            .attr( 'aria-label', label )
+            .append( $content );
+
+        $trigger.closest( '.owa_grid' ).append( $pop );
+        $trigger.attr( 'aria-expanded', 'true' );
+
+        /*
+         * Under the control, as tall as the room below it allows; above it
+         * when there is more room there, which is the case for a heading
+         * near the foot of the window.
+         */
+        var place = function () {
+
+            var r     = $trigger[0].getBoundingClientRect();
+            var width = $pop.outerWidth();
+            var left  = Math.max( 8, Math.min( r.left, window.innerWidth - width - 8 ) );
+            var below = window.innerHeight - r.bottom - 14;
+            var above = r.top - 14;
+            var up    = below < 320 && above > below;
+
+            $pop.css( {
+                left: Math.round( left ) + 'px',
+                top: up ? 'auto' : Math.round( r.bottom + 6 ) + 'px',
+                bottom: up ? Math.round( window.innerHeight - r.top + 6 ) + 'px' : 'auto',
+                maxHeight: Math.round( Math.min( 520, Math.max( 160, up ? above : below ) ) ) + 'px'
+            } );
+        };
+
+        var outside = function ( e ) {
+
+            if ( ! $pop[0].contains( e.target ) && ! $trigger[0].contains( e.target ) ) {
+                that.closePopover();
+            }
+        };
+
+        var keys = function ( e ) {
+
+            if ( e.key === 'Escape' || e.which === 27 ) {
+                e.preventDefault();
+                that.closePopover( true );
+            }
+        };
+
+        place();
+
+        window.addEventListener( 'scroll', place, true );
+        window.addEventListener( 'resize', place );
+        document.addEventListener( 'mousedown', outside, true );
+        $pop[0].addEventListener( 'keydown', keys );
+
+        this.popover = {
+            el: $pop,
+            trigger: $trigger,
+            off: function () {
+                window.removeEventListener( 'scroll', place, true );
+                window.removeEventListener( 'resize', place );
+                document.removeEventListener( 'mousedown', outside, true );
+            }
+        };
+
+        return $pop;
+    },
+
+    closePopover : function ( refocus ) {
+
+        if ( ! this.popover ) {
             return;
         }
 
-        /*
-         * Cell padding plus a little slack, and bounds.
-         *
-         * The maximum is what stops one long URL from taking the row: past it,
-         * a column has as much as it can usefully be given and the value wraps
-         * or ellipsizes as it did before. The minimum keeps a short column --
-         * a Yes/No, a small count -- from collapsing to nothing.
-         */
-        var PAD = 24;
-        var MIN = 70;
-        var MAX = 320;
+        var p = this.popover;
 
-        for ( var c = 0; c < columns.length; c++ ) {
+        this.popover = null;
+        p.off();
+        p.el.remove();
+        p.trigger.attr( 'aria-expanded', 'false' );
 
-            var def = columns[c];
-
-            if ( def.fixed ) {
-
-                continue;
-            }
-
-            // The heading is content too, and it carries a sort indicator.
-            var widest = measure( def.label || def.name ) + PAD + 14;
-
-            for ( var i = 0; i < resultSet.resultsRows.length; i++ ) {
-
-                var cell = resultSet.resultsRows[i][ def.name ];
-
-                if ( ! cell ) {
-
-                    continue;
-                }
-
-                var text = ( cell.formatted_value === null || cell.formatted_value === undefined
-                    || cell.formatted_value === '' ) ? cell.value : cell.formatted_value;
-
-                var width = measure( text ) + PAD;
-
-                if ( width > widest ) {
-
-                    widest = width;
-                }
-            }
-
-            def.width = Math.round( Math.min( MAX, Math.max( MIN, widest ) ) );
+        if ( refocus ) {
+            p.trigger.trigger( 'focus' );
         }
     },
 
     /**
-     * A function that measures a string in the grid's own font.
-     *
-     * Canvas measureText rather than a hidden element per value: a grid of ten
-     * rows by ten columns is a hundred measurements, and doing those by
-     * inserting and reading back DOM nodes is a hundred forced layouts.
-     *
-     * Returns null when there is no canvas to measure with, which the caller
-     * treats as "leave the widths alone".
+     * The dimensions to choose from for one heading: slot is the index of the
+     * dimension it replaces, or the count of them to add one.
      */
-    textMeasurer : function () {
+    openDimensions : function ( $trigger, rs, slot ) {
 
-        var canvas = document.createElement( 'canvas' );
+        var that   = this;
+        var lists  = this.dimensionLists( rs );
+        var mine   = lists.shown[ slot ];
+        var $box   = jQuery( '<div class="owa_gridDimPop"></div>' );
 
-        if ( ! canvas.getContext ) {
+        var $search = jQuery( '<input type="search" class="owa_gridPopSearch">' )
+            .attr( 'placeholder', OWA.l( 'Search dimensions' ) )
+            .attr( 'aria-label', OWA.l( 'Search dimensions' ) );
 
-            return null;
+        var $list = jQuery( '<div class="owa_gridPopList"></div>' );
+
+        $box.append( $search ).append( $list );
+
+        // Replacing a heading's dimension can also sort by it.
+        if ( mine ) {
+
+            var $sorts = jQuery( '<div class="owa_gridPopSorts"></div>' );
+
+            [ [ 'asc', 'Sort A to Z' ], [ 'desc', 'Sort Z to A' ] ].forEach( function ( s ) {
+
+                var on = rs.sortColumn === mine && ( rs.sortOrder === 'desc' ) === ( s[0] === 'desc' );
+
+                $sorts.append( jQuery( '<button type="button" class="owa_gridPopOption"></button>' )
+                    .toggleClass( 'is-current', on )
+                    .attr( 'aria-pressed', on ? 'true' : 'false' )
+                    .text( OWA.l( s[1] ) )
+                    .on( 'click', function () { that.emit( 'sort_column_change', [ mine, s[0] ] ); } ) );
+            } );
+
+            $box.prepend( $sorts );
         }
 
-        var ctx = canvas.getContext( '2d' );
+        jQuery.each( rs.relatedDimensions || {}, function ( family, dims ) {
 
-        if ( ! ctx || typeof ctx.measureText !== 'function' ) {
+            var $group = jQuery( '<div class="owa_gridPopGroup"></div>' );
 
-            return null;
-        }
-
-        // The grid's own font, so the measurement is of what will be drawn.
-        // Falls back to the theme's size rather than to the canvas default,
-        // which is smaller than anything the grid uses.
-        var probe = document.getElementById( this.dom_id );
-        var style = probe && window.getComputedStyle ? window.getComputedStyle( probe ) : null;
-
-        ctx.font = style
-            ? ( style.fontStyle + ' ' + style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily )
-            : '12px Arial, sans-serif';
-
-        return function ( value ) {
-
-            if ( value === null || value === undefined ) {
-
-                return 0;
-            }
-
-            /*
-             * The TEXT, not the markup. A linked column's formatted value is an
-             * anchor, and measuring the tags would size the column to the href.
-             */
-            var text = String( value ).replace( /<[^>]*>/g, '' );
-
-            return ctx.measureText( text ).width;
-        };
-    },
-
-    makeGridColumnDef : function(column) {
-
-        var _sort_type = '';
-        var _align = '';
-        var _format = '';
-        var _class = '';
-        var _width = '';
-        var _resizable = true;
-        var _fixed = false;
-        var _datefmt = '';
-        var _link_template = '';
-
-        if (column.result_type === 'dimension') {
-            _align = 'left';
-            _class = 'owa_dimensionGridCell';
-        } else {
-            _align = 'right';
-            _class = 'owa_metricGridCell';
-            _width = 100;
-            _resizable = false;
-            _fixed = true;
-        }
-
-        if (column.data_type === 'string') {
-            _sort_type = 'text';
-        } else {
-            _sort_type = 'number';
-        }
-
-        if (column.link) {
-            _format = 'urlFormatter';
-        } else {
-            _format = 'useServerFormatter';
-        }
-
-        // set custom formatter if one exists.
-        if (this.options.columnFormatters.hasOwnProperty(column.name)) {
-            _format = this.options.columnFormatters[column.name];
-        }
-
-        if ( this.columnLinks.hasOwnProperty( column.name ) ) {
-            _link_template = this.columnLinks[column.name].template;
-        }
-
-        var columnDef = {
-            //name: column.name +'.value',
-            name: column.name,
-            //index: column.name +'.value',
-            index: column.name +'',
-            label: column.label,
-            sorttype: _sort_type,
-            align: _align,
-            formatter: _format,
-            classes: _class,
-            width: _width,
-            resizable: _resizable,
-            fixed: _fixed,
-            realColName: column.name,
-            datefmt: _datefmt,
-            link_template: _link_template
-        };
-
-        return columnDef;
-
-    },
-
-    getDimensions : function ( resultSet ) {
-
-        var dims = '';
-        var self = new OWA.uri(resultSet.self);
-        dims = OWA.util.urldecode( self.getQueryParam(OWA.util.appNs('dimensions')) );
-        dims = dims.split(',');
-
-        return dims;
-    }
-
-};
-
-/**
- * TWO CONTEXTS, TWO SETS OF RULES
- *
- * These pickers look the same in the grid's explore bar and in the custom
- * report builder's widget modal, and their obligations are opposite.
- *
- * REFINING a rendered widget: the metrics are locked -- there is no control to
- * change them -- so the metric reduction has already pinned the fact table
- * before the control exists. relatedDimensions, which the server computes
- * against that table, IS the legal list. The control reasons about nothing; it
- * renders what it was handed, and cannot offer an illegal combination.
- *
- * EDITING a widget: the metrics are being chosen, so no table is resolved yet.
- * Every pick narrows what else is possible, in both directions -- metrics
- * constrain the dimensions and dimensions constrain the metrics -- so that
- * control must actively reduce, which is why the builder carries entity maps
- * and re-narrows on each change.
- *
- * The rule: a control takes its choices FROM ITS CALLER and does no legality
- * reasoning of its own. Refining passes relatedDimensions; editing passes the
- * list it narrowed. Confusing the two is what produces a refresh that is not
- * needed here, or a missing one over there.
- */
-
-/**
- * The dimensions a grid is grouped by: one picker each, and a plus for another.
- *
- * WHAT IT REPLACES
- *
- * A single "Secondary Dimension" select. The grid groups by a LIST -- the
- * dimensions travel in one URL parameter and changeDimension() has always
- * appended to them -- so the select showed one slot of something already
- * plural, and what the grid was grouped by was legible only from its columns.
- *
- * It also behaved differently on its first use than after: the swap-or-append
- * branch keys off previousDimensionName, which starts empty, so the first pick
- * ADDED a dimension and every pick after REPLACED one, with nothing on screen
- * to explain the difference.
- *
- * A PICKER PER DIMENSION, NOT A PILL EACH
- *
- * Deliberately unlike the widget-edit modal, which uses pills. Refining is
- * about CHANGING what you are looking at -- swap this dimension for that one --
- * and a select is the control for changing a choice. Pills are for curating a
- * set, which is what editing a widget's definition is. The two screens look
- * different because the actions are different.
- *
- * The first picker always holds a dimension: a grid grouped by nothing is not a
- * state the report has, so that one offers no blank. The rest can be cleared,
- * which is how a dimension is removed.
- *
- * @param string target_dom_selector
- * @param object options {choices, selected, max, onChange}
- */
-OWA.dimensionSelectors = function ( target_dom_selector, options ) {
-
-    this.dom_selector = target_dom_selector;
-
-    this.options = jQuery.extend( {
-        /*
-         * {family: [{name, label}, ...]} -- the shape relatedDimensions already
-         * has, kept rather than flattened. Seventy dimensions in one flat list
-         * is a scroll; grouped by family (Visitor, Visit, System, Geo ...) it is
-         * a menu, and chosen renders each family as a heading.
-         */
-        choices: {},
-        // Names currently grouped by, in column order.
-        selected: [],
-        /*
-         * Grouped by, but not shown -- and not this control's to offer.
-         *
-         * They are added back to every emitted list, because they are part of
-         * the query even though they are not part of the choice: a grid whose
-         * rows link somewhere needs the column the link is built from, and
-         * dropping it on the first regroup would take the links with it.
-         */
-        hidden: [],
-        /*
-         * Two.
-         *
-         * Not a data limit -- the grid will group by more, and some shipped
-         * widgets do. It is what fits: each slot is a picker, and a widget can
-         * be as narrow as a quarter of the page, where three pickers plus the
-         * filter control no longer sit on a line.
-         */
-        max: 2,
-        onChange: null
-    }, options || {} );
-
-    this.selected = ( this.options.selected || [] ).slice();
-};
-
-OWA.dimensionSelectors.prototype = {
-
-    value : function () {
-
-        return this.selected.slice();
-    },
-
-    /**
-     * One picker's options: everything legal, minus what the OTHER pickers
-     * hold. Its own value stays, or the control would clear itself on render.
-     */
-    optionsFor : function ( $select, index, blankLabel ) {
-
-        var that = this;
-        var mine = this.selected[ index ];
-
-        if ( blankLabel !== null ) {
-            $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( '' ) );
-        }
-
-        jQuery.each( this.options.choices || {}, function ( family, dims ) {
-
-            var $group = jQuery( '<optgroup>' ).attr( 'label', family );
-            var added  = 0;
+            $group.append( jQuery( '<div class="owa_gridPopHeading"></div>' ).text( family ) );
 
             jQuery.each( dims || [], function ( i, dim ) {
 
@@ -2213,146 +2216,214 @@ OWA.dimensionSelectors.prototype = {
                     return;
                 }
 
-                // Used in another picker: offering it here would let one grid
-                // group by the same dimension twice.
-                if ( dim.name !== mine && that.selected.indexOf( dim.name ) !== -1 ) {
-                    return;
+                var current = dim.name === mine;
+                var inUse   = ! current && lists.shown.indexOf( dim.name ) !== -1;
+
+                var $opt = jQuery( '<button type="button" class="owa_gridPopOption"></button>' )
+                    .attr( 'data-name', dim.name )
+                    .text( dim.label || dim.name )
+                    .toggleClass( 'is-current', current )
+                    .prop( 'disabled', inUse );
+
+                if ( current || inUse ) {
+                    $opt.append( jQuery( '<span class="owa_gridPopNote"></span>' )
+                        .text( current ? OWA.l( 'shown' ) : OWA.l( 'in use' ) ) );
                 }
 
-                $group.append( jQuery( '<option>' ).attr( 'value', dim.name )
-                    .prop( 'selected', dim.name === mine )
-                    .text( dim.label || dim.name ) );
+                $opt.on( 'click', function () {
 
-                added++;
+                    if ( current ) {
+                        that.closePopover( true );
+                        return;
+                    }
+
+                    var shown = lists.shown.slice();
+
+                    shown[ slot ] = dim.name;
+                    that.emit( 'dimension_list_change', [ shown.concat( lists.hidden ) ] );
+                } );
+
+                $group.append( $opt );
             } );
 
-            // A family with nothing left to offer would render as a heading
-            // with nothing under it.
-            if ( added ) {
-                $select.append( $group );
+            if ( $group.children( '.owa_gridPopOption' ).length ) {
+                $list.append( $group );
             }
         } );
+
+        $search.on( 'input', function () {
+
+            var q = String( jQuery( this ).val() || '' ).toLowerCase();
+
+            $list.children( '.owa_gridPopGroup' ).each( function () {
+
+                var $g   = jQuery( this );
+                var seen = 0;
+
+                $g.children( '.owa_gridPopOption' ).each( function () {
+                    var hit = jQuery( this ).text().toLowerCase().indexOf( q ) !== -1;
+                    jQuery( this ).toggle( hit );
+                    seen += hit ? 1 : 0;
+                } );
+
+                $g.toggle( seen > 0 );
+            } );
+
+        } ).on( 'keydown', function ( e ) {
+
+            if ( e.which === 13 ) {
+                e.preventDefault();
+                $list.find( '.owa_gridPopOption:visible:enabled' ).first().trigger( 'click' );
+            }
+        } );
+
+        var $pop = this.openPopover( $trigger, OWA.l( mine ? 'Change dimension' : 'Add a dimension' ), $box );
+
+        if ( $pop ) {
+            $search.trigger( 'focus' );
+        }
     },
 
-    display : function () {
+    /** Add a filter: a field, a condition and a value. */
+    openFilter : function ( $trigger ) {
 
-        var that  = this;
-        var $root = jQuery( this.dom_selector );
+        var that = this;
+        var rs   = this.resultSet;
+        var $box = jQuery( '<form class="owa_gridFilterPop" novalidate></form>' );
+        var id   = 'owa_gridFilter-' + this.dom_id;
 
-        $root.empty();
+        $box.append( jQuery( '<div class="owa_gridPopTitle"></div>' ).text( OWA.l( 'Add a filter' ) ) );
 
-        /*
-         * A widget already scoped to more dimensions than this control holds is
-         * left alone.
-         *
-         * Grouping by several is something the report author did on purpose --
-         * Latest Visits groups by seven -- so a two-slot control over it could
-         * only take dimensions away, and would need seven pickers to show what
-         * is there. The grid's own column headings still name every one of
-         * them, so nothing becomes invisible; there is simply nothing here to
-         * change.
-         */
-        if ( this.selected.length > this.options.max ) {
+        var $field = jQuery( '<select class="owa_gridFilterField"></select>' ).attr( 'id', id + '-field' );
+        var kinds  = {};
 
-            $root.removeClass( 'owa_dimensionSelectors' );
+        jQuery.each( [ [ 'dimension', rs.relatedDimensions ], [ 'metric', rs.relatedMetrics ] ], function ( i, pair ) {
 
-            return;
-        }
+            jQuery.each( pair[1] || {}, function ( family, list ) {
 
-        $root.addClass( 'owa_dimensionSelectors' );
+                var $group = jQuery( '<optgroup></optgroup>' ).attr( 'label', family );
 
-        this.selected.forEach( function ( name, index ) {
+                jQuery.each( list || [], function ( j, d ) {
 
-            var $slot = jQuery( '<span class="owa_dimSlot">' ).attr( 'data-index', index );
+                    if ( d && d.name && ! kinds[ d.name ] ) {
+                        kinds[ d.name ] = pair[0];
+                        $group.append( jQuery( '<option></option>' ).val( d.name ).text( d.label || d.name ) );
+                    }
+                } );
 
-            var $select = jQuery( '<select class="owa_dimSelect">' )
-                .attr( 'data-placeholder', index === 0 ? 'Dimension' : 'Add dimension' );
-
-            // The first has no blank: the grid must be grouped by something.
-            that.optionsFor( $select, index, index === 0 ? null : '' );
-
-            $slot.append( $select );
-            $root.append( $slot );
-
-            $select.chosen( { no_results_text: 'Name not found.', width: '100%' } );
-
-            /*
-             * Let the list escape the widget while it is open.
-             *
-             * .owa_reportGridItem carries overflow-x:auto so a wide table
-             * scrolls inside its own widget rather than widening the page --
-             * and per CSS, one axis being non-visible computes the OTHER to
-             * auto. So the widget is a scroll box in both directions and the
-             * dropdown is clipped by it: measured at 278px tall with 74px
-             * visible.
-             *
-             * Lifted only while a list is open, so the reason the overflow
-             * exists still holds the rest of the time.
-             */
-            $select.on( 'chosen:showing_dropdown', function () {
-                jQuery( this ).closest( '.owa_reportGridItem' ).addClass( 'owa_dropdownOpen' );
-            } );
-
-            $select.on( 'chosen:hiding_dropdown', function () {
-                jQuery( this ).closest( '.owa_reportGridItem' ).removeClass( 'owa_dropdownOpen' );
-            } );
-
-            $select.on( 'change', function () {
-
-                var picked = jQuery( this ).val();
-
-                if ( picked ) {
-                    that.selected[ index ] = picked;
-                } else {
-                    // Cleared: that is how a dimension is removed. Never the
-                    // first, which offers no blank to begin with.
-                    that.selected.splice( index, 1 );
+                if ( $group.children().length ) {
+                    $field.append( $group );
                 }
-
-                that.display();
-                that.changed();
             } );
         } );
 
-        if ( this.selected.length < this.options.max ) {
+        // The grid's own first dimension, which is what a filter is usually of.
+        var first = this.dimensionLists( rs ).shown[ 0 ];
 
-            var $add = jQuery( '<button type="button" class="owa_dimAdd" title="Group by another dimension">' )
-                .text( '+' );
+        if ( first && kinds[ first ] ) {
+            $field.val( first );
+        }
 
-            $add.on( 'click', function ( e ) {
+        $box.append( jQuery( '<label class="owa_gridFieldLabel"></label>' ).attr( 'for', id + '-field' ).text( OWA.l( 'Field' ) ) )
+            .append( $field );
 
-                e.preventDefault();
+        var $ops = jQuery( '<fieldset class="owa_gridFilterOps"></fieldset>' )
+            .append( jQuery( '<legend class="owa_gridFieldLabel"></legend>' ).text( OWA.l( 'Condition' ) ) );
 
-                /*
-                 * The new picker is drawn empty and the grid is NOT refetched
-                 * yet -- there is nothing to group by until something is
-                 * chosen, and refetching on an empty slot would reload the
-                 * same data.
-                 */
-                that.selected.push( '' );
-                that.display();
+        var $valueLabel = jQuery( '<label class="owa_gridFieldLabel"></label>' ).attr( 'for', id + '-value' ).text( OWA.l( 'Value' ) );
+        var $value      = jQuery( '<input type="text" class="owa_gridFilterValue" autocomplete="off">' ).attr( 'id', id + '-value' );
+        var $hint       = jQuery( '<p class="owa_gridPopHint"></p>' );
+        var $apply      = jQuery( '<button type="submit" class="owa_gridButton owa_gridPrimary"></button>' ).text( OWA.l( 'Add filter' ) );
 
-                jQuery( that.dom_selector + ' .owa_dimSlot' ).last()
-                    .find( '.chosen-container' ).trigger( 'mousedown' );
+        var operator = function () {
+            return $ops.find( 'input:checked' ).val();
+        };
+
+        var sync = function () {
+
+            var empty = OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( operator() );
+            var value = String( $value.val() || '' );
+            var comma = value.indexOf( ',' ) !== -1;
+
+            $valueLabel.toggle( ! empty );
+            $value.toggle( ! empty );
+
+            $hint.text( comma
+                ? OWA.l( 'A value cannot contain a comma.' )
+                : OWA.l( 'Rows must match every filter.' ) );
+
+            $apply.prop( 'disabled', ! $field.val() || ( ! empty && ( value === '' || comma ) ) );
+        };
+
+        var conditions = function () {
+
+            var kind = kinds[ $field.val() ] === 'metric' ? 'metric' : 'dimension';
+
+            $ops.children( '.owa_gridFilterOp' ).remove();
+
+            OWA.dataGrid.CONDITIONS[ kind ].forEach( function ( c, i ) {
+
+                $ops.append( jQuery( '<label class="owa_gridFilterOp"></label>' )
+                    .append( jQuery( '<input type="radio">' ).attr( 'name', id + '-op' ).val( c[0] ).prop( 'checked', i === 0 ) )
+                    .append( jQuery( '<span></span>' ).text( OWA.l( c[1] ) ) ) );
             } );
 
-            $root.append( $add );
+            sync();
+        };
+
+        $field.on( 'change', conditions );
+        $ops.on( 'change', sync );
+        $value.on( 'input', sync );
+
+        $box.append( $ops ).append( $valueLabel ).append( $value ).append( $hint );
+
+        $box.append( jQuery( '<div class="owa_gridPopActions"></div>' )
+            .append( jQuery( '<button type="button" class="owa_gridButton owa_gridQuiet"></button>' )
+                .text( OWA.l( 'Cancel' ) )
+                .on( 'click', function () { that.closePopover( true ); } ) )
+            .append( $apply ) );
+
+        $box.on( 'submit', function ( e ) {
+
+            e.preventDefault();
+
+            if ( $apply.prop( 'disabled' ) ) {
+                return;
+            }
+
+            var op   = operator();
+            var list = that.constraints( rs );
+
+            list.push( {
+                name: $field.val(),
+                operator: op,
+                value: OWA.dataGrid.EMPTY_TESTS.hasOwnProperty( op ) ? '' : String( $value.val() )
+            } );
+
+            that.emit( 'constraint_change', [ OWA.dataGrid.formatConstraints( list ) ] );
+        } );
+
+        conditions();
+
+        var $pop = this.openPopover( $trigger, OWA.l( 'Add a filter' ), $box );
+
+        if ( $pop ) {
+            $field.trigger( 'focus' );
         }
     },
 
-    changed : function () {
+    getDimensions : function ( resultSet ) {
 
-        if ( typeof this.options.onChange === 'function' ) {
-
-            /*
-             * Empty slots are a control state, not a grouping, so they are
-             * dropped -- and the hidden ones are added back, because they are
-             * part of the query the grid has to reissue.
-             */
-            this.options.onChange(
-                this.selected.filter( Boolean ).concat( this.options.hidden || [] ) );
+        // A grid of computed rows (the goal funnel's steps) has no URL.
+        if ( ! resultSet.self ) {
+            return [];
         }
+
+        var self = new OWA.uri(resultSet.self);
+
+        return String( self.getQueryParam(OWA.util.appNs('dimensions')) || '' ).split(',');
     }
+
 };
 
 OWA.constraintBuilder = function( target_dom_selector, options ) {

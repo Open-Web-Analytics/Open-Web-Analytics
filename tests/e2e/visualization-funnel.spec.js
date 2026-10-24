@@ -295,6 +295,188 @@ test.describe('visualization: funnel', () => {
         expect(Math.abs(after.y - before.y)).toBeLessThan(3);
     });
 
+    test('the filter builder opens as a modal with pill controls', async ({ page }) => {
+        /*
+         * The builder is a DIALOG now, not a panel inside the bar.
+         *
+         * A filter row is wider than a quarter-row widget, so every in-flow
+         * position for it was a choice about which edge of the card to
+         * overflow. A dialog has no parent to overflow. That move is also why
+         * this test can no longer look for `.constraintPickerContainer >
+         * .builder`: jQuery UI lifts the element out of that container.
+         *
+         * The operator picker is chosen, not jQuery-UI selectmenu. It was the
+         * odd one out -- a square selectmenu between a rounded chosen pill and
+         * a bare input, three shapes for three parts of one sentence.
+         */
+        await openFunnel(page);
+
+        const toggle = page.locator('#funnelFilter .toggle-button');
+        await expect(toggle).toBeVisible();
+
+        // The toggle is an ICON, not a jQuery-UI button -- it carries no label
+        // and no dropdown triangle.
+        await expect(toggle).toHaveClass(/owa_filterToggle/);
+        await expect(toggle).not.toHaveClass(/ui-button/);
+        await expect(toggle.locator('i.fa-filter')).toHaveCount(1);
+        await expect(toggle).toHaveText('');
+
+        // ...at the size every other icon on the page is.
+        await expect(toggle).toHaveCSS('font-size', '16px');
+
+        await toggle.click();
+
+        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
+        await expect(dialog).toBeVisible();
+
+        /*
+         * INSIDE .owa, which is load-bearing rather than cosmetic. jQuery UI
+         * appends a dialog to <body> by default, and every rule styling what is
+         * in here is written `.owa .owa_...` -- a lifted dialog matches none of
+         * them, which is exactly how both report-builder modals once shipped
+         * with browser defaults.
+         */
+        await expect(dialog.locator('xpath=ancestor::*[contains(@class,"owa")][1]'))
+            .toHaveCount(1);
+
+        /*
+         * ONE action button at the foot, and a plus per row.
+         *
+         * There used to be "+ Add Filter" beside Apply, which read as a choice
+         * between two ways of finishing when only one of them finishes
+         * anything. Growing the filter is part of writing it, so the plus sits
+         * in the row it grows from.
+         */
+        await expect(dialog.locator('.add-button')).toHaveCount(0);
+        await expect(dialog.locator('.apply-button')).toBeVisible();
+        await expect(dialog.locator('li.constraintRow .constraintAddButton')).toHaveCount(1);
+
+        /*
+         * ...and Apply does not look like the pills it sits under. It was the
+         * same shape and height as the three selects above it, which made the
+         * one control that commits look like a fourth thing to pick from.
+         */
+        const applyBox = await dialog.locator('.apply-button')
+            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+        const pillBox = await dialog.locator('.constraintOperatorPicker .chosen-single')
+            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+        expect(applyBox).toBeGreaterThan(pillBox + 6);
+
+        // The plus grows the list, directly below the row it was pressed on.
+        await dialog.locator('li.constraintRow').first().locator('.constraintAddButton').click();
+        await expect(dialog.locator('li.constraintRow')).toHaveCount(2);
+
+        /*
+         * Both select controls are chosen, and there is no selectmenu left.
+         * A row has two: the dimension and the operator.
+         */
+        await expect(dialog.locator('.constraintRow').first().locator('.chosen-container'))
+            .toHaveCount(2);
+        await expect(dialog.locator('span.ui-selectmenu-button')).toHaveCount(0);
+
+        // The native <select> is hidden once chosen takes over -- and it stays
+        // in the DOM, which is what the apply handler reads.
+        const selectDisplay = await dialog.evaluate((d) => {
+            const sel = d.querySelector('select.operator-list');
+            return sel ? getComputedStyle(sel).display : null;
+        });
+        expect(selectDisplay).toBe('none');
+    });
+
+    test("the filter builder's dimension picker opens at full width with a dimension list", async ({ page }) => {
+        // Regression guard (chosen 0.9.6 -> 1.8.7): the filter/constraint builder's
+        // dimension picker (OWA.dimensionPicker -> <select.dim-list> enhanced by
+        // chosen, INSIDE each constraint row) rendered as a ~2px-wide sliver -- the
+        // dimension list was there but unusable. Root cause: the builder creates its
+        // rows while its .builder is display:none, and chosen-js 1.x sizes its
+        // container from the <select>'s offsetWidth AT ENHANCEMENT TIME (0 when
+        // hidden). chosen 0.9.x read the CSS width, so this only broke on the upgrade.
+        // Fix: pass an explicit width:'150px' to .chosen(). Assert it opens at a
+        // real, usable width.
+        await openFunnel(page);
+        await page.locator('#funnelFilter .toggle-button').click();
+
+        // The builder is a dialog, so it is addressed as one -- see the modal
+        // test above.
+        const builder = page.locator('.owa_filterDialogFrame:visible').first();
+        await expect(builder).toBeVisible();
+
+        const dimChosen = builder.locator('.constraintDimensionPicker .chosen-container').first();
+        await expect(dimChosen).toBeVisible();
+        /*
+         * The enhanced container must be a real width, not the collapsed sliver.
+         *
+         * Not 150 any more: the pill is CONTENT-sized now (the filter rows share
+         * the bar's pill styling, which is `width: auto`), so it is as wide as
+         * "Select..." rather than as wide as the explicit width chosen was given.
+         * That does not bring the sliver back -- the width comes from CSS laying
+         * out the text, not from chosen measuring a hidden <select> -- but it does
+         * mean the number to assert is "wider than a caret", not a fixed size.
+         */
+        const contWidth = await dimChosen.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+        expect(contWidth).toBeGreaterThanOrEqual(50);
+
+        // Open the dropdown and assert the dimension list is present, grouped, and
+        // painted at the same usable width (chosen sizes .chosen-drop off the container).
+        await dimChosen.locator('.chosen-single').click();
+        const drop = dimChosen.locator('.chosen-drop');
+        await expect(drop).toBeVisible();
+        const dropWidth = await drop.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+        expect(dropWidth).toBeGreaterThanOrEqual(100);
+        expect(await drop.locator('.chosen-results li.active-result').count()).toBeGreaterThanOrEqual(2);
+        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
+    });
+
+    test('chosen keeps the native select in sync with the selected operator', async ({ page }) => {
+        // Runtime guard (not just render): the constraint-apply path reads the
+        // chosen operator (owa.resultSetExplorer.js ~1638). Neither the old Nagel
+        // selectmenu fork nor chosen offers a "read the widget" method -- both keep
+        // the native <select> in sync, which is what the code reads with .val().
+        // The widget changed from selectmenu to chosen; this contract did not.
+        // Pin that contract: the select carries a non-empty value.
+        await openFunnel(page);
+        await page.locator('#funnelFilter .toggle-button').click();
+        const value = await page.evaluate(() => {
+            const sel = jQuery('select.operator-list').first();
+            return sel.length ? sel.val() : null;
+        });
+        // Default selection is the first operator ("==" Exactly Matching).
+        expect(value).not.toBeNull();
+        expect(typeof value).toBe('string');
+        expect(value.length).toBeGreaterThan(0);
+    });
+
+    test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
+        // Regression guard for a build-artifact clobber that shipped a WORKING but
+        // completely UNSTYLED control. chosen-js 1.8.7's JS emits .chosen-* markup,
+        // but the SOURCE chosen.css was left as the 0.9.6 .chzn-* stylesheet when the
+        // JS was swapped (commit 36fb9d0b hand-edited only the built CSS artifact).
+        // The next `cli.php cmd=build` regenerated the artifact from the stale source,
+        // so the served CSS had ZERO .chosen-* rules -- the widget rendered as a bare
+        // unstyled text list with no dropdown arrow. Existence/visibility (the test
+        // above) still PASSED because the markup was correct; only the applied CSS was
+        // wrong. So assert the stylesheet actually takes effect: the sprite-driven
+        // dropdown arrow paints a background image (the single clearest "the .chosen-*
+        // CSS is present and its sprite resolves" signal). On the funnel, whose
+        // filter is the one place left that is built with chosen.
+        await openFunnel(page);
+
+        const arrowBg = await page.evaluate(() => {
+            const b = document.querySelector('.chosen-container .chosen-single div b');
+            return b ? getComputedStyle(b).backgroundImage : null;
+        });
+        expect(arrowBg).not.toBeNull();
+        expect(arrowBg).toContain('chosen-sprite');
+    });
+
+    test('the filter dialog\'s Apply is a jQuery-UI button', async ({ page }) => {
+        await openFunnel(page);
+        await page.locator('#funnelFilter .toggle-button').click();
+
+        await expect(page.locator('#owa_filterBuilder-funnelFilter .apply-button')).toHaveClass(/ui-button/);
+    });
+
     /**
      * The segment picks PEOPLE, so the time group is deliberately not offered:
      * the period already bounds the funnel, and a date in the SEGMENT reads like
@@ -357,10 +539,10 @@ test.describe('visualization: funnel', () => {
     test('the steps table renders a row per stage', async ({ page }) => {
         await openFunnel(page);
 
-        // jqGrid draws its data rows as tr.jqgrow inside a .ui-jqgrid wrapper.
-        await expect(page.locator('#funnel-steps-grid .ui-jqgrid')).toBeVisible();
+        // The grid draws its data rows as tr.owa_gridRow.
+        await expect(page.locator('#funnel-steps-grid .owa_gridTable')).toBeVisible();
 
-        const rows = page.locator('#funnel-steps-grid tr.jqgrow');
+        const rows = page.locator('#funnel-steps-grid tr.owa_gridRow');
 
         await expect(rows).toHaveCount(VIZ.steps.length);
 

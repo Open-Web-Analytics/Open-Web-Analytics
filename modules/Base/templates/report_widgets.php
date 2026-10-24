@@ -712,6 +712,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
              */
         ?>
         <?php echo $owa_id; ?>.options.grid.showExplorerControls = false;
+        <?php echo $owa_id; ?>.options.grid.compact = true;
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['link'] ) ): ?>
         var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
