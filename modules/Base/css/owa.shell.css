@@ -195,6 +195,17 @@
     font-weight: 600;
 }
 
+.owa_navShell .owa_navColumnIcon {
+    width: 1em;
+    margin-right: 8px;
+    text-align: center;
+}
+
+/* A favorite's star, the same gold as the star on the roster. */
+.owa_navShell .owa_navColumnIcon.fa-star {
+    color: #c99a06;
+}
+
 /* Hidden, the column keeps only its chevron, turned to point back out. */
 .owa_navShell.is-collapsed .owa_navColumn {
     flex-basis: 48px;

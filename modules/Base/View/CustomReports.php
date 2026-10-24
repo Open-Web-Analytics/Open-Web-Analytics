@@ -16,15 +16,15 @@ class CustomReports extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Custom Reports' );
+        $this->t->set( 'page_title', 'Custom reports' );
 
         $this->body->set_template( 'custom_reports.php' );
 
         $this->body->set( 'custom_reports', $this->get( 'custom_reports' ) );
-        $this->body->set( 'roster_type', $this->get( 'roster_type' ) );
-        // Empty on the reports roster, which is what stops it rendering the
-        // "which kind" modal that only visualizations have.
-        $this->body->set( 'visualization_types', $this->get( 'visualization_types' ) );
+        $this->body->set( 'roster_count', $this->get( 'roster_count' ) );
+        // Empty for a reader who may not author, which is what stops the
+        // "what do you want to make" modal rendering for them.
+        $this->body->set( 'new_kinds', $this->get( 'new_kinds' ) );
         $this->body->set( 'sees_all', $this->get( 'sees_all' ) );
         $this->body->set( 'may_author', $this->get( 'may_author' ) );
         $this->body->set( 'current_user_id', $this->get( 'current_user_id' ) );

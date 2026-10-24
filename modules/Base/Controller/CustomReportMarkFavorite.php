@@ -3,7 +3,8 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Star or unstar a custom report, and go back to it.
+ * Star or unstar a custom report, and go back to it, or to the roster when
+ * the star was pressed there (returnTo=roster).
  *
  * ONE ACTION, NOT TWO. The star is a toggle in the interface, so it is a toggle
  * here: a separate favourite/unfavourite pair would need the caller to know the
@@ -55,19 +56,36 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
                 $id, (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' ) );
         }
 
-        /*
-         * Back to the report, not to the roster. The star is pressed while
-         * looking at the thing, and the answer to "did that work" is the star
-         * itself having changed.
-         */
-        $this->set( 'reportId', Report::CUSTOM_PREFIX . $id );
-
         $propertyId = (string) $this->getParam( 'propertyId' );
 
         if ( $propertyId !== '' ) {
 
             $this->set( 'propertyId', $propertyId );
         }
+
+        /*
+         * Back to where the star was pressed, since the answer to "did that
+         * work" is the star itself having changed: the roster, with its order
+         * and filter, or the report.
+         */
+        if ( $this->getParam( 'returnTo' ) === 'roster' ) {
+
+            foreach ( array( 'rosterSort', 'rosterDesc', 'rosterMine', 'rosterFavorites' ) as $key ) {
+
+                $value = (string) $this->getParam( $key );
+
+                if ( $value !== '' ) {
+
+                    $this->set( $key, $value );
+                }
+            }
+
+            $this->setRedirectAction( 'base.customReports' );
+
+            return;
+        }
+
+        $this->set( 'reportId', Report::CUSTOM_PREFIX . $id );
 
         $this->setRedirectAction( 'base.report' );
     }

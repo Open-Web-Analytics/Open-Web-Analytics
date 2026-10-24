@@ -40,11 +40,11 @@ async function visualizationId(page) {
         return vizId;
     }
 
-    await page.goto(`?owa_do=base.visualizations&owa_siteId=${FIXTURE.siteId}`,
+    await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`,
         { waitUntil: 'networkidle' });
 
     const href = await page
-        .locator('table.management tbody tr', { hasText: VIZ.name })
+        .locator('table.owa_customReportRoster tbody tr', { hasText: VIZ.name })
         .locator('a[href*="reportId=custom-"]').first()
         .getAttribute('href');
 

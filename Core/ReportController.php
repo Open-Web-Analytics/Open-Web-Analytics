@@ -480,22 +480,17 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     /**
-     * The reader's own custom reports, as a nav group.
+     * The Custom Reports section: All reports, then the reader's favorites.
      *
      * Added here rather than through registerNavigation() because these are
-     * ROWS, not registrations: they differ per reader, they change while the
-     * install is running, and half of them are invisible to anyone but their
-     * author. A module registering navigation is answering "what does this
-     * install have"; this is answering "what does this person have".
+     * ROWS, not registrations: they differ per reader and change while the
+     * install is running. A module registering navigation is answering "what
+     * does this install have"; this is answering "what does this person have".
      *
-     * The list ends with "See more..." rather than relying on the group heading
-     * -- the heading is a toggle as much as a link, so a reader with more than
-     * ten needs a line that plainly says where the rest are.
-     *
-     * One small indexed query per report render. Worth it for the thing being
-     * bought -- a custom report that is not in the nav is a custom report
-     * nobody finds twice -- but it is the reason this reads ten rows and not
-     * five hundred.
+     * Reports and funnels are one list, so their favorites are one group. The
+     * section keeps its column with no favorites, since All reports is where
+     * one gets built, and it is current on any custom report and on both
+     * builders, favorite or not.
      *
      * @param array $nav
      * @return array
@@ -511,21 +506,14 @@ class ReportController extends \OWA\Core\AdminController {
             return $nav;
         }
 
-        /*
-         * REPORTS only. Visualizations live on this table too and get their own
-         * group below -- a list mixing "Pages by source" with "Checkout funnel"
-         * invites the reader to expect the same controls on both, and a
-         * visualization does not have them.
-         */
-        $reports = \OWA\Module\Base\Classes\CustomReports::recent(
+        $favorites = \OWA\Module\Base\Classes\CustomReports::favorites(
             (string) $user->getUserData( 'user_id' ),
-            (bool) $user->isCapable( 'edit_users' ),
-            \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT
+            (bool) $user->isCapable( 'edit_users' )
         );
 
         $links = array();
 
-        foreach ( $reports as $i => $report ) {
+        foreach ( $favorites as $i => $report ) {
 
             $links[] = array(
                 'ref' => array(
@@ -535,24 +523,10 @@ class ReportController extends \OWA\Core\AdminController {
                 'anchortext' => $report['name'],
                 'order'      => $i,
                 'priviledge' => 'view_reports',
-                'icon_class' => '',
+                'icon_class' => 'fas fa-star',
+                'heading'    => 'Favorites',
             );
         }
-
-        /*
-         * ...and the way to all of them, last.
-         *
-         * Always present, including when there are none: the roster is where a
-         * report gets built, so an empty group still has somewhere to send a
-         * reader.
-         */
-        $links[] = array(
-            'ref'        => array( 'do' => 'base.customReports' ),
-            'anchortext' => 'See more...',
-            'order'      => count( $links ),
-            'priviledge' => 'view_site_list',
-            'icon_class' => '',
-        );
 
         $nav['Custom Reports'] = array(
             'ref'        => array( 'do' => 'base.customReports' ),
@@ -562,71 +536,17 @@ class ReportController extends \OWA\Core\AdminController {
             'icon_class' => 'fa fa-th-list',
             // The rail's column lists the roster first, under this name.
             'overview_label' => 'All reports',
+            'keeps_column'   => true,
+            'current_for'    => array(
+                array( 'do' => 'base.report', 'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . '*' ),
+                array( 'do' => 'base.customReportEdit' ),
+                array( 'do' => 'base.visualizationEdit' ),
+                array( 'do' => 'base.visualizations' ),
+            ),
             'subgroup'   => $links,
         );
-
-        $nav['Visualizations'] = self::visualizationsNavGroup( $user );
 
         return $nav;
-    }
-
-    /**
-     * The Visualizations group.
-     *
-     * Its own group rather than an entry in Custom Reports, deliberately. The
-     * two behave identically in every other way -- same ownership, same access
-     * control, same editable titles, same delete -- but one CONFIGURES a query
-     * and the other COMPUTES, and the controls differ accordingly. Listing them
-     * together would teach the reader they are the same thing.
-     *
-     * Always present, including when there are none: the roster is where one
-     * gets built, so an empty group still has somewhere to send a reader. Same
-     * rule the Custom Reports group already follows.
-     *
-     * @return array
-     */
-    protected static function visualizationsNavGroup( $user ) {
-
-        $links = array();
-
-        $visualizations = \OWA\Module\Base\Classes\CustomReports::recent(
-            (string) $user->getUserData( 'user_id' ),
-            (bool) $user->isCapable( 'edit_users' ),
-            \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION
-        );
-
-        foreach ( $visualizations as $i => $visualization ) {
-
-            $links[] = array(
-                'ref' => array(
-                    'do'       => 'base.report',
-                    'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX
-                                  . $visualization['id'],
-                ),
-                'anchortext' => $visualization['name'],
-                'order'      => $i,
-                'priviledge' => 'view_reports',
-                'icon_class' => '',
-            );
-        }
-
-        $links[] = array(
-            'ref'        => array( 'do' => 'base.visualizations' ),
-            'anchortext' => 'See more...',
-            'order'      => count( $links ),
-            'priviledge' => 'view_site_list',
-            'icon_class' => '',
-        );
-
-        return array(
-            'ref'        => array( 'do' => 'base.visualizations' ),
-            'anchortext' => 'Visualizations',
-            'order'      => 1000,
-            'priviledge' => 'view_site_list',
-            'icon_class' => 'fa fa-filter',
-            'overview_label' => 'All visualizations',
-            'subgroup'   => $links,
-        );
     }
 
     protected function hideReportingNavigation() {

@@ -1,100 +1,92 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /**
- * The custom report roster: every report the reader may see listed.
+ * The custom report roster: every report and funnel the reader may see, in one
+ * list with a Type column.
  *
  * Ownership decides what is LISTED, not what may be opened. An admin sees every
- * report; everyone else sees the ones they created. A report reached by its URL
- * renders for anyone who may view reports, which is what makes these shareable.
+ * report; everyone else sees their own and the shared ones. A report reached by
+ * its URL renders for anyone who may view reports, which is what makes these
+ * shareable.
  */
 $owa_reports   = (array) $view->get('custom_reports');
-/*
- * This roster serves both kinds. A visualization is not a custom report -- it
- * computes rather than configures, and they are listed separately for exactly
- * that reason -- so the empty state has to say which one is empty, the builder
- * link has to point at the right screen, and only one of the two asks which
- * KIND before it opens.
- */
-$owa_isViz     = ( $view->get('roster_type') ?: '' ) === 'visualization';
-$owa_vizTypes  = (array) ( $view->get('visualization_types') ?: array() );
-$owa_builder   = $owa_isViz ? 'base.visualizationEdit' : 'base.customReportEdit';
-/*
- * Whether this reader may author one, which is only asked to decide what the
- * empty state says and whether to offer a builder at all. WHO OWNS a row is no
- * longer asked here: editing is the pencil on the thing itself, so the roster
- * has nothing to gate per row. The controller still decides what is LISTED.
- */
+$owa_count     = (int) $view->get('roster_count');
+$owa_kinds     = (array) ( $view->get('new_kinds') ?: array() );
 $owa_author    = (bool) $view->get('may_author');
 $owa_mine      = (bool) $view->get('roster_mine');
 $owa_favs      = (bool) $view->get('roster_favorites');
-$owa_seesAll   = (bool) $view->get('sees_all');
+$owa_me        = (string) $view->get('current_user_id');
+$owa_sort      = (string) $view->get('roster_sort');
+$owa_desc      = (bool) $view->get('roster_desc');
+$owa_active    = $owa_favs ? 'favorites' : ( $owa_mine ? 'mine' : 'all' );
+
+/*
+ * What every link back to this roster carries, so sorting keeps the filter,
+ * filtering keeps nothing it should not, and a star keeps both. add_state on
+ * each, or propertyId is dropped and the Property the report links open for is
+ * lost.
+ */
+$owa_state = array(
+    'rosterSort'      => $owa_sort,
+    'rosterDesc'      => $owa_desc ? '1' : '0',
+    'rosterMine'      => $owa_mine ? '1' : '0',
+    'rosterFavorites' => $owa_favs ? '1' : '0',
+);
+
+$owa_typeLabels = array( 'report' => 'Report' );
+$owa_typeIcons  = array( 'report' => 'fas fa-th-large' );
+
+foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as $owa_key => $owa_kind ) {
+    $owa_typeLabels[ $owa_key ] = $owa_kind['label'];
+    $owa_typeIcons[ $owa_key ]  = $owa_kind['icon'];
+}
 ?>
 
-<div class="owa_reportSectionContent">
+<div class="owa_reportSectionContent owa_roster">
 
 <?php
     /*
-     * Whose reports this is showing, and the way to change it.
+     * Whose reports this is showing: three states of ONE control. They are
+     * alternatives -- "my favorites" and "my reports" are different questions.
      *
-     * ALWAYS DRAWN, including when the list it produced is empty. It used to
-     * sit inside the has-results branch, so narrowing to "Just mine" or
-     * "Favorites" with nothing to show removed the only control that could
-     * widen it again -- a dead end escapable solely by the back button.
+     * ALWAYS DRAWN, including when the list it produced is empty, or narrowing
+     * to "Favorites" with nothing starred would remove the only way back.
      */
+    $owa_filterLink = function ( $which ) use ( $view ) {
+        return $view->makeLink( array(
+            'do'              => 'base.customReports',
+            'rosterMine'      => $which === 'mine' ? '1' : '0',
+            'rosterFavorites' => $which === 'favorites' ? '1' : '0',
+        ), true );
+    };
 ?>
-<div class="owa_rosterFilter">
-    <?php
-        /*
-         * Three states of ONE control, not three controls. They are
-         * alternatives: "my favourites" and "my reports" are different
-         * questions, and a reader who could pick both would need a fourth
-         * control saying how to combine them.
-         */
-        $owa_filterLink = function ( $which ) use ( $view, $owa_isViz ) {
-            return $view->makeLink( array(
-                'do'              => $owa_isViz ? 'base.visualizations' : 'base.customReports',
-                'rosterMine'      => $which === 'mine' ? '1' : '0',
-                'rosterFavorites' => $which === 'favorites' ? '1' : '0',
-            // add_state, or propertyId is dropped and the Property the report
-            // links depend on is lost the moment anyone filters.
-            ), true );
-        };
-        $owa_active = $owa_favs ? 'favorites' : ( $owa_mine ? 'mine' : 'all' );
-    ?>
-    <span class="owa_rosterFilterLabel">Showing</span>
-
-    <span class="owa_rosterFilterOptions">
-        <a class="<?php echo $owa_active === 'all' ? 'owa_rosterFilterActive' : ''; ?>"
-           href="<?php echo $owa_filterLink( 'all' ); ?>">All</a>
-        <a class="<?php echo $owa_active === 'mine' ? 'owa_rosterFilterActive' : ''; ?>"
-           href="<?php echo $owa_filterLink( 'mine' ); ?>">Just mine</a>
-        <a class="<?php echo $owa_active === 'favorites' ? 'owa_rosterFilterActive' : ''; ?>"
-           href="<?php echo $owa_filterLink( 'favorites' ); ?>"><i class="fas fa-star"></i>Favorites</a>
-    </span>
+<div class="owa_rosterBar">
+    <div class="owa_rosterFilter" role="group" aria-label="Show">
+        <?php foreach ( array( 'all' => 'All', 'mine' => 'Just mine', 'favorites' => 'Favorites' ) as $owa_which => $owa_label ): ?>
+        <a class="<?php echo $owa_active === $owa_which ? 'owa_rosterFilterActive' : ''; ?>"
+           <?php echo $owa_active === $owa_which ? 'aria-current="true"' : ''; ?>
+           href="<?php echo $owa_filterLink( $owa_which ); ?>"><?php
+            if ( $owa_which === 'favorites' ): ?><i class="fas fa-star" aria-hidden="true"></i><?php endif;
+            $view->out( $owa_label ); ?></a>
+        <?php endforeach; ?>
+    </div>
+    <span class="owa_rosterCount"><?php $view->out( $owa_count === 1 ? '1 report' : $owa_count . ' reports' ); ?></span>
 </div>
 
 <?php if ( $owa_reports ): ?>
 
-<table class="management owa_customReportRoster">
+<table class="owa_customReportRoster">
     <thead>
         <tr>
+            <th class="owa_rosterStarCell"><span class="owa_srOnly">Favorite</span></th>
             <?php
                 /*
-                 * Sortable headings.
-                 *
-                 * Each links to sorting BY ITSELF; the one already active links
-                 * to the opposite direction, which is what makes a second click
-                 * reverse rather than do nothing. The arrow marks which column
-                 * the order is actually by -- without it a sorted list and an
-                 * unsorted one look identical.
-                 *
-                 * Sorting is server-side and on the URL, so the order survives
-                 * a reload and travels with a link.
+                 * Sortable headings, server-side and on the URL, so the order
+                 * survives a reload and travels with a link. Each links to
+                 * sorting by itself; the active one links to the opposite
+                 * direction, and carries the arrow.
                  */
-                $owa_sort = (string) $view->get('roster_sort');
-                $owa_desc = (bool) $view->get('roster_desc');
-
-                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_isViz, $owa_mine, $owa_favs ) {
+                $owa_heading = function ( $key, $label ) use ( $view, $owa_sort, $owa_desc, $owa_state ) {
 
                     $active = ( $owa_sort === $key );
 
@@ -102,166 +94,132 @@ $owa_seesAll   = (bool) $view->get('sees_all');
                     // starts that column in its own natural direction.
                     $next = $active ? ! $owa_desc : ( $key === 'updated' );
 
-                    $url = $view->makeLink( array(
-                        // Back to THIS roster: sorting the visualizations list
-                        // through base.customReports would land the reader on
-                        // the reports list instead.
-                        'do'         => $owa_isViz ? 'base.visualizations' : 'base.customReports',
+                    $url = $view->makeLink( array_merge( $owa_state, array(
+                        'do'         => 'base.customReports',
                         'rosterSort' => $key,
                         'rosterDesc' => $next ? '1' : '0',
-                        // Carried, or sorting would silently drop the filter
-                        // and hand back a longer list than was asked for.
-                        'rosterMine'      => $owa_mine ? '1' : '0',
-                        'rosterFavorites' => $owa_favs ? '1' : '0',
-                    // add_state, for the same reason as the filter above.
-                    ), true );
+                    ) ), true );
 
                     printf(
-                        '<th class="%s"><a href="%s">%s</a>%s</th>',
+                        '<th class="%s"%s><a href="%s">%s%s</a></th>',
                         $active ? 'owa_sorted' : '',
+                        $active ? ' aria-sort="' . ( $owa_desc ? 'descending' : 'ascending' ) . '"' : '',
                         $url,
-                        htmlspecialchars( $label, ENT_QUOTES ),
                         $active
-                            ? '<i class="fa ' . ( $owa_desc ? 'fa-caret-down' : 'fa-caret-up' )
-                              . ' owa_sortIndicator"></i>'
-                            : ''
+                            ? '<i class="fas ' . ( $owa_desc ? 'fa-arrow-down' : 'fa-arrow-up' )
+                              . ' owa_sortIndicator" aria-hidden="true"></i>'
+                            : '',
+                        htmlspecialchars( $label, ENT_QUOTES )
                     );
                 };
-            ?>
-            <?php
-                /*
-                 * The first column is named for what it lists. This roster
-                 * serves both kinds, and heading a list of funnels "Report" is
-                 * the exact confusion the separate list exists to avoid.
-                 */
-            ?>
-            <?php $owa_heading( 'name', $owa_isViz ? 'Visualization' : 'Report' ); ?>
-            <?php $owa_heading( 'author', 'Created by' ); ?>
-            <?php $owa_heading( 'updated', 'Last updated' ); ?>
-            <?php
-                /*
-                 * No edit column.
-                 *
-                 * Editing is the pencil beside the title on the thing itself --
-                 * see Report::withEditAction() -- which is where it acts on
-                 * something the reader is looking at. A second way in from the
-                 * roster made the row carry two links to two different screens
-                 * and an empty cell for everyone who may not edit.
-                 */
+
+                $owa_heading( 'name', 'Report' );
+                $owa_heading( 'type', 'Type' );
+                $owa_heading( 'author', 'Created by' );
+                $owa_heading( 'updated', 'Last updated' );
             ?>
         </tr>
     </thead>
     <tbody>
     <?php foreach ( $owa_reports as $owa_report ): ?>
+        <?php
+            $owa_starred = ! empty( $owa_report['is_favorite'] );
+            $owa_kind    = (string) ( $owa_report['kind'] ?? 'report' );
+            // add_nonce: the toggle writes, and demands one.
+            $owa_starUrl = $view->makeLink( array_merge( $owa_state, array(
+                'do'             => 'base.customReportMarkFavorite',
+                'customReportId' => $owa_report['id'],
+                'returnTo'       => 'roster',
+            ) ), true, '', false, true );
+        ?>
         <tr>
-            <td class="data_cell">
+            <td class="owa_rosterStarCell">
+                <a class="owa_rosterStar<?php echo $owa_starred ? ' is-on' : ''; ?>"
+                   href="<?php $view->out( $owa_starUrl, false ); ?>"
+                   aria-label="<?php echo $owa_starred ? 'Remove from favorites' : 'Add to favorites'; ?>"
+                   title="<?php echo $owa_starred ? 'Remove from favorites' : 'Add to favorites'; ?>"><i
+                   class="<?php echo $owa_starred ? 'fas' : 'far'; ?> fa-star" aria-hidden="true"></i></a>
+            </td>
+            <td class="owa_rosterName">
                 <a href="<?php echo $view->makeLink( array(
                     'do'       => 'base.report',
                     'reportId' => 'custom-' . $owa_report['id'],
                 ), true ); ?>"><?php $view->out( $owa_report['name'] ); ?></a>
-                <?php if ( ! empty( $owa_report['invalid'] ) ): ?>
-                    <span class="owa_rosterBroken"
-                          title="<?php $view->out( $owa_report['invalid'] ); ?>">can't be drawn</span>
-                <?php endif; ?>
-            </td>
-
-            <td class="data_cell">
-                <?php $view->out( $owa_report['user_id'] ); ?>
-                <?php if ( ! empty( $owa_report['is_favorite'] ) ): ?>
-                    <i class="fas fa-star owa_rosterFavorite"
-                       title="One of your favorites, so it sorts to the top"></i>
-                <?php endif; ?>
                 <?php if ( ! empty( $owa_report['is_shared'] ) ): ?>
-                    <span class="owa_rosterShared"
-                          title="Shown in everyone's list">shared</span>
+                    <span class="owa_rosterTag" title="In everyone's list">Shared</span>
+                <?php endif; ?>
+                <?php if ( ! empty( $owa_report['invalid'] ) ): ?>
+                    <span class="owa_rosterTag is-warn"
+                          title="<?php $view->out( $owa_report['invalid'] ); ?>">Can't be drawn</span>
                 <?php endif; ?>
             </td>
-
-            <td class="data_cell">
+            <td class="owa_rosterType">
+                <i class="<?php $view->out( $owa_typeIcons[ $owa_kind ] ?? '' ); ?>" aria-hidden="true"></i><?php
+                $view->out( $owa_typeLabels[ $owa_kind ] ?? $owa_kind ); ?>
+            </td>
+            <td>
+                <?php
+                    $owa_author = (string) $owa_report['user_id'];
+                    $view->out( $owa_author !== '' && $owa_author === $owa_me ? 'you' : $owa_author );
+                ?>
+            </td>
+            <td>
                 <?php $owa_when = (int) $owa_report['last_updated_timestamp']; ?>
-                <?php $view->out( $owa_when ? date( 'M j, Y g:i a', $owa_when ) : '' ); ?>
+                <?php $view->out( $owa_when ? date( 'M j, Y, g:i A', $owa_when ) : '' ); ?>
             </td>
         </tr>
     <?php endforeach; ?>
     </tbody>
 </table>
-</div>
+
+<p class="owa_rosterNote">Favorites sort to the top and appear in the column on the left. A shared report is in everyone's list; any report opens for anyone with its link.</p>
 
 <?php else: ?>
-    <?php $owa_noun = $owa_isViz ? 'visualizations' : 'custom reports'; ?>
+    <p class="owa_rosterEmpty">
     <?php if ( $owa_active !== 'all' ): ?>
         <?php
             /*
              * EMPTY BECAUSE OF THE FILTER, which is a different thing from
-             * having none at all -- and saying "no custom reports yet" to
-             * someone who has several, just none starred, reads as data loss.
-             * The control above is still there to widen it again.
+             * having none at all: "none yet" to someone with several, just none
+             * starred, reads as data loss.
              */
         ?>
-        No <?php $view->out( $owa_noun );?> <?php
-            $view->out( $owa_active === 'mine' ? 'of your own.' : 'in your favorites.' );?>
+        <?php $view->out( $owa_active === 'mine' ? 'No reports of your own.' : 'No favorites yet. Star a report to add it here.' ); ?>
     <?php elseif ( $owa_author ): ?>
-        No <?php $view->out( $owa_noun );?> yet.
-        <?php /* Hooked by the same modal as the New button; see below. */ ?>
-        <a class="<?php echo $owa_isViz ? 'owa_newVisualization' : '';?>"
-           href="<?php echo $view->makeLink( array( 'do' => $owa_builder ), true ); ?>">Build one</a>.
+        No custom reports yet.
+        <a class="owa_newCustomReport"
+           href="<?php echo $view->makeLink( array( 'do' => 'base.customReportEdit' ), true ); ?>">Make one</a>.
     <?php else: ?>
-        <?php
-            /*
-             * Said differently for a reader who cannot author one: "build one"
-             * would point at a screen they are not allowed to open.
-             */
-        ?>
-        No <?php $view->out( $owa_noun );?> have been shared with you yet.
+        No custom reports have been shared with you yet.
     <?php endif; ?>
+    </p>
 <?php endif; ?>
 
 </div>
 
-<?php if ( $owa_isViz && $owa_author && $owa_vizTypes ): ?>
+<?php if ( $owa_author && $owa_kinds ): ?>
 <?php
 /*
- * WHICH KIND, asked before the builder opens.
+ * WHAT TO MAKE, asked before a builder opens: the kind decides what the builder
+ * then asks for. The same tiles as the widget builder's type chooser, and the
+ * same class names, so the two galleries read as one kind of question.
  *
- * The same question, in the same shape, as the widget builder's type chooser --
- * a gallery of tiles rather than a dropdown, because the kind decides what the
- * builder then asks for and is therefore the one choice worth showing rather
- * than listing. It reuses that chooser's markup and class names on purpose:
- * two galleries that look different would say the choices differ in kind.
- *
- * There is only a funnel today, and it is still asked. A single hardcoded kind
- * would not need naming -- asking is what makes the second one cost nothing but
- * a row in VISUALIZATION_TYPES.
+ * Each tile is a link, so picking one navigates to its builder; with no
+ * JavaScript the modal never opens and New opens the report builder.
  */
 ?>
-<div id="visualizationTypeDialog" class="owa_typeDialog" style="display:none;">
-    <ul class="owa_typeChoices">
-    <?php foreach ( $owa_vizTypes as $owa_key => $owa_label ): ?>
+<div id="customReportNewDialog" class="owa_typeDialog" style="display:none;">
+    <ul class="owa_typeChoices owa_typeChoicesTwo">
+    <?php foreach ( $owa_kinds as $owa_key => $owa_kind ): ?>
         <li>
-            <?php
-                /*
-                 * An <a> with a real href, not a button.
-                 *
-                 * Picking a kind NAVIGATES -- the builder is its own screen --
-                 * so the tile is a link, and with no JavaScript at all the
-                 * modal never opens and these are never reached. That is why
-                 * the New button keeps its own href.
-                 */
-            ?>
             <a class="owa_typeChoice" data-type="<?php $view->out( $owa_key ); ?>"
-               href="<?php echo $view->makeLink( array(
-                   'do'                => 'base.visualizationEdit',
-                   'visualizationType' => $owa_key,
-               // add_state: the builder needs the Profile it is building for.
-               ), true ); ?>">
+               href="<?php echo $view->makeLink( $owa_kind['params'], true ); ?>">
                 <span class="owa_typeChoiceArt" aria-hidden="true">
-                    <i class="owa_typeChoiceIcon <?php $view->out(
-                        \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $owa_key ] ?? '' ); ?>"></i>
+                    <i class="owa_typeChoiceIcon <?php $view->out( $owa_kind['icon'] ); ?>"></i>
                 </span>
                 <span class="owa_typeChoiceText">
-                    <span class="owa_typeChoiceName"><?php $view->out( $owa_label ); ?></span>
-                    <span class="owa_typeChoiceHint"><?php $view->out(
-                        \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $owa_key ] ?? '' ); ?></span>
+                    <span class="owa_typeChoiceName"><?php $view->out( $owa_kind['label'] ); ?></span>
+                    <span class="owa_typeChoiceHint"><?php $view->out( $owa_kind['hint'] ); ?></span>
                 </span>
             </a>
         </li>
@@ -272,7 +230,7 @@ $owa_seesAll   = (bool) $view->get('sees_all');
 <script>
 jQuery( function () {
 
-    var dialog = jQuery( '#visualizationTypeDialog' );
+    var dialog = jQuery( '#customReportNewDialog' );
 
     if ( ! dialog.length ) {
         return;
@@ -281,21 +239,15 @@ jQuery( function () {
     dialog.dialog( {
         autoOpen: false,
         modal: true,
-        width: Math.min( 820, jQuery( window ).width() - 40 ),
-        title: 'Add a visualization',
-        /*
-         * KEPT INSIDE .owa. jQuery UI lifts a dialog to <body> by default, and
-         * every rule styling what is inside it is written `.owa .owa_...` like
-         * the rest of the reporting stylesheet -- so a lifted dialog renders
-         * with browser defaults and the gallery collapses to a bare list.
-         */
+        width: Math.min( 640, jQuery( window ).width() - 32 ),
+        title: 'What do you want to make?',
+        // Kept inside .owa: every rule styling what is inside it is scoped
+        // `.owa .owa_...`, and jQuery UI would otherwise lift it to <body>.
         appendTo: '.owa',
-        // The frame is built OUTSIDE this element and carries the titlebar, so
-        // the chrome cannot be styled through #visualizationTypeDialog alone.
         dialogClass: 'owa_typeDialogFrame'
     } );
 
-    jQuery( document ).on( 'click', '.owa_newVisualization', function ( e ) {
+    jQuery( document ).on( 'click', '.owa_newCustomReport', function ( e ) {
 
         e.preventDefault();
 

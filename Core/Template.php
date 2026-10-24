@@ -1071,7 +1071,13 @@ class Template extends TemplateEngine {
      *
      * The section's own report heads its items, as "Overview" unless the
      * section names it (overview_label). An item pointing where the section
-     * itself does is dropped, so it is not listed twice.
+     * itself does is dropped, so it is not listed twice. An item may carry a
+     * `heading`, which reportColumn() groups it under, and an `icon_class`.
+     *
+     * A section with `keeps_column` has its column even when nothing is under
+     * it yet (Custom Reports, before anything is a favorite). One with
+     * `current_for` is also current on those screens: each is a set of params
+     * that must all match, and a value ending in `*` matches by its prefix.
      *
      * @param array  $nav        the Reports navigation group
      * @param string $propertyId the Property every report link is of
@@ -1097,7 +1103,7 @@ class Template extends TemplateEngine {
             $own   = $this->navLinkParams( $section );
             $items = array();
 
-            if ( ! empty( $section['subgroup'] ) ) {
+            if ( ! empty( $section['subgroup'] ) || ! empty( $section['keeps_column'] ) ) {
 
                 $items[] = array(
                     'label'   => (string) ( $section['overview_label'] ?? 'Overview' ),
@@ -1105,7 +1111,7 @@ class Template extends TemplateEngine {
                     'current' => ! $inSettings && $this->navLinkIsCurrent( $section, $params ),
                 );
 
-                foreach ( $section['subgroup'] as $link ) {
+                foreach ( (array) ( $section['subgroup'] ?? array() ) as $link ) {
 
                     if ( $this->navLinkParams( $link ) == $own
                          || ! $user->isCapable( $link['priviledge'] ?? '', $accessSiteId ) ) {
@@ -1117,11 +1123,14 @@ class Template extends TemplateEngine {
                         'label'   => strip_tags( (string) $link['anchortext'] ),
                         'href'    => $this->makeLink( array_merge( $state, $this->navLinkParams( $link ) ), true ),
                         'current' => ! $inSettings && $this->navLinkIsCurrent( $link, $params ),
+                        'heading' => (string) ( $link['heading'] ?? '' ),
+                        'icon'    => trim( (string) ( $link['icon_class'] ?? '' ) ),
                     );
                 }
             }
 
-            $current = ! $inSettings && $this->navLinkIsCurrent( $section, $params );
+            $current = ! $inSettings
+                && ( $this->navLinkIsCurrent( $section, $params ) || $this->navIsCurrentFor( $section, $params ) );
 
             foreach ( $items as $item ) {
 
@@ -1162,8 +1171,46 @@ class Template extends TemplateEngine {
     }
 
     /**
+     * Whether the request is one of the screens a section also answers for.
+     *
+     * @param array $section a nav section, with `current_for` param sets
+     * @param array $params  the request's params
+     * @return bool
+     */
+    private function navIsCurrentFor( $section, $params ) {
+
+        foreach ( (array) ( $section['current_for'] ?? array() ) as $wanted ) {
+
+            $matches = (bool) $wanted;
+
+            foreach ( (array) $wanted as $key => $value ) {
+
+                $value = (string) $value;
+                $have  = (string) ( $params[ $key ] ?? '' );
+
+                if ( substr( $value, -1 ) === '*'
+                    ? strpos( $have, substr( $value, 0, -1 ) ) !== 0
+                    : $have !== $value ) {
+
+                    $matches = false;
+                    break;
+                }
+            }
+
+            if ( $matches ) {
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The column beside the rail on a report screen: the current section's
      * pages, or null when it has none.
+     *
+     * Items sharing a `heading` are one group, in the order they come.
      *
      * @param array[] $rail as navRail() returns it
      * @return array|null title, groups
@@ -1174,9 +1221,25 @@ class Template extends TemplateEngine {
 
             if ( $section['current'] && $section['items'] ) {
 
+                $groups = array();
+
+                foreach ( $section['items'] as $item ) {
+
+                    $heading = (string) ( $item['heading'] ?? '' );
+                    $last    = count( $groups ) - 1;
+
+                    if ( $last < 0 || $groups[ $last ]['heading'] !== $heading ) {
+
+                        $groups[] = array( 'heading' => $heading, 'items' => array() );
+                        $last++;
+                    }
+
+                    $groups[ $last ]['items'][] = $item;
+                }
+
                 return array(
                     'title'  => $section['label'],
-                    'groups' => array( array( 'heading' => '', 'items' => $section['items'] ) ),
+                    'groups' => $groups,
                 );
             }
         }

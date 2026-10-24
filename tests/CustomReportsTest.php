@@ -1853,6 +1853,84 @@ final class CustomReportsTest extends TestCase
     }
 
     /**
+     * Favorites are narrowed before the LIMIT, so one that the sort puts past
+     * the limit is still listed.
+     */
+    public function testAFavoritePastTheLimitIsStillListed(): void
+    {
+        $this->requireDb();
+
+        $this->store(array('name' => 'AAA Unstarred, First By Name'));
+        $starred = $this->store(array('name' => 'ZZZ Starred, Last By Name'));
+
+        // A reader with no other stars, who may see every report.
+        Favorites::toggle($starred['id'], 'limit-reader@example.test');
+
+        $ids = array_column(
+            CustomReports::roster('limit-reader@example.test', true, 'name', false, 1, null, false, true), 'id');
+
+        $this->assertSame(array($starred['id']), $ids);
+    }
+
+    public function testNoFavoritesListsNothing(): void
+    {
+        $this->requireDb();
+
+        $this->store(array('name' => 'Never Starred'));
+
+        $this->assertSame(array(),
+            CustomReports::roster('starred-nothing@example.test', true, '', null, null, null, false, true));
+    }
+
+    /** The nav's Favorites group: the reader's favorites only, by name. */
+    public function testTheNavFavoritesAreTheReadersStarsByName(): void
+    {
+        $this->requireDb();
+
+        $b     = $this->store(array('name' => 'Nav Favorite B'));
+        $a     = $this->store(array('name' => 'Nav Favorite A'));
+        $plain = $this->store(array('name' => 'Nav Not A Favorite'));
+
+        Favorites::toggle($b['id'], self::AUTHOR);
+        Favorites::toggle($a['id'], self::AUTHOR);
+
+        $ids = array_column(CustomReports::favorites(self::AUTHOR), 'id');
+
+        $this->assertNotContains($plain['id'], $ids);
+        $this->assertLessThan(array_search($b['id'], $ids, true), array_search($a['id'], $ids, true));
+    }
+
+    public function testTheRosterSortsByType(): void
+    {
+        $this->assertSame('report_type', CustomReports::ROSTER_SORTS['type']);
+    }
+
+    /** The Type column: a report, or the visualization's own kind. */
+    public function testEachRowIsAReportOrItsVisualizationsKind(): void
+    {
+        $kind = array(\OWA\Module\Base\Controller\CustomReports::class, 'kindOf');
+
+        $this->assertSame('report', $kind(array('report_type' => null)));
+        $this->assertSame('report', $kind(array('report_type' => 'report')));
+        $this->assertSame('funnel', $kind(array('report_type' => 'visualization', 'visualization_type' => 'funnel')));
+        // A kind this install no longer has reads as the first one it does.
+        $this->assertSame('funnel', $kind(array('report_type' => 'visualization', 'visualization_type' => 'gone')));
+    }
+
+    /** + New offers a report first, then each visualization, each opening its builder. */
+    public function testNewOffersAReportThenEachVisualization(): void
+    {
+        $kinds = \OWA\Module\Base\Controller\CustomReports::newKinds();
+
+        $this->assertSame(array('report', 'funnel'), array_keys($kinds));
+        $this->assertSame(array('do' => 'base.customReportEdit'), $kinds['report']['params']);
+        $this->assertSame(array('do' => 'base.visualizationEdit', 'visualizationType' => 'funnel'),
+            $kinds['funnel']['params']);
+        $this->assertSame('Funnel', $kinds['funnel']['label']);
+        $this->assertNotSame('', $kinds['funnel']['hint']);
+    }
+
+    /**
      * A reader may star somebody else's shared report, and it reaches their
      * list -- which is the case the two features have to work together in.
      */

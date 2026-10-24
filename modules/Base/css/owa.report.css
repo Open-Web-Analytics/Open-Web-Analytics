@@ -1455,6 +1455,18 @@ li.constraintRow {
     gap: 12px;
 }
 
+/* Two kinds, side by side: + New on the roster. */
+.owa .owa_typeChoices.owa_typeChoicesTwo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 560px) {
+
+    .owa .owa_typeChoices.owa_typeChoicesTwo {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 .owa .owa_typeChoices li {
     /* The generic horizontal-list rules float list items; the grid places
        these. */
@@ -1466,14 +1478,15 @@ li.constraintRow {
 
 .owa .owa_typeChoice {
     display: flex;
-    align-items: stretch;
-    gap: 0;
+    align-items: flex-start;
+    gap: 14px;
     width: 100%;
+    box-sizing: border-box;
     text-align: left;
-    padding: 0;
+    padding: 16px;
     overflow: hidden;
-    border: 1px solid #dcdcdc;
-    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
     background: #fff;
     cursor: pointer;
     font: inherit;
@@ -1488,58 +1501,49 @@ li.constraintRow {
     color: inherit;
 }
 
-/*
- * The drawing, at the FULL HEIGHT of the tile.
- *
- * A band down the left rather than a glyph floating in the padding: it gives
- * the icon room to be read as a picture of the thing, and it makes the tiles
- * scannable as shapes before any of the words are.
- */
+/* The picture of the kind: a pale square at the tile's top left. */
 .owa .owa_typeChoiceArt {
-    flex: 0 0 64px;
+    flex: 0 0 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f4f8fc;
-    border-right: 1px solid #e6eef6;
-    color: #6a8fb5;
+    border-radius: 10px;
+    background: #eef4fb;
+    color: #1874CD;
 }
 
 .owa .owa_typeChoiceIcon {
-    font-size: 28px;
+    font-size: 18px;
     line-height: 1;
 }
 
 .owa .owa_typeChoiceText {
+    flex: 1 1 auto;
+    align-self: stretch;
     min-width: 0;
-    padding: 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
 }
 
 .owa .owa_typeChoice:hover,
 .owa .owa_typeChoice:focus {
-    border-color: #9ec2e6;
-    background: #f5faff;
-}
-
-.owa .owa_typeChoice:hover .owa_typeChoiceArt,
-.owa .owa_typeChoice:focus .owa_typeChoiceArt {
-    background: #e8f2fc;
-    color: #1874CD;
+    border-color: #1874CD;
 }
 
 .owa .owa_typeChoiceName {
     display: block;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
 }
 
 .owa .owa_typeChoiceHint {
     display: block;
-    font-size: 11px;
-    color: #808080;
-    line-height: 1.4;
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.45;
 
     /* Takes the slack, so the width bar below sits on the tile's floor and the
        bars line up across a row however long the sentences are. */
@@ -1914,139 +1918,215 @@ li.constraintRow {
 /* ---------------------------------------------------------------------------
  * Custom report roster
  *
- * Values read left to right, because they are words -- a report name and a user
- * id are read from their first character, and centring them puts every row's
- * first character in a different place. Every column now: the roster carries no
- * action column, because editing is the pencil on the thing itself.
+ * Reports and funnels in one list. Above it, the All / Just mine / Favorites
+ * control and the count; in it, a star column, the name with its tags, the
+ * type, who made it and when it changed. Values read left to right, because
+ * they are words.
  * ------------------------------------------------------------------------- */
 
-.owa table.owa_customReportRoster th,
-.owa table.owa_customReportRoster td {
-    text-align: left;
-    vertical-align: top;
-}
-
-/* ---------------------------------------------------------------------------
- * The roster's filter: All / Just mine / Favorites
- *
- * A segmented control rather than three loose links. They are alternatives --
- * one is always in force -- and three bare anchors above a table read as
- * navigation to somewhere else, which is the wrong promise: they change what
- * this table lists.
- *
- * Labelled, because a control with no label leaves the reader to infer that a
- * list is filtered at all. "Showing" is what the buttons complete.
- * ------------------------------------------------------------------------- */
-
-.owa .owa_rosterFilter {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 12px 0;
-    font-size: 12px;
-    color: #707070;
-}
-
-.owa .owa_rosterFilter .owa_rosterFilterLabel {
-    margin-right: 2px;
-}
-
-/* The buttons themselves: one group, so the segments sit against each other. */
-.owa .owa_rosterFilter .owa_rosterFilterOptions {
-    display: inline-flex;
-    border: 1px solid #cccccc;
-    border-radius: 3px;
+.owa .owa_srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
     overflow: hidden;
-}
-
-.owa .owa_rosterFilter a {
-    padding: 4px 10px;
-    color: #505050;
-    background-color: #ffffff;
-    text-decoration: none;
-    border-left: 1px solid #cccccc;
+    clip: rect(0 0 0 0);
     white-space: nowrap;
 }
 
-.owa .owa_rosterFilter a:first-child {
-    border-left: none;
+.owa .owa_rosterBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 20px;
+}
+
+.owa .owa_rosterCount {
+    margin-left: auto;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* A segmented control: one of the three is always in force. */
+.owa .owa_rosterFilter {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: #f3f5f8;
+}
+
+.owa .owa_rosterFilter a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #4b5563;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
 .owa .owa_rosterFilter a:hover {
-    background-color: #f2f2f2;
+    color: #111827;
 }
 
-/* The one in force. Colour AND weight: colour alone is not a state anybody
-   can see if they cannot distinguish it. */
+/* The one in force: raised, and in weight as well as colour. */
 .owa .owa_rosterFilter a.owa_rosterFilterActive {
-    background-color: #505050;
-    color: #ffffff;
-    font-weight: bold;
+    background: #ffffff;
+    color: #111827;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.08);
 }
 
-.owa .owa_rosterFilter a.owa_rosterFilterActive:hover {
-    background-color: #505050;
+.owa .owa_rosterFilter a i,
+.owa .owa_rosterStar.is-on {
+    color: #c99a06;
 }
 
-/* Any icon inside a segment, whatever FA style it names. */
-.owa .owa_rosterFilter a i {
-    margin-right: 5px;
+.owa table.owa_customReportRoster {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-/* ---------------------------------------------------------------------------
- * Row markers: starred, and shared
- *
- * Both sit beside the author, because both answer "whose is this" -- one says
- * it is one of yours, the other that its author put it on everyone's list.
- * ------------------------------------------------------------------------- */
-
-.owa .owa_rosterFavorite {
-    color: #e8b500;
-    margin-right: 4px;
+.owa table.owa_customReportRoster th,
+.owa table.owa_customReportRoster td {
+    padding: 13px 12px;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
 }
 
-.owa .owa_rosterShared {
-    display: inline-block;
-    margin-left: 6px;
-    padding: 1px 6px;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #707070;
-    background-color: #f2f2f2;
-    border-radius: 2px;
+.owa table.owa_customReportRoster th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
 }
 
-/* A saved report that cannot be drawn; the title says why. */
-.owa .owa_rosterBroken {
-    display: inline-block;
-    margin-left: 6px;
-    padding: 1px 6px;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #9a1c1c;
-    background-color: #fbeaea;
-    border-radius: 2px;
+.owa table.owa_customReportRoster td {
+    border-bottom: 1px solid #f1f3f6;
+    font-size: 14px;
+    color: #374151;
 }
 
-/* A sortable heading, and the arrow marking the one the order is actually by. */
+.owa table.owa_customReportRoster tbody tr:nth-child(even) td {
+    background: #f7f8fa;
+}
+
+/* The name wraps; nothing else needs to. */
+.owa table.owa_customReportRoster td.owa_rosterName {
+    width: 100%;
+    white-space: normal;
+}
+
+.owa .owa_rosterName > a {
+    font-size: 15px;
+    color: #1874CD;
+    text-decoration: none;
+}
+
+.owa .owa_rosterName > a:hover {
+    text-decoration: underline;
+}
+
 .owa table.owa_customReportRoster th a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     color: inherit;
     text-decoration: none;
 }
 
 .owa table.owa_customReportRoster th a:hover {
-    text-decoration: underline;
+    color: #111827;
 }
 
 .owa table.owa_customReportRoster th.owa_sorted a {
-    font-weight: bold;
+    color: #1874CD;
+    font-weight: 600;
+}
+
+.owa .owa_rosterStarCell {
+    width: 32px;
+}
+
+.owa table.owa_customReportRoster .owa_rosterStarCell {
+    padding-right: 0;
+}
+
+.owa .owa_rosterStar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: -6px 0;
+    border-radius: 16px;
+    color: #9ca3af;
+    text-decoration: none;
+}
+
+.owa .owa_rosterStar:hover,
+.owa .owa_rosterStar:focus {
+    background: #f3f5f8;
+    color: #c99a06;
+}
+
+.owa .owa_rosterType i {
+    width: 1em;
+    margin-right: 6px;
+    color: #6b7280;
+    text-align: center;
+}
+
+/* Shared, and Can't be drawn (its title says why), beside the name. */
+.owa .owa_rosterTag {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    margin-left: 6px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: #f3f5f8;
+    font-size: 12px;
+    color: #4b5563;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.owa .owa_rosterTag.is-warn {
+    background: #fdf0e6;
+    color: #9a3d0c;
+}
+
+.owa .owa_rosterNote,
+.owa .owa_rosterEmpty {
+    margin: 20px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #6b7280;
+}
+
+.owa .owa_rosterEmpty {
+    font-size: 14px;
+    color: #374151;
+}
+
+/* On a phone the table scrolls in its own box rather than widening the page. */
+@media (max-width: 640px) {
+
+    .owa .owa_roster {
+        overflow-x: auto;
+    }
 }
 
 .owa .owa_sortIndicator {
-    margin-left: 5px;
-    opacity: 0.7;
+    font-size: 11px;
 }
 
 /* A count beside a report title, and actions on the title's line. */
@@ -2066,6 +2146,43 @@ li.constraintRow {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* A labelled action is a button: outlined, or filled when it is the screen's
+   main one (is-primary, New on the roster). */
+.owa .owa_titleActions .owa_button {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    font-size: 14px;
+    color: #111827;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.owa .owa_titleActions .owa_button:hover {
+    border-color: #cfd4dc;
+}
+
+.owa .owa_titleActions .owa_button.is-primary {
+    border-color: #1874CD;
+    background: #1874CD;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.owa .owa_titleActions .owa_button.is-primary:hover,
+.owa .owa_titleActions .owa_button.is-primary:focus {
+    border-color: #0f5596;
+    background: #0f5596;
+}
+
+.owa .owa_titleActions .owa_button.is-primary .owa_titleActionIcon {
+    opacity: 1;
 }
 
 .owa .owa_titleActionIcon {
@@ -2133,31 +2250,51 @@ li.constraintRow {
 .owa_typeDialogFrame.ui-dialog,
 .owa_widgetDialogFrame.ui-dialog {
     padding: 0;
-    border: 1px solid #c0c0c0;
-    border-radius: 6px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
     background: #ffffff;
 }
 
 .owa_typeDialogFrame .ui-dialog-titlebar,
 .owa_widgetDialogFrame .ui-dialog-titlebar {
     border: 0;
-    border-bottom: 1px solid #e6e6e6;
-    border-radius: 6px 6px 0 0;
-    background: #f7f7f7;
-    padding: 14px 18px;
-    font-size: 15px;
+    border-radius: 12px 12px 0 0;
+    background: #ffffff;
+    padding: 24px 24px 8px;
+    font-size: 18px;
 }
 
 .owa_typeDialogFrame .ui-dialog-title,
 .owa_widgetDialogFrame .ui-dialog-title {
-    font-weight: bold;
-    color: #303030;
+    font-weight: 600;
+    color: #111827;
 }
 
 .owa_typeDialogFrame .ui-dialog-content,
 .owa_widgetDialogFrame .ui-dialog-content {
-    padding: 18px;
+    padding: 12px 24px 24px;
+}
+
+/* Close: a round icon button, not the theme's bordered square. */
+.owa_typeDialogFrame .ui-dialog-titlebar-close,
+.owa_widgetDialogFrame .ui-dialog-titlebar-close {
+    top: 28px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    margin: -18px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 18px;
+    background: transparent;
+}
+
+.owa_typeDialogFrame .ui-dialog-titlebar-close:hover,
+.owa_typeDialogFrame .ui-dialog-titlebar-close:focus,
+.owa_widgetDialogFrame .ui-dialog-titlebar-close:hover,
+.owa_widgetDialogFrame .ui-dialog-titlebar-close:focus {
+    background: #f3f5f8;
 }
 
 .owa_widgetDialogFrame .ui-dialog-buttonpane {
