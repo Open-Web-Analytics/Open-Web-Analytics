@@ -120,17 +120,17 @@ class CustomReports extends \OWA\Core\ReportController {
          * something that no longer exists, and it should say so in the list,
          * not only when someone opens it.
          */
-        if ( $this->rosterType() === \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT ) {
+        foreach ( $reports as $i => $report ) {
 
-            foreach ( $reports as $i => $report ) {
-
-                $reports[ $i ]['invalid'] = \OWA\Module\Base\Classes\CustomReports::validate(
-                    (array) ( $report['definition'] ?? array() ) );
-            }
+            $reports[ $i ]['kind']    = self::kindOf( $report );
+            $reports[ $i ]['invalid'] = $reports[ $i ]['kind'] === 'report'
+                ? \OWA\Module\Base\Classes\CustomReports::validate(
+                    (array) ( $report['definition'] ?? array() ) )
+                : '';
         }
 
         $this->set( 'custom_reports', $reports );
-        $this->set( 'roster_type', $this->rosterType() );
+        $this->set( 'roster_count', count( $reports ) );
         $this->set( 'sees_all', $sees_all );
         $this->set( 'roster_mine', $mine_only );
         $this->set( 'roster_favorites', $favorites_only );
@@ -139,51 +139,67 @@ class CustomReports extends \OWA\Core\ReportController {
     }
 
     /**
-     * Which kind this roster lists.
+     * Which kinds this roster lists: both. Reports and funnels are one list,
+     * told apart by its Type column.
      *
-     * Reports and visualizations share a table and a set of screens -- same
-     * ownership, access control, editable titles, delete -- and differ only in
-     * how they are drawn. So the roster is one class asked which kind it is,
-     * rather than two that would drift.
-     *
-     * @return string
+     * @return string|null
      */
     protected function rosterType() {
 
-        return \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT;
+        return null;
+    }
+
+    /**
+     * What the Type column calls a row: 'report', or the visualization's own
+     * kind ('funnel').
+     *
+     * @param array $report a roster row
+     * @return string
+     */
+    public static function kindOf( array $report ) {
+
+        if ( ( $report['report_type'] ?? '' ) !== \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION ) {
+
+            return 'report';
+        }
+
+        $type = (string) ( $report['visualization_type'] ?? '' );
+
+        return isset( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES[ $type ] )
+            ? $type
+            : (string) array_key_first( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES );
     }
 
     function success() {
 
         $this->setSubview( 'base.customReports' );
         $this->setView( 'base.report' );
-        $this->set( 'title', 'Custom Reports' );
-
-        /*
-         * $this->data, NOT $this->get().
-         *
-         * Controller::get() is getParam() -- it reads the REQUEST. Asking it
-         * for something action() set returns whatever the URL happened to
-         * carry, which is nothing, so the count read as 0 and the New button
-         * was never offered.
-         */
-        $this->set( 'title_count', count( (array) ( $this->data['custom_reports'] ?? array() ) ) );
+        $this->set( 'title', 'Custom reports' );
 
         /*
          * New sits on the title's line, because it acts on the whole screen.
          * Offered only to someone who may author one -- a reader who cannot
          * would get a button that leads to a refusal.
+         *
+         * $this->data, NOT $this->get(): Controller::get() reads the REQUEST.
+         *
+         * Hooked by the roster template, which asks what to make (a report or
+         * a funnel) in a modal. Still a real link: with no JavaScript it opens
+         * the report builder.
          */
         if ( ! empty( $this->data['may_author'] ) ) {
 
             $this->set( 'title_actions', array(
                 array(
                     'url'   => ( new \OWA\Core\Template() )
-                                   ->makeLink( array( 'do' => 'base.customReportEdit' ) ),
-                    'label' => 'New Custom Report',
+                                   ->makeLink( array( 'do' => 'base.customReportEdit' ), true ),
+                    'label' => 'New',
                     'icon'  => 'fa-plus',
+                    'class' => 'owa_newCustomReport is-primary',
                 ),
             ) );
+
+            $this->set( 'new_kinds', self::newKinds() );
         }
 
         /*
@@ -206,5 +222,34 @@ class CustomReports extends \OWA\Core\ReportController {
          * unchangeable, which is how it read as the tile going missing.
          */
         $this->hideTimeControls();
+    }
+
+    /**
+     * What + New offers, in order: a report, then each visualization.
+     *
+     * @return array[] key => label, hint, icon, params (the builder's link)
+     */
+    public static function newKinds() {
+
+        $kinds = array(
+            'report' => array(
+                'label'  => 'Report',
+                'hint'   => 'Tables, trends and totals laid out on a grid. You pick the metrics and dimensions for each widget.',
+                'icon'   => 'fas fa-th-large',
+                'params' => array( 'do' => 'base.customReportEdit' ),
+            ),
+        );
+
+        foreach ( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES as $key => $label ) {
+
+            $kinds[ $key ] = array(
+                'label'  => $label,
+                'hint'   => \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $key ] ?? '',
+                'icon'   => \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $key ] ?? '',
+                'params' => array( 'do' => 'base.visualizationEdit', 'visualizationType' => $key ),
+            );
+        }
+
+        return $kinds;
     }
 }

@@ -9,9 +9,8 @@ const { FIXTURE, adminLogin } = require('./fixtures');
  * no arrangement of metrics and dimensions expresses -- which is exactly why
  * goal-funnel kept a controller when 62 of 64 reports became JSON.
  *
- * They share a table and every screen around it, because ownership, access
- * control, editable titles and delete are identical. They are listed separately
- * because the controls are not.
+ * They share a table, every screen around it, and one roster, where the Type
+ * column tells them apart.
  */
 
 async function gotoAction(page, doName, extra = '') {
@@ -24,7 +23,7 @@ test.describe('visualizations', () => {
         await adminLogin(page);
     });
 
-    test('build one, render it, and find it in its own nav group', async ({ page }) => {
+    test('build one, render it, and find it under Custom Reports', async ({ page }) => {
         const name = 'E2E Funnel ' + Date.now();
 
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
@@ -70,71 +69,63 @@ test.describe('visualizations', () => {
         await expect(page.locator('body')).toContainText('Docs');
         await expect(page.locator('body')).toContainText('Thanks');
 
-        // Its own section of the rail, NOT under Custom Reports: the section is
-        // current and its column lists the visualization.
-        await expect(page.locator('.owa_rail .owa_railItem.is-current')).toHaveText('Visualizations');
-        await expect(page.locator('#owa_navColumn')).toContainText(name);
-
-        // And it is a DIFFERENT section from Custom Reports, which is the whole
-        // point of the separation.
+        // Under Custom Reports: the section is current on a funnel too.
+        await expect(page.locator('.owa_rail .owa_railItem.is-current')).toHaveText('Custom Reports');
         await expect(
-            page.locator('.owa_rail').getByRole('link', { name: 'Custom Reports', exact: true })
-        ).toHaveCount(1);
+            page.locator('.owa_rail').getByRole('link', { name: 'Visualizations', exact: true })
+        ).toHaveCount(0);
 
-        // --- the roster lists it, and nothing else does ------------------------
-        await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
+        // --- the one roster lists it, as a Funnel -------------------------------
+        await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
 
-        const row = page.locator('table.management tbody tr', { hasText: name });
+        const row = page.locator('table.owa_customReportRoster tbody tr', { hasText: name });
         await expect(row).toHaveCount(1);
+        await expect(row.locator('td.owa_rosterType')).toHaveText('Funnel');
 
         /*
          * And no edit link in the row. Editing is the pencil on the thing
-         * itself, which is where it acts on something the reader is looking at;
-         * a second way in from the roster made every row carry two links to two
-         * screens and an empty cell for anyone who may not edit.
+         * itself, which is where it acts on something the reader is looking at.
          */
         await expect(row.locator('a[href*="visualizationEdit"]')).toHaveCount(0);
 
-        await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
+        // The old roster's address opens the same list.
+        await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
         await expect(
-            page.locator('table.management tbody tr', { hasText: name }),
-            'a visualization appeared in the Custom Reports roster'
-        ).toHaveCount(0);
+            page.locator('table.owa_customReportRoster tbody tr', { hasText: name })
+        ).toHaveCount(1);
     });
 
     /**
-     * WHICH KIND, before the builder opens.
-     *
-     * The same question in the same shape as the widget builder's type chooser,
-     * because the kind decides what the builder then asks for. There is only a
-     * funnel today and it is still asked: a single hardcoded kind would not
-     * need naming, and asking is what makes the second one cost a row in
-     * VISUALIZATION_TYPES rather than a new screen.
+     * WHAT TO MAKE, before a builder opens: + New asks Report or Funnel, in a
+     * modal, because the kind decides what the builder then asks for.
      */
-    test('the New button asks which kind, in a modal', async ({ page }) => {
-        await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
+    test('the New button asks what to make, in a modal', async ({ page }) => {
+        await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
 
-        const dialog = page.locator('#visualizationTypeDialog');
+        const dialog = page.locator('#customReportNewDialog');
 
         // Behind the button: it is not on the page until asked for.
         await expect(dialog).toBeHidden();
 
-        await page.locator('.owa_newVisualization').first().click();
+        await page.locator('.owa_titleActions .owa_newCustomReport').click();
         await expect(dialog).toBeVisible();
+        await expect(page.locator('.owa_typeDialogFrame .ui-dialog-title'))
+            .toHaveText('What do you want to make?');
 
-        // One kind, and it is the funnel.
         const tiles = dialog.locator('.owa_typeChoice');
-        await expect(tiles).toHaveCount(1);
-        await expect(tiles.first()).toContainText('Funnel');
+        await expect(tiles).toHaveCount(2);
+        await expect(tiles.nth(0)).toContainText('Report');
+        await expect(tiles.nth(1)).toContainText('Funnel');
+        await expect(tiles.nth(0)).toHaveAttribute('href', /do=base\.customReportEdit/);
 
         /*
-         * Still a real link. With no JavaScript the modal never opens and the
-         * New button opens the builder directly, so picking a kind has to be a
+         * Still real links. With no JavaScript the modal never opens and New
+         * opens the report builder directly, so picking a kind has to be a
          * navigation rather than something only script can do.
          */
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            tiles.first().click(),
+            tiles.nth(1).click(),
         ]);
 
         expect(page.url()).toContain('visualizationType=funnel');
@@ -336,12 +327,12 @@ test.describe('visualizations', () => {
         expect(mine[2], 'the goal event step counted nobody').toBeGreaterThan(0);
 
         // --- and it is the SAME funnel as the path version ---------------------
-        await gotoAction(page, 'base.visualizations', `&owa_siteId=${FIXTURE.siteId}`);
+        await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('table.management tbody tr', { hasText: FIXTURE.funnelVisualization.name })
-                .locator('a').first().click(),
+            page.locator('table.owa_customReportRoster tbody tr', { hasText: FIXTURE.funnelVisualization.name })
+                .locator('td.owa_rosterName a').click(),
         ]);
 
         await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });

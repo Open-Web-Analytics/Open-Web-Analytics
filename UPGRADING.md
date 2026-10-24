@@ -157,6 +157,21 @@ For module and template authors:
 - The grid's element also publishes `page_change` (page, resultsPerPage).
 - Each entry of a result set's `relatedMetrics` carries its `metric_type`.
 
+### Custom reports and funnels are one list
+
+Custom Reports lists reports and funnels together, with a Type column, and the
+Visualizations section is gone from the navigation. New asks whether to make a
+report or a funnel. A star on each row adds it to the reader's favorites, which
+sort to the top and are listed in the Custom Reports column. The old
+`base.visualizations` address opens the same list.
+
+For module and template authors:
+
+- A navigation link may carry a `heading`, which groups it in the column, and an
+  `icon_class`. A group may set `keeps_column` to have a column with no links
+  under it, and `current_for` (sets of params; a value ending in `*` matches by
+  prefix) to be current on other screens.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

@@ -47,11 +47,17 @@ final class NavShellTest extends TestCase
                 'ref' => array( 'do' => 'base.customReports' ),
                 'anchortext' => 'Custom Reports', 'priviledge' => 'view_site_list', 'icon_class' => 'fa fa-th-list',
                 'overview_label' => 'All reports',
+                'keeps_column' => true,
+                'current_for' => array(
+                    array( 'do' => 'base.report', 'reportId' => 'custom-*' ),
+                    array( 'do' => 'base.customReportEdit' ),
+                ),
                 'subgroup' => array(
                     array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'custom-7' ),
-                           'anchortext' => 'Blog launch week', 'priviledge' => 'view_reports' ),
+                           'anchortext' => 'Blog launch week', 'priviledge' => 'view_reports',
+                           'icon_class' => 'fas fa-star', 'heading' => 'Favorites' ),
                     array( 'ref' => array( 'do' => 'base.customReports' ),
-                           'anchortext' => 'See more...', 'priviledge' => 'view_site_list' ),
+                           'anchortext' => 'All reports again', 'priviledge' => 'view_site_list' ),
                 ),
             ),
         );
@@ -78,13 +84,56 @@ final class NavShellTest extends TestCase
         $this->assertSame( array( 'Overview', 'Pages', 'Entry Pages' ), $this->labels( $rail[1]['items'] ) );
     }
 
-    /** "See more..." goes where the section does, so it is not listed twice. */
+    /** An item going where the section does is not listed twice. */
     public function testASectionNamesItsOwnEntryAndDropsADuplicate(): void
     {
         $rail = $this->template()->navRail( $this->nav(), 'p1', array( 'do' => 'base.customReports' ) );
 
         $this->assertSame( array( 'All reports', 'Blog launch week' ), $this->labels( $rail[2]['items'] ) );
         $this->assertTrue( $rail[2]['items'][0]['current'] );
+    }
+
+    /** Items under a heading are their own group of the column, with their icons. */
+    public function testTheColumnGroupsItemsByHeading(): void
+    {
+        $rail   = $this->template()->navRail( $this->nav(), 'p1', array( 'do' => 'base.customReports' ) );
+        $column = \OWA\Core\Template::reportColumn( $rail );
+
+        $this->assertSame( array( '', 'Favorites' ), array_column( $column['groups'], 'heading' ) );
+        $this->assertSame( array( 'All reports' ), $this->labels( $column['groups'][0]['items'] ) );
+        $this->assertSame( array( 'Blog launch week' ), $this->labels( $column['groups'][1]['items'] ) );
+        $this->assertSame( 'fas fa-star', $column['groups'][1]['items'][0]['icon'] );
+    }
+
+    /** keeps_column: Custom Reports has its column with no favorites under it. */
+    public function testASectionThatKeepsItsColumnHasOneWithNothingUnderIt(): void
+    {
+        $nav = $this->nav();
+        $nav['Custom Reports']['subgroup'] = array();
+
+        $rail   = $this->template()->navRail( $nav, 'p1', array( 'do' => 'base.customReports' ) );
+        $column = \OWA\Core\Template::reportColumn( $rail );
+
+        $this->assertSame( array( 'All reports' ), $this->labels( $column['groups'][0]['items'] ) );
+        $this->assertCount( 1, $column['groups'] );
+    }
+
+    /**
+     * current_for: Custom Reports is current on any custom report, favorite or
+     * not, and on its builders; a value ending in * matches by prefix.
+     */
+    public function testASectionIsCurrentOnTheScreensItAnswersFor(): void
+    {
+        $current = function ( array $params ) {
+            $rail = $this->template()->navRail( $this->nav(), 'p1', $params );
+            return $rail[2]['current'];
+        };
+
+        $this->assertTrue( $current( array( 'do' => 'base.report', 'reportId' => 'custom-99' ) ) );
+        $this->assertTrue( $current( array( 'do' => 'base.customReportEdit', 'customReportId' => '4' ) ) );
+        $this->assertFalse( $current( array( 'do' => 'base.report', 'reportId' => 'pages' ) ) );
+        $this->assertFalse( $current( array( 'do' => 'base.report', 'reportId' => 'xcustom-1' ) ) );
+        $this->assertFalse( $current( array( 'do' => 'base.report' ) ) );
     }
 
     public function testASectionWithNoReportsUnderItHasNoItems(): void

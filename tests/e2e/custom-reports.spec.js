@@ -289,12 +289,16 @@ test.describe('custom reports', () => {
                     tiles: tiles.length,
                     rows: new Set(tops).size,
                     perRow: tops.filter((t) => t === tops[0]).length,
-                    // The icon band runs the full height of its tile.
-                    artFills: tiles.every((t) => {
+                    // The icon sits in its 40px square at the tile's top left.
+                    artSquare: tiles.every((t) => {
                         const art = t.querySelector('.owa_typeChoiceArt');
-                        return art
-                            && art.getBoundingClientRect().height
-                                >= t.getBoundingClientRect().height - 4;
+                        if (!art) {
+                            return false;
+                        }
+                        const a = art.getBoundingClientRect();
+                        const b = t.getBoundingClientRect();
+                        return Math.round(a.width) === 40 && Math.round(a.height) === 40
+                            && a.left - b.left < 24 && a.top - b.top < 24;
                     }),
                     // ...and each says how much of a row it takes.
                     labelled: tiles.every((t) =>
@@ -312,7 +316,7 @@ test.describe('custom reports', () => {
             expect(state.perRow, 'the tiles are in a single column').toBeGreaterThan(1);
             expect(state.rows, 'the tiles are all on one row').toBeGreaterThan(1);
 
-            expect(state.artFills, 'an icon does not fill its tile').toBe(true);
+            expect(state.artSquare, 'an icon is not in its square at the top left').toBe(true);
             expect(state.labelled, 'a tile does not say how wide the widget is').toBeTruthy();
         });
 
@@ -1101,22 +1105,25 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * The roster's own header: a count beside the title, and New on the
-         * title's line rather than in a bar of its own below it.
+         * The roster's own header: New on the title's line, filled as the
+         * screen's main action, and the count beside the filter.
          */
-        test('the roster titles itself with a count and a New button', async ({ page }) => {
+        test('the roster titles itself with a New button and counts its rows', async ({ page }) => {
             await buildOne(page, 'Header');
             await openRoster(page);
 
-            const count = page.locator('.owa_titleCount');
+            await expect(page.locator('.owa_titleCount')).toHaveCount(0);
 
-            await expect(count).toHaveCount(1);
-            await expect(count).toHaveText(/^[0-9]+$/);
+            const rows = await page.locator('table.owa_customReportRoster tbody tr').count();
 
-            const button = page.locator('.owa_titleActions a', { hasText: 'New Custom Report' });
+            await expect(page.locator('.owa_rosterCount')).toHaveText(
+                rows === 1 ? '1 report' : `${rows} reports`);
+
+            const button = page.locator('.owa_titleActions a.is-primary', { hasText: 'New' });
 
             await expect(button).toHaveCount(1);
             await expect(button.locator('i.fa')).toHaveCount(1);
+            await expect(button).toHaveCSS('background-color', 'rgb(24, 116, 205)');
 
             // On the title's LINE, not under it: same vertical centre.
             const titleBox  = await page.locator('.owa_reportTitle').boundingBox();
@@ -1171,10 +1178,12 @@ test.describe('custom reports', () => {
 
             await openRoster(page);
 
-            const row = page.locator('table.management tr').filter({ hasText: name });
+            const row = page.locator('table.owa_customReportRoster tr').filter({ hasText: name });
 
             await expect(row).toHaveCount(1);
-            await expect(row).toContainText(FIXTURE.adminUserId);
+            // The reader's own are "you"; anyone else's by their user id.
+            await expect(row.locator('td').nth(3)).toHaveText('you');
+            await expect(row.locator('td.owa_rosterType')).toHaveText('Report');
         });
 
         /** The roster link is the shareable URL, and it must actually open. */
@@ -1183,7 +1192,7 @@ test.describe('custom reports', () => {
 
             await openRoster(page);
 
-            await page.locator('table.management a').filter({ hasText: name }).click();
+            await page.locator('table.owa_customReportRoster a').filter({ hasText: name }).click();
             await page.waitForLoadState('networkidle');
 
             expect(page.url()).toContain('custom-');
@@ -2198,8 +2207,8 @@ test.describe('custom reports', () => {
              * empty cell for anyone who may not edit.
              */
             await openRoster(page);
-            await page.locator('table.management tr').filter({ hasText: name })
-                .locator('a').first().click();
+            await page.locator('table.owa_customReportRoster tr').filter({ hasText: name })
+                .locator('td.owa_rosterName a').click();
             await page.waitForLoadState('networkidle');
 
             await page.locator('.owa_reportTitle a[href*="customReportEdit"]').click();
@@ -2477,15 +2486,14 @@ test.describe('custom reports', () => {
         test.describe('favorites', () => {
 
             /*
-             * The star lives on the REPORT, beside its title -- not on the
-             * roster row. A favourite is the reader's note about the thing they
-             * are looking at, so it is pressed while looking at it.
+             * The star is beside the report's title, and in the roster's first
+             * column; each comes back to where it was pressed.
              */
 
             async function openReportNamed(page, name) {
                 await openRoster(page);
                 await page.locator('.owa_customReportRoster tbody tr', { hasText: name })
-                    .locator('a').first().click();
+                    .locator('td.owa_rosterName a').click();
                 await page.waitForLoadState('networkidle');
             }
 
@@ -2528,6 +2536,39 @@ test.describe('custom reports', () => {
                 ).toHaveCount(1);
             });
 
+            test('the roster star toggles and comes back to the roster', async ({ page }) => {
+                const name = await buildOne(page, 'RosterStar');
+
+                // Sorted by name, so the round trip has an order to keep.
+                await page.goto('?owa_do=base.customReports&rosterSort=name&rosterDesc=0',
+                    { waitUntil: 'networkidle' });
+
+                const row  = page.locator('.owa_customReportRoster tbody tr', { hasText: name });
+                const star = row.locator('a.owa_rosterStar');
+
+                await expect(star).toHaveAttribute('aria-label', 'Add to favorites');
+                await expect(star.locator('i.far.fa-star')).toBeVisible();
+
+                await star.click();
+                await page.waitForLoadState('networkidle');
+
+                await expect(page).toHaveURL(/do=base\.customReports/);
+                await expect(page).toHaveURL(/rosterSort=name/);
+                await expect(row.locator('a.owa_rosterStar.is-on i.fas.fa-star')).toBeVisible();
+
+                // A favorite is in the column, under Favorites, with a star.
+                await expect(page.locator('#owa_navColumn .owa_navColumnHeading', { hasText: 'Favorites' }))
+                    .toBeVisible();
+                await expect(page.locator('#owa_navColumn a', { hasText: name }).locator('i.fa-star'))
+                    .toHaveCount(1);
+
+                await row.locator('a.owa_rosterStar').click();
+                await page.waitForLoadState('networkidle');
+
+                await expect(row.locator('a.owa_rosterStar')).toHaveAttribute('aria-label', 'Add to favorites');
+                await expect(page.locator('#owa_navColumn a', { hasText: name })).toHaveCount(0);
+            });
+
             test('a starred report sorts to the top and the filter finds it', async ({ page }) => {
                 const plain   = await buildOne(page, 'AAA Unstarred');
                 const starred = await buildOne(page, 'ZZZ Starred');
@@ -2539,7 +2580,7 @@ test.describe('custom reports', () => {
                 await openRoster(page);
 
                 // Starred outranks the alphabetical sort.
-                const names = await page.locator('.owa_customReportRoster tbody tr td:first-child')
+                const names = await page.locator('.owa_customReportRoster tbody tr td.owa_rosterName')
                     .allInnerTexts();
                 const starredAt = names.findIndex((n) => n.includes(starred));
                 const plainAt   = names.findIndex((n) => n.includes(plain));
@@ -2554,7 +2595,7 @@ test.describe('custom reports', () => {
 
                 await expect(page).toHaveURL(/rosterFavorites=1/);
 
-                const filtered = await page.locator('.owa_customReportRoster tbody tr td:first-child')
+                const filtered = await page.locator('.owa_customReportRoster tbody tr td.owa_rosterName')
                     .allInnerTexts();
 
                 expect(filtered.some((n) => n.includes(starred))).toBe(true);
@@ -2599,7 +2640,7 @@ test.describe('custom reports', () => {
                 const row = page.locator('.owa_customReportRoster tbody tr', { hasText: name });
 
                 await expect(row).toHaveCount(1);
-                await expect(row.locator('.owa_rosterShared')).toBeVisible();
+                await expect(row.locator('.owa_rosterTag', { hasText: 'Shared' })).toBeVisible();
             });
 
             test('the builder comes back with the box still ticked', async ({ page }) => {
@@ -2614,7 +2655,7 @@ test.describe('custom reports', () => {
 
                 await openRoster(page);
                 await page.locator('.owa_customReportRoster tbody tr', { hasText: name })
-                    .locator('a').first().click();
+                    .locator('td.owa_rosterName a').click();
                 await page.waitForLoadState('networkidle');
 
                 // Edit is the pencil on the report itself, not a roster column.
@@ -2660,9 +2701,9 @@ test.describe('custom reports', () => {
      * rows. There was then no control left to choose "All" with, and the
      * browser's back button was the only way out.
      *
-     * Tested from the reader's side because "mine" is EMPTY for them by
-     * construction -- they cannot author, so no report can be theirs -- while
-     * the author's own favourites depend on what earlier tests starred in a
+     * Favorites, emptied first with the roster's own stars, from the reader's
+     * side: their "Just mine" holds the funnel the fixture made for them, and
+     * the author's favourites depend on what earlier tests starred in a
      * database they all share.
      */
     test('the roster filter is still there when it matches nothing',
@@ -2692,15 +2733,20 @@ test.describe('custom reports', () => {
 
             await expect(rows.filter({ hasText: name })).toHaveCount(1);
 
-            await theirs.locator('.owa_rosterFilter a', { hasText: 'Just mine' }).click();
+            await theirs.locator('.owa_rosterFilter a', { hasText: 'Favorites' }).click();
             await theirs.waitForLoadState('networkidle');
 
-            await expect(rows).toHaveCount(0);
+            // Unstarring from the filtered list comes back to it, one fewer.
+            for (let left = await rows.count(); left > 0; left--) {
+                await theirs.locator('a.owa_rosterStar').first().click();
+                await expect(rows).toHaveCount(left - 1);
+            }
 
             const filter = theirs.locator('.owa_rosterFilter');
 
             await expect(filter).toBeVisible();
-            await expect(filter.locator('a.owa_rosterFilterActive')).toHaveText('Just mine');
+            await expect(filter.locator('a.owa_rosterFilterActive')).toHaveText('Favorites');
+            await expect(theirs.locator('.owa_rosterEmpty')).toContainText('No favorites');
 
             // ...and the way back out is a link on the page, not the back button.
             await filter.locator('a', { hasText: 'All' }).click();
@@ -2806,12 +2852,14 @@ test.describe('custom reports', () => {
 
             // The page is theirs to read -- asserted on the roster's own table
             // or its empty-state text, not on a string the NAV also contains.
-            await expect(page.locator('table.management, .owa_reportSectionContent').first())
+            await expect(page.locator('table.owa_customReportRoster, .owa_reportSectionContent').first())
                 .toBeVisible();
 
             // ...but there is nothing on it to author with. The New button
-            // lives on the title's line now, offered only to an author.
+            // lives on the title's line now, offered only to an author, and
+            // so does the modal it opens.
             await expect(page.locator('.owa_titleActions')).toHaveCount(0);
+            await expect(page.locator('#customReportNewDialog')).toHaveCount(0);
         });
     });
 
@@ -2869,7 +2917,7 @@ test.describe('custom reports', () => {
             await login(theirs);
             await openRoster(theirs);
 
-            await expect(theirs.locator('table.management tr').filter({ hasText: name }))
+            await expect(theirs.locator('table.owa_customReportRoster tr').filter({ hasText: name }))
                 .toHaveCount(0);
         } finally {
             await reader.close();

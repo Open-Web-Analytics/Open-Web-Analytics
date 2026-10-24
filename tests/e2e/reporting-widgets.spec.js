@@ -200,8 +200,8 @@ test.describe('every configured report renders in a browser', () => {
          * The goals report used to carry a Related Reports widget pointing at
          * goal-funnel. A funnel is not a report any more -- it is a
          * visualization, one somebody made, and there is no single one to
-         * point at. So the route is the Visualizations group in the left-hand
-         * nav, which lists the ones that exist.
+         * point at. So the route is Custom Reports in the rail, whose list
+         * holds the funnels that exist.
          *
          * Asserted rather than left as an absence: a reader looking at goal
          * performance and wanting to see the path to it must still have
@@ -214,7 +214,7 @@ test.describe('every configured report renders in a browser', () => {
             ).toHaveCount(0);
 
             await expect(
-                page.locator('.owa_rail').getByRole('link', { name: 'Visualizations', exact: true })
+                page.locator('.owa_rail').getByRole('link', { name: 'Custom Reports', exact: true })
             ).toHaveCount(1);
         });
     });

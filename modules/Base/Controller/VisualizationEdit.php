@@ -49,7 +49,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
             if ( ! $may ) {
 
                 $this->setStatusCode( 2513 );
-                $this->setRedirectAction( 'base.visualizations' );
+                $this->setRedirectAction( 'base.customReports' );
 
                 return;
             }

@@ -359,6 +359,7 @@ class CustomReports {
      */
     const ROSTER_SORTS = array(
         'name'    => 'name',
+        'type'    => 'report_type',
         'author'  => 'user_id',
         'updated' => 'last_updated_timestamp',
     );
@@ -1637,6 +1638,23 @@ class CustomReports {
         $params = array();
         $where  = array();
 
+        $starred = \OWA\Module\Base\Classes\CustomReportFavorites::idsFor( $user_id );
+
+        /*
+         * Favorites are narrowed in the query, before the LIMIT, so a favorite
+         * older than the newest ten is still one of the reader's ten favorites.
+         */
+        if ( $favorites_only ) {
+
+            if ( ! $starred ) {
+
+                return array();
+            }
+
+            $where[] = 'id IN (' . implode( ', ', array_fill( 0, count( $starred ), '?' ) ) . ')';
+            $params  = array_merge( $params, array_map( 'strval', array_keys( $starred ) ) );
+        }
+
         if ( $mine_only ) {
 
             /*
@@ -1732,8 +1750,6 @@ class CustomReports {
          * keep the order the database returned -- which is the sort the reader
          * actually asked for.
          */
-        $starred = \OWA\Module\Base\Classes\CustomReportFavorites::idsFor( $user_id );
-
         $out = array();
 
         foreach ( $rows as $row ) {
@@ -1917,30 +1933,22 @@ class CustomReports {
     }
 
     /**
-     * How many custom reports the left-hand nav lists.
-     *
-     * The nav is a way IN, not an index -- the roster is the index, and the
-     * group's own heading links to it. Ten is enough that somebody's current
-     * work is nearly always there and few enough that the group can be read
-     * without scrolling.
+     * How many favorites the Custom Reports column lists. The roster is the
+     * index; the column is a way in.
      */
     const NAV_LIMIT = 10;
 
     /**
-     * The most recently changed reports a user may see, for the nav.
-     *
-     * Same visibility rule as the roster, because it is the same list: an admin
-     * sees everyone's, everyone else sees their own. Ordered by when they
-     * changed, which is the order that puts what somebody is working on at the
-     * top.
+     * The reader's favorites of either kind, for the nav: the ones they may
+     * still see, by name.
      *
      * @param string $user_id
      * @param bool   $all
      * @return array
      */
-    public static function recent( $user_id, $all = false, $type = null ) {
+    public static function favorites( $user_id, $all = false ) {
 
-        return self::roster( $user_id, $all, 'updated', true, self::NAV_LIMIT, $type );
+        return self::roster( $user_id, $all, 'name', false, self::NAV_LIMIT, null, false, true );
     }
 
     /**

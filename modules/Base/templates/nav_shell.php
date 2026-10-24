@@ -59,7 +59,7 @@ $owa_column = $owa_column ?? null;
             <?php foreach ( $owa_group['items'] as $owa_item ):?>
                 <li><a class="owa_navColumnItem<?php echo $owa_item['current'] ? ' is-current' : '';?>"
                        <?php echo $owa_item['current'] ? 'aria-current="page"' : '';?>
-                       href="<?php $view->safeHref( $owa_item['href'] );?>"><?php $view->out( $owa_item['label'] );?></a></li>
+                       href="<?php $view->safeHref( $owa_item['href'] );?>"><?php if ( ! empty( $owa_item['icon'] ) ):?><i class="owa_navColumnIcon <?php $view->out( $owa_item['icon'] );?>" aria-hidden="true"></i><?php endif;?><?php $view->out( $owa_item['label'] );?></a></li>
             <?php endforeach;?>
             </ul>
         <?php endforeach;?>
