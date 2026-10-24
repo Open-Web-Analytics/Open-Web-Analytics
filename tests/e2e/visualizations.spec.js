@@ -70,16 +70,15 @@ test.describe('visualizations', () => {
         await expect(page.locator('body')).toContainText('Docs');
         await expect(page.locator('body')).toContainText('Thanks');
 
-        // Its own nav group, NOT under Custom Reports. The group is a topmenu
-        // item whose subgroup holds the links.
-        const vizGroup = page.locator('.owa_admin_nav_topmenu', { hasText: 'Visualizations' });
-        await expect(vizGroup).toHaveCount(1);
-        await expect(vizGroup).toContainText(name);
+        // Its own section of the rail, NOT under Custom Reports: the section is
+        // current and its column lists the visualization.
+        await expect(page.locator('.owa_rail .owa_railItem.is-current')).toHaveText('Visualizations');
+        await expect(page.locator('#owa_navColumn')).toContainText(name);
 
-        // And it is a DIFFERENT group from Custom Reports, which is the whole
+        // And it is a DIFFERENT section from Custom Reports, which is the whole
         // point of the separation.
         await expect(
-            page.locator('.owa_admin_nav_topmenu', { hasText: 'Custom Reports' })
+            page.locator('.owa_rail').getByRole('link', { name: 'Custom Reports', exact: true })
         ).toHaveCount(1);
 
         // --- the roster lists it, and nothing else does ------------------------

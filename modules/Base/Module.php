@@ -795,7 +795,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsPage(array(
                 'do'             => 'base.optionsGeneral',
-                'title'          => 'Main Configuration',
+                'title'          => 'General',
                 'group'          => 'General',
                 'order'          => 1,
                 'fieldsets'      => array(
@@ -850,9 +850,9 @@ class Module extends \OWA\Core\Module {
         // first of these deletes data, and that should not sit among routine settings.
         $this->registerSettingsPage( array(
                 'do'        => 'base.optionsRetention',
-                'title'     => 'Data Retention',
+                'title'     => 'Data retention',
                 'group'     => 'General',
-                'order'     => 2,
+                'order'     => 6,
                 'fieldsets' => array( 'base.retention' ) )
         );
 
@@ -909,7 +909,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerSettingsPage(array(
                 'do'             => 'base.cubeStatus',
-                'title'          => 'Reporting Cubes',
+                'title'          => 'Reporting cubes',
                 'group'          => 'General',
                 'order'          => 4)
         );
@@ -917,7 +917,7 @@ class Module extends \OWA\Core\Module {
         // Is the background work happening: the scheduler, its jobs, the job queue, the tracker intake.
         $this->registerSettingsPage(array(
                 'do'             => 'base.systemHealth',
-                'title'          => 'System Health',
+                'title'          => 'System health',
                 'group'          => 'General',
                 'order'          => 5)
         );

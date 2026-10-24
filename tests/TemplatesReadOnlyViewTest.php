@@ -17,9 +17,14 @@ use PHPUnit\Framework\TestCase;
  */
 final class TemplatesReadOnlyViewTest extends TestCase
 {
-    /** Variables a template defines by requiring a conf file that assigns them. */
+    /**
+     * Variables a template defines by requiring a conf file that assigns them,
+     * or is handed by the template that includes it.
+     */
     private const LOCALS_FROM_REQUIRE = [
         'install_defaults_entry.php' => ['timezones', 'countryCode2Name'],
+        // report.php and options_hierarchy.php set these before including it.
+        'nav_shell.php' => ['owa_rail', 'owa_column'],
     ];
 
     private const NOT_VIEW_DATA = ['view', '__owa_template_file', 'GLOBALS', '_GET', '_POST', '_SERVER',

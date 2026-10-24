@@ -31,12 +31,34 @@
                 </div>
                 <?php // The Property chooser, on a narrow screen (see report.php). ?>
                 <div class="owa_railSiteControl"></div>
-                <?php include('hierarchy_nav.php');?>
+                <?php
+                    $owa_rail   = $view->navRail( $view->report_nav, (string) $view->nav_property_id,
+                        (array) $view->params, (string) $view->nav_access_site, true );
+                    $owa_column = array( 'title' => 'Settings',
+                        'groups' => $view->settingsColumn( $view->hierarchy_nav, (array) $view->params ) );
+                    include( 'nav_shell.php' );
+                ?>
             </div>
         </TD>
         <TD class="layout_subview owa_hierarchyContent" valign="top">
             <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
             <?php include('hierarchy_breadcrumb.php');?>
+            <?php
+                /*
+                 * A Profile's page: its tag, how it observes and its details
+                 * are tabs of one page, which the column names once.
+                 */
+                $owa_tabs = $view->profileTabs( $view->hierarchy_nav, (array) $view->params );
+            ?>
+            <?php if ( $owa_tabs ):?>
+            <nav class="owa_pageTabs" aria-label="Profile">
+                <?php foreach ( $owa_tabs as $owa_tab ):?>
+                <a class="owa_pageTab<?php echo $owa_tab['current'] ? ' is-current' : '';?>"
+                   <?php echo $owa_tab['current'] ? 'aria-current="page"' : '';?>
+                   href="<?php $view->safeHref( $owa_tab['href'] );?>"><?php $view->out( $owa_tab['label'] );?></a>
+                <?php endforeach;?>
+            </nav>
+            <?php endif;?>
             <?php echo $view->subview;?>
         </TD>
     </TR>

@@ -9,7 +9,7 @@ const { execSync } = require('child_process');
  * This file's production moved from the PHP-CLI `cmd=build` controller
  * (base.build / owa_buildController, formerly driven by base/module.php
  * registerBuildPackages) to webpack (reportingCssConfig in webpack.config.js):
- *   - The six source CSS files are the webpack entry, in the SAME cascade order
+ *   - The seven source CSS files are the webpack entry, in the SAME cascade order
  *     the PHP package used: jquery-ui, ui.jqgrid, chosen, owa, owa.admin, owa.report.
  *   - mini-css-extract-plugin emits the combined file under the SAME name to the
  *     SAME directory (modules/Base/css/), and css-loader runs with url:false so
@@ -19,7 +19,7 @@ const { execSync } = require('child_process');
  *   - webpack-remove-empty-scripts drops the stub .js a CSS-only entry produces.
  *   - The output is NOT minified (no -min suffix), matching the retired concat.
  *
- * These tests pin that contract: the six sources exist, the config drives the CSS
+ * These tests pin that contract: the seven sources exist, the config drives the CSS
  * through mini-css-extract (not the PHP concat), the PHP build package is gone, and
  * the built artifact carries each source's signature rule with url()s intact.
  */
@@ -36,24 +36,24 @@ describe('reporting CSS build integrity', () => {
     const artifactPath = path.join(publicCssDir, 'owa.reporting-css-combined.css');
     const modulePhpPath = path.join(repoRoot, 'modules/Base/Module.php');
 
-    // The six source stylesheets, in the cascade order the entry lists them.
+    // The seven source stylesheets, in the cascade order the entry lists them.
     // Order is load-bearing: later files intentionally override earlier ones.
     const CSS_SOURCES = [
         'jquery-ui.css', 'ui.jqgrid.css', 'chosen.css',
-        'owa.css', 'owa.admin.css', 'owa.report.css',
+        'owa.css', 'owa.admin.css', 'owa.report.css', 'owa.shell.css',
     ];
 
     // The reporting-css package as declared in base's build manifest.
     const cssPkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
         .packages.find((p) => p.name === 'owa.reporting-css-combined.css');
 
-    test('all six source stylesheets exist', () => {
+    test('all seven source stylesheets exist', () => {
         for (const f of CSS_SOURCES) {
             expect(fs.existsSync(path.join(cssSrcDir, f))).toBe(true);
         }
     });
 
-    test('the build manifest lists the six sources in cascade order', () => {
+    test('the build manifest lists the seven sources in cascade order', () => {
         // The entry (source list + order) now lives in base/build.manifest.json,
         // discovered by webpack.config.js. Order is load-bearing.
         expect(cssPkg).toBeDefined();
@@ -104,7 +104,7 @@ describe('reporting CSS build integrity', () => {
             expect(css.length).toBeGreaterThan(40 * 1024);
         });
 
-        test('a signature rule from each source is present (all six concatenated)', () => {
+        test('a signature rule from each source is present (all seven concatenated)', () => {
             if (css === null) return;
             // One distinctive token per source proves it made it into the combine.
             expect(css).toMatch(/\.ui-datepicker/);        // jquery-ui.css
@@ -112,6 +112,7 @@ describe('reporting CSS build integrity', () => {
             expect(css).toMatch(/\.chosen-container/);     // chosen.css
             expect(css).toMatch(/#owa/);                   // owa.css (OWA app ids)
             expect(css).toMatch(/\.ui-selectmenu-button/); // bundled selectmenu (jquery-ui 1.13)
+            expect(css).toMatch(/\.owa_navShell/);        // owa.shell.css
         });
 
         test('url() asset references are passed through verbatim (url:false)', () => {

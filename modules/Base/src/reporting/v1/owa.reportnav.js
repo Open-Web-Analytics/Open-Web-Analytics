@@ -10,6 +10,9 @@
  *
  *   <div class="owa_reportNavRail" id="owa_reportNavRail">...</div>
  *   <button class="owa_reportNavToggle" aria-controls="owa_reportNavRail">...</button>  (header.php)
+ *
+ * At full width the chevron at the top of the column beside the rail hides
+ * the column, and the choice is remembered (nav_shell.php).
  */
 
 export const NARROW = '(max-width: 900px)';
@@ -109,7 +112,66 @@ export function handleClick( target, rail ) {
     return false;
 }
 
+/** Where the column's hidden state is remembered (nav_shell.php reads it before the first paint). */
+export const COLUMN_KEY = 'owa_navColumnHidden';
+
+/**
+ * Hide or show the column beside the rail, and remember the choice. Storage
+ * can be refused (a private window, blocked site data); the column still
+ * hides, just not for the next page.
+ *
+ * @param {HTMLElement} shell .owa_navShell
+ * @param {boolean} hidden
+ */
+export function setColumnHidden( shell, hidden ) {
+
+    shell.classList.toggle( 'is-collapsed', hidden );
+
+    const toggle = shell.querySelector( '.owa_navColumnToggle' );
+
+    if ( toggle ) {
+
+        const label = hidden ? 'Show this column' : 'Hide this column';
+
+        toggle.setAttribute( 'aria-expanded', hidden ? 'false' : 'true' );
+        toggle.setAttribute( 'aria-label', label );
+        toggle.setAttribute( 'title', label );
+    }
+
+    try {
+        if ( hidden ) {
+            window.localStorage.setItem( COLUMN_KEY, '1' );
+        } else {
+            window.localStorage.removeItem( COLUMN_KEY );
+        }
+    } catch ( e ) { /* not remembered */ }
+}
+
+function bindColumn() {
+
+    const shell = document.getElementById( 'owa_navShell' );
+    const toggle = shell && shell.querySelector( '.owa_navColumnToggle' );
+
+    if ( ! toggle ) {
+        return;
+    }
+
+    // The state the page was painted in, set before the first paint.
+    const hidden = shell.classList.contains( 'is-collapsed' );
+
+    toggle.setAttribute( 'aria-expanded', hidden ? 'false' : 'true' );
+    toggle.setAttribute( 'aria-label', hidden ? 'Show this column' : 'Hide this column' );
+    toggle.setAttribute( 'title', hidden ? 'Show this column' : 'Hide this column' );
+
+    toggle.addEventListener( 'click', function () {
+
+        setColumnHidden( shell, ! shell.classList.contains( 'is-collapsed' ) );
+    } );
+}
+
 function bind() {
+
+    bindColumn();
 
     const rail = document.getElementById( 'owa_reportNavRail' );
 

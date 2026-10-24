@@ -14,7 +14,7 @@
  * a class name.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, loginAs, adminLogin, logoOrange } = require('./fixtures');
+const { FIXTURE, loginAs, adminLogin } = require('./fixtures');
 
 const toggle = '#owa_userMenuToggle';
 const panel  = '#owa_userMenuPanel';
@@ -105,44 +105,28 @@ test.describe('the top bar', () => {
     });
 
     /**
-     * WHAT THE BAR OFFERS.
-     *
-     * "Reporting" is Analytics. Documentation and Report a Bug are no longer
-     * here: both leave the application for GitHub, so they moved into the help
-     * menu rather than spending half the bar navigating away from it.
+     * WHAT THE BAR OFFERS: no sections. The report sections and Settings are
+     * the rail (nav_shell.php); Documentation, Report a Bug and Donate leave
+     * the application, so they are in the help menu.
      */
-    test('the bar offers Analytics, Settings and Donate', async ({ page }) => {
-        const links = page.locator('.owa_navigation li a');
-
-        // Icons, each named by its aria-label and its tooltip.
-        expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute('aria-label'))))
-            .toEqual(['Analytics', 'Settings', 'Donate']);
-        expect(await links.evaluateAll((as) => as.map((a) => a.getAttribute('title'))))
-            .toEqual(['Analytics', 'Settings', 'Donate']);
-        expect(await links.evaluateAll((as) => as.map((a) => a.querySelector('i').className)))
-            .toEqual(['fas fa-chart-line', 'fas fa-cog', 'fas fa-hands-helping']);
-
-        // Analytics still goes where Reporting went: base.reportingHome, which
-        // resolves to the dashboard, so the landing page is what to assert.
-        await page.getByRole('link', { name: 'Analytics', exact: true }).click();
-        await page.waitForLoadState('networkidle');
-
-        expect(page.url()).toContain('reportId=dashboard');
-        await expect(page.locator('.owa_reportTitle')).toContainText('Dashboard');
+    test('the bar has no section links', async ({ page }) => {
+        await expect(page.locator('#owa_header .owa_navigation')).toHaveCount(0);
+        await expect(page.locator('#owa_header').getByRole('link', { name: 'Settings' })).toHaveCount(0);
+        await expect(page.locator('.owa_rail').getByRole('link', { name: 'Settings', exact: true })).toBeVisible();
     });
 
     /**
      * EVERYTHING SITS ON THE LOGO'S CENTRE LINE.
      *
      * Every item in this header is floated, and a float takes its own height
-     * and sits at the top of the content box -- so the logo (55px), the links
-     * (36px) and the round buttons (40px) each started at the same top edge and
+     * and sits at the top of the content box -- so the logo (55px) and the
+     * round buttons (40px) each started at the same top edge and
      * ended in three different places, none of them centred on any other.
      *
      * Measured, because that is what the defect was: a class name cannot say
      * whether two boxes share a centre line.
      */
-    test('the logo, the links and the buttons share one centre line', async ({ page }) => {
+    test('the logo and the buttons share one centre line', async ({ page }) => {
         const middles = await page.evaluate(() => {
             const mid = (selector) => {
                 const el = document.querySelector(selector);
@@ -158,7 +142,6 @@ test.describe('the top bar', () => {
 
             return {
                 logo: mid('.owa_logo'),
-                link: mid('.owa_navigation li a'),
                 help: mid('.owa_helpMenu'),
                 account: mid('.owa_userMenu'),
                 bell: mid('.owa_notificationBell'),
@@ -191,7 +174,7 @@ test.describe('the top bar', () => {
         await expect(page.locator('#owa_helpMenuPanel')).toBeVisible();
 
         expect(await page.locator('#owa_helpMenuPanel a').allInnerTexts())
-            .toEqual(['Documentation', 'Report a Bug', 'GitHub']);
+            .toEqual(['Documentation', 'Report a Bug', 'GitHub', 'Donate']);
 
         // They leave the application, so they open away from it.
         for (const link of await page.locator('#owa_helpMenuPanel a').all()) {
@@ -353,7 +336,7 @@ test.describe('the top bar', () => {
 
             await expect(page.locator('#owa_helpMenuPanel')).toBeVisible();
             expect(await page.locator('#owa_helpMenuPanel a').allInnerTexts())
-                .toEqual(['Documentation', 'Report a Bug', 'GitHub']);
+                .toEqual(['Documentation', 'Report a Bug', 'GitHub', 'Donate']);
         });
 
         /*
@@ -366,42 +349,12 @@ test.describe('the top bar', () => {
          */
     });
 
-    /**
-     * THE LINKS ARE SPACED BY ONE RULE.
-     *
-     * Every link was a 9em box whatever its text, so "Donate" sat marooned in
-     * the middle of a wide one while "Documentation" filled its own -- the gaps
-     * between the words were all different widths. Sized by their text with one
-     * padding value, the gaps are equal and the widths are not.
-     */
-    test('the nav icons are one size and evenly spaced', async ({ page }) => {
-        const geometry = await page.evaluate(() => {
-            const links = [...document.querySelectorAll('.owa_navigation li a')];
-            const gaps  = [];
-
-            for (let i = 1; i < links.length; i++) {
-                gaps.push(Math.round(links[i].getBoundingClientRect().left -
-                                     links[i - 1].getBoundingClientRect().right));
-            }
-
-            return {
-                count: links.length,
-                gaps,
-                widths: links.map((l) => Math.round(l.getBoundingClientRect().width)),
-            };
-        });
-
-        expect(geometry.count).toBeGreaterThan(2);
-        expect(new Set(geometry.gaps).size).toBe(1);
-        expect(new Set(geometry.widths).size).toBe(1);
-    });
-
-    /** The Property chooser is in the bar, right of the logo and left of the separator. */
-    test('the Property chooser sits between the logo and the icons', async ({ page }) => {
+    /** The Property chooser is in the bar, right of the logo and left of the controls. */
+    test('the Property chooser sits between the logo and the controls', async ({ page }) => {
         const x = await page.evaluate(() => ({
             logo: document.querySelector('.owa_logo').getBoundingClientRect().right,
             chooser: document.querySelector('#owa_header #owa_siteControl')?.getBoundingClientRect(),
-            nav: document.querySelector('.owa_navigation').getBoundingClientRect().left,
+            nav: document.querySelector('.owa_helpMenu').getBoundingClientRect().left,
             inRail: !!document.querySelector('.owa_railSiteControl #owa_siteControl'),
         }));
 
@@ -418,7 +371,7 @@ test.describe('the top bar', () => {
             const css  = getComputedStyle(el, '::before');
             const box  = el.getBoundingClientRect();
             const logo = document.querySelector('.owa_logo').getBoundingClientRect();
-            const next = document.querySelector('#owa_header #owa_siteControl, .owa_navigation li a').getBoundingClientRect();
+            const next = document.querySelector('#owa_header #owa_siteControl').getBoundingClientRect();
 
             return {
                 width: parseFloat(css.width),
@@ -430,56 +383,6 @@ test.describe('the top bar', () => {
         expect(rule.width).toBe(1);
         expect(rule.ratio).toBeCloseTo(0.75, 2);
         expect(rule.between).toBe(true);
-    });
-
-    /** Each icon's glyph is centred on the same line as the pills on the right. */
-    test('the icons are vertically centred with the other pills', async ({ page }) => {
-        const centres = await page.evaluate(() => {
-            const mid = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
-
-            return {
-                pill: mid(document.querySelector('.owa_helpMenuToggle')),
-                glyphs: [...document.querySelectorAll('.owa_navigation li a i')].map(mid),
-                heights: [...document.querySelectorAll('.owa_navigation li a')].map((a) => a.getBoundingClientRect().height),
-            };
-        });
-
-        for (const g of centres.glyphs) {
-            expect(Math.abs(g - centres.pill)).toBeLessThan(1.5);
-        }
-        expect(new Set(centres.heights)).toEqual(new Set([40]));
-    });
-
-    /** One dark grey; the logo's orange for the section you are in and on hover. */
-    test('the icons are grey, and orange when current or hovered', async ({ page }) => {
-        const colours = () => page.locator('.owa_navigation li a').evaluateAll((as) =>
-            as.map((a) => [a.getAttribute('aria-label'), getComputedStyle(a).color, a.getAttribute('aria-current')]));
-
-        const GREY = 'rgb(80, 80, 80)';
-        const ORANGE = logoOrange();
-
-        // A report: Analytics is current.
-        expect(await colours()).toEqual([
-            ['Analytics', ORANGE, 'page'], ['Settings', GREY, null], ['Donate', GREY, null]]);
-
-        await page.getByRole('link', { name: 'Donate', exact: true }).hover();
-        await expect.poll(async () => (await colours())[2][1]).toBe(ORANGE);
-
-        // A settings screen: Settings is current.
-        await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
-        await page.mouse.move(0, 400);
-        expect(await colours()).toEqual([
-            ['Analytics', GREY, null], ['Settings', ORANGE, 'page'], ['Donate', GREY, null]]);
-    });
-
-    /**
-     * The last item used to be an unclosed <LI>, which nested the rest of the
-     * bar inside it.
-     */
-    test('every nav item is closed', async ({ page }) => {
-        const nested = await page.locator('.owa_navigation li li').count();
-
-        expect(nested).toBe(0);
     });
 });
 

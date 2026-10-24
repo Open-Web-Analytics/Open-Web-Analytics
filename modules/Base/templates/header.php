@@ -30,22 +30,14 @@
      &nbsp
     <?php
         /*
-         * nav_header: a module adds, removes or reorders entries (see
-         * Core\Navigation). Documentation and Report a Bug are in the help menu
-         * on the right: both leave the application for GitHub.
+         * nav_header: a module adds entries here (see Core\Navigation). OWA
+         * has none of its own: its sections and Settings are the rail
+         * (nav_shell.php), and Documentation, Report a Bug and Donate are in
+         * the help menu on the right, since each leaves the application.
          */
-        $owa_header_links = \OWA\Core\Navigation::links( 'nav_header', array(
-            array( 'id' => 'analytics', 'label' => 'Analytics', 'capability' => 'view_site_list',
-                   'icon' => 'fas fa-chart-line',
-                   'href' => $view->makeLink( array( 'do' => 'base.reportingHome' ) ) ),
-            array( 'id' => 'settings', 'label' => 'Settings', 'capability' => 'edit_settings',
-                   'icon' => 'fas fa-cog',
-                   'href' => $view->makeLink( array( 'do' => 'base.optionsGeneral' ) ) ),
-            array( 'id' => 'donate', 'label' => 'Donate',
-                   'icon' => 'fas fa-hands-helping',
-                   'href' => 'https://github.com/sponsors/padams' ),
-        ) );
+        $owa_header_links = \OWA\Core\Navigation::links( 'nav_header', array() );
     ?>
+    <?php if ( $owa_header_links ):?>
     <span class="owa_navigation">
         <UL>
             <?php foreach ( $owa_header_links as $owa_link ):?>
@@ -64,6 +56,7 @@
             <?php endforeach;?>
         </UL>
     </span>
+    <?php endif;?>
     <?php $cu = $view->getCurrentUser(); ?>
 <?php if ( \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ): ?>
     <?php
@@ -395,6 +388,8 @@
                        'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues' ),
                 array( 'id' => 'github', 'label' => 'GitHub',
                        'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics' ),
+                array( 'id' => 'donate', 'label' => 'Donate',
+                       'href' => 'https://github.com/sponsors/padams' ),
             ) ) as $owa_link ):?>
             <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
                href="<?php $view->safeHref( $owa_link['href'] );?>"><?php $view->out( $owa_link['label'] );?></a>

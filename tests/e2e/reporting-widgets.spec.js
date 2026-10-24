@@ -214,7 +214,7 @@ test.describe('every configured report renders in a browser', () => {
             ).toHaveCount(0);
 
             await expect(
-                page.locator('.owa_admin_nav_topmenu', { hasText: 'Visualizations' })
+                page.locator('.owa_rail').getByRole('link', { name: 'Visualizations', exact: true })
             ).toHaveCount(1);
         });
     });
@@ -889,7 +889,8 @@ test.describe('the report grid gives every widget a usable width', () => {
         test.setTimeout(120_000);
 
         await login(page);
-        await page.setViewportSize({ width: 1600, height: 1400 });
+        // 1600 with the old 200px nav column; the rail and column are 336px.
+        await page.setViewportSize({ width: 1736, height: 1400 });
 
         const circles = async (reportId) => {
 
@@ -959,10 +960,13 @@ test.describe('the report grid gives every widget a usable width', () => {
          * still a real difference, and still enough for the same-circle
          * assertion below to be about something: at equal widths it would be
          * comparing a number to itself.
+         *
+         * 1.1, not 1.2: the dashboard opens no nav column, so its row is 248px
+         * wider than Traffic's and its quarter is closer to Traffic's third.
          */
         expect(wide[0].widget,
             'the wide pie is no longer in a wider widget, so this proves nothing')
-            .toBeGreaterThan(narrow[0].widget * 1.2);
+            .toBeGreaterThan(narrow[0].widget * 1.1);
 
         // Same circle in all five, within a pixel of rounding.
         const all = [...narrow, ...wide].map((p) => p.circle);
@@ -1278,7 +1282,8 @@ test.describe('the report grid gives every widget a usable width', () => {
     test('a quarter-width widget is promoted once a quarter stops fitting', async ({ page }) => {
         await login(page);
 
-        await page.setViewportSize({ width: 1280, height: 1000 });
+        // 1280 with the old 200px nav column; the rail and column are 336px.
+        await page.setViewportSize({ width: 1416, height: 1000 });
 
         await page.goto(
             `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`

@@ -7,47 +7,6 @@ OWA.items['<?php echo $view->dom_id;?>'].max_page_num = "<?php $view->out( $view
 OWA.items['<?php echo $view->dom_id;?>'].max_page_num = "<?php $view->out( $view->getValue( 'more_pages', 'pagination' ), false );?>";
 OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson($view->params);?>;
 
-<?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
-// Bind event handlers
-jQuery(document).ready(function(){   
-	
-	
-	/*
-	 * Open the group holding the current report.
-	 *
-	 * .owa_admin_nav_subgroup is display:none in CSS, so this is the only thing
-	 * that opens one -- if no link is marked current the whole nav renders
-	 * collapsed on every page load, which is exactly what it did while the
-	 * current-link check could not see a reportId.
-	 *
-	 * The group is the one whose own report is current (.is-current) or that
-	 * holds it (.has-current). Scoped to the TOP MENU item: the current
-	 * report's own line carries .is-current too.
-	 *
-	 * show(), not toggle(): the intent is "open the group I am in", and a toggle
-	 * would close it in any state where it had already been opened.
-	 */
-	var owaCurrentGroup = jQuery('.owa_admin_nav_topmenu_item.is-current, .owa_admin_nav_topmenu_item.has-current');
-
-	if ( owaCurrentGroup.next('.owa_admin_nav_subgroup').length ) {
-
-		owaCurrentGroup.next('.owa_admin_nav_subgroup').show();
-		owaCurrentGroup.addClass('is-open')
-			.children('.owa_admin_nav_topmenu_toggle').attr('aria-expanded', 'true');
-	}
-
-    // A group's chevron opens and closes its reports.
-    jQuery('.owa_admin_nav_topmenu_toggle').click(function () {
-
-        var item = jQuery(this).parent();
-        var open = ! item.siblings('.owa_admin_nav_subgroup').toggle().is(':hidden');
-
-        item.toggleClass('is-open', open);
-        jQuery(this).attr('aria-expanded', open ? 'true' : 'false');
-    });
-    
-});
-<?php endif;?>
 </script>
 
 <div id="<?php echo $view->dom_id;?>" class="owa_reportContainer">
@@ -87,9 +46,15 @@ jQuery(document).ready(function(){
                          */
                     ?>
                     <div class="owa_railSiteControl"></div>
-                    <div id="owa_reportNavPanel">
-                        <?php echo $view->makeNavigationMenu($view->top_level_report_nav, $view->currentPropertyId, $view->params ?? array(), $view->currentSiteId);?>
-                    </div>
+                    <?php
+                        // Without a Property there is nothing for its links to be of.
+                        if ( (string) $view->currentPropertyId !== '' ):
+                        $owa_rail   = $view->navRail( $view->top_level_report_nav, (string) $view->currentPropertyId,
+                            $view->params ?? array(), (string) $view->currentSiteId );
+                        $owa_column = \OWA\Core\Template::reportColumn( $owa_rail );
+                        include( 'nav_shell.php' );
+                        endif;
+                    ?>
                 </div>
             </TD>
             <?php endif;?>

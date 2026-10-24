@@ -182,7 +182,7 @@ test.describe('on a phone', () => {
         await expect(rail).toBeInViewport();
         await expect(toggle).toHaveAttribute('aria-expanded', 'true');
         await expect(toggle).toHaveAttribute('aria-label', 'Hide the menu');
-        await expect(rail.locator('.owa_hierarchyNav').getByRole('link', { name: 'Modules', exact: true })).toBeVisible();
+        await expect(rail.locator('.owa_navColumn').getByRole('link', { name: 'Modules', exact: true })).toBeVisible();
 
         await rail.locator('.owa_reportNavClose').click();
         await expect(rail).not.toBeInViewport();
@@ -191,7 +191,7 @@ test.describe('on a phone', () => {
         await toggle.click();
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            rail.locator('.owa_hierarchyNav').getByRole('link', { name: 'Modules', exact: true }).click(),
+            rail.locator('.owa_navColumn').getByRole('link', { name: 'Modules', exact: true }).click(),
         ]);
         expect(page.url()).toContain('base.optionsModules');
         await expect(page.locator('#owa_reportNavRail')).not.toBeInViewport();
@@ -200,10 +200,10 @@ test.describe('on a phone', () => {
     test('the header keeps to one row', async ({ page }) => {
         await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
 
-        const nav = await page.locator('#owa_header .owa_navigation').boundingBox();
+        const nav = await page.locator('#owa_header .owa_reportNavToggle').boundingBox();
         for (const sel of ['.owa_helpMenuToggle', '.owa_notificationToggle', '.owa_userMenuToggle']) {
             const box = await page.locator(`#owa_header ${sel}`).boundingBox();
-            expect(box.y, `${sel} wrapped below the links`).toBeLessThan(nav.y + nav.height);
+            expect(box.y, `${sel} wrapped below the menu button`).toBeLessThan(nav.y + nav.height);
             expect(box.x + box.width).toBeLessThanOrEqual(390);
         }
     });
@@ -240,7 +240,7 @@ test.describe('at desktop width', () => {
         await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
         await expect(page.locator('.owa_reportNavToggle')).toBeHidden();
         await expect(page.locator('#owa_reportNavRail')).toBeInViewport();
-        await expect(page.locator('.owa_hierarchyNav').getByRole('link', { name: 'Modules', exact: true })).toBeVisible();
+        await expect(page.locator('.owa_navColumn').getByRole('link', { name: 'Modules', exact: true })).toBeVisible();
 
         await page.goto(report('dashboard'), { waitUntil: 'networkidle' });
         const floor = await page.locator('.owa_widget-grid-card').first().evaluate((c) => getComputedStyle(c).minHeight);
