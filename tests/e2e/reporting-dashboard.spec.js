@@ -81,7 +81,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(names.locator('.owa_gridTable thead')).toContainText('Event Name');
         await expect(names.locator('.owa_gridTable tbody')).toContainText('page_view');
 
-        await expect(names.locator('xpath=..').locator('.owa_reportSectionHeader')).toHaveText('Events');
+        await expect(names.locator('xpath=..').locator('.owa_reportSectionTitle')).toHaveText('Events');
 
         const more = names.locator('xpath=..').locator('.owa_moreLinks a');
         await expect(more).toHaveCount(1);

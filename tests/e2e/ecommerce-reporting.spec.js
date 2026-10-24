@@ -84,9 +84,9 @@ test.describe('e-commerce reporting', () => {
     });
 
     /**
-     * The selected tab is painted the same blue the trend beside it draws its
-     * total in. jQuery-UI's base theme paints an active widget #007fff, and two
-     * blues a few pixels apart read as an accident rather than a choice.
+     * The selected tab is underlined in the same blue the trend beside it draws
+     * its total in. jQuery-UI's base theme paints an active widget #007fff, and
+     * two blues a few pixels apart read as an accident rather than a choice.
      *
      * #1874CD is OWA.areaChart's totalColor -- read off the chart rather than
      * written down here, so the two cannot drift apart without this failing.
@@ -104,13 +104,14 @@ test.describe('e-commerce reporting', () => {
         const active = page.locator('#report-tabs > .report-tabs-nav-list li.ui-tabs-active');
         await expect(active).toHaveCount(1);
 
-        const bg = await active.evaluate(el => getComputedStyle(el).backgroundColor);
-        expect(bg).toBe('rgb(24, 116, 205)');
+        // Underlined in that blue, and its label in it too -- .ui-state-active
+        // sets a colour on the LI and the anchor inside it carries its own, so
+        // both have to be said.
+        const rule = await active.evaluate(el => getComputedStyle(el).borderBottomColor);
+        expect(rule).toBe('rgb(24, 116, 205)');
 
-        // White on that blue -- .ui-state-active sets a colour on the LI and the
-        // anchor inside it carries its own, so both have to be said.
         const fg = await active.locator('a').evaluate(el => getComputedStyle(el).color);
-        expect(fg).toBe('rgb(255, 255, 255)');
+        expect(fg).toBe('rgb(24, 116, 205)');
     });
 
     test('the tabbed and untabbed report families stay as they are', async ({ page }) => {

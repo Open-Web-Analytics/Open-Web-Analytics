@@ -134,9 +134,9 @@ OWA.resultSetExplorer = function(dom_id, options) {
         defaultView: 'grid',
         areaChart: {
             series:[],
-            showDots: true,
+            showDots: false,
             showLegend: true,
-            lineWidth: 4
+            lineWidth: 2.5
         },
         pieChart: {
             metric: '',
@@ -157,8 +157,9 @@ OWA.resultSetExplorer = function(dom_id, options) {
             showRowNumbers: true,
             /*
              * A card: one metric against one dimension at a quarter of the
-             * row (report_widgets.php). No row numbers, no Total row and no
-             * shares, which would take the room its one value column has.
+             * row (report_widgets.php), drawn as a ranked list -- each row's
+             * value with a bar under it against the largest. No row numbers,
+             * no Total row and no shares.
              */
             compact: false,
             excludeColumns: [],
@@ -1575,6 +1576,7 @@ OWA.dataGrid.prototype = {
         }
 
         var $table = jQuery( '<table class="owa_gridTable"></table>' )
+            .toggleClass( 'is-compact', !! this.options.compact )
             .append( this.head( rs ) )
             .append( this.body( rs ) );
 
@@ -1993,11 +1995,31 @@ OWA.dataGrid.prototype = {
             $tbody.append( $total );
         }
 
+        /*
+         * A card's bars: each row's first metric against the largest on the
+         * page, in a row of its own under it so the bar can run the width of
+         * the card.
+         */
+        var barMetric = null;
+        var barMax    = 0;
+
+        if ( this.options.compact ) {
+
+            barMetric = columns.filter( function ( c ) { return c.kind === 'metric'; } )[ 0 ] || null;
+
+            ( rs.resultsRows || [] ).forEach( function ( row ) {
+                var v = barMetric && row[ barMetric.name ] ? parseFloat( row[ barMetric.name ].value ) : NaN;
+                if ( ! isNaN( v ) && v > barMax ) {
+                    barMax = v;
+                }
+            } );
+        }
+
         ( rs.resultsRows || [] ).forEach( function ( row, i ) {
 
             var $tr = jQuery( '<tr class="owa_gridRow"></tr>' );
 
-            if ( i % 2 === 1 ) {
+            if ( i % 2 === 1 && ! that.options.compact ) {
                 $tr.addClass( 'is-alt' );
             }
 
@@ -2042,6 +2064,17 @@ OWA.dataGrid.prototype = {
             } );
 
             $tbody.append( $tr );
+
+            if ( barMetric && barMax > 0 ) {
+
+                var v = row[ barMetric.name ] ? parseFloat( row[ barMetric.name ].value ) : 0;
+                var w = Math.max( 0, Math.min( 100, ( v || 0 ) / barMax * 100 ) );
+
+                $tbody.append( jQuery( '<tr class="owa_gridBarRow" aria-hidden="true"></tr>' )
+                    .append( jQuery( '<td></td>' ).attr( 'colspan', columns.length )
+                        .append( jQuery( '<span class="owa_gridBar"></span>' )
+                            .append( jQuery( '<span class="owa_gridBarFill"></span>' ).css( 'width', w.toFixed( 1 ) + '%' ) ) ) ) );
+            }
         } );
 
         return $tbody;

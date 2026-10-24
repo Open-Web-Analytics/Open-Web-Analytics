@@ -220,13 +220,13 @@ test.describe('on a phone', () => {
         expect(field.x + field.width, 'the field runs past the card').toBeLessThanOrEqual(card.x + card.width);
     });
 
-    test('a card on its own row is as tall as its content', async ({ page }) => {
+    test('a card is as tall as its content', async ({ page }) => {
         await page.goto(report('dashboard'), { waitUntil: 'networkidle' });
 
         const floors = await page.locator('.owa_widget-grid-card').evaluateAll(
             (cards) => cards.map((c) => getComputedStyle(c).minHeight));
         expect(floors.length).toBeGreaterThan(0);
-        expect(new Set(floors)).toEqual(new Set(['0px']));
+        expect(new Set(floors)).toEqual(new Set(['auto']));
     });
 });
 
@@ -234,16 +234,12 @@ test.describe('at desktop width', () => {
 
     test.use({ viewport: { width: 1280, height: 900 } });
 
-    test('a settings screen keeps its left column and cards keep their floor', async ({ page }) => {
+    test('a settings screen keeps its left column', async ({ page }) => {
         await adminLogin(page);
 
         await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
         await expect(page.locator('.owa_reportNavToggle')).toBeHidden();
         await expect(page.locator('#owa_reportNavRail')).toBeInViewport();
         await expect(page.locator('.owa_navColumn').getByRole('link', { name: 'Modules', exact: true })).toBeVisible();
-
-        await page.goto(report('dashboard'), { waitUntil: 'networkidle' });
-        const floor = await page.locator('.owa_widget-grid-card').first().evaluate((c) => getComputedStyle(c).minHeight);
-        expect(floor).toBe('320px');
     });
 });

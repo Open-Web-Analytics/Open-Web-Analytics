@@ -256,7 +256,7 @@ test.describe('every configured report renders in a browser', () => {
                 await expect(widget, `${container} is not in a pie widget`)
                     .toHaveCount(1, { timeout: 20_000 });
 
-                await expect(widget.locator('.owa_reportSectionHeader'))
+                await expect(widget.locator('.owa_reportSectionTitle'))
                     .toHaveText(title);
             }
 
@@ -771,20 +771,10 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
-     * A CARD IS A PANEL, and stays one when the data is thin.
-     *
-     * A card and a pie are bounded things you read at a glance and then follow
-     * to the full report -- so they carry a border, a background and a floor
-     * under their height. A full-width table or trend is not that; it is the
-     * page itself, and a box round it would be a box round everything.
-     *
-     * The FLOOR is the part a fixture cannot fake convincingly, so it is the
-     * part asserted hardest. align-items:stretch already makes a row uniform,
-     * but a row holding only short widgets was still short: the dashboard's
-     * Top Content has four rows in it, and drew a panel barely taller than its
-     * own heading. A card is the same object whether or not the data filled it.
+     * A widget is a section of the page, not a panel: no border, no background
+     * of its own, and its full-report link on its heading's line.
      */
-    test('a card and a pie are panels with a floor under their height', async ({ page }) => {
+    test('widgets are sections, with no panel round them', async ({ page }) => {
         await login(page);
         await page.setViewportSize({ width: 1600, height: 1500 });
 
@@ -795,74 +785,44 @@ test.describe('the report grid gives every widget a usable width', () => {
         );
 
         await page.waitForSelector('.owa_widget-pie canvas', { timeout: 20_000 });
-        await page.waitForTimeout(1200);
 
         const widgets = await page.evaluate(() =>
             [...document.querySelectorAll('.owa_reportGridItem')].map((el) => {
 
                 const cs = getComputedStyle(el);
+                const head = el.querySelector('.owa_reportSectionHeader');
+                const more = el.querySelector('.owa_moreLinks');
 
                 return {
                     type: (el.className.match(/owa_widget-([a-z-]+)/) || [])[1] || '',
-                    height: Math.round(el.getBoundingClientRect().height),
                     border: cs.borderTopWidth,
-                    radius: parseInt(cs.borderTopLeftRadius, 10),
-                    padding: parseInt(cs.paddingTop, 10),
                     background: cs.backgroundColor,
+                    // How far the link's middle is from the heading's: 0 on one line.
+                    linkOffset: head && more
+                        ? Math.abs((head.getBoundingClientRect().top + head.getBoundingClientRect().bottom)
+                            - (more.getBoundingClientRect().top + more.getBoundingClientRect().bottom)) / 2
+                        : null,
+                    linkInHead: !! (head && more && head.contains(more)),
                 };
             }));
 
-        const cards = widgets.filter((w) =>
-            ['grid-card', 'trend-card', 'pie'].includes(w.type));
-
-        const plain = widgets.filter((w) => w.type === 'grid');
-
-        // The fixture has to contain both kinds or this proves nothing.
-        expect(cards.length).toBeGreaterThanOrEqual(3);
-        expect(plain.length).toBeGreaterThanOrEqual(1);
-
-        for (const c of cards) {
-
-            expect(c.border, `${c.type} has no border`).toBe('1px');
-            expect(c.radius, `${c.type} has square corners`).toBeGreaterThan(0);
-            expect(c.background, `${c.type} is not explicitly white`).toBe('rgb(255, 255, 255)');
-
-            // Content must not abut the edge.
-            expect(c.padding, `${c.type} has no padding inside its border`)
-                .toBeGreaterThanOrEqual(10);
-
-            expect(c.height, `${c.type} is below the floor`).toBeGreaterThanOrEqual(320);
+        // The fixture has to contain each kind or this proves nothing.
+        for (const type of ['grid', 'grid-card', 'trend-card', 'pie']) {
+            expect(widgets.filter((w) => w.type === type).length, `no ${type} widget`).toBeGreaterThanOrEqual(1);
         }
 
-        // ...and a full-width table is a panel too, so a report reads as a set
-        // of panels rather than two kinds of thing.
-        for (const p of plain) {
-            expect(p.border, 'a grid did not get the panel border').toBe('1px');
-            expect(p.height, 'a grid is below the floor').toBeGreaterThanOrEqual(320);
+        for (const w of widgets) {
+            expect(w.border, `${w.type} has a border`).toBe('0px');
+            expect(w.background, `${w.type} has a background`).toBe('rgba(0, 0, 0, 0)');
         }
 
-        /*
-         * The FOOTER sits on the panel's floor. A panel has a floor under its
-         * height, so a four-row table leaves space below it -- and the pager
-         * and the "View Full Report" link were landing against the last row
-         * with the rest of the panel empty underneath.
-         */
-        const footers = await page.evaluate(() =>
-            [...document.querySelectorAll('.owa_reportGridItem')]
-                .map((el) => {
-                    const more = el.querySelector('.owa_moreLinks');
-                    if (!more) { return null; }
-                    return Math.round(el.getBoundingClientRect().bottom
-                        - more.getBoundingClientRect().bottom);
-                })
-                .filter((g) => g !== null));
+        const linked = widgets.filter((w) => w.linkOffset !== null);
 
-        expect(footers.length).toBeGreaterThanOrEqual(2);
+        expect(linked.length).toBeGreaterThanOrEqual(2);
 
-        // Within the panel's own padding of the bottom edge.
-        for (const gap of footers) {
-            expect(gap, `a "View Full Report" link is ${gap}px off the floor`)
-                .toBeLessThanOrEqual(20);
+        for (const w of linked) {
+            expect(w.linkInHead, `${w.type}'s full-report link is not in its heading`).toBe(true);
+            expect(w.linkOffset, `${w.type}'s full-report link is off the heading's line`).toBeLessThan(6);
         }
     });
 
@@ -1121,6 +1081,10 @@ test.describe('the report grid gives every widget a usable width', () => {
 
         await login(page);
 
+        /*
+         * From 1800: the trend is half a row there, and at 1000 it is promoted
+         * to the whole row, which at 1600 would be a little WIDER than half.
+         */
         const canvasWidth = () => page.evaluate(() => {
             const c = document.querySelector('.owa_areaChart canvas');
             const h = document.querySelector('.owa_areaChart');
@@ -1130,7 +1094,7 @@ test.describe('the report grid gives every widget a usable width', () => {
             } : null;
         });
 
-        await page.setViewportSize({ width: 1600, height: 1000 });
+        await page.setViewportSize({ width: 1800, height: 1000 });
 
         await page.goto(
             `?owa_do=base.report&owa_reportId=content&owa_siteId=${FIXTURE.siteId}`
@@ -1150,7 +1114,7 @@ test.describe('the report grid gives every widget a usable width', () => {
             .toBeLessThan(wide.canvas);
 
         // ...and back up, which is the half that was broken.
-        await page.setViewportSize({ width: 1600, height: 1000 });
+        await page.setViewportSize({ width: 1800, height: 1000 });
 
         await expect.poll(async () => {
             const m = await canvasWidth();
@@ -1165,7 +1129,7 @@ test.describe('the report grid gives every widget a usable width', () => {
         await expect.poll(async () => (await canvasWidth()).canvas, { timeout: 10_000 })
             .toBeLessThan(wide.canvas);
 
-        await page.setViewportSize({ width: 1600, height: 1000 });
+        await page.setViewportSize({ width: 1800, height: 1000 });
 
         await expect.poll(async () => (await canvasWidth()).canvas, { timeout: 10_000 })
             .toBe(wide.canvas);

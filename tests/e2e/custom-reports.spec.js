@@ -1504,30 +1504,26 @@ test.describe('custom reports', () => {
             expect(boxBox.y).toBeLessThan(chartBox.y);
 
             /*
-             * Borderless, which is the type's whole visual difference.
-             *
-             * The bar marking the charted metric is painted INSIDE the box, not
-             * on its edge: a thicker border on that box alone would stand it 2px
-             * taller than its neighbours and step the row, and reserving the
-             * space on every box took away the top border the bordered ones
-             * have. An inset shadow changes no geometry and costs no border.
+             * No box round the figure: the only edge is the 2px rule under it,
+             * which is in the chart's blue on the charted metric -- the first
+             * one -- and clear on the others, so the row does not step when
+             * the reader picks another.
              */
-            const edges = await boxes.locator('.owa_metricInfobox').first()
-                .evaluate((el) => {
-                    const cs = getComputedStyle(el);
-                    return { left: cs.borderLeftWidth, right: cs.borderRightWidth,
-                             bottom: cs.borderBottomWidth, top: cs.borderTopWidth,
-                             shadow: cs.boxShadow };
-                });
+            const edges = await boxes.locator('.owa_metricInfobox').evaluateAll((els) => els.map((el) => {
+                const cs = getComputedStyle(el);
+                return { left: cs.borderLeftWidth, right: cs.borderRightWidth, top: cs.borderTopWidth,
+                         bottom: cs.borderBottomWidth, colour: cs.borderBottomColor };
+            }));
 
-            expect(edges.left).toBe('0px');
-            expect(edges.right).toBe('0px');
-            expect(edges.bottom).toBe('0px');
-            expect(edges.top).toBe('0px');
+            for (const e of edges) {
+                expect([e.left, e.right, e.top, e.bottom]).toEqual(['0px', '0px', '0px', '2px']);
+            }
 
-            // The first metric is the charted one, so it carries the bar.
-            expect(edges.shadow).toContain('inset');
-            expect(edges.shadow).toContain('rgb(24, 116, 205)');
+            expect(edges[0].colour).toBe('rgb(24, 116, 205)');
+
+            if (edges.length > 1) {
+                expect(edges[1].colour).toBe('rgba(0, 0, 0, 0)');
+            }
 
             // Half a row by default, without the author choosing a width.
             await expect(page.locator('.owa_reportGridItem.owa_span-6')).toHaveCount(1);

@@ -12,7 +12,7 @@
 
     <body class="<?php if ($cu->user->isOWAAdmin()) echo 'owaadmin'; ?>">
         <style>
-            html {background-color: #F2F2F2;}
+            html {background-color: #ffffff;}
         </style>
 
         <div class="owa">

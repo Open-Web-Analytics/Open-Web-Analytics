@@ -333,6 +333,55 @@
     background: #eef4fb;
 }
 
+/* ---- a card: a ranked list --------------------------------------------- */
+
+/* The headings are there for a screen reader; the card's title names it. */
+.owa_grid .owa_gridTable.is-compact thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.owa_grid .owa_gridTable.is-compact td {
+    padding: 10px 0 0;
+    border-bottom: 0;
+}
+
+.owa_grid .owa_gridTable.is-compact td.owa_gridDim {
+    padding-right: 16px;
+    color: #1f2937;
+}
+
+.owa_grid .owa_gridTable.is-compact td.owa_gridDimEnd {
+    border-right: 0;
+}
+
+.owa_grid .owa_gridTable.is-compact td.owa_gridMetric {
+    font-weight: 500;
+    color: #111827;
+}
+
+.owa_grid .owa_gridTable.is-compact .owa_gridBarRow td {
+    padding: 8px 0 10px;
+}
+
+.owa_gridBar {
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    background: #f1f3f6;
+}
+
+.owa_gridBarFill {
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    background: #1874CD;
+}
+
 /* ---- popovers ---------------------------------------------------------- */
 
 .owa_gridPop {
