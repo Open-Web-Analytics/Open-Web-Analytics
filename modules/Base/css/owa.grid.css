@@ -1,0 +1,558 @@
+/*
+ * The grid of a result set's rows (OWA.dataGrid in owa.resultSetExplorer.js).
+ *
+ *   .owa_gridControls   the bar: Filter and its chips, then Rows per page,
+ *                       Go to and the pager
+ *   .owa_gridTable      the rows; a Total row first, every second row shaded,
+ *                       and a rule after the last dimension column
+ *   .owa_gridPop        a popover: choosing a dimension, or adding a filter
+ *
+ * The bar wraps rather than scrolls: in a half-width widget the paging goes
+ * under the filters. The table scrolls sideways inside .owa_gridScroll when its
+ * columns need more room than the widget has.
+ */
+
+/* A container, so the bar can lay itself out by the grid's width: a grid in a
+   half-width widget is narrow on a wide screen. */
+.owa_grid {
+    container-type: inline-size;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+/* ---- the bar ----------------------------------------------------------- */
+
+.owa_gridControls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px 20px;
+    padding: 10px 0;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.owa_gridFilters {
+    flex: 1 1 240px;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.owa_gridPaging {
+    flex: 0 1 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 20px;
+    font-size: 13px;
+    color: #4b5563;
+    white-space: nowrap;
+}
+
+/* A rule between the two halves while they share a line. */
+.owa_gridFilters + .owa_gridPaging {
+    padding-left: 20px;
+    border-left: 1px solid #e5e7eb;
+}
+
+.owa_gridPagingItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: normal;
+}
+
+.owa_grid .owa_gridButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    color: #111827;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.owa_grid .owa_gridButton:hover {
+    border-color: #cfd4dc;
+}
+
+.owa_grid .owa_gridButton[aria-expanded="true"] {
+    border-color: #1874CD;
+    box-shadow: 0 0 0 1px #1874CD;
+}
+
+.owa_grid .owa_gridButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.owa_grid .owa_gridIconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: #4b5563;
+    cursor: pointer;
+}
+
+.owa_grid .owa_gridIconButton:hover {
+    background: #f3f5f8;
+    color: #111827;
+}
+
+.owa_grid .owa_gridIconButton:disabled {
+    color: #c7ced8;
+    background: transparent;
+    cursor: default;
+}
+
+.owa_grid .owa_gridPageSize,
+.owa_grid .owa_gridGoTo {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    color: #111827;
+    box-sizing: border-box;
+}
+
+.owa_grid .owa_gridGoTo {
+    width: 64px;
+    font-variant-numeric: tabular-nums;
+}
+
+.owa_gridPager {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.owa_gridRange {
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+}
+
+.owa_gridChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 4px 0 12px;
+    border-radius: 16px;
+    background: #eef4fb;
+    color: #0f4f8f;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.owa_gridChipText strong {
+    font-weight: 600;
+}
+
+.owa_grid .owa_gridChipRemove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #0f4f8f;
+    cursor: pointer;
+}
+
+.owa_grid .owa_gridChipRemove:hover {
+    background: #dbe8f7;
+}
+
+.owa_gridEmpty {
+    margin: 0;
+    padding: 24px 12px;
+    color: #6b7280;
+}
+
+/* ---- the table --------------------------------------------------------- */
+
+.owa_gridScroll {
+    overflow-x: auto;
+}
+
+.owa_grid .owa_gridTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.owa_grid .owa_gridTable th {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.owa_grid .owa_gridTable td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f3f6;
+    vertical-align: top;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.owa_grid .owa_gridTable .owa_gridDim {
+    text-align: left;
+}
+
+/*
+ * A dimension's value wraps rather than widening the table without end: a
+ * full URL is one word as far as the browser is concerned.
+ */
+.owa_grid .owa_gridTable td.owa_gridDim {
+    min-width: 7em;
+    max-width: 28em;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.owa_grid .owa_gridTable .owa_gridDimEnd {
+    border-right: 1px solid #e5e7eb;
+}
+
+.owa_grid .owa_gridTable .owa_gridRowNum {
+    width: 1%;
+    padding-right: 4px;
+    text-align: left;
+    color: #6b7280;
+}
+
+.owa_grid .owa_gridRow.is-alt td {
+    background: #f7f8fa;
+}
+
+.owa_grid .owa_gridTotal td {
+    padding-top: 14px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 600;
+    color: #111827;
+}
+
+.owa_gridShare {
+    color: #6b7280;
+}
+
+.owa_grid .owa_gridTable a {
+    color: #1874CD;
+    text-decoration: none;
+}
+
+.owa_grid .owa_gridTable a:hover {
+    color: #0f5596;
+    text-decoration: underline;
+}
+
+/* A heading that sorts. */
+.owa_grid .owa_gridSort {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 140px;
+    padding: 6px 0 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    line-height: 20px;
+    color: inherit;
+    text-align: inherit;
+    white-space: normal;
+    cursor: pointer;
+}
+
+.owa_grid .owa_gridSort:hover {
+    color: #111827;
+}
+
+.owa_grid .owa_gridSort .fas {
+    line-height: 20px;
+}
+
+.owa_grid th.is-sorted .owa_gridSort {
+    color: #1874CD;
+    font-weight: 600;
+}
+
+/* A dotted rule under a heading that has a description to show on hover. */
+.owa_gridSortLabel.has-description {
+    padding-bottom: 1px;
+    border-bottom: 1px dotted #9ca3af;
+}
+
+.owa_gridDimHead {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.owa_grid .owa_gridDimButton {
+    font-weight: 600;
+}
+
+.owa_grid .owa_gridDimButton .fas {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.owa_grid .owa_gridDimAdd {
+    color: #1874CD;
+}
+
+.owa_grid .owa_gridDimAdd[aria-expanded="true"] {
+    background: #eef4fb;
+}
+
+/* ---- popovers ---------------------------------------------------------- */
+
+.owa_gridPop {
+    position: fixed;
+    z-index: 1000;
+    width: 300px;
+    max-width: calc(100vw - 16px);
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
+    box-sizing: border-box;
+    font-size: 14px;
+    color: #111827;
+    text-align: left;
+}
+
+.owa_grid .owa_gridPopSearch {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.owa_grid .owa_gridPopSearch:focus,
+.owa_grid .owa_gridFilterField:focus,
+.owa_grid .owa_gridFilterValue:focus {
+    outline: none;
+    border-color: #1874CD;
+    box-shadow: 0 0 0 1px #1874CD;
+}
+
+.owa_gridPopSorts {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 8px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid #eef0f3;
+}
+
+.owa_gridPopHeading {
+    margin: 12px 10px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.owa_grid .owa_gridPopOption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    color: #1f2937;
+    text-align: left;
+    cursor: pointer;
+}
+
+.owa_grid .owa_gridPopOption:hover,
+.owa_grid .owa_gridPopOption:focus-visible {
+    background: #f3f5f8;
+    outline: none;
+}
+
+.owa_grid .owa_gridPopOption.is-current {
+    background: #eef4fb;
+    color: #0f4f8f;
+    font-weight: 600;
+}
+
+.owa_grid .owa_gridPopOption:disabled {
+    color: #9ca3af;
+    background: transparent;
+    cursor: default;
+}
+
+.owa_gridPopNote {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.owa_gridPop .owa_gridFilterPop {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 8px;
+}
+
+.owa_gridPop:has(.owa_gridFilterPop) {
+    width: 360px;
+}
+
+.owa_gridPopTitle {
+    margin-bottom: 16px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.owa_grid .owa_gridFieldLabel {
+    display: block;
+    margin: 16px 0 6px;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.owa_grid .owa_gridPopTitle + .owa_gridFieldLabel {
+    margin-top: 0;
+}
+
+.owa_grid .owa_gridFilterField,
+.owa_grid .owa_gridFilterValue {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    color: #111827;
+    box-sizing: border-box;
+}
+
+.owa_grid .owa_gridFilterOps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin: 16px 0 0;
+    padding: 0;
+    border: 0;
+}
+
+.owa_grid .owa_gridFilterOps legend {
+    grid-column: 1 / -1;
+    margin: 0 0 6px;
+}
+
+.owa_grid .owa_gridFilterOp {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.owa_grid .owa_gridFilterOp:has(input:checked) {
+    background: #eef4fb;
+    color: #0f4f8f;
+    font-weight: 600;
+}
+
+.owa_grid .owa_gridFilterOp input {
+    margin: 0;
+    accent-color: #1874CD;
+}
+
+.owa_gridPopHint {
+    margin: 12px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #6b7280;
+}
+
+.owa_gridPopActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.owa_grid .owa_gridQuiet {
+    border-color: transparent;
+    color: #4b5563;
+}
+
+.owa_grid .owa_gridQuiet:hover {
+    border-color: transparent;
+    background: #f3f5f8;
+}
+
+.owa_grid .owa_gridPrimary {
+    border-color: #1874CD;
+    background: #1874CD;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.owa_grid .owa_gridPrimary:hover {
+    border-color: #0f5596;
+    background: #0f5596;
+}
+
+/* ---- narrow ------------------------------------------------------------ */
+
+@container (max-width: 640px) {
+
+    /* The paging goes under the filters, so the rule between them goes. */
+    .owa_gridFilters + .owa_gridPaging {
+        padding-left: 0;
+        border-left: 0;
+    }
+
+    .owa_gridPaging {
+        gap: 8px 12px;
+    }
+}

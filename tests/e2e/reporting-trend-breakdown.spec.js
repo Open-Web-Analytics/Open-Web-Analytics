@@ -77,27 +77,21 @@ const trendQuery = (page) => page.evaluate(() => ({
     series: window.trend.areaChart.options.series[0].series || '',
 }));
 
-const breakdownRows = (page) => page.locator('#trend-breakdown tr.jqgrow');
+const breakdownRows = (page) => page.locator('#trend-breakdown tr.owa_gridRow');
 
 /** Column headings of the companion grid, trimmed. */
 async function breakdownColumns(page) {
-    return (await page.locator('#trend-breakdown .ui-jqgrid-htable th').allInnerTexts())
+    return (await page.locator('#trend-breakdown .owa_gridTable thead th').allInnerTexts())
         .map(h => h.trim()).filter(Boolean);
 }
 
 /**
- * Choose a dimension in one of the grid's pickers, through the real click path.
- *
- * chosen hides the native <select> and renders its own field, so selectOption()
- * cannot reach it -- and setting the hidden select directly would pass with the
- * visible control broken, which is the only part a reader touches.
+ * Choose a dimension in the grid's open dimension list: a heading's picker
+ * (to replace that dimension) or the plus beside it (to add one).
  */
-async function pickDimension(page, index, label) {
-    const picker = page.locator('#trend-breakdown .owa_dimSlot .chosen-container').nth(index);
-
-    await picker.click();
-    await picker.locator('.chosen-results li.active-result', { hasText: new RegExp(`^${label}$`) })
-        .first().click();
+async function pickDimension(page, label) {
+    await page.locator('#trend-breakdown .owa_gridPop .owa_gridPopOption',
+        { hasText: new RegExp(`^${label}$`) }).first().click();
 }
 
 async function openContent(page) {
@@ -107,7 +101,7 @@ async function openContent(page) {
 
     // The grid builds from its own fetch, so wait for a row rather than the
     // container -- the container is in the markup before anything is queried.
-    await page.waitForSelector('#trend-breakdown tr.jqgrow', { timeout: 20_000 });
+    await page.waitForSelector('#trend-breakdown tr.owa_gridRow', { timeout: 20_000 });
 }
 
 test.describe('a broken-out trend and its companion grid', () => {
@@ -174,7 +168,8 @@ test.describe('a broken-out trend and its companion grid', () => {
         const before = await trendQuery(page);
         expect(before.series).toBe('pagePath');
 
-        await pickDimension(page, 0, 'Medium');
+        await page.locator('#trend-breakdown .owa_gridDimButton').first().click();
+        await pickDimension(page, 'Medium');
 
         // The grid regrouped...
         await expect.poll(async () => await breakdownColumns(page), { timeout: 15_000 })
@@ -214,8 +209,8 @@ test.describe('a broken-out trend and its companion grid', () => {
 
         const before = await trendQuery(page);
 
-        await page.locator('#trend-breakdown .owa_dimAdd').first().click();
-        await pickDimension(page, 1, 'Medium');
+        await page.locator('#trend-breakdown .owa_gridDimAdd').click();
+        await pickDimension(page, 'Medium');
 
         // The grid gained a column and split its rows.
         await expect.poll(async () => await breakdownColumns(page), { timeout: 15_000 })
@@ -240,39 +235,31 @@ test.describe('a broken-out trend and its companion grid', () => {
     test('a filter on the grid narrows the trend too', async ({ page }) => {
         await openContent(page);
 
+        /*
+         * The one filter there is: whatever is on is taken off first, so the
+         * constraint asserted below is this filter alone.
+         */
         const setFilter = async (value) => {
 
-            const toggle = page.locator('#trend-breakdown .constraintPickerContainer > .toggle-button');
+            const grid = page.locator('#trend-breakdown');
 
-            /*
-             * The builder is a DIALOG and no longer sits inside the grid it
-             * filters -- jQuery UI lifts it to `.owa`. It carries an id naming
-             * the element it belongs to, which is how the right one is picked
-             * now that every filter's dialog is a sibling of every other.
-             */
-            const panel = page.locator('#owa_filterBuilder-trend-breakdown');
+            // One at a time, each gone before the next: a chip is on screen
+            // until the grid's refetch redraws it away.
+            const chips = grid.locator('.owa_gridChip');
 
-            // Applying CLOSES the dialog, so each pass opens it again.
-            if (!(await panel.isVisible())) {
-                await toggle.click();
+            for (let n = await chips.count(); n > 0; n--) {
+                await chips.first().locator('.owa_gridChipRemove').click();
+                await expect(chips).toHaveCount(n - 1, { timeout: 15_000 });
             }
 
-            await expect(panel).toBeVisible();
+            await grid.locator('.owa_gridFilterButton').click();
 
-            await page.evaluate((val) => {
-                const row = document.querySelector(
-                    '#owa_filterBuilder-trend-breakdown li.constraintRow');
+            const pop = grid.locator('.owa_gridPop');
 
-                jQuery(row).find('.constraintDimensionPicker select.dim-list')
-                    .val('pagePath').trigger('chosen:updated');
-                // The operator is a chosen widget too now; same contract --
-                // the native <select> carries the value.
-                jQuery(row).find('.constraintOperatorPicker select.operator-list')
-                    .val('=@').trigger('chosen:updated');
-                jQuery(row).find('.constraintValueField').val(val);
-            }, value);
-
-            await panel.locator('.apply-button').click();
+            await pop.locator('.owa_gridFilterField').selectOption('pagePath');
+            await pop.locator('.owa_gridFilterOps input[value="=@"]').check();
+            await pop.locator('.owa_gridFilterValue').fill(value);
+            await pop.locator('.owa_gridPrimary').click();
         };
 
         // Matches one of the four seeded pages.

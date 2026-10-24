@@ -86,16 +86,17 @@ test.describe('report nav on a phone', () => {
         const page_width = await page.evaluate(() => document.documentElement.scrollWidth);
         expect(page_width).toBeLessThanOrEqual(390);
 
+        // The row-number column is narrow by design; the data columns are not.
         const grid = await page.evaluate(() => {
-            const widths = [...document.querySelectorAll('.ui-jqgrid-htable th')]
+            const widths = [...document.querySelectorAll('.owa_gridTable thead th:not(.owa_gridRowNum)')]
                 .filter((th) => th.offsetWidth > 0)
                 .map((th) => th.offsetWidth);
-            const box = document.querySelector('.ui-jqgrid').closest('.owa_widget-grid');
+            const box = document.querySelector('.owa_gridTable').closest('.owa_gridScroll');
             return { narrowest: Math.min(...widths), scrolls: box.scrollWidth > box.clientWidth,
                 overflow: getComputedStyle(box).overflowX };
         });
         expect(grid.narrowest, 'every column keeps a readable width').toBeGreaterThanOrEqual(60);
-        expect(grid.scrolls, 'the table is wider than the phone, so its widget scrolls').toBe(true);
+        expect(grid.scrolls, 'the table is wider than the phone, so its box scrolls').toBe(true);
         expect(['auto', 'scroll']).toContain(grid.overflow);
     });
 

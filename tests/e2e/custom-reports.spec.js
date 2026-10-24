@@ -1837,11 +1837,11 @@ test.describe('custom reports', () => {
 
             const card = page.locator('.owa_reportGridItem.owa_span-3').first();
 
-            await expect(card.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
+            await expect(card.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
 
             // The rows are links into the report that details a page, carrying
             // the row's own value.
-            const rowLink = card.locator('tr.jqgrow a').first();
+            const rowLink = card.locator('tr.owa_gridRow a').first();
 
             await expect(rowLink).toBeVisible();
 
@@ -2274,7 +2274,7 @@ test.describe('custom reports', () => {
             await expect(page.locator('#report-tabs')).toHaveCount(0);
 
             // The grid fetched rows, and the boxes drew.
-            await expect(page.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
+            await expect(page.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
             await expect(page.locator('.owa_metricInfobox').first()).toBeVisible({ timeout: 20_000 });
         });
 
@@ -2322,13 +2322,13 @@ test.describe('custom reports', () => {
 
             // Both drew a table: a card is a table, just a small one with no
             // controls -- not a different renderer.
-            await expect(grid.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
-            await expect(card.locator('tr.jqgrow').first()).toBeVisible({ timeout: 20_000 });
+            await expect(grid.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+            await expect(card.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
 
             // The bar is on the grid and NOT on the card. This is the whole
             // point of the split.
-            await expect(grid.locator('.explorerTopControls')).toHaveCount(1);
-            await expect(card.locator('.explorerTopControls')).toHaveCount(0);
+            await expect(grid.locator('.owa_gridFilterButton')).toHaveCount(1);
+            await expect(card.locator('.owa_gridFilterButton')).toHaveCount(0);
 
             /*
              * And the card does not scroll sideways, which is the symptom that

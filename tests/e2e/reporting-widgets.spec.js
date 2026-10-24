@@ -11,8 +11,8 @@ const { FIXTURE, login, openConfiguredReport, configuredReportIds } = require('.
  *
  * That distinction has already cost this project once. base.reportEcommerce
  * set sort='actions', neither a metric it queried nor a dimension it grouped
- * on; the unresolvable sort arrived as a null sortColumn, jqGrid called
- * .toLowerCase() on it, and the grid threw while building. The page still
+ * on; the unresolvable sort arrived as a null sortColumn, jqGrid (the grid
+ * then) called .toLowerCase() on it, and the grid threw while building. The page still
  * rendered. The only trace was the browser console, which nothing was
  * watching.
  *
@@ -58,8 +58,8 @@ test.describe('every configured report renders in a browser', () => {
         await openConfiguredReport(page, { reportId: 'transactions' });
 
         const bars = await page.locator('.owa_reportGridItem').evaluateAll((els) => els.map((e) => ({
-            slots: e.querySelectorAll('.owa_dimSlot').length,
-            add: e.querySelectorAll('.owa_dimAdd').length,
+            slots: e.querySelectorAll('.owa_gridDimButton').length,
+            add: e.querySelectorAll('.owa_gridDimAdd').length,
         })).filter((r) => r.slots || r.add));
 
         expect(bars.length, 'transactions drew no explorer bar to count pickers on')
@@ -315,14 +315,14 @@ test.describe('every configured report renders in a browser', () => {
          * rendered" from "the widget rendered the right query".
          */
         test('the entry pages card lists the pages traffic arrived on', async ({ page }) => {
-            await expect(page.locator('#entry-pages tr.jqgrow').first(),
+            await expect(page.locator('#entry-pages tr.owa_gridRow').first(),
                 'entry-pages drew no rows').toBeVisible({ timeout: 20_000 });
 
             await expect(page.locator('#entry-pages')).toContainText(FIXTURE.pageTitles[0]);
         });
 
         test('the referring sites card lists the referring host', async ({ page }) => {
-            await expect(page.locator('#referring-sites tr.jqgrow').first(),
+            await expect(page.locator('#referring-sites tr.owa_gridRow').first(),
                 'referring-sites drew no rows').toBeVisible({ timeout: 20_000 });
 
             /*
@@ -332,7 +332,7 @@ test.describe('every configured report renders in a browser', () => {
              * and read as correct. The cell is compared whole.
              *
              */
-            const cells = page.locator('#referring-sites tr.jqgrow td[aria-describedby$="sessionSource"]');
+            const cells = page.locator('#referring-sites tr.owa_gridRow td[data-column="sessionSource"]');
 
             await expect(cells.filter({ hasText: FIXTURE.traffic.refererHost }))
                 .toHaveCount(1);
@@ -355,7 +355,7 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         test('the countries card links to the geolocation report', async ({ page }) => {
-            await expect(page.locator('#visitor-countries tr.jqgrow').first(),
+            await expect(page.locator('#visitor-countries tr.owa_gridRow').first(),
                 'visitor-countries drew no rows').toBeVisible({ timeout: 20_000 });
 
             const more = page.locator('#visitor-countries')
@@ -366,7 +366,7 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         test('the sources grid lists the seeded sources', async ({ page }) => {
-            const grid = page.locator('#top-sources .ui-jqgrid');
+            const grid = page.locator('#top-sources .owa_gridTable');
 
             await expect(grid, 'top-sources built no grid').toHaveCount(1, { timeout: 20_000 });
 
@@ -1172,42 +1172,29 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
-     * ...and so does the GRID, which never resized at all.
+     * ...and so does the GRID.
      *
-     * jqGrid's `autowidth` fits the container once, at build time, and never
-     * looks again. A grid built at 1285px stayed 1285px inside a widget that
-     * had become 685px -- it did not overflow the page, because the widget
-     * scrolls, so it simply became a table you had to scroll sideways to read.
-     * That is the "widgets collapse when the window is resized" report.
+     * It is a table at the width of its box, so it follows its widget with no
+     * resize handler of its own: narrower with the window, and back. A table
+     * whose columns need more than the widget has scrolls inside its box.
      */
-    test('a grid is refitted to its widget when the window changes', async ({ page }) => {
+    test('a grid follows its widget when the window changes', async ({ page }) => {
         test.setTimeout(120_000);
 
         await login(page);
 
-        /*
-         * Latest Visits, not the trend's companion grid: Content's trend is a
-         * card now and cannot be broken out, so no shipped report has one. Any
-         * grid answers this question -- it is about jqGrid refitting to its
-         * widget, not about which report it is on.
-         */
-        /*
-         * `fit` is the width the grid should take: its widget's, unless that is
-         * narrower than the grid's columns can be read at (readableWidth()), in
-         * which case it stays at that floor and the widget scrolls.
-         */
         const measure = () => page.evaluate(() => {
-            const w = document.querySelector('#latest-visits');
-            const g = document.querySelector('#latest-visits .ui-jqgrid');
-            const t = document.querySelector('#latest-visits .ui-jqgrid-btable');
-            const floor = t ? (window.jQuery(t).data('owaFloor') || 0) : 0;
-            return w && g ? {
-                widget: Math.round(w.getBoundingClientRect().width),
-                grid:   Math.round(g.getBoundingClientRect().width),
-                floor:  Math.round(floor),
+            const box = document.querySelector('#latest-visits .owa_gridScroll');
+            const table = box && box.querySelector('.owa_gridTable');
+            return table ? {
+                box:   box.clientWidth,
+                table: Math.round(table.getBoundingClientRect().width),
+                scrolls: box.scrollWidth > box.clientWidth,
             } : null;
         });
-        const fits = (m) => Math.abs(m.grid - Math.max(m.widget, m.floor)) < 6;
+
+        // The table fills its box, or is wider and the box scrolls.
+        const fits = (m) => m.table >= m.box - 1 && (m.table <= m.box + 1 || m.scrolls);
 
         await page.setViewportSize({ width: 1600, height: 1000 });
 
@@ -1217,27 +1204,23 @@ test.describe('the report grid gives every widget a usable width', () => {
             { waitUntil: 'networkidle' }
         );
 
-        await page.waitForSelector('#latest-visits tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#latest-visits tr.owa_gridRow', { timeout: 20_000 });
 
         const wide = await measure();
 
-        // Within a couple of pixels of its widget: jqGrid rounds.
-        expect(Math.abs(wide.grid - wide.widget)).toBeLessThan(6);
-        expect(wide.floor, 'the floor is recorded on the grid').toBeGreaterThan(0);
+        expect(fits(wide), JSON.stringify(wide)).toBe(true);
 
         await page.setViewportSize({ width: 1000, height: 1000 });
 
         await expect.poll(async () => fits(await measure()), { timeout: 10_000 }).toBe(true);
 
         const narrow = await measure();
-        expect(narrow.grid).toBeLessThan(wide.grid);
+        expect(narrow.box).toBeLessThan(wide.box);
 
-        // ...and back, so this is a refit rather than a one-way shrink.
+        // ...and back.
         await page.setViewportSize({ width: 1600, height: 1000 });
 
-        await expect.poll(async () => fits(await measure()), { timeout: 10_000 }).toBe(true);
-
-        expect((await measure()).grid).toBeGreaterThan(narrow.grid);
+        await expect.poll(async () => (await measure()).box, { timeout: 10_000 }).toBe(wide.box);
     });
 
     /**
@@ -1261,7 +1244,7 @@ test.describe('the report grid gives every widget a usable width', () => {
             { waitUntil: 'networkidle' }
         );
 
-        await page.waitForSelector('#latest-visits tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#latest-visits tr.owa_gridRow', { timeout: 20_000 });
 
         for (const width of [1000, 1600, 800, 1600]) {
 

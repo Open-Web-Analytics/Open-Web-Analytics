@@ -16,7 +16,7 @@ test.describe('pages report', () => {
     test('lists the query string beside the path, and links the path', async ({ page }) => {
         await openReportNoTabs(page, { reportId: 'pages' });
 
-        const headers = await page.locator('.ui-jqgrid-htable th')
+        const headers = await page.locator('.owa_gridTable thead th')
             .evaluateAll((ths) => ths.filter((th) => th.offsetWidth > 0).map((th) => th.innerText.trim()));
 
         const path = headers.indexOf('Page Path');
@@ -24,7 +24,7 @@ test.describe('pages report', () => {
         expect(headers[path + 1]).toBe('Page Query');
         expect(headers[path + 2]).toBe('Page Title');
 
-        const link = page.locator('.ui-jqgrid-btable a').first();
+        const link = page.locator('.owa_gridTable tbody a').first();
         await expect(link).toBeVisible();
         expect(await link.getAttribute('href')).toContain('reportId=document');
     });

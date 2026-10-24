@@ -11,7 +11,7 @@ const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
  * three vendored jQuery plugins:
  *
  *   - Flot        -> <canvas> chart tiles
- *   - jqGrid      -> .ui-jqgrid tables with data rows
+ *   - the grid    -> .owa_gridTable tables with data rows
  *   - chosen      -> .chzn-container enhanced select menus
  *
  * They also PIN jQuery 3.6.0 -- the reporting bundle is on 3.x (was 1.6.4).
@@ -49,7 +49,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('the fixture user can authenticate and reach the dashboard', async ({ page }) => {
         // openDashboard already waited for a data grid row; being here means
         // login + site-access (analyst view_reports on the fixture site) worked.
-        await expect(page.locator('.ui-jqgrid').first()).toBeVisible();
+        await expect(page.locator('.owa_gridTable').first()).toBeVisible();
     });
 
     /**
@@ -61,7 +61,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('the events card sits before top content and links to the events report', async ({ page }) => {
         const names = page.locator('#event-names');
 
-        await expect(names.locator('.ui-jqgrid')).toBeVisible({ timeout: 20_000 });
+        await expect(names.locator('.owa_gridTable')).toBeVisible({ timeout: 20_000 });
 
         const before = await names.evaluate((el) => {
             const other = document.getElementById('top-pages');
@@ -78,8 +78,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
             await page.screenshot({ path: process.env.OWA_DASH_SCREENSHOT, fullPage: true });
         }
 
-        await expect(names.locator('.ui-jqgrid-htable')).toContainText('Event Name');
-        await expect(names.locator('.ui-jqgrid-btable')).toContainText('page_view');
+        await expect(names.locator('.owa_gridTable thead')).toContainText('Event Name');
+        await expect(names.locator('.owa_gridTable tbody')).toContainText('page_view');
 
         await expect(names.locator('xpath=..').locator('.owa_reportSectionHeader')).toHaveText('Events');
 
@@ -545,43 +545,23 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(owaType).toBe('object');
     });
 
-    test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
-        // Regression guard for a build-artifact clobber that shipped a WORKING but
-        // completely UNSTYLED control. chosen-js 1.8.7's JS emits .chosen-* markup,
-        // but the SOURCE chosen.css was left as the 0.9.6 .chzn-* stylesheet when the
-        // JS was swapped (commit 36fb9d0b hand-edited only the built CSS artifact).
-        // The next `cli.php cmd=build` regenerated the artifact from the stale source,
-        // so the served CSS had ZERO .chosen-* rules -- the widget rendered as a bare
-        // unstyled text list with no dropdown arrow. Existence/visibility (the test
-        // above) still PASSED because the markup was correct; only the applied CSS was
-        // wrong. So assert the stylesheet actually takes effect: the sprite-driven
-        // dropdown arrow paints a background image (the single clearest "the .chosen-*
-        // CSS is present and its sprite resolves" signal).
-        const arrowBg = await page.evaluate(() => {
-            const b = document.querySelector('.chosen-container .chosen-single div b');
-            return b ? getComputedStyle(b).backgroundImage : null;
-        });
-        expect(arrowBg).not.toBeNull();
-        expect(arrowBg).toContain('chosen-sprite');
-    });
-
-    test('jqGrid renders the seeded page rows', async ({ page }) => {
+    test('the grid renders the seeded page rows', async ({ page }) => {
         // At least one grid with exactly the seeded rows. The "top pages" grid
         // has one row per seeded page title.
-        const grids = page.locator('.ui-jqgrid');
+        const grids = page.locator('.owa_gridTable');
         expect(await grids.count()).toBeGreaterThanOrEqual(1);
 
         /*
          * Scoped to #top-pages, not the whole page.
          *
-         * Counting every tr.jqgrow on the dashboard only ever matched the
+         * Counting every grid row on the dashboard only ever matched the
          * seeded page count because the OTHER grids had nothing to draw --
          * the fixture attributed no traffic, so #top-referers took the
          * explorer's empty branch. Now that it has a referral to show, a
          * page-wide count measures both grids and this read 5 for 4 pages.
          */
-        const rows = page.locator('#top-pages tr.jqgrow');
-        expect(await rows.count()).toBe(FIXTURE.expectedGridRows);
+        const rows = page.locator('#top-pages tr.owa_gridRow');
+        await expect(rows).toHaveCount(FIXTURE.expectedGridRows, { timeout: 20_000 });
 
         /*
          * By PATH, not by title. Top Content is a grid-card grouped by pagePath
@@ -590,16 +570,17 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
          * alongside it and hidden.
          */
         const cells = await page.evaluate(() =>
-            [...document.querySelectorAll('#top-pages tr.jqgrow td:first-child')]
+            [...document.querySelectorAll('#top-pages tr.owa_gridRow td:first-child')]
                 .map((c) => c.innerText.trim())
         );
         for (const path of FIXTURE.pagePaths) {
             expect(cells).toContain(path);
         }
         // ...and the metric column renders a figure beside each of them. The
-        // fixture's /about has exactly 2 page views.
+        // fixture's /about has exactly 2 page views. A card shows no share, so
+        // the cell is the figure alone.
         const counts = await page.evaluate(() =>
-            [...document.querySelectorAll('#top-pages tr.jqgrow td:last-child')]
+            [...document.querySelectorAll('#top-pages tr.owa_gridRow td:last-child')]
                 .map((c) => c.innerText.trim())
         );
 
@@ -622,8 +603,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
      * link text. The column and its dimension are kept and simply stop being
      * populated; nothing about the schema changed.
      */
-    test('jqGrid renders the seeded referring site', async ({ page }) => {
-        await expect(page.locator('#top-referers tr.jqgrow'))
+    test('the grid renders the seeded referring site', async ({ page }) => {
+        await expect(page.locator('#top-referers tr.owa_gridRow'))
             .toHaveCount(1, { timeout: 20_000 });
 
         await expect(page.locator('#top-referers'))
@@ -633,54 +614,14 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
             .not.toContainText('(not set)');
     });
 
-    test('jqGrid header columns align with their data columns', async ({ page }) => {
-        // Regression guard: the jqGrid 3.6.5 -> free-jqgrid swap left
-        // the combined stylesheet's table-layout:auto rules in place. free-jqgrid
-        // sizes columns from a hidden template row and needs table-layout:fixed;
-        // under auto the header and body tables each sized to their own content,
-        // so every column's header cell rendered at a different width than its
-        // data cells. Assert they line up (within a sub-pixel rounding tolerance).
-        const geom = await page.evaluate(() => {
-            const grid = document.querySelector('.ui-jqgrid');
-            if (!grid) return null;
-            const round = (els) => [...els].map((c) => Math.round(c.getBoundingClientRect().width));
-            const hcells = round(grid.querySelectorAll('.ui-jqgrid-htable th'));
-            const brow = grid.querySelector('.ui-jqgrid-btable tr.jqgrow');
-            const bcells = brow ? round(brow.children) : [];
-            return { hcells, bcells };
-        });
-        expect(geom).not.toBeNull();
-        expect(geom.hcells.length).toBeGreaterThan(0);
-        expect(geom.bcells.length).toBe(geom.hcells.length);
-        geom.hcells.forEach((hw, i) => {
-            // 1px tolerance for sub-pixel layout rounding between the two tables.
-            expect(Math.abs(hw - geom.bcells[i])).toBeLessThanOrEqual(1);
-        });
-    });
+    test('no grid on the dashboard scrolls sideways', async ({ page }) => {
+        // A dimension's value wraps rather than widening its table, so at this
+        // width every grid fits its widget.
+        const overflow = await page.evaluate(() =>
+            [...document.querySelectorAll('.owa_gridScroll')].map((el) => el.scrollWidth - el.clientWidth));
 
-    test('jqGrid tables do not overflow their scroll container', async ({ page }) => {
-        // Regression guard: free-jqgrid sizes the grid tables to fill
-        // their scroll containers (.ui-jqgrid-bdiv / -hdiv) exactly, but the tables
-        // inherited the browser-default border-collapse:separate; border-spacing:2px.
-        // Fixed layout then adds (columns + 1) * 2px past the container, so every
-        // grid overflowed by a few pixels and showed a small horizontal scrollbar.
-        // Collapsing border-spacing to 0 removes it. Assert no grid's body or header
-        // div scrolls horizontally.
-        const overflow = await page.evaluate(() => {
-            return [...document.querySelectorAll('.ui-jqgrid')].map((grid) => {
-                const bdiv = grid.querySelector('.ui-jqgrid-bdiv');
-                const hdiv = grid.querySelector('.ui-jqgrid-hdiv');
-                return {
-                    bdiv: bdiv ? bdiv.scrollWidth - bdiv.clientWidth : 0,
-                    hdiv: hdiv ? hdiv.scrollWidth - hdiv.clientWidth : 0,
-                };
-            });
-        });
         expect(overflow.length).toBeGreaterThan(0);
-        overflow.forEach((o) => {
-            expect(o.bdiv).toBeLessThanOrEqual(0);
-            expect(o.hdiv).toBeLessThanOrEqual(0);
-        });
+        overflow.forEach((o) => expect(o).toBeLessThanOrEqual(0));
     });
 
     test('Flot paints the chart canvases', async ({ page }) => {
@@ -765,14 +706,12 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(dims.h).toBeGreaterThan(0);
     });
 
-    test('jQuery-UI initializes the datepicker and button widgets', async ({ page }) => {
-        // Pins the jQuery-UI 1.13.3 widget surface so a regression in
-        // datepicker/button (the widgets OWA actually uses on the dashboard) fails
-        // loudly. The date range control is two jQuery-UI datepickers; OWA also
-        // enhances several .ui-button controls (paging, filter builder).
+    test('jQuery-UI initializes the datepicker widget', async ({ page }) => {
+        // Pins the jQuery-UI 1.13.3 widget surface so a regression in the
+        // datepicker fails loudly. The date range control is two jQuery-UI
+        // datepickers. (The button widget is pinned on the funnel's filter.)
         const startInput = page.locator('#owa_report-datepicker-start');
         await expect(startInput).toHaveClass(/hasDatepicker/);
-        expect(await page.locator('.ui-button').count()).toBeGreaterThanOrEqual(1);
     });
 
     test('jQuery-UI datepicker renders a calendar when the period control opens', async ({ page }) => {
@@ -788,161 +727,6 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(startCal).toBeVisible();
         // A rendered inline datepicker has clickable day cells.
         expect(await startCal.locator('a.ui-state-default').count()).toBeGreaterThanOrEqual(1);
-    });
-
-    test('the filter builder opens as a modal with pill controls', async ({ page }) => {
-        /*
-         * The builder is a DIALOG now, not a panel inside the bar.
-         *
-         * A filter row is wider than a quarter-row widget, so every in-flow
-         * position for it was a choice about which edge of the card to
-         * overflow. A dialog has no parent to overflow. That move is also why
-         * this test can no longer look for `.constraintPickerContainer >
-         * .builder`: jQuery UI lifts the element out of that container.
-         *
-         * The operator picker is chosen, not jQuery-UI selectmenu. It was the
-         * odd one out -- a square selectmenu between a rounded chosen pill and
-         * a bare input, three shapes for three parts of one sentence.
-         */
-        const toggle = page.locator('.constraintPickerContainer > .toggle-button').first();
-        await expect(toggle).toBeVisible();
-
-        // The toggle is an ICON, not a jQuery-UI button -- it carries no label
-        // and no dropdown triangle, because it sits beside the dimension
-        // pickers and a second labelled box there reads as another dimension.
-        await expect(toggle).toHaveClass(/owa_filterToggle/);
-        await expect(toggle).not.toHaveClass(/ui-button/);
-        await expect(toggle.locator('i.fa-filter')).toHaveCount(1);
-        await expect(toggle).toHaveText('');
-
-        /*
-         * ...at the size every other icon on the page is. It computed to 10px
-         * for a while: `.explorerTopControls .controlItem span` is (0,2,1) and
-         * the rule meant to set it was (0,2,0), so the bar's text size won and
-         * the funnel rendered at half the size of the nav's icons beside it.
-         */
-        await expect(toggle).toHaveCSS('font-size', '16px');
-
-        await toggle.click();
-
-        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
-        await expect(dialog).toBeVisible();
-
-        /*
-         * INSIDE .owa, which is load-bearing rather than cosmetic. jQuery UI
-         * appends a dialog to <body> by default, and every rule styling what is
-         * in here is written `.owa .owa_...` -- a lifted dialog matches none of
-         * them, which is exactly how both report-builder modals once shipped
-         * with browser defaults.
-         */
-        await expect(dialog.locator('xpath=ancestor::*[contains(@class,"owa")][1]'))
-            .toHaveCount(1);
-
-        /*
-         * ONE action button at the foot, and a plus per row.
-         *
-         * There used to be "+ Add Filter" beside Apply, which read as a choice
-         * between two ways of finishing when only one of them finishes
-         * anything. Growing the filter is part of writing it, so the plus sits
-         * in the row it grows from.
-         */
-        await expect(dialog.locator('.add-button')).toHaveCount(0);
-        await expect(dialog.locator('.apply-button')).toBeVisible();
-        await expect(dialog.locator('li.constraintRow .constraintAddButton')).toHaveCount(1);
-
-        /*
-         * ...and Apply does not look like the pills it sits under. It was the
-         * same shape and height as the three selects above it, which made the
-         * one control that commits look like a fourth thing to pick from.
-         */
-        const applyBox = await dialog.locator('.apply-button')
-            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
-        const pillBox = await dialog.locator('.constraintOperatorPicker .chosen-single')
-            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
-
-        expect(applyBox).toBeGreaterThan(pillBox + 6);
-
-        // The plus grows the list, directly below the row it was pressed on.
-        await dialog.locator('li.constraintRow').first().locator('.constraintAddButton').click();
-        await expect(dialog.locator('li.constraintRow')).toHaveCount(2);
-
-        /*
-         * Both select controls are chosen, and there is no selectmenu left.
-         * A row has two: the dimension and the operator.
-         */
-        await expect(dialog.locator('.constraintRow').first().locator('.chosen-container'))
-            .toHaveCount(2);
-        await expect(dialog.locator('span.ui-selectmenu-button')).toHaveCount(0);
-
-        // The native <select> is hidden once chosen takes over -- and it stays
-        // in the DOM, which is what the apply handler reads.
-        const selectDisplay = await dialog.evaluate((d) => {
-            const sel = d.querySelector('select.operator-list');
-            return sel ? getComputedStyle(sel).display : null;
-        });
-        expect(selectDisplay).toBe('none');
-    });
-
-    test("the filter builder's dimension picker opens at full width with a dimension list", async ({ page }) => {
-        // Regression guard (chosen 0.9.6 -> 1.8.7): the filter/constraint builder's
-        // dimension picker (OWA.dimensionPicker -> <select.dim-list> enhanced by
-        // chosen, INSIDE each constraint row) rendered as a ~2px-wide sliver -- the
-        // dimension list was there but unusable. Root cause: the builder creates its
-        // rows while its .builder is display:none, and chosen-js 1.x sizes its
-        // container from the <select>'s offsetWidth AT ENHANCEMENT TIME (0 when
-        // hidden). chosen 0.9.x read the CSS width, so this only broke on the upgrade.
-        // Fix: pass an explicit width:'150px' to .chosen(). Unlike the secondary-
-        // dimension picker (created visible), THIS one is created hidden -- so it is
-        // the specific case that regressed. Assert it opens at a real, usable width.
-        await page.locator('.constraintPickerContainer > .toggle-button').first().click();
-
-        // The builder is a dialog, so it is addressed as one -- see the modal
-        // test above.
-        const builder = page.locator('.owa_filterDialogFrame:visible').first();
-        await expect(builder).toBeVisible();
-
-        const dimChosen = builder.locator('.constraintDimensionPicker .chosen-container').first();
-        await expect(dimChosen).toBeVisible();
-        /*
-         * The enhanced container must be a real width, not the collapsed sliver.
-         *
-         * Not 150 any more: the pill is CONTENT-sized now (the filter rows share
-         * the bar's pill styling, which is `width: auto`), so it is as wide as
-         * "Select..." rather than as wide as the explicit width chosen was given.
-         * That does not bring the sliver back -- the width comes from CSS laying
-         * out the text, not from chosen measuring a hidden <select> -- but it does
-         * mean the number to assert is "wider than a caret", not a fixed size.
-         */
-        const contWidth = await dimChosen.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-        expect(contWidth).toBeGreaterThanOrEqual(50);
-
-        // Open the dropdown and assert the dimension list is present, grouped, and
-        // painted at the same usable width (chosen sizes .chosen-drop off the container).
-        await dimChosen.locator('.chosen-single').click();
-        const drop = dimChosen.locator('.chosen-drop');
-        await expect(drop).toBeVisible();
-        const dropWidth = await drop.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-        expect(dropWidth).toBeGreaterThanOrEqual(100);
-        expect(await drop.locator('.chosen-results li.active-result').count()).toBeGreaterThanOrEqual(2);
-        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
-    });
-
-    test('chosen keeps the native select in sync with the selected operator', async ({ page }) => {
-        // Runtime guard (not just render): the constraint-apply path reads the
-        // chosen operator (owa.resultSetExplorer.js ~1638). Neither the old Nagel
-        // selectmenu fork nor chosen offers a "read the widget" method -- both keep
-        // the native <select> in sync, which is what the code reads with .val().
-        // The widget changed from selectmenu to chosen; this contract did not.
-        // Pin that contract: the select carries a non-empty value.
-        await page.locator('.constraintPickerContainer .toggle-button').first().click();
-        const value = await page.evaluate(() => {
-            const sel = jQuery('select.operator-list').first();
-            return sel.length ? sel.val() : null;
-        });
-        // Default selection is the first operator ("==" Exactly Matching).
-        expect(value).not.toBeNull();
-        expect(typeof value).toBe('string');
-        expect(value.length).toBeGreaterThan(0);
     });
 
     test('server-rendered images resolve to public/, not the denied module tree', async ({ page }) => {
@@ -1002,60 +786,28 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await openReport(page);
     });
 
-    /*
-     * The two chosen checks run HERE, on a dimension report, and not on the
-     * dashboard. The dashboard lost its last visible enhanced select when its
-     * grids became cards: Latest Visits groups by seven dimensions, past the
-     * dimension control's cap, so the only chosen left on it is the hidden one
-     * in its filter. This report's grid has the secondary-dimension chooser.
-     */
-    test('chosen enhances the report select menus', async ({ page }) => {
-        // The site filter (and period control) are <select>s upgraded by chosen
-        // into .chosen-container widgets (chosen-js 1.8.7 renamed the prefix from
-        // .chzn-* to .chosen-*). If chosen breaks under jQuery 3.x this count
-        // drops and the menus fall back to bare <select>s.
-        const chosen = page.locator('.chosen-container');
-        expect(await chosen.count()).toBeGreaterThanOrEqual(1);
+    test('a dimension heading opens the dimensions to choose from, by family', async ({ page }) => {
+        const pick = page.locator('.owa_gridDimButton').first();
 
-        /*
-         * A VISIBLE one, not the first one.
-         *
-         * Some of these are the constraint builder's dimension picker, which
-         * lives inside a collapsed .builder panel and is hidden until the
-         * Filter control opens it -- so whether .first() happens to be visible
-         * depends on which widget the dashboard draws first. It stopped being
-         * visible when Latest Visits moved to the top: it groups by seven
-         * dimensions, which is past the dimension control's cap, so its only
-         * chosen is the hidden one in its filter.
-         *
-         * What this test is actually about is that chosen ran at all, and one
-         * visible enhanced control says that without depending on the layout.
-         */
-        await expect(chosen.locator('visible=true').first()).toBeVisible();
+        await expect(pick).toHaveText('Browser');
+        await pick.click();
+
+        const pop = page.locator('.owa_gridPop');
+
+        await expect(pop).toBeVisible();
+        await expect(pick).toHaveAttribute('aria-expanded', 'true');
+        await expect(pop.locator('.owa_gridPopSearch')).toBeFocused();
+        expect(await pop.locator('.owa_gridPopHeading').count()).toBeGreaterThanOrEqual(2);
+        await expect(pop.locator('.owa_gridPopOption.is-current')).toContainText('Browser');
+
+        // The list is in the window, however near the foot of it the heading is.
+        const box = await pop.boundingBox();
+        expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize().height);
+
+        await page.keyboard.press('Escape');
+        await expect(pop).toHaveCount(0);
+        await expect(pick).toBeFocused();
     });
-
-    test('the secondary-dimension picker is styled (chosen render regressions)', async ({ page }) => {
-        // The data-table's "Secondary Dimension" control (OWA.dimensionPicker ->
-        // <select.dim-list> enhanced by chosen) rendered as an unstyled text list
-        // after the chosen 0.9.6 -> 1.8.7 migration (build-artifact CSS clobber).
-        // Guard the RENDER: sprite-backed trigger arrow + a grouped, styled
-        // .chosen-drop (not a flat unstyled <select> fallback). The FUNCTIONAL
-        // behavior (pick a dimension -> grid requeries correctly) is asserted in
-        // the next test.
-        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').first();
-        await expect(picker).toBeVisible();
-
-        const arrowBg = await picker.locator('.chosen-single div b').evaluate(
-            (b) => getComputedStyle(b).backgroundImage
-        );
-        expect(arrowBg).toContain('chosen-sprite');
-
-        await picker.click();
-        const drop = picker.locator('.chosen-drop');
-        await expect(drop).toBeVisible();
-        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
-    });
-
 
     test('jQuery-UI tabs build the tabbed report layout', async ({ page }) => {
         // openReport already waited for #report-tabs.ui-tabs, so the widget built.
@@ -1071,7 +823,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
         // The active tab's panel is shown and carries the grid (createTabs' initial
         // selectTab() calls tab.load(), which builds a result-set explorer grid).
-        await expect(page.locator('tr.jqgrow').first()).toBeVisible();
+        await expect(page.locator('tr.owa_gridRow').first()).toBeVisible();
     });
 
     test('selecting a secondary dimension requeries and splits the grid by that dimension', async ({ page }) => {
@@ -1081,7 +833,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // those views across FIVE distinct days (day_ago 23/16/9/4/2, see
         // seed_reporting_fixtures.php -- the day_ago 4 visit is the one that walks
         // the goal funnel in order), so adding "Date" as the secondary dimension
-        // must requery (owa.resultSetExplorer.changeDimension -> getNewResultSet
+        // must requery (dimension_list_change -> setDimensionList -> getNewResultSet
         // with owa_dimensions=browserType,date) and split the one Chrome row into
         // one row per day (seven: see below), each carrying a rendered Date value.
         // This pins the real outcome: the right dimension is added AND the server
@@ -1089,31 +841,24 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         // pick -> event -> URL rewrite -> requery -> re-render, not just DOM width.
 
         // Baseline: single Chrome row, no Date column.
-        await expect(page.locator('tr.jqgrow')).toHaveCount(1);
-        const headsBefore = await page.locator('.ui-jqgrid-htable th').allInnerTexts();
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(1);
+        const headsBefore = await page.locator('.owa_gridTable thead th').allInnerTexts();
         expect(headsBefore.map((h) => h.trim())).not.toContain('Date');
 
         // Grouped by exactly one dimension to begin with, so the split below is
         // the plus doing something rather than a second picker already present.
-        await expect(page.locator('.owa_dimSlot')).toHaveCount(1);
+        await expect(page.locator('.owa_gridDimButton')).toHaveCount(1);
 
         /*
-         * ADD a dimension, through the real chosen click path.
-         *
-         * The bar has one picker per dimension now, so the FIRST one holds
-         * browserType and choosing in it would REPLACE rather than add. The
-         * plus is what adds, which is the action this test is about -- it
-         * appends an empty picker, and choosing in that one splits the grid.
+         * ADD a dimension. The heading's own picker holds browserType, and
+         * choosing in it would REPLACE rather than add; the plus beside it adds.
          */
-        await page.locator('.owa_dimAdd').first().click();
-
-        const picker = page.locator('[id$="_grid_secondDimensionChooser"] .chosen-container').last();
-        await picker.click();
-        await picker.locator('.chosen-results li.active-result', { hasText: /^Date$/ }).first().click();
+        await page.locator('.owa_gridDimAdd').first().click();
+        await page.locator('.owa_gridPop .owa_gridPopOption[data-name="date"]').click();
 
         // The requery must add a "Date" column and split into one row per seeded day.
         await expect
-            .poll(async () => (await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()),
+            .poll(async () => (await page.locator('.owa_gridTable thead th').allInnerTexts()).map((h) => h.trim()),
                 { timeout: 15_000 })
             .toContain('Date');
         /*
@@ -1122,125 +867,117 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
          * on v2 a session opens on its first event of any kind -- so they are
          * sessions, and each is Chrome on its own date.
          */
-        await expect(page.locator('tr.jqgrow')).toHaveCount(7);
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(7);
 
         // Added, not swapped: Browser Type is still a column.
-        expect((await page.locator('.ui-jqgrid-htable th').allInnerTexts()).map((h) => h.trim()))
+        expect((await page.locator('.owa_gridTable thead th').allInnerTexts()).map((h) => h.trim()))
             .toContain('Browser');
 
         // Every row is still a Chrome row and now carries a YYYYMMDD date value,
         // and the dates are DISTINCT -- i.e. the grid really grouped by date.
-        const rowText = await page.locator('tr.jqgrow').allInnerTexts();
+        const rowText = await page.locator('tr.owa_gridRow').allInnerTexts();
         expect(rowText.every((t) => t.includes('Chrome'))).toBe(true);
         const dates = rowText.map((t) => (t.match(/\b(20\d{6})\b/) || [])[1]).filter(Boolean);
         expect(dates).toHaveLength(7);
         expect(new Set(dates).size).toBe(7);
     });
 
-    test('applying a filter constraint requeries and filters the grid result set', async ({ page }) => {
-        // FUNCTIONAL test of the whole filter feature end-to-end: pick a dimension
-        // in the constraint builder, choose an operator, type a value, click Apply,
-        // and prove the grid actually requeried with that constraint
-        // (OWA.constraintBuilder -> constraint_change -> resultSetExplorer
-        // .changeConstraints -> getNewResultSet with owa_constraints=...).
-        // Deterministic against the fixture: the Browser Types grid is a single
-        // "Chrome" row (all seeded pageviews use a Chrome UA). So:
-        //   - browserType contains "Firefox" matches NOTHING  -> grid empties (0 rows)
-        //   - browserType contains "Chrome"  matches the row  -> grid keeps 1 row
-        // Asserting BOTH directions proves the filter genuinely discriminates on the
-        // constraint, not merely that Apply clears/reloads the grid.
-        /*
-         * The builder is a MODAL, so it is opened and addressed as one. Applying
-         * closes it -- the rows it just changed are behind it -- so each pass
-         * through this test opens it again.
-         */
-        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
-        const openBuilder = async () => {
-            if (!(await dialog.isVisible().catch(() => false))) {
-                await page.locator('.constraintPickerContainer > .toggle-button').first().click();
-            }
-            await expect(dialog).toBeVisible();
-        };
-        await openBuilder();
-        await expect(page.locator('tr.jqgrow')).toHaveCount(1);
+    /*
+     * The Filter button, its dialog and its chips, end to end: a filter is
+     * added, the grid requeries with it (constraint_change ->
+     * changeConstraints -> getNewResultSet with constraints=...), and its chip
+     * takes it off again.
+     *
+     * Deterministic against the fixture: the Browser Types grid is a single
+     * "Chrome" row, so "contains Firefox" empties it and "contains Chrome"
+     * keeps it. Both directions, so the filter is shown to discriminate rather
+     * than merely to reload.
+     */
+    const addFilter = async (page, { field = 'browserType', op, value }) => {
+        await page.locator('.owa_gridFilterButton').click();
 
-        // Fill the single default constraint row: browserType =@ <value>.
-        const setConstraint = async (value) => {
-            await page.evaluate((val) => {
-                const frame = [ ...document.querySelectorAll('.owa_filterDialogFrame') ]
-                    .find((f) => f.offsetParent !== null);
-                const row = frame.querySelector('li.constraintRow');
-                // dimension picker is a chosen widget -> set the <select> + resync
-                jQuery(row).find('.constraintDimensionPicker select.dim-list')
-                    .val('browserType').trigger('chosen:updated');
-                // ...and so is the operator now. Same contract either way: the
-                // native <select> carries the value and the widget follows it.
-                jQuery(row).find('.constraintOperatorPicker select.operator-list')
-                    .val('=@').trigger('chosen:updated');
-                jQuery(row).find('.constraintValueField').val(val);
-            }, value);
-            await dialog.locator('.apply-button').click();
-        };
+        const pop = page.locator('.owa_gridPop');
 
-        // Non-matching value -> the grid must empty out.
-        await setConstraint('Firefox');
-        await expect(page.locator('tr.jqgrow')).toHaveCount(0, { timeout: 15_000 });
+        await expect(pop).toBeVisible();
+        await pop.locator('.owa_gridFilterField').selectOption(field);
 
-        // Matching value -> the Chrome row must come back (proves it filtered on the
-        // constraint, not just wiped the grid). Re-open the dialog: applying closed
-        // it, and a requery rebuilds it.
-        await openBuilder();
-        await setConstraint('Chrome');
-        await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
-        await expect(page.locator('tr.jqgrow').first()).toContainText('Chrome');
+        if (op) {
+            await pop.locator(`.owa_gridFilterOps input[value="${op}"]`).check();
+        }
+
+        if (value !== undefined) {
+            await pop.locator('.owa_gridFilterValue').fill(value);
+        }
+
+        const request = page.waitForRequest((r) => r.url().includes('constraints='));
+
+        await pop.locator('.owa_gridPrimary').click();
+
+        return decodeURIComponent((await request).url().replace(/\+/g, ' '));
+    };
+
+    test('a filter requeries the grid, and its chip takes it off', async ({ page }) => {
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(1);
+
+        const url = await addFilter(page, { value: 'Firefox' });
+
+        expect(url).toContain('browserType=@Firefox');
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(0, { timeout: 15_000 });
+        await expect(page.locator('.owa_gridEmpty')).toHaveText('No rows match these filters.');
+
+        const chip = page.locator('.owa_gridChip');
+
+        await expect(chip).toHaveCount(1);
+        await expect(chip).toContainText('Browser contains Firefox');
+
+        await chip.locator('.owa_gridChipRemove').click();
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(1, { timeout: 15_000 });
+        await expect(page.locator('.owa_gridChip')).toHaveCount(0);
+
+        await addFilter(page, { value: 'Chrome' });
+        await expect(page.locator('.owa_gridChip')).toContainText('Browser contains Chrome');
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(1, { timeout: 15_000 });
+        await expect(page.locator('tr.owa_gridRow').first()).toContainText('Chrome');
     });
 
     /**
-     * "Is Set" / "Is Not Set" filter on emptiness, with no value typed.
+     * "Has a value" / "Is not set" filter on emptiness, with no value typed.
      *
-     * Every seeded row has a browser, so Is Not Set empties the grid and Is Set
-     * keeps its one row. The requery carries `browserType==(not set)` -- the
-     * server reads that as "is empty", not as a comparison with the label.
+     * Every seeded row has a browser, so Is not set empties the grid and Has a
+     * value keeps its one row. The requery carries `browserType==(not set)` --
+     * the server reads that as "is empty", not as a comparison with the label.
      */
     test('the empty-test filters requery on whether the dimension has a value', async ({ page }) => {
-        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
-        const openBuilder = async () => {
-            if (!(await dialog.isVisible().catch(() => false))) {
-                await page.locator('.constraintPickerContainer > .toggle-button').first().click();
-            }
-            await expect(dialog).toBeVisible();
-        };
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(1);
 
-        await openBuilder();
-        await expect(page.locator('tr.jqgrow')).toHaveCount(1);
+        const notSet = await addFilter(page, { op: '==(not set)' });
 
-        const setEmptyTest = async (operator) => {
-            await page.evaluate((op) => {
-                const frame = [ ...document.querySelectorAll('.owa_filterDialogFrame') ]
-                    .find((f) => f.offsetParent !== null);
-                const row = frame.querySelector('li.constraintRow');
-                jQuery(row).find('.constraintDimensionPicker select.dim-list')
-                    .val('browserType').trigger('chosen:updated');
-                jQuery(row).find('.constraintOperatorPicker select.operator-list')
-                    .val(op).trigger('chosen:updated').trigger('change');
-            }, operator);
-
-            await expect(dialog.locator('li.constraintRow .constraintValueField').first()).toBeHidden();
-
-            const request = page.waitForRequest((r) => r.url().includes('constraints='));
-            await dialog.locator('.apply-button').click();
-
-            return decodeURIComponent((await request).url().replace(/\+/g, ' '));
-        };
-
-        const notSet = await setEmptyTest('==(not set)');
         expect(notSet).toContain('browserType==(not set)');
-        await expect(page.locator('tr.jqgrow')).toHaveCount(0, { timeout: 15_000 });
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(0, { timeout: 15_000 });
+        await expect(page.locator('.owa_gridChip')).toContainText('Browser is not set');
 
-        await openBuilder();
-        const isSet = await setEmptyTest('!=(not set)');
+        await page.locator('.owa_gridChipRemove').click();
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(1, { timeout: 15_000 });
+
+        const isSet = await addFilter(page, { op: '!=(not set)' });
+
         expect(isSet).toContain('browserType!=(not set)');
-        await expect(page.locator('tr.jqgrow')).toHaveCount(1, { timeout: 15_000 });
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(1, { timeout: 15_000 });
+    });
+
+    test('Rows per page and the pager requery the grid', async ({ page }) => {
+        // Split by date first, so there is more than a page of rows to page through.
+        await page.locator('.owa_gridDimAdd').first().click();
+        await page.locator('.owa_gridPop .owa_gridPopOption[data-name="date"]').click();
+        await expect(page.locator('tr.owa_gridRow')).toHaveCount(7, { timeout: 15_000 });
+
+        let request = page.waitForRequest((r) => r.url().includes('resultsPerPage=10'));
+        await page.locator('.owa_gridPageSize').selectOption('10');
+        await request;
+
+        await expect(page.locator('.owa_gridRange')).toHaveText('1–7 of 7');
+        await expect(page.locator('.owa_gridNext')).toBeDisabled();
+        await expect(page.locator('.owa_gridPrev')).toBeDisabled();
     });
 
     test('the dimension report loads without uncaught page errors', async ({ page }) => {

@@ -35,6 +35,17 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openConfiguredReport } = require('./fixtures');
 
+/**
+ * Each grid row as its dimensions and its last figure, run together without
+ * whitespace: the row number and the share beside the figure are left out.
+ */
+function rowText(rows) {
+    return rows.evaluateAll((trs) => trs.map((tr) =>
+        ([...tr.querySelectorAll('td.owa_gridDim')].map((td) => td.textContent).join('')
+        + (tr.querySelector('td:last-child').firstChild || { textContent: '' }).textContent)
+            .replace(/\s+/g, '')));
+}
+
 test.describe('the click reports draw recorded clicks', () => {
 
     test.beforeEach(async ({ page }) => {
@@ -54,10 +65,10 @@ test.describe('the click reports draw recorded clicks', () => {
     test('the Clicks report splits clicks by page and element', async ({ page }) => {
         await openConfiguredReport(page, { reportId: 'clicks' });
 
-        const rows = page.locator('tr.jqgrow');
+        const rows = page.locator('tr.owa_gridRow');
         await expect(rows.first()).toBeVisible({ timeout: 20_000 });
 
-        const cells = (await rows.allTextContents()).map((r) => r.replace(/\s+/g, ''));
+        const cells = await rowText(rows);
 
         // Each row is page + element + count, run together once whitespace goes.
         expect(cells).toEqual(expect.arrayContaining([
@@ -91,7 +102,7 @@ test.describe('the click reports draw recorded clicks', () => {
             params: { pagePath: '/' },
         });
 
-        await expect(page.locator('.ui-jqgrid').first()).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('.owa_gridTable').first()).toBeVisible({ timeout: 20_000 });
 
         expect(await clicksInGrid(page), "the element grid does not add up to this page's clicks")
             .toBe(FIXTURE.clicks.byPage['/']);
@@ -99,8 +110,7 @@ test.describe('the click reports draw recorded clicks', () => {
         // Both elements clicked on '/', and NOT the one clicked only elsewhere
         // -- /pricing's clicks were on buy-btn, which is also on '/', so the
         // discriminator is the count rather than the name.
-        const rows = (await page.locator('tr.jqgrow').allTextContents())
-            .map((r) => r.replace(/\s+/g, ''));
+        const rows = await rowText(page.locator('tr.owa_gridRow'));
 
         expect(rows).toEqual(expect.arrayContaining(['buy-btn3', 'nav-home1']));
     });
@@ -112,7 +122,7 @@ test.describe('the click reports draw recorded clicks', () => {
             params: { pagePath: '/pricing' },
         });
 
-        await expect(page.locator('.ui-jqgrid').first()).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('.owa_gridTable').first()).toBeVisible({ timeout: 20_000 });
 
         expect(await clicksInGrid(page)).toBe(FIXTURE.clicks.byPage['/pricing']);
     });
@@ -122,8 +132,10 @@ test.describe('the click reports draw recorded clicks', () => {
      * grid on the page, so the other breakdowns of the same clicks are not added
      * in again.
      */
+    // The last column's figure on each row, without the share beside it.
     async function clicksInGrid(page) {
-        const rows = await page.locator('#topDomIds tr.jqgrow').allTextContents();
-        return rows.reduce((sum, r) => sum + Number((r.replace(/\s+/g, '').match(/(\d+)$/) || [0, 0])[1]), 0);
+        const counts = await page.locator('#topDomIds tr.owa_gridRow td:last-child')
+            .evaluateAll((tds) => tds.map((td) => td.firstChild ? td.firstChild.textContent : ''));
+        return counts.reduce((sum, c) => sum + (Number(c.replace(/[^\d]/g, '')) || 0), 0);
     }
 });

@@ -1078,7 +1078,7 @@ OWA.util =  {
     /**
      * Escape a value for interpolation into HTML.
      *
-     * A jqGrid formatter's return value becomes the cell's HTML, so any
+     * A grid formatter's return value becomes the cell's HTML, so any
      * value concatenated into one is markup unless it passes through here
      * first. Two formatters in owa.resultSetExplorer.js each carried their
      * own copy of these five replaces; this is that, shared, and now also

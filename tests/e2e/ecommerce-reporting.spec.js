@@ -174,7 +174,7 @@ test.describe('e-commerce reporting', () => {
     // base.reportEcommerce set sort='actions' -- neither a metric it queries nor
     // a dimension it groups on, and the report has no dimensions at all. The
     // unresolvable sort came back as a null sortColumn/sortOrder, which
-    // setGridOptions handed to jqGrid, which called .toLowerCase() on it:
+    // setGridOptions handed to jqGrid (the grid then), which called .toLowerCase() on it:
     // "Cannot read properties of null (reading 'toLowerCase')", thrown while
     // building the grid. The page still rendered, so the only trace was the
     // browser console -- which nothing was watching.

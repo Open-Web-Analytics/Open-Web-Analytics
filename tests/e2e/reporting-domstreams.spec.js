@@ -32,7 +32,7 @@ async function openDomstreams(page, constraints) {
 
 /** The grid's data rows, once it has drawn. */
 function rows(page) {
-    return page.locator('#domstreams-grid tr.jqgrow');
+    return page.locator('#domstreams-grid tr.owa_gridRow');
 }
 
 /**
@@ -52,7 +52,7 @@ function rowFor(page, path) {
 
 /** One of a row's cells, by column name. */
 function cell(row, name) {
-    return row.locator(`td[aria-describedby$="_${name}"]`);
+    return row.locator(`td[data-column="${name}"]`);
 }
 
 test.describe('reporting: domstreams', () => {
@@ -63,7 +63,7 @@ test.describe('reporting: domstreams', () => {
 
     test('lists one row per recording, not one per stored chunk', async ({ page }) => {
         await openDomstreams(page);
-        await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
         // Four chunks are stored: three of one recording and one of the other.
         await expect(rows(page)).toHaveCount(DS.recordings);
@@ -71,7 +71,7 @@ test.describe('reporting: domstreams', () => {
 
     test('a multi-chunk recording reports its whole length', async ({ page }) => {
         await openDomstreams(page);
-        await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
         const row = rowFor(page, DS.a.page);
 
@@ -85,7 +85,7 @@ test.describe('reporting: domstreams', () => {
 
     test('a recording sums its chunks\' events, clicks and key presses', async ({ page }) => {
         await openDomstreams(page);
-        await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
         const row = rowFor(page, DS.a.page);
 
@@ -96,7 +96,7 @@ test.describe('reporting: domstreams', () => {
 
     test('a single-chunk recording is listed too', async ({ page }) => {
         await openDomstreams(page);
-        await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
         const row = rowFor(page, DS.b.page);
 
@@ -110,7 +110,7 @@ test.describe('reporting: domstreams', () => {
      */
     test('each recording has a play link pointing at the recorded page', async ({ page }) => {
         await openDomstreams(page);
-        await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
         const play = rowFor(page, DS.a.page).locator('a.owa_overlayLink');
 
@@ -132,7 +132,7 @@ test.describe('reporting: domstreams', () => {
 
         test('narrows the list to the visits it selects', async ({ page }) => {
             await openDomstreams(page, `sessionMedium==${DS.a.medium}`);
-            await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+            await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
             await expect(rows(page)).toHaveCount(1);
             await expect(rowFor(page, DS.a.page)).toHaveCount(1);
@@ -145,7 +145,7 @@ test.describe('reporting: domstreams', () => {
          */
         test('a different segment selects a different recording', async ({ page }) => {
             await openDomstreams(page, `sessionMedium==${DS.b.medium}`);
-            await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+            await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
             await expect(rows(page)).toHaveCount(1);
             await expect(rowFor(page, DS.b.page)).toHaveCount(1);
@@ -201,8 +201,9 @@ test.describe('reporting: domstreams', () => {
      */
     test('the grid offers no explorer controls of its own', async ({ page }) => {
         await openDomstreams(page);
-        await page.waitForSelector('#domstreams-grid tr.jqgrow', { timeout: 20_000 });
+        await page.waitForSelector('#domstreams-grid tr.owa_gridRow', { timeout: 20_000 });
 
-        await expect(page.locator('#domstreams-grid .explorerTopControls')).toHaveCount(0);
+        await expect(page.locator('#domstreams-grid .owa_gridFilterButton')).toHaveCount(0);
+        await expect(page.locator('#domstreams-grid .owa_gridDimButton')).toHaveCount(0);
     });
 });

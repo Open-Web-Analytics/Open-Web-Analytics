@@ -7,8 +7,8 @@
  *   - jquery-ui-dist: UMD else-branch `factory( jQuery )`
  *   - chosen-js:      `$ = jQuery` (chosen.jquery.js ~610)
  *   - jquery-sparkline, jquery.flot (core/time/resize/pie), jQote2: `(function($){...})(jQuery)`
- * (jquery-migrate and free-jqgrid DO require('jquery') themselves, so they don't
- * need this -- but it's harmless to them.)
+ * (jquery-migrate DOES require('jquery') itself, so it doesn't need this -- but it's
+ * harmless to it.)
  *
  * webpack.ProvidePlugin used to rewrite those free identifiers to require('jquery').
  * This module replaces it: it imports jQuery and assigns it to window BEFORE the

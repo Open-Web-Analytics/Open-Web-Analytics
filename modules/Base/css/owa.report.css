@@ -58,32 +58,6 @@
     color:#505050; background-color:#cccccc;
 }
 
-/* Grid cells get room on both sides.
- *
- * jqGrid's own padding is barely a pixel, which was hidden while every row
- * started with a row-number column -- that column did the spacing for the one
- * beside it. With row numbers off, the first value sits against the border, so
- * the cells space themselves.
- *
- * !important because jqGrid writes padding into its own stylesheet at the same
- * specificity and later in the cascade. */
-.ui-jqgrid tr.jqgrow td {
-    font-size: 10px;
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-}
-
-.ui-jqgrid .ui-jqgrid-htable th.ui-th-column {
-    font-size: 10px;
-}
-
-/* The heading has to line up with the values under it, so it takes the same
-   inset. div, because jqGrid puts the label in one inside the th. */
-.ui-jqgrid .ui-jqgrid-htable th.ui-th-column div {
-    padding-left: 8px;
-    padding-right: 8px;
-}
-
 .clear {
     float:none;
     clear:both;
@@ -356,69 +330,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa .relatedReports li {
     padding-bottom: 10px;
-}
-
-/*
- * The strip under a grid: the row count on one side, the pager on the other.
- *
- * NO BACKGROUND. It was a solid #9f9f9f band, which reads as a divider rather
- * than as a place controls live -- and now that a widget is a panel and this
- * sits on its floor, an empty one drew a 5px grey bar across the bottom of
- * every table with nothing in it. It is a container for controls; when it holds
- * none it should be nothing.
- */
-.owa_resultsExplorerBottomControls {
-    font-size:10px;
-}
-
-.owa_resultsExplorerBottomControls li a {
-    border: 1px solid #efefef;
-}
-
-
-
-.owa_resultsExplorerBottomControls ul {
-
-    float:right;
-
-}
-.owa_rowCount {
-
-    font-size:12px;
-    color: #9f9f9f;
-    margin-right:30px;
-}
-
-.owa_nextPageControl:hover, .owa_previousPageControl:hover{
-    color: var(--owa-accent);
-    padding:;
-    border: 1px solid var(--owa-accent);
-}
-
-.owa_nextPageControl, .owa_previousPageControl {
-    background-color: #efefef;
-    border: 1px solid #505050;
-    color: #505050;
-    padding:5px;
-    font-size: 12px;
-}
-
-.owa_metricGridCell {
-    padding-right: 20px;
-}
-
-.owa_dimensionGridCell td {
-    padding-left: 30px;
-}
-
-.owa_dimensionGridCell a {
-    text-decoration: none;
-    color: blue;
-}
-
-.owa_dimensionGridCell a:hover{
-    text-decoration: underline;
-    color: blue;
 }
 
 .simpleTable {
@@ -790,65 +701,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     margin-top: 10px;
 }
 
-/* The grid's control bar.
- *
- * A ROW that stays a row. Each control used to be a text label plus a select,
- * and two of those wrap onto separate lines as soon as the widget is narrow --
- * which is most of them, since a widget is often half a report wide. The labels
- * are gone (each control names itself through its placeholder) and the items
- * shrink rather than pushing each other down. */
-.explorerTopControls {
-
-    font-size: 12px;
-    width: auto;
-    border: 1px solid #B0B0B0;
-    border-radius: 3px;
-    padding: 5px 8px;
-    margin-bottom: 3px;
-    background-color: #fafafa;
-}
-
-.explorerTopControls > ul {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin: 0;
-    padding: 0;
-    /* The bar's own list, not the generic horizontal one it inherits from --
-       those float, and a float cannot shrink to share a row. */
-    float: none;
-}
-
 .dimensionPicker li, .dimensionPicker ul {
 
     float:none;
-}
-
-.explorerTopControls .controlItem span {
-    font-size: 10px;
-}
-
-.explorerTopControls li {
-
-    list-style: none;
-    text-decoration: none;
-    float: none;
-    margin: 0;
-    padding: 0;
-
-    /* Shrink before wrapping: a picker at 120px is still usable, and a bar on
-       one line is what makes the widget readable. max-width so an item can
-       never be wider than the bar holding it. */
-    flex: 0 1 auto;
-    min-width: 0;
-    max-width: 100%;
-}
-
-/* The secondary-dimension picker fills whatever the row leaves it. */
-.explorerTopControls .controlItem .chosen-container {
-    min-width: 120px;
-    max-width: 100%;
 }
 
 /*
@@ -1201,16 +1056,6 @@ li.constraintRow {
     overflow-x: auto;
 }
 
-/* ...except while a dropdown is open in it.
- *
- * overflow-x:auto computes overflow-y to auto as well, so the widget is a
- * scroll box in both directions and a chosen drop opening downwards is cut off
- * by it -- measured at 278px tall with 74px showing. Lifted only for as long as
- * a list is open, so wide tables still scroll inside their widget the rest of
- * the time. */
-.owa_reportGridItem.owa_dropdownOpen {
-    overflow: visible;
-}
 .owa_span-1 { grid-column: span 1; }
 .owa_span-2 { grid-column: span 2; }
 .owa_span-3 { grid-column: span 3; }
@@ -2542,10 +2387,6 @@ li.constraintRow {
     min-width: 0;
 }
 
-.owa .owa_widgetBody > .owa_resultsExplorerBottomControls {
-    margin-top: auto;
-}
-
 /* The "View Full Report" link is a sibling of the body rather than inside it,
    so it needs saying separately -- and it goes UNDER the pager, which is the
    order they read in: page through what is here, then go and see all of it. */
@@ -2824,17 +2665,6 @@ li.constraintRow {
     clear: both;
 }
 
-/* NO BOX AROUND IT. The grid of rows behind a trend is part of that widget --
-   the same question at more detail -- and jqGrid's own frame drew it as a
-   second, nested card sitting inside the first. The rows and their headings
-   keep their rules; only the outer frame goes. */
-.owa .owa_trendBreakdown .ui-jqgrid,
-.owa .owa_trendBreakdown .ui-jqgrid-view,
-.owa .owa_trendBreakdown .ui-jqgrid-bdiv,
-.owa .owa_trendBreakdown .ui-jqgrid-hdiv {
-    border: 0;
-}
-
 /* ---------------------------------------------------------------------------
  * The filter toggle
  *
@@ -2848,20 +2678,9 @@ li.constraintRow {
  * "available", and a control you are currently using is not merely available.
  * ------------------------------------------------------------------------- */
 
-.owa .explorerTopControls .owa_filterToggle,
 .owa .owa_filterToggle {
     display: inline-block;
-    /*
-     * 16px, which is what every other icon on the page is -- the nav's group
-     * icons and its carets both.
-     *
-     * The selector carries .explorerTopControls for a reason. That bar sets
-     * `.explorerTopControls .controlItem span { font-size: 10px }`, which is
-     * two classes and an element (0,2,1) against this rule's two classes
-     * (0,2,0), so it WON and the funnel rendered at 10px -- a smudge, and half
-     * the size of the icons it sits among. The comment here used to claim the
-     * opposite; it was never measured.
-     */
+    /* 16px, which is what every other icon on the page is. */
     font-size: 16px;
     line-height: 1;
     padding: 2px;
@@ -2898,60 +2717,10 @@ li.constraintRow {
     vertical-align: middle;
 }
 
-/* ---------------------------------------------------------------------------
- * Dimension pickers, in the grid's control bar
- *
- * One picker per dimension the grid is grouped by, and a plus for another.
- * A select, not a pill, because refining is about CHANGING what you are looking
- * at -- pills are for curating a set, which is what editing a widget is.
- * ------------------------------------------------------------------------- */
-
-.owa .owa_dimensionSelectors {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-wrap: wrap;
-
-    /* Shrinkable and bounded by the bar.
-     *
-     * A widget can legitimately group by several dimensions -- the dashboard's
-     * Latest Visits grid queries seven -- and seven pickers at their natural
-     * width is far wider than a half-width widget's bar. Without a max-width
-     * this grew past the widget, and .owa_reportGridItem's overflow-x turned
-     * that into a horizontal scrollbar on the whole widget.
-     *
-     * flex, not inline-flex: an inline-flex is sized shrink-to-fit by its
-     * parent's available width, which inside a flex item resolves to
-     * max-content and defeats the wrapping. */
-    min-width: 0;
-    max-width: 100%;
-}
-
-/* Each picker reads as a PILL with a dropdown arrow, and sizes to its own
-   text rather than to a fixed width -- three dimensions named "Medium",
-   "Browser Type" and "Date" should take the room those words need and no more.
-   The list itself opens over the widget, which is chosen's own behaviour: its
-   drop is absolutely positioned, so it costs no space in the bar. */
-.owa .owa_dimSlot {
-    display: inline-block;
-
-    /* Narrow enough that several fit a half-width bar, wide enough to read.
-       The label truncates with an ellipsis rather than widening the slot. */
-    min-width: 0;
-    max-width: 150px;
-    flex: 0 1 auto;
-}
-
 /*
- * THE PILL, wherever a dimension is chosen.
- *
- * Scoped to .owa_dimSlot at first, because the bar was the only place one
- * appeared. The filter builder builds dimension pickers too -- and an operator
- * picker beside them now -- and left to chosen's own defaults those rendered
- * 25px tall at 13px with a 5px corner, next to 22px/11px/12px pills on the bar
- * two lines above. Same control, same clothes.
+ * The filter builder's pickers (OWA.constraintBuilder, for a screen that builds
+ * its own filter control): a pill per chosen select.
  */
-.owa .owa_dimSlot .chosen-container,
 .owa .constraintRow .chosen-container {
     font-size: 11px;
     max-width: 100%;
@@ -2959,7 +2728,6 @@ li.constraintRow {
     width: auto !important;
 }
 
-.owa .owa_dimSlot .chosen-container .chosen-single,
 .owa .constraintRow .chosen-container .chosen-single {
     height: auto;
     padding: 3px 22px 3px 9px;
@@ -2971,7 +2739,6 @@ li.constraintRow {
     line-height: 1.4;
 }
 
-.owa .owa_dimSlot .chosen-container .chosen-single span,
 .owa .constraintRow .chosen-container .chosen-single span {
     margin-right: 0;
     white-space: nowrap;
@@ -2980,57 +2747,15 @@ li.constraintRow {
     display: block;
 }
 
-.owa .owa_dimSlot .chosen-container-active .chosen-single,
 .owa .constraintRow .chosen-container-active .chosen-single {
     border-color: #999999;
 }
 
 /* The drop is wider than the pill that opened it -- a name has to be readable
    even when the trigger is only as wide as "Date". */
-.owa .owa_dimSlot .chosen-container .chosen-drop,
 .owa .constraintRow .chosen-container .chosen-drop {
     min-width: 240px;
     width: auto;
-}
-
-.owa .owa_dimAdd {
-    flex: 0 0 auto;
-    width: 22px;
-    height: 22px;
-    line-height: 1;
-    padding: 0;
-    border: 1px solid #cccccc;
-    border-radius: 3px;
-    background-color: #f5f5f5;
-    color: #505050;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-.owa .owa_dimAdd:hover {
-    border-color: #999999;
-    background-color: #ececec;
-}
-
-/* How many filters are on, beside the Filter toggle.
- *
- * Red because it changes what the numbers beside it MEAN: a filtered grid and
- * an unfiltered one look identical, and a reader draws conclusions from the
- * rows in front of them. Hidden at zero -- an always-present badge is furniture
- * and stops being read. */
-.owa .constraintPickerContainer .constraintCount {
-    display: inline-block;
-    min-width: 18px;
-    margin-left: 5px;
-    padding: 1px 6px;
-    border-radius: 9px;
-    background-color: #c0392b;
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: bold;
-    line-height: 16px;
-    text-align: center;
-    vertical-align: middle;
 }
 
 /* ---------------------------------------------------------------------------
