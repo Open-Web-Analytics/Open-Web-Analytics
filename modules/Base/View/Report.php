@@ -87,6 +87,7 @@ class Report extends \OWA\Core\View {
         $this->body->set('hideTimeControls', $this->get('hideTimeControls') );
         $this->body->set('title_actions', $this->get('title_actions') );
         $this->body->set('title_count', $this->get('title_count') );
+        $this->body->set('title_tags', $this->get('title_tags') ?: array() );
 
         $this->body->set('currentSiteId', $this->get('currentSiteId'));
         $this->body->set('currentPropertyId', $this->get('currentPropertyId'));

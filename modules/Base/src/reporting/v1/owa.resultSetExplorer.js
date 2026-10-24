@@ -111,7 +111,6 @@ OWA.resultSetExplorer = function(dom_id, options) {
     this.gridInit = false;
     this.init = {
         grid: false,
-        pieChart: false,
         areaChart: false
     };
 
@@ -138,11 +137,11 @@ OWA.resultSetExplorer = function(dom_id, options) {
             showLegend: true,
             lineWidth: 2.5
         },
-        pieChart: {
+        // A `pie` widget's options; see OWA.shareChart.
+        shareChart: {
             metric: '',
             dimension: '',
-            metrics: [],
-            // Raw dimension value -> slice label, set by a report definition.
+            // Raw dimension value -> row label, set by a report definition.
             valueLabels: null,
             numSlices: 5
         },
@@ -221,7 +220,7 @@ OWA.resultSetExplorer.prototype = {
     viewMethods: {
         grid: 'refreshGrid',
         areaChart: 'makeAreaChart',
-        pie: 'makePieChart',
+        pie: 'makeShareChart',
         sparkline: 'makeSparkline',
         template: 'renderTemplate'
     },
@@ -773,27 +772,14 @@ OWA.resultSetExplorer.prototype = {
         return this.resultSet.getMetricValue( name );
     },
 
-    makePieChart : function (resultSet, dom_id, options) {
-     
-         var pc = new OWA.pieChart();
+    makeShareChart : function ( resultSet, dom_id, options ) {
 
-         if ( ! options ) {
-             options = this.options.pieChart;
-         };
+        var chart = new OWA.shareChart();
 
-         if ( ! dom_id ) {
+        dom_id = dom_id || this.dom_id;
 
-             dom_id = this.dom_id;
-         }
+        chart.generate( resultSet || this.resultSet, dom_id, options || this.options.shareChart );
 
-         if ( ! resultSet ) {
-
-             resultSet = this.resultSet;
-         }
-
-         pc.generate(resultSet, dom_id, options);
-
-         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
     },
     

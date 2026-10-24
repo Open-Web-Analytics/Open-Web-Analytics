@@ -536,7 +536,7 @@ $owa_max        = (int) $view->get('max_widgets');
      *
      * A card shows one dimension, so the column a link comes from is the one it
      * has. A full-width grid can show several and would need that choice asked
-     * separately; a pie has slices rather than rows.
+     * separately; a share chart's Other row is no one value to link to.
      */
     var LINKABLE_TYPES = [ 'grid-card' ];
 

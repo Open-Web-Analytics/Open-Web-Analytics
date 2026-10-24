@@ -219,7 +219,7 @@ class Report extends \OWA\Core\AdminController {
         $data = (array) $this->delegateTo( $controllers[ $type ] );
 
         // The same edit control a custom report gets, in the same place.
-        return $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report );
+        return $this->withSharedTag( $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report ), $report );
     }
 
     private function renderCustom( $id ) {
@@ -323,7 +323,7 @@ class Report extends \OWA\Core\AdminController {
          * enough. It took an admin opening a report created by someone else --
          * which is the ordinary case on any install with more than one author.
          */
-        return $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report );
+        return $this->withSharedTag( $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report ), $report );
     }
 
     /**
@@ -460,6 +460,26 @@ class Report extends \OWA\Core\AdminController {
         $existing = isset( $data['title_actions'] ) ? (array) $data['title_actions'] : array();
 
         $data['title_actions'] = array_merge( array( $star ), $existing );
+
+        return $data;
+    }
+
+    /**
+     * "Shared" beside the title of a report everyone with access can see, the
+     * tag the custom reports list gives it.
+     *
+     * @param  array $data    what the target controller returned
+     * @param  array $report  the row being rendered
+     * @return array
+     */
+    private function withSharedTag( array $data, array $report ) {
+
+        if ( empty( $data['view'] ) || empty( $report['is_shared'] ) ) {
+
+            return $data;
+        }
+
+        $data['title_tags'] = array_merge( (array) ( $data['title_tags'] ?? array() ), array( 'Shared' ) );
 
         return $data;
     }

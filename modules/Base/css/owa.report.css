@@ -264,12 +264,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     min-height: 60px;
 }
 
-.owa_piechart {
-	
-	width:250px;
-	margin-top:-10px;
-}
-
 .owa_visitInfobox {
     color:#9f9f9f;
     background-color: #505050;
@@ -2209,25 +2203,51 @@ li.constraintRow {
  * A left margin only, so the icon hangs off the end of the title instead of
  * being centred in a gap that reads as a separator. */
 .owa .owa_titleActionMark {
-    display: inline-block;
-    margin-left: 14px;
-    padding: 4px;
-    font-size: 0.68em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-left: 4px;
+    border-radius: 18px;
+    font-size: 17px;
     line-height: 1;
-    color: #505050;
-    opacity: 0.85;
-    border-radius: 3px;
+    color: #4b5563;
     text-decoration: none;
     vertical-align: middle;
 }
 
+.owa .owa_titleActionMark:first-of-type {
+    margin-left: 12px;
+}
+
 /* A hover target that is a shape, not just a colour change: a 17px glyph is a
-   small thing to aim at, and the tinted square says it was hit. */
+   small thing to aim at, and the round fill says it was hit. */
 .owa .owa_titleActionMark:hover,
 .owa .owa_titleActionMark:focus {
-    opacity: 1;
-    color: #1874CD;
-    background-color: #eaf2fb;
+    color: #111827;
+    background-color: #f3f5f8;
+}
+
+/* A favorite's star is filled and gold, as on the list and in the column. */
+.owa .owa_titleActionMark .fas.fa-star {
+    color: #c99a06;
+}
+
+.owa .owa_titleTag {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    margin-left: 8px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: #f3f5f8;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: #4b5563;
+    vertical-align: middle;
+    white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------------------
@@ -2532,74 +2552,51 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
- * Pie chart legend
- *
- * The slice names sit in a column to the RIGHT of the circle rather than round
- * its edge. flot inserts this table itself and the pie plugin measures it to
- * decide where the circle's centre goes, so its width is load-bearing -- these
- * rules set the type and spacing and leave the box alone.
- *
- * Round-the-edge labels were what made two pies draw at different sizes: flot
- * fits them by shrinking the pie, so the width of the longest word set the
- * diameter.
+ * Share chart (OWA.shareChart): each value's share of one metric, ranked, a
+ * row per value with the bar a card draws under it (owa.grid.css).
  * ------------------------------------------------------------------------- */
 
-/* The plot is a FIXED box in a panel that is usually bigger, so it is CENTRED
-   in both directions rather than sitting in the top-left corner.
- *
- * Left-aligned it reads as content that ran out rather than as a chart that is
- * the size it means to be -- most visible on Traffic, where the panel is half a
- * row and 280 of it is the plot. Top-aligned it left the panel's floor as a
- * band of empty white under the circle.
- *
- * The pie already sits left of centre INSIDE the plot, because the legend has
- * the right-hand column; centring the plot is what puts the pair of them
- * together in the middle of the widget. */
-.owa .owa_pieBody {
-    align-items: center;
-    justify-content: center;
+.owa .owa_shareChart {
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.owa .owa_pieChart {
-    flex: 0 0 auto;
+.owa .owa_shareRow {
+    padding: 10px 0;
 }
 
-.owa .owa_pieChart .legend table {
-    font-size: 11px;
-    border-spacing: 0;
+.owa .owa_shareHead {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 6px;
+    font-size: 14px;
+    line-height: 20px;
 }
 
-/* A name too long for the space is TRUNCATED rather than allowed to widen the
-   legend into the pie. The plot is a fixed box, so something has to give, and a
-   clipped name with an ellipsis still reads -- a legend overlapping the circle
-   does not. The full text stays available on hover via the title attribute
-   flot writes. */
-.owa .owa_pieChart .legend .legendLabel {
-    padding: 1px 0 1px 5px;
-    color: #505050;
-    white-space: nowrap;
-    /* Inside the column the pie reserves for it -- see
-       OWA.pieChart's legendWidth. The swatch cell takes the rest. */
-    max-width: 92px;
+.owa .owa_shareLabel {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1f2937;
 }
 
-/* The swatch is a table cell holding a bordered div; size it there so the row
-   height follows the text rather than the box. */
-.owa .owa_pieChart .legend .legendColorBox div {
-    border-radius: 2px;
+.owa .owa_shareValue {
+    flex: none;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #111827;
 }
 
-/* flot paints a translucent panel behind the legend. On a white widget that
-   only adds an edge.
- *
- * Hidden by OPACITY, not display: the element is what flot measures to decide
- * where to put the circle. Taking it out of the layout is how the pie ended up
- * centred under its own legend. (The offset is a reserved number now rather
- * than that measurement -- see OWA.pieChart -- so this is belt and braces.) */
-.owa .owa_pieChart .legend > div:first-child {
-    opacity: 0;
+/* Other is the rest, not a value: quieter, and its bar grey. */
+.owa .owa_shareRow.is-other .owa_shareLabel {
+    color: #6b7280;
+}
+
+.owa .owa_shareRow.is-other .owa_gridBarFill {
+    background: #b8c0cc;
 }
 
 /* An empty period still draws its axes; this says which kind of empty it is.
@@ -2752,12 +2749,6 @@ li.constraintRow {
 /* A trend card the width of the report has the room for a chart that is. */
 .owa .owa_widget-trend-card.owa_span-12 .owa_trendChart {
     min-height: 260px;
-}
-
-/* A pie's legend sits beside the circle and can reach past the widget's edge,
-   which the sideways scroll every widget has would cut off. */
-.owa .owa_reportGridItem.owa_widget-pie {
-    overflow: visible;
 }
 
 /* The boxes share what the row has rather than each taking a fixed slice: the

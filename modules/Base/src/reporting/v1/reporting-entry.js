@@ -10,7 +10,7 @@
  * order the concat used:
  *   - jquery + jquery-migrate first (migrate bridges the 1.x->3.x API removals the
  *     legacy plugins still rely on).
- *   - flot core -> time -> resize -> pie: 0.8 EXTRACTED the time axis out of core
+ *   - flot core -> time: 0.8 EXTRACTED the time axis out of core
  *     into jquery.flot.time.js, and owa.areachart.js uses xaxis.mode:"time", so
  *     time.js MUST load before the OWA area chart or its date axis breaks.
  *
@@ -67,7 +67,6 @@ import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis
  * also covers what this plugin never could -- a widget whose width changed
  * without the window changing, which is most of them on a container-query grid.
  */
-import 'jquery.flot/jquery.flot.pie.js';
 // jQote2 has no npm package -> stays vendored, imported as a side-effect module.
 import './includes/jquery/jQote2/jquery.jqote2.min.js';
 
@@ -79,7 +78,7 @@ import './owa.resultSetExplorer.js';
 import './owa.sparkline.js';
 import './owa.realtime.js';
 import './owa.areachart.js';
-import './owa.piechart.js';
+import './owa.sharechart.js';
 import './owa.kpibox.js';
 // The confirmation an irreversible action gets. Imported after owa.js like the
 // rest; it augments OWA and delegates one document-level handler.

@@ -332,8 +332,15 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * exactly one goal resolves to exactly one metric, so counting cannot tell
      * a panel from a box.
      */
+    /*
+     * ...and only with ONE metric. Several boxes each labelled "Totals" say
+     * nothing about which is which, so with more than one each box keeps its
+     * metric's name and the title is the heading over them.
+     */
     $owa_ownsTitle = ( $owa_w['type'] ?? '' ) === 'metric-boxes'
-        && empty( $owa_w['showTitle'] );
+        && empty( $owa_w['showTitle'] )
+        && count( array_filter( array_map( 'trim',
+            explode( ',', (string) ( $owa_w['query']['metrics'] ?? '' ) ) ) ) ) <= 1;
 
     $owa_showTitle = ! $owa_ownsTitle
         && ! empty( $owa_w['title'] )
@@ -531,47 +538,28 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'pie' ): ?>
 <?php
     /*
-     * A share-of-total chart: one slice per value of the query's dimension.
+     * A share chart: each value of the query's dimension as its share of the
+     * metric, ranked, with the rest as Other (OWA.shareChart). The type is
+     * still called `pie` because saved reports name it.
      *
      * The dimension is NOT configured separately -- it is the one the widget
      * already queries, and naming it twice is a way for the two to disagree.
      */
 ?>
-        <?php
-            /*
-             * The pie's plot is a fixed box in a panel that is usually bigger,
-             * so the body it sits in centres it -- see owa.report.css.
-             */
-        ?>
-        <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody owa_pieBody"></div>
+        <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody owa_shareBody"></div>
 
         <script>
         var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.pieChart.metric = '<?php $view->out( $owa_chartMetric, false ); ?>';
-        <?php echo $owa_id; ?>.options.pieChart.dimension = '<?php $view->out( (string) ( $owa_query['dimensions'] ?? '' ), false ); ?>';
+        <?php echo $owa_id; ?>.options.shareChart.metric = '<?php $view->out( $owa_chartMetric, false ); ?>';
+        <?php echo $owa_id; ?>.options.shareChart.dimension = '<?php $view->out( (string) ( $owa_query['dimensions'] ?? '' ), false ); ?>';
 <?php if ( ! empty( $owa_w['valueLabels'] ) ): ?>
-        <?php // Raw value -> label, so a boolean pie can read New/Repeat rather than No/Yes. ?>
-        <?php echo $owa_id; ?>.options.pieChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
+        <?php // Raw value -> label, so a boolean dimension can read New/Repeat rather than No/Yes. ?>
+        <?php echo $owa_id; ?>.options.shareChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
 <?php endif; ?>
-<?php
-    /*
-     * NO chartWidth. A pie is as wide as the widget holding it and as tall as
-     * its own option -- see OWA.pieChart.setupPieChart -- so a per-widget width
-     * had nothing to set.
-     *
-     * It was not merely unused, it was DEAD: the template wrote it onto the
-     * explorer's option bag, and the pie reads a different one and takes its
-     * width from the DOM regardless. `traffic` carried chartWidth: '300px' and
-     * drew at 619px for years.
-     *
-     * Removed rather than wired up, because wiring it would put back the thing
-     * this was reported as: pies at different sizes on different reports.
-     */
-?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makePieChart']);
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeShareChart']);
 
 <?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load();

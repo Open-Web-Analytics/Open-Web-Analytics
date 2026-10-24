@@ -235,7 +235,7 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         /**
-         * THREE pies, each into its own container.
+         * THREE share charts, each into its own container.
          *
          * The report splits its visits three ways -- by channel, by source, by
          * campaign -- and draws each split as its own chart. Three widgets of
@@ -245,7 +245,7 @@ test.describe('every configured report renders in a browser', () => {
          * have three metric-boxes widgets and that is exactly the bug they
          * were guarding, so the guard follows the shape rather than the type.
          */
-        test('each pie draws into its own container', async ({ page }) => {
+        test('each share chart draws into its own container', async ({ page }) => {
             for (const [container, title] of [
                 ['traffic-sources',          'Channels'],
                 ['traffic-sources-source',   'Sources'],
@@ -260,31 +260,30 @@ test.describe('every configured report renders in a browser', () => {
                     .toHaveText(title);
             }
 
-            // All three paint: an untagged visit's campaign is a placeholder, not empty.
+            // All three draw rows: an untagged visit's campaign is a placeholder, not empty.
             for (const container of ['traffic-sources', 'traffic-sources-source', 'traffic-sources-campaign']) {
-                await expect(page.locator(`#${container} canvas`).first(),
-                    `${container} painted no canvas`).toBeVisible({ timeout: 20_000 });
+                await expect(page.locator(`#${container} .owa_shareRow`).first(),
+                    `${container} drew no rows`).toBeVisible({ timeout: 20_000 });
             }
         });
 
         /**
-         * A pie with nothing to draw says so, rather than drawing nothing.
+         * A share chart with nothing to draw says so, rather than drawing nothing.
          *
-         * Every pie on the report has slices for the fixture's own period, so
-         * the empty case is the same report over a week with no traffic at
-         * all. An empty pie that painted a blank canvas -- or an empty panel
-         * with no message at all -- reads as a broken widget rather than as an
-         * answer, and the two are indistinguishable from outside.
+         * Every share chart on the report has rows for the fixture's own
+         * period, so the empty case is the same report over a week with no
+         * traffic at all. An empty panel with no message reads as a broken
+         * widget rather than as an answer.
          */
-        test('a pie with no data says so instead of drawing', async ({ page }) => {
+        test('a share chart with no data says so instead of drawing', async ({ page }) => {
             const drawn = page.locator('#traffic-sources');
 
             /*
              * The fixture's period first, and what stops the rest from passing
-             * on a report where every pie is always empty: this pie has slices
+             * on a report where every chart is always empty: this one has rows
              * and does NOT carry the message.
              */
-            await expect(drawn.locator('.legend tr').first()).toBeVisible({ timeout: 20_000 });
+            await expect(drawn.locator('.owa_shareRow').first()).toBeVisible({ timeout: 20_000 });
             await expect(drawn).not.toContainText(/no data/i);
 
             await openConfiguredReport(page, {
@@ -297,13 +296,8 @@ test.describe('every configured report renders in a browser', () => {
 
             await expect(empty).toContainText(/no data/i, { timeout: 20_000 });
 
-            /*
-             * ...and no slices to read it against. flot builds its two
-             * canvases either way -- they are just painted blank -- so the
-             * canvas is not the difference. The LEGEND is: one entry per
-             * slice, and an empty pie has none.
-             */
-            await expect(empty.locator('.legend tr')).toHaveCount(0);
+            // ...and no rows to read it against.
+            await expect(empty.locator('.owa_shareRow')).toHaveCount(0);
         });
 
         /**
@@ -784,7 +778,7 @@ test.describe('the report grid gives every widget a usable width', () => {
             { waitUntil: 'networkidle' }
         );
 
-        await page.waitForSelector('.owa_widget-pie canvas', { timeout: 20_000 });
+        await page.waitForSelector('.owa_widget-pie .owa_shareChart', { timeout: 20_000 });
 
         const widgets = await page.evaluate(() =>
             [...document.querySelectorAll('.owa_reportGridItem')].map((el) => {
@@ -827,131 +821,16 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
-     * EVERY PIE DRAWS THE SAME CIRCLE, whatever width its widget is.
-     *
-     * A pie used to be a SQUARE the size of whatever held it -- the height was
-     * literally the container's width. At a quarter of a row that is a 286px
-     * box; at half a row it is a 619px one, and flot sizes the circle from
-     * min(width, height), so the same pie drew at 174px on the dashboard and
-     * around 446px on Traffic. Two pies, two and a half times apart, with
-     * nothing in the definitions to say so.
-     *
-     * The height is the pie's own option now and is capped at the width, so
-     * min(w, h) is the same number everywhere and so is the circle. The extra
-     * width on a wide widget becomes margin, which is what it should have been.
-     *
-     * Measured off the CANVAS rather than from the element box: the box was
-     * always the same as its container and told you nothing about what was
-     * drawn in it. flot renders pie labels as HTML, so the canvas holds the
-     * circle alone and its filled extent IS the diameter.
+     * A share chart is as wide as its widget, at a quarter of a row on the
+     * dashboard and a third on Traffic, and a long name is cut short with an
+     * ellipsis rather than pushing the percentage out of the widget.
      */
-    test('a pie draws the same size circle on every report', async ({ page }) => {
-        test.setTimeout(120_000);
-
-        await login(page);
-        // 1600 with the old 200px nav column; the rail and column are 336px.
-        await page.setViewportSize({ width: 1736, height: 1400 });
-
-        const circles = async (reportId) => {
-
-            await page.goto(
-                `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}`
-                + '&owa_period=last_thirty_days',
-                { waitUntil: 'networkidle' }
-            );
-
-            await page.waitForSelector('.owa_pieChart canvas', { timeout: 20_000 });
-            await page.waitForTimeout(1200);
-
-            return page.evaluate(() => [...document.querySelectorAll('.owa_pieChart')].map((holder) => {
-
-                let widest = 0;
-
-                for (const c of holder.querySelectorAll('canvas')) {
-
-                    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-
-                    let minX = 1e9, maxX = -1, n = 0;
-
-                    for (let y = 0; y < c.height; y++) {
-                        for (let x = 0; x < c.width; x++) {
-                            if (d[(y * c.width + x) * 4 + 3] > 20) {
-                                n++;
-                                if (x < minX) { minX = x; }
-                                if (x > maxX) { maxX = x; }
-                            }
-                        }
-                    }
-
-                    // The slice layer, not flot's empty base canvas.
-                    if (n > 500) { widest = Math.max(widest, maxX - minX + 1); }
-                }
-
-                /*
-                 * The WIDGET's width, not the plot's. The plot is a fixed box
-                 * now, so comparing plots would make the "is one of these
-                 * actually wider" guard below compare two equal numbers and
-                 * fail on a report that is set up correctly.
-                 */
-                const item = holder.closest('.owa_reportGridItem');
-
-                return {
-                    widget: Math.round(item.getBoundingClientRect().width),
-                    circle: widest,
-                };
-            }));
-        };
-
-        // The dashboard's two pies are a quarter of a row...
-        const narrow = await circles('dashboard');
-
-        expect(narrow.length).toBe(2);
-
-        /*
-         * ...and Traffic's three are a THIRD of one each, in wider containers.
-         */
-        const wide = await circles('traffic');
-
-        expect(wide.length).toBe(3);
-
-        /*
-         * A quarter of a row against a third of one. Not the 1.5x this used to
-         * ask for -- the pie was half a row when it was the only one -- but
-         * still a real difference, and still enough for the same-circle
-         * assertion below to be about something: at equal widths it would be
-         * comparing a number to itself.
-         *
-         * 1.1, not 1.2: the dashboard opens no nav column, so its row is 248px
-         * wider than Traffic's and its quarter is closer to Traffic's third.
-         */
-        expect(wide[0].widget,
-            'the wide pie is no longer in a wider widget, so this proves nothing')
-            .toBeGreaterThan(narrow[0].widget * 1.1);
-
-        // Same circle in all five, within a pixel of rounding.
-        const all = [...narrow, ...wide].map((p) => p.circle);
-
-        expect(Math.min(...all)).toBeGreaterThan(0);
-        expect(Math.max(...all) - Math.min(...all),
-            `pie circles differ across reports: ${JSON.stringify(all)}`)
-            .toBeLessThanOrEqual(2);
-    });
-
-    /**
-     * The plot area is a FIXED BOX, and the legend fits inside it.
-     *
-     * The slice names sit to the right of the circle, so a plot that tracked
-     * its container would take that room away as the widget narrowed --
-     * squeezing the legend into the pie or off the canvas. A circle and a
-     * legend need what they need; below that the widget scrolls, which is the
-     * answer a table already gets when its columns stop fitting.
-     */
-    test('a pie plot is a fixed box with its legend inside it', async ({ page }) => {
+    test('a share chart fills its widget, its percentages inside it', async ({ page }) => {
         test.setTimeout(120_000);
 
         await login(page);
 
-        const boxes = async (reportId, width) => {
+        const measure = async (reportId, width) => {
 
             await page.setViewportSize({ width, height: 1500 });
 
@@ -961,103 +840,34 @@ test.describe('the report grid gives every widget a usable width', () => {
                 { waitUntil: 'networkidle' }
             );
 
-            await page.waitForSelector('.owa_pieChart canvas', { timeout: 20_000 });
-            await page.waitForTimeout(1000);
+            await page.waitForSelector('.owa_shareChart .owa_shareRow', { timeout: 20_000 });
 
-            return page.evaluate(() => [...document.querySelectorAll('.owa_pieChart')].map((h) => {
+            return page.evaluate(() => [...document.querySelectorAll('.owa_shareChart')].map((list) => {
 
-                const plot = h.getBoundingClientRect();
-
-                /*
-                 * The CIRCLE, from the painted canvas -- not the plot element,
-                 * which is the box the circle sits in and says nothing about
-                 * where it actually is.
-                 */
-                let circle = null;
-
-                for (const c of h.querySelectorAll('canvas')) {
-
-                    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-
-                    let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1, n = 0;
-
-                    for (let y = 0; y < c.height; y++) {
-                        for (let x = 0; x < c.width; x++) {
-                            if (d[(y * c.width + x) * 4 + 3] > 20) {
-                                n++;
-                                if (x < x0) { x0 = x; }
-                                if (x > x1) { x1 = x; }
-                                if (y < y0) { y0 = y; }
-                                if (y > y1) { y1 = y; }
-                            }
-                        }
-                    }
-
-                    if (n > 500) {
-                        const r = c.getBoundingClientRect();
-                        circle = { l: r.left + x0, r: r.left + x1, t: r.top + y0, b: r.top + y1 };
-                    }
-                }
-
-                // flot's .legend is a full-width positioned block; the TABLE is
-                // the part with the names in it.
-                const legend = h.querySelector('.legend');
-                const table = legend ? legend.querySelector('table') : null;
-                const t = table ? table.getBoundingClientRect() : null;
+                const item = list.closest('.owa_reportGridItem').getBoundingClientRect();
+                const bar = list.querySelector('.owa_gridBar').getBoundingClientRect();
+                const values = [...list.querySelectorAll('.owa_shareValue')].map((v) => v.getBoundingClientRect());
 
                 return {
-                    plot: { w: Math.round(plot.width), h: Math.round(plot.height) },
-                    hasLegend: !!table,
-                    legendInside: t
-                        ? t.left >= plot.left - 1 && t.right <= plot.right + 1
-                        : null,
-                    overlapsCircle: (circle && t)
-                        ? !(t.left >= circle.r || t.right <= circle.l
-                            || t.top >= circle.b || t.bottom <= circle.t)
-                        : null,
+                    item: Math.round(item.width),
+                    bar: Math.round(bar.width),
+                    valuesInside: values.every((v) => v.right <= item.right + 0.5 && v.width > 0),
                 };
             }));
         };
 
         const seen = [];
 
-        // Two reports, and a widget twice as wide on one of them.
         for (const [reportId, width] of [['dashboard', 1600], ['dashboard', 1000], ['traffic', 1600]]) {
-            seen.push(...await boxes(reportId, width));
+            seen.push(...await measure(reportId, width));
         }
 
-        expect(seen.length).toBeGreaterThanOrEqual(4);
+        expect(seen.length).toBe(2 + 2 + 3);
 
-        for (const p of seen) {
-
-            expect(p.hasLegend, 'a pie drew no legend').toBe(true);
-
-            expect(p.legendInside,
-                'the legend is outside the plot area it is drawn in').toBe(true);
-
-            /*
-             * THE ASSERTION THAT MATTERS, and the one this test did not make
-             * at first: inside the plot is not the same as clear of the pie.
-             *
-             * flot positions the circle by MEASURING the legend -- the width of
-             * a background div it prepends, and only prepends when
-             * backgroundOpacity is non-zero -- then shifting the centre by half
-             * of it. That measurement came back as 40px for a legend 119px
-             * wide, so Traffic Sources drew its names across its own pie while
-             * "the legend is inside the plot" stayed true throughout.
-             *
-             * The legend has a reserved column now and the offset is derived
-             * from it, so nothing is measured and nothing can be measured
-             * wrong.
-             */
-            expect(p.overlapsCircle,
-                'the legend is drawn over the pie').toBe(false);
+        for (const c of seen) {
+            expect(Math.abs(c.bar - c.item), `a bar is ${c.bar}px in a ${c.item}px widget`).toBeLessThanOrEqual(1);
+            expect(c.valuesInside, 'a percentage is outside its widget').toBe(true);
         }
-
-        // ...and every plot is the SAME box, whatever holds it.
-        const sizes = [...new Set(seen.map((p) => `${p.plot.w}x${p.plot.h}`))];
-
-        expect(sizes, `pie plots differ in size: ${sizes.join(', ')}`).toHaveLength(1);
     });
 
     /**

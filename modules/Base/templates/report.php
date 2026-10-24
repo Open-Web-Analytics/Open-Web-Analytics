@@ -146,6 +146,10 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                              * in 5.13 and renders as an empty box.)
                              */
                             $view->out( $owa_mark['icon'] ); ?>"></i></a><?php
+                        endforeach;
+                        // Words about the report, such as Shared, after its controls.
+                        foreach ( (array) ( $view->get( 'title_tags' ) ?: array() ) as $owa_tag ): ?><span
+                            class="owa_titleTag"><?php $view->out( $owa_tag ); ?></span><?php
                         endforeach; ?></div>
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
                     <?php

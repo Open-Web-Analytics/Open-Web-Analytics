@@ -89,72 +89,39 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * Two pies the same width draw the same size.
-     *
-     * flot fits its round-the-edge labels by SHRINKING: drawPie() returns false
-     * when a label div lands outside the canvas and the caller multiplies
-     * maxRadius by 0.95 and tries again. So the width of the word
-     * "organic-search" set the diameter, and Traffic Sources drew smaller than
-     * Visitor Types on an identical canvas.
-     *
-     * Fixed twice, and the first attempt is worth remembering: pinning
-     * `radius: 0.72` pinned the FRACTION, and flot computes
-     * `maxRadius * radius` -- the fraction was never what moved. It is a pixel
-     * length now, which the loop cannot reach, and the labels are a legend
-     * beside the pie rather than text around it, so there is nothing left to
-     * overflow.
-     *
-     * Measured from the CANVAS, not the container: the containers were always
-     * the same size, which is exactly why this looked like a styling problem
-     * and was not one.
+     * Visitor Types and Channels are share charts: each value's share of
+     * sessions as a ranked row, its percentage printed and a bar under it
+     * against the largest. They were pies, drawn by flot onto a canvas.
      */
-    test('the two dashboard pies draw at the same size', async ({ page }) => {
-        const pies = page.locator('.owa_pieChart canvas');
+    test('the dashboard share charts are ranked bars with percentages', async ({ page }) => {
+        for (const id of ['#visitor-types', '#visitor-mediums']) {
+            const chart = page.locator(`${id} .owa_shareChart`);
 
-        await expect.poll(async () => pies.count(), { timeout: 20_000 })
-            .toBeGreaterThanOrEqual(2);
+            await expect(chart).toBeVisible({ timeout: 20_000 });
+            await expect(page.locator(`${id} canvas`)).toHaveCount(0);
 
-        const drawn = await pies.evaluateAll((els) => els.map((c) => {
-            const ctx = c.getContext('2d');
-            const mid = Math.floor(c.height / 2);
-            const row = ctx.getImageData(0, mid, c.width, 1).data;
+            const rows = await chart.locator('.owa_shareRow').evaluateAll((lis) => lis.map((li) => ({
+                label: li.querySelector('.owa_shareLabel').textContent,
+                share: parseInt(li.querySelector('.owa_shareValue').textContent, 10),
+                text: li.querySelector('.owa_shareValue').textContent,
+                bar: parseFloat(li.querySelector('.owa_gridBarFill').style.width),
+            })));
 
-            let first = -1, last = -1;
+            expect(rows.length).toBeGreaterThan(1);
+            rows.forEach((r) => expect(r.text).toMatch(/^(<1|\d+)%$/));
 
-            for (let x = 0; x < c.width; x++) {
-                if (row[x * 4 + 3] > 10) { if (first < 0) first = x; last = x; }
+            // Ranked, the first bar the width of the row and the rest shorter.
+            expect(rows[0].bar).toBe(100);
+            for (let i = 1; i < rows.length; i++) {
+                expect(rows[i].share).toBeLessThanOrEqual(rows[i - 1].share);
+                expect(rows[i].bar).toBeLessThanOrEqual(rows[i - 1].bar);
             }
 
-            return { canvas: c.width, drawn: first < 0 ? 0 : last - first + 1 };
-        }));
-
-        // flot builds a base canvas and an empty overlay per plot; the overlay
-        // has nothing drawn on it, so only the painted ones are pies.
-        const widths = drawn.filter((d) => d.drawn > 10);
-
-        expect(widths.length).toBe(2);
-
-        // The same, and actually drawn -- a pair of zeroes would be "equal" too.
-        expect(widths[0].drawn).toBe(widths[1].drawn);
-        expect(widths[0].drawn).toBeGreaterThan(50);
-
-        // ...and both are comfortably inside their canvas, leaving room for the
-        // legend flot places beside them.
-        for (const w of widths) {
-            expect(w.drawn).toBeLessThan(w.canvas);
+            // Every row says what it is.
+            rows.forEach((r) => expect(r.label.trim()).not.toBe(''));
         }
 
-        /*
-         * The labels are a LEGEND, not text around the circle. That is what
-         * removes the shrink loop's cause rather than working around it.
-         */
-        const legends = page.locator('.owa_pieChart .legend');
-
-        await expect(legends).toHaveCount(2);
-
-        // ...carrying the slice name and its share, which is what the
-        // round-the-edge labels said.
-        await expect(legends.first()).toContainText('%');
+        await expect(page.locator('#visitor-mediums .owa_shareChart')).toContainText('Organic Search');
     });
 
     /**
@@ -361,17 +328,10 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * Every chart that draws more than one thing draws it in the same colours.
-     *
-     * A report shows traffic sources as a pie and the same sources as lines
-     * over time. Two palettes make the reader work out twice which colour is
-     * which, when the colour existed to save them that.
-     *
-     * Ten, because the pie draws up to six slices from what used to be a list
-     * of four -- so its fifth and sixth repeated its first and second -- and a
-     * trend needs seven.
+     * A trend's lines take their colours from OWA.chartColors, ten distinct
+     * colours, so a value has one colour wherever a line draws it.
      */
-    test('the pie and the trend draw from one palette', async ({ page }) => {
+    test('the trend draws from the shared palette', async ({ page }) => {
         const shared = await page.evaluate(() => ({
             palette: window.OWA.chartColors,
             trend: window.siteTrend.areaChart.options.colors,
@@ -380,13 +340,6 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(shared.palette.length).toBeGreaterThanOrEqual(10);
         expect(new Set(shared.palette).size).toBe(shared.palette.length);
         expect(shared.trend).toEqual(shared.palette);
-
-        // The pie reads the same list. Asserted on a fresh instance rather than
-        // on a rendered chart, because a pie's own options are merged down onto
-        // whatever the widget passed it.
-        const pie = await page.evaluate(() => new window.OWA.pieChart().options.colors);
-
-        expect(pie).toEqual(shared.palette);
     });
 
     /**
@@ -628,12 +581,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // Flot draws each chart as a <canvas class="flot-base"> plus a
         // "flot-overlay" sibling inside an OWA chart container. (Flot 0.8 renamed
         // these from 0.7's bare "base"/"overlay".)
-        // Assert the area chart and at least one pie chart painted (base+overlay
-        // pair each).
+        // Assert the area chart painted (a base+overlay pair).
         const areaCanvases = page.locator('.owa_areaChart canvas');
-        const pieCanvases = page.locator('.owa_pieChart canvas');
         expect(await areaCanvases.count()).toBeGreaterThanOrEqual(2);
-        expect(await pieCanvases.count()).toBeGreaterThanOrEqual(2);
 
         // A painted Flot canvas has non-zero pixel dimensions.
         const dims = await page.evaluate(() => {
@@ -643,38 +593,6 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(dims).not.toBeNull();
         expect(dims.w).toBeGreaterThan(0);
         expect(dims.h).toBeGreaterThan(0);
-    });
-
-    test('Flot pie is drawn centered, not collapsed into a corner wedge', async ({ page }) => {
-        // Regression guard: jQuery 3.x returns undefined (not null) from $().width()
-        // on an EMPTY set, so a Flot pie plugin that reads the legend width without
-        // a guard gets undefined -> centerLeft NaN -> the pie origin translates to
-        // (0,0) and each pie draws as a quarter wedge in the top-left corner. OWA
-        // hand-patched Flot 0.7's pie with `|| 0`; jquery.flot 0.8.3 ships that
-        // guard upstream, so this now pins the 0.8.3 behavior.
-        // Sample the base canvas: a correctly centered pie has painted
-        // (non-transparent) pixels at its center; a corner wedge leaves the center
-        // empty. Also require the corner itself NOT be the only painted region.
-        const probe = await page.evaluate(() => {
-            const c = document.querySelector('.owa_pieChart canvas.flot-base');
-            if (!c) return null;
-            const ctx = c.getContext('2d');
-            const at = (x, y) => ctx.getImageData(x, y, 1, 1).data[3]; // alpha
-            const cx = Math.floor(c.width / 2), cy = Math.floor(c.height / 2);
-            return {
-                center: at(cx, cy),
-                // A ring of points around the center; a full pie paints most of them.
-                ring: [
-                    at(cx + 30, cy), at(cx - 30, cy),
-                    at(cx, cy + 30), at(cx, cy - 30),
-                ],
-            };
-        });
-        expect(probe).not.toBeNull();
-        // Pie fills its own center.
-        expect(probe.center).toBeGreaterThan(0);
-        // And extends outward around it (not a corner sliver).
-        expect(probe.ring.filter((a) => a > 0).length).toBeGreaterThanOrEqual(3);
     });
 
     test('sparkline paints kpi-box canvases', async ({ page }) => {
@@ -687,7 +605,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // them already shows the shape over time. `goals` has a metric-boxes
         // widget with no chart above it, which is where sparklines still
         // belong and so where the library can still be pinned. (It was
-        // `traffic`; that report's standalone boxes became pies.)
+        // `traffic`; that report's standalone boxes became share charts.)
         await page.goto(
             `?owa_do=base.report&owa_reportId=goals&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
             { waitUntil: 'networkidle' });
