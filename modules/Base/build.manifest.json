@@ -27,7 +27,8 @@
                 "css/chosen.css",
                 "css/owa.css",
                 "css/owa.admin.css",
-                "css/owa.report.css"
+                "css/owa.report.css",
+                "css/owa.shell.css"
             ],
             "copy": [
                 {

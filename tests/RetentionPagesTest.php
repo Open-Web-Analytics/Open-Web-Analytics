@@ -126,7 +126,7 @@ final class RetentionPagesTest extends TestCase
 
         $this->assertCount( 1, $entries );
         $entry = reset( $entries );
-        $this->assertSame( 'Data Retention', $entry['label'] );
+        $this->assertSame( 'Data retention', $entry['label'] );
         $this->assertSame( 'edit_settings', $entry['capability'] );
         $this->assertSame( array( 'propertyId' => '7781000000000009' ), $entry['params'] );
     }

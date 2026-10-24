@@ -483,18 +483,20 @@ final class PropertyAdminScreensTest extends TestCase
 
         /*
          * A Profile is reached through its Property: the control stops there,
-         * the Property's nav carries the roster, and each row leads to the
-         * Profile's own screens.
+         * the settings column lists the Property's Profiles under it, with the
+         * way to add one, and the roster's rows lead to each Profile's own
+         * screens.
          */
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
         $method->setAccessible( true );
 
-        $property = array_column( (array) $method->invoke( $controller, '', 'p' )['Property'], 'label', 'do' );
+        $profiles = (array) ( $method->invoke( $controller, '', 'p' )['Profiles'] ?? array() );
 
-        $this->assertSame( 'Observation Profiles', $property['base.propertyProfiles'] ?? null,
-            'No way from a Property to its Profiles.' );
+        $this->assertSame( 'base.sitesProfile', end( $profiles )['do'] ?? null,
+            'No way from a Property to a new Profile.' );
+        $this->assertSame( array( 'propertyId' => 'p' ), end( $profiles )['params'] ?? null );
 
         $roster = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
 
@@ -623,7 +625,7 @@ final class PropertyAdminScreensTest extends TestCase
         $withProperty = (array) $method->invoke( $controller, '', 'some-property-id' );
 
         $this->assertSame(
-            array( 'My Preferences', 'Instance', 'Organization', 'Property' ),
+            array( 'My Preferences', 'Instance', 'Organization', 'Property', 'Profiles' ),
             array_keys( $withProperty ) );
     }
 
@@ -655,10 +657,10 @@ final class PropertyAdminScreensTest extends TestCase
         // In the slide-out menu the control sits above the nav: the tile says
         // which thing the nav is about.
         $this->assertStringContainsString( 'owa_railSiteControl', $wrapper );
-        $this->assertStringContainsString( "include('hierarchy_nav.php')", $wrapper );
+        $this->assertStringContainsString( "include( 'nav_shell.php' )", $wrapper );
 
         $this->assertLessThan(
-            strpos( $wrapper, 'hierarchy_nav.php' ),
+            strpos( $wrapper, 'nav_shell.php' ),
             strpos( $wrapper, 'owa_railSiteControl' ),
             'The nav is above the tile; the tile is what says which thing the nav is about.' );
 
@@ -685,16 +687,17 @@ final class PropertyAdminScreensTest extends TestCase
 
         $nav = (array) $method->invoke( $controller, 'a-site', 'a-property' );
 
-        $profile = array_column( $nav['Observation Profile'], 'label', 'do' );
+        // The tabs of the Profile's page, in this order.
+        $this->assertSame(
+            array( 'base.sitesInvocation' => 'Tracking tag', 'base.profileSettings' => 'Observation settings',
+                   'base.sitesProfile' => 'Details' ),
+            array_column( $nav['Observation Profile'], 'label', 'do' ) );
 
-        $this->assertSame( 'Details', $profile['base.sitesProfile'] ?? null );
-        $this->assertSame( 'Observation Settings', $profile['base.profileSettings'] ?? null );
-        $this->assertSame( 'Tracking Tag', $profile['base.sitesInvocation'] ?? null );
+        $profile = array_column( $nav['Observation Profile'], 'label', 'do' );
 
         $property = array_column( $nav['Property'], 'label', 'do' );
 
         $this->assertSame( 'Details', $property['base.propertyProfile'] ?? null );
-        $this->assertSame( 'Observation Profiles', $property['base.propertyProfiles'] ?? null );
         /*
          * Goal events sit under the PROPERTY, not the Profile.
          *
@@ -702,12 +705,12 @@ final class PropertyAdminScreensTest extends TestCase
          * of one Property both want the same signup counted, and defining it
          * twice is how the two drift.
          */
-        $this->assertSame( 'Goal Events', $property['base.goalEvents'] ?? null );
+        $this->assertSame( 'Goal events', $property['base.goalEvents'] ?? null );
         $this->assertArrayNotHasKey( 'base.goalEvents', $profile,
             'Goal events are listed under the Observation Profile as well, so the same '
             . 'list appears twice and it is unclear which tier owns it.' );
         $this->assertSame(
-            'Property Access Management', $property['base.propertyAccess'] ?? null,
+            'Access', $property['base.propertyAccess'] ?? null,
             'Access is granted to a website, so it belongs under the Property.' );
 
         $this->assertSame(

@@ -61,7 +61,7 @@ test.describe('application password screens @selfhost-only', () => {
         await loginAs(page, fx.user_id, fx.password);
 
         await page.goto('?owa_do=base.myAppPasswords', { waitUntil: 'networkidle' });
-        await expect(page.locator('.owa_hierarchyNav a', { hasText: 'Application Passwords' })).toBeVisible();
+        await expect(page.locator('.owa_navColumn a', { hasText: 'Application passwords' })).toBeVisible();
 
         const dialog = page.locator('#owa_appPasswordDialog');
 

@@ -321,8 +321,7 @@ class ReportController extends \OWA\Core\AdminController {
             : str_replace('.', '-', (string) $this->getParam('do'));
         $this->data['dom_id'] = $this->dom_id;
         $this->data['do'] = $this->getParam('do');
-        $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
-        
+
         /*
          * The metric sets this Property offers -- site usage, and e-commerce if
          * the Property has it.
@@ -337,19 +336,35 @@ class ReportController extends \OWA\Core\AdminController {
 
         $tabs = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
 
-        if ( $propertyId !== '' && ! \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'property', $propertyId ) ) {
-
-            unset( $nav['Ecommerce'] );
-        }
-
         $this->set('metricSets', $metricSets);
 
         $this->set('tabs', $tabs);
         $this->set('tabs_json', json_encode($tabs));
 
-        $nav = $this->withCustomReports( $nav );
+        $this->set('top_level_report_nav', self::reportNavigation( $propertyId ));
+    }
 
-        $this->set('top_level_report_nav', $nav);
+    /**
+     * The Reports navigation for a Property: the registered sections, less
+     * Ecommerce where the Property has none, plus the reader's own custom
+     * reports and visualizations.
+     *
+     * Static, because settings screens draw the same rail (OptionsHierarchy)
+     * and are not reports.
+     *
+     * @param string $propertyId
+     * @return array
+     */
+    public static function reportNavigation( $propertyId ) {
+
+        $nav = \OWA\Core\CoreAPI::getGroupNavigation('Reports');
+
+        if ( $propertyId !== '' && ! \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'property', $propertyId ) ) {
+
+            unset( $nav['Ecommerce'] );
+        }
+
+        return self::withCustomReports( $nav );
     }
 
     /**
@@ -411,8 +426,8 @@ class ReportController extends \OWA\Core\AdminController {
      * In order: the one the request names; the one its siteId belongs to; the
      * one this browser last reported on, if the reader may still see it; the
      * first the reader may see. A REPORT IS ALWAYS OF A PROPERTY: a report page
-     * with none has no nav (makeNavigationMenu() returns false without one)
-     * and no way off it but the back button.
+     * with none has no nav (report.php draws none without one) and no way off
+     * it but the back button.
      *
      * A named Property is not checked against $sites here. Access was checked
      * against it before pre() ran (isCurrentUserCapable()), and an
@@ -485,7 +500,7 @@ class ReportController extends \OWA\Core\AdminController {
      * @param array $nav
      * @return array
      */
-    private function withCustomReports( array $nav ) {
+    private static function withCustomReports( array $nav ) {
 
         $user = \OWA\Core\CoreAPI::getCurrentUser();
 
@@ -545,10 +560,12 @@ class ReportController extends \OWA\Core\AdminController {
             'order'      => 999,
             'priviledge' => 'view_site_list',
             'icon_class' => 'fa fa-th-list',
+            // The rail's column lists the roster first, under this name.
+            'overview_label' => 'All reports',
             'subgroup'   => $links,
         );
 
-        $nav['Visualizations'] = $this->visualizationsNavGroup( $user );
+        $nav['Visualizations'] = self::visualizationsNavGroup( $user );
 
         return $nav;
     }
@@ -568,7 +585,7 @@ class ReportController extends \OWA\Core\AdminController {
      *
      * @return array
      */
-    protected function visualizationsNavGroup( $user ) {
+    protected static function visualizationsNavGroup( $user ) {
 
         $links = array();
 
@@ -607,6 +624,7 @@ class ReportController extends \OWA\Core\AdminController {
             'order'      => 1000,
             'priviledge' => 'view_site_list',
             'icon_class' => 'fa fa-filter',
+            'overview_label' => 'All visualizations',
             'subgroup'   => $links,
         );
     }

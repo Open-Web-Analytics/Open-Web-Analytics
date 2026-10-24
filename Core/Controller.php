@@ -1088,7 +1088,7 @@ class Controller extends \OWA\Core\Base {
         $nav['My Preferences'] = array(
             array(
                 'do'         => 'base.myProfile',
-                'label'      => 'User Profile',
+                'label'      => 'User profile',
                 'params'     => array(),
                 // What admin, analyst and viewer all carry and nothing else
                 // does -- the capability that means "signed in".
@@ -1096,7 +1096,7 @@ class Controller extends \OWA\Core\Base {
             ),
             array(
                 'do'         => 'base.myAppPasswords',
-                'label'      => 'Application Passwords',
+                'label'      => 'Application passwords',
                 'params'     => array(),
                 'capability' => 'view_site_list',
             ),
@@ -1149,19 +1149,10 @@ class Controller extends \OWA\Core\Base {
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
                 /*
-                 * Where a Profile is reached from. The site control stops at
-                 * the Property, because reports are of a Property; a Profile's
-                 * own screens -- its details, how it observes, its tag -- are
-                 * reached through this roster.
-                 */
-                array( 'do' => 'base.propertyProfiles', 'label' => 'Observation Profiles',
-                       'params' => array( 'propertyId' => $propertyId ),
-                       'capability' => 'edit_sites' ),
-                /*
                  * Goal events describe a behaviour on the WEBSITE, so they
                  * belong here and every Profile of it inherits them.
                  */
-                array( 'do' => 'base.goalEvents', 'label' => 'Goal Events',
+                array( 'do' => 'base.goalEvents', 'label' => 'Goal events',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_settings' ),
                 /*
@@ -1170,10 +1161,10 @@ class Controller extends \OWA\Core\Base {
                  * registration adds is the Property's and two Properties may
                  * use the same key for different things.
                  */
-                array( 'do' => 'base.customDimensions', 'label' => 'Custom Dimensions',
+                array( 'do' => 'base.customDimensions', 'label' => 'Custom dimensions',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_settings' ),
-                array( 'do' => 'base.propertyRetention', 'label' => 'Data Retention',
+                array( 'do' => 'base.propertyRetention', 'label' => 'Data retention',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_settings' ),
                 /*
@@ -1181,32 +1172,67 @@ class Controller extends \OWA\Core\Base {
                  * it, so it belongs to the Property. Stored per Profile;
                  * PropertyGrants reads and writes it across all of them.
                  */
-                array( 'do' => 'base.propertyAccess', 'label' => 'Property Access Management',
+                array( 'do' => 'base.propertyAccess', 'label' => 'Access',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
             );
         }
 
         /*
+         * The Property's Profiles, each one entry, and the way to add another.
+         *
+         * A Profile's own screens -- its tag, how it observes, its details --
+         * are the tabs of its page (the 'Observation Profile' group below), so
+         * the column names the Profile once rather than repeating three
+         * screens under a heading that does not say which Profile they are of.
+         * Its entry opens the first tab.
+         */
+        if ( $propertyId ) {
+
+            $nav['Profiles'] = array();
+
+            foreach ( \OWA\Module\Base\Controller\PropertyProfiles::rowsFor( $propertyId ) as $profile ) {
+
+                $nav['Profiles'][] = array(
+                    'do'         => 'base.sitesInvocation',
+                    'label'      => (string) ( $profile['name'] ?: $profile['site_id'] ),
+                    'params'     => array( 'siteId' => $profile['site_id'] ),
+                    'capability' => 'edit_sites',
+                    // Filled in below, once the registered tabs are known.
+                    'current_for' => array(),
+                );
+            }
+
+            $nav['Profiles'][] = array(
+                'do'         => 'base.sitesProfile',
+                'label'      => 'Add profile',
+                'params'     => array( 'propertyId' => $propertyId ),
+                'capability' => 'edit_sites',
+            );
+        }
+
+        /*
          * Only on a screen about a Profile. The caller passes a siteId when the
          * screen is one of the Profile's own, and the Property otherwise.
+         *
+         * These are the tabs of the Profile's page, in this order.
          */
         if ( $siteId ) {
 
             $nav['Observation Profile'] = array(
-                array( 'do' => 'base.sitesProfile', 'label' => 'Details',
-                       'params' => array( 'siteId' => $siteId, 'edit' => true ),
+                array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking tag',
+                       'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_sites' ),
                 /*
                  * An Observation Profile IS a way of observing, so how it
                  * watches the site is its own screen rather than a second form
                  * stacked under its name.
                  */
-                array( 'do' => 'base.profileSettings', 'label' => 'Observation Settings',
+                array( 'do' => 'base.profileSettings', 'label' => 'Observation settings',
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_sites' ),
-                array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking Tag',
-                       'params' => array( 'siteId' => $siteId ),
+                array( 'do' => 'base.sitesProfile', 'label' => 'Details',
+                       'params' => array( 'siteId' => $siteId, 'edit' => true ),
                        'capability' => 'edit_sites' ),
             );
         }
@@ -1235,6 +1261,22 @@ class Controller extends \OWA\Core\Base {
             foreach ( $items as $item ) {
 
                 $nav[ $section ][] = $item;
+            }
+        }
+
+        /*
+         * A Profile's entry is current on every tab of its page, a registered
+         * one included.
+         */
+        $tabs = array_merge(
+            array( 'base.sitesInvocation', 'base.profileSettings', 'base.sitesProfile' ),
+            array_column( (array) ( $registered['Observation Profile'] ?? array() ), 'do' ) );
+
+        foreach ( (array) ( $nav['Profiles'] ?? array() ) as $i => $entry ) {
+
+            if ( isset( $entry['current_for'] ) ) {
+
+                $nav['Profiles'][ $i ]['current_for'] = $tabs;
             }
         }
 

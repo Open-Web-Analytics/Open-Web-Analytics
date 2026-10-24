@@ -70,10 +70,10 @@ test.describe('my preferences', () => {
 
             // ...and the settings nav carries it, in a group of its own rather
             // than filed under Instance with the install-wide screens.
-            await expect(page.locator('.owa_hierarchyNavHead', { hasText: 'My Preferences' }))
+            await expect(page.locator('.owa_navColumnHeading', { hasText: 'My preferences' }))
                 .toHaveCount(1);
 
-            const navLink = page.locator('.owa_hierarchyNav a', { hasText: 'User Profile' });
+            const navLink = page.locator('.owa_navColumn a', { hasText: 'User profile' });
 
             await expect(navLink).toHaveCount(1);
             await navLink.click();
@@ -157,7 +157,7 @@ test.describe('my preferences', () => {
         test('an analyst can open it and change their name', async ({ page }) => {
             await openPreferences(page);
 
-            await expect(page.locator('.owa_hierarchyNav a', { hasText: 'Profile' }))
+            await expect(page.locator('.owa_navColumn a', { hasText: 'User profile' }))
                 .toHaveCount(1);
 
             const name = 'E2E Analyst ' + Date.now();

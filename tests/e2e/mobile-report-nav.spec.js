@@ -18,7 +18,7 @@ async function openReport(page, reportId) {
         + `&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
         { waitUntil: 'networkidle' }
     );
-    await page.waitForSelector('#owa_reportNavPanel', { state: 'attached', timeout: 20_000 });
+    await page.waitForSelector('#owa_navShell', { state: 'attached', timeout: 20_000 });
 }
 
 const rail = (page) => page.locator('#owa_reportNavRail');
@@ -68,13 +68,6 @@ test.describe('report nav on a phone', () => {
         await expect(rail(page)).toBeInViewport();
         await page.keyboard.press('Escape');
         await expect(rail(page)).not.toBeInViewport();
-
-        // A tap beside it closes it, and does nothing to the report under it.
-        await toggle(page).click();
-        await expect(rail(page)).toBeInViewport();
-        await page.mouse.click(370, 600);
-        await expect(rail(page)).not.toBeInViewport();
-        expect(page.url()).toContain(`owa_reportId=${REPORT}`);
     });
 
     /**
@@ -86,7 +79,7 @@ test.describe('report nav on a phone', () => {
         await openReport(page, REPORT);
 
         const rows = await page.evaluate(() =>
-            ['.owa_reportNavToggle', '.owa_navigation', '.owa_helpMenu', '.owa_notificationBell', '.owa_userMenu']
+            ['.owa_reportNavToggle', '.owa_helpMenu', '.owa_notificationBell', '.owa_userMenu']
                 .map((s) => Math.round(document.querySelector(s).getBoundingClientRect().top)));
         expect(new Set(rows).size, `header item tops: ${rows}`).toBe(1);
 
@@ -161,6 +154,30 @@ test.describe('report nav on a phone', () => {
     });
 });
 
+/**
+ * On a tablet the slide-out is the rail and column, with the report beside it.
+ * On a phone it is the whole screen, so there is nothing beside it to tap.
+ */
+test.describe('report nav on a tablet', () => {
+
+    test.use({ viewport: { width: 820, height: 1180 }, isMobile: true, hasTouch: true });
+
+    test('a tap beside the open nav closes it, and does nothing to the report under it', async ({ page }) => {
+        await login(page);
+        await openReport(page, REPORT);
+
+        await toggle(page).click();
+        await expect(rail(page)).toBeInViewport();
+
+        const box = await rail(page).boundingBox();
+        expect(box.width, 'the slide-out is as wide as the rail and column').toBeLessThan(400);
+
+        await page.mouse.click(700, 600);
+        await expect(rail(page)).not.toBeInViewport();
+        expect(page.url()).toContain(`owa_reportId=${REPORT}`);
+    });
+});
+
 test.describe('report nav at desktop width', () => {
 
     test.use({ viewport: { width: 1280, height: 900 } });
@@ -174,7 +191,7 @@ test.describe('report nav at desktop width', () => {
         await expect(rail(page).locator('.owa_railLogo')).toBeHidden();
         await expect(page.locator('#owa_header .owa_logo')).toBeVisible();
         await expect(rail(page)).toBeInViewport();
-        await expect(page.locator('#owa_reportNavPanel a', { hasText: OTHER.label })).toBeVisible();
+        await expect(page.locator('#owa_navColumn a', { hasText: OTHER.label })).toBeVisible();
         await shot(page, 'desktop');
     });
 });

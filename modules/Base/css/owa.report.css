@@ -189,18 +189,10 @@ table#owa_reportPeriodLabelContainer {
 #owa_reportPeriodLabelContainer .owa_reportRevealControl i { transition: transform 0.12s ease; }
 #owa_reportPeriodLabelContainer.is-open .owa_reportRevealControl i { transform: rotate(180deg); }
 
-#owa_reportNavPanel {}
 #report_top_level_nav_ul {width:;}
 
-/* min-width as well: the column is a table cell, and a wide report beside it
-   (a roster of long report names) squeezed it to its min-content width,
-   wrapping the nav's labels. */
-.owa_reportLeftNavColumn {width:200px; min-width:200px; margin-right:0px; border-right: 0px solid #cccccc;}
-.owa_reportLeftNavColumn a {
-    text-decoration: none;
-    color:;
-
-}
+/* As wide as the rail and column it holds (owa.shell.css). */
+.owa_reportLeftNavColumn {width:1px; margin-right:0px;}
 
 .owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid var(--owa-accent); text-align: left; padding:5px; margin-bottom:5px;}
 
@@ -256,116 +248,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     width:120px;
     min-width:120px;
     min-height: 60px;
-}
-
-.owa_admin_nav ul {list-style:none; margin:0px; padding:0px; }
-/* 2px at the sides, so a group's line starts 4px into the column, as a
-   settings nav item does (the column's 2px and .owa_hierarchyNav's 2px). */
-.owa_admin_nav li {list-style:none; margin:0px; padding:3px 2px;font-size:10px;}
-.owa_admin_nav_topmenu {
-    padding:;
-    border:0px solid #cccccc;
-    
-    
-}
-
-/*
- * A group's label starts 40px in: 10px padding, a 20px icon column, a 10px
- * gap. Every icon gets the same column whatever its glyph's width, so every
- * label starts at the same x. A report's rule sits at that x too, under its
- * group's label: the subgroup is indented by the same 40px, and its li drops
- * the side padding .owa_admin_nav li gives it.
- */
-.owa_admin_nav_subgroup {
-	display: none;
-	padding-left: 40px;
-}
-.owa_admin_nav_subgroup li {
-    padding: 0;
-}
-/* A report's row is a settings nav row (.owa_hierarchyNav li): 6px above and
-   below, 8px after the rule, 12px type at 1.3, so 28px tall with the rule its
-   full height. */
-.owa_admin_nav_subgroup_item {
-    padding: 6px 6px 6px 8px;
-    font-size: 12px;
-    line-height: 1.3;
-}
-.owa_admin_nav_topmenu_container {}
-/* 4px on the right, and a 20px chevron: with 10px and 28px, "Custom
-   Reports" in bold filled its room to the pixel in Chromium and wrapped in
-   Safari. */
-.owa_admin_nav_topmenu_item {display: flex; align-items: center; min-height:25px; padding: 10px 4px 10px 10px; font-size: var(--owa-text-lg);  }
-/* Icon and label side by side, so a label that wraps stays in its column
-   rather than running back under the icon. */
-.owa_admin_nav_topmenu_item > span {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-}
-.owa_admin_nav_topmenu_item .owa_nav_icon {
-    flex: none;
-    width: 20px;
-    margin-right: 10px;
-    padding-right: 0;
-    text-align: center;
-}
-.owa_admin_nav_topmenu_item_text {}
-
-/* A group's chevron, right of its name: down while closed, up while open. */
-.owa_admin_nav_topmenu_toggle {
-    flex: none;
-    margin-left: auto;
-    width: 20px;
-    /* The item's min-height: at 28px a group with a chevron stood 3px
-       taller than one without. */
-    height: 25px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #777777;
-    font-size: 12px;
-    cursor: pointer;
-}
-.owa_admin_nav_topmenu_toggle i { transition: transform 0.12s ease; }
-.owa_admin_nav_topmenu_item.is-open .owa_admin_nav_topmenu_toggle i { transform: rotate(180deg); }
-.owa_admin_nav_topmenu_toggle:hover { color: #333333; }
-
-/* Rest, hover and current as in the settings nav (.owa_hierarchyNav): grey
-   links, darker on hover, and the report you are on in a bold label. The
-   label and the mark are the reporting blue, #1874CD, as on the selected tab
-   and the Live View switch, not the settings nav's orange. A report's line
-   is marked by a rule; the transparent rule keeps its label from shifting by
-   the 3px when it becomes current. A group's line is marked by its icon, for
-   the group's own report and for the group holding the current one. */
-.owa_admin_nav_subgroup_item {
-    border-left: 3px solid transparent;
-}
-
-.owa_admin_nav_topmenu_item a,
-.owa_admin_nav_subgroup_item a {
-    color: #666666;
-}
-
-.owa_admin_nav_topmenu_item:hover a,
-.owa_admin_nav_subgroup_item:hover a {
-    color: #505050;
-}
-
-.owa_admin_nav_subgroup_item.is-current {
-    border-left-color: #1874CD;
-}
-
-.owa_admin_nav_topmenu_item.is-current a,
-.owa_admin_nav_subgroup_item.is-current a {
-    color: #1874CD;
-    font-weight: bold;
-}
-
-.owa_admin_nav_topmenu_item.is-current .owa_nav_icon,
-.owa_admin_nav_topmenu_item.has-current .owa_nav_icon {
-    color: #1874CD;
-    opacity: 1;
 }
 
 .owa_piechart {
@@ -3328,11 +3210,6 @@ li.constraintRow {
     text-overflow: ellipsis;
 }
 
-/* The left column started with the chooser, whose margin spaced it from the
-   header; it starts with its nav now. */
-.owa_railSiteControl {
-    height: 20px;
-}
 
 .owa_headerSiteControl .owa_siteControlPanel {
     top: 100%;
@@ -3561,71 +3438,6 @@ li.constraintRow {
 .owa_propertyProfilesActions a {
     margin-right: 1em;
     white-space: nowrap;
-}
-
-/* The hierarchy's settings nav, under the site control. One group per tier, so
-   each screen sits under a heading that says which thing it is about. */
-
-.owa_hierarchyNav {
-    font-size: var(--owa-text-sm);
-    /* Matches the tile's own inset, so the two read as one column rather than
-       a card with a list floating beside it. */
-    padding: 0 2px;
-}
-
-.owa_hierarchyNavGroup {
-    margin-bottom: 16px;
-}
-
-.owa_hierarchyNavGroup:last-child {
-    margin-bottom: 0;
-}
-
-.owa_hierarchyNavHead {
-    color: #999999;
-    font-size: var(--owa-text-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0 0 5px 8px;
-    border-bottom: 1px solid #efefef;
-    margin-bottom: 2px;
-}
-
-.owa_hierarchyNav ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-/* 6px vertical, and the left inset lines the label up with its heading. A
-   4px strip was a cramped hit area for a link people use to move between
-   screens. */
-.owa_hierarchyNav li {
-    padding: 6px 6px 6px 8px;
-    border-left: 3px solid transparent;
-    line-height: 1.3;
-}
-
-.owa_hierarchyNav li a {
-    color: #666666;
-    text-decoration: none;
-}
-
-.owa_hierarchyNav li:hover a {
-    color: #505050;
-}
-
-/* Current is marked by the accent rule, the same idiom the site control uses
-   for a selected Property or Profile. */
-/* The accent rule replaces the transparent one, so the label must not shift by
-   the 3px when it becomes current. */
-.owa_hierarchyNav li.is-current {
-    border-left-color: var(--owa-accent);
-}
-
-.owa_hierarchyNav li.is-current a {
-    color: #505050;
-    font-weight: bold;
 }
 
 /* ---------------------------------------------------------------------------
