@@ -1,6 +1,6 @@
 {
     "title": "Pages",
-    "description": "Page views and sessions by page path, query string, title and content group.",
+    "description": "Page views and sessions by page path.",
     "metrics": "pageViews,sessions,pageViews",
     "widgets": [
         {
@@ -18,7 +18,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "pagePath,pageQuery,pageTitle,contentGroup",
+                "dimensions": "pagePath",
                 "sort": "pageViews-",
                 "resultsPerPage": 30
             },

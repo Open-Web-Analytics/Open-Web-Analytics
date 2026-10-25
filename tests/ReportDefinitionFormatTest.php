@@ -833,9 +833,6 @@ final class ReportDefinitionFormatTest extends TestCase
          * Each says why; a new card does not belong here without one.
          */
         $finer = array(
-            // Pages splits a path by query string, so /?p=3497 is not the home page.
-            'content.toppages'          => 'pages',
-            'dashboard.topContent'      => 'pages',
             // The report breaks an element's clicks down by the page it is on.
             'content.clickedelements'   => 'clicks',
             // countryCode is one per country: it adds the flag, not rows.
