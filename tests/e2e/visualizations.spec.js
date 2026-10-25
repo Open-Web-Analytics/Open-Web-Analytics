@@ -29,27 +29,23 @@ test.describe('visualizations', () => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         /*
-         * The kind was answered before this screen opened, so it is STATED
-         * here, not asked again -- and it is posted, so an unchanged edit
-         * cannot quietly fall back to the default and change what computes the
-         * row.
+         * The kind was answered before this screen opened, so it is not asked
+         * again -- and it is posted, so an unchanged edit cannot quietly fall
+         * back to the default and change what computes the row.
          */
-        await expect(page.locator('.owa_statedValue')).toContainText('Funnel');
         await expect(page.locator('input[type="hidden"][name="visualizationType"]'))
             .toHaveValue('funnel');
 
         await page.fill('input[name="name"]', name);
-        await page.locator('input[name="stepName[]"]').first().fill('Docs');
         await page.locator('input[name="stepPath[]"]').first().fill('/docs');
 
-        // Steps are a repeatable list, sharing the report builder's row markup.
-        await page.locator('#owa_goalEventFunnel .constraintAddButton').first().click();
-        await page.locator('input[name="stepName[]"]').nth(1).fill('Thanks');
+        await page.click('#owa_funnelAddStep');
+        await expect(page.locator('input[name="stepPath[]"]').nth(1)).toBeFocused();
         await page.locator('input[name="stepPath[]"]').nth(1).fill('/thanks');
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Visualization"]').click(),
+            page.click('#owa_visualizationSubmit'),
         ]);
 
         /*
@@ -64,10 +60,11 @@ test.describe('visualizations', () => {
          */
         expect(page.url()).toContain('reportId=custom-');
 
-        // It computed: both steps drawn, in order, from its own definition.
+        // It computed: both steps drawn, in order, from its own definition,
+        // each named for its page.
         await expect(page.locator('body')).toContainText(name);
-        await expect(page.locator('body')).toContainText('Docs');
-        await expect(page.locator('body')).toContainText('Thanks');
+        await expect(page.locator('body')).toContainText('/docs');
+        await expect(page.locator('body')).toContainText('/thanks');
 
         // Under Custom Reports: the section is current on a funnel too.
         await expect(page.locator('.owa_rail .owa_railItem.is-current')).toHaveText('Custom Reports');
@@ -129,7 +126,7 @@ test.describe('visualizations', () => {
         ]);
 
         expect(page.url()).toContain('visualizationType=funnel');
-        await expect(page.locator('input[name="stepName[]"]').first()).toBeVisible();
+        await expect(page.locator('input[name="stepPath[]"]').first()).toBeVisible();
     });
 
     /**
@@ -168,7 +165,6 @@ test.describe('visualizations', () => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E Bad Step');
-        await page.locator('input[name="stepName[]"]').first().fill('Basket');
         await page.locator('input[name="stepPath[]"]').first().fill('https://example.test/basket');
 
         // Caught in the form, on the same rule the save applies.
@@ -190,25 +186,20 @@ test.describe('visualizations', () => {
     /**
      * AN ERROR ABOUT STEP 2 WAS WRITTEN AND NEVER SHOWN.
      *
-     * The template rendered three hardcoded keys -- stepPath1, stepName1,
-     * stepGoalEvent1 -- and validate() writes one per step number. So a problem
-     * with any step but the first refused the save and then appeared nowhere:
-     * the author got the form back, unchanged, with no reason on it.
-     *
-     * Driven past the button, because the form now stops this before it is
-     * posted; what is under test is the server's answer and where it is shown.
+     * The template rendered three hardcoded keys and validate() writes one per
+     * step number, so a problem with any step but the first refused the save
+     * and then appeared nowhere. Driven past the button, because the form now
+     * stops this before it is posted; what is under test is the server's
+     * answer and where it is shown.
      */
     test('an error about a later step is shown, not swallowed', async ({ page }) => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E Second Step');
-        await page.locator('input[name="stepName[]"]').first().fill('One');
         await page.locator('input[name="stepPath[]"]').first().fill('/one');
 
-        await page.locator('#owa_goalEventFunnel .constraintAddButton').first().click();
-
-        // A second step with a name and no path.
-        await page.locator('input[name="stepName[]"]').nth(1).fill('Two');
+        await page.click('#owa_funnelAddStep');
+        await page.locator('input[name="stepPath[]"]').nth(1).fill('https://example.test/two');
 
         await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
         await expect(page.locator('#owa_visualizationBlocker')).toContainText('Step 2');
@@ -219,10 +210,11 @@ test.describe('visualizations', () => {
                 document.forms.owa_visualization)),
         ]);
 
-        // The message names the step it is about, and the work is still there.
-        await expect(page.locator('.validation_error').filter({ hasText: 'Step 2: path is required' }))
-            .toHaveCount(1);
-        await expect(page.locator('input[name="stepName[]"]').nth(1)).toHaveValue('Two');
+        // The message is on the step it is about, and the work is still there.
+        const second = page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(1);
+
+        await expect(second.locator('.validation_error')).toContainText('Step 2: enter a path');
+        await expect(second.locator('input[name="stepPath[]"]')).toHaveValue('https://example.test/two');
     });
 
     /**
@@ -243,9 +235,6 @@ test.describe('visualizations', () => {
 
         await page.fill('input[name="name"]', 'E2E Gate ' + Date.now());
         await expect(page.locator('#owa_visualizationBlocker')).toContainText('at least one step');
-
-        await page.locator('input[name="stepName[]"]').first().fill('Basket');
-        await expect(page.locator('#owa_visualizationBlocker')).toContainText('no path');
 
         await page.locator('input[name="stepPath[]"]').first().fill('/basket');
 
@@ -274,20 +263,16 @@ test.describe('visualizations', () => {
 
         await page.fill('input[name="name"]', name);
 
-        // Two path steps, then a third naming the goal event.
-        await page.locator('input[name="stepName[]"]').first().fill('Home');
+        // Two page steps, then a third naming the goal event.
         await page.locator('input[name="stepPath[]"]').first().fill('/');
 
-        await page.locator('#owa_goalEventFunnel .constraintAddButton').first().click();
-        await page.locator('input[name="stepName[]"]').nth(1).fill('Pricing');
+        await page.click('#owa_funnelAddStep');
         await page.locator('input[name="stepPath[]"]').nth(1).fill('/pricing');
 
-        await page.locator('#owa_goalEventFunnel .constraintRow').nth(1)
-            .locator('.constraintAddButton').click();
+        await page.click('#owa_funnelAddStep');
 
-        const third = page.locator('#owa_goalEventFunnel .constraintRow').nth(2);
+        const third = page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(2);
 
-        await third.locator('input[name="stepName[]"]').fill('Signed up');
         await third.locator('select[name="stepKind[]"]').selectOption('goal_event');
 
         // The picker offers this Property's goal events, and the fixture's is
@@ -312,7 +297,7 @@ test.describe('visualizations', () => {
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Visualization"]').click(),
+            page.click('#owa_visualizationSubmit'),
         ]);
 
         await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
@@ -385,9 +370,8 @@ test.describe('visualizations', () => {
 
         await page.fill('input[name="name"]', 'E2E Refused Step');
 
-        const row = page.locator('#owa_goalEventFunnel .constraintRow').first();
+        const row = page.locator('#owa_goalEventFunnel .owa_funnelStep').first();
 
-        await row.locator('input[name="stepName[]"]').fill('Nope');
         await row.locator('select[name="stepKind[]"]').selectOption('goal_event');
         const picker = row.locator('select[name="stepGoalEventId[]"]');
         const value = await picker.locator('option', { hasText: name }).first()
@@ -399,7 +383,7 @@ test.describe('visualizations', () => {
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Visualization"]').click(),
+            page.click('#owa_visualizationSubmit'),
         ]);
 
         // Back on the form, saying which property is the problem -- not saved
@@ -407,5 +391,188 @@ test.describe('visualizations', () => {
         // would report a wider number than the goal event means.
         await expect(page.locator('input[name="name"]')).toHaveValue('E2E Refused Step');
         await expect(page.locator('body')).toContainText('medium');
+    });
+
+    /**
+     * The builder's own screen: no report title, the name is the header with
+     * Shared and Cancel / Save beside it, and Cancel goes back to the list.
+     */
+    test('the funnel builder header holds the name, Shared, Cancel and Save', async ({ page }) => {
+        await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await expect(page.locator('.owa_reportHead')).toHaveCount(0);
+
+        const head = page.locator('.owa_editorHead');
+
+        await expect(head.locator('label[for="owa_funnelName"]')).toHaveText('Funnel name');
+        await expect(head.locator('#owa_funnelShared')).toHaveAttribute('role', 'switch');
+        await expect(head.locator('#owa_visualizationSubmit')).toHaveValue('Save funnel');
+        expect(await head.locator('#owa_funnelCancel').getAttribute('href')).toContain('customReports');
+    });
+
+    /**
+     * THE PREVIEW: the funnel counted as it stands, from the steps on the
+     * screen, before it is saved -- the same counting the saved funnel does,
+     * so the fixture funnel's steps preview as it draws.
+     */
+    test('the preview counts the steps on the screen, and follows them', async ({ page }) => {
+        await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        const preview = page.locator('#owa_funnelPreview');
+
+        await expect(preview).toContainText('Add a step');
+
+        const steps = FIXTURE.funnelVisualization.steps;
+
+        for (let i = 0; i < steps.length; i++) {
+            if (i > 0) {
+                await page.click('#owa_funnelAddStep');
+            }
+            await page.locator('input[name="stepPath[]"]').nth(i).fill(steps[i].path);
+        }
+
+        const rows = preview.locator('.owa_funnelPreviewStep');
+
+        await expect(rows).toHaveCount(steps.length, { timeout: 20_000 });
+
+        // Named for their pages, since no name was given.
+        await expect(rows.locator('.owa_funnelPreviewName'))
+            .toHaveText(steps.map((s, i) => `${i + 1} ${s.path}`));
+
+        const counts = async () => (await rows.locator('.owa_funnelPreviewCount b').allInnerTexts())
+            .map((t) => parseInt(t.replace(/,/g, ''), 10));
+
+        const before = await counts();
+
+        expect(before[0]).toBeGreaterThan(0);
+        await expect(rows.nth(1)).toContainText('continued');
+        await expect(preview.locator('.owa_funnelPreviewSummary')).toContainText('of sessions that reached /');
+
+        // The first bar is the whole; the rest are against it.
+        await expect(rows.first().locator('.owa_funnelPreviewFill')).toHaveAttribute('style', /width: 100(\.0)?%/);
+
+        // A step that matches nothing counts nobody, and the preview follows.
+        await page.locator('input[name="stepPath[]"]').last().fill('/no-such-page');
+
+        await expect.poll(async () => (await counts()).slice(-1)[0], { timeout: 20_000 }).toBe(0);
+    });
+
+    /**
+     * Steps move by dragging a handle or with the arrow keys, and the saved
+     * order is the order on the screen. A step keeps its stored name while it
+     * is unchanged, and is named for its page once it is changed.
+     */
+    test('steps move, and keep their names until they change', async ({ page }) => {
+        await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('table.owa_customReportRoster tbody tr', { hasText: FIXTURE.funnelVisualization.name })
+                .locator('td.owa_rosterName a').click(),
+        ]);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('.owa_reportTitle a[href*="visualizationEdit"]').click(),
+        ]);
+
+        // A copy, so the fixture funnel itself is not changed.
+        const name = 'E2E Moved Funnel ' + Date.now();
+        await page.fill('input[name="name"]', name);
+        await page.evaluate(() => {
+            document.querySelector('input[name="visualizationId"]').value = '';
+        });
+
+        const paths = () => page.locator('input[name="stepPath[]"]').evaluateAll((els) => els.map((e) => e.value));
+        const names = () => page.locator('input[name="stepName[]"]').evaluateAll((els) => els.map((e) => e.value));
+
+        const fixture = FIXTURE.funnelVisualization.steps;
+
+        expect(await paths()).toEqual(fixture.map((s) => s.path));
+        expect(await names()).toEqual(fixture.map((s) => s.name));
+
+        // The last step dragged onto the first takes its place...
+        const handle = (i) => page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(i).locator('.owa_builderMove');
+
+        await handle(2).dragTo(page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(0));
+        expect(await paths()).toEqual([fixture[2].path, fixture[0].path, fixture[1].path]);
+
+        // ...and the arrow keys move it back.
+        await handle(0).focus();
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('ArrowDown');
+        expect(await paths()).toEqual(fixture.map((s) => s.path));
+        await expect(handle(2)).toBeFocused();
+        await expect(page.locator('.owa_funnelStepNumber')).toHaveText(['1', '2', '3']);
+
+        // Changing a step drops its stored name.
+        await page.locator('input[name="stepPath[]"]').nth(1).fill('/pricing/plans');
+        expect((await names())[1]).toBe('');
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.click('#owa_visualizationSubmit'),
+        ]);
+
+        await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
+
+        await expect(page.locator('body')).toContainText(fixture[0].name);
+        await expect(page.locator('body')).toContainText('/pricing/plans');
+        await expect(page.locator('body')).not.toContainText(fixture[1].name);
+    });
+
+    /**
+     * A FUNNEL CAN CARRY ITS OWN FILTER, which applies to every step and is
+     * said on the funnel. Built with the same pills as a widget's filter.
+     */
+    test("a funnel's filter is saved, counted and stated", async ({ page }) => {
+        const name = 'E2E Filtered Funnel ' + Date.now();
+
+        await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await page.fill('input[name="name"]', name);
+        await page.locator('input[name="stepPath[]"]').first().fill('/');
+
+        await page.click('#owa_funnelAddFilter');
+
+        const chosen = page.locator('#owa_funnelFilterDimension_chosen');
+
+        await chosen.locator('.chosen-single').click();
+        await chosen.locator('.chosen-search input').pressSequentially('pagePath');
+        await chosen.locator('.chosen-results li.active-result', { hasText: '(pagePath)' }).first().click();
+        await page.selectOption('#owa_funnelFilterOperator', { label: 'contains' });
+        await page.fill('#owa_funnelFilterValue', '/');
+
+        // Save waits while the filter is half done.
+        await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
+        await expect(page.locator('#owa_visualizationBlocker')).toContainText('Add the filter');
+
+        await page.click('#owa_funnelFilterAdd');
+
+        await expect(page.locator('#owa_funnelFilters .owa_filterPill')).toContainText('contains');
+        await expect(page.locator('#owa_funnelConstraints')).toHaveValue('pagePath=@/');
+        await expect(page.locator('#owa_visualizationSubmit')).toBeEnabled();
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.click('#owa_visualizationSubmit'),
+        ]);
+
+        await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
+
+        await expect(page.locator('.owa_funnelSavedFilter')).toContainText('contains /');
+
+        const counts = (await page.locator('.funnelStepCount').allTextContents())
+            .map((c) => parseInt(c.trim(), 10));
+
+        expect(counts[0], 'every session viewed a page, so the filter keeps them').toBeGreaterThan(0);
+
+        // ...and it comes back as a pill.
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('.owa_reportTitle a[href*="visualizationEdit"]').click(),
+        ]);
+
+        await expect(page.locator('#owa_funnelFilters .owa_filterPill')).toHaveCount(1);
     });
 });

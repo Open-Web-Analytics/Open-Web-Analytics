@@ -51,6 +51,9 @@ class VisualizationFunnel extends \OWA\Core\View {
         $this->body->set('funnel_scope_other',   $this->get('funnel_scope_other') );
         $this->body->set('funnel_scope_label',   $this->get('funnel_scope_label') );
         $this->body->set('funnel_segment_error', $this->get('funnel_segment_error') );
+        // The funnel's own filter, in words: it narrows every count below.
+        $this->body->set('funnel_saved_filter', \OWA\Module\Base\Classes\CustomReports::constraintsInWords(
+            (string) $this->get('funnel_saved_constraints') ) );
         // A step naming a goal event the funnel cannot count against. Refused
         // rather than drawn with that step ignored -- see stepPredicate().
         $this->body->set('funnel_step_error',    $this->get('funnel_step_error') );

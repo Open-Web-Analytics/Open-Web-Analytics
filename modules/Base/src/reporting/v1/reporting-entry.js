@@ -79,6 +79,8 @@ import './owa.sparkline.js';
 import './owa.realtime.js';
 import './owa.areachart.js';
 import './owa.sharechart.js';
+// Filters as pills, in the report editor's widget panel and the funnel builder.
+import './owa.filterpills.js';
 import './owa.kpibox.js';
 // The confirmation an irreversible action gets. Imported after owa.js like the
 // rest; it augments OWA and delegates one document-level handler.

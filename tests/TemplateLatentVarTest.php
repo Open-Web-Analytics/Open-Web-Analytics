@@ -317,6 +317,8 @@ final class TemplateLatentVarTest extends TestCase
                     // The step cap, read from VisualizationSave so the form
                     // cannot offer a step the save then refuses.
                     'maxSteps' => 10,
+                    // The funnel's filter, and what it may filter on.
+                    'constraints' => '', 'dimensionChoices' => [],
                 ],
                 ['name="name"', 'name="stepPath[]"', 'name="visualizationType"'],
             ],

@@ -425,6 +425,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.visualizationSave',             'OWA\\Module\\Base\\Controller\\VisualizationSave',           'Controller/VisualizationSave.php' );
         $this->registerAction( 'base.visualizationEdit',             'OWA\\Module\\Base\\Controller\\VisualizationEdit',           'Controller/VisualizationEdit.php' );
         $this->registerAction( 'base.visualizationFunnel',           'OWA\\Module\\Base\\Controller\\VisualizationFunnel',         'Controller/VisualizationFunnel.php' );
+        $this->registerAction( 'base.visualizationPreview',          'OWA\\Module\\Base\\Controller\\VisualizationPreview',        'Controller/VisualizationPreview.php' );
         $this->registerAction( 'base.goalEvents',                     'OWA\\Module\\Base\\Controller\\GoalEvents',                    'Controller/GoalEvents.php' );
         $this->registerAction( 'base.goalEventEdit',                  'OWA\\Module\\Base\\Controller\\GoalEventEdit',                 'Controller/GoalEventEdit.php' );
         $this->registerAction( 'base.goalEventSave',                  'OWA\\Module\\Base\\Controller\\GoalEventSave',                 'Controller/GoalEventSave.php' );
