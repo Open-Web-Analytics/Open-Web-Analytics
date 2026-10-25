@@ -312,7 +312,14 @@ test.describe('every configured report renders in a browser', () => {
             await expect(page.locator('#entry-pages tr.owa_gridRow').first(),
                 'entry-pages drew no rows').toBeVisible({ timeout: 20_000 });
 
-            await expect(page.locator('#entry-pages')).toContainText(FIXTURE.pageTitles[0]);
+            /*
+             * By PATH, as the Entry Pages report it opens groups, so a row on
+             * the card is a row there. The cell is compared whole: '/' is in
+             * every path.
+             */
+            const cells = page.locator('#entry-pages tr.owa_gridRow td[data-column="landingPage"]');
+
+            await expect(cells.filter({ hasText: new RegExp('^' + FIXTURE.pagePaths[0] + '$') })).toHaveCount(1);
         });
 
         test('the referring sites card lists the referring host', async ({ page }) => {
