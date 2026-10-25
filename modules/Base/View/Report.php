@@ -85,6 +85,7 @@ class Report extends \OWA\Core\View {
 
         $this->body->set('hideSitesFilter', $this->get('hideSitesFilter') );
         $this->body->set('hideTimeControls', $this->get('hideTimeControls') );
+        $this->body->set('hideReportHead', $this->get('hideReportHead') );
         $this->body->set('title_actions', $this->get('title_actions') );
         $this->body->set('title_count', $this->get('title_count') );
         $this->body->set('title_tags', $this->get('title_tags') ?: array() );

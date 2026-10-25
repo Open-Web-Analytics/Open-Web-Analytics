@@ -53,25 +53,32 @@ async function openRoster(page) {
 }
 
 /**
- * Fill the widget modal's FIRST constraint row, by driving its controls.
+ * Write a filter in the panel's filter form, opening the form if it is shut.
  *
- * The dimension and the operator are chosen widgets, so the native <select>
- * is hidden and page.selectOption() cannot reach it -- and setting the hidden
- * select would pass with the visible control broken, which is the only part an
- * author touches. Same reasoning as chooseInChosen() above.
+ * The dimension is a chosen widget, so its native <select> is hidden and
+ * page.selectOption() cannot reach it -- and setting the hidden select would
+ * pass with the visible control broken. Same reasoning as chooseInChosen().
+ *
+ * @param dimension the dimension's machine name
+ * @param operator  the condition's words, e.g. 'contains' or 'is set'
  */
-async function fillConstraintRow(page, { dimension, operator, value }) {
-    const row = page.locator('#dlgConstraintRows li.constraintRow').first();
+async function fillFilter(page, { dimension, operator, value }) {
+    if (!(await page.locator('#dlgFilterForm').isVisible())) {
+        await page.click('#dlgAddFilter');
+    }
 
-    const pick = async (holder, label) => {
-        const chosen = row.locator(`${holder} .chosen-container`);
+    if (dimension) {
+        const chosen = page.locator('#dlgFilterDimension_chosen');
+
         await chosen.click();
-        await chosen.locator('.chosen-results li', { hasText: label }).first().click();
-    };
+        await chosen.locator('.chosen-search input').pressSequentially(dimension);
+        await chosen.locator('.chosen-results li.active-result', { hasText: `(${dimension})` })
+            .first().click();
+        await expect(page.locator('#dlgFilterDimension')).toHaveValue(dimension);
+    }
 
-    if (dimension) { await pick('.constraintDimensionPicker', dimension); }
-    if (operator)  { await pick('.constraintOperatorPicker', operator); }
-    if (value !== undefined) { await row.locator('.constraintValueField').fill(value); }
+    if (operator) { await page.selectOption('#dlgFilterOperator', { label: operator }); }
+    if (value !== undefined) { await page.fill('#dlgFilterValue', value); }
 }
 
 /**
@@ -148,15 +155,13 @@ async function chooseInChosen(page, selectId, name) {
         .toHaveJSProperty('selected', true);
 }
 
-/**
- * The widget dialog's Save button.
- *
- * Built by jQuery UI in the frame outside #widgetDialog, so it cannot be
- * reached through that id.
- */
+/** The widget panel's Apply and Cancel. */
 function dialogSave(page) {
-    return page.locator('.owa_widgetDialogFrame .ui-dialog-buttonpane button',
-        { hasText: 'Save' });
+    return page.locator('#dlgApply');
+}
+
+function dialogCancel(page) {
+    return page.locator('#dlgCancel');
 }
 
 /** The pills currently shown by a Chosen control. */
@@ -180,7 +185,7 @@ async function startWidget(page, type) {
     await expect(page.locator('#typeDialog')).toBeVisible();
     await page.locator(`.owa_typeChoice[data-type="${type}"]`).click();
 
-    // Choosing lands straight in the widget modal, on the block just added.
+    // Choosing lands straight in the widget panel, on the card just added.
     await expect(page.locator('#widgetDialog')).toBeVisible();
 }
 
@@ -204,11 +209,12 @@ async function onlyWidget(page, type, opts = {}) {
     await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
 }
 
-/** Fill the widget modal that is already open, and close it with Save. */
+/** Fill the widget panel that is already open, and close it with Apply. */
 async function fillWidget(page, opts) {
     if (opts.title !== undefined) { await page.fill('#dlgTitle', opts.title); }
-    if (opts.colspan)             { await page.selectOption('#dlgColspan', String(opts.colspan)); }
-    if (opts.rowspan)             { await page.selectOption('#dlgRowspan', String(opts.rowspan)); }
+    // The labels, not the radios: the radios are hidden under the segmented control.
+    if (opts.colspan)             { await page.click(`label[for="dlgWidth-${opts.colspan}"]`); }
+    if (opts.rowspan)             { await page.click(`label[for="dlgHeight-${opts.rowspan}"]`); }
 
     for (const metric of opts.metrics || [])       { await chooseInChosen(page, 'dlgMetrics', metric); }
     for (const dim of opts.dimensions || [])       { await chooseInChosen(page, 'dlgDimensions', dim); }
@@ -219,9 +225,12 @@ async function fillWidget(page, opts) {
     if (opts.more !== undefined)      { await page.selectOption('#dlgMoreReport', opts.more); }
     if (opts.moreLabel !== undefined) { await page.fill('#dlgMoreLabel', opts.moreLabel); }
 
-    if (opts.sort !== undefined)  { await page.fill('#dlgSort', opts.sort); }
+    if (opts.sort !== undefined) {
+        await page.selectOption('#dlgSortBy', opts.sort.replace(/-$/, ''));
+        await page.selectOption('#dlgSortDir', opts.sort.endsWith('-') ? 'desc' : 'asc');
+    }
 
-    await page.locator('.ui-dialog-buttonpane button', { hasText: 'Save' }).click();
+    await dialogSave(page).click();
     await expect(page.locator('#widgetDialog')).toBeHidden();
 }
 
@@ -305,9 +314,6 @@ test.describe('custom reports', () => {
                         return Math.round(a.width) === 40 && Math.round(a.height) === 40
                             && a.left - b.left < 24 && a.top - b.top < 24;
                     }),
-                    // ...and each says how much of a row it takes.
-                    labelled: tiles.every((t) =>
-                        (t.querySelector('.owa_typeChoiceWidthLabel') || {}).textContent),
                 };
             });
 
@@ -318,22 +324,21 @@ test.describe('custom reports', () => {
 
             // Cascading left to right across more than one row.
             expect(state.tiles).toBe(6);
-            expect(state.perRow, 'the tiles are in a single column').toBeGreaterThan(1);
+            expect(state.perRow, 'the tiles are not two to a row').toBe(2);
             expect(state.rows, 'the tiles are all on one row').toBeGreaterThan(1);
 
             expect(state.artSquare, 'an icon is not in its square at the top left').toBe(true);
-            expect(state.labelled, 'a tile does not say how wide the widget is').toBeTruthy();
         });
 
         /**
-         * ...and the type is settled once the block exists.
+         * ...and the type is settled once the card exists.
          *
          * It used to be a select inside the widget modal, which made that one
          * form have to be every form at once -- and every answer already given
          * had to be re-examined whenever the type changed. A trend has no
          * dimension to pick; a card takes one metric where a table takes four.
          */
-        test('the widget modal does not offer the type again', async ({ page }) => {
+        test('the widget panel does not offer the type again', async ({ page }) => {
             await openBuilderOnGrid(page);
 
             await expect(page.locator('#dlgType')).toHaveCount(0);
@@ -514,9 +519,7 @@ test.describe('custom reports', () => {
         test('the required fields say so', async ({ page }) => {
             await openBuilder(page);
 
-            const nameField = page.locator('.owa_builderField', {
-                has: page.locator('#customReportName'),
-            });
+            const nameField = page.locator('.owa_editorName');
 
             await expect(nameField.locator('.owa_builderRequired')).toBeVisible();
             await expect(nameField.locator('.owa_builderRequired')).toHaveText(/required/i);
@@ -525,7 +528,7 @@ test.describe('custom reports', () => {
             await startWidget(page, 'grid');
             await expect(page.locator('#dlgMetricsRequired')).toBeVisible();
             await expect(page.locator('#dlgDimensionsRequired')).toBeHidden();
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+            await dialogCancel(page).click();
 
             // A card and a pie draw exactly one of each, and are refused
             // without either -- see CustomReports::SINGLE_FIELD_TYPES.
@@ -533,7 +536,7 @@ test.describe('custom reports', () => {
                 await startWidget(page, type);
                 await expect(page.locator('#dlgMetricsRequired')).toBeVisible();
                 await expect(page.locator('#dlgDimensionsRequired')).toBeVisible();
-                await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+                await dialogCancel(page).click();
             }
 
             // A trend's breakdown is an addition to a chart that draws without
@@ -541,7 +544,7 @@ test.describe('custom reports', () => {
             await startWidget(page, 'trend');
             await expect(page.locator('#dlgMetricsRequired')).toBeVisible();
             await expect(page.locator('#dlgDimensionsRequired')).toBeHidden();
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+            await dialogCancel(page).click();
 
             // Info boxes have no dimension field at all, so there is nothing to
             // mark -- the mark must not be showing beside a hidden control.
@@ -552,21 +555,13 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * A HALF-FILLED CONSTRAINT ROW USED TO VANISH.
+         * A FILTER STARTED AND NOT ADDED DOES NOT VANISH.
          *
-         * readConstraintRows() keeps a row only when it has both a dimension
-         * and a value, and dropped anything else without a word. So an author
-         * who chose a dimension and tabbed past the value got a widget with no
-         * filter on it, no message, and nothing to distinguish it from one they
-         * had never filtered -- the same failure the query engine refuses to
-         * run ("a missing value is not a request for everything"), except that
-         * here it happened before anything reached the engine.
-         *
-         * Done does not close on one. The row is inside this dialog, so closing
-         * would take the author away from the control the message is about.
+         * A half-written filter dropped without a word gives a widget with no
+         * filter on it and nothing to say so. Apply does not go while the
+         * filter form is open; Add filter waits for a dimension and a value.
          */
-        test('a constraint row started and not finished stops the dialog closing',
-            async ({ page }) => {
+        test('a filter started and not added stops Apply', async ({ page }) => {
 
             await openBuilder(page);
             await page.fill('#customReportName', reportName('Constraint'));
@@ -575,14 +570,25 @@ test.describe('custom reports', () => {
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
 
             // A dimension, and deliberately no value.
-            await fillConstraintRow(page, { dimension: '(sessionMedium)' });
+            await fillFilter(page, { dimension: 'sessionMedium' });
 
+            await expect(page.locator('#dlgFilterAdd')).toBeDisabled();
             await expect(dialogSave(page)).toBeDisabled();
-            await expect(page.locator('#dlgError')).toContainText('has no value');
+            await expect(page.locator('#dlgError')).toContainText('Add the filter you started');
 
-            // Filling it in lets the widget be saved, and the constraint
-            // reaches the definition rather than being dropped on the way out.
-            await fillConstraintRow(page, { value: 'organic' });
+            // A comma would split the stored list, so it is not accepted.
+            await fillFilter(page, { value: 'a,b' });
+            await expect(page.locator('#dlgFilterAdd')).toBeDisabled();
+            await expect(page.locator('#dlgError')).toContainText('comma');
+
+            // Filling it in lets the filter be added, as a pill, and the
+            // widget applied; the filter reaches the definition.
+            await fillFilter(page, { value: 'organic' });
+            await page.click('#dlgFilterAdd');
+
+            await expect(page.locator('#dlgFilterForm')).toBeHidden();
+            await expect(page.locator('#dlgFilters .owa_filterPill')).toHaveCount(1);
+            await expect(page.locator('#dlgFilters .owa_filterPill')).toContainText(/is\s+organic/);
 
             await expect(dialogSave(page)).toBeEnabled();
             await dialogSave(page).click();
@@ -599,23 +605,25 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * "Is Set" takes no value and stores the `(not set)` form.
+         * "is set" takes no value and stores the `(not set)` form.
          *
-         * The value field hides, the row is complete without one, and the
+         * The value field hides, the filter is complete without one, and the
          * clause written is `!=(not set)` -- which the server reads as "has a
          * value", not as a comparison with the label.
          */
-        test('an Is Set constraint needs no value and stores the empty test', async ({ page }) => {
+        test('an "is set" filter needs no value and stores the empty test', async ({ page }) => {
             await openBuilder(page);
             await page.fill('#customReportName', reportName('IsSet'));
 
             await startWidget(page, 'grid');
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
 
-            await fillConstraintRow(page, { dimension: '(sessionCampaign)', operator: 'Is Set' });
+            await fillFilter(page, { dimension: 'sessionCampaign', operator: 'is set' });
 
-            await expect(page.locator('#dlgConstraintRows li.constraintRow').first()
-                .locator('.constraintValueField')).toBeHidden();
+            await expect(page.locator('#dlgFilterValue')).toBeHidden();
+            await page.click('#dlgFilterAdd');
+
+            await expect(page.locator('#dlgFilters .owa_filterPill')).toContainText('is set');
             await expect(dialogSave(page)).toBeEnabled();
             await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
@@ -630,13 +638,8 @@ test.describe('custom reports', () => {
                 .toBe('sessionCampaign!=(not set)');
         });
 
-        /**
-         * A blank row is still nothing.
-         *
-         * The form always carries one, and it does not mean the author left
-         * something out -- so it must not be what stops them saving.
-         */
-        test('the always-present empty constraint row is not an error', async ({ page }) => {
+        /** A widget with no filters stores none. */
+        test('a widget with no filters stores no constraints', async ({ page }) => {
             await openBuilder(page);
             await page.fill('#customReportName', reportName('BlankRow'));
 
@@ -692,7 +695,7 @@ test.describe('custom reports', () => {
 
         /*
          * ------------------------------------------------------------------
-         * THE MODAL IS WHERE A WIDGET IS FINISHED
+         * THE PANEL IS WHERE A WIDGET IS FINISHED
          * ------------------------------------------------------------------
          *
          * Done used to close on anything. The block landed on the canvas marked
@@ -704,13 +707,13 @@ test.describe('custom reports', () => {
          * arrive already broken from a report saved before these rules or from
          * a refusal round-trip. They are the backstop, not the first line.
          */
-        test('done will not close on a widget that is not finished', async ({ page }) => {
+        test('apply will not close on a widget that is not finished', async ({ page }) => {
             await openBuilder(page);
 
             await startWidget(page, 'grid');
 
-            // Not refused on click -- never clickable. The reason is on the
-            // dialog beside it.
+            // Not refused on click -- never clickable. The reason is in the
+            // panel beside it.
             await expect(dialogSave(page)).toBeDisabled();
             await expect(page.locator('#dlgError')).toContainText('at least one metric');
 
@@ -744,64 +747,88 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * THE SORT IS THE ONE FIELD AN AUTHOR TYPES INTO FREELY.
+         * THE SORT IS ONE OF THE WIDGET'S OWN METRICS OR DIMENSIONS, AND A
+         * DIRECTION.
          *
-         * Everything else in this dialog is a picker fed from the registry, so
-         * the sort was the only way to reach the server with a name that does
-         * not resolve -- and the answer came back as a refusal two steps later,
-         * on a page about a widget rather than showing them one. The registry
-         * is already in the page for the pickers.
-         *
-         * A trailing '-' is the DIRECTION and is stripped before the lookup;
-         * without that every descending sort would be reported as unresolvable,
-         * which is the bug this check would otherwise introduce.
+         * It was a text field taking `pageViews-`, the one place an author
+         * could type a name the registry does not know. A new widget is sorted
+         * by its first metric, largest first, as soon as it has one.
          */
-        test('an unresolvable sort is caught in the modal, and a descending one is not',
-            async ({ page }) => {
-
+        test('the sort is chosen from what the widget shows, with a direction', async ({ page }) => {
             await openBuilder(page);
+            await page.fill('#customReportName', reportName('Sorted'));
 
             await startWidget(page, 'grid');
+
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
 
-            await page.fill('#dlgSort', 'notARealMetric-');
+            await expect(page.locator('#dlgSortBy')).toHaveValue('pageViews');
+            await expect(page.locator('#dlgSortDir')).toHaveValue('desc');
+            await expect(page.locator('#dlgSortDir option[value="desc"]')).toHaveText('Highest first');
 
-            await expect(dialogSave(page)).toBeDisabled();
-            await expect(page.locator('#dlgError')).toContainText('notARealMetric');
+            const offered = await page.locator('#dlgSortBy option').evaluateAll(
+                (opts) => opts.map((o) => o.value));
 
-            // A real metric, descending, is fine -- the '-' is not part of it.
-            await page.fill('#dlgSort', 'pageViews-');
+            expect(offered).toEqual(['', 'pageViews', 'pagePath']);
 
-            await expect(dialogSave(page)).toBeEnabled();
+            // A dimension reads A to Z.
+            await page.selectOption('#dlgSortBy', 'pagePath');
+            await expect(page.locator('#dlgSortDir option[value="asc"]')).toHaveText('A to Z');
+            await page.selectOption('#dlgSortDir', 'asc');
+
             await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm')
+                    .dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            expect(JSON.parse(definition).widgets[0].query.sort).toBe('pagePath');
+        });
+
+        /** A trend is always by date, so it has no sort to choose. */
+        test('a trend has no sort to choose', async ({ page }) => {
+            await openBuilder(page);
+            await startWidget(page, 'trend');
+
+            await expect(page.locator('#dlgSortField')).toBeHidden();
         });
 
         /**
          * BACKING OUT OF A NEW WIDGET UNDOES THE ADD.
          *
-         * The type chooser pushes the widget onto the canvas before the modal
-         * opens, so without this Cancel leaves exactly the unconfigured block
-         * Done refuses to produce -- the rule would be reachable around, and so
-         * would be decoration.
+         * The type chooser pushes the widget onto the canvas before the panel
+         * opens, so without this Cancel leaves exactly the unconfigured card
+         * Apply refuses to produce -- the rule would be reachable around, and
+         * so would be decoration.
          *
-         * Asserted through the titlebar X as well, because that is the same
-         * decision made with a different control and it is the one that gets
+         * Asserted through the X and Escape as well, because they are the same
+         * decision made with different controls and they are the ones that get
          * missed.
          */
         test('cancelling a widget that was never configured removes it', async ({ page }) => {
             await openBuilder(page);
 
             await startWidget(page, 'grid');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+            await dialogCancel(page).click();
 
             await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
             await expect(page.locator('#customReportEmpty')).toBeVisible();
 
-            // The same, closed with the X rather than the button.
+            // The same, closed with the X rather than the button...
             await startWidget(page, 'grid');
-            await page.locator('.owa_widgetDialogFrame .ui-dialog-titlebar-close').click();
+            await page.click('#dlgClose');
 
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+
+            // ...and with Escape.
+            await startWidget(page, 'grid');
+            await page.locator('#dlgTitle').press('Escape');
+
+            await expect(page.locator('#widgetDialog')).toBeHidden();
             await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
         });
 
@@ -820,7 +847,7 @@ test.describe('custom reports', () => {
 
             await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
             await page.fill('#dlgTitle', 'Should not stick');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+            await dialogCancel(page).click();
 
             await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
             await expect(page.locator('.owa_builderBlockName').first()).toHaveText('Widget 1');
@@ -858,8 +885,8 @@ test.describe('custom reports', () => {
              * A sort the registry cannot resolve, on the SECOND widget -- put
              * there by POSTING it, not by typing it.
              *
-             * The modal now resolves the sort against the registry, so this
-             * cannot be built in the builder any more; a save-time refusal is
+             * The panel offers only the widget's own fields as a sort, so this
+             * cannot be built in the editor any more; a save-time refusal is
              * not reachable through the UI at all. It is still reachable from a
              * stale tab, a direct post, or a report stored before these rules,
              * which is exactly why the refusal page still has to work.
@@ -893,7 +920,7 @@ test.describe('custom reports', () => {
 
                 await expect(page.locator('#widgetDialog')).toBeVisible();
 
-                await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+                await dialogCancel(page).click();
                 await expect(page.locator('#widgetDialog')).toBeHidden();
             }
 
@@ -901,8 +928,11 @@ test.describe('custom reports', () => {
             // which is the whole point of coming back to the builder.
             await page.locator('.owa_builderBlock').nth(1).locator('.owa_builderEdit').click();
             await expect(page.locator('#widgetDialog')).toBeVisible();
-            await page.fill('#dlgSort', 'pageViews-');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Save' }).click();
+            // The stored sort is kept as a choice until it is changed.
+            await expect(page.locator('#dlgSortBy')).toHaveValue('notARealMetric');
+            await page.selectOption('#dlgSortBy', 'pageViews');
+            await page.selectOption('#dlgSortDir', 'desc');
+            await dialogSave(page).click();
 
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
@@ -1040,19 +1070,16 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * Constraints are ROWS now, not a string the author types.
+         * Filters are PILLS, not a string the author types.
          *
-         * The field used to be a text input taking `medium==organic-search` --
-         * a syntax with no discoverable operator list, no dimension names, and
-         * nothing to catch a typo until the widget came back empty. The STORED
-         * format is unchanged, which is the thing worth pinning: the rows have
-         * to serialise to exactly what the definition already holds, and parse
-         * that same string back when the widget is reopened.
+         * The STORED format is unchanged, which is the thing worth pinning: the
+         * pills have to serialise to exactly what the definition already holds,
+         * and parse that same string back when the widget is reopened.
          *
          * Round-tripped through a real save, so the assertion is about what
          * reached the database rather than what the form is holding.
          */
-        test('a constraint built as rows survives a save and reopens as rows', async ({ page }) => {
+        test('a filter survives a save and reopens as a pill', async ({ page }) => {
             const name = reportName('constraint-rows');
 
             await openBuilder(page);
@@ -1063,10 +1090,10 @@ test.describe('custom reports', () => {
             await chooseInChosen(page, 'dlgMetrics', 'sessions');
             await chooseInChosen(page, 'dlgDimensions', 'browserType');
 
-            await fillConstraintRow(page,
-                { dimension: '(sessionMedium)', operator: 'Contains', value: 'organic' });
+            await fillFilter(page, { dimension: 'sessionMedium', operator: 'contains', value: 'organic' });
+            await page.click('#dlgFilterAdd');
 
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Save' }).click();
+            await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();
 
             await page.click('#customReportSubmit');
@@ -1081,22 +1108,28 @@ test.describe('custom reports', () => {
             await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
             await expect(page.locator('#widgetDialog')).toBeVisible();
 
-            const row = page.locator('#dlgConstraintRows li.constraintRow').first();
+            const pill = page.locator('#dlgFilters .owa_filterPill');
 
-            /*
-             * Read off the NATIVE selects, which is where chosen keeps the
-             * value and where the serialiser reads it -- the visible pill is
-             * asserted below, so both halves are covered.
-             */
-            await expect(row.locator('select.dim-list')).toHaveValue('sessionMedium');
-            await expect(row.locator('select.operator-list')).toHaveValue('=@');
-            await expect(row.locator('.constraintValueField')).toHaveValue('organic');
+            await expect(pill).toHaveCount(1);
+            await expect(pill).toContainText('contains');
+            await expect(pill.locator('strong')).toHaveText('organic');
 
-            // ...and the pills show it, which is what an author sees.
-            await expect(row.locator('.constraintDimensionPicker .chosen-single'))
-                .toContainText('(sessionMedium)');
-            await expect(row.locator('.constraintOperatorPicker .chosen-single'))
-                .toContainText('Contains');
+            // ...and the card says it is filtered.
+            await expect(page.locator('.owa_builderBlockSummary').first())
+                .toContainText('filtered:');
+
+            // A pill's X removes it, and Apply stores no constraint.
+            await pill.locator('.owa_filterPillRemove').click();
+            await expect(pill).toHaveCount(0);
+            await dialogSave(page).click();
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm')
+                    .dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            expect(JSON.parse(definition).widgets[0]).not.toHaveProperty('constraints');
         });
 
         test('a report can be built, saved, and opens showing its own name', async ({ page }) => {
@@ -1280,39 +1313,45 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * ...and the modal is a real, styled dialog.
-         *
-         * It needs jQuery UI's stylesheet, which report pages load and options
-         * pages do not -- the builder was an options screen at first, so the
-         * dialog SCRIPT was present and the CSS was not, and it opened as an
-         * unstyled block in the middle of the document.
+         * A widget's settings are a panel at the right, with the layout still
+         * in view beside it and the card being edited marked. No overlay: the
+         * layout is what the panel is about.
          */
-        test('the widget modal is a styled dialog', async ({ page }) => {
-            await openBuilderOnGrid(page);
+        test('the widget panel sits at the right, beside the layout', async ({ page }) => {
+            await openBuilder(page);
+            await addWidget(page, 'grid', { metrics: ['pageViews'] });
 
-            const dialog = page.locator('.owa_widgetDialogFrame').first();
+            await page.locator('.owa_builderBlock').first().locator('.owa_builderEdit').click();
 
-            await expect(dialog).toBeVisible();
+            const panel = page.locator('#widgetDialog');
 
-            // The title bar and buttons only exist once jQuery UI has built it.
-            await expect(dialog.locator('.ui-dialog-titlebar')).toBeVisible();
-            await expect(dialog.locator('.ui-dialog-buttonpane')).toBeVisible();
+            await expect(panel).toBeVisible();
+            await expect(panel).toHaveCSS('position', 'fixed');
 
-            // Our own styling, not the bare theme: a shadow lifts it off the
-            // page, asserted as a computed value because a class name would
-            // pass with the stylesheet missing.
-            const shadow = await dialog.evaluate((el) => getComputedStyle(el).boxShadow);
+            const box = await panel.boundingBox();
+            const viewport = page.viewportSize();
 
-            expect(shadow).not.toBe('none');
+            expect(Math.round(box.x + box.width)).toBe(viewport.width);
+            expect(Math.round(box.width)).toBe(440);
+
+            await expect(page.locator('.owa_builderBlock').first()).toHaveClass(/is-editing/);
+            await expect(page.locator('.ui-widget-overlay')).toHaveCount(0);
+
+            // Focus goes to the name, and back to the pencil on Cancel.
+            await expect(page.locator('#dlgTitle')).toBeFocused();
+            await dialogCancel(page).click();
+            await expect(page.locator('.owa_builderBlock').first().locator('.owa_builderEdit')).toBeFocused();
+            await expect(page.locator('.owa_builderBlock').first()).not.toHaveClass(/is-editing/);
         });
 
         /**
-         * The page behind is dimmed, so the dialog reads as the only thing to
-         * answer. jQuery UI draws the overlay for modal:true, but the bundled
-         * theme leaves it so faint the page looks live underneath.
+         * The gallery dims the page behind it, so it reads as the only thing
+         * to answer. jQuery UI draws the overlay for modal:true, but the
+         * bundled theme leaves it so faint the page looks live underneath.
          */
-        test('the modal dims the page behind it', async ({ page }) => {
-            await openBuilderOnGrid(page);
+        test('the gallery dims the page behind it', async ({ page }) => {
+            await openBuilder(page);
+            await page.click('#addWidget');
 
             const overlay = page.locator('.ui-widget-overlay');
 
@@ -1321,9 +1360,8 @@ test.describe('custom reports', () => {
             const opacity = await overlay.evaluate((el) => parseFloat(getComputedStyle(el).opacity));
 
             expect(opacity).toBeGreaterThan(0.2);
-
-            // ...and it covers the viewport rather than sitting in the flow.
             await expect(overlay).toHaveCSS('position', 'fixed');
+            await expect(page.locator('.owa_typeDialogFrame .ui-dialog-title')).toHaveText('Add a widget');
         });
 
         /*
@@ -1375,11 +1413,11 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * The modal's spans reach the block, which is the point of showing them
-         * there: the canvas is the layout, so a span the author sets has to be
-         * visible on it before they save.
+         * The panel's width and height reach the card, which is the point of
+         * showing them there: the canvas is the layout, so a span the author
+         * sets has to be visible on it before they save.
          */
-        test('the span set in the modal is shown on the block', async ({ page }) => {
+        test('the width and height set in the panel are shown on the card', async ({ page }) => {
             await openBuilder(page);
 
             await onlyWidget(page, 'trend', {
@@ -1393,11 +1431,115 @@ test.describe('custom reports', () => {
 
             await expect(block.locator('.owa_builderBlockName')).toHaveText('Revenue by day');
             await expect(block.locator('.owa_builderBlockType')).toHaveText('Trend chart');
-            await expect(block.locator('.owa_builderBlockSpan')).toHaveText('4 × 2');
+            await expect(block.locator('.owa_builderBlockSpan')).toHaveText('One third · tall');
 
             // ...and the block is physically narrower than a full-width one,
             // which is the claim the canvas is making.
             await expect(block).toHaveClass(/owa_builderSpan-4/);
+        });
+
+        /**
+         * The cards are the report's order, and moving one moves the widget:
+         * by dragging it onto another card, or with its handle and the arrow
+         * keys. The saved definition follows.
+         */
+        test('a card moves by dragging and by the arrow keys', async ({ page }) => {
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('Moved'));
+
+            for (const title of ['First', 'Second', 'Third']) {
+                await addWidget(page, 'grid', { title, metrics: ['pageViews'] });
+            }
+
+            const names = () => page.locator('.owa_builderBlockName').allInnerTexts();
+
+            await expect(page.locator('#widgetBudget')).toContainText('drag to reorder');
+
+            // Third dragged onto First takes its place.
+            await page.locator('.owa_builderBlock').nth(2)
+                .dragTo(page.locator('.owa_builderBlock').nth(0));
+
+            expect(await names()).toEqual(['Third', 'First', 'Second']);
+
+            // The handle and the arrow keys; focus stays on the moved card.
+            const handle = page.locator('.owa_builderBlock').nth(0).locator('.owa_builderMove');
+
+            await expect(handle).toHaveAttribute('aria-label', 'Move Third');
+            await handle.focus();
+            await page.keyboard.press('ArrowRight');
+            await page.keyboard.press('ArrowDown');
+
+            expect(await names()).toEqual(['First', 'Second', 'Third']);
+            await expect(page.locator('.owa_builderBlock').nth(2).locator('.owa_builderMove')).toBeFocused();
+            await expect(page.locator('#customReportMoved')).toHaveText('Third, position 3 of 3.');
+
+            // Past the end is no move.
+            await page.keyboard.press('ArrowRight');
+            expect(await names()).toEqual(['First', 'Second', 'Third']);
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm')
+                    .dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            expect(JSON.parse(definition).widgets.map((w) => w.title)).toEqual(['First', 'Second', 'Third']);
+        });
+
+        /**
+         * A card says what its widget shows in words: the metrics by the
+         * dimensions, by their labels, then its filters and where its rows go.
+         */
+        test('a card summarises its widget in words', async ({ page }) => {
+            await openBuilder(page);
+
+            await startWidget(page, 'grid-card');
+            await page.fill('#dlgTitle', 'Top pages');
+            await chooseInChosen(page, 'dlgMetrics', 'pageViews');
+            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await fillFilter(page, { dimension: 'pagePath', operator: 'contains', value: '/blog/' });
+            await page.click('#dlgFilterAdd');
+            await dialogSave(page).click();
+
+            const card = page.locator('.owa_builderBlock').first();
+
+            await expect(card.locator('.owa_builderBlockType')).toHaveText('Table card');
+            await expect(card.locator('.owa_builderBlockSummary'))
+                .toHaveText(/^Page Views by .+ · filtered: .+ contains \/blog\/$/);
+            await expect(card.locator('.owa_builderBlockSpan')).toHaveText('Half width · short');
+            await expect(card.locator('.owa_builderEdit')).toHaveAttribute('aria-label', 'Edit Top pages');
+            await expect(card.locator('.owa_builderRemove')).toHaveAttribute('aria-label', 'Remove Top pages');
+        });
+
+        /**
+         * The editor is its own screen: no report title above it, the name is
+         * the header, and Cancel and Save sit beside it. Cancel goes back to
+         * the list for a new report and to the report for an existing one.
+         */
+        test('the editor header holds the name, Shared, Cancel and Save', async ({ page }) => {
+            await openBuilder(page);
+
+            await expect(page.locator('.owa_reportHead')).toHaveCount(0);
+
+            const head = page.locator('.owa_editorHead');
+
+            await expect(head.locator('#customReportName')).toBeVisible();
+            await expect(head.locator('#isShared')).toHaveAttribute('role', 'switch');
+            await expect(head.locator('label[for="isShared"]')).toContainText("Shared in everyone's list");
+            await expect(head.locator('#customReportSubmit')).toHaveValue('Save report');
+            expect(await head.locator('#customReportCancel').getAttribute('href')).toContain('customReports');
+
+            const name = await buildOne(page, 'HeaderCancel');
+
+            await page.locator('.owa_reportTitle a[href*="customReportEdit"]').click();
+            await page.waitForSelector('#customReportForm');
+
+            await expect(page.locator('#customReportName')).toHaveValue(name);
+
+            const href = await page.locator('#customReportCancel').getAttribute('href');
+
+            expect(href).toContain('base.report');
+            expect(href).toContain('custom-');
         });
 
         /*
@@ -1420,16 +1562,21 @@ test.describe('custom reports', () => {
             await expect(page.locator('#dlgColspanField')).toBeHidden();
             await expect(page.locator('#dlgWidthNote')).toContainText('always full width');
 
-            // The row span is still the author's -- only the width is decided.
-            await expect(page.locator('#dlgRowspan')).toBeVisible();
+            // The height is still the author's -- only the width is decided.
+            await expect(page.locator('#dlgHeight')).toBeVisible();
 
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+            await dialogCancel(page).click();
 
             // ...and a card has a width to choose.
             await startWidget(page, 'grid-card');
 
             await expect(page.locator('#dlgColspanField')).toBeVisible();
             await expect(page.locator('#dlgWidthNote')).toBeHidden();
+
+            // Third, Half, Two thirds, Full; a new card is added at Half.
+            await expect(page.locator('#dlgWidth label')).toHaveText(['Third', 'Half', 'Two thirds', 'Full']);
+            await expect(page.locator('#dlgWidth-6')).toBeChecked();
+            await expect(page.locator('#dlgHeight label')).toHaveText(['Short', 'Tall']);
         });
 
         /*
@@ -1708,7 +1855,7 @@ test.describe('custom reports', () => {
             await expect(page.locator('#dlgMetricsLabel')).toHaveText('Metrics');
             await expect(page.locator('#dlgMetricsHelp')).toContainText('Up to');
             await expect(page.locator('#dlgMetricsHelp')).toContainText('Required');
-            await page.locator('.ui-dialog-buttonpane button', { hasText: 'Cancel' }).click();
+            await dialogCancel(page).click();
 
             await startWidget(page, 'grid-card');
 
@@ -1845,7 +1992,8 @@ test.describe('custom reports', () => {
             url.searchParams.set('period', 'last_thirty_days');
             await page.goto(url.toString(), { waitUntil: 'networkidle' });
 
-            const card = page.locator('.owa_reportGridItem.owa_span-3').first();
+            // A new card is added at half the row (CustomReports::NEW_WIDGET_COLSPANS).
+            const card = page.locator('.owa_reportGridItem.owa_span-6').first();
 
             await expect(card.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
 
@@ -2195,14 +2343,14 @@ test.describe('custom reports', () => {
             // type. This test is about a span surviving the round trip, so it
             // uses a type that still has one.
             await onlyWidget(page, 'pie', {
-                colspan: 3, rowspan: 2,
+                colspan: 4, rowspan: 2,
                 metrics: ['pageViews'], dimensions: ['pagePath'],
             });
             await page.click('#customReportSubmit');
             await page.waitForLoadState('networkidle');
 
             // The rendered report honours it.
-            await expect(page.locator('.owa_reportGridItem.owa_span-3').first()).toHaveCount(1);
+            await expect(page.locator('.owa_reportGridItem.owa_span-4').first()).toHaveCount(1);
 
             /*
              * Back in through the ROSTER and then the report, because that is
@@ -2219,7 +2367,7 @@ test.describe('custom reports', () => {
             await page.locator('.owa_reportTitle a[href*="customReportEdit"]').click();
             await page.waitForSelector('#customReportCanvas');
 
-            await expect(page.locator('.owa_builderBlockSpan').first()).toHaveText('3 × 2');
+            await expect(page.locator('.owa_builderBlockSpan').first()).toHaveText('One third · tall');
         });
 
         /**
@@ -2291,8 +2439,8 @@ test.describe('custom reports', () => {
         /**
          * The rendered outcome of the type split, measured.
          *
-         * A grid is full width and carries its control bar; a card is a quarter
-         * of the row and carries none. Asserted on the RENDERED widgets rather
+         * A grid is full width and carries its control bar; a card is added at
+         * half the row and carries none. Asserted on the RENDERED widgets rather
          * than on the definition, because the bug this replaced was entirely a
          * rendering one -- the definition said colspan 6 and the renderer drew
          * a full-width bar inside it.
@@ -2325,7 +2473,8 @@ test.describe('custom reports', () => {
             await page.goto(url.toString(), { waitUntil: 'networkidle' });
 
             const grid = page.locator('.owa_reportGridItem.owa_span-12').first();
-            const card = page.locator('.owa_reportGridItem.owa_span-3').first();
+            // A new card is added at half the row (CustomReports::NEW_WIDGET_COLSPANS).
+            const card = page.locator('.owa_reportGridItem.owa_span-6').first();
 
             await expect(grid).toHaveCount(1);
             await expect(card).toHaveCount(1);
@@ -2350,7 +2499,7 @@ test.describe('custom reports', () => {
 
             expect(overflow).toBeLessThanOrEqual(1);
 
-            // ...and it really is narrower than the grid, so span-3 is doing
+            // ...and it really is narrower than the grid, so span-6 is doing
             // something rather than merely being in the class list.
             const gridBox = await grid.boundingBox();
             const cardBox = await card.boundingBox();

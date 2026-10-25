@@ -1918,6 +1918,40 @@ final class CustomReportsTest extends TestCase
     }
 
     /** + New offers a report first, then each visualization, each opening its builder. */
+    /**
+     * A new widget is added at a width the editor offers -- a third, a half,
+     * two thirds or the full row -- and only a type that may be narrowed has
+     * one.
+     */
+    public function testANewWidgetIsAddedAtAWidthTheEditorOffers(): void
+    {
+        foreach ( CustomReports::NEW_WIDGET_COLSPANS as $type => $span ) {
+
+            $this->assertArrayHasKey( $type, CustomReports::WIDGET_TYPES );
+            $this->assertNotContains( $type, CustomReports::FULL_WIDTH_TYPES );
+            $this->assertContains( $span, array( 4, 6, 8, 12 ), "$type is added at $span" );
+        }
+    }
+
+    /**
+     * The editor names a metric by its label. A metric's registry entry is a
+     * list of definitions, one per entity, and the label was looked for on
+     * the list itself -- so every metric was offered as its API name.
+     */
+    public function testTheEditorOffersMetricsByTheirLabels(): void
+    {
+        $labels = array_column(
+            \OWA\Module\Base\Controller\CustomReportEdit::metricChoices(), 'label', 'name' );
+
+        $this->assertSame( 'Page Views', $labels['pageViews'] ?? null );
+
+        $named = array_filter( $labels, static function ( $label, $name ) {
+            return $label === $name;
+        }, ARRAY_FILTER_USE_BOTH );
+
+        $this->assertSame( array(), $named, 'metrics offered by their API name' );
+    }
+
     public function testNewOffersAReportThenEachVisualization(): void
     {
         $kinds = \OWA\Module\Base\Controller\CustomReports::newKinds();

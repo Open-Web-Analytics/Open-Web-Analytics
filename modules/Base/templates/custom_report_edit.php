@@ -1,13 +1,13 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /**
- * The custom report builder.
+ * The custom report editor.
  *
- * The canvas shows the report as BLOCKS, left to right, in the order they will
- * be drawn -- and each block is as wide as the column span it claims, so the
- * arrangement on this screen is the arrangement on the report. A plus at the
- * end adds another; each block's Edit opens a modal holding everything about
- * that one widget.
+ * The layout shows the report as CARDS on its twelve columns, in the order
+ * they will be drawn, each as wide as it will be -- so the arrangement on this
+ * screen is the arrangement on the report. Add a widget asks what kind; a
+ * card's pencil opens a panel at the right holding everything about that one
+ * widget, and its handle moves it.
  *
  * WHERE THE STATE LIVES
  *
@@ -37,7 +37,7 @@ $owa_max        = (int) $view->get('max_widgets');
 <div class="notice error" role="alert"><?php $view->out( $owa_error ); ?></div>
 <?php endif; ?>
 
-<form id="customReportForm" action="<?php echo $view->makeLink( array( 'do' => 'base.customReportSave' ) ); ?>" method="post">
+<form id="customReportForm" class="owa_editor" action="<?php echo $view->makeLink( array( 'do' => 'base.customReportSave' ) ); ?>" method="post">
 
     <?php echo $view->createNonceFormField( 'base.customReportSave' ); ?>
 
@@ -55,18 +55,21 @@ $owa_max        = (int) $view->get('max_widgets');
     <?php /* The assembled definition. Written by the script below on submit. */ ?>
     <input type="hidden" name="customReportDefinition" id="customReportDefinition" value="" />
 
-    <div class="owa_builderHeader">
-        <div class="owa_builderField">
+    <?php
+        /*
+         * The screen's header: the report's name, whether it is listed for
+         * everyone, and Cancel / Save. There is no page title above it; the
+         * name is the title.
+         */
+    ?>
+    <div class="owa_editorHead">
+        <div class="owa_editorName">
             <?php
                 /*
                  * MARKED REQUIRED, because the placeholder makes an empty one
-                 * look filled in.
-                 *
-                 * "Untitled report" sits in the field greyed out, which reads
-                 * as a default that has already been supplied rather than as an
-                 * example of what to type -- so pressing Save with it untouched
-                 * was the most ordinary mistake there is, and the refusal it
-                 * produced was the least informative page in the application.
+                 * look filled in -- "Untitled report" greyed out reads as a
+                 * default already supplied, and Save with it untouched was the
+                 * most ordinary mistake there is.
                  */
             ?>
             <div class="owa_builderFieldLabel">
@@ -76,66 +79,56 @@ $owa_max        = (int) $view->get('max_widgets');
             <input type="text" id="customReportName" name="customReportName"
                    placeholder="Untitled report"
                    value="<?php $view->out( $owa_name ); ?>" />
-
-            <?php
-                /*
-                 * Listing, not access. Anyone with view_reports can already
-                 * open this report from its link -- that is what makes the link
-                 * worth sending. What this decides is whose LIST it appears on.
-                 */
-            ?>
-            <div class="owa_builderShare">
-                <label for="isShared">
-                    <input type="checkbox" id="isShared" name="isShared" value="1"
-                           <?php echo $owa_is_shared ? 'checked="checked"' : ''; ?> />
-                    Show this report in everyone's list
-                </label>
-                <p class="owa_builderHint">
-                    Off by default. Anyone you send the link to can open it either way;
-                    this decides whether other people find it without the link.
-                </p>
-            </div>
         </div>
 
         <?php
             /*
-             * THE REPORT METRIC SET IS NOT ASKED FOR HERE ANY MORE.
-             *
-             * It was a second place to answer "what does this report measure",
-             * beside the one inside every widget, and the two did not compose:
-             * a widget that named nothing inherited the set, so the same
-             * report drew different things depending on a field further up the
-             * page that said nothing about which widget it would land in. An
-             * author reading a widget could not tell what it would show.
-             *
-             * So a widget names its own metrics, always -- see
-             * CustomReports::validateQuery(), which now refuses one that names
-             * none. The key is still READ: a report saved while the control
-             * existed keeps its set, keeps rendering, and keeps validating, and
-             * the script below carries the stored value back out untouched
-             * rather than dropping it on the next save.
+             * Listing, not access. Anyone with view_reports can already open
+             * this report from its link; this decides whose LIST it is on.
              */
         ?>
+        <label class="owa_switch" for="isShared">
+            <input type="checkbox" role="switch" id="isShared" name="isShared" value="1"
+                   aria-describedby="isSharedHint"
+                   <?php echo $owa_is_shared ? 'checked="checked"' : ''; ?> />
+            <span class="owa_switchTrack" aria-hidden="true"></span>
+            Shared in everyone's list
+        </label>
+        <span id="isSharedHint" class="owa_srOnly">Anyone you send the link to can open it either way.</span>
+
+        <div class="owa_editorActions">
+            <a class="owa_button" id="customReportCancel" href="<?php echo $owa_id
+                ? $view->makeLink( array( 'do' => 'base.report', 'reportId' => 'custom-' . $owa_id ), true )
+                : $view->makeLink( array( 'do' => 'base.customReports' ), true ); ?>">Cancel</a>
+            <?php
+                /*
+                 * Disabled in the MARKUP as well as by draw(), so a new report
+                 * has no window before the script runs in which Save posts an
+                 * empty definition.
+                 */
+            ?>
+            <input type="submit" id="customReportSubmit" class="owa_button is-primary" value="Save report"
+                   <?php echo empty( $owa_definition['widgets'] ) ? 'disabled="disabled"' : ''; ?> />
+        </div>
     </div>
 
-    <div class="owa_builderSectionHeader">
-        <span>Widgets</span>
+    <?php
+        /*
+         * WHY Save will not go, under the button that will not go. Written by
+         * refreshSaveState() from the same rules the server applies.
+         */
+    ?>
+    <p id="customReportBlocker" class="owa_builderBlocker" role="status" style="display:none;"></p>
+
+    <div class="owa_editorSectionHead">
+        <h2>Layout</h2>
         <span class="owa_builderBudget" id="widgetBudget"></span>
     </div>
 
     <?php
         /*
-         * The canvas. Blocks are laid out left to right in the order the report
-         * draws them, each as wide as the column span it claims -- the point
-         * being that the layout is legible here rather than only after saving.
-         */
-    ?>
-    <?php
-        /*
          * Shown only while the canvas is empty, which for a NEW report is what
-         * it opens as. Server-rendered and hidden rather than built in script,
-         * so it is in the page for a reader whose stylesheet or script is slow
-         * -- and so its words live in the template with the rest of them.
+         * it opens as. Server-rendered so its words live with the rest of them.
          */
     ?>
     <div id="customReportEmpty" class="owa_builderEmpty" style="display:none;">
@@ -144,64 +137,19 @@ $owa_max        = (int) $view->get('max_widgets');
             A report cannot be saved empty.</span>
     </div>
 
+    <?php
+        /*
+         * The layout: a card per widget on the report's twelve columns, in the
+         * order the report draws them, each as wide as it will be. Drag a card
+         * by its handle, or focus the handle and use the arrow keys, to move it.
+         */
+    ?>
     <div id="customReportCanvas" class="owa_builderCanvas"></div>
+    <p id="customReportMoved" class="owa_srOnly" aria-live="polite"></p>
 
-    <div class="owa_builderActions">
-        <?php
-            /*
-             * An id, because this button is no longer the only submit on the
-             * page: the builder renders inside the report chrome now, and the
-             * site filter brings a form of its own.
-             */
-        ?>
-        <?php
-            /*
-             * owa-button, the class every other save form on the installation
-             * uses -- the sibling visualization builder included.
-             *
-             * This said `owa_button`, with an underscore, and NOTHING defines
-             * that: not owa.css, not owa.report.css, not the combined bundle.
-             * So the one affirmative control on the screen rendered as a bare
-             * browser submit while Save Visualization two screens over was the
-             * orange primary, and the difference was invisible in review
-             * because a class name reads as styling whether or not a rule
-             * exists for it.
-             */
-        ?>
-        <?php
-            /*
-             * Disabled in the MARKUP, not only by draw().
-             *
-             * draw() sets this on every canvas change and is the thing that
-             * keeps it right, but it does not run until the script at the foot
-             * of the page does -- so a new report drew an enabled Save for as
-             * long as that took, and pressing it in that window posted an empty
-             * definition. Rendered from the same fact the canvas is rendered
-             * from, there is no window.
-             */
-        ?>
-        <input type="submit" id="customReportSubmit" class="owa-button" value="Save report"
-               <?php echo empty( $owa_definition['widgets'] ) ? 'disabled="disabled"' : ''; ?> />
-
-        <?php
-            /*
-             * WHY Save will not go, next to the button that will not go.
-             *
-             * A disabled control with no explanation is the worst of both: it
-             * says something is wrong and not what. The text is written by
-             * refreshSaveState() from the same rules the server applies.
-             */
-        ?>
-        <span id="customReportBlocker" class="owa_builderBlocker" style="display:none;"></span>
-
-        <?php if ( $owa_id ): ?>
-        <a class="owa-button owa-button-quiet" href="<?php echo $view->makeLink( array(
-            'do'       => 'base.report',
-            'reportId' => 'custom-' . $owa_id,
-        ), true ); ?>">View</a>
-
-        <?php // 5th arg = $add_nonce. base.customReportDelete is setNonceRequired(),
-              // so the link has to carry one or the check refuses it. ?>
+    <?php if ( $owa_id ): ?>
+    <div class="owa_editorFoot">
+        <?php // 5th arg = $add_nonce: base.customReportDelete is setNonceRequired(). ?>
         <a class="owa_builderDelete" href="<?php echo $view->makeLink( array(
             'do'             => 'base.customReportDelete',
             'customReportId' => $owa_id,
@@ -209,9 +157,9 @@ $owa_max        = (int) $view->get('max_widgets');
            data-owa-confirm
            data-owa-confirm-title="Delete this report?"
            data-owa-confirm-body="This is final. Unlike a Profile, a custom report is not archived."
-           data-owa-confirm-proceed="Delete report">Delete</a>
-        <?php endif; ?>
+           data-owa-confirm-proceed="Delete report">Delete this report</a>
     </div>
+    <?php endif; ?>
 </form>
 
 <?php
@@ -220,55 +168,18 @@ $owa_max        = (int) $view->get('max_widgets');
      *
      * The type decides what the rest of the questions are -- a trend is always
      * by date and has no dimension to pick, a card takes one metric where a
-     * table takes four, only a card's rows can be links. Asking it inside the
-     * widget modal meant one form that had to be every form at once, and every
-     * answer already given had to be re-examined each time the type changed.
-     *
-     * Asked here, the modal is built for a type that is already known. The
-     * consequence is that a widget's type is fixed once it is added: to change
-     * it, remove the block and add the kind you meant. That is the honest
-     * trade -- a card and a trend share a name and almost nothing else.
+     * table takes four, only a card's rows can be links. Asked here, the panel
+     * is built for a type that is already known, and a widget's type is fixed
+     * once it is added: to change it, remove the card and add the kind you
+     * meant.
      */
-?>
-<?php
-    /*
-     * HOW MUCH OF A ROW EACH KIND TAKES, in the words an author thinks in.
-     *
-     * The number is real -- Core\ReportGrid decides it, and it is the width the
-     * widget will actually be added at -- but "3 of 12 columns" is a fact about
-     * the grid rather than about the report. A reader choosing between a table
-     * and a table card is asking "how much room does this take", and the answer
-     * is a fraction of a row.
-     */
-    $owa_widthWords = array(
-        12 => 'Full width',
-        8  => 'Two thirds',
-        6  => 'Half width',
-        4  => 'One third',
-        3  => 'One quarter',
-    );
 ?>
 <div id="typeDialog" class="owa_typeDialog" style="display:none;">
-    <ul class="owa_typeChoices">
-    <?php foreach ( (array) $view->get('widget_types') as $owa_key => $owa_label ): ?>
-    <?php
-        $owa_span = \OWA\Core\ReportGrid::defaultColspan( array( 'type' => $owa_key ) );
-        $owa_pct  = round( $owa_span / \OWA\Core\ReportGrid::COLUMNS * 100 );
-    ?>
+    <ul class="owa_typeChoices owa_typeChoicesTwo">
+    <?php foreach ( $owa_types as $owa_key => $owa_label ): ?>
         <li>
-            <button type="button" class="owa_typeChoice" data-type="<?php $view->out( $owa_key ); ?>"
-                    data-colspan="<?php $view->out( (string) $owa_span ); ?>">
-                <?php
-                    /*
-                     * The drawing, at the full height of the tile.
-                     *
-                     * Decorative: the name beside it says the same thing, so it
-                     * is hidden from assistive technology rather than read out
-                     * as a second, worse label. It earns its size anyway --
-                     * "Table" and "Table card" are a word apart, and the shape
-                     * is what separates them at a glance.
-                     */
-                ?>
+            <button type="button" class="owa_typeChoice" data-type="<?php $view->out( $owa_key ); ?>">
+                <?php // Decorative: the name beside it says the same thing. ?>
                 <span class="owa_typeChoiceArt" aria-hidden="true">
                     <i class="owa_typeChoiceIcon <?php $view->out(
                         \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_ICONS[ $owa_key ] ?? '' ); ?>"></i>
@@ -277,22 +188,6 @@ $owa_max        = (int) $view->get('max_widgets');
                     <span class="owa_typeChoiceName"><?php $view->out( $owa_label ); ?></span>
                     <span class="owa_typeChoiceHint"><?php
                         $view->out( \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_HINTS[ $owa_key ] ?? '' ); ?></span>
-                    <?php
-                        /*
-                         * A bar showing the share of a row this kind takes, at
-                         * the proportion it really takes. The words are the
-                         * label; the bar is what makes two kinds comparable
-                         * without reading either.
-                         */
-                    ?>
-                    <span class="owa_typeChoiceWidth">
-                        <span class="owa_typeChoiceWidthBar">
-                            <span class="owa_typeChoiceWidthFill"
-                                  style="width:<?php $view->out( (string) $owa_pct, false ); ?>%"></span>
-                        </span>
-                        <span class="owa_typeChoiceWidthLabel"><?php
-                            $view->out( $owa_widthWords[ $owa_span ] ?? ( $owa_span . ' of 12' ) ); ?></span>
-                    </span>
                 </span>
             </button>
         </li>
@@ -300,78 +195,45 @@ $owa_max        = (int) $view->get('max_widgets');
     </ul>
 </div>
 
-<?php /* The modal body. Hidden here; jQuery UI lifts it into a dialog. */ ?>
-<div id="widgetDialog" class="owa_widgetDialog" style="display:none;">
+<?php
+    /*
+     * One widget's settings, in a panel at the right of the screen, opened by
+     * a card's pencil or by choosing a type. The layout stays in view beside
+     * it, with the card being edited marked.
+     */
+?>
+<aside id="widgetDialog" class="owa_widgetPanel" role="dialog" aria-labelledby="dlgHeading">
 
-    <div class="owa_builderField">
-        <label for="dlgTitle">Widget name</label>
-        <?php
-            /*
-             * The name, and what KIND of thing is being named.
-             *
-             * The type is chosen at the plus and cannot be changed here, so
-             * without this the modal never says which of the five you are
-             * editing -- and half its fields are missing or singular BECAUSE of
-             * the type. A pill rather than a disabled control: there is no
-             * choice being withheld, it is a label.
-             */
-        ?>
-        <div class="owa_builderNameRow">
-            <input type="text" id="dlgTitle" />
-            <span class="owa_typePill" id="dlgTypePill"></span>
+    <div class="owa_widgetPanelHead">
+        <div>
+            <div class="owa_widgetPanelKind" id="dlgTypePill"></div>
+            <h2 id="dlgHeading">Widget settings</h2>
         </div>
+        <button type="button" class="owa_iconButton" id="dlgClose" aria-label="Close" title="Close"><i class="fas fa-times" aria-hidden="true"></i></button>
     </div>
 
-    <div class="owa_builderFieldRow">
-        <?php
-            /*
-             * Hidden, not disabled, for a type that decides its own width. A
-             * disabled control still says the choice exists and was taken away;
-             * a full-width table has no width to choose, so the sentence next
-             * to it says which types do.
-             */
-        ?>
-        <div class="owa_builderField" id="dlgColspanField">
-            <label for="dlgColspan">Column span</label>
-            <select id="dlgColspan"></select>
-            <div class="owa_builderHelp">Out of <?php echo (int) $view->get('grid_columns') ?: 12; ?>. Half the width is 6.</div>
-        </div>
-
-        <div class="owa_builderField owa_builderNote" id="dlgWidthNote" style="display:none;"></div>
+    <div class="owa_widgetPanelBody">
 
         <div class="owa_builderField">
-            <label for="dlgRowspan">Row span</label>
-            <select id="dlgRowspan"></select>
-            <div class="owa_builderHelp">How many rows tall.</div>
+            <label for="dlgTitle">Name</label>
+            <input type="text" id="dlgTitle" />
         </div>
-    </div>
 
-    <div class="owa_builderFieldRow">
-        <?php
-            /*
-             * The label is singular or plural depending on the type, because
-             * the two are different things. A table or a set of boxes takes a
-             * METRIC SET -- several, and the report's own set if it names none.
-             * A card or a pie draws one metric and cannot use a set at all, so
-             * calling that field "Metrics" would be offering a set that the
-             * widget has no way to draw.
-             */
-        ?>
-        <?php
-            /*
-             * The "Required" marks are TOGGLED, not written once.
-             *
-             * Which of these must be answered depends on the widget's type --
-             * a card and a pie draw exactly one dimension and are refused
-             * without it, while a grid may name none -- so a mark painted into
-             * the markup would be wrong on half the types. applyTypeRules()
-             * sets them from the same lists the server validates against.
-             *
-             * Kept in a row beside the label rather than inside it, because
-             * that label's text is rewritten per type and would take the mark
-             * with it.
-             */
-        ?>
+        <div class="owa_builderFieldRow">
+            <?php // Filled by renderSpanChoices(), which adds the widget's own width if it is not one of these. ?>
+            <fieldset class="owa_builderField" id="dlgColspanField">
+                <legend>Width</legend>
+                <div class="owa_seg" id="dlgWidth"></div>
+            </fieldset>
+
+            <div class="owa_builderField owa_builderNote" id="dlgWidthNote" style="display:none;"></div>
+
+            <fieldset class="owa_builderField">
+                <legend>Height</legend>
+                <div class="owa_seg" id="dlgHeight"></div>
+            </fieldset>
+        </div>
+
         <div class="owa_builderField" id="dlgMetricsField">
             <div class="owa_builderFieldLabel">
                 <label for="dlgMetrics" id="dlgMetricsLabel">Metrics</label>
@@ -392,90 +254,88 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <?php /* ...or the sentence saying the type has already decided. */ ?>
         <div class="owa_builderField owa_builderNote" id="dlgDimensionNote" style="display:none;"></div>
-    </div>
 
-    <?php
-        /*
-         * Where a row leads.
-         *
-         * Offered only for the widget types whose link column is unambiguous --
-         * a card shows one dimension, so the column a link comes from is the
-         * one it has. A full-width grid can show several, and which of them is
-         * the link would be another choice; it is not offered rather than
-         * guessed.
-         *
-         * The destinations are per dimension and come from the reports
-         * themselves, so this list changes as the dimension does.
-         */
-    ?>
-    <div class="owa_builderField" id="dlgLinkField" style="display:none;">
-        <label for="dlgLinkReport">Rows link to</label>
-        <select id="dlgLinkReport"></select>
-        <div class="owa_builderHelp" id="dlgLinkHelp"></div>
-    </div>
-
-    <?php
-        /*
-         * "View Full Report" -- a link BELOW the widget, to the report that
-         * shows the whole thing. The dashboard's summary grids all carry one.
-         *
-         * Different from the row link above it, and offered for every type: it
-         * carries no value from the widget, so it needs no column to come from
-         * -- and for the same reason it can only reach reports that read no
-         * parameter, which is the list it is given.
-         */
-    ?>
-    <div class="owa_builderFieldRow" id="dlgMoreField" style="display:none;">
-        <div class="owa_builderField">
-            <label for="dlgMoreReport">Full report link</label>
-            <select id="dlgMoreReport"></select>
-            <div class="owa_builderHelp">Shown below the widget.</div>
-        </div>
-
-        <div class="owa_builderField">
-            <label for="dlgMoreLabel">Link text</label>
-            <input type="text" id="dlgMoreLabel" placeholder="<?php $view->out( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>" />
-        </div>
-    </div>
-
-    <div class="owa_builderField" id="dlgSortField">
-        <label for="dlgSort">Sort</label>
-        <input type="text" id="dlgSort" placeholder="visits-" />
-        <div class="owa_builderHelp">
-            A metric or dimension name. Add a trailing <code>-</code> for descending.
-        </div>
-    </div>
-
-    <div class="owa_builderField">
-        <label>Constraints</label>
         <?php
             /*
-             * ROWS, the same ones the grid's filter uses.
-             *
-             * This was a text field the author typed `medium==organic-search`
-             * into -- a syntax with no discoverable operator list, no
-             * dimension names, and nothing to catch a typo until the widget
-             * came back empty. The rows carry the same classes as the filter
-             * builder's, so they get its pills, and they serialise back to
-             * exactly that string on the way out: the STORED format has not
-             * changed, only the way it is written.
+             * What the rows are ordered by, from the metrics and dimensions the
+             * widget shows, and which way.
              */
         ?>
-        <div id="dlgConstraintRows" class="owa_builderConstraints"><ul></ul></div>
-        <div class="owa_builderHelp">
-            Rows are combined, e.g. <code>medium</code> is <code>organic</code>
-            <em>and</em> <code>browserType</code> contains <code>Chrome</code>.
+        <div class="owa_builderField" id="dlgSortField">
+            <label for="dlgSortBy">Sort</label>
+            <div class="owa_builderSort">
+                <select id="dlgSortBy"></select>
+                <select id="dlgSortDir" aria-label="Sort direction"></select>
+            </div>
         </div>
+
+        <?php
+            /*
+             * Filters as pills. Filter opens a small form under the pills;
+             * Add filter turns it into a pill, and a pill's X removes it.
+             * Every pill applies: they are combined with "and".
+             */
+        ?>
+        <div class="owa_builderField" id="dlgFiltersField">
+            <span class="owa_builderLabel" id="dlgFiltersLabel">Filters</span>
+            <div class="owa_filterPills" id="dlgFilters" role="group" aria-labelledby="dlgFiltersLabel">
+                <button type="button" class="owa_button owa_filterAdd" id="dlgAddFilter" aria-expanded="false"
+                        aria-controls="dlgFilterForm"><i class="fas fa-filter" aria-hidden="true"></i> Filter</button>
+            </div>
+            <div class="owa_filterForm" id="dlgFilterForm" style="display:none;">
+                <label for="dlgFilterDimension" class="owa_srOnly">Dimension</label>
+                <select id="dlgFilterDimension"></select>
+                <label for="dlgFilterOperator" class="owa_srOnly">Condition</label>
+                <select id="dlgFilterOperator"></select>
+                <label for="dlgFilterValue" class="owa_srOnly">Value</label>
+                <input type="text" id="dlgFilterValue" placeholder="Value" />
+                <div class="owa_filterFormActions">
+                    <button type="button" class="owa_button" id="dlgFilterCancel">Cancel</button>
+                    <button type="button" class="owa_button is-primary" id="dlgFilterAdd" disabled="disabled">Add filter</button>
+                </div>
+            </div>
+        </div>
+
+        <?php
+            /*
+             * Where a card's rows go when clicked. Only a card: its single
+             * dimension is the unambiguous link column. Hidden when the
+             * dimension has no detail report.
+             */
+        ?>
+        <div class="owa_builderField" id="dlgLinkField" style="display:none;">
+            <label for="dlgLinkReport">Rows link to</label>
+            <select id="dlgLinkReport"></select>
+            <div class="owa_builderHelp" id="dlgLinkHelp"></div>
+        </div>
+
+        <?php
+            /*
+             * A link from the widget to the built-in report that shows the
+             * whole thing, offered where one of its dimensions has such a report.
+             */
+        ?>
+        <div class="owa_builderFieldRow" id="dlgMoreField" style="display:none;">
+            <div class="owa_builderField">
+                <label for="dlgMoreReport">Full report link</label>
+                <select id="dlgMoreReport"></select>
+                <div class="owa_builderHelp">Shown beside the widget's name.</div>
+            </div>
+
+            <div class="owa_builderField">
+                <label for="dlgMoreLabel">Link text</label>
+                <input type="text" id="dlgMoreLabel" placeholder="<?php $view->out( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>" />
+            </div>
+        </div>
+
+        <div id="dlgError" class="owa_builderRowError" style="display:none;" role="alert"></div>
     </div>
 
-    <?php
-        /*
-         * One message for the whole dialog rather than one per field, at the
-         * foot next to the button that refused.
-         */
-    ?>
-    <div id="dlgError" class="owa_builderRowError" style="display:none;" role="alert"></div>
-</div>
+    <div class="owa_widgetPanelFoot">
+        <button type="button" class="owa_button" id="dlgCancel">Cancel</button>
+        <button type="button" class="owa_button is-primary" id="dlgApply">Apply</button>
+    </div>
+</aside>
 
 <script>
 (function () {
@@ -507,6 +367,15 @@ $owa_max        = (int) $view->get('max_widgets');
     var FULL_WIDTH_TYPES   = <?php echo json_encode( array_values( (array) $view->get('full_width_types') ) ); ?>;
     var SINGLE_FIELD_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_field_types') ) ); ?>;
     var DEFAULT_COLSPANS   = <?php echo json_encode( (object) (array) $view->get('default_colspans') ); ?>;
+
+    // The width a NEW widget of each type is added at; see CustomReports::NEW_WIDGET_COLSPANS.
+    var NEW_COLSPANS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::NEW_WIDGET_COLSPANS ); ?>;
+
+    // The widths and heights the panel offers, and how a card says them.
+    var WIDTHS       = [ [ 4, 'Third' ], [ 6, 'Half' ], [ 8, 'Two thirds' ], [ 12, 'Full' ] ];
+    var HEIGHTS      = [ [ 1, 'Short' ], [ 2, 'Tall' ] ];
+    var WIDTH_WORDS  = { 12: 'Full width', 8: 'Two thirds', 6: 'Half width', 4: 'One third', 3: 'One quarter' };
+    var HEIGHT_WORDS = { 1: 'short', 2: 'tall' };
 
     /*
      * dimension -> the reports a row of it can lead to.
@@ -593,7 +462,7 @@ $owa_max        = (int) $view->get('max_widgets');
         return fixedDimension( type ) === null || ( FIXED_DIMENSION_EXTRA[ type ] || 0 ) > 0;
     }
 
-    /** The type the dialog is open on. It cannot change while it is open. */
+    /** The type the panel is open on. It cannot change while it is open. */
     function editingType() {
         return editing === null ? '' : widgets[ editing ].type;
     }
@@ -617,13 +486,8 @@ $owa_max        = (int) $view->get('max_widgets');
      * more precise thing.
      */
 
-    /*
-     * The grid the report is drawn on. These mirror Core\ReportGrid, which
-     * clamps to the same numbers server-side -- bounding the PICKER means an
-     * author is never offered a span that would be silently reduced.
-     */
-    var COLUMNS     = <?php echo (int) $view->get('grid_columns') ?: 12; ?>;
-    var MAX_ROWSPAN = 6;
+    // The grid the report is drawn on, as Core\ReportGrid has it.
+    var COLUMNS = <?php echo (int) $view->get('grid_columns') ?: 12; ?>;
 
     function isFullWidth( type ) {
         return FULL_WIDTH_TYPES.indexOf( type ) !== -1;
@@ -654,7 +518,7 @@ $owa_max        = (int) $view->get('max_widgets');
     }
 
     /*
-     * The caps for the type the dialog is open on.
+     * The caps for the type the panel is open on.
      *
      * A card is one metric against one dimension, so its pickers stop offering
      * after the first -- rather than offering a second and refusing it on save.
@@ -686,7 +550,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
     /*
      * The state. The canvas is a rendering of this array, not the reverse: a
-     * redraw reads from here and the dialog writes to here.
+     * redraw reads from here and the panel writes to here.
      */
     var widgets = ( definition && definition.widgets ) ? definition.widgets.slice() : [];
 
@@ -714,7 +578,7 @@ $owa_max        = (int) $view->get('max_widgets');
      */
     var reportMetrics = ( definition && definition.metrics ) ? definition.metrics : '';
 
-    var editing = null;   // index of the widget the dialog is open on
+    var editing = null;   // index of the widget the panel is open on
 
     /*
      * Index of a widget the type chooser added that has not been applied yet.
@@ -725,7 +589,7 @@ $owa_max        = (int) $view->get('max_widgets');
     var pendingNew = null;
 
     /*
-     * The report the widget's rows link to, as the dialog was opened.
+     * The report the widget's rows link to, as the panel was opened.
      *
      * Held apart from the select because the select is rebuilt whenever the
      * dimension changes -- without this, changing the dimension and changing it
@@ -735,6 +599,18 @@ $owa_max        = (int) $view->get('max_widgets');
 
     /** ...and the same for the link below the widget, for the same reason. */
     var dialogMore = '';
+
+    // The panel's span, sort and filters while it is open.
+    var dialogColspan  = 0;
+    var dialogRowspan  = 1;
+    var dialogSort     = '';
+    var dialogSortDesc = true;
+    var sortTouched    = false;
+    var dialogFilters  = [];
+
+    // The widget whose pencil opened the panel, to go back to when it closes.
+    // The widget rather than the button: closing redraws the cards.
+    var returnFocus = null;
 
     function newWidget( index, type ) {
 
@@ -753,7 +629,7 @@ $owa_max        = (int) $view->get('max_widgets');
          * rather than a number copied into every definition.
          */
         if ( ! isFullWidth( type ) ) {
-            widget.colspan = defaultColspan( type );
+            widget.colspan = NEW_COLSPANS[ type ] || defaultColspan( type );
         }
 
         var fixed = fixedDimension( type );
@@ -987,7 +863,7 @@ $owa_max        = (int) $view->get('max_widgets');
      *
      * The explicit width is not decoration. chosen-js 1.x sizes its container
      * from the select's offsetWidth AT ENHANCEMENT TIME, which is 0 inside a
-     * display:none parent -- and the widget dialog is hidden until it is
+     * display:none parent -- and the widget panel is hidden until it is
      * opened, so without this its two pickers enhance to a couple of pixels
      * wide and are unusable. The same trap is documented on the constraint
      * builder's dimension picker, which enhances inside a hidden .builder.
@@ -1013,16 +889,6 @@ $owa_max        = (int) $view->get('max_widgets');
         jQuery( selector ).trigger( 'chosen:updated' );
     }
 
-    function fillRange( $select, from, to, selected ) {
-
-        $select.empty();
-
-        for ( var i = from; i <= to; i++ ) {
-            $select.append( jQuery( '<option>' ).attr( 'value', i )
-                .prop( 'selected', Number( selected ) === i ).text( i ) );
-        }
-    }
-
     // ------------------------------------------------------------------
     // The canvas
     // ------------------------------------------------------------------
@@ -1035,36 +901,30 @@ $owa_max        = (int) $view->get('max_widgets');
 
             var colspan = colspanOf( widget );
             var rowspan = Number( widget.rowspan ) || 1;
+            var title   = widget.title || ( 'Widget ' + ( i + 1 ) );
 
-            var $block = jQuery( '<div class="owa_builderBlock">' )
+            var $block = jQuery( '<div class="owa_builderBlock" draggable="true">' )
                 .attr( 'data-index', i )
                 // As wide as the span it claims, so the canvas reads as the
                 // layout rather than as a list.
-                .addClass( 'owa_builderSpan-' + colspan );
+                .addClass( 'owa_builderSpan-' + colspan )
+                .toggleClass( 'is-editing', editing === i );
 
-            $block.append( jQuery( '<div class="owa_builderBlockHead">' )
-                .append( jQuery( '<span class="owa_builderBlockName">' )
-                    .text( widget.title || ( 'Widget ' + ( i + 1 ) ) ) )
-                .append( jQuery( '<a href="#" class="owa_builderRemove" title="Remove this widget">' )
-                    .text( '×' ) ) );
-
-            $block.append( jQuery( '<div class="owa_builderBlockMeta">' )
+            $block.append( jQuery( '<div class="owa_builderBlockKind">' )
+                .append( jQuery( '<button type="button" class="owa_builderMove">' )
+                    .attr( { 'aria-label': 'Move ' + title, title: 'Drag to move, or use the arrow keys' } )
+                    .append( '<i class="fas fa-grip-vertical" aria-hidden="true"></i>' ) )
+                .append( jQuery( '<i aria-hidden="true">' ).attr( 'class', TYPE_ICONS[ widget.type ] || '' ) )
                 .append( jQuery( '<span class="owa_builderBlockType">' )
-                    .text( TYPES[ widget.type ] || widget.type ) )
-                .append( jQuery( '<span class="owa_builderBlockSpan">' )
-                    .text( colspan + ' × ' + rowspan ) ) );
+                    .text( TYPES[ widget.type ] || widget.type ) ) );
 
-            var summary = widgetMetrics( widget )
-                .concat( names( widget.query && widget.query.dimensions ) );
+            $block.append( jQuery( '<div class="owa_builderBlockName">' ).text( title ) );
 
             /*
-             * A block that names no metrics is marked ON THE CANVAS, not only
-             * in the sentence under the Save button. The canvas is where an
-             * author is looking, and "Widget 3 does not say what it measures"
-             * is only useful if Widget 3 can be picked out of a row of blocks.
-             *
-             * Not marked at all where a report metric set exists, because there
-             * the widget is inheriting rather than unfinished -- the same
+             * A card that names no metrics is marked ON THE CANVAS, not only
+             * in the sentence under Save -- the canvas is where an author is
+             * looking. Not marked where a report metric set exists, because
+             * there the widget is inheriting rather than unfinished, the same
              * exception the server makes.
              */
             if ( ! reportMetrics && ! widgetMetrics( widget ).length ) {
@@ -1072,10 +932,19 @@ $owa_max        = (int) $view->get('max_widgets');
                 $block.addClass( 'owa_builderBlockIncomplete' );
             }
 
-            $block.append( jQuery( '<div class="owa_builderBlockSummary">' )
-                .text( summary.length ? summary.join( ', ' ) : 'No metrics chosen yet' ) );
+            $block.append( jQuery( '<div class="owa_builderBlockSummary">' ).text( summaryOf( widget ) ) );
 
-            $block.append( jQuery( '<a href="#" class="owa_builderEdit">' ).text( 'Edit' ) );
+            $block.append( jQuery( '<div class="owa_builderBlockFoot">' )
+                .append( jQuery( '<span class="owa_builderBlockSpan">' ).text(
+                    ( WIDTH_WORDS[ colspan ] || ( colspan + ' of ' + COLUMNS ) )
+                    + ' · ' + ( HEIGHT_WORDS[ rowspan ] || ( rowspan + ' rows tall' ) ) ) )
+                .append( jQuery( '<span class="owa_builderBlockTools">' )
+                    .append( jQuery( '<button type="button" class="owa_iconButton owa_builderEdit">' )
+                        .attr( { 'aria-label': 'Edit ' + title, title: 'Edit' } )
+                        .append( '<i class="fas fa-pencil-alt" aria-hidden="true"></i>' ) )
+                    .append( jQuery( '<button type="button" class="owa_iconButton owa_builderRemove">' )
+                        .attr( { 'aria-label': 'Remove ' + title, title: 'Remove' } )
+                        .append( '<i class="fas fa-times" aria-hidden="true"></i>' ) ) ) );
 
             $canvas.append( $block );
         } );
@@ -1083,23 +952,97 @@ $owa_max        = (int) $view->get('max_widgets');
         if ( widgets.length < MAX ) {
 
             $canvas.append(
-                jQuery( '<button type="button" id="addWidget" class="owa_builderAdd" title="Add a widget">' )
-                    .append( jQuery( '<span class="owa_builderAddPlus">' ).text( '+' ) )
-                    .append( jQuery( '<span>' ).text( 'Add widget' ) ) );
+                jQuery( '<button type="button" id="addWidget" class="owa_builderAdd">' )
+                    .append( '<i class="fas fa-plus" aria-hidden="true"></i>' )
+                    .append( jQuery( '<span>' ).text( 'Add a widget' ) ) );
         }
 
-        /*
-         * An empty canvas gets a line of text above the plus saying what to
-         * add. The text is a sibling of the plus rather than a replacement for
-         * it, so the first widget lands where the plus is.
-         */
         $canvas.toggleClass( 'owa_builderCanvasEmpty', ! widgets.length );
 
         jQuery( '#customReportEmpty' ).toggle( ! widgets.length );
 
-        jQuery( '#widgetBudget' ).text( widgets.length + ' of ' + MAX + ' widgets' );
+        jQuery( '#widgetBudget' ).text( widgets.length + ' of ' + MAX + ' widgets'
+            + ( widgets.length > 1 ? ' · drag to reorder' : '' ) );
 
         refreshSaveState();
+    }
+
+    /** A name's label, from the registry's choices. */
+    function labelOf( name ) {
+
+        var all = METRICS.concat( DIMENSIONS );
+
+        for ( var i = 0; i < all.length; i++ ) {
+            if ( all[ i ].name === name ) {
+                return all[ i ].label;
+            }
+        }
+
+        return name;
+    }
+
+    /**
+     * What a card says the widget shows: "Page views by Page path · filtered:
+     * Page path contains /blog/ · rows link to Pages".
+     */
+    function summaryOf( widget ) {
+
+        var query   = widget.query || {};
+        var metrics = widgetMetrics( widget ).map( labelOf );
+        var dims    = names( query.dimensions ).map( labelOf );
+
+        if ( ! metrics.length ) {
+            return 'No metrics chosen yet';
+        }
+
+        var parts = [ metrics.join( ', ' ) + ( dims.length ? ' by ' + dims.join( ', ' ) : '' ) ];
+
+        var filters = parseFilters( widget.constraints || '' ).map( filterWords );
+
+        if ( filters.length ) {
+            parts.push( 'filtered: ' + filters.join( ', ' ) );
+        }
+
+        var linkTo = ( ( widget.link || {} ).template || {} ).reportId;
+
+        if ( linkTo ) {
+
+            var target = ( LINK_TARGETS[ names( query.dimensions )[0] ] || [] ).filter(
+                function ( t ) { return t.id === linkTo; } )[0];
+
+            parts.push( 'rows link to ' + ( target ? target.label : linkTo ) );
+        }
+
+        return parts.join( ' · ' );
+    }
+
+    /**
+     * Move a widget to another place in the order.
+     *
+     * The panel may be open on one of them, so the index it is editing and
+     * the index of an unsaved new widget follow the widget, not the slot.
+     */
+    function moveWidget( from, to ) {
+
+        if ( from === to || to < 0 || to >= widgets.length ) {
+            return false;
+        }
+
+        var edited  = editing === null ? null : widgets[ editing ];
+        var pending = pendingNew === null ? null : widgets[ pendingNew ];
+        var moved   = widgets.splice( from, 1 )[0];
+
+        widgets.splice( to, 0, moved );
+
+        editing    = edited === null ? null : widgets.indexOf( edited );
+        pendingNew = pending === null ? null : widgets.indexOf( pending );
+
+        draw();
+
+        jQuery( '#customReportMoved' ).text(
+            ( moved.title || 'Widget' ) + ', position ' + ( to + 1 ) + ' of ' + widgets.length + '.' );
+
+        return true;
     }
 
     /**
@@ -1171,12 +1114,19 @@ $owa_max        = (int) $view->get('max_widgets');
     }
 
     // ------------------------------------------------------------------
-    // The dialog
+    // The panel
     // ------------------------------------------------------------------
 
-    function openDialog( index ) {
+    function openDialog( index, opener ) {
+
+        // Another widget's panel was open: that edit is abandoned, as Cancel.
+        if ( editing !== null && editing !== index ) {
+            index = closePanel( index );
+        }
 
         editing = index;
+
+        returnFocus = opener ? widgets[ index ] : null;
 
         // A refusal from last time is not about this widget.
         jQuery( '#dlgError' ).text( '' ).hide();
@@ -1195,8 +1145,19 @@ $owa_max        = (int) $view->get('max_widgets');
         dialogLink = String( ( ( widget.link || {} ).template || {} ).reportId || '' );
         dialogMore = String( ( widget.more || {} ).reportId || '' );
 
-        fillRange( jQuery( '#dlgColspan' ), 1, COLUMNS, colspanOf( widget ) );
-        fillRange( jQuery( '#dlgRowspan' ), 1, MAX_ROWSPAN, widget.rowspan || 1 );
+        dialogColspan = colspanOf( widget );
+        dialogRowspan = Number( widget.rowspan ) || 1;
+        renderSpanChoices();
+
+        var sort = String( query.sort || '' );
+
+        dialogSortDesc = /-$/.test( sort );
+        dialogSort     = sort.replace( /-$/, '' );
+        sortTouched    = false;
+
+        dialogFilters = parseFilters( widget.constraints || '' );
+        closeFilterForm();
+        renderFilters();
 
         fillChoices( jQuery( '#dlgMetrics' ), METRICS, names( query.metrics ) );
         /*
@@ -1215,15 +1176,12 @@ $owa_max        = (int) $view->get('max_widgets');
 
         fillChoices( jQuery( '#dlgDimensions' ), DIMENSIONS, chosenDimensions );
 
-        // The options were just replaced, so chosen has to be told before it
-        // will show them -- and again after the dialog is open, because that is
-        // when it can finally measure itself.
         chosenSync( '#dlgMetrics' );
         chosenSync( '#dlgDimensions' );
 
         // After the selections are loaded, not before: applyTypeRules() trims
         // to the type's cap, and run any earlier it would be trimming the
-        // widget the dialog was open on last time.
+        // widget the panel was open on last time.
         applyTypeRules();
 
         var more = widget.more || {};
@@ -1233,21 +1191,96 @@ $owa_max        = (int) $view->get('max_widgets');
         jQuery( '#dlgMoreLabel' ).val(
             more.label && more.label !== MORE_LABEL ? more.label : '' );
 
-        jQuery( '#dlgSort' ).val( query.sort || '' );
-        renderConstraintRows( widget.constraints || '' );
+        jQuery( '#widgetDialog' ).addClass( 'is-open' ).scrollTop( 0 );
+        jQuery( '.owa_widgetPanelBody' ).scrollTop( 0 );
 
-        jQuery( '#widgetDialog' )
-            .dialog( 'option', 'title', widget.title || ( 'Widget ' + ( index + 1 ) ) )
-            .dialog( 'open' );
+        // The card being edited is marked.
+        draw();
 
-        chosenSync( '#dlgMetrics' );
-        chosenSync( '#dlgDimensions' );
+        jQuery( '#dlgTitle' ).trigger( 'focus' );
     }
 
     /**
-     * What the chosen TYPE decides, applied to the dialog.
+     * Close the panel without applying it. A widget that was added and never
+     * applied is taken off the layout again.
      *
-     * Run when the dialog opens and on every type change, because both are the
+     * @param  keep  an index to follow through the removal
+     * @return       where that index is afterwards
+     */
+    function closePanel( keep ) {
+
+        jQuery( '#widgetDialog' ).removeClass( 'is-open' );
+        closeFilterForm();
+
+        if ( pendingNew !== null ) {
+
+            widgets.splice( pendingNew, 1 );
+
+            if ( keep !== undefined && keep > pendingNew ) {
+                keep--;
+            }
+        }
+
+        pendingNew = null;
+        editing    = null;
+
+        draw();
+
+        restoreFocus();
+
+        return keep;
+    }
+
+    /** Back to the pencil that opened the panel, or to Add a widget. */
+    function restoreFocus() {
+
+        var at  = returnFocus === null ? -1 : widgets.indexOf( returnFocus );
+        var $to = at === -1 ? jQuery( '#addWidget' )
+            : jQuery( '#customReportCanvas .owa_builderBlock' ).eq( at ).find( '.owa_builderEdit' );
+
+        returnFocus = null;
+        $to.trigger( 'focus' );
+    }
+
+    /**
+     * Width and Height, as segmented choices. A widget whose span is not one of
+     * them -- a quarter-width card from before this screen, say -- gets its own
+     * as an extra choice, so opening the panel does not change it.
+     */
+    function renderSpanChoices() {
+
+        var seg = function ( $holder, name, choices, current ) {
+
+            var list = choices.slice();
+
+            if ( ! list.some( function ( c ) { return c[0] === current; } ) ) {
+                list.push( [ current, name === 'dlgWidth'
+                    ? ( WIDTH_WORDS[ current ] || ( current + ' of ' + COLUMNS ) )
+                    : ( current + ' rows' ) ] );
+                list.sort( function ( a, b ) { return a[0] - b[0]; } );
+            }
+
+            $holder.empty();
+
+            list.forEach( function ( c ) {
+
+                var id = name + '-' + c[0];
+
+                $holder.append( jQuery( '<input type="radio">' )
+                        .attr( { id: id, name: name, value: c[0] } )
+                        .prop( 'checked', c[0] === current ) )
+                    .append( jQuery( '<label>' ).attr( 'for', id ).text( c[1] ) );
+            } );
+        };
+
+        seg( jQuery( '#dlgWidth' ), 'dlgWidth', WIDTHS, dialogColspan );
+        seg( jQuery( '#dlgHeight' ), 'dlgHeight', HEIGHTS, dialogRowspan );
+    }
+
+    /**
+     * What the chosen TYPE decides, applied to the panel.
+     *
+     * Run when the panel opens and on every type change, because both are the
      * same event as far as the fields are concerned: the type is what says
      * whether there is a width to choose and how many fields may be picked.
      *
@@ -1357,7 +1390,6 @@ $owa_max        = (int) $view->get('max_widgets');
             .text( name + ' shows totals for the period, so there is nothing to group by.' );
 
         // A sort orders rows, and these types have none to order.
-        jQuery( '#dlgSortField' ).toggle( picksDimensions( type ) );
 
         narrowMetrics();
 
@@ -1367,6 +1399,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         refreshLinkControl();
         refreshMoreControl();
+        refreshSortControl();
         refreshDialogState();
     }
 
@@ -1461,50 +1494,38 @@ $owa_max        = (int) $view->get('max_widgets');
         } );
     }
 
-    /** Read the dialog back into the widget it was opened on. */
     /*
      * ------------------------------------------------------------------
-     * Constraints, as rows rather than as a string the author types
+     * Filters, as pills
      * ------------------------------------------------------------------
      *
      * The STORED format is unchanged -- `name==value`, comma separated, which
-     * is what CustomReports::constraintDimensions() parses. These two functions
-     * are the only place that string is written or read here, so the syntax
-     * stops being something an author has to know.
-     *
-     * The markup deliberately matches the grid's filter builder
-     * (li.constraintRow > .constraintDimensionPicker / .constraintOperatorPicker
-     * / .constraintValueField), because the pill styling is written against
-     * those classes and a filter should look the same wherever it is built.
+     * is what CustomReports::constraintDimensions() parses. parseFilters() and
+     * filtersString() are the only place that string is read or written here,
+     * so the syntax is not something an author has to know.
      */
     var CONSTRAINT_OPERATORS = {
-        '==': 'Exactly Matching',
-        '!=': 'Not Matching',
-        '>':  'Greater than',
-        '<':  'Less than',
-        '=@': 'Contains'
+        '==': 'is',
+        '!=': 'is not',
+        '=@': 'contains',
+        '>':  'is greater than',
+        '<':  'is less than'
     };
 
     /*
-     * The empty test, as the grid's filter builder offers it. Each key is the
-     * whole tail of the clause: the server reads `==(not set)` / `!=(not set)`
-     * as "is empty" / "has a value". Not in CONSTRAINT_OPERATORS, which also
-     * splits stored clauses.
+     * The two tests on "(not set)", which the server reads as empty and has a
+     * value. Stored as the operator plus that value; offered as their own
+     * conditions, with no value to type.
      */
     var EMPTY_TESTS = {
-        '!=(not set)': 'Is Set',
-        '==(not set)': 'Is Not Set'
+        '!=(not set)': 'is set',
+        '==(not set)': 'is not set'
     };
 
-    /**
-     * Split one clause into name / operator / value.
-     *
-     * LONGEST OPERATOR FIRST. '=@' and '!=' both contain a character that '='
-     * would match, and '>=' starts with '>' -- testing in any order but longest
-     * first splits `medium=@news` into name `medium=` with operator `@`.
-     */
+    /** One stored clause as { name, op, value }. */
     function splitConstraint( clause ) {
 
+        // Longest first, so `!=` is not read as `=`.
         var ops = Object.keys( CONSTRAINT_OPERATORS ).sort( function ( a, b ) {
             return b.length - a.length;
         } );
@@ -1516,14 +1537,13 @@ $owa_max        = (int) $view->get('max_widgets');
             if ( at > 0 ) {
 
                 var part = {
-                    name:     jQuery.trim( clause.slice( 0, at ) ),
-                    operator: ops[ i ],
-                    value:    jQuery.trim( clause.slice( at + ops[ i ].length ) )
+                    name:  jQuery.trim( clause.slice( 0, at ) ),
+                    op:    ops[ i ],
+                    value: jQuery.trim( clause.slice( at + ops[ i ].length ) )
                 };
 
-                if ( EMPTY_TESTS.hasOwnProperty( part.operator + part.value ) ) {
-
-                    part.operator += part.value;
+                if ( EMPTY_TESTS.hasOwnProperty( part.op + part.value ) ) {
+                    part.op += part.value;
                     part.value = '';
                 }
 
@@ -1531,256 +1551,181 @@ $owa_max        = (int) $view->get('max_widgets');
             }
         }
 
-        return { name: jQuery.trim( clause ), operator: '==', value: '' };
+        return { name: jQuery.trim( clause ), op: '==', value: '' };
     }
 
-    function addConstraintRow( name, operator, value, after ) {
+    function parseFilters( str ) {
 
-        var $row = jQuery(
-              '<li class="constraintRow">'
-            + '<span class="constraintDimensionPicker"></span>'
-            + '<span class="constraintOperatorPicker"></span>'
-            + '<input class="constraintValueField" type="text" />'
-            + '<span class="constraintAddButton" role="button" tabindex="0"'
-            + ' title="Add another filter" aria-label="Add another filter">+</span>'
-            + '<span class="constraintRemoveButton" role="button" tabindex="0"'
-            + ' title="Remove this filter" aria-label="Remove this filter">X</span>'
-            + '</li>' );
+        return String( str || '' ).split( ',' )
+            .filter( function ( c ) { return jQuery.trim( c ) !== ''; } )
+            .map( splitConstraint );
+    }
 
-        var $dim = jQuery( '<select class="dim-list"></select>' )
-            .append( jQuery( '<option value=""></option>' ).text( 'Select...' ) );
+    function filtersString( filters ) {
 
-        /*
-         * The same list the dimension slots offer, labelled the same way -- see
-         * fillChoices(). DIMENSIONS is a LIST of { name, label }, not a
-         * name => label map: iterating it as a map yields the array index and
-         * the object, so every option came out `[object Object]` with a numeric
-         * value.
-         */
-        DIMENSIONS.forEach( function ( choice ) {
-            $dim.append( jQuery( '<option>' )
-                .attr( 'value', choice.name )
-                .text( choice.label + ' (' + choice.name + ')' ) );
-        } );
+        return filters.map( function ( f ) {
+            return f.name + f.op + ( EMPTY_TESTS.hasOwnProperty( f.op ) ? '' : f.value );
+        } ).join( ',' );
+    }
 
-        var $op = jQuery( '<select class="operator-list"></select>' );
+    /** "Page path contains /blog/" */
+    function filterWords( f ) {
 
-        jQuery.each( jQuery.extend( {}, CONSTRAINT_OPERATORS, EMPTY_TESTS ), function ( value, label ) {
-            $op.append( jQuery( '<option></option>' ).attr( 'value', value ).text( label ) );
-        } );
+        var words = CONSTRAINT_OPERATORS[ f.op ] || EMPTY_TESTS[ f.op ] || f.op;
 
-        $row.children( '.constraintDimensionPicker' ).append( $dim );
-        $row.children( '.constraintOperatorPicker' ).append( $op );
+        return labelOf( f.name ) + ' ' + words + ( EMPTY_TESTS.hasOwnProperty( f.op ) ? '' : ' ' + f.value );
+    }
 
-        if ( name )     { $dim.val( name ); }
-        if ( operator ) { $op.val( operator ); }
-        if ( value )    { $row.children( '.constraintValueField' ).val( value ); }
+    function renderFilters() {
 
-        // The value field has nothing to say for an empty test.
-        var syncValueField = function () {
-            $row.children( '.constraintValueField' )
-                .toggle( ! EMPTY_TESTS.hasOwnProperty( $op.val() ) );
-        };
+        var $holder = jQuery( '#dlgFilters' );
 
-        syncValueField();
-        $op.on( 'change', syncValueField );
+        $holder.children( '.owa_filterPill' ).remove();
 
-        if ( after && after.length ) {
+        dialogFilters.forEach( function ( f, i ) {
 
-            // Directly below the row whose plus was pressed -- the rows read
-            // top to bottom as one sentence.
-            $row.insertAfter( after );
+            var $pill = jQuery( '<span class="owa_filterPill">' ).attr( 'data-index', i )
+                .append( jQuery( '<span>' ).text( labelOf( f.name ) + ' '
+                    + ( CONSTRAINT_OPERATORS[ f.op ] || EMPTY_TESTS[ f.op ] || f.op ) + ' ' ) );
 
-        } else {
-
-            jQuery( '#dlgConstraintRows > ul' ).append( $row );
-        }
-
-        /*
-         * Enhanced AFTER the row is in the document, and with explicit widths.
-         *
-         * chosen-js 1.x measures the <select> at enhancement time and reads 0
-         * inside a hidden parent -- this dialog is display:none until it opens,
-         * which is exactly the case that once left the grid filter's dimension
-         * picker a 2px sliver. The width option bypasses the measurement.
-         */
-        $dim.chosen( { no_results_text: 'Name not found.', width: '160px' } );
-        $op.chosen( { disable_search: true, width: '150px' } );
-
-        var addAfter = function () { addConstraintRow( '', '', '', $row ); };
-
-        $row.children( '.constraintAddButton' )
-            .on( 'click', addAfter )
-            .on( 'keydown', function ( e ) {
-                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); addAfter(); }
-            } );
-
-        var remove = function () {
-
-            $row.remove();
-
-            // Never zero rows: the plus lives IN a row, so removing the last
-            // one would leave nothing to add from.
-            if ( ! jQuery( '#dlgConstraintRows > ul > li' ).length ) {
-                addConstraintRow();
+            if ( ! EMPTY_TESTS.hasOwnProperty( f.op ) ) {
+                $pill.append( jQuery( '<strong>' ).text( f.value ) );
             }
-        };
 
-        $row.children( '.constraintRemoveButton' )
-            .on( 'click', remove )
-            .on( 'keydown', function ( e ) {
-                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); remove(); }
-            } );
+            $pill.append( jQuery( '<button type="button" class="owa_filterPillRemove">' )
+                .attr( { 'aria-label': 'Remove the filter ' + filterWords( f ), title: 'Remove this filter' } )
+                .append( '<i class="fas fa-times" aria-hidden="true"></i>' ) );
+
+            $holder.append( $pill );
+        } );
     }
 
-    function renderConstraintRows( str ) {
+    function openFilterForm() {
 
-        jQuery( '#dlgConstraintRows > ul' ).empty();
+        var $dim = jQuery( '#dlgFilterDimension' );
 
-        var clauses = String( str || '' ).split( ',' ).filter( function ( c ) {
-            return jQuery.trim( c ) !== '';
-        } );
+        fillChoices( $dim, DIMENSIONS, [] );
+        $dim.prepend( jQuery( '<option value="">' ).text( 'Choose a dimension' ) ).val( '' );
+        chosenSync( '#dlgFilterDimension' );
 
-        if ( ! clauses.length ) {
+        jQuery( '#dlgFilterOperator' ).val( '==' );
+        jQuery( '#dlgFilterValue' ).val( '' );
 
-            addConstraintRow();
-            return;
+        jQuery( '#dlgFilterForm' ).show();
+        jQuery( '#dlgAddFilter' ).attr( 'aria-expanded', 'true' );
+
+        syncFilterForm();
+
+        jQuery( '#dlgFilterDimension' ).trigger( 'chosen:activate' );
+    }
+
+    function closeFilterForm() {
+
+        jQuery( '#dlgFilterForm' ).hide();
+        jQuery( '#dlgAddFilter' ).attr( 'aria-expanded', 'false' );
+    }
+
+    function filterFormOpen() {
+        return jQuery( '#dlgFilterForm' ).is( ':visible' );
+    }
+
+    /** The filter being written, or null if it is not finished. */
+    function readFilterForm() {
+
+        var f = {
+            name:  jQuery( '#dlgFilterDimension' ).val() || '',
+            op:    jQuery( '#dlgFilterOperator' ).val() || '==',
+            value: jQuery.trim( jQuery( '#dlgFilterValue' ).val() || '' )
+        };
+
+        if ( ! f.name || ( ! f.value && ! EMPTY_TESTS.hasOwnProperty( f.op ) ) ) {
+            return null;
         }
 
-        clauses.forEach( function ( clause ) {
-            var part = splitConstraint( clause );
-            addConstraintRow( part.name, part.operator, part.value );
-        } );
+        // A comma would split the stored list into two clauses.
+        if ( f.value.indexOf( ',' ) !== -1 ) {
+            return null;
+        }
+
+        return f;
     }
 
-    /** One constraint row read off its controls. */
-    function readConstraintRow( row ) {
+    function syncFilterForm() {
 
-        return {
-            name:  jQuery( row ).find( 'select.dim-list' ).val() || '',
-            op:    jQuery( row ).find( 'select.operator-list' ).val() || '==',
-            value: jQuery.trim( jQuery( row ).children( '.constraintValueField' ).val() || '' )
-        };
+        var empty = EMPTY_TESTS.hasOwnProperty( jQuery( '#dlgFilterOperator' ).val() );
+
+        jQuery( '#dlgFilterValue' ).toggle( ! empty );
+        jQuery( '#dlgFilterAdd' ).prop( 'disabled', ! readFilterForm() );
     }
 
     /**
-     * The rows, back as the stored string.
-     *
-     * A COMPLETELY empty row contributes nothing, which is what lets the form
-     * always carry a blank one without it meaning anything. A HALF-filled row
-     * is a different thing and is not silently dropped -- see
-     * constraintRowProblem(), which stops the dialog closing on one.
+     * Why Apply cannot go because of a filter: one half written. The stored
+     * list cannot hold a comma in a value, so that is refused too.
      */
-    function readConstraintRows() {
+    function filterProblem() {
 
-        var out = [];
-
-        jQuery( '#dlgConstraintRows > ul > li' ).each( function () {
-
-            var part = readConstraintRow( this );
-
-            if ( part.name && EMPTY_TESTS.hasOwnProperty( part.op ) ) {
-                out.push( part.name + part.op );
-            } else if ( part.name && part.value ) {
-                out.push( part.name + part.op + part.value );
-            }
-        } );
-
-        return out.join( ',' );
-    }
-
-    /**
-     * What is wrong with the constraint rows, or '' if nothing is.
-     *
-     * readConstraintRows() keeps a row only when it has both a dimension and a
-     * value, and used to drop anything else silently -- so a row with a
-     * dimension and no value produced an unfiltered widget with no message.
-     * ResultSetManager refuses the same thing at query time.
-     *
-     * An entirely blank row is still ignored: the form always carries one.
-     */
-    function constraintRowProblem() {
-
-        var problem = '';
-
-        jQuery( '#dlgConstraintRows > ul > li' ).each( function ( i ) {
-
-            if ( problem ) {
-                return;
-            }
-
-            var part = readConstraintRow( this );
-
-            // Untouched. There is always one of these.
-            if ( ! part.name && ! part.value ) {
-                return;
-            }
-
-            if ( ! part.name ) {
-                problem = 'Constraint ' + ( i + 1 ) + ' has a value but no dimension.';
-                return;
-            }
-
-            if ( ! part.value && ! EMPTY_TESTS.hasOwnProperty( part.op ) ) {
-                problem = 'Constraint ' + ( i + 1 ) + ' on ' + part.name
-                        + ' has no value.';
-            }
-        } );
-
-        return problem;
-    }
-
-    /** Whether a name is one the reporting registry knows. */
-    function isKnownName( name ) {
-
-        var all = METRICS.concat( DIMENSIONS );
-
-        for ( var i = 0; i < all.length; i++ ) {
-
-            if ( all[ i ].name === name ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * What is wrong with the SORT, or '' if nothing is.
-     *
-     * The only free-text field here, so the only one that could reach the
-     * server with a name that does not resolve. METRICS and DIMENSIONS are
-     * already in the page for the pickers.
-     *
-     * A trailing '-' is the direction and is stripped before the lookup;
-     * without that every descending sort would be reported as unresolvable.
-     * An empty sort is allowed.
-     */
-    function sortProblem() {
-
-        var sort = jQuery.trim( jQuery( '#dlgSort' ).val() || '' );
-
-        if ( ! sort || ! picksDimensions( editingType() ) ) {
+        if ( ! filterFormOpen() ) {
             return '';
         }
 
-        var name = sort.replace( /-$/, '' );
-
-        if ( ! name ) {
-            return 'The sort names no field.';
+        if ( jQuery( '#dlgFilterValue' ).val().indexOf( ',' ) !== -1 ) {
+            return 'A filter value cannot contain a comma.';
         }
 
-        if ( ! isKnownName( name ) ) {
-            return '"' + name + '" is not a metric or a dimension.';
+        return 'Add the filter you started, or cancel it.';
+    }
+
+    /*
+     * ------------------------------------------------------------------
+     * Sort: one of the widget's metrics or dimensions, and a direction
+     * ------------------------------------------------------------------
+     */
+    function refreshSortControl() {
+
+        var type = editingType();
+
+        var metrics = jQuery( '#dlgMetrics' ).val() || [];
+        var dims    = jQuery( '#dlgDimensions' ).val() || [];
+
+        // A new widget is sorted by its first metric, largest first, as soon
+        // as it has one -- a ranked card is what most of them are for.
+        if ( dialogSort === '' && pendingNew === editing && metrics.length && ! sortTouched ) {
+            dialogSort     = metrics[0];
+            dialogSortDesc = true;
         }
 
-        return '';
+        var options = metrics.concat( dims );
+
+        // A stored sort on a field no longer shown stays until it is changed.
+        if ( dialogSort && options.indexOf( dialogSort ) === -1 ) {
+            options.push( dialogSort );
+        }
+
+        var $by = jQuery( '#dlgSortBy' ).empty()
+            .append( jQuery( '<option value="">' ).text( 'Unsorted' ) );
+
+        options.forEach( function ( name ) {
+            $by.append( jQuery( '<option>' ).attr( 'value', name ).text( labelOf( name ) ) );
+        } );
+
+        $by.val( dialogSort );
+
+        var isDimension = dialogSort !== '' && metrics.indexOf( dialogSort ) === -1
+            && DIMENSIONS.some( function ( c ) { return c.name === dialogSort; } );
+
+        jQuery( '#dlgSortDir' ).empty()
+            .append( jQuery( '<option value="desc">' ).text( isDimension ? 'Z to A' : 'Highest first' ) )
+            .append( jQuery( '<option value="asc">' ).text( isDimension ? 'A to Z' : 'Lowest first' ) )
+            .val( dialogSortDesc ? 'desc' : 'asc' )
+            .prop( 'disabled', dialogSort === '' );
+
+        jQuery( '#dlgSortField' ).toggle( picksDimensions( type ) && fixedDimension( type ) === null );
     }
 
     /**
      * EVERYTHING WRONG WITH THIS WIDGET, or '' if it is ready.
      *
-     * Done used to close on anything: the block landed on the canvas marked
+     * Apply used to close on anything: the block landed on the canvas marked
      * unfinished and Save reported it, which meant finding the widget again
      * two screens later. Checked here, the fields are still open.
      *
@@ -1817,15 +1762,15 @@ $owa_max        = (int) $view->get('max_widgets');
             return 'Choose a dimension.';
         }
 
-        return sortProblem() || constraintRowProblem();
+        return filterProblem();
     }
 
     /**
-     * Write the dialog back onto the widget.
+     * Write the panel back onto the widget.
      *
-     * Returns FALSE when it refused to, which is what stops Done closing on a
+     * Returns FALSE when it refused to, which is what stops Apply closing on a
      * widget that is not finished -- the fields that need filling are in this
-     * dialog, so closing would hide them.
+     * panel, so closing would hide them.
      *
      * @return bool
      */
@@ -1847,7 +1792,7 @@ $owa_max        = (int) $view->get('max_widgets');
         var query  = {};
 
         // The type is not read back: it was chosen when the widget was added
-        // and the dialog was built for it.
+        // and the panel was built for it.
         widget.title = jQuery( '#dlgTitle' ).val() || ( 'Widget ' + ( editing + 1 ) );
 
         if ( isFullWidth( widget.type ) ) {
@@ -1858,13 +1803,13 @@ $owa_max        = (int) $view->get('max_widgets');
 
         } else {
 
-            widget.colspan = Number( jQuery( '#dlgColspan' ).val() ) || defaultColspan( widget.type );
+            widget.colspan = dialogColspan || defaultColspan( widget.type );
         }
 
-        widget.rowspan = Number( jQuery( '#dlgRowspan' ).val() ) || 1;
+        widget.rowspan = dialogRowspan || 1;
 
         var metrics = jQuery( '#dlgMetrics' ).val() || [];
-        var cons    = readConstraintRows();
+        var cons    = filtersString( dialogFilters );
 
         /*
          * The dimensions, from whichever of the three this type is.
@@ -1888,8 +1833,8 @@ $owa_max        = (int) $view->get('max_widgets');
         // an ungrouped one has no rows to order.
         var sort = fixed !== null
             ? fixed
-            : ( picksDimensions( widget.type )
-                ? jQuery.trim( jQuery( '#dlgSort' ).val() || '' )
+            : ( picksDimensions( widget.type ) && dialogSort
+                ? dialogSort + ( dialogSortDesc ? '-' : '' )
                 : '' );
 
         if ( metrics.length ) {
@@ -1987,34 +1932,51 @@ $owa_max        = (int) $view->get('max_widgets');
     chosenify( '#dlgMetrics' );
     chosenify( '#dlgDimensions' );
 
-    // Choosing a metric changes what else is askable alongside it.
+    jQuery( '#dlgFilterDimension' ).chosen( {
+        width: '100%',
+        no_results_text: 'Name not found.',
+        placeholder_text_single: 'Choose a dimension'
+    } );
+
+    jQuery.each( jQuery.extend( {}, CONSTRAINT_OPERATORS, EMPTY_TESTS ), function ( value, label ) {
+        jQuery( '#dlgFilterOperator' ).append( jQuery( '<option>' ).attr( 'value', value ).text( label ) );
+    } );
+
     jQuery( '#dlgMetrics' ).on( 'change', function () {
         narrowMetrics();
-        // Choosing a metric can rule dimensions out, so both are redrawn.
         narrowDimensions();
         refreshLinkControl();
         refreshMoreControl();
+        refreshSortControl();
         refreshDialogState();
     } );
+
     jQuery( '#dlgDimensions' ).on( 'change', function () {
         narrowDimensions();
-        // Both link lists are per dimension, so they change with it.
         refreshLinkControl();
         refreshMoreControl();
+        refreshSortControl();
         refreshDialogState();
     } );
 
-    /*
-     * The sort is free text and the constraint rows are added and removed, so
-     * both are watched by delegation rather than by binding to the controls
-     * that exist right now.
-     */
-    jQuery( '#dlgSort' ).on( 'input', refreshDialogState );
+    jQuery( '#dlgSortBy' ).on( 'change', function () {
+        sortTouched = true;
+        dialogSort  = jQuery( this ).val() || '';
+        refreshSortControl();
+    } );
 
-    jQuery( '#dlgConstraintRows' ).on( 'change input click', refreshDialogState );
+    jQuery( '#dlgSortDir' ).on( 'change', function () {
+        dialogSortDesc = jQuery( this ).val() === 'desc';
+    } );
 
-    // Remembered, so rebuilding the select on a dimension change does not lose
-    // a choice the author has already made.
+    jQuery( '#dlgWidth' ).on( 'change', 'input', function () {
+        dialogColspan = Number( this.value );
+    } );
+
+    jQuery( '#dlgHeight' ).on( 'change', 'input', function () {
+        dialogRowspan = Number( this.value );
+    } );
+
     jQuery( '#dlgLinkReport' ).on( 'change', function () {
         dialogLink = jQuery( this ).val() || '';
     } );
@@ -2023,97 +1985,99 @@ $owa_max        = (int) $view->get('max_widgets');
         dialogMore = jQuery( this ).val() || '';
     } );
 
-    jQuery( '#typeDialog' ).dialog( {
-        autoOpen: false,
-        modal: true,
-        /*
-         * Wide enough for three tiles across. The choices are a gallery now --
-         * see .owa_typeChoices -- and the point of a gallery is comparing
-         * things side by side, which a 520px column could not do.
-         */
-        width: Math.min( 820, jQuery( window ).width() - 40 ),
-        title: 'Add a widget',
-
-        /*
-         * KEPT INSIDE .owa, and this is not cosmetic.
-         *
-         * jQuery UI lifts a dialog to <body> by default. Every rule styling
-         * what is inside these two modals is written `.owa .owa_...`, the way
-         * the rest of the reporting stylesheet is -- so the moment the dialog
-         * was lifted out of that wrapper, none of them matched. Both modals
-         * have been rendering with browser defaults: the type chooser's grid
-         * was a block, its tiles were bare buttons, and the widget form's rows
-         * had no layout at all.
-         *
-         * appendTo keeps them where their stylesheet expects them. `.owa` is a
-         * plain div with no transform, so it creates no containing block and
-         * the dialog still positions against the window.
-         */
-        appendTo: '.owa',
-        // Its OWN frame class. Sharing the widget modal's would make a locator
-        // for that modal match this one too -- jQuery UI builds both frames at
-        // init, so the chooser's is already in the page, hidden.
-        dialogClass: 'owa_typeDialogFrame'
+    // Filters.
+    jQuery( '#dlgAddFilter' ).on( 'click', function () {
+        if ( filterFormOpen() ) {
+            closeFilterForm();
+        } else {
+            openFilterForm();
+        }
+        refreshDialogState();
     } );
 
-    jQuery( '#widgetDialog' ).dialog( {
-        autoOpen: false,
-        modal: true,
-        // Inside .owa, for the reason given on the chooser above.
-        appendTo: '.owa',
-        width: Math.min( 760, jQuery( window ).width() - 40 ),
-        // A class on the FRAME, which jQuery UI builds outside this element --
-        // the frame is what carries the titlebar and the button pane, so the
-        // dialog chrome cannot be styled through #widgetDialog alone.
-        dialogClass: 'owa_widgetDialogFrame',
-        buttons: [
-            /*
-             * Disabled while the widget is unfinished -- refreshDialogState()
-             * keeps it in step with the fields, and #dlgError says what is
-             * missing. applyDialog() re-checks anyway, so a programmatic click
-             * cannot get past it.
-             */
-            { text: 'Save', click: function () {
-                if ( applyDialog() ) { jQuery( this ).dialog( 'close' ); }
-            } },
-            { text: 'Cancel', click: function () { editing = null; jQuery( this ).dialog( 'close' ); } }
-        ],
+    jQuery( '#dlgFilterDimension, #dlgFilterOperator' ).on( 'change', syncFilterForm );
+    jQuery( '#dlgFilterValue' ).on( 'input', function () {
+        syncFilterForm();
+        refreshDialogState();
+    } );
 
-        /*
-         * Backing out of a newly added widget removes it.
-         *
-         * The type chooser pushes the widget before this dialog opens, so
-         * without this Cancel leaves the unconfigured block Done refuses to
-         * produce.
-         *
-         * On `close` rather than in the Cancel handler, so the titlebar X and
-         * Escape behave the same. A successful Done clears pendingNew before
-         * closing, and re-opening an existing widget never sets it, so this
-         * only ever removes a widget that was just added and never applied.
-         */
-        close: function () {
-
-            if ( pendingNew === null ) {
-                return;
-            }
-
-            widgets.splice( pendingNew, 1 );
-
-            pendingNew = null;
-            editing    = null;
-
-            draw();
+    jQuery( '#dlgFilterValue' ).on( 'keydown', function ( e ) {
+        if ( e.which === 13 ) {
+            e.preventDefault();
+            jQuery( '#dlgFilterAdd' ).trigger( 'click' );
         }
     } );
 
-    /*
-     * The dialog's Save button, captured after jQuery UI builds the button
-     * pane. .dialog('widget') is the frame, which is where the pane lives.
-     */
-    var $dlgSaveButton = jQuery( '#widgetDialog' ).dialog( 'widget' )
-        .find( '.ui-dialog-buttonpane button' ).first();
+    jQuery( '#dlgFilterAdd' ).on( 'click', function () {
 
-    /** Keep the dialog's Save button and message in step with its fields. */
+        var f = readFilterForm();
+
+        if ( ! f ) {
+            return;
+        }
+
+        dialogFilters.push( f );
+        renderFilters();
+        closeFilterForm();
+        refreshDialogState();
+        jQuery( '#dlgAddFilter' ).trigger( 'focus' );
+    } );
+
+    jQuery( '#dlgFilterCancel' ).on( 'click', function () {
+        closeFilterForm();
+        refreshDialogState();
+        jQuery( '#dlgAddFilter' ).trigger( 'focus' );
+    } );
+
+    jQuery( '#dlgFilters' ).on( 'click', '.owa_filterPillRemove', function () {
+        dialogFilters.splice( Number( jQuery( this ).closest( '.owa_filterPill' ).attr( 'data-index' ) ), 1 );
+        renderFilters();
+        refreshDialogState();
+        jQuery( '#dlgAddFilter' ).trigger( 'focus' );
+    } );
+
+    /*
+     * The gallery: a jQuery UI dialog, as New on the list is. Choosing a type
+     * adds the widget and opens its panel.
+     */
+    jQuery( '#typeDialog' ).dialog( {
+        autoOpen: false,
+        modal: true,
+        width: Math.min( 760, jQuery( window ).width() - 32 ),
+        title: 'Add a widget',
+        appendTo: '.owa',
+        dialogClass: 'owa_typeDialogFrame'
+    } );
+
+    // The panel.
+    jQuery( '#dlgApply' ).on( 'click', function () {
+        if ( applyDialog() ) {
+            jQuery( '#widgetDialog' ).removeClass( 'is-open' );
+            restoreFocus();
+        }
+    } );
+
+    jQuery( '#dlgCancel, #dlgClose' ).on( 'click', function () {
+        closePanel();
+    } );
+
+    jQuery( '#widgetDialog' ).on( 'keydown', function ( e ) {
+
+        if ( e.which !== 27 || jQuery( e.target ).closest( '.chosen-container' ).length ) {
+            return;
+        }
+
+        e.preventDefault();
+
+        if ( filterFormOpen() ) {
+            closeFilterForm();
+            refreshDialogState();
+            jQuery( '#dlgAddFilter' ).trigger( 'focus' );
+        } else {
+            closePanel();
+        }
+    } );
+
     function refreshDialogState() {
 
         if ( editing === null ) {
@@ -2123,51 +2087,119 @@ $owa_max        = (int) $view->get('max_widgets');
         var problem = dialogProblem();
 
         jQuery( '#dlgError' ).text( problem ).toggle( !! problem );
-
-        $dlgSaveButton
-            .prop( 'disabled', !! problem )
-            .toggleClass( 'ui-state-disabled', !! problem );
+        jQuery( '#dlgApply' ).prop( 'disabled', !! problem );
     }
 
-    // ------------------------------------------------------------------
-    // Wiring
-    // ------------------------------------------------------------------
-
+    // The layout.
     jQuery( '#customReportCanvas' )
         .on( 'click', '.owa_builderEdit', function ( e ) {
             e.preventDefault();
-            openDialog( Number( jQuery( this ).closest( '.owa_builderBlock' ).attr( 'data-index' ) ) );
+            openDialog( Number( jQuery( this ).closest( '.owa_builderBlock' ).attr( 'data-index' ) ), this );
         } )
         .on( 'click', '.owa_builderRemove', function ( e ) {
+
             e.preventDefault();
 
             var index = Number( jQuery( this ).closest( '.owa_builderBlock' ).attr( 'data-index' ) );
 
-            widgets.splice( index, 1 );
+            if ( editing === index ) {
 
-            /*
-             * Removing the last one leaves the canvas EMPTY.
-             *
-             * It used to put a fresh block back, on the reasoning that a report
-             * with no widgets cannot be saved and so an empty canvas is a dead
-             * end. It is not a dead end -- the plus is right there -- and the
-             * replacement was worse than the emptiness: an author who removed a
-             * widget got another one, of a type they had not chosen, which then
-             * had to be removed as well.
-             */
+                // Its panel closes; one never applied is removed by that alone.
+                var wasPending = pendingNew === index;
+
+                closePanel();
+
+                if ( ! wasPending ) {
+                    widgets.splice( index, 1 );
+                }
+
+            } else {
+
+                // Another widget's panel stays open on that widget.
+                var edited  = editing === null ? null : widgets[ editing ];
+                var pending = pendingNew === null ? null : widgets[ pendingNew ];
+
+                widgets.splice( index, 1 );
+
+                editing    = edited === null ? null : widgets.indexOf( edited );
+                pendingNew = pending === null ? null : widgets.indexOf( pending );
+            }
+
             draw();
+            jQuery( '#addWidget' ).trigger( 'focus' );
         } )
         .on( 'click', '#addWidget', function ( e ) {
+
             e.preventDefault();
 
             if ( widgets.length >= MAX ) {
                 return;
             }
 
-            // What kind, first. The widget modal is built for a type, so there
-            // has to be one before it can be opened.
             jQuery( '#typeDialog' ).dialog( 'open' );
+        } )
+
+        // Moving by keyboard: the handle and the arrow keys.
+        .on( 'keydown', '.owa_builderMove', function ( e ) {
+
+            var step = { 37: -1, 38: -1, 39: 1, 40: 1 }[ e.which ];
+
+            if ( ! step ) {
+                return;
+            }
+
+            e.preventDefault();
+
+            var from = Number( jQuery( this ).closest( '.owa_builderBlock' ).attr( 'data-index' ) );
+
+            if ( moveWidget( from, from + step ) ) {
+                jQuery( '#customReportCanvas .owa_builderBlock' ).eq( from + step )
+                    .find( '.owa_builderMove' ).trigger( 'focus' );
+            }
+        } )
+
+        // ...and by dragging a card onto another: it takes that card's place.
+        .on( 'dragstart', '.owa_builderBlock', function ( e ) {
+
+            dragFrom = Number( jQuery( this ).attr( 'data-index' ) );
+
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+            e.originalEvent.dataTransfer.setData( 'text/plain', String( dragFrom ) );
+
+            jQuery( this ).addClass( 'is-dragging' );
+        } )
+        .on( 'dragover', '.owa_builderBlock', function ( e ) {
+
+            if ( dragFrom === null ) {
+                return;
+            }
+
+            e.preventDefault();
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+
+            jQuery( '#customReportCanvas .owa_builderBlock' ).removeClass( 'is-dropTarget' );
+            jQuery( this ).not( '.is-dragging' ).addClass( 'is-dropTarget' );
+        } )
+        .on( 'drop', '.owa_builderBlock', function ( e ) {
+
+            e.preventDefault();
+
+            var to = Number( jQuery( this ).attr( 'data-index' ) );
+
+            if ( dragFrom !== null ) {
+                moveWidget( dragFrom, to );
+            }
+
+            dragFrom = null;
+        } )
+        .on( 'dragend', '.owa_builderBlock', function () {
+
+            dragFrom = null;
+
+            jQuery( '#customReportCanvas .owa_builderBlock' ).removeClass( 'is-dragging is-dropTarget' );
         } );
+
+    var dragFrom = null;
 
     jQuery( '#typeDialog' ).on( 'click', '.owa_typeChoice', function ( e ) {
 
@@ -2177,19 +2209,18 @@ $owa_max        = (int) $view->get('max_widgets');
             return;
         }
 
-        widgets.push( newWidget( widgets.length, jQuery( this ).attr( 'data-type' ) ) );
+        // A panel open on an unapplied widget is abandoned first.
+        if ( editing !== null ) {
+            closePanel();
+        }
 
-        draw();
+        widgets.push( newWidget( widgets.length, jQuery( this ).attr( 'data-type' ) ) );
 
         jQuery( '#typeDialog' ).dialog( 'close' );
 
-        // Straight into configuring it: the type was a question about what to
-        // build, not a step of its own. Recorded as pending, so backing out of
-        // that dialog undoes the add rather than leaving a block nobody chose
-        // to make.
         pendingNew = widgets.length - 1;
 
-        openDialog( widgets.length - 1 );
+        openDialog( widgets.length - 1, null );
     } );
 
     /*

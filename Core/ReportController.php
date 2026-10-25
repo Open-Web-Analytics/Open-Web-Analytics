@@ -567,6 +567,12 @@ class ReportController extends \OWA\Core\AdminController {
         $this->set('hideTimeControls', true);
     }
 
+    /** No title row: for a screen whose own header is its title (the report editor). */
+    protected function hideReportHead() {
+
+        $this->set('hideReportHead', true);
+    }
+
     protected function hideSitesFilter() {
 
         $this->set('hideSitesFilter', true);

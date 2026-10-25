@@ -242,6 +242,20 @@ class CustomReports {
     const FULL_WIDTH_TYPES = array( 'grid' );
 
     /**
+     * The width the editor adds a new widget of each type at, out of
+     * ReportGrid::COLUMNS. Half a row for the narrow kinds, so two sit side
+     * by side; the rest are full width.
+     *
+     * Only for a NEW widget. A widget with no colspan stored renders at
+     * ReportGrid::defaultColspan(), which shipped definitions rely on.
+     */
+    const NEW_WIDGET_COLSPANS = array(
+        'grid-card'  => 6,
+        'pie'        => 6,
+        'trend-card' => 6,
+    );
+
+    /**
      * Widget types that take exactly one metric and exactly one dimension.
      *
      * EXACTLY, not at most, and the "at least" half is the part that matters.

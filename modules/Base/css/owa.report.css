@@ -1221,59 +1221,6 @@ li.constraintRow {
     .owa_rowspan-5, .owa_rowspan-6 { grid-row: auto; }
 }
 
-/* ---------------------------------------------------------------------------
- * Custom report builder
- *
- * The canvas shows the report as blocks, left to right, each as wide as the
- * column span it claims. That is the whole idea: the arrangement here is the
- * arrangement on the report, so an author sets a span and SEES what it means
- * rather than saving and finding out.
- *
- * It shares the report grid's twelve columns deliberately -- the block widths
- * and the rendered widget widths are the same fractions of the same grid, so
- * they cannot drift apart.
- * ------------------------------------------------------------------------- */
-
-.owa .owa_builderHeader {
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
-    padding: 0 0 20px 0;
-    border-bottom: 1px solid #e0e0e0;
-    margin-bottom: 20px;
-}
-
-.owa .owa_builderField {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-    flex: 1 1 260px;
-    margin-bottom: 14px;
-}
-
-/* The label, whether it sits alone or in a row beside a "Required" mark. A
-   child selector was enough until the mark needed a row of its own. */
-.owa .owa_builderField label {
-    font-size: 12px;
-    font-weight: bold;
-    color: #505050;
-}
-
-.owa .owa_builderFieldLabel {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-/* Why the dialog will not close: a constraint row that was started and not
-   finished. Sits directly under the rows it is about. */
-.owa .owa_builderRowError {
-    font-size: 12px;
-    color: #99321f;
-    margin-top: 6px;
-}
-
 /* WHICH FIELDS HAVE TO BE ANSWERED, said on the field rather than discovered
  * on save.
  *
@@ -1287,20 +1234,6 @@ li.constraintRow {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #99321f;
-}
-
-.owa .owa_builderField input[type=text],
-.owa .owa_builderField select {
-    padding: 6px;
-    border: 1px solid #cccccc;
-    border-radius: 3px;
-    font-size: 13px;
-    max-width: 100%;
-}
-
-.owa .owa_builderHelp {
-    font-size: 11px;
-    color: #808080;
 }
 
 /*
@@ -1542,371 +1475,6 @@ li.constraintRow {
     /* Takes the slack, so the width bar below sits on the tile's floor and the
        bars line up across a row however long the sentences are. */
     flex: 1 1 auto;
-}
-
-/*
- * HOW MUCH OF A ROW IT TAKES, drawn at the proportion it takes.
- *
- * The width is the other half of choosing between a table and a table card,
- * and it is the half the names do not carry at all. A bar makes two kinds
- * comparable without reading either.
- */
-.owa .owa_typeChoiceWidth {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
-}
-
-.owa .owa_typeChoiceWidthBar {
-    flex: 1 1 auto;
-    height: 5px;
-    border-radius: 3px;
-    background: #e6e6e6;
-    overflow: hidden;
-}
-
-.owa .owa_typeChoiceWidthFill {
-    display: block;
-    height: 100%;
-    background: #9ec2e6;
-}
-
-.owa .owa_typeChoice:hover .owa_typeChoiceWidthFill,
-.owa .owa_typeChoice:focus .owa_typeChoiceWidthFill {
-    background: #1874CD;
-}
-
-.owa .owa_typeChoiceWidthLabel {
-    flex: 0 0 auto;
-    font-size: 10px;
-    color: #9f9f9f;
-    white-space: nowrap;
-}
-
-/*
- * What kind of widget is being edited, beside its name.
- *
- * The type is settled at the plus and is not a control here, so it is a label
- * rather than a disabled select -- but it has to be SOMEWHERE, because half the
- * modal's fields are missing or singular because of it.
- */
-.owa .owa_builderNameRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.owa .owa_builderNameRow input {
-    /* The name takes the room; the pill is as wide as its words. */
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.owa .owa_typePill {
-    flex: 0 0 auto;
-    padding: 3px 10px;
-    border-radius: 10px;
-    background-color: #e8e8e8;
-    color: #505050;
-    font-size: 11px;
-    white-space: nowrap;
-}
-
-.owa .owa_typePill i {
-    margin-right: 4px;
-    color: #6a8fb5;
-}
-
-/*
- * Where a control would be, when the type decided it instead.
- *
- * It sits in the field row the column-span picker was taken out of, so the row
- * keeps its shape rather than collapsing the row-span picker across the dialog.
- */
-.owa .owa_builderNote {
-    font-size: 12px;
-    color: #808080;
-    align-self: center;
-    line-height: 1.4;
-}
-
-/* Two fields side by side inside the dialog -- span/span, metrics/dimensions. */
-.owa .owa_builderFieldRow {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.owa .owa_builderSectionHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.owa .owa_builderBudget {
-    font-size: 12px;
-    font-weight: normal;
-    color: #808080;
-}
-
-/* The canvas: the same twelve columns the report is drawn on. */
-.owa .owa_builderCanvas {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 25px;
-}
-
-.owa .owa_builderSpan-1  { grid-column: span 1; }
-.owa .owa_builderSpan-2  { grid-column: span 2; }
-.owa .owa_builderSpan-3  { grid-column: span 3; }
-.owa .owa_builderSpan-4  { grid-column: span 4; }
-.owa .owa_builderSpan-5  { grid-column: span 5; }
-.owa .owa_builderSpan-6  { grid-column: span 6; }
-.owa .owa_builderSpan-7  { grid-column: span 7; }
-.owa .owa_builderSpan-8  { grid-column: span 8; }
-.owa .owa_builderSpan-9  { grid-column: span 9; }
-.owa .owa_builderSpan-10 { grid-column: span 10; }
-.owa .owa_builderSpan-11 { grid-column: span 11; }
-.owa .owa_builderSpan-12 { grid-column: span 12; }
-
-.owa .owa_builderBlock {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-    min-height: 120px;
-    padding: 12px;
-    background-color: #fafafa;
-    border: 1px solid #dddddd;
-    border-radius: 4px;
-}
-
-.owa .owa_builderBlock:hover {
-    border-color: #b0b0b0;
-}
-
-.owa .owa_builderBlockHead {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.owa .owa_builderBlockName {
-    font-weight: bold;
-    font-size: 13px;
-    /* A long name wraps rather than pushing the remove control out of reach. */
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-
-.owa .owa_builderRemove {
-    color: #999999;
-    text-decoration: none;
-    font-size: 16px;
-    line-height: 1;
-    padding: 0 2px;
-    flex: 0 0 auto;
-}
-
-.owa .owa_builderRemove:hover {
-    color: #c0392b;
-}
-
-.owa .owa_builderBlockMeta {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    font-size: 11px;
-}
-
-.owa .owa_builderBlockType,
-.owa .owa_builderBlockSpan {
-    padding: 2px 6px;
-    border-radius: 10px;
-    background-color: #e8e8e8;
-    color: #505050;
-}
-
-.owa .owa_builderBlockSummary {
-    font-size: 11px;
-    color: #808080;
-    /* Grows to fill, so Edit sits on the bottom edge of every block whatever
-       the summary length -- a row of blocks with the link at a different height
-       in each reads as broken. */
-    flex: 1 1 auto;
-    overflow-wrap: anywhere;
-}
-
-.owa .owa_builderEdit {
-    font-size: 12px;
-    align-self: flex-start;
-}
-
-/* The plus. Sits in the flow as the last cell, so "add" is where the next
-   widget will appear rather than somewhere else on the page. */
-.owa .owa_builderAdd {
-    grid-column: span 3;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    min-height: 120px;
-    padding: 12px;
-    background-color: transparent;
-    border: 2px dashed #cccccc;
-    border-radius: 4px;
-    color: #808080;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.owa .owa_builderAdd:hover {
-    border-color: #999999;
-    color: #505050;
-    background-color: #fafafa;
-}
-
-.owa .owa_builderAddPlus {
-    font-size: 24px;
-    line-height: 1;
-}
-
-/* What an EMPTY canvas says.
- *
- * A new report starts with no widgets, so this is the first thing on the
- * screen. The plus alone is a control rather than an instruction -- on a blank
- * page it reads as one option among others -- so the words say what a report is
- * made of, and the plus below them is then the obvious thing to press.
- *
- * The gap under it is the point of the block. Without it the sentence sat
- * directly on the top edge of the plus tile and read as a label ON the tile
- * rather than as a line above it. */
-.owa .owa_builderEmpty {
-    display: block;
-    margin: 0 0 18px 0;
-    padding: 16px 0 0 0;
-}
-
-.owa .owa_builderEmptyTitle {
-    display: block;
-    font-size: 13px;
-    font-weight: bold;
-    color: #505050;
-    margin-bottom: 4px;
-}
-
-.owa .owa_builderEmptyBody {
-    display: block;
-    font-size: 12px;
-    line-height: 1.55;
-    color: #808080;
-    max-width: 560px;
-}
-
-/* ...and the plus keeps clear of the words above it whether or not the empty
-   block is drawn, so the canvas does not shift when the first widget lands. */
-.owa .owa_builderCanvasEmpty {
-    padding-top: 2px;
-}
-
-.owa .owa_builderActions {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #e0e0e0;
-}
-
-/* .owa-button carries `margin: 25px 0 0 0` for the admin forms it was written
-   for, where it is the last thing on a page. Here it sits in a centred flex row
-   under its own rule, and that margin pushes it off the line. Overridden the
-   same way the confirmation dialog's buttons override it, rather than by
-   introducing a second button class. */
-.owa .owa_builderActions .owa-button {
-    margin: 0;
-}
-
-/* Save with nothing to save.
- *
- * A report needs at least one widget, and the button says so by being
- * unavailable rather than by being absent -- a control that vanishes reads as a
- * page that has not finished loading. The empty-canvas sentence above says
- * why. */
-.owa .owa_builderActions .owa-button:disabled {
-    background-color: #f0f0f0;
-    color: #a0a0a0;
-    border-color: #dddddd;
-    cursor: default;
-}
-
-/* The reason Save will not go, beside the button that will not go. A disabled
-   control with no explanation says something is wrong and not what. */
-.owa .owa_builderBlocker {
-    font-size: 12px;
-    color: #99321f;
-}
-
-/* A block that has not been told what it measures.
- *
- * Marked on the CANVAS as well as in the sentence under the button, because the
- * canvas is where the author is looking -- "Widget 3 does not say what it
- * measures" is only useful if Widget 3 can be picked out of a row of blocks.
- *
- * A left edge rather than a full border: the block is unfinished, not invalid,
- * and a red box around it would read as an error the author has made. */
-.owa .owa_builderBlockIncomplete {
-    border-left: 3px solid #d9a441;
-}
-
-.owa .owa_builderBlockIncomplete .owa_builderBlockSummary {
-    color: #99321f;
-}
-
-.owa .owa_builderActions .owa-button:disabled:hover {
-    color: #a0a0a0;
-    border-color: #dddddd;
-    box-shadow: none;
-    -moz-box-shadow: none;
-    -webkit-box-shadow: none;
-}
-
-.owa .owa_builderDelete {
-    color: #c0392b;
-    font-size: 12px;
-    margin-left: auto;
-}
-
-.owa .owa_widgetDialog .owa_builderField {
-    flex: 1 1 220px;
-}
-
-.owa .owa_widgetDialog select[multiple] {
-    width: 100%;
-}
-
-/* Narrow: the canvas halves like the report grid does, and the plus goes with
-   it rather than being left as a sliver beside a full-width block. */
-@media (max-width: 900px) {
-
-    .owa .owa_builderCanvas { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-
-    .owa .owa_builderSpan-7, .owa .owa_builderSpan-8, .owa .owa_builderSpan-9,
-    .owa .owa_builderSpan-10, .owa .owa_builderSpan-11,
-    .owa .owa_builderSpan-12 { grid-column: 1 / -1; }
-}
-
-@media (max-width: 600px) {
-
-    .owa .owa_builderCanvas { grid-template-columns: 1fr; }
-
-    .owa .owa_builderBlock, .owa .owa_builderAdd { grid-column: 1 / -1; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -2251,24 +1819,715 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
- * Widget configuration modal
+ * The custom report editor (custom_report_edit.php)
  *
- * jQuery UI supplies the dialog frame and almost no opinion about what goes in
- * it, so without these the contents are a stack of unstyled labels and boxes.
- * The frame is restyled too: its default is a rounded grey chrome that does not
- * match anything else in the reporting UI.
+ * A header holding the report's name, Shared and Cancel / Save; the layout
+ * as cards on the report's twelve columns; a panel at the right for one
+ * widget's settings.
  * ------------------------------------------------------------------------- */
 
-/*
- * The dialog chrome, shared by the widget modal and the type chooser.
+.owa .owa_editor {
+    max-width: 1280px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #111827;
+}
+
+.owa .owa_editor .owa_button,
+.owa .owa_widgetPanel .owa_button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    color: #111827;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.owa .owa_editor .owa_button:hover,
+.owa .owa_widgetPanel .owa_button:hover {
+    border-color: #cfd4dc;
+    text-decoration: none;
+}
+
+.owa .owa_editor .owa_button.is-primary,
+.owa .owa_widgetPanel .owa_button.is-primary {
+    border-color: #1874CD;
+    background: #1874CD;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.owa .owa_editor .owa_button.is-primary:hover,
+.owa .owa_widgetPanel .owa_button.is-primary:hover {
+    border-color: #0f5596;
+    background: #0f5596;
+}
+
+.owa .owa_editor .owa_button:disabled,
+.owa .owa_widgetPanel .owa_button:disabled {
+    border-color: #e5e7eb;
+    background: #f3f5f8;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.owa .owa_iconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: #4b5563;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.owa .owa_iconButton:hover,
+.owa .owa_iconButton:focus-visible {
+    background: #f3f5f8;
+    color: #111827;
+}
+
+/* The header. */
+.owa .owa_editorHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px 24px;
+    padding: 8px 0 20px;
+    border-bottom: 1px solid #eef0f3;
+}
+
+.owa .owa_editorName {
+    flex: 1 1 280px;
+    min-width: 0;
+}
+
+.owa .owa_editorName input {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 520px;
+    height: 48px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 22px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.owa .owa_editorActions {
+    display: flex;
+    gap: 8px;
+}
+
+.owa .owa_editorActions .owa_button {
+    height: 44px;
+}
+
+.owa .owa_builderFieldLabel {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.owa .owa_editor label,
+.owa .owa_widgetPanel label,
+.owa .owa_widgetPanel legend,
+.owa .owa_builderLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+/* Shared: a switch, which is a checkbox underneath. */
+.owa .owa_editor .owa_switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    font-size: 14px;
+    font-weight: 400;
+    color: #374151;
+    cursor: pointer;
+}
+
+.owa .owa_switch input {
+    position: absolute;
+    z-index: 1;
+    width: 36px;
+    height: 20px;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.owa .owa_switchTrack {
+    position: relative;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: #d1d5db;
+    transition: background 0.12s ease;
+}
+
+.owa .owa_switchTrack::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background: #ffffff;
+    transition: left 0.12s ease;
+}
+
+.owa .owa_switch input:checked + .owa_switchTrack {
+    background: #1874CD;
+}
+
+.owa .owa_switch input:checked + .owa_switchTrack::after {
+    left: 18px;
+}
+
+.owa .owa_switch input:focus-visible + .owa_switchTrack {
+    outline: 2px solid #1874CD;
+    outline-offset: 2px;
+}
+
+/* Why Save will not go. */
+.owa .owa_builderBlocker {
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: #99321f;
+}
+
+.owa .owa_editorSectionHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 28px 0 16px;
+}
+
+.owa .owa_editorSectionHead h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.owa .owa_builderBudget {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.owa .owa_builderEmpty {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.owa .owa_builderEmptyTitle {
+    display: block;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* The layout: the report's twelve columns. */
+.owa .owa_builderCanvas {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.owa .owa_builderSpan-1  { grid-column: span 1; }
+.owa .owa_builderSpan-2  { grid-column: span 2; }
+.owa .owa_builderSpan-3  { grid-column: span 3; }
+.owa .owa_builderSpan-4  { grid-column: span 4; }
+.owa .owa_builderSpan-5  { grid-column: span 5; }
+.owa .owa_builderSpan-6  { grid-column: span 6; }
+.owa .owa_builderSpan-7  { grid-column: span 7; }
+.owa .owa_builderSpan-8  { grid-column: span 8; }
+.owa .owa_builderSpan-9  { grid-column: span 9; }
+.owa .owa_builderSpan-10 { grid-column: span 10; }
+.owa .owa_builderSpan-11 { grid-column: span 11; }
+.owa .owa_builderSpan-12 { grid-column: span 12; }
+
+.owa .owa_builderBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 132px;
+    padding: 16px 16px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.owa .owa_builderBlock.is-editing {
+    border-color: #1874CD;
+    box-shadow: 0 0 0 1px #1874CD;
+}
+
+.owa .owa_builderBlock.is-dragging {
+    opacity: 0.5;
+}
+
+.owa .owa_builderBlock.is-dropTarget {
+    border-color: #1874CD;
+    border-style: dashed;
+}
+
+/* Unfinished, not invalid: a left edge rather than a full border. */
+.owa .owa_builderBlockIncomplete {
+    border-left: 3px solid #d97706;
+}
+
+.owa .owa_builderBlockKind {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.owa .owa_builderMove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 24px;
+    margin-left: -4px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: grab;
+}
+
+.owa .owa_builderMove:hover,
+.owa .owa_builderMove:focus-visible {
+    background: #f3f5f8;
+    color: #4b5563;
+}
+
+.owa .owa_builderBlockName {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    overflow-wrap: anywhere;
+}
+
+.owa .owa_builderBlockSummary {
+    font-size: 13px;
+    line-height: 1.45;
+    color: #4b5563;
+    overflow-wrap: anywhere;
+}
+
+.owa .owa_builderBlockIncomplete .owa_builderBlockSummary {
+    color: #9a3d0c;
+}
+
+.owa .owa_builderBlockFoot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: auto;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.owa .owa_builderBlockTools {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+}
+
+.owa .owa_builderBlock.is-editing .owa_builderEdit {
+    background: #eef4fb;
+    color: #1874CD;
+}
+
+.owa .owa_builderAdd {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 132px;
+    border: 1.5px dashed #c7ced8;
+    border-radius: 12px;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1874CD;
+    cursor: pointer;
+}
+
+.owa .owa_builderAdd:hover,
+.owa .owa_builderAdd:focus-visible {
+    border-color: #1874CD;
+    background: #f7fafd;
+}
+
+.owa .owa_editorFoot {
+    margin-top: 40px;
+}
+
+.owa .owa_builderDelete {
+    font-size: 13px;
+    color: #99321f;
+}
+
+/* A widget's settings: a panel at the right. */
+.owa .owa_widgetPanel {
+    display: none;
+    position: fixed;
+    z-index: 900;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: 440px;
+    max-width: 100%;
+    background: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    box-shadow: -12px 0 32px rgba(17, 24, 39, 0.08);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #111827;
+    text-align: left;
+}
+
+.owa .owa_widgetPanel.is-open {
+    display: flex;
+}
+
+.owa .owa_widgetPanelHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 28px 16px;
+}
+
+.owa .owa_widgetPanelKind {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.owa .owa_widgetPanelHead h2 {
+    margin: 6px 0 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.owa .owa_widgetPanelBody {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 4px 28px 24px;
+}
+
+.owa .owa_widgetPanelFoot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 28px;
+    border-top: 1px solid #eef0f3;
+}
+
+.owa .owa_widgetPanel .owa_builderField {
+    margin: 0 0 20px;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+.owa .owa_widgetPanel .owa_builderField > label,
+.owa .owa_widgetPanel .owa_builderField > legend,
+.owa .owa_widgetPanel .owa_builderLabel {
+    display: block;
+    margin: 0 0 6px;
+    padding: 0;
+}
+
+.owa .owa_builderFieldRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 20px;
+}
+
+.owa .owa_widgetPanel input[type=text],
+.owa .owa_widgetPanel select {
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    color: #111827;
+}
+
+.owa .owa_widgetPanel input[type=text]:focus,
+.owa .owa_widgetPanel select:focus {
+    border-color: #1874CD;
+    outline: 1px solid #1874CD;
+}
+
+.owa .owa_builderHelp {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #6b7280;
+}
+
+.owa .owa_builderNote {
+    flex: 1 1 100%;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #4b5563;
+}
+
+.owa .owa_builderRowError {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fdf0e6;
+    font-size: 13px;
+    color: #9a3d0c;
+}
+
+/* Width and Height: a segmented control made of radios. */
+.owa .owa_seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: #f3f5f8;
+}
+
+.owa .owa_seg input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+}
+
+.owa .owa_widgetPanel .owa_seg label {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #4b5563;
+    cursor: pointer;
+}
+
+.owa .owa_widgetPanel .owa_seg input:checked + label {
+    background: #ffffff;
+    color: #111827;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.08);
+}
+
+.owa .owa_seg input:focus-visible + label {
+    outline: 2px solid #1874CD;
+    outline-offset: 1px;
+}
+
+/* Metrics and dimensions: chosen's pills. */
+.owa .owa_widgetPanel .chosen-container-multi .chosen-choices {
+    min-height: 40px;
+    padding: 4px 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+.owa .owa_widgetPanel .chosen-container-active .chosen-choices {
+    border-color: #1874CD;
+    box-shadow: 0 0 0 1px #1874CD;
+}
+
+.owa .owa_widgetPanel .chosen-container-multi .chosen-choices li.search-choice {
+    margin: 2px 4px 2px 0;
+    padding: 5px 26px 5px 10px;
+    border: 0;
+    border-radius: 14px;
+    background: #eef4fb;
+    box-shadow: none;
+    font-size: 13px;
+    line-height: 18px;
+    color: #0f4f8f;
+}
+
+.owa .owa_widgetPanel .chosen-container-multi .chosen-choices li.search-choice .search-choice-close {
+    top: 7px;
+    right: 8px;
+}
+
+.owa .owa_widgetPanel .chosen-container-single .chosen-single {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+    font-size: 14px;
+    line-height: 38px;
+    color: #111827;
+}
+
+.owa .owa_widgetPanel .chosen-container-single .chosen-single div b {
+    margin-top: 7px;
+}
+
+.owa .owa_builderSort {
+    display: flex;
+    gap: 8px;
+}
+
+.owa .owa_builderSort #dlgSortDir {
+    flex: 0 0 150px;
+}
+
+/* Filters: a Filter button and a pill per filter. */
+.owa .owa_filterPills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.owa .owa_widgetPanel .owa_filterAdd {
+    height: 32px;
+    padding: 0 12px;
+}
+
+.owa .owa_filterAdd[aria-expanded="true"] {
+    background: #eef4fb;
+}
+
+.owa .owa_filterPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    height: 32px;
+    padding: 0 4px 0 12px;
+    border-radius: 16px;
+    background: #eef4fb;
+    font-size: 13px;
+    color: #0f4f8f;
+    white-space: nowrap;
+}
+
+.owa .owa_filterPill strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+
+.owa .owa_filterPillRemove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #0f4f8f;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.owa .owa_filterPillRemove:hover,
+.owa .owa_filterPillRemove:focus-visible {
+    background: #dbe8f7;
+}
+
+.owa .owa_filterForm {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #f7f8fa;
+}
+
+.owa .owa_filterFormActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+@media (max-width: 760px) {
+
+    .owa .owa_builderBlock {
+        grid-column: 1 / -1;
+    }
+
+    .owa .owa_editorActions {
+        width: 100%;
+    }
+
+    .owa .owa_editorActions .owa_button {
+        flex: 1 1 0;
+    }
+
+    .owa .owa_widgetPanelHead,
+    .owa .owa_widgetPanelBody,
+    .owa .owa_widgetPanelFoot {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * The "What do you want to make?" and "Add a widget" dialogs
  *
- * Two selectors rather than one class on both frames: the widget modal's class
- * has to identify the widget modal, or a locator for it silently matches the
- * chooser's frame as well -- which jQuery UI has already built, hidden, by the
- * time anything looks.
- */
-.owa_typeDialogFrame.ui-dialog,
-.owa_widgetDialogFrame.ui-dialog {
+ * jQuery UI's frame, restyled: its default is a rounded grey chrome that does
+ * not match anything else in the reporting UI.
+ * ------------------------------------------------------------------------- */
+
+.owa_typeDialogFrame.ui-dialog {
     padding: 0;
     border: 0;
     border-radius: 12px;
@@ -2276,8 +2535,7 @@ li.constraintRow {
     background: #ffffff;
 }
 
-.owa_typeDialogFrame .ui-dialog-titlebar,
-.owa_widgetDialogFrame .ui-dialog-titlebar {
+.owa_typeDialogFrame .ui-dialog-titlebar {
     border: 0;
     border-radius: 12px 12px 0 0;
     background: #ffffff;
@@ -2285,20 +2543,17 @@ li.constraintRow {
     font-size: 18px;
 }
 
-.owa_typeDialogFrame .ui-dialog-title,
-.owa_widgetDialogFrame .ui-dialog-title {
+.owa_typeDialogFrame .ui-dialog-title {
     font-weight: 600;
     color: #111827;
 }
 
-.owa_typeDialogFrame .ui-dialog-content,
-.owa_widgetDialogFrame .ui-dialog-content {
+.owa_typeDialogFrame .ui-dialog-content {
     padding: 12px 24px 24px;
 }
 
 /* Close: a round icon button, not the theme's bordered square. */
-.owa_typeDialogFrame .ui-dialog-titlebar-close,
-.owa_widgetDialogFrame .ui-dialog-titlebar-close {
+.owa_typeDialogFrame .ui-dialog-titlebar-close {
     top: 28px;
     right: 16px;
     width: 36px;
@@ -2311,122 +2566,8 @@ li.constraintRow {
 }
 
 .owa_typeDialogFrame .ui-dialog-titlebar-close:hover,
-.owa_typeDialogFrame .ui-dialog-titlebar-close:focus,
-.owa_widgetDialogFrame .ui-dialog-titlebar-close:hover,
-.owa_widgetDialogFrame .ui-dialog-titlebar-close:focus {
+.owa_typeDialogFrame .ui-dialog-titlebar-close:focus {
     background: #f3f5f8;
-}
-
-.owa_widgetDialogFrame .ui-dialog-buttonpane {
-    margin: 0;
-    border: 0;
-    border-top: 1px solid #e6e6e6;
-    background: #fafafa;
-    border-radius: 0 0 6px 6px;
-    padding: 12px 18px;
-}
-
-.owa_widgetDialogFrame .ui-dialog-buttonpane .ui-dialog-buttonset {
-    margin: 0;
-    float: right;
-}
-
-/* The dialog's own buttons, so Done reads as the action and Cancel as the way
-   out -- jQuery UI renders both identically. */
-.owa_widgetDialogFrame .ui-dialog-buttonpane button {
-    margin: 0 0 0 8px;
-    padding: 7px 16px;
-    border: 1px solid #cccccc;
-    border-radius: 3px;
-    background: #ffffff;
-    color: #404040;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.owa_widgetDialogFrame .ui-dialog-buttonpane button:first-child {
-    border-color: #3c78b4;
-    background: #3c78b4;
-    color: #ffffff;
-}
-
-.owa_widgetDialogFrame .ui-dialog-buttonpane button:hover {
-    border-color: #999999;
-}
-
-.owa_widgetDialogFrame .ui-dialog-buttonpane button:first-child:hover {
-    background: #33689e;
-    border-color: #33689e;
-}
-
-/* The fields inside. Grouped rows sit side by side and fall to one column when
-   there is no room, rather than overflowing the dialog. */
-.owa .owa_widgetDialog,
-.owa_widgetDialog {
-    font-size: 13px;
-}
-
-.owa_widgetDialog .owa_builderField {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin-bottom: 16px;
-    min-width: 0;
-    flex: 1 1 220px;
-}
-
-.owa_widgetDialog .owa_builderField > label {
-    font-size: 12px;
-    font-weight: bold;
-    color: #505050;
-}
-
-.owa_widgetDialog .owa_builderFieldRow {
-    display: flex;
-    gap: 18px;
-    flex-wrap: wrap;
-}
-
-.owa_widgetDialog input[type=text],
-.owa_widgetDialog select {
-    padding: 7px;
-    border: 1px solid #cccccc;
-    border-radius: 3px;
-    font-size: 13px;
-    max-width: 100%;
-}
-
-.owa_widgetDialog input[type=text]:focus,
-.owa_widgetDialog select:focus {
-    border-color: #3c78b4;
-    outline: none;
-}
-
-.owa_widgetDialog .owa_builderHelp {
-    font-size: 11px;
-    color: #808080;
-}
-
-.owa_widgetDialog code {
-    background: #f0f0f0;
-    padding: 1px 4px;
-    border-radius: 2px;
-    font-size: 11px;
-}
-
-/* Chosen inside the dialog: match the plain inputs beside it. */
-.owa_widgetDialog .chosen-container-multi .chosen-choices,
-.owa_pillFieldHost .chosen-container-multi .chosen-choices {
-    padding: 3px 4px;
-    border: 1px solid #cccccc;
-    border-radius: 3px;
-    background-image: none;
-    background-color: #ffffff;
-}
-
-.owa_widgetDialog .chosen-container-active .chosen-choices {
-    border-color: #3c78b4;
-    box-shadow: none;
 }
 
 /* The page behind a modal, dimmed.
@@ -2447,11 +2588,6 @@ li.constraintRow {
     opacity: 0.45;
     filter: none;
     z-index: 1000;
-}
-
-/* ...and the dialog sits above it. */
-.owa_widgetDialogFrame.ui-dialog {
-    z-index: 1001;
 }
 
 /* ---------------------------------------------------------------------------
@@ -2944,20 +3080,6 @@ li.constraintRow {
     overflow: visible;
 }
 
-
-/*
- * The widget builder's constraint rows.
- *
- * The rows themselves are already styled -- they carry the same classes as the
- * grid's filter builder, which is the point -- so this only places them in the
- * form. There is no "Add filter" button here either: the plus lives in each
- * row, and this form's one action is the dialog's own Done.
- */
-.owa .owa_builderConstraints ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
 
 /* ---------------------------------------------------------------------------
  * Type scale for the admin and settings screens.
