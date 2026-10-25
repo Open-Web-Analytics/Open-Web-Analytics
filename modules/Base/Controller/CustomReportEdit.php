@@ -323,6 +323,13 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
             $entry = (array) $entry;
 
+            // A metric is registered once per entity that can compute it, so
+            // its entry is a list of definitions; they share a label.
+            if ( isset( $entry[0] ) && is_array( $entry[0] ) ) {
+
+                $entry = $entry[0];
+            }
+
             $label = '';
 
             foreach ( array( 'label', 'name' ) as $key ) {
@@ -377,5 +384,8 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * back into it.
          */
         $this->hideTimeControls();
+
+        // The name field, Shared and Save are the screen's header.
+        $this->hideReportHead();
     }
 }

@@ -187,6 +187,19 @@ For module and template authors:
   now `options.shareChart` and `makeShareChart`. `valueLabels` and `numSlices`
   work as before.
 
+### The custom report editor is its own screen
+
+The editor's header is the report's name, Shared and Cancel / Save. Widgets are
+cards on the report's twelve columns, moved by dragging or with the arrow keys;
+a widget's settings open in a panel at the right, with Width (a third, half, two
+thirds or full) and Height (short or tall), the sort as a field and a direction,
+and filters as pills. Reports saved before keep any width or height they have.
+
+For module authors:
+
+- A `ReportController` can call `hideReportHead()` to leave out the title row,
+  for a screen whose own header is its title.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

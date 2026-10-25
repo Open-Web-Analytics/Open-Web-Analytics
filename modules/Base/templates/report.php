@@ -121,6 +121,8 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                             && $owa_titleCount !== '';
                     ?>
                     <?php // The title and when its numbers are from; the period and the screen's actions opposite. ?>
+                    <?php // A screen that is its own header (the report editor) has none. ?>
+                    <?php if ( ! $view->get( 'hideReportHead' ) ): ?>
                     <div class="owa_reportHead">
                     <div class="owa_reportHeadText">
                     <div class="owa_reportTitle"><?php echo $view->title;
@@ -202,6 +204,7 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                     <?php endif;?>
                     </div>
                     </div>
+                    <?php endif; ?>
 
                     <div class="clear"></div>
                     <?php echo $view->subview;?>
