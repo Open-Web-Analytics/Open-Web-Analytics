@@ -32,8 +32,6 @@ class PropertyProfiles extends \OWA\Core\AdminController {
         $this->set( 'propertyId', $property_id );
         $this->set( 'profiles', $property_id !== '' ? self::rowsFor( $property_id ) : array() );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        /* Tier 2: a list of the Property's Profiles is about the Property. */
-        $this->set( 'hierarchy_tier', 2 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $property_id ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.propertyProfiles' );

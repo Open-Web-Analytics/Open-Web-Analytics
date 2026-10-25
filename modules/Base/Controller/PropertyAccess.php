@@ -42,8 +42,6 @@ class PropertyAccess extends \OWA\Core\AdminController {
             ? \OWA\Module\Base\Classes\PropertyGrants::userIds( $property_id ) : array() );
         $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $property_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        /* Tier 2: this screen is about a Property, so the context line stops there. */
-        $this->set( 'hierarchy_tier', 2 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $property_id ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.propertyAccess' );

@@ -59,8 +59,6 @@ class PropertyProfile extends \OWA\Core\AdminController {
             $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        /* Tier 2: this screen is about a Property, so the context line stops there. */
-        $this->set( 'hierarchy_tier', 2 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $this->getParam( 'propertyId' ) ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.propertyProfile' );

@@ -349,7 +349,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $this->set( 'savedProperties', $saved );
         $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $propertyId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_tier', 2 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->set( 'error_code', 3002 );
         $this->setView( 'base.optionsHierarchy' );

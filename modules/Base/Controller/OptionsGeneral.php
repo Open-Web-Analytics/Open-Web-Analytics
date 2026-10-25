@@ -56,8 +56,6 @@ class OptionsGeneral extends \OWA\Core\AdminController {
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
-        /* Tier 0: an install-wide screen, so the context line names nothing below it. */
-        $this->set( 'hierarchy_tier', 0 );
         $this->setView( 'base.optionsHierarchy' );
         $this->data['subview'] = 'base.optionsGeneral';
         $this->data['view_method'] = 'delegate';

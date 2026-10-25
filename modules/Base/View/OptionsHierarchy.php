@@ -18,7 +18,7 @@ class OptionsHierarchy extends \OWA\Core\View {
         $this->body->set_template( 'options_hierarchy.php' );
         $this->body->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
         /*
-         * The breadcrumb and the tile both read params['propertyId'] and
+         * The column and the Property chooser read params['propertyId'] and
          * params['siteId'] to know which Property and Profile are current. Not
          * every screen sets 'params' -- most set only 'siteId' or 'propertyId'
          * -- so fall back to those rather than requiring each controller to
@@ -60,23 +60,6 @@ class OptionsHierarchy extends \OWA\Core\View {
         $this->body->set( 'nav_property_id', $propertyId );
         $this->body->set( 'nav_access_site', self::accessSiteFor(
             (array) $this->get( 'site_hierarchy' ), $propertyId, (string) ( $params['siteId'] ?? '' ) ) );
-
-        /*
-         * What the root crumb says. Tier 0 means install-wide on every other
-         * screen, so 'Instance' is the default -- but base.myProfile is
-         * tier 0 and is about the person rather than the installation, so it
-         * names its own. get() answers false for a name nobody set, hence the
-         * ?: rather than a check.
-         */
-        $this->body->set( 'hierarchy_root_label',
-            $this->get( 'hierarchy_root_label' ) ?: 'Instance' );
-        /*
- * Not ?: -- tier 0 (install-wide) is a legitimate value that ?: would turn
- * into 3, putting a Property and a Profile above Main Configuration.
- */
-        $tier = $this->get( 'hierarchy_tier' );
-
-        $this->body->set( 'hierarchy_tier', $tier === '' || $tier === false || $tier === null ? 3 : (int) $tier );
 
         $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
         $this->setCss( 'base/css/owa.admin.css' );

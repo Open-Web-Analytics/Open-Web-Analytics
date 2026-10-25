@@ -847,32 +847,16 @@ test.describe('admin: start_page default action', () => {
     });
 });
 
-test.describe('admin: the breadcrumb', () => {
+test.describe('admin: settings screens', () => {
 
-    test('each crumb opens its tier, and the current one is not a link', async ({ page }) => {
+    // The column and the Property chooser say where you are; no breadcrumb.
+    test('have no breadcrumb', async ({ page }) => {
         await adminLogin(page);
-        // The Profile's crumb opens its page, whose first tab is the Tracking
-        // tag; on that tab it is the current one and plain text.
-        await gotoAction(page, 'base.sitesInvocation', `&owa_siteId=${FIXTURE.siteId}`);
 
-        const crumbs = page.locator('.owa_hierarchyCrumb .owa_hierarchyCrumbItem');
-        await expect(crumbs).toHaveCount(3);
-        await expect(crumbs.nth(2).locator('a')).toHaveCount(0);
-
-        await gotoAction(page, 'base.profileSettings', `&owa_siteId=${FIXTURE.siteId}`);
-        await clickAndWait(page, crumbs.nth(2).locator('a'));
-        await expect(page).toHaveURL(/do=base\.sitesInvocation/);
-        await expect(page).toHaveURL(new RegExp(`siteId=${FIXTURE.siteId}`));
-
-        await gotoAction(page, 'base.sitesInvocation', `&owa_siteId=${FIXTURE.siteId}`);
-        await clickAndWait(page, crumbs.nth(1).locator('a'));
-        await expect(page).toHaveURL(/do=base\.propertyProfile/);
-
-        // Property Details is tier 2: two crumbs, and its own is plain text.
-        await expect(crumbs).toHaveCount(2);
-        await expect(crumbs.nth(1).locator('a')).toHaveCount(0);
-
-        await clickAndWait(page, crumbs.nth(0).locator('a'));
-        await expect(page).toHaveURL(/do=base\.organizationProfile/);
+        for (const action of ['base.sitesInvocation', 'base.propertyProfile', 'base.optionsGeneral']) {
+            await gotoAction(page, action, `&owa_siteId=${FIXTURE.siteId}`);
+            await expect(page.locator('#owa_navColumn')).toBeVisible();
+            await expect(page.locator('.owa_hierarchyCrumb')).toHaveCount(0);
+        }
     });
 });

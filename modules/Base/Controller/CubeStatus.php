@@ -49,7 +49,6 @@ class CubeStatus extends \OWA\Core\AdminController {
         $controller->set( 'site_hierarchy',
             $controller->getSiteHierarchy( $controller->getSitesAllowedForCurrentUser() ) );
         $controller->set( 'hierarchy_nav', $controller->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id ) ) );
-        $controller->set( 'hierarchy_tier', 0 );
         $controller->setView( 'base.optionsHierarchy' );
     }
 }

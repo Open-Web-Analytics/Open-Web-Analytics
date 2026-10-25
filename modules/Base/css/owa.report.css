@@ -3316,7 +3316,7 @@ li.constraintRow {
  *   lg  section heading, dialog title
  *   md  body: intro text, field titles (bold), form controls, buttons
  *   sm  field descriptions, help text, nav links, table cells
- *   xs  notes beneath a field, breadcrumb, nav group heads, ids, badges
+ *   xs  notes beneath a field, nav group heads, ids, badges
  * ------------------------------------------------------------------------ */
 :root {
     --owa-text-xl: 18px;
@@ -3828,40 +3828,6 @@ li.constraintRow {
     border-color: #a0a0a0;
     outline: none;
 }
-
-/* The tile's contents on one line above the page heading. Context, not title:
-   grey, small, and it never wraps into a second line -- it truncates, because a
-   two-line breadcrumb competes with the heading it is meant to sit under. */
-
-.owa_hierarchyCrumb {
-    font-size: var(--owa-text-xs);
-    color: #999999;
-    margin: 0 0 10px 0;
-    max-width: 780px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.owa_hierarchyCrumbSep {
-    margin: 0 6px;
-    color: #cccccc;
-}
-
-.owa_hierarchyCrumbNote {
-    color: #bbbbbb;
-}
-
-.owa_hierarchyCrumb a {
-    color: inherit;
-    text-decoration: none;
-}
-
-.owa_hierarchyCrumb a:hover {
-    color: #333333;
-    text-decoration: underline;
-}
-
 
 /* Grids inside the hierarchy pane.
  *
@@ -4744,9 +4710,8 @@ li.constraintRow {
     .owa_hierarchyContent { padding-left: 8px; padding-right: 8px; }
 
     /* The settings table takes the screen's width, not its widest content's.
-       Laid out automatically, a table cell grows to fit the breadcrumb (one
-       nowrap line) and every 400px field, and the page grew with it. Fixed,
-       the crumb ellipsises as it was written to and fields shrink to fit. */
+       Laid out automatically, a table cell grows to fit every 400px field, and
+       the page grew with it. Fixed, the fields shrink to fit. */
     .owa_hierarchyPage,
     .owa_reportContainer > table { table-layout: fixed; }
 
