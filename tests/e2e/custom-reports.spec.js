@@ -70,7 +70,7 @@ async function fillFilter(page, { dimension, operator, value }) {
     if (dimension) {
         const chosen = page.locator('#dlgFilterDimension_chosen');
 
-        await chosen.click();
+        await chosen.locator('.chosen-single').click();
         await chosen.locator('.chosen-search input').pressSequentially(dimension);
         await chosen.locator('.chosen-results li.active-result', { hasText: `(${dimension})` })
             .first().click();
@@ -115,7 +115,17 @@ async function buildOne(page, label) {
 async function chooseInChosen(page, selectId, name) {
     const container = page.locator(`#${selectId}_chosen`);
 
-    await container.click();
+    /*
+     * Into the search field, NOT the middle of the box. Once there are pills
+     * the middle can be a pill's X -- where it lands depends on how wide the
+     * fonts draw the labels -- and clicking it removed the metric the test
+     * had just chosen.
+     */
+    if (await container.locator('.chosen-choices').count()) {
+        await container.locator('.chosen-choices .search-field input').click();
+    } else {
+        await container.locator('.chosen-single').click();
+    }
 
     const search = container.locator('.chosen-choices input, .chosen-search input').first();
 
