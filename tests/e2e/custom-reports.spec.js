@@ -341,17 +341,65 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * ...and the type is settled once the card exists.
+         * ...and changed from the panel through the same gallery, not a select
+         * in the form: a select there made one form every form at once.
          *
-         * It used to be a select inside the widget modal, which made that one
-         * form have to be every form at once -- and every answer already given
-         * had to be re-examined whenever the type changed. A trend has no
-         * dimension to pick; a card takes one metric where a table takes four.
+         * What the new type cannot use is dropped -- a card keeps one metric
+         * and one dimension and may be narrowed -- and the rest stays: the
+         * name, the filters. Cancel puts the old type back.
          */
-        test('the widget panel does not offer the type again', async ({ page }) => {
-            await openBuilderOnGrid(page);
+        test("a widget's type changes from its panel, keeping what the new type can use",
+            async ({ page }) => {
 
+            await openBuilder(page);
+            await page.fill('#customReportName', reportName('ChangedType'));
+
+            await addWidget(page, 'grid', {
+                title: 'Pages',
+                metrics: ['pageViews', 'sessions'],
+                dimensions: ['pagePath', 'pageTitle'],
+            });
+
+            const card = page.locator('.owa_builderBlock').first();
+
+            // Changed, then cancelled: still a table.
+            await card.locator('.owa_builderEdit').click();
             await expect(page.locator('#dlgType')).toHaveCount(0);
+            await page.click('#dlgChangeType');
+            await expect(page.locator('.owa_typeDialogFrame .ui-dialog-title')).toHaveText('Change the widget type');
+            await expect(page.locator('.owa_typeChoice.is-current')).toHaveAttribute('data-type', 'grid');
+            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+            await expect(page.locator('#dlgTypePill')).toHaveText('Table card');
+            await dialogCancel(page).click();
+            await expect(card.locator('.owa_builderBlockType')).toHaveText('Table');
+
+            // Changed and applied: a card of the first metric by the first dimension.
+            await card.locator('.owa_builderEdit').click();
+            await page.click('#dlgChangeType');
+            await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
+
+            await expect(page.locator('#dlgChangeType')).toBeFocused();
+            await expect(page.locator('#dlgTitle')).toHaveValue('Pages');
+            await expect(chosenPills(page, 'dlgMetrics')).toHaveCount(1);
+            await expect(chosenPills(page, 'dlgDimensions')).toHaveCount(1);
+            await expect(page.locator('#dlgColspanField')).toBeVisible();
+            await expect(page.locator('#dlgWidth-6')).toBeChecked();
+
+            await dialogSave(page).click();
+            await expect(card.locator('.owa_builderBlockType')).toHaveText('Table card');
+
+            const definition = await page.evaluate(() => {
+                document.getElementById('customReportForm')
+                    .dispatchEvent(new Event('submit'));
+                return document.getElementById('customReportDefinition').value;
+            });
+
+            const widget = JSON.parse(definition).widgets[0];
+
+            expect(widget.type).toBe('grid-card');
+            expect(widget.colspan).toBe(6);
+            expect(widget.query.metrics).toBe('pageViews');
+            expect(widget.query.dimensions).toBe('pagePath');
         });
 
         /**

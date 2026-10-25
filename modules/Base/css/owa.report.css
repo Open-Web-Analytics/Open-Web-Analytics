@@ -2242,6 +2242,28 @@ li.constraintRow {
     color: #6b7280;
 }
 
+/* A link's look on a button: the panel's "change". */
+.owa .owa_linkButton {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: #1874CD;
+    cursor: pointer;
+}
+
+.owa .owa_linkButton:hover,
+.owa .owa_linkButton:focus-visible {
+    color: #0f5596;
+    text-decoration: underline;
+}
+
+/* In the gallery opened to change a type, the type it is now. */
+.owa .owa_typeChoice.is-current {
+    border-color: #1874CD;
+    box-shadow: 0 0 0 1px #1874CD;
+}
+
 .owa .owa_widgetPanelHead h2 {
     margin: 6px 0 0;
     font-size: 18px;

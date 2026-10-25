@@ -194,6 +194,8 @@ cards on the report's twelve columns, moved by dragging or with the arrow keys;
 a widget's settings open in a panel at the right, with Width (a third, half, two
 thirds or full) and Height (short or tall), the sort as a field and a direction,
 and filters as pills. Reports saved before keep any width or height they have.
+A widget's type can be changed from its panel; what the new type cannot use, such
+as a second metric on a table card, is dropped.
 
 For module authors:
 
