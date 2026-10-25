@@ -23,7 +23,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class GoalFunnelStepValidationTest extends TestCase
 {
     /** @param array<int, array<string, string>> $steps */
-    private function refuses( array $steps ): bool
+    private function refuses( array $steps, string $constraints = '' ): bool
     {
         /*
          * Goals became goal events, so these rules moved with the screen that
@@ -58,6 +58,7 @@ final class GoalFunnelStepValidationTest extends TestCase
             'name'     => 'Probe',
             'stepName' => $names,
             'stepPath' => $paths,
+            'constraints' => $constraints,
         ) );
 
         $controller->validate();
@@ -85,15 +86,44 @@ final class GoalFunnelStepValidationTest extends TestCase
         $this->assertFalse( $this->refuses( array( 1 => $this->step( 'Basket', '/basket' ) ) ) );
     }
 
-    public function testAStepWithNoPathIsRefused(): void
+    /**
+     * A step is its page (or goal event). A row with a stored name and no
+     * page is not a step, so a funnel of only that has none.
+     */
+    public function testANameWithNoPageIsNotAStep(): void
     {
         $this->assertTrue( $this->refuses( array( 1 => $this->step( 'Basket', '' ) ) ),
-            'a step that names a stage but no page is half-filled, not optional' );
+            'the funnel has no steps' );
+
+        $this->assertFalse( $this->refuses( array(
+            1 => $this->step( 'Basket', '' ),
+            2 => $this->step( '', '/checkout' ),
+        ) ), 'a row with no page is dropped, not refused' );
     }
 
-    public function testAStepWithNoNameIsRefused(): void
+    /** The builder does not ask for a step's name; it is named for its page. */
+    public function testAStepNeedsNoName(): void
     {
-        $this->assertTrue( $this->refuses( array( 1 => $this->step( '', '/basket' ) ) ) );
+        $this->assertFalse( $this->refuses( array( 1 => $this->step( '', '/basket' ) ) ) );
+
+        $steps = \OWA\Module\Base\Controller\VisualizationSave::stepsFromForm(
+            array( '', 'Checkout', '' ), array( 'path', 'path', 'path' ),
+            array( '/basket', '/checkout', '' ), array( '', '', '' ) );
+
+        $this->assertSame( array(
+            array( 'name' => '/basket', 'path' => '/basket', 'step_number' => 1 ),
+            array( 'name' => 'Checkout', 'path' => '/checkout', 'step_number' => 2 ),
+        ), $steps );
+    }
+
+    /** A funnel's filter is checked the way a widget's is. */
+    public function testAFilterThatNamesNothingIsRefused(): void
+    {
+        $basket = array( 1 => $this->step( '', '/basket' ) );
+
+        $this->assertFalse( $this->refuses( $basket, 'pagePath=@/blog/' ) );
+        $this->assertTrue( $this->refuses( $basket, 'notADimension==x' ) );
+        $this->assertTrue( $this->refuses( $basket, 'pagePath==' ) );
     }
 
     /**
@@ -134,13 +164,13 @@ final class GoalFunnelStepValidationTest extends TestCase
     public function testABadFirstStepDoesNotHideALaterOne(): void
     {
         $this->assertTrue( $this->refuses( array(
-            1 => $this->step( 'Basket', '' ),
+            1 => $this->step( 'Basket', 'https://example.com/basket' ),
             2 => $this->step( 'Checkout', '/checkout' ),
-        ) ), 'the first step is incomplete' );
+        ) ), 'the first step is a web address' );
 
         $this->assertTrue( $this->refuses( array(
             1 => $this->step( 'Basket', '/basket' ),
-            2 => $this->step( 'Checkout', '' ),
+            2 => $this->step( 'Checkout', 'https://example.com/checkout' ),
         ) ), 'and so is the second, which the early return never reached' );
     }
 

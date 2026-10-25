@@ -17,5 +17,7 @@ class VisualizationEdit extends \OWA\Core\View {
         $this->body->set( 'maxSteps', $this->get( 'maxSteps' ) );
         $this->body->set( 'propertyId', $this->get( 'propertyId' ) );
         $this->body->set( 'validation_errors', $this->get( 'validation_errors' ) ?? array() );
+        $this->body->set( 'constraints', (string) $this->get( 'constraints' ) );
+        $this->body->set( 'dimensionChoices', (array) $this->get( 'dimensionChoices' ) );
     }
 }

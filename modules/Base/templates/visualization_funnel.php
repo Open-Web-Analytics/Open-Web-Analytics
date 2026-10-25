@@ -82,6 +82,11 @@ foreach ( $owa_steps as $owa_s ) {
     <div style="clear:both;"></div>
 </div>
 
+<?php if ( $view->get('funnel_saved_filter') ): ?>
+<p class="owa_funnelSavedFilter">Counts only where <?php
+    $view->out( implode( ', and ', (array) $view->get('funnel_saved_filter') ) ); ?>.</p>
+<?php endif; ?>
+
 <?php if ( $view->get('funnel_segment_error') ): ?>
 <?php
     /*

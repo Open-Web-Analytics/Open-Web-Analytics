@@ -80,6 +80,18 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      *
      * @return string
      */
+    /**
+     * The funnel's own filter, from its definition. It applies to every step,
+     * under whatever filter the reader adds on the URL.
+     */
+    private $savedConstraints = '';
+
+    /** The visualization being drawn: the stored one this report names. */
+    protected function visualization() {
+
+        return \OWA\Module\Base\Classes\CustomReports::load( $this->visualizationId() );
+    }
+
     protected function visualizationId() {
 
         $reportId = (string) $this->getParam( 'reportId' );
@@ -100,7 +112,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          * directly now, so this is free to be what it always was: an analysis
          * of a path, defined where it is looked at.
          */
-        $visualization = \OWA\Module\Base\Classes\CustomReports::load( $this->visualizationId() );
+        $visualization = $this->visualization();
 
         if ( ! $visualization ) {
 
@@ -113,6 +125,10 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         $definition = (array) $visualization['definition'];
         $funnel     = isset( $definition['steps'] ) ? (array) $definition['steps'] : array();
+
+        // Before anything builds the segment, which reads it.
+        $this->savedConstraints = trim( (string) ( $definition['constraints'] ?? '' ) );
+        $this->set( 'funnel_saved_constraints', $this->savedConstraints );
 
         $scope = $this->scope();
 
@@ -954,12 +970,30 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         if ( ! $this->segment ) {
 
+            $period    = $this->getParam( 'period' );
+            $startDate = $this->getParam( 'startDate' );
+            $endDate   = $this->getParam( 'endDate' );
+
+            /*
+             * No period on the URL is the report's default period, which is
+             * what the header says the numbers are for -- pre() resolved it.
+             * Passed through as nothing, a filtered funnel queried with no
+             * period at all and failed (a saved funnel opens with none), and an
+             * unfiltered one counted all time under a header naming a week.
+             */
+            if ( ! $period && ! ( $startDate && $endDate ) && $this->getPeriod() ) {
+
+                $period = $this->getPeriod()->get();
+            }
+
             $this->segment = new \OWA\Module\Base\Classes\ReportSegment(
                 $this->getParam( 'propertyId' ),
-                $this->getParam( 'period' ),
-                $this->getParam( 'startDate' ),
-                $this->getParam( 'endDate' ),
-                (string) $this->getParam( 'constraints' )
+                $period,
+                $startDate,
+                $endDate,
+                // The funnel's own filter AND the reader's: both narrow it.
+                implode( ',', array_filter( array(
+                    $this->savedConstraints, trim( (string) $this->getParam( 'constraints' ) ) ), 'strlen' ) )
             );
         }
 

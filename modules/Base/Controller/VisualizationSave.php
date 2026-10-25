@@ -51,36 +51,31 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * what says which one to read, and reading the wrong one would refuse a
          * perfectly complete step.
          */
-        $names = (array) $this->getParam( 'stepName' );
         $kinds = (array) $this->getParam( 'stepKind' );
         $goals = (array) $this->getParam( 'stepGoalEventId' );
         $kept  = 0;
 
         foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
 
-            $name   = trim( (string) ( $names[ $i ] ?? '' ) );
             $path   = trim( (string) $path );
             $goal   = trim( (string) ( $goals[ $i ] ?? '' ) );
             $number = $i + 1;
 
             $isGoal = ( (string) ( $kinds[ $i ] ?? 'path' ) ) === 'goal_event';
 
-            /* A row someone added and left alone is not a mistake. */
-            if ( $name === '' && ( $isGoal ? $goal === '' : $path === '' ) ) {
+            /*
+             * A row with no page or goal event is not a step: one someone
+             * added and left alone is not a mistake. A step's name is optional
+             * -- see stepsFromForm() -- so it does not make a row a step.
+             */
+            if ( $isGoal ? $goal === '' : $path === '' ) {
 
                 continue;
             }
 
             $kept++;
 
-            $this->addValidation( 'stepName' . $number, $name, 'required',
-                array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: name is required.' ), $number ) ) );
-
             if ( $isGoal ) {
-
-                $this->addValidation( 'stepGoalEvent' . $number, $goal, 'required',
-                    array( 'errorMsg' => sprintf(
-                        \OWA\Core\CoreAPI::t( 'Step %s: choose a goal event.' ), $number ) ) );
 
                 /*
                  * And it has to be one a funnel can actually count.
@@ -91,22 +86,16 @@ class VisualizationSave extends \OWA\Core\AdminController {
                  * still choose another -- rather than saving something that
                  * refuses to draw every time it is opened.
                  */
-                if ( $goal !== '' ) {
+                $error = $this->goalEventStepError( $goal );
 
-                    $error = $this->goalEventStepError( $goal );
+                if ( $error !== '' ) {
 
-                    if ( $error !== '' ) {
-
-                        $this->addValidation( 'stepGoalEvent' . $number, '', 'required',
-                            array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: %s' ), $number, $error ) ) );
-                    }
+                    $this->addValidation( 'stepGoalEvent' . $number, '', 'required',
+                        array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: %s' ), $number, $error ) ) );
                 }
 
                 continue;
             }
-
-            $this->addValidation( 'stepPath' . $number, $path, 'required',
-                array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: path is required.' ), $number ) ) );
 
             /*
              * A path, not a URL. The counting matches on the path alone, so a
@@ -122,21 +111,98 @@ class VisualizationSave extends \OWA\Core\AdminController {
             }
         }
 
+        // About the list, not one row: keyed `steps`, shown under the steps.
         if ( ! $kept ) {
 
-            $this->addValidation( 'stepPath1', '', 'required',
+            $this->addValidation( 'steps', '', 'required',
                 array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'A funnel needs at least one step.' ) ) );
         }
 
         /* A ceiling on the CHART rather than on the query -- see MAX_STEPS. */
         if ( $kept > self::MAX_STEPS ) {
 
-            $this->addValidation( 'stepPath1', '', 'required', array(
+            $this->addValidation( 'steps', '', 'required', array(
                 'errorMsg' => sprintf(
                     \OWA\Core\CoreAPI::t( 'A funnel has at most %d steps; this one has %d.' ),
                     self::MAX_STEPS, $kept ),
             ) );
         }
+
+        /*
+         * The funnel's filter, which applies to every step. Checked the way a
+         * widget's constraints are, so one that cannot resolve is refused
+         * here rather than every time the funnel is opened.
+         */
+        $problem = \OWA\Module\Base\Classes\CustomReports::constraintsProblem(
+            (string) $this->getParam( 'constraints' ), \OWA\Core\CoreAPI::t( 'The funnel' ) );
+
+        if ( $problem !== '' ) {
+
+            $this->addValidation( 'constraints', '', 'required', array( 'errorMsg' => $problem ) );
+        }
+    }
+
+    /**
+     * The steps a form posted, as a definition stores them.
+     *
+     * A row with neither a page nor a goal event is skipped. A step with no
+     * name is named for its page, or for its goal event: the builder asks for
+     * the page or the event and nothing else, and keeps a stored name only
+     * while the step it names is unchanged.
+     *
+     * @return array
+     */
+    public static function stepsFromForm( array $names, array $kinds, array $paths, array $goals ) {
+
+        $steps = array();
+
+        foreach ( $paths as $i => $path ) {
+
+            $path   = trim( (string) $path );
+            $goal   = trim( (string) ( $goals[ $i ] ?? '' ) );
+            $name   = trim( (string) ( $names[ $i ] ?? '' ) );
+            $isGoal = ( (string) ( $kinds[ $i ] ?? 'path' ) ) === 'goal_event';
+
+            if ( $isGoal ? $goal === '' : $path === '' ) {
+
+                continue;
+            }
+
+            if ( $name === '' ) {
+
+                $name = $isGoal ? self::goalEventName( $goal ) : $path;
+            }
+
+            /*
+             * ONE of the two, never both.
+             *
+             * The form posts both fields whatever the kind. Storing the unused
+             * one as well would leave a step carrying a stale path beside its
+             * goal event, and the next reader could not tell which the funnel
+             * actually counts.
+             */
+            $steps[] = $isGoal
+                ? array(
+                    'name'          => $name,
+                    'goal_event_id' => $goal,
+                    'step_number'   => count( $steps ) + 1,
+                  )
+                : array(
+                    'name'        => $name,
+                    'path'        => $path,
+                    'step_number' => count( $steps ) + 1,
+                  );
+        }
+
+        return $steps;
+    }
+
+    private static function goalEventName( $id ) {
+
+        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goalEvent->load( $id );
+
+        return $goalEvent->wasPersisted() ? (string) $goalEvent->get( 'name' ) : '';
     }
 
     /**
@@ -184,44 +250,19 @@ class VisualizationSave extends \OWA\Core\AdminController {
             $report->load( $id );
         }
 
-        $names = (array) $this->getParam( 'stepName' );
-        $kinds = (array) $this->getParam( 'stepKind' );
-        $goals = (array) $this->getParam( 'stepGoalEventId' );
-        $steps = array();
+        $steps = self::stepsFromForm(
+            (array) $this->getParam( 'stepName' ),
+            (array) $this->getParam( 'stepKind' ),
+            (array) $this->getParam( 'stepPath' ),
+            (array) $this->getParam( 'stepGoalEventId' ) );
 
-        foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
+        $definition = array( 'steps' => $steps );
 
-            $path   = trim( (string) $path );
-            $goal   = trim( (string) ( $goals[ $i ] ?? '' ) );
-            $isGoal = ( (string) ( $kinds[ $i ] ?? 'path' ) ) === 'goal_event';
+        $constraints = trim( (string) $this->getParam( 'constraints' ) );
 
-            if ( $isGoal ? $goal === '' : $path === '' ) {
+        if ( $constraints !== '' ) {
 
-                continue;
-            }
-
-            /*
-             * ONE of the two, never both.
-             *
-             * The form posts both fields whatever the kind, because both are
-             * rendered so it works with no JavaScript. Storing the unused one
-             * as well would leave a step carrying a stale path beside its goal
-             * event, and the next reader could not tell which the funnel
-             * actually counts. The counting reads goal_event_id first, so a
-             * leftover path would be silent rather than wrong -- which is worse
-             * to find later, not better.
-             */
-            $steps[] = $isGoal
-                ? array(
-                    'name'          => trim( (string) ( $names[ $i ] ?? '' ) ),
-                    'goal_event_id' => $goal,
-                    'step_number'   => count( $steps ) + 1,
-                  )
-                : array(
-                    'name'        => trim( (string) ( $names[ $i ] ?? '' ) ),
-                    'path'        => $path,
-                    'step_number' => count( $steps ) + 1,
-                  );
+            $definition['constraints'] = $constraints;
         }
 
         $report->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
@@ -234,7 +275,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * Handing it an array stores the string "Array", which is what a
          * PHP array casts to, and the visualization then renders nothing.
          */
-        $report->set( 'definition', json_encode( array( 'steps' => $steps ) ) );
+        $report->set( 'definition', json_encode( $definition ) );
         $report->set( 'last_updated_timestamp', \OWA\Core\CoreAPI::getRequestTimestamp() );
         /*
          * Listed to everybody, or only to its author. DISCOVERABILITY, not
@@ -295,6 +336,11 @@ class VisualizationSave extends \OWA\Core\AdminController {
         $this->set( 'visualizationId', $this->getParam( 'visualizationId' ) );
         $this->set( 'name', $this->getParam( 'name' ) );
         $this->set( 'visualizationType', $this->getParam( 'visualizationType' ) );
+
+        // Shared and the filter come back as they were posted, like the steps.
+        $this->set( 'isShared', $this->getParam( 'isShared' ) ? 1 : 0 );
+        $this->set( 'constraints', (string) $this->getParam( 'constraints' ) );
+
         /*
          * The steps as ONE encoded param.
          *

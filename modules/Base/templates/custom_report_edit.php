@@ -278,22 +278,15 @@ $owa_max        = (int) $view->get('max_widgets');
         ?>
         <div class="owa_builderField" id="dlgFiltersField">
             <span class="owa_builderLabel" id="dlgFiltersLabel">Filters</span>
-            <div class="owa_filterPills" id="dlgFilters" role="group" aria-labelledby="dlgFiltersLabel">
-                <button type="button" class="owa_button owa_filterAdd" id="dlgAddFilter" aria-expanded="false"
-                        aria-controls="dlgFilterForm"><i class="fas fa-filter" aria-hidden="true"></i> Filter</button>
-            </div>
-            <div class="owa_filterForm" id="dlgFilterForm" style="display:none;">
-                <label for="dlgFilterDimension" class="owa_srOnly">Dimension</label>
-                <select id="dlgFilterDimension"></select>
-                <label for="dlgFilterOperator" class="owa_srOnly">Condition</label>
-                <select id="dlgFilterOperator"></select>
-                <label for="dlgFilterValue" class="owa_srOnly">Value</label>
-                <input type="text" id="dlgFilterValue" placeholder="Value" />
-                <div class="owa_filterFormActions">
-                    <button type="button" class="owa_button" id="dlgFilterCancel">Cancel</button>
-                    <button type="button" class="owa_button is-primary" id="dlgFilterAdd" disabled="disabled">Add filter</button>
-                </div>
-            </div>
+            <?php
+                $owa_fp = array(
+                    'pills' => 'dlgFilters', 'add' => 'dlgAddFilter', 'form' => 'dlgFilterForm',
+                    'dimension' => 'dlgFilterDimension', 'operator' => 'dlgFilterOperator',
+                    'value' => 'dlgFilterValue', 'addFilter' => 'dlgFilterAdd', 'cancel' => 'dlgFilterCancel',
+                    'label' => 'dlgFiltersLabel',
+                );
+                include( 'filter_pills.php' );
+            ?>
         </div>
 
         <?php
@@ -606,7 +599,6 @@ $owa_max        = (int) $view->get('max_widgets');
     var dialogSort     = '';
     var dialogSortDesc = true;
     var sortTouched    = false;
-    var dialogFilters  = [];
 
     // The widget whose pencil opened the panel, to go back to when it closes.
     // The widget rather than the button: closing redraws the cards.
@@ -997,7 +989,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         var parts = [ metrics.join( ', ' ) + ( dims.length ? ' by ' + dims.join( ', ' ) : '' ) ];
 
-        var filters = parseFilters( widget.constraints || '' ).map( filterWords );
+        var filters = OWA.filterPills.parse( widget.constraints || '' ).map( filterWords );
 
         if ( filters.length ) {
             parts.push( 'filtered: ' + filters.join( ', ' ) );
@@ -1155,9 +1147,7 @@ $owa_max        = (int) $view->get('max_widgets');
         dialogSort     = sort.replace( /-$/, '' );
         sortTouched    = false;
 
-        dialogFilters = parseFilters( widget.constraints || '' );
-        closeFilterForm();
-        renderFilters();
+        filters.set( widget.constraints || '' );
 
         fillChoices( jQuery( '#dlgMetrics' ), METRICS, names( query.metrics ) );
         /*
@@ -1210,7 +1200,7 @@ $owa_max        = (int) $view->get('max_widgets');
     function closePanel( keep ) {
 
         jQuery( '#widgetDialog' ).removeClass( 'is-open' );
-        closeFilterForm();
+        filters.close();
 
         if ( pendingNew !== null ) {
 
@@ -1495,184 +1485,13 @@ $owa_max        = (int) $view->get('max_widgets');
     }
 
     /*
-     * ------------------------------------------------------------------
-     * Filters, as pills
-     * ------------------------------------------------------------------
-     *
-     * The STORED format is unchanged -- `name==value`, comma separated, which
-     * is what CustomReports::constraintDimensions() parses. parseFilters() and
-     * filtersString() are the only place that string is read or written here,
-     * so the syntax is not something an author has to know.
+     * Filters, as pills: OWA.filterPills, over the markup in filter_pills.php.
+     * The stored format is the constraints string; see owa.filterpills.js.
      */
-    var CONSTRAINT_OPERATORS = {
-        '==': 'is',
-        '!=': 'is not',
-        '=@': 'contains',
-        '>':  'is greater than',
-        '<':  'is less than'
-    };
+    var filters = null;   // made once the script below has the dimensions
 
-    /*
-     * The two tests on "(not set)", which the server reads as empty and has a
-     * value. Stored as the operator plus that value; offered as their own
-     * conditions, with no value to type.
-     */
-    var EMPTY_TESTS = {
-        '!=(not set)': 'is set',
-        '==(not set)': 'is not set'
-    };
-
-    /** One stored clause as { name, op, value }. */
-    function splitConstraint( clause ) {
-
-        // Longest first, so `!=` is not read as `=`.
-        var ops = Object.keys( CONSTRAINT_OPERATORS ).sort( function ( a, b ) {
-            return b.length - a.length;
-        } );
-
-        for ( var i = 0; i < ops.length; i++ ) {
-
-            var at = clause.indexOf( ops[ i ] );
-
-            if ( at > 0 ) {
-
-                var part = {
-                    name:  jQuery.trim( clause.slice( 0, at ) ),
-                    op:    ops[ i ],
-                    value: jQuery.trim( clause.slice( at + ops[ i ].length ) )
-                };
-
-                if ( EMPTY_TESTS.hasOwnProperty( part.op + part.value ) ) {
-                    part.op += part.value;
-                    part.value = '';
-                }
-
-                return part;
-            }
-        }
-
-        return { name: jQuery.trim( clause ), op: '==', value: '' };
-    }
-
-    function parseFilters( str ) {
-
-        return String( str || '' ).split( ',' )
-            .filter( function ( c ) { return jQuery.trim( c ) !== ''; } )
-            .map( splitConstraint );
-    }
-
-    function filtersString( filters ) {
-
-        return filters.map( function ( f ) {
-            return f.name + f.op + ( EMPTY_TESTS.hasOwnProperty( f.op ) ? '' : f.value );
-        } ).join( ',' );
-    }
-
-    /** "Page path contains /blog/" */
     function filterWords( f ) {
-
-        var words = CONSTRAINT_OPERATORS[ f.op ] || EMPTY_TESTS[ f.op ] || f.op;
-
-        return labelOf( f.name ) + ' ' + words + ( EMPTY_TESTS.hasOwnProperty( f.op ) ? '' : ' ' + f.value );
-    }
-
-    function renderFilters() {
-
-        var $holder = jQuery( '#dlgFilters' );
-
-        $holder.children( '.owa_filterPill' ).remove();
-
-        dialogFilters.forEach( function ( f, i ) {
-
-            var $pill = jQuery( '<span class="owa_filterPill">' ).attr( 'data-index', i )
-                .append( jQuery( '<span>' ).text( labelOf( f.name ) + ' '
-                    + ( CONSTRAINT_OPERATORS[ f.op ] || EMPTY_TESTS[ f.op ] || f.op ) + ' ' ) );
-
-            if ( ! EMPTY_TESTS.hasOwnProperty( f.op ) ) {
-                $pill.append( jQuery( '<strong>' ).text( f.value ) );
-            }
-
-            $pill.append( jQuery( '<button type="button" class="owa_filterPillRemove">' )
-                .attr( { 'aria-label': 'Remove the filter ' + filterWords( f ), title: 'Remove this filter' } )
-                .append( '<i class="fas fa-times" aria-hidden="true"></i>' ) );
-
-            $holder.append( $pill );
-        } );
-    }
-
-    function openFilterForm() {
-
-        var $dim = jQuery( '#dlgFilterDimension' );
-
-        fillChoices( $dim, DIMENSIONS, [] );
-        $dim.prepend( jQuery( '<option value="">' ).text( 'Choose a dimension' ) ).val( '' );
-        chosenSync( '#dlgFilterDimension' );
-
-        jQuery( '#dlgFilterOperator' ).val( '==' );
-        jQuery( '#dlgFilterValue' ).val( '' );
-
-        jQuery( '#dlgFilterForm' ).show();
-        jQuery( '#dlgAddFilter' ).attr( 'aria-expanded', 'true' );
-
-        syncFilterForm();
-
-        jQuery( '#dlgFilterDimension' ).trigger( 'chosen:activate' );
-    }
-
-    function closeFilterForm() {
-
-        jQuery( '#dlgFilterForm' ).hide();
-        jQuery( '#dlgAddFilter' ).attr( 'aria-expanded', 'false' );
-    }
-
-    function filterFormOpen() {
-        return jQuery( '#dlgFilterForm' ).is( ':visible' );
-    }
-
-    /** The filter being written, or null if it is not finished. */
-    function readFilterForm() {
-
-        var f = {
-            name:  jQuery( '#dlgFilterDimension' ).val() || '',
-            op:    jQuery( '#dlgFilterOperator' ).val() || '==',
-            value: jQuery.trim( jQuery( '#dlgFilterValue' ).val() || '' )
-        };
-
-        if ( ! f.name || ( ! f.value && ! EMPTY_TESTS.hasOwnProperty( f.op ) ) ) {
-            return null;
-        }
-
-        // A comma would split the stored list into two clauses.
-        if ( f.value.indexOf( ',' ) !== -1 ) {
-            return null;
-        }
-
-        return f;
-    }
-
-    function syncFilterForm() {
-
-        var empty = EMPTY_TESTS.hasOwnProperty( jQuery( '#dlgFilterOperator' ).val() );
-
-        jQuery( '#dlgFilterValue' ).toggle( ! empty );
-        jQuery( '#dlgFilterAdd' ).prop( 'disabled', ! readFilterForm() );
-    }
-
-    /**
-     * Why Apply cannot go because of a filter: one half written. The stored
-     * list cannot hold a comma in a value, so that is refused too.
-     */
-    function filterProblem() {
-
-        if ( ! filterFormOpen() ) {
-            return '';
-        }
-
-        if ( jQuery( '#dlgFilterValue' ).val().indexOf( ',' ) !== -1 ) {
-            return 'A filter value cannot contain a comma.';
-        }
-
-        return 'Add the filter you started, or cancel it.';
+        return OWA.filterPills.words( f, labelOf );
     }
 
     /*
@@ -1762,7 +1581,7 @@ $owa_max        = (int) $view->get('max_widgets');
             return 'Choose a dimension.';
         }
 
-        return filterProblem();
+        return filters.problem();
     }
 
     /**
@@ -1809,7 +1628,7 @@ $owa_max        = (int) $view->get('max_widgets');
         widget.rowspan = dialogRowspan || 1;
 
         var metrics = jQuery( '#dlgMetrics' ).val() || [];
-        var cons    = filtersString( dialogFilters );
+        var cons    = filters.get();
 
         /*
          * The dimensions, from whichever of the three this type is.
@@ -1932,15 +1751,11 @@ $owa_max        = (int) $view->get('max_widgets');
     chosenify( '#dlgMetrics' );
     chosenify( '#dlgDimensions' );
 
-    jQuery( '#dlgFilterDimension' ).chosen( {
-        width: '100%',
-        no_results_text: 'Name not found.',
-        placeholder_text_single: 'Choose a dimension'
-    } );
-
-    jQuery.each( jQuery.extend( {}, CONSTRAINT_OPERATORS, EMPTY_TESTS ), function ( value, label ) {
-        jQuery( '#dlgFilterOperator' ).append( jQuery( '<option>' ).attr( 'value', value ).text( label ) );
-    } );
+    filters = new OWA.filterPills( {
+        pills: 'dlgFilters', add: 'dlgAddFilter', form: 'dlgFilterForm',
+        dimension: 'dlgFilterDimension', operator: 'dlgFilterOperator', value: 'dlgFilterValue',
+        addFilter: 'dlgFilterAdd', cancel: 'dlgFilterCancel'
+    }, DIMENSIONS, function () { refreshDialogState(); } );
 
     jQuery( '#dlgMetrics' ).on( 'change', function () {
         narrowMetrics();
@@ -1985,57 +1800,6 @@ $owa_max        = (int) $view->get('max_widgets');
         dialogMore = jQuery( this ).val() || '';
     } );
 
-    // Filters.
-    jQuery( '#dlgAddFilter' ).on( 'click', function () {
-        if ( filterFormOpen() ) {
-            closeFilterForm();
-        } else {
-            openFilterForm();
-        }
-        refreshDialogState();
-    } );
-
-    jQuery( '#dlgFilterDimension, #dlgFilterOperator' ).on( 'change', syncFilterForm );
-    jQuery( '#dlgFilterValue' ).on( 'input', function () {
-        syncFilterForm();
-        refreshDialogState();
-    } );
-
-    jQuery( '#dlgFilterValue' ).on( 'keydown', function ( e ) {
-        if ( e.which === 13 ) {
-            e.preventDefault();
-            jQuery( '#dlgFilterAdd' ).trigger( 'click' );
-        }
-    } );
-
-    jQuery( '#dlgFilterAdd' ).on( 'click', function () {
-
-        var f = readFilterForm();
-
-        if ( ! f ) {
-            return;
-        }
-
-        dialogFilters.push( f );
-        renderFilters();
-        closeFilterForm();
-        refreshDialogState();
-        jQuery( '#dlgAddFilter' ).trigger( 'focus' );
-    } );
-
-    jQuery( '#dlgFilterCancel' ).on( 'click', function () {
-        closeFilterForm();
-        refreshDialogState();
-        jQuery( '#dlgAddFilter' ).trigger( 'focus' );
-    } );
-
-    jQuery( '#dlgFilters' ).on( 'click', '.owa_filterPillRemove', function () {
-        dialogFilters.splice( Number( jQuery( this ).closest( '.owa_filterPill' ).attr( 'data-index' ) ), 1 );
-        renderFilters();
-        refreshDialogState();
-        jQuery( '#dlgAddFilter' ).trigger( 'focus' );
-    } );
-
     /*
      * The gallery: a jQuery UI dialog, as New on the list is. Choosing a type
      * adds the widget and opens its panel.
@@ -2067,15 +1831,9 @@ $owa_max        = (int) $view->get('max_widgets');
             return;
         }
 
+        // The filter form's own Escape is handled, and stopped, by OWA.filterPills.
         e.preventDefault();
-
-        if ( filterFormOpen() ) {
-            closeFilterForm();
-            refreshDialogState();
-            jQuery( '#dlgAddFilter' ).trigger( 'focus' );
-        } else {
-            closePanel();
-        }
+        closePanel();
     } );
 
     function refreshDialogState() {

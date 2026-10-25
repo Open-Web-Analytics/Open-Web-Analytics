@@ -1,249 +1,173 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * One visualization.
+ * The funnel builder.
  *
- * The KIND was answered before this screen opened -- in the modal on the
- * roster, the same order the widget builder puts the question in, because the
- * kind decides what this form then asks for. So it is STATED here, not asked
- * again: two places to answer one question is a way for the two to disagree.
+ * The KIND was answered before this screen opened -- in New's "What do you
+ * want to make?" -- because the kind decides what this form asks for. It is
+ * posted, so an unchanged edit cannot fall back to a default, and it cannot be
+ * changed: steps mean nothing to another kind.
  *
- * And it cannot be changed. The definition a kind produces means nothing to
- * another kind, so re-typing a funnel would leave steps that whatever computes
- * it does not read. Building the other kind is how to get the other kind.
+ * The header is the funnel's name, Shared and Cancel / Save, as on the report
+ * editor. Under it, the steps and the filter at the left and a preview at the
+ * right: the funnel counted as it stands, from the steps on the screen, over
+ * the last 30 days (base.visualizationPreview).
+ *
+ * The form posts the steps as parallel arrays -- stepKind[], stepPath[],
+ * stepGoalEventId[], stepName[] -- in row order, so the order on the screen is
+ * the order saved. A step is a page path or a goal event; its name is not
+ * asked for. A stored name rides along in stepName[] while the step it names is
+ * unchanged, and a step with none is named for its page or goal event.
  */
-$owa_v     = (array) $view->visualization;
-$owa_type  = (string) ( $view->visualizationType ?: 'funnel' );
+$owa_v      = (array) $view->visualization;
+$owa_type   = (string) ( $view->visualizationType ?: 'funnel' );
+$owa_id     = (string) ( $owa_v['id'] ?? '' );
+$owa_errors = (array) $view->validation_errors;
+$owa_steps  = (array) $view->steps ?: array( array() );
+$owa_goals  = (array) $view->goalEvents;
+
+// The errors each step row shows; the rest are shown under the steps.
+$owa_shownErrors = array( 'name' => true, 'constraints' => true );
 ?>
-<div class="owa_panelIntro">A visualization computes something a report cannot arrange from
-metrics and dimensions. A funnel counts how many people reached each step of a path, in order,
-and where they left.</div>
 
 <?php
 /*
- * An explicit action URL, not a hidden owa_action field.
- *
- * The admin screens post to the current URL and name the action in a hidden
- * field. A REPORT page does not route that way -- the custom report builder
- * posts to makeLink( do => ... ) -- and posting the admin way ran the save but
- * then rendered an empty document, because nothing had resolved a view.
+ * An explicit action URL, not a hidden owa_action field: a report page does
+ * not route the admin way, and posting so ran the save then rendered nothing.
  */
 ?>
-<form method="post" name="owa_visualization"
+<form method="post" name="owa_visualization" class="owa_editor owa_funnelEditor" id="owa_funnelForm"
       action="<?php echo $view->makeLink( array( 'do' => 'base.visualizationSave' ) );?>">
 
-    <div class="setting">
-        <div class="title">Name <span class="owa_builderRequired">Required</span></div>
-        <div class="description">What this is called in the Visualizations list and its own
-        heading.</div>
-        <div class="field">
-            <input class="owa_largeFormField" type="text" maxlength="255"
+    <?php echo $view->createNonceFormField( 'base.visualizationSave' );?>
+    <input type="hidden" name="<?php echo $view->getNs();?>visualizationId" value="<?php $view->out( $view->visualizationId ?? '' );?>">
+    <input type="hidden" name="<?php echo $view->getNs();?>visualizationType" value="<?php $view->out( $owa_type );?>">
+    <?php // The saved funnel opens on this Property, as a saved report does. ?>
+    <input type="hidden" name="propertyId" value="<?php $view->out( $view->get( 'propertyId' ) );?>">
+    <?php // The filter, written by the script from its pills. ?>
+    <input type="hidden" name="<?php echo $view->getNs();?>constraints" id="owa_funnelConstraints"
+           value="<?php $view->out( (string) $view->constraints );?>">
+
+    <div class="owa_editorHead">
+        <div class="owa_editorName">
+            <div class="owa_builderFieldLabel">
+                <label for="owa_funnelName">Funnel name</label>
+                <span class="owa_builderRequired">Required</span>
+            </div>
+            <input type="text" id="owa_funnelName" maxlength="255"
                    name="<?php echo $view->getNs();?>name"
+                   placeholder="Untitled funnel"
                    value="<?php $view->out( $owa_v['name'] ?? '' );?>">
-            <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
+            <?php if ( ! empty( $owa_errors['name'] ) ):?>
+            <span class="validation_error"><?php $view->out( $owa_errors['name'] );?></span>
+            <?php endif;?>
+        </div>
+
+        <?php // Listing, not access: anyone with the link can open it either way. ?>
+        <label class="owa_switch" for="owa_funnelShared">
+            <input type="checkbox" role="switch" id="owa_funnelShared" value="1"
+                   name="<?php echo $view->getNs();?>isShared"
+                   aria-describedby="owa_funnelSharedHint"
+                   <?php echo ! empty( $owa_v['is_shared'] ) ? 'checked="checked"' : '';?>>
+            <span class="owa_switchTrack" aria-hidden="true"></span>
+            Shared in everyone's list
+        </label>
+        <span id="owa_funnelSharedHint" class="owa_srOnly">Anyone you send the link to can open it either way.</span>
+
+        <div class="owa_editorActions">
+            <a class="owa_button" id="owa_funnelCancel" href="<?php echo $owa_id
+                ? $view->makeLink( array( 'do' => 'base.report',
+                    'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $owa_id ), true )
+                : $view->makeLink( array( 'do' => 'base.customReports' ), true );?>">Cancel</a>
+            <input class="owa_button is-primary" type="submit" id="owa_visualizationSubmit"
+                   name="<?php echo $view->getNs();?>submit_btn" value="Save funnel">
         </div>
     </div>
 
-    <div class="setting">
-        <div class="title">Visibility</div>
-        <div class="description">Whose <em>list</em> it appears on. Anyone you send the link to can open it either way, since it shows nothing its reader could not already query.</div>
-        <div class="field">
-            <label>
-                <input type="checkbox" value="1"
-                       name="<?php echo $view->getNs();?>isShared"
-                       <?php echo ! empty( $owa_v['is_shared'] ) ? 'checked="checked"' : '';?>>
-                Show this visualization in everyone's list
-            </label>
-        </div>
-    </div>
+    <?php // Why Save will not go, from the same rules the save applies. ?>
+    <p id="owa_visualizationBlocker" class="owa_builderBlocker" role="status" style="display:none;"></p>
 
-    <div class="setting">
-        <div class="title">Type</div>
-        <div class="description">What kind of visualization this is. The kind decides what this form asks for, so it is chosen before the form opens and cannot be changed.</div>
-        <div class="field">
-            <span class="owa_statedValue">
-                <i class="<?php $view->out( (string) $view->visualizationTypeIcon );?>"
-                   aria-hidden="true"></i>
-                <?php $view->out( (string) $view->visualizationTypeLabel );?>
-            </span>
-            <div class="owa_statedValueHint"><?php
-                $view->out( (string) $view->visualizationTypeHint );?></div>
-            <?php
-                /*
-                 * Posted as a hidden field, not inferred at the save.
-                 *
-                 * The save writes visualization_type, and a form that shows a
-                 * kind but does not send it would have the controller pick the
-                 * default -- so an unchanged edit could quietly change what
-                 * computes the row.
-                 */
-            ?>
-            <input type="hidden" name="<?php echo $view->getNs();?>visualizationType"
-                   value="<?php $view->out( $owa_type );?>">
-        </div>
-    </div>
+    <div class="owa_funnelColumns">
 
-    <div class="setting">
-        <div class="title">Steps <span class="owa_builderRequired">Required</span></div>
-        <div class="description">In order, first to last. A step is a page, matched on its path, or one of this Property's goal events, which counts wherever that goal event would count a conversion. A row left blank is ignored.</div>
-        <div class="field">
-            <ul class="constraintList owa_goalEventFunnel" id="owa_goalEventFunnel" data-owa-repeatable>
-            <?php
-            /* Always one row, or there is nowhere to type the first step. */
-            $owa_steps = $view->steps ?: array( array( 'name' => '', 'path' => '' ) );
-            ?>
-            <?php
-                /*
-                 * Which error keys have been shown, so the catch-all below can
-                 * show anything left over.
-                 */
-                $owa_shownErrors = array( 'name' => true );
-            ?>
+        <section class="owa_funnelBuild" aria-labelledby="owa_funnelStepsHeading">
+
+            <h2 id="owa_funnelStepsHeading">Steps <span class="owa_builderRequired">Required</span></h2>
+            <p class="owa_builderHelp">In order, first to last. A page is matched on its path; an event is
+                one of this Property's goal events, counted wherever it would count a conversion.</p>
+
+            <ol class="owa_funnelStepList" id="owa_goalEventFunnel">
             <?php foreach ( $owa_steps as $owa_stepIndex => $owa_step ):?>
             <?php
-                $owa_stepGoal = (string) ( $owa_step['goal_event_id'] ?? '' );
+                $owa_step     = (array) $owa_step;
                 $owa_stepNo   = (int) $owa_stepIndex + 1;
-
-                /*
-                 * This step's messages, keyed the way VisualizationSave::validate()
-                 * writes them.
-                 */
+                $owa_stepGoal = (string) ( $owa_step['goal_event_id'] ?? '' );
                 $owa_stepErrors = array();
 
                 foreach ( array( 'stepName', 'stepPath', 'stepGoalEvent' ) as $owa_key ) {
-
                     $owa_field = $owa_key . $owa_stepNo;
-
                     $owa_shownErrors[ $owa_field ] = true;
-
-                    if ( ! empty( $view->validation_errors[ $owa_field ] ) ) {
-
-                        $owa_stepErrors[] = $view->validation_errors[ $owa_field ];
+                    if ( ! empty( $owa_errors[ $owa_field ] ) ) {
+                        $owa_stepErrors[] = $owa_errors[ $owa_field ];
                     }
                 }
+
             ?>
-                <li class="constraintRow owa_funnelStep">
-                    <input class="constraintValueField owa_funnelStepName" type="text"
-                           placeholder="Step name"
-                           name="<?php echo $view->getNs();?>stepName[]"
-                           value="<?php $view->out( $owa_step['name'] ?? '' );?>">
-                    <?php
-                        /*
-                         * WHAT the step is, then the value it needs.
-                         *
-                         * A step is a condition, and a goal event is a
-                         * condition somebody already named -- so naming one
-                         * here means exactly what writing its conditions into
-                         * the step by hand would mean. The counting compiles
-                         * both to the same predicate; see GoalEventPredicate.
-                         *
-                         * It reads as the operator slot of a constraint row
-                         * because that is what it is: the same three-part
-                         * sentence the report builder writes, subject / verb /
-                         * value.
-                         */
-                    ?>
-                    <span class="constraintOperatorPicker owa_funnelStepMatches">
-                        <select class="owa_funnelStepKind" name="<?php echo $view->getNs();?>stepKind[]">
-                            <option value="path" <?php echo $owa_stepGoal === '' ? 'selected' : '';?>>is the page</option>
-                            <option value="goal_event" <?php echo $owa_stepGoal !== '' ? 'selected' : '';?>>is the goal event</option>
-                        </select>
-                    </span>
-                    <input class="constraintValueField owa_funnelStepPath" type="text"
-                           placeholder="/path"
-                           name="<?php echo $view->getNs();?>stepPath[]"
-                           value="<?php $view->out( $owa_step['path'] ?? '' );?>">
-                    <select class="constraintValueField owa_funnelStepGoal"
-                            name="<?php echo $view->getNs();?>stepGoalEventId[]">
-                        <option value="">Choose a goal event&hellip;</option>
-                        <?php foreach ( (array) $view->goalEvents as $owa_ge ):?>
-                            <option value="<?php $view->out( $owa_ge['id'] );?>"
-                                <?php echo $owa_stepGoal === (string) $owa_ge['id'] ? 'selected' : '';?>>
-                                <?php $view->out( $owa_ge['name'] );?><?php
-                                    echo empty( $owa_ge['is_active'] ) ? ' (inactive)' : '';?>
-                            </option>
-                        <?php endforeach;?>
-                    </select>
-                    <span class="constraintAddButton" role="button" tabindex="0"
-                          title="Add another step" aria-label="Add another step">+</span>
-                    <span class="constraintRemoveButton" role="button" tabindex="0"
-                          title="Remove this step" aria-label="Remove this step">X</span>
-                    <?php foreach ( $owa_stepErrors as $owa_stepError ):?>
-                    <span class="validation_error owa_funnelStepError"><?php
-                        $view->out( $owa_stepError );?></span>
-                    <?php endforeach;?>
-                </li>
+                <?php include( 'visualization_edit_step.php' ); ?>
             <?php endforeach;?>
-            </ul>
+            </ol>
+
+            <button type="button" class="owa_button owa_funnelAdd" id="owa_funnelAddStep">
+                <i class="fas fa-plus" aria-hidden="true"></i> Add a step</button>
+
+            <?php foreach ( array_diff_key( $owa_errors, $owa_shownErrors ) as $owa_otherError ):?>
+            <p class="validation_error"><?php $view->out( $owa_otherError );?></p>
+            <?php endforeach;?>
+
+            <h2 id="owa_funnelFiltersLabel">Filters</h2>
             <?php
-                /*
-                 * Anything the rows did not show.
-                 *
-                 * This used to be three hardcoded keys -- stepPath1, stepName1,
-                 * stepGoalEvent1 -- so a message about step 2 or later was
-                 * written by validate(), refused the save, and then appeared
-                 * nowhere. The author got the form back with no reason on it.
-                 *
-                 * Driven off the errors themselves now, so a key added to
-                 * validate() cannot go unrendered.
-                 */
-                $owa_otherErrors = array_diff_key(
-                    (array) $view->validation_errors, $owa_shownErrors );
+                $owa_fp = array(
+                    'pills' => 'owa_funnelFilters', 'add' => 'owa_funnelAddFilter', 'form' => 'owa_funnelFilterForm',
+                    'dimension' => 'owa_funnelFilterDimension', 'operator' => 'owa_funnelFilterOperator',
+                    'value' => 'owa_funnelFilterValue', 'addFilter' => 'owa_funnelFilterAdd',
+                    'cancel' => 'owa_funnelFilterCancel', 'label' => 'owa_funnelFiltersLabel',
+                );
+                include( 'filter_pills.php' );
             ?>
-            <?php foreach ( $owa_otherErrors as $owa_otherError ):?>
-            <span class="validation_error"><?php $view->out( $owa_otherError );?></span>
-            <?php endforeach;?>
-        </div>
+            <p class="owa_builderHelp">A filter applies to every step.</p>
+            <?php if ( ! empty( $owa_errors['constraints'] ) ):?>
+            <p class="validation_error"><?php $view->out( $owa_errors['constraints'] );?></p>
+            <?php endif;?>
+        </section>
+
+        <section class="owa_funnelPreview" aria-labelledby="owa_funnelPreviewHeading">
+            <h2 id="owa_funnelPreviewHeading">Preview</h2>
+            <p class="owa_funnelPreviewNote">Sessions that reached each step, in order, last 30 days.</p>
+            <div id="owa_funnelPreview" aria-live="polite"></div>
+        </section>
     </div>
 
-    <?php echo $view->createNonceFormField('base.visualizationSave');?>
-    <input type="hidden" name="<?php echo $view->getNs();?>visualizationId" value="<?php $view->out( $view->visualizationId ?? '' );?>">
-    <?php
-        /*
-         * WHICH PROPERTY, carried by the form.
-         *
-         * The action is built with makeLink(), which does not add state unless
-         * asked -- so without this the save receives no scope and redirects to
-         * the funnel without one, which then reports on whichever Property the
-         * reader looked at last.
-         *
-         * Unprefixed, like the custom report builder's, because that is the
-         * name its save reads.
-         */
-    ?>
-    <input type="hidden" name="propertyId" value="<?php $view->out( $view->get('propertyId') );?>">
-    <input class="owa-button" type="submit" id="owa_visualizationSubmit"
-           name="<?php echo $view->getNs();?>submit_btn" value="Save Visualization">
-
-    <?php
-        /*
-         * Why Save is unavailable. Written by the script below; the server
-         * validates the same rules either way, so a browser running none of
-         * this still saves and is still refused with a reason.
-         */
-    ?>
-    <span id="owa_visualizationBlocker" class="owa_builderBlocker" style="display:none;"></span>
+    <?php // One blank step, for Add a step to copy. ?>
+    <template id="owa_funnelStepTemplate">
+        <?php
+            $owa_step = array(); $owa_stepNo = 0; $owa_stepGoal = ''; $owa_stepErrors = array();
+            include( 'visualization_edit_step.php' );
+        ?>
+    </template>
 </form>
 
-<?php if ( ! empty( $owa_v['id'] ) ):?>
-<div class="owa_dangerZone">
-    <div class="owa_dangerZoneTitle">Delete this visualization</div>
-    <div class="owa_dangerZoneBody">
-        It is removed from the Visualizations list. The events it counted are not affected.
-    </div>
-    <form method="post"
-          action="<?php echo $view->makeLink( array( 'do' => 'base.customReportDelete' ) );?>">
-        <?php echo $view->createNonceFormField('base.customReportDelete');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>customReportId" value="<?php $view->out( $owa_v['id'] );?>">
-        <?php /* And the same for delete, which redirects to a roster -- and a
-                 roster with no site has no left-hand nav at all. */ ?>
-        <input type="hidden" name="propertyId" value="<?php $view->out( $view->get('propertyId') );?>">
-        <input class="owa-button owa-button-danger" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Delete Visualization"
+<?php if ( $owa_id ):?>
+<div class="owa_editorFoot">
+    <form method="post" action="<?php echo $view->makeLink( array( 'do' => 'base.customReportDelete' ) );?>">
+        <?php echo $view->createNonceFormField( 'base.customReportDelete' );?>
+        <input type="hidden" name="<?php echo $view->getNs();?>customReportId" value="<?php $view->out( $owa_id );?>">
+        <?php // A roster with no Property has no navigation, so the Property goes along. ?>
+        <input type="hidden" name="propertyId" value="<?php $view->out( $view->get( 'propertyId' ) );?>">
+        <input class="owa_builderDelete" type="submit"
+               name="<?php echo $view->getNs();?>submit_btn" value="Delete this funnel"
                data-owa-confirm
-               data-owa-confirm-title="Delete this visualization?"
+               data-owa-confirm-title="Delete this funnel?"
                data-owa-confirm-body="&ldquo;<?php $view->out( $owa_v['name'] ?? '' );?>&rdquo; disappears from the list. Nothing it counted is removed."
-               data-owa-confirm-proceed="Delete visualization">
+               data-owa-confirm-proceed="Delete funnel">
     </form>
 </div>
 <?php endif;?>
@@ -251,110 +175,89 @@ and where they left.</div>
 <script>
 jQuery( function () {
 
-    /*
-     * Show the field the chosen kind needs, and only that one.
-     *
-     * Both are rendered so the form works with no JavaScript at all -- the save
-     * reads the KIND and ignores the other field, so a browser that runs none
-     * of this still saves the right thing. This only stops the reader being
-     * asked for two answers when one is wanted.
-     */
-    function syncStep( row ) {
+    var MAX_STEPS   = <?php echo (int) ( $view->maxSteps ?: 10 );?>;
+    var DIMENSIONS  = <?php echo json_encode( array_values( (array) $view->dimensionChoices ) );?>;
+    var PREVIEW_URL = <?php echo json_encode( $view->makeLink( array(
+        'do'          => 'base.visualizationPreview',
+        'period'      => 'last_thirty_days',
+        'funnelScope' => 'session',
+    ), true ) );?>;
 
-        var kind = jQuery( row ).find( '.owa_funnelStepKind' ).val();
+    var $list = jQuery( '#owa_goalEventFunnel' );
 
-        jQuery( row ).find( '.owa_funnelStepPath' ).toggle( kind !== 'goal_event' );
-        jQuery( row ).find( '.owa_funnelStepGoal' ).toggle( kind === 'goal_event' );
+    var filters = new OWA.filterPills( {
+        pills: 'owa_funnelFilters', add: 'owa_funnelAddFilter', form: 'owa_funnelFilterForm',
+        dimension: 'owa_funnelFilterDimension', operator: 'owa_funnelFilterOperator',
+        value: 'owa_funnelFilterValue', addFilter: 'owa_funnelFilterAdd', cancel: 'owa_funnelFilterCancel'
+    }, DIMENSIONS, function () {
+        jQuery( '#owa_funnelConstraints' ).val( filters.get() );
+        refresh();
+    } );
+
+    filters.set( jQuery( '#owa_funnelConstraints' ).val() );
+
+    function rows() {
+        return $list.children( '.owa_funnelStep' );
     }
 
-    // Delegated, because the + button clones a row at runtime and a per-row
-    // binding would cover only the rows present at load.
-    jQuery( document ).on( 'change', '.owa_funnelStepKind', function () {
-
-        syncStep( jQuery( this ).closest( '.constraintRow' ) );
-    } );
-
-    jQuery( document ).on( 'click keypress', '#owa_goalEventFunnel .constraintAddButton',
-        function () {
-
-            // After the clone, not before: the new row is inserted by the
-            // repeatable-list handler bound on the same event.
-            window.setTimeout( function () {
-
-                jQuery( '#owa_goalEventFunnel .constraintRow' ).each( function () {
-
-                    syncStep( this );
-                } );
-            }, 0 );
-        } );
-
-    jQuery( '#owa_goalEventFunnel .constraintRow' ).each( function () {
-
-        syncStep( this );
-    } );
-
-    /*
-     * The same rules VisualizationSave::validate() applies, checked before the
-     * round trip rather than instead of it.
-     *
-     * A row left entirely blank is ignored, here and there -- the form always
-     * carries one, and the description says so. A row with anything in it has
-     * to be complete.
-     */
-    var MAX_STEPS = <?php echo (int) ( $view->maxSteps ?: 10 ); ?>;
-
-    /** One step row read off its controls. */
     function readStep( row ) {
 
         var $row = jQuery( row );
 
         return {
-            name: jQuery.trim( $row.find( '.owa_funnelStepName' ).val() || '' ),
-            kind: $row.find( '.owa_funnelStepKind' ).val() || 'path',
-            path: jQuery.trim( $row.find( '.owa_funnelStepPath' ).val() || '' ),
-            goal: $row.find( '.owa_funnelStepGoal' ).val() || ''
+            kind:          $row.find( '.owa_funnelStepKind' ).val() || 'path',
+            path:          jQuery.trim( $row.find( '.owa_funnelStepPath' ).val() || '' ),
+            goal_event_id: $row.find( '.owa_funnelStepGoal' ).val() || '',
+            name:          $row.find( '.owa_funnelStepName' ).val() || ''
         };
     }
 
-    /** Why this funnel cannot be saved yet, or '' if it can. */
-    function visualizationBlocker() {
+    function valueOf( step ) {
+        return step.kind === 'goal_event' ? step.goal_event_id : step.path;
+    }
 
-        if ( ! jQuery.trim( jQuery( 'input[name$="name"]' ).not( '[type=hidden]' ).first().val() || '' ) ) {
-            return 'Give the visualization a name.';
+    /** Numbers, labels and the page/event field each row shows, after any change to the list. */
+    function syncRows() {
+
+        rows().each( function ( i ) {
+
+            var $row = jQuery( this );
+            var n    = i + 1;
+            var goal = $row.find( '.owa_funnelStepKind' ).val() === 'goal_event';
+
+            $row.find( '.owa_funnelStepNumber' ).text( n );
+            $row.find( '.owa_funnelStepPath' ).toggle( ! goal ).attr( 'aria-label', 'Page path of step ' + n );
+            $row.find( '.owa_funnelStepGoal' ).toggle( goal ).attr( 'aria-label', 'Goal event of step ' + n );
+            $row.find( '.owa_funnelStepKind' ).attr( 'aria-label', 'What step ' + n + ' matches' );
+            $row.find( '.owa_builderMove' ).attr( 'aria-label', 'Move step ' + n );
+            $row.find( '.owa_funnelStepRemove' ).attr( 'aria-label', 'Remove step ' + n );
+        } );
+
+        jQuery( '#owa_funnelAddStep' ).prop( 'disabled', rows().length >= MAX_STEPS );
+    }
+
+    /** Why Save will not go, or ''. The same rules VisualizationSave::validate() applies. */
+    function blocker() {
+
+        if ( ! jQuery.trim( jQuery( '#owa_funnelName' ).val() || '' ) ) {
+            return 'Give the funnel a name.';
         }
 
-        var rows    = jQuery( '#owa_goalEventFunnel .constraintRow' );
-        var problem = '';
         var kept    = 0;
+        var problem = '';
 
-        rows.each( function ( i ) {
+        rows().each( function ( i ) {
 
-            var step  = readStep( this );
-            var value = step.kind === 'goal_event' ? step.goal : step.path;
+            var step = readStep( this );
 
-            // Untouched, so not a mistake.
-            if ( ! step.name && ! value ) {
+            if ( ! valueOf( step ) ) {
                 return;
             }
 
             kept++;
 
-            if ( problem ) {
-                return;
-            }
-
-            if ( ! step.name ) {
-                problem = 'Step ' + ( i + 1 ) + ' has no name.';
-
-            } else if ( ! value ) {
-                problem = step.kind === 'goal_event'
-                    ? 'Step ' + ( i + 1 ) + ' has no goal event.'
-                    : 'Step ' + ( i + 1 ) + ' has no path.';
-
-            } else if ( step.kind !== 'goal_event' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( step.path ) ) {
-                // Matched on the path alone, so a full address matches nothing.
-                problem = 'Step ' + ( i + 1 ) + ' needs a path, such as /basket, not a full '
-                        + 'web address.';
+            if ( ! problem && step.kind !== 'goal_event' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( step.path ) ) {
+                problem = 'Step ' + ( i + 1 ) + ' needs a path, such as /basket, not a full web address.';
             }
         } );
 
@@ -366,44 +269,306 @@ jQuery( function () {
             return 'Add at least one step.';
         }
 
-        if ( kept > MAX_STEPS ) {
-            return 'A funnel can have at most ' + MAX_STEPS + ' steps; this one has ' + kept + '.';
+        return filters.problem();
+    }
+
+    function refresh() {
+
+        var problem = blocker();
+
+        jQuery( '#owa_visualizationSubmit' ).prop( 'disabled', !! problem ).attr( 'title', problem );
+        jQuery( '#owa_visualizationBlocker' ).text( problem ).toggle( !! problem );
+
+        schedulePreview();
+    }
+
+    // ---- the preview ------------------------------------------------------
+
+    var previewTimer   = null;
+    var previewRequest = null;
+    var previewAsked   = '';
+
+    function schedulePreview() {
+
+        window.clearTimeout( previewTimer );
+        previewTimer = window.setTimeout( preview, 400 );
+    }
+
+    function previewMessage( text ) {
+        jQuery( '#owa_funnelPreview' ).empty()
+            .append( jQuery( '<p class="owa_funnelPreviewEmpty">' ).text( text ) );
+    }
+
+    function preview() {
+
+        var steps = [];
+        var bad   = false;
+
+        rows().each( function () {
+
+            var step = readStep( this );
+
+            if ( ! valueOf( step ) ) {
+                return;
+            }
+
+            if ( step.kind !== 'goal_event' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( step.path ) ) {
+                bad = true;
+            }
+
+            steps.push( step );
+        } );
+
+        if ( ! steps.length ) {
+            previewAsked = '';
+            previewMessage( 'Add a step to see how many sessions reach it.' );
+            return;
         }
 
-        return '';
+        if ( bad ) {
+            return;
+        }
+
+        var url = PREVIEW_URL
+            + '&' + OWA.util.appNs( 'steps' ) + '=' + encodeURIComponent( JSON.stringify( steps ) )
+            + '&' + OWA.util.appNs( 'funnelFilter' ) + '=' + encodeURIComponent( filters.get() );
+
+        // Nothing it counts has changed.
+        if ( url === previewAsked ) {
+            return;
+        }
+
+        previewAsked = url;
+
+        if ( previewRequest ) {
+            previewRequest.abort();
+        }
+
+        jQuery( '#owa_funnelPreview' ).addClass( 'is-loading' );
+
+        previewRequest = jQuery.getJSON( url )
+            .done( function ( answer ) {
+
+                if ( answer && answer.error ) {
+                    previewMessage( answer.error );
+                    return;
+                }
+
+                drawPreview( ( ( answer && answer.data ) || {} ).steps || [] );
+            } )
+            .fail( function ( xhr, status ) {
+
+                if ( status !== 'abort' ) {
+                    previewAsked = '';
+                    previewMessage( 'The preview could not be counted.' );
+                }
+            } )
+            .always( function () {
+                jQuery( '#owa_funnelPreview' ).removeClass( 'is-loading' );
+            } );
     }
 
-    function refreshVisualizationState() {
-
-        var blocker = visualizationBlocker();
-
-        jQuery( '#owa_visualizationSubmit' )
-            .prop( 'disabled', !! blocker )
-            .attr( 'title', blocker );
-
-        jQuery( '#owa_visualizationBlocker' ).text( blocker ).toggle( !! blocker );
+    function percent( part, whole ) {
+        return whole > 0 ? ( Math.round( part / whole * 1000 ) / 10 ).toFixed( 1 ) + '%' : '0%';
     }
 
-    /*
-     * Delegated: the + button clones rows at runtime, so binding to the rows
-     * that exist now would miss every one added afterwards.
-     */
-    jQuery( document ).on( 'input change click',
-        '#owa_goalEventFunnel, input[name$="name"]', refreshVisualizationState );
+    function drawPreview( steps ) {
 
-    jQuery( 'form[name=owa_visualization]' ).on( 'submit', function ( e ) {
+        var $box  = jQuery( '#owa_funnelPreview' ).empty();
+        var first = steps.length ? steps[0].reached : 0;
 
-        // Enter in a text field submits whether or not there is a button to
-        // press, so the disabled button is not the whole guard.
-        if ( visualizationBlocker() ) {
+        if ( ! steps.length ) {
+            previewMessage( 'These steps could not be counted.' );
+            return;
+        }
+
+        var $list = jQuery( '<ol class="owa_funnelPreviewSteps">' );
+
+        steps.forEach( function ( step, i ) {
+
+            var $count = jQuery( '<span class="owa_funnelPreviewCount">' )
+                .append( jQuery( '<b>' ).text( step.reached.toLocaleString() ) );
+
+            if ( i > 0 ) {
+                $count.append( jQuery( '<span class="owa_funnelPreviewRate">' )
+                    .text( ' · ' + percent( step.reached, steps[ i - 1 ].reached ) + ' continued' ) );
+            }
+
+            $list.append( jQuery( '<li class="owa_funnelPreviewStep">' )
+                .append( jQuery( '<span class="owa_funnelPreviewHead">' )
+                    .append( jQuery( '<span class="owa_funnelPreviewName">' )
+                        .append( jQuery( '<span class="owa_funnelPreviewNumber">' ).text( i + 1 ) )
+                        .append( document.createTextNode( ' ' + step.name ) ) )
+                    .append( $count ) )
+                .append( jQuery( '<span class="owa_funnelPreviewBar" aria-hidden="true">' )
+                    .append( jQuery( '<span class="owa_funnelPreviewFill">' )
+                        .css( 'width', ( first > 0 ? step.reached / first * 100 : 0 ).toFixed( 1 ) + '%' ) ) ) );
+        } );
+
+        $box.append( $list );
+
+        if ( steps.length > 1 ) {
+
+            var last = steps[ steps.length - 1 ];
+
+            $box.append( jQuery( '<p class="owa_funnelPreviewSummary">' )
+                .append( jQuery( '<b>' ).text( percent( last.reached, first ) ) )
+                .append( document.createTextNode( ' of sessions that reached ' + steps[0].name
+                    + ' went on to reach ' + last.name + '.' ) ) );
+        }
+    }
+
+    // ---- the steps --------------------------------------------------------
+
+    function addStep() {
+
+        if ( rows().length >= MAX_STEPS ) {
+            return;
+        }
+
+        var $row = jQuery( jQuery( '#owa_funnelStepTemplate' ).html() );
+
+        $list.append( $row );
+        syncRows();
+        refresh();
+
+        $row.find( '.owa_funnelStepPath' ).trigger( 'focus' );
+    }
+
+    function moveStep( from, to ) {
+
+        var $rows = rows();
+
+        if ( from === to || to < 0 || to >= $rows.length ) {
+            return false;
+        }
+
+        var $moved = $rows.eq( from ).detach();
+
+        if ( to >= rows().length ) {
+            $list.append( $moved );
+        } else {
+            rows().eq( to ).before( $moved );
+        }
+
+        syncRows();
+        refresh();
+
+        return true;
+    }
+
+    jQuery( '#owa_funnelAddStep' ).on( 'click', addStep );
+
+    $list
+        .on( 'change', '.owa_funnelStepKind', function () {
+
+            // A different kind of step is a different step: its old name goes.
+            jQuery( this ).closest( '.owa_funnelStep' ).find( '.owa_funnelStepName' ).val( '' );
+            syncRows();
+            refresh();
+        } )
+        .on( 'input change', '.owa_funnelStepPath, .owa_funnelStepGoal', function () {
+            jQuery( this ).closest( '.owa_funnelStep' ).find( '.owa_funnelStepName' ).val( '' );
+            refresh();
+        } )
+        .on( 'click', '.owa_funnelStepRemove', function () {
+
+            var at = jQuery( this ).closest( '.owa_funnelStep' ).index();
+
+            jQuery( this ).closest( '.owa_funnelStep' ).remove();
+
+            if ( ! rows().length ) {
+                addStep();
+                return;
+            }
+
+            syncRows();
+            refresh();
+
+            rows().eq( Math.min( at, rows().length - 1 ) ).find( '.owa_funnelStepRemove' ).trigger( 'focus' );
+        } )
+
+        // Moving a step: its handle and the arrow keys...
+        .on( 'keydown', '.owa_builderMove', function ( e ) {
+
+            var step = { 37: -1, 38: -1, 39: 1, 40: 1 }[ e.which ];
+
+            if ( ! step ) {
+                return;
+            }
 
             e.preventDefault();
-            refreshVisualizationState();
 
+            var from = jQuery( this ).closest( '.owa_funnelStep' ).index();
+
+            if ( moveStep( from, from + step ) ) {
+                rows().eq( from + step ).find( '.owa_builderMove' ).trigger( 'focus' );
+                jQuery( '#owa_funnelMoved' ).text( 'Step moved to position ' + ( from + step + 1 ) + ' of ' + rows().length + '.' );
+            }
+        } )
+
+        /*
+         * ...or dragging a step onto another: it takes that step's place.
+         * Draggable only while its handle is held, so the text in its field
+         * can still be selected.
+         */
+        .on( 'mousedown', '.owa_builderMove', function () {
+            jQuery( this ).closest( '.owa_funnelStep' ).attr( 'draggable', 'true' );
+        } )
+        .on( 'mouseup', '.owa_builderMove', function () {
+            jQuery( this ).closest( '.owa_funnelStep' ).removeAttr( 'draggable' );
+        } )
+        .on( 'dragstart', '.owa_funnelStep', function ( e ) {
+
+            dragFrom = jQuery( this ).index();
+
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+            e.originalEvent.dataTransfer.setData( 'text/plain', String( dragFrom ) );
+
+            jQuery( this ).addClass( 'is-dragging' );
+        } )
+        .on( 'dragover', '.owa_funnelStep', function ( e ) {
+
+            if ( dragFrom === null ) {
+                return;
+            }
+
+            e.preventDefault();
+            rows().removeClass( 'is-dropTarget' );
+            jQuery( this ).not( '.is-dragging' ).addClass( 'is-dropTarget' );
+        } )
+        .on( 'drop', '.owa_funnelStep', function ( e ) {
+
+            e.preventDefault();
+
+            if ( dragFrom !== null ) {
+                moveStep( dragFrom, jQuery( this ).index() );
+            }
+
+            dragFrom = null;
+        } )
+        .on( 'dragend', '.owa_funnelStep', function () {
+            dragFrom = null;
+            rows().removeClass( 'is-dragging is-dropTarget' ).removeAttr( 'draggable' );
+        } );
+
+    var dragFrom = null;
+
+    jQuery( '#owa_funnelName' ).on( 'input', refresh );
+
+    jQuery( '#owa_funnelForm' ).on( 'submit', function ( e ) {
+
+        jQuery( '#owa_funnelConstraints' ).val( filters.get() );
+
+        if ( blocker() ) {
+            e.preventDefault();
+            refresh();
             return false;
         }
     } );
 
-    refreshVisualizationState();
+    syncRows();
+    refresh();
 } );
 </script>
+<p id="owa_funnelMoved" class="owa_srOnly" aria-live="polite"></p>

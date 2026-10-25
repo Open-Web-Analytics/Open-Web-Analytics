@@ -200,6 +200,27 @@ For module authors:
 - A `ReportController` can call `hideReportHead()` to leave out the title row,
   for a screen whose own header is its title.
 
+### The funnel builder: steps, a filter and a live preview
+
+The funnel builder has the report editor's header (name, Shared, Cancel / Save).
+A step is "Page is" a path or "Event is" a goal event, and steps move by
+dragging or with the arrow keys. A step's name is no longer asked for: a step
+with none is named for its page or goal event, and a stored name is kept while
+its step is unchanged. A funnel may carry its own filter, which applies to every
+step under any filter its reader adds, and the funnel says so. A preview beside
+the steps counts the funnel as it stands over the last 30 days.
+
+A funnel opened with no period on its URL is now counted over the default
+reporting period that its header names. With a filter it failed with a server
+error, and without one it counted all time.
+
+For module and template authors:
+
+- A funnel definition may hold `constraints`, in the format a widget's take.
+- `OWA.filterPills` (with the `filter_pills.php` markup) is the Filter button,
+  pills and form both builders use.
+- `base.visualizationPreview` answers the counts for steps sent to it, as JSON.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

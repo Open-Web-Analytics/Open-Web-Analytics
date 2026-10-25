@@ -133,6 +133,15 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          * cannot offer a step the save then refuses.
          */
         $this->set( 'maxSteps', \OWA\Module\Base\Controller\VisualizationSave::MAX_STEPS );
+
+        /*
+         * The funnel's filter: as posted when a save was refused, else as
+         * stored. What it may filter on is what a widget's filter may.
+         */
+        $this->set( 'constraints', $this->getParam( 'name' ) !== null
+            ? (string) $this->getParam( 'constraints' )
+            : (string) ( $definition['constraints'] ?? '' ) );
+        $this->set( 'dimensionChoices', CustomReportEdit::dimensionChoices() );
     }
 
     /**
@@ -217,10 +226,13 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
         $this->setSubview( 'base.visualizationEdit' );
         $this->setView( 'base.report' );
-        $this->set( 'title', $this->get( 'visualizationId' ) ? 'Visualization' : 'New Visualization' );
+        $this->set( 'title', $this->get( 'visualizationId' ) ? 'Funnel' : 'New funnel' );
 
         /* A form is not a report of a time range. */
         $this->hideTimeControls();
         $this->hideSitesFilter();
+
+        // The name field, Shared and Save are the screen's header.
+        $this->hideReportHead();
     }
 }

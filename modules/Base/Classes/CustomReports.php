@@ -1463,7 +1463,77 @@ class CustomReports {
      */
     private static function validateConstraints( array $widget, $where ) {
 
-        $constraints = isset( $widget['constraints'] ) ? $widget['constraints'] : '';
+        return self::constraintsProblem(
+            isset( $widget['constraints'] ) ? $widget['constraints'] : '', $where );
+    }
+
+    /** How a filter's condition reads, by its operator. See owa.filterpills.js. */
+    const CONSTRAINT_WORDS = array(
+        '!=(not set)' => 'is set',
+        '==(not set)' => 'is not set',
+        '=='          => 'is',
+        '!='          => 'is not',
+        '=@'          => 'contains',
+        '>'           => 'is greater than',
+        '<'           => 'is less than',
+    );
+
+    /**
+     * A constraints string in words, a clause each: "Page Path contains /blog/".
+     * A clause that does not parse is given as written.
+     *
+     * @param  string $constraints
+     * @return array
+     */
+    public static function constraintsInWords( $constraints ) {
+
+        $labels = array_column(
+            \OWA\Module\Base\Controller\CustomReportEdit::dimensionChoices(), 'label', 'name' );
+
+        $out = array();
+
+        foreach ( self::asNames( $constraints ) as $clause ) {
+
+            $words = $clause;
+
+            foreach ( self::constraintOperators() as $operator ) {
+
+                $at = strpos( $clause, $operator );
+
+                if ( $at > 0 ) {
+
+                    $name  = trim( substr( $clause, 0, $at ) );
+                    $value = trim( substr( $clause, $at + strlen( $operator ) ) );
+                    $label = $labels[ $name ] ?? $name;
+
+                    if ( isset( self::CONSTRAINT_WORDS[ $operator . $value ] ) ) {
+
+                        $words = $label . ' ' . self::CONSTRAINT_WORDS[ $operator . $value ];
+
+                    } else {
+
+                        $words = $label . ' ' . ( self::CONSTRAINT_WORDS[ $operator ] ?? $operator ) . ' ' . $value;
+                    }
+
+                    break;
+                }
+            }
+
+            $out[] = $words;
+        }
+
+        return $out;
+    }
+
+    /**
+     * What is wrong with a constraints string, or ''. The check a widget's
+     * constraints get, for anything else that stores them -- a funnel's filter.
+     *
+     * @param mixed  $constraints
+     * @param string $where human-readable position, for the message
+     * @return string
+     */
+    public static function constraintsProblem( $constraints, $where ) {
 
         if ( ! is_string( $constraints ) || trim( $constraints ) === '' ) {
 
