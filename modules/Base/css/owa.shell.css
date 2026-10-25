@@ -22,9 +22,17 @@
     padding: 0;
 }
 
+/*
+ * The rail and the column carry a width as well as a flex basis. They sit in a
+ * table cell sized to its content (report.php, options_hierarchy.php), and
+ * Safari and Firefox size that cell from the content's widths, not its flex
+ * bases: the cell came out narrower than the column, and the page drew over it.
+ */
+
 /* The rail. */
 .owa_rail {
     flex: 0 0 88px;
+    width: 88px;
     box-sizing: border-box;
     padding: 20px 0;
     border-right: 1px solid #eef0f3;
@@ -116,6 +124,7 @@
 /* The column. */
 .owa_navColumn {
     flex: 0 0 248px;
+    width: 248px;
     box-sizing: border-box;
     padding: 24px 12px;
     border-right: 1px solid #eef0f3;
@@ -209,6 +218,7 @@
 /* Hidden, the column keeps only its chevron, turned to point back out. */
 .owa_navShell.is-collapsed .owa_navColumn {
     flex-basis: 48px;
+    width: 48px;
     padding: 24px 8px;
     overflow: hidden;
 }
@@ -267,6 +277,7 @@
 
     .owa_navShell.is-collapsed .owa_navColumn {
         flex-basis: 248px;
+        width: 248px;
         padding: 24px 12px;
         overflow-y: auto;
     }
@@ -291,6 +302,7 @@
     .owa_navColumn,
     .owa_navShell.is-collapsed .owa_navColumn {
         flex: 1 1 auto;
+        width: auto;
     }
 }
 
