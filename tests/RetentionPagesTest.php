@@ -114,6 +114,37 @@ final class RetentionPagesTest extends TestCase
         }
     }
 
+    /**
+     * A number field that says what blank means is wide enough to say it. At
+     * the browser's width "Same as event data" read "Same" until the field
+     * was clicked. Measured roughly: about 0.55em a character, and 3em for the
+     * padding and the spinner.
+     */
+    public function testANumberFieldIsWideEnoughForWhatBlankMeans(): void
+    {
+        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+
+        $this->assertMatchesRegularExpression(
+            '/#panel input\[type="number"\]\[placeholder\] \{\s*width: (\d+)em;/', $css );
+
+        preg_match( '/#panel input\[type="number"\]\[placeholder\] \{\s*width: (\d+)em;/', $css, $width );
+
+        $blanks = array();
+
+        foreach ( (array) glob( OWA_DIR . 'modules/*/settings.php' ) as $file ) {
+
+            preg_match_all( "/'blank'\s*=>\s*'([^']*)'/", (string) file_get_contents( $file ), $found );
+            $blanks = array_merge( $blanks, $found[1] );
+        }
+
+        $this->assertContains( 'Same as event data', $blanks, 'the declarations this reads have moved' );
+
+        foreach ( $blanks as $blank ) {
+            $this->assertLessThanOrEqual( (int) $width[1], strlen( $blank ) * 0.55 + 3,
+                sprintf( '"%s" does not fit a %sem field', $blank, $width[1] ) );
+        }
+    }
+
     /** The Property tier of the settings nav links its Data Retention page, for administrators only. */
     public function testThePropertyNavLinksThePage(): void
     {
