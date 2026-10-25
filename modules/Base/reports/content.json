@@ -22,7 +22,7 @@
             "colspan": 6,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "pageTitle",
+                "dimensions": "pagePath",
                 "sort": "sessions-"
             },
             "more": {
