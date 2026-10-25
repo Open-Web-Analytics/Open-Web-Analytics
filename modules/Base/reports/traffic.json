@@ -23,7 +23,7 @@
             "colspan": 6,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "landingPageTitle",
+                "dimensions": "landingPage",
                 "sort": "sessions-"
             },
             "more": {

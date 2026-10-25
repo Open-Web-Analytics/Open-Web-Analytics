@@ -17,7 +17,7 @@
             "container": "dimension-grid",
             "query": {
                 "metrics": "pageViews,exits,exitRate",
-                "dimensions": "pagePath,pageTitle",
+                "dimensions": "pagePath",
                 "sort": "exits-",
                 "resultsPerPage": 30
             },

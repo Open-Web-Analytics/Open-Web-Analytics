@@ -292,4 +292,46 @@ final class NavShellTest extends TestCase
         $this->assertSame( 'Events', end( $labels ) );
     }
 
+    /**
+     * Every fixed flex basis the rail and column are given comes with the
+     * same width. The nav sits in a table cell sized to its content, and
+     * Safari and Firefox size that cell from widths, not flex bases: with a
+     * basis alone the cell was narrower than the column and the settings page
+     * drew over it. CI's Chromium lays it out either way, so this is checked
+     * on the stylesheet.
+     */
+    public function testTheRailAndColumnHaveTheWidthOfTheirFlexBasis(): void
+    {
+        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.shell.css' );
+        $css = preg_replace( '#/\*.*?\*/#s', '', $css );
+
+        preg_match_all( '/([^{}]+)\{([^{}]*)\}/', $css, $rules, PREG_SET_ORDER );
+
+        $checked = 0;
+        $missing = array();
+
+        foreach ( $rules as $rule ) {
+
+            $selector = trim( $rule[1] );
+
+            if ( ! preg_match( '/\.owa_(rail|navColumn)(?![A-Za-z])/', $selector ) ) {
+                continue;
+            }
+
+            if ( ! preg_match( '/flex(?:-basis)?:\s*(?:0 0 )?(\d+px)\s*;/', $rule[2], $basis ) ) {
+                continue;
+            }
+
+            $checked++;
+
+            if ( ! preg_match( '/(?<![-\w])width:\s*' . preg_quote( $basis[1], '/' ) . '\s*;/', $rule[2] ) ) {
+                $missing[] = $selector . ' (' . $basis[1] . ')';
+            }
+        }
+
+        // The rail, the column, the hidden column, and the hidden column on a narrow screen.
+        $this->assertSame( 4, $checked, 'the rules this reads have moved' );
+        $this->assertSame( array(), $missing, 'a flex basis with no width: ' . implode( ', ', $missing ) );
+    }
+
 }

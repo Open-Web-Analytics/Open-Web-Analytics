@@ -3820,10 +3820,25 @@ li.constraintRow {
 }
 
 .owa_hierarchyContent #panel input[type="text"],
-.owa_hierarchyContent #panel input[type="password"] {
+.owa_hierarchyContent #panel input[type="password"],
+.owa_hierarchyContent #panel input[type="number"] {
     border: 1px solid #cccccc;
     padding: 6px 8px;
     font-size: var(--owa-text-md);
+}
+
+/*
+ * A number field is as wide as a number, unless its placeholder says what
+ * leaving it blank means ("Same as event data"): the browser's width cut that
+ * to "Same".
+ */
+.owa_hierarchyContent #panel input[type="number"] {
+    box-sizing: border-box;
+    width: 8em;
+}
+
+.owa_hierarchyContent #panel input[type="number"][placeholder] {
+    width: 16em;
 }
 
 /*
@@ -3846,7 +3861,8 @@ li.constraintRow {
 }
 
 .owa_hierarchyContent #panel input[type="text"]:focus,
-.owa_hierarchyContent #panel input[type="password"]:focus {
+.owa_hierarchyContent #panel input[type="password"]:focus,
+.owa_hierarchyContent #panel input[type="number"]:focus {
     border-color: #a0a0a0;
     outline: none;
 }
