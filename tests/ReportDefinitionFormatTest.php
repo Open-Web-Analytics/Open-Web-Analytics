@@ -819,6 +819,80 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertArrayNotHasKey( 'definitely-not-a-report', $registry );
     }
 
+    /**
+     * A card's "View Full Report" opens a report whose table groups by what
+     * the card groups by, so a row on the card is a row in the report with
+     * the same count. The Traffic card grouped entry pages by title and the
+     * report by path and title: "California Photos 40" on the card was a
+     * dozen paginated pages in the report, and "/" was split by title.
+     */
+    public function testACardsFullReportGroupsByWhatTheCardDoes(): void
+    {
+        /*
+         * Cards whose report is deliberately finer or is not counts at all.
+         * Each says why; a new card does not belong here without one.
+         */
+        $finer = array(
+            // Pages splits a path by query string, so /?p=3497 is not the home page.
+            'content.toppages'          => 'pages',
+            'dashboard.topContent'      => 'pages',
+            // The report breaks an element's clicks down by the page it is on.
+            'content.clickedelements'   => 'clicks',
+            // countryCode is one per country: it adds the flag, not rows.
+            'traffic.countries'         => 'geolocation',
+            // A list of visits, not a count by anything.
+            'dashboard.latestVisits'    => 'latest-visits',
+        );
+
+        $reports = array();
+
+        foreach ( (array) glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+
+            $reports[ basename( $file, '.json' ) ] = json_decode( (string) file_get_contents( $file ), true );
+        }
+
+        $differ  = array();
+        $checked = 0;
+
+        foreach ( $reports as $name => $definition ) {
+
+            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+                $target = $widget['more']['reportId'] ?? '';
+
+                if ( $target === '' || ! isset( $reports[ $target ] ) ) {
+                    continue;
+                }
+
+                $card = $name . '.' . ( $widget['id'] ?? '' );
+
+                if ( ( $finer[ $card ] ?? '' ) === $target ) {
+                    continue;
+                }
+
+                $checked++;
+
+                $grids = array_filter( (array) ( $reports[ $target ]['widgets'] ?? array() ),
+                    static function ( $w ) { return ( $w['type'] ?? '' ) === 'grid'; } );
+
+                $groups = array_map( static function ( $w ) {
+                    return (string) ( $w['query']['dimensions'] ?? '' );
+                }, $grids );
+
+                if ( ! in_array( (string) ( $widget['query']['dimensions'] ?? '' ), $groups, true ) ) {
+
+                    $differ[] = sprintf( '%s by %s -> %s by %s', $card,
+                        $widget['query']['dimensions'] ?? '(none)', $target, implode( ' / ', $groups ) );
+                }
+            }
+        }
+
+        $this->assertGreaterThan( 5, $checked, 'too few cards checked for this to prove anything' );
+
+        $this->assertSame( array(), $differ,
+            'these cards count different rows from the report they open: ' . implode( '; ', $differ ) );
+    }
+
     // ------------------------------------------------------------------
     // The trend card
     // ------------------------------------------------------------------
