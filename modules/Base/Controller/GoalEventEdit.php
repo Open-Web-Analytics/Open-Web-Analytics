@@ -64,7 +64,6 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $propertyId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_tier', 2 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.goalEventEdit' );

@@ -99,7 +99,6 @@ class SitesEditSettings extends \OWA\Core\AdminController {
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
-        $this->set( 'hierarchy_tier', 3 );
         $this->setView('base.optionsHierarchy');
         $this->setSubview('base.sitesProfile');
         /*

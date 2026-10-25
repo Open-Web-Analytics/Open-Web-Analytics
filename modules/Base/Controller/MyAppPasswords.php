@@ -42,8 +42,6 @@ class MyAppPasswords extends \OWA\Core\AdminController {
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
-        $this->set( 'hierarchy_tier', 0 );
-        $this->set( 'hierarchy_root_label', 'My Preferences' );
         $this->set( 'siteId', $siteId );
 
         $this->setView( 'base.optionsHierarchy' );

@@ -1150,6 +1150,7 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'events' ), 'Events', 9);
 
         //Traffic
         $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 3, 'view_reports', 'Reports','fa fa-random');

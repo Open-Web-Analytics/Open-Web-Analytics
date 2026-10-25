@@ -85,21 +85,12 @@ class MyProfile extends \OWA\Core\AdminController {
             $this->set( 'my_profile_saved', true );
         }
 
-        /*
-         * The settings chrome, the same way every other screen in that nav
-         * gets it. Tier 0: this is about the person rather than about the
-         * Organization, Property or Profile below it.
-         */
+        // The settings chrome, the same way every other screen in that nav gets it.
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
-        $this->set( 'hierarchy_tier', 0 );
-
-        // Tier 0 because it belongs to no Organization, but it is not an
-        // install-wide setting, so the root crumb says whose screen this is.
-        $this->set( 'hierarchy_root_label', 'My Preferences' );
         $this->set( 'siteId', $siteId );
 
         $this->setView( 'base.optionsHierarchy' );

@@ -3051,7 +3051,8 @@ class CoreAPI {
 
     public static function random($min, $max) {
 
-        static $rnd_value;
+        // A string from the start: strlen() of null is deprecated on PHP 8.1+.
+        static $rnd_value = '';
 
         if ( strlen($rnd_value) < 8 ) {
 

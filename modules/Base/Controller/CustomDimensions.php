@@ -48,7 +48,6 @@ class CustomDimensions extends \OWA\Core\AdminController {
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $property_id ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_tier', 2 );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $property_id ) );
         $this->setView( 'base.optionsHierarchy' );
         $this->setSubview( 'base.customDimensions' );

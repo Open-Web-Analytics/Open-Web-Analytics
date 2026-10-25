@@ -221,6 +221,17 @@ For module and template authors:
   pills and form both builders use.
 - `base.visualizationPreview` answers the counts for steps sent to it, as JSON.
 
+### Settings screens have no breadcrumb, and Events is under Visitors
+
+The line above a settings screen naming its Organization, Property and Profile
+is gone; the Settings column and the Property chooser say where you are. The
+Events report is in the navigation, last under Visitors.
+
+For module authors:
+
+- `hierarchy_tier` and `hierarchy_root_label` are no longer read. A screen that
+  sets them is unaffected.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

@@ -973,58 +973,25 @@ final class PropertyAdminScreensTest extends TestCase
         }
     }
     /**
-     * Every settings screen states its full context on one line.
-     *
-     * The tile says where you are, but it is in the other column, and these
-     * forms change one Property or one Profile -- the tracking id is the only
-     * thing that tells two similarly named Profiles apart. Repeating it above
-     * the heading puts the answer in the same line of sight as the fields.
-     *
-     * It renders only when there is a Profile to name: with just an
-     * Organization there is no path to draw, and a one-item breadcrumb is
-     * noise.
+     * Settings screens draw no breadcrumb: the column and the Property chooser
+     * say where you are. The params fallback stays, because the column reads
+     * the current Property and Profile from them.
      */
-    public function testEachScreenStatesItsFullContext(): void
+    public function testSettingsScreensHaveNoBreadcrumb(): void
     {
-        $crumb = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
-
-        foreach ( array( 'organization', 'properties', 'profiles' ) as $tier ) {
-
-            $this->assertStringContainsString(
-                $tier, $crumb, "The context line does not walk the $tier tier." );
-        }
-
-        /*
-         * Renders whenever there is anything to name. A single crumb is right
-         * at tier 1: on Organization Details the Organization IS the whole
-         * context, and suppressing it would leave that screen the only one
-         * without a context line.
-         */
-        $this->assertStringContainsString(
-            'if ( $owa_crumbs )', $crumb,
-            'The context line should render whenever there is a tier to name.' );
+        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
 
         $wrapper = (string) file_get_contents(
             OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
 
-        $this->assertLessThan(
-            strpos( $wrapper, 'view->subview' ),
-            strpos( $wrapper, 'hierarchy_breadcrumb.php' ),
-            'The context line belongs ABOVE the page heading, not under the form.' );
+        $this->assertStringNotContainsString( 'breadcrumb', $wrapper );
 
-        /*
-         * Most screens set only 'siteId' or 'propertyId', not 'params'.
-         * Requiring each controller to remember both is how one screen ends up
-         * without its context line, so the wrapper falls back.
-         */
         $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
 
+        $this->assertStringNotContainsString( 'hierarchy_tier', $view );
         $this->assertStringContainsString(
             "foreach ( array( 'siteId', 'propertyId' ) as \$key )", $view,
-            'A screen that sets only siteId or propertyId would render no context line.' );
-        $this->assertStringContainsString(
-            "\$params[ \$key ] = \$this->get( \$key );", $view );
+            'A screen that sets only siteId or propertyId would leave the column without its Property.' );
     }
 
     /** One description per screen. */
@@ -1052,56 +1019,6 @@ final class PropertyAdminScreensTest extends TestCase
                 "$template describes itself twice before its first form -- Property Access "
                 . 'carried both the intro and the old inline description.' );
         }
-    }
-    /**
-     * The context line stops at the tier its screen is about.
-     *
-     * Organization Details edits an Organization, so naming a Property and a
-     * Profile under it describes a scope the form does not touch. Property
-     * Access is worse: it edits grants covering EVERY Profile, so trailing one
-     * Profile's id says the opposite of what the screen does.
-     */
-    public function testTheContextLineStopsAtTheScreensTier(): void
-    {
-        $expected = array(
-            'OrganizationProfile' => 1, 'Users'           => 1,
-            'PropertyProfile'     => 2, 'PropertyAccess'  => 2,
-            'SitesProfile'        => 3, 'ProfileSettings' => 3,
-            'SitesInvocation'     => 3, 'GoalEvents'      => 2,
-            'PropertyProfiles'    => 2, 'CustomDimensions' => 2,
-        );
-
-        foreach ( $expected as $controller => $tier ) {
-
-            $src = (string) file_get_contents(
-                OWA_DIR . "modules/Base/Controller/{$controller}.php" );
-
-            $this->assertStringContainsString(
-                "\$this->set( 'hierarchy_tier', {$tier} )", $src,
-                "$controller does not declare its tier, so its context line would claim a "
-                . 'scope its form does not edit.' );
-        }
-
-        $crumb = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
-
-        $this->assertStringContainsString( '$owa_tier >= 2', $crumb );
-        $this->assertStringContainsString( '$owa_tier >= 3', $crumb );
-
-        /*
-         * Defaulted rather than required. A screen that forgets to declare one
-         * should show the most specific line, not none -- an absent context
-         * line is harder to notice than an over-long one.
-         */
-        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
-
-        /*
-         * Defaulted, but NOT with ?: -- tier 0 (install-wide) is a real value
-         * that ?: would turn into 3. A screen that declares no tier should
-         * still show the most specific line, since an absent context line is
-         * harder to notice than an over-long one.
-         */
-        $this->assertStringContainsString( '? 3 : (int) $tier', $view );
     }
     /**
      * A grid inside the pane must not out-weigh the page it sits on.
@@ -1308,44 +1225,9 @@ final class PropertyAdminScreensTest extends TestCase
                 OWA_DIR . "modules/Base/Controller/{$screen}.php" );
 
             $this->assertStringContainsString( 'base.optionsHierarchy', $src );
-            $this->assertStringContainsString( "'hierarchy_tier', 0", $src );
         }
     }
 
-    /**
-     * Tier 0 names the installation, not an Organization.
-     *
-     * Main Configuration applies to every Organization on the install, so
-     * heading it with one Organization's name would be wrong in exactly the way
-     * the tiering exists to prevent. It is also why the tier cannot be
-     * defaulted with ?: -- 0 is a real value that would become 3.
-     */
-    public function testAnInstallWideScreenIsNotHeadedByAnOrganization(): void
-    {
-        $crumb = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
-
-        $this->assertStringContainsString( "hierarchy_tier === 0", $crumb );
-
-        /*
-         * The tier-0 crumb is NAMED by the screen rather than hardcoded, so
-         * base.myProfile -- tier 0 because it belongs to no Organization, but
-         * about the person rather than the install -- can say so. What matters
-         * here is still that tier 0 gets a root crumb of its own instead of an
-         * Organization name.
-         */
-        $this->assertStringContainsString( 'hierarchy_root_label', $crumb );
-
-        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
-
-        /* ...and it still says Installation for every screen that names none. */
-        $this->assertStringContainsString( "?: 'Instance'", $view );
-
-        $this->assertStringNotContainsString(
-            "hierarchy_tier' ) ?: 3", $view,
-            '?: turns tier 0 into 3, putting a Property and a Profile above a screen whose '
-            . 'settings apply to the whole install.' );
-    }
     /**
      * There is one settings nav. The old menu is gone, not merely bypassed.
      *

@@ -42,7 +42,6 @@
         </TD>
         <TD class="layout_subview owa_hierarchyContent" valign="top">
             <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
-            <?php include('hierarchy_breadcrumb.php');?>
             <?php
                 /*
                  * A Profile's page: its tag, how it observes and its details

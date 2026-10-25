@@ -280,4 +280,16 @@ final class NavShellTest extends TestCase
             "the screen's own Profile" );
         $this->assertSame( '', \OWA\Module\Base\View\OptionsHierarchy::accessSiteFor( $hierarchy, 'p3', '' ) );
     }
+
+    /** The Events report is in the navigation, under Visitors, last. */
+    public function testEventsIsUnderVisitors(): void
+    {
+        $nav    = (array) \OWA\Core\ReportController::reportNavigation( '' );
+        $labels = array_map( static function ( $link ) {
+            return $link['anchortext'] ?? '';
+        }, array_values( (array) ( $nav['Visitors']['subgroup'] ?? array() ) ) );
+
+        $this->assertSame( 'Events', end( $labels ) );
+    }
+
 }
