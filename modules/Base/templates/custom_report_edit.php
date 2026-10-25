@@ -169,9 +169,11 @@ $owa_max        = (int) $view->get('max_widgets');
      * The type decides what the rest of the questions are -- a trend is always
      * by date and has no dimension to pick, a card takes one metric where a
      * table takes four, only a card's rows can be links. Asked here, the panel
-     * is built for a type that is already known, and a widget's type is fixed
-     * once it is added: to change it, remove the card and add the kind you
-     * meant.
+     * is built for a type that is already known.
+     *
+     * The same gallery changes a widget's type from its panel: what the new
+     * type cannot use is dropped -- a card keeps one metric and one dimension,
+     * a trend's breakdown cannot be a date -- and Cancel puts the old type back.
      */
 ?>
 <div id="typeDialog" class="owa_typeDialog" style="display:none;">
@@ -206,7 +208,9 @@ $owa_max        = (int) $view->get('max_widgets');
 
     <div class="owa_widgetPanelHead">
         <div>
-            <div class="owa_widgetPanelKind" id="dlgTypePill"></div>
+            <div class="owa_widgetPanelKind"><span id="dlgTypePill"></span> &middot;
+                <button type="button" class="owa_linkButton" id="dlgChangeType"
+                        aria-label="Change the widget type">change</button></div>
             <h2 id="dlgHeading">Widget settings</h2>
         </div>
         <button type="button" class="owa_iconButton" id="dlgClose" aria-label="Close" title="Close"><i class="fas fa-times" aria-hidden="true"></i></button>
@@ -599,6 +603,12 @@ $owa_max        = (int) $view->get('max_widgets');
     var dialogSort     = '';
     var dialogSortDesc = true;
     var sortTouched    = false;
+
+    // The type the panel opened on, which Cancel puts back after a change.
+    var dialogOriginalType = null;
+
+    // Whether the gallery is open to change the type rather than to add.
+    var changingType = false;
 
     // The widget whose pencil opened the panel, to go back to when it closes.
     // The widget rather than the button: closing redraws the cards.
@@ -1128,11 +1138,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
         jQuery( '#dlgTitle' ).val( widget.title || ( 'Widget ' + ( index + 1 ) ) );
 
-        jQuery( '#dlgTypePill' )
-            .empty()
-            .append( jQuery( '<i aria-hidden="true">' )
-                .attr( 'class', TYPE_ICONS[ widget.type ] || '' ) )
-            .append( document.createTextNode( ' ' + ( TYPES[ widget.type ] || widget.type ) ) );
+        dialogOriginalType = widget.type;
+        renderTypePill( widget.type );
 
         dialogLink = String( ( ( widget.link || {} ).template || {} ).reportId || '' );
         dialogMore = String( ( widget.more || {} ).reportId || '' );
@@ -1202,6 +1209,11 @@ $owa_max        = (int) $view->get('max_widgets');
         jQuery( '#widgetDialog' ).removeClass( 'is-open' );
         filters.close();
 
+        // A type changed and not applied goes back.
+        if ( editing !== null && editing !== pendingNew && dialogOriginalType ) {
+            widgets[ editing ].type = dialogOriginalType;
+        }
+
         if ( pendingNew !== null ) {
 
             widgets.splice( pendingNew, 1 );
@@ -1219,6 +1231,61 @@ $owa_max        = (int) $view->get('max_widgets');
         restoreFocus();
 
         return keep;
+    }
+
+    function renderTypePill( type ) {
+
+        jQuery( '#dlgTypePill' )
+            .empty()
+            .append( jQuery( '<i aria-hidden="true">' ).attr( 'class', TYPE_ICONS[ type ] || '' ) )
+            .append( document.createTextNode( ' ' + ( TYPES[ type ] || type ) ) );
+    }
+
+    /**
+     * Make the widget being edited another type, keeping what the new type
+     * can use: its name, filters, height and link targets; its metrics and
+     * dimensions up to the new type's caps (a trend's breakdown cannot be a
+     * date); its width if the new type may be narrowed. Applied with the rest
+     * of the panel, and undone by Cancel.
+     */
+    function changeType( type ) {
+
+        var widget  = widgets[ editing ];
+        var metrics = jQuery( '#dlgMetrics' ).val() || [];
+
+        // A trend's picker holds only its breakdown; its axis is not carried.
+        var dims = jQuery( '#dlgDimensions' ).val() || [];
+
+        var wasFullWidth = isFullWidth( widget.type );
+
+        widget.type = type;
+
+        metrics = metrics.slice( 0, isSingleMetric( type ) ? 1 : MAX_METRICS );
+
+        if ( ! picksDimensions( type ) ) {
+            dims = [];
+        } else if ( fixedDimension( type ) !== null ) {
+            dims = dims.filter( function ( d ) { return TIME_DIMENSIONS.indexOf( d ) === -1; } )
+                .slice( 0, FIXED_DIMENSION_EXTRA[ type ] || 0 );
+        } else {
+            dims = dims.slice( 0, isSingleField( type ) ? 1 : MAX_DIMENSIONS );
+        }
+
+        if ( isFullWidth( type ) ) {
+            dialogColspan = COLUMNS;
+        } else if ( wasFullWidth ) {
+            dialogColspan = NEW_COLSPANS[ type ] || defaultColspan( type );
+        }
+
+        fillChoices( jQuery( '#dlgMetrics' ), METRICS, metrics );
+        fillChoices( jQuery( '#dlgDimensions' ), DIMENSIONS, dims );
+        chosenSync( '#dlgMetrics' );
+        chosenSync( '#dlgDimensions' );
+
+        renderTypePill( type );
+        renderSpanChoices();
+        applyTypeRules();
+        draw();
     }
 
     /** Back to the pencil that opened the panel, or to Add a widget. */
@@ -1814,6 +1881,28 @@ $owa_max        = (int) $view->get('max_widgets');
     } );
 
     // The panel.
+
+    // The gallery again, to change the type: titled for it, the current type marked.
+    jQuery( '#dlgChangeType' ).on( 'click', function () {
+
+        changingType = true;
+
+        jQuery( '#typeDialog .owa_typeChoice' ).each( function () {
+            var current = jQuery( this ).attr( 'data-type' ) === editingType();
+            jQuery( this ).toggleClass( 'is-current', current ).attr( 'aria-current', current ? 'true' : null );
+        } );
+
+        jQuery( '#typeDialog' ).dialog( 'option', 'title', 'Change the widget type' ).dialog( 'open' );
+    } );
+
+    jQuery( '#typeDialog' ).on( 'dialogclose', function () {
+
+        changingType = false;
+
+        jQuery( '#typeDialog' ).dialog( 'option', 'title', 'Add a widget' );
+        jQuery( '#typeDialog .owa_typeChoice' ).removeClass( 'is-current' ).removeAttr( 'aria-current' );
+    } );
+
     jQuery( '#dlgApply' ).on( 'click', function () {
         if ( applyDialog() ) {
             jQuery( '#widgetDialog' ).removeClass( 'is-open' );
@@ -1962,6 +2051,15 @@ $owa_max        = (int) $view->get('max_widgets');
     jQuery( '#typeDialog' ).on( 'click', '.owa_typeChoice', function ( e ) {
 
         e.preventDefault();
+
+        if ( changingType ) {
+
+            changeType( jQuery( this ).attr( 'data-type' ) );
+            jQuery( '#typeDialog' ).dialog( 'close' );
+            jQuery( '#dlgChangeType' ).trigger( 'focus' );
+
+            return;
+        }
 
         if ( widgets.length >= MAX ) {
             return;
