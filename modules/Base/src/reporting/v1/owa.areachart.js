@@ -536,6 +536,20 @@ OWA.areaChart.prototype = {
             ] );
         }
 
+        var xs = this.periodXs( resultSet, x_name, x_type );
+
+        if ( xs ) {
+
+            var byX  = {};
+            var fill = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
+
+            data.forEach( function ( p ) { byX[ p[0] ] = p[1]; } );
+
+            data = xs.map( function ( x ) {
+                return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : fill ];
+            } );
+        }
+
         return {
             series: [ this.areaSeries( resultSet.getMetricLabel( y_name ), data ) ],
             points: data.length,
@@ -605,6 +619,20 @@ OWA.areaChart.prototype = {
 
             byValue[ key ].points[ x ] = ( byValue[ key ].points[ x ] || 0 ) + y;
             byValue[ key ].total += y;
+        }
+
+        // Days nobody visited, too, when they are zero rather than a gap --
+        // see zeroForMissing().
+        if ( this.zeroForMissing( resultSet, y_name ) ) {
+
+            ( this.periodXs( resultSet, x_name, x_type ) || [] ).forEach( function ( x ) {
+
+                if ( ! seen_x[ x ] ) {
+                    seen_x[ x ] = true;
+                    xs.push( x );
+                    totals[ x ] = 0;
+                }
+            } );
         }
 
         xs.sort( function ( a, b ) { return a - b; } );
@@ -834,8 +862,51 @@ OWA.areaChart.prototype = {
             label: label,
             isTotal: true,
             data: data,
-            lines: { fill: true, fillColor: this.options.fillColor }
+            lines: { fill: true, fillColor: this.options.fillColor },
+
+            // A line needs two points. A period of one day -- Today -- drew
+            // nothing at all, so its one value is a dot.
+            points: data.length === 1 ? { show: true, fill: true, radius: 4 } : undefined
         };
+    },
+
+    /**
+     * Whether a metric's missing interval is zero.
+     *
+     * The cube writes no row for a day with nothing in it. For a count or a
+     * sum that day IS zero, and leaving it out had flot join the days either
+     * side of it -- a line drawn straight over the absence. A ratio over a
+     * day with no visits has no value at all (PLAN 2.11), so it is a gap
+     * rather than a zero.
+     */
+    zeroForMissing : function ( resultSet, name ) {
+
+        var type = '';
+
+        jQuery.each( ( resultSet && resultSet.relatedMetrics ) || {}, function ( group, list ) {
+            jQuery.each( list || [], function ( i, m ) {
+                if ( m && m.name === name ) {
+                    type = m.metric_type || '';
+                }
+            } );
+        } );
+
+        return [ 'count', 'distinct_count', 'sum', 'boolean_true_count' ].indexOf( type ) !== -1;
+    },
+
+    /**
+     * Every interval of the period, in order, as x values -- or null when the
+     * period cannot be read or is not what the chart is drawn over.
+     */
+    periodXs : function ( resultSet, x_name, x_type ) {
+
+        var period = this.zeroFilled( resultSet, x_name );
+
+        if ( ! period || period.x_type !== x_type ) {
+            return null;
+        }
+
+        return period.points.map( function ( p ) { return p[0]; } );
     },
 
     /**

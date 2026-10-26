@@ -2068,6 +2068,34 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
+     * The page tells a grid which of its constraints are its own.
+     *
+     * An empty widget says "No data matches these filters" only when the
+     * READER filtered (OWA.dataGrid.emptyText). Top Referrers is sessions
+     * whose medium is referral, and with no referrals it blamed a filter
+     * nobody set.
+     */
+    public function testAGridIsToldWhichConstraintsAreItsOwn(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'    => 'Constrained',
+            'metrics'  => 'sessions',
+            'settings' => array( 'constraints' => array( array( 'dimension' => 'host', 'value' => 'example.com' ) ) ),
+            'widgets'  => array(
+                array( 'type' => 'grid', 'id' => 'dim', 'container' => 'dimension-grid',
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ),
+                       'constraints' => array( array( 'dimension' => 'medium', 'value' => '</script>' ) ) ),
+            ),
+        ), array() );
+
+        $this->assertStringContainsString(
+            'dim.options.grid.ownConstraints = "medium==\u003C\/script\u003E";', $html,
+            'the widget\'s own, not the report\'s, encoded so it cannot close the script' );
+    }
+
+    /**
      * The other spelling is refused rather than given the opposite meaning.
      *
      * A widget's `query` is merged over the report-wide defaults with a union,

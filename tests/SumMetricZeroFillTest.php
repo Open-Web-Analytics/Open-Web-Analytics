@@ -25,9 +25,9 @@ final class SumMetricZeroFillTest extends TestCase
         $this->table = 'owa_test_sumzero_' . bin2hex(random_bytes(3));
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->query(sprintf('CREATE TABLE %s (event_type VARCHAR(32), tax BIGINT NULL, engagement_msec BIGINT NULL)',
-            $this->table));
-        $db->query(sprintf("INSERT INTO %s VALUES ('purchase', NULL, NULL)", $this->table));
+        $db->query(sprintf('CREATE TABLE %s (event_type VARCHAR(32), tax BIGINT NULL, engagement_msec BIGINT NULL, '
+            . 'is_entrance TINYINT NULL)', $this->table));
+        $db->query(sprintf("INSERT INTO %s VALUES ('purchase', NULL, NULL, NULL)", $this->table));
     }
 
     protected function tearDown(): void
@@ -62,5 +62,19 @@ final class SumMetricZeroFillTest extends TestCase
     {
         $this->assertNotNull($this->value('totalEngagementTime'));
         $this->assertSame('0', (string) $this->value('totalEngagementTime'));
+    }
+
+    /**
+     * A period with no rows at all. SUM over nothing is NULL where COUNT is 0,
+     * so the dashboard showed "null" page views beside 0 users.
+     */
+    public function testACountOrSumOverNoRowsIsZero(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM ' . $this->table);
+
+        foreach (['pageViews', 'transactions', 'entrances', 'taxRevenue', 'totalEngagementTime'] as $metric) {
+            $this->assertSame('0', (string) $this->value($metric), $metric);
+            $this->assertNotNull($this->value($metric), $metric);
+        }
     }
 }

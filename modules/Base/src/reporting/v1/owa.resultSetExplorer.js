@@ -143,7 +143,9 @@ OWA.resultSetExplorer = function(dom_id, options) {
             dimension: '',
             // Raw dimension value -> row label, set by a report definition.
             valueLabels: null,
-            numSlices: 5
+            numSlices: 5,
+            // The widget's own constraints; see OWA.dataGrid.emptyText.
+            ownConstraints: ''
         },
         sparkline: {
             metric: ''
@@ -1217,7 +1219,8 @@ OWA.dataGrid = function(target_dom_id, options) {
         compact: false,
         excludeColumns: [],
         columnFormatters: {},
-        showExplorerControls: true
+        showExplorerControls: true,
+        ownConstraints: ''
     }, options || {} );
     this.init = false;
     this.resultSet = null;
@@ -1328,6 +1331,38 @@ OWA.dataGrid.parseConstraints = function ( str ) {
     } );
 
     return list;
+};
+
+/**
+ * What an empty widget says.
+ *
+ * "No data matches these filters" only when the READER filtered: a filter
+ * of the report's, or one added from the grid. A widget's own constraints
+ * are part of what it measures -- Top Referrers is sessions whose medium is
+ * referral -- and a reader who set no filter was told one had emptied it.
+ *
+ * @param rs  the result set, whose `self` URL carries every constraint
+ * @param own the widget's own constraints string, as its definition gave them
+ */
+OWA.dataGrid.emptyText = function ( rs, own ) {
+
+    var mine = {};
+
+    OWA.dataGrid.parseConstraints( own ).forEach( function ( c ) {
+        mine[ OWA.dataGrid.formatConstraints( [ c ] ) ] = true;
+    } );
+
+    var asked = rs && rs.self
+        ? OWA.dataGrid.parseConstraints( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'constraints' ) ) )
+        : [];
+
+    var readers = asked.filter( function ( c ) {
+        return ! mine[ OWA.dataGrid.formatConstraints( [ c ] ) ];
+    } );
+
+    return readers.length
+        ? OWA.l( 'No data matches these filters.' )
+        : OWA.l( 'No data for this period.' );
 };
 
 /** The list parseConstraints() returns, as a constraints string. */
@@ -1553,10 +1588,8 @@ OWA.dataGrid.prototype = {
 
         if ( ! rows.length ) {
 
-            $grid.append( jQuery( '<p class="owa_gridEmpty"></p>' ).text(
-                this.constraints( rs ).length
-                    ? OWA.l( 'No rows match these filters.' )
-                    : OWA.l( 'No data is available for this time period.' ) ) );
+            $grid.append( jQuery( '<p class="owa_gridEmpty"></p>' )
+                .text( OWA.dataGrid.emptyText( rs, this.options.ownConstraints ) ) );
 
             return;
         }
@@ -1974,8 +2007,7 @@ OWA.dataGrid.prototype = {
                 var agg = aggs[ c.name ];
 
                 $total.append( jQuery( '<td class="owa_gridMetric"></td>' ).attr( 'data-column', c.name )
-                    .text( agg ? ( agg.formatted_value !== undefined && agg.formatted_value !== ''
-                        ? agg.formatted_value : agg.value ) : '' ) );
+                    .text( OWA.util.metricText( agg ) ) );
             } );
 
             $tbody.append( $total );
@@ -2071,6 +2103,10 @@ OWA.dataGrid.prototype = {
 
         var name = formatters.hasOwnProperty( col.name ) ? formatters[ col.name ]
                  : ( col.link ? 'urlFormatter' : 'useServerFormatter' );
+
+        if ( col.kind === 'metric' && name === 'useServerFormatter' ) {
+            return OWA.util.escapeHtml( OWA.util.metricText( cell ) );
+        }
 
         var fn   = OWA.dataGrid.formatters[ name ] || OWA.dataGrid.formatters.useServerFormatter;
         var html = fn( cell, { colModel: { realColName: col.name }, rowId: i + 1 }, row );

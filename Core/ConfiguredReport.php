@@ -901,6 +901,10 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
                 $widget['query'] = $query;
 
+                // Kept apart so an empty widget does not blame the reader's
+                // filters for its own (OWA.dataGrid.emptyText).
+                $widget['ownConstraints'] = $own;
+
                 unset( $widget['constraints'] );
             }
 
