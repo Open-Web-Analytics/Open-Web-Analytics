@@ -29,7 +29,10 @@ OWA.shareChart = function ( options ) {
         numSlices: 5,
 
         // Raw dimension value -> row label, set by a report definition.
-        valueLabels: null
+        valueLabels: null,
+
+        // The widget's own constraints; see OWA.dataGrid.emptyText.
+        ownConstraints: ''
     };
 
     if ( options ) {
@@ -162,7 +165,7 @@ OWA.shareChart.prototype = {
         if ( ! rows.length || max <= 0 ) {
 
             $box.append( jQuery( '<p class="owa_gridEmpty"></p>' )
-                .text( OWA.l( 'No data is available for this time period.' ) ) );
+                .text( OWA.dataGrid.emptyText( resultSet, this.options.ownConstraints ) ) );
             return;
         }
 

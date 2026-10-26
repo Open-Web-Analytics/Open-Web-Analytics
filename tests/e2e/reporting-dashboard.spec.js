@@ -841,7 +841,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
         expect(url).toContain('browserType=@Firefox');
         await expect(page.locator('tr.owa_gridRow')).toHaveCount(0, { timeout: 15_000 });
-        await expect(page.locator('.owa_gridEmpty')).toHaveText('No rows match these filters.');
+        await expect(page.locator('.owa_gridEmpty')).toHaveText('No data matches these filters.');
 
         const chip = page.locator('.owa_gridChip');
 

@@ -103,7 +103,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.is_entrance = 1 THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.is_entrance = 1 THEN 1 ELSE 0 END), 0)",
             "alias": "entrances"
         }
     ],
@@ -155,7 +155,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.is_exit = 1 THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.is_exit = 1 THEN 1 ELSE 0 END), 0)",
             "alias": "exits"
         }
     ],
@@ -163,7 +163,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'form_start' THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'form_start' THEN 1 ELSE 0 END), 0)",
             "alias": "formStarts"
         }
     ],
@@ -183,7 +183,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'form_submit' THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'form_submit' THEN 1 ELSE 0 END), 0)",
             "alias": "formSubmits"
         }
     ],
@@ -215,7 +215,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.is_goal_event = 1 THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.is_goal_event = 1 THEN 1 ELSE 0 END), 0)",
             "alias": "goalConversions"
         }
     ],
@@ -242,7 +242,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'page_view' THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'page_view' THEN 1 ELSE 0 END), 0)",
             "alias": "pageViews"
         }
     ],
@@ -282,7 +282,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'refund' THEN COALESCE(event.revenue, 0) ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'refund' THEN COALESCE(event.revenue, 0) ELSE 0 END), 0)",
             "alias": "refundAmount"
         }
     ],
@@ -290,7 +290,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'refund' THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'refund' THEN 1 ELSE 0 END), 0)",
             "alias": "refunds"
         }
     ],
@@ -362,7 +362,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.shipping, 0) ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.shipping, 0) ELSE 0 END), 0)",
             "alias": "shippingRevenue"
         }
     ],
@@ -370,7 +370,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.tax, 0) ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.tax, 0) ELSE 0 END), 0)",
             "alias": "taxRevenue"
         }
     ],
@@ -394,7 +394,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.revenue, 0) ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN COALESCE(event.revenue, 0) ELSE 0 END), 0)",
             "alias": "transactionRevenue"
         }
     ],
@@ -402,7 +402,7 @@
         {
             "kind": "aggregate",
             "entity": "base.event",
-            "expression": "sum(CASE WHEN event.event_type = 'purchase' THEN 1 ELSE 0 END)",
+            "expression": "COALESCE(sum(CASE WHEN event.event_type = 'purchase' THEN 1 ELSE 0 END), 0)",
             "alias": "transactions"
         }
     ]

@@ -196,6 +196,19 @@ describe('the table', () => {
         expect($root.find('td[data-column="browserType"]').text()).toBe('<img src=x onerror=y>');
     });
 
+    /* A ratio over nothing is NULL on purpose; it read "null" on the dashboard. */
+    test('a metric with no value is a dash, in its row and in the Total', () => {
+        const none = { name: 'bounceRate', result_type: 'metric', value: null, formatted_value: null };
+        const { $root } = draw(resultSet({
+            rows: [{ browserType: cell('browserType', 'dimension', 'Chrome'), sessions: cell('sessions', 'metric', 60), bounceRate: none }],
+            rs: { aggregates: { sessions: { name: 'sessions', value: 60, formatted_value: '60' }, bounceRate: none } },
+        }));
+
+        expect($root.find('tr.owa_gridRow td[data-column="bounceRate"]').text()).toBe('\u2014');
+        expect($root.find('tr.owa_gridTotal td[data-column="bounceRate"]').text()).toBe('\u2014');
+        expect($root.text()).not.toContain('null');
+    });
+
     test('a column a report excludes is not drawn', () => {
         const { $root } = draw(resultSet(), { excludeColumns: ['bounceRate'] });
 
@@ -228,14 +241,29 @@ describe('the table', () => {
     test('no rows, and no filters: the period has no data', () => {
         const { $root } = draw(resultSet({ rows: [] }));
 
-        expect($root.find('.owa_gridEmpty').text()).toBe('No data is available for this time period.');
+        expect($root.find('.owa_gridEmpty').text()).toBe('No data for this period.');
+    });
+
+    /* Top Referrers is sessions whose medium is referral; the reader set no filter. */
+    test('no rows, under only the widget\'s own filter: the period has no data', () => {
+        const { $root } = draw(resultSet({ rows: [], constraints: 'medium==referral' }),
+            { ownConstraints: 'medium==referral' });
+
+        expect($root.find('.owa_gridEmpty').text()).toBe('No data for this period.');
+    });
+
+    test('no rows, under the widget\'s filter and the reader\'s: the filters emptied it', () => {
+        const { $root } = draw(resultSet({ rows: [], constraints: 'browserType==Lynx,medium==referral' }),
+            { ownConstraints: 'medium==referral' });
+
+        expect($root.find('.owa_gridEmpty').text()).toBe('No data matches these filters.');
     });
 
     /* The filter is what emptied it, so its chip stays to be removed. */
     test('no rows, under a filter: the chip is still there', () => {
         const { $root } = draw(resultSet({ rows: [], constraints: 'browserType==Lynx' }));
 
-        expect($root.find('.owa_gridEmpty').text()).toBe('No rows match these filters.');
+        expect($root.find('.owa_gridEmpty').text()).toBe('No data matches these filters.');
         expect($root.find('.owa_gridChip').length).toBe(1);
         expect($root.find('.owa_gridPager').length).toBe(0);
     });

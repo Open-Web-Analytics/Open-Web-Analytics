@@ -559,6 +559,9 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <?php // Raw value -> label, so a boolean dimension can read New/Repeat rather than No/Yes. ?>
         <?php echo $owa_id; ?>.options.shareChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
 <?php endif; ?>
+<?php if ( ! empty( $owa_w['ownConstraints'] ) ): ?>
+        <?php echo $owa_id; ?>.options.shareChart.ownConstraints = <?php echo json_encode( (string) $owa_w['ownConstraints'], JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+<?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeShareChart']);
 
 <?php if ( ! $owa_multiSet ): ?>
@@ -750,6 +753,9 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
              */
         ?>
         <?php echo $owa_id; ?>.options.grid.columnFormatters = <?php echo json_encode( (object) $owa_w['formatters'] ); ?>;
+<?php endif; ?>
+<?php if ( ! empty( $owa_w['ownConstraints'] ) ): ?>
+        <?php echo $owa_id; ?>.options.grid.ownConstraints = <?php echo json_encode( (string) $owa_w['ownConstraints'], JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
 <?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 

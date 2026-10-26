@@ -261,7 +261,8 @@ OWA.kpiBox.prototype = {
                 '<div id ="%s" class="owa_metricInfobox" data-metric="%s" style="min-width:%s;width:%s">',
                 item.dom_id, item.name, this.options.minWidth, width );
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
-            html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>', item.formatted_value);
+            html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>',
+                OWA.util.escapeHtml( OWA.util.metricText( item ) ) );
             html += '</div>';
 
             jQuery('#' + con_id ).append( html );

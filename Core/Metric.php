@@ -298,10 +298,14 @@ class Metric extends \OWA\Core\Base {
 
                         // '' means the condition could not be rendered, and
                         // counting every row instead would be a metric quietly
-                        // answering a different question.
+                        // answering a different question. COALESCE because SUM
+                        // over no rows at all is NULL where COUNT is 0: a day
+                        // with no visits answered "null" page views beside 0
+                        // users.
                         $statement = $where === ''
                             ? null
-                            : sprintf( 'sum(CASE WHEN %s THEN 1 ELSE 0 END)', $where );
+                            : sprintf( OWA_SQL_COALESCE,
+                                  sprintf( 'sum(CASE WHEN %s THEN 1 ELSE 0 END)', $where ), '0' );
 
                     } else {
 
@@ -351,6 +355,8 @@ class Metric extends \OWA\Core\Base {
                      * And COALESCE on the column: a matching row can hold NULL
                      * -- a purchase with no tax -- and SUM over NULL alone is
                      * NULL, which a report showed as a blank cell beside zeros.
+                     * And around the whole sum, for a period with no rows at
+                     * all, where the ELSE 0 never runs.
                      */
                     if ( $this->hasCondition() ) {
 
@@ -361,8 +367,8 @@ class Metric extends \OWA\Core\Base {
                         // answering a different question.
                         $statement = $where === ''
                             ? null
-                            : sprintf( 'sum(CASE WHEN %s THEN %s ELSE 0 END)',
-                                  $where, sprintf( OWA_SQL_COALESCE, $this->getColumn(), '0' ) );
+                            : sprintf( OWA_SQL_COALESCE, sprintf( 'sum(CASE WHEN %s THEN %s ELSE 0 END)',
+                                  $where, sprintf( OWA_SQL_COALESCE, $this->getColumn(), '0' ) ), '0' );
 
                     } else {
 
@@ -386,8 +392,8 @@ class Metric extends \OWA\Core\Base {
                      * the three-valued boolean is a 1.x problem that v2's schema
                      * removes rather than one to fix inside a conversion.
                      */
-                    $statement = sprintf(
-                        'sum(CASE %s WHEN TRUE THEN 1 ELSE 0 END)', $this->getColumn() );
+                    $statement = sprintf( OWA_SQL_COALESCE, sprintf(
+                        'sum(CASE %s WHEN TRUE THEN 1 ELSE 0 END)', $this->getColumn() ), '0' );
                     break;
 
                 case 'avg_difference':
