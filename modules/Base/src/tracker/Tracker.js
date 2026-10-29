@@ -255,6 +255,11 @@ class OWATracker  {
 	    /** Whether a page view has been sent; the first carries no engagement. */
 	    this.pageViewSent = false;
 	    /**
+	     * The exceptions this page view has sent, keyed by message, source and
+	     * line. Cleared by each page view; see trackExceptions().
+	     */
+	    this.exceptionsSent = {};
+	    /**
 	     * Whether SPA route changes are being watched. Opt-in, and patching
 	     * history.pushState twice would double every route change.
 	     */
@@ -4992,6 +4997,9 @@ class OWATracker  {
             this.resetEngagement();
         }
 
+        // An error the previous route sent is news again on this one.
+        this.exceptionsSent = {};
+
         var ret = this.trackEvent( event );
 
         // Sent, with its event_seq and session stamped: anything compiled in
@@ -5470,6 +5478,18 @@ class OWATracker  {
      * with a token in it. Message, file and line answer "is my site broken"
      * without that risk.
      *
+     * ONCE PER PAGE VIEW for each message, source and line. An error raised in
+     * a loop or a repeating callback raises the same message every time it
+     * runs; measured, one page view sent 100 identical events.
+     *
+     * NOT THE RESIZEOBSERVER LOOP NOTICE. Chrome reports "ResizeObserver loop
+     * completed with undelivered notifications" (formerly "ResizeObserver loop
+     * limit exceeded") through window.onerror when an observer's callback
+     * changes layout in the frame it ran in. Nothing has failed: the
+     * notifications are delivered in the next frame. It arrives with line 0
+     * and no error object, and a crawler that resizes its window to the full
+     * page height raises it dozens of times per page.
+     *
      * @command
      */
     trackExceptions() {
@@ -5488,19 +5508,7 @@ class OWATracker  {
 
             try {
 
-                /*
-                 * PREFIXED, because these are custom event properties.
-                 *
-                 * They were sent bare -- description, source, line -- and not one
-                 * of them is a declared property or carries a prefix, so
-                 * admitRequestParams() dropped all three and every exception event
-                 * arrived carrying nothing but its site id. Measured.
-                 */
-                that.raiseEvent( 'exception', {
-                    eps_description: String( message ).substring( 0, 255 ),
-                    eps_source:      String( source || '' ).substring( 0, 255 ),
-                    epn_line:        line || 0
-                } );
+                that.reportException( message, source, line );
 
             } catch ( e ) {
                 // An error raised while reporting an error must not become a
@@ -5514,6 +5522,51 @@ class OWATracker  {
 
             return false;
         };
+    }
+
+    /**
+     * Send one uncaught error as an `exception` event, unless it is the
+     * ResizeObserver notice or this page view has already sent it. See
+     * trackExceptions().
+     *
+     * @param {string} message
+     * @param {string} source
+     * @param {number} line
+     */
+    reportException( message, source, line ) {
+
+        var description = String( message ).substring( 0, 255 );
+
+        if ( description.indexOf( 'ResizeObserver loop' ) === 0 ) {
+
+            return;
+        }
+
+        source = String( source || '' ).substring( 0, 255 );
+        line   = line || 0;
+
+        var key = description + '\n' + source + '\n' + line;
+
+        if ( this.exceptionsSent[ key ] ) {
+
+            return;
+        }
+
+        this.exceptionsSent[ key ] = true;
+
+        /*
+         * PREFIXED, because these are custom event properties.
+         *
+         * They were sent bare -- description, source, line -- and not one
+         * of them is a declared property or carries a prefix, so
+         * admitRequestParams() dropped all three and every exception event
+         * arrived carrying nothing but its site id. Measured.
+         */
+        this.raiseEvent( 'exception', {
+            eps_description: description,
+            eps_source:      source,
+            epn_line:        line
+        } );
     }
 
     /**
