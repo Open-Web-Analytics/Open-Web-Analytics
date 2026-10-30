@@ -802,6 +802,45 @@ final class PropertyAdminScreensTest extends TestCase
             'explicit', $method->invoke( $controller, 'explicit', array_key_first( $byProperty ) ) );
     }
 
+    /**
+     * The Settings gear and the install-wide entries name a Property and no
+     * Profile. Screens that did not read it showed the first Property the
+     * user may see, whichever one they had switched to.
+     */
+    public function testASettingsScreenKeepsThePropertyBeingLookedAt(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable.' );
+        }
+
+        $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
+        $method->setAccessible( true );
+
+        $allowed = new \ReflectionMethod( \OWA\Core\Controller::class, 'getSitesAllowedForCurrentUser' );
+        $allowed->setAccessible( true );
+
+        $byProperty = array();
+
+        foreach ( (array) $allowed->invoke( new \OWA\Module\Base\Controller\OptionsGeneral( array() ) ) as $site ) {
+
+            if ( $site->get( 'property_id' ) ) {
+                $byProperty[ (string) $site->get( 'property_id' ) ][] = $site->get( 'site_id' );
+            }
+        }
+
+        if ( count( $byProperty ) < 2 ) {
+            $this->markTestSkipped( 'Needs at least two parented Properties.' );
+        }
+
+        // Not the first: the first is what the old fallback picked anyway.
+        $propertyId = (string) array_keys( $byProperty )[ count( $byProperty ) - 1 ];
+        $profiles   = $byProperty[ $propertyId ];
+
+        $this->assertContains(
+            $method->invoke( new \OWA\Module\Base\Controller\OptionsGeneral( array( 'propertyId' => $propertyId ) ) ),
+            $profiles, 'The propertyId on the request was ignored.' );
+    }
+
     /** Each screen says what it is for, in the hierarchy's words. */
     public function testEveryHierarchyScreenExplainsItself(): void
     {

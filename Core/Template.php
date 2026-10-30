@@ -556,7 +556,8 @@ class Template extends TemplateEngine {
      * Makes Links, adds state to links optionaly.
      *
      * @param array $params
-     * @param boolean $add_state
+     * @param boolean|string[] $add_state true for all of the link state, or the
+     *                                    keys of it to add (array( 'propertyId' ))
      * @return string
      */
     function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
@@ -564,18 +565,15 @@ class Template extends TemplateEngine {
         $all_params = array();
 
         //Loads link state passed by caller
-        if ($add_state == true) {
-            if (!empty($this->caller_params['link_state'])) {
-                $all_params = array_merge($all_params, $this->caller_params['link_state']);
+        if ($add_state) {
+
+            $state = $this->getAllStateParams();
+
+            if (is_array($add_state)) {
+                $state = array_intersect_key($state, array_flip($add_state));
             }
 
-            // add in period properties if available
-            $period = $this->get('timePeriod');
-
-            if (!empty($period)) {
-                $all_params = array_merge($all_params, $period->getPeriodProperties());
-
-            }
+            $all_params = array_merge($all_params, $state);
         }
 
         // Load overrides
@@ -1159,8 +1157,10 @@ class Template extends TemplateEngine {
                 'id'      => 'settings',
                 'label'   => 'Settings',
                 'icon'    => 'fas fa-cog',
+                // With the Property, so the settings screens are of the one being looked at.
                 'href'    => $this->makeLink( array(
-                    'do' => $user->isCapable( 'edit_settings' ) ? 'base.optionsGeneral' : 'base.myProfile' ) ),
+                    'do' => $user->isCapable( 'edit_settings' ) ? 'base.optionsGeneral' : 'base.myProfile' ),
+                    array( 'propertyId' ) ),
                 'current' => (bool) $inSettings,
                 'items'   => array(),
                 'foot'    => true,
@@ -1259,6 +1259,9 @@ class Template extends TemplateEngine {
      * one of the actions it also answers for (`current_for`) -- a Profile's
      * entry is current on every one of its tabs.
      *
+     * Every entry links with the Property in the link state, so the next
+     * screen is of the same one; an entry naming its own keeps that.
+     *
      * @param array $hierarchyNav as Controller::getHierarchyNav() returns it
      * @param array $params       the request's params
      * @return array[] heading, items (label, href, current)
@@ -1291,7 +1294,8 @@ class Template extends TemplateEngine {
 
                 $items[] = array(
                     'label'   => (string) $entry['label'],
-                    'href'    => $this->makeLink( array_merge( array( 'do' => $entry['do'] ), (array) ( $entry['params'] ?? array() ) ) ),
+                    'href'    => $this->makeLink( array_merge( array( 'do' => $entry['do'] ), (array) ( $entry['params'] ?? array() ) ),
+                        array( 'propertyId' ) ),
                     'current' => self::settingsEntryIsCurrent( $entry, $params ),
                 );
             }

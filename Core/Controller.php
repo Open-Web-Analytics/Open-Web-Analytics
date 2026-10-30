@@ -968,6 +968,11 @@ class Controller extends \OWA\Core\Base {
      * blank, which reads as though nothing is selected rather than as though
      * this screen is simply about a higher tier.
      *
+     * Without a siteId, a Profile of the Property in context: the one the
+     * caller passes, else the request's propertyId. The Settings gear and the
+     * install-wide entries in the settings column name a Property and no
+     * Profile, and most screens call this without passing it on.
+     *
      * Falls back to the first Profile the user may see. Same reasoning the
      * report controller uses when a request names no site: something has to be
      * current, and the first allowed one is the only defensible choice without
@@ -981,6 +986,8 @@ class Controller extends \OWA\Core\Base {
         }
 
         $sites = (array) $this->getSitesAllowedForCurrentUser();
+
+        $propertyId = (string) $propertyId ?: (string) $this->getParam( 'propertyId' );
 
         /*
          * A Property in context picks a Profile OF THAT PROPERTY.
