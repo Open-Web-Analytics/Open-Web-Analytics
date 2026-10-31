@@ -719,9 +719,10 @@ class Controller extends \OWA\Core\Base {
 
     }
 
-    function redirectBrowserToUrl($url) {
+    /** @param string[] $also_hosts see Lib::resolveRedirectUrl() */
+    function redirectBrowserToUrl($url, array $also_hosts = array()) {
 
-        return \OWA\Core\Lib::redirectBrowser($url);
+        return \OWA\Core\Lib::redirectBrowser($url, $also_hosts);
     }
 
     function setStatusCode($code) {
