@@ -115,12 +115,16 @@ final class OverlayApiLinkTest extends TestCase
         $token = $q['owa_overlayToken'] ?? ($q['overlayToken'] ?? '');
         $this->assertNotSame('', $token, 'the link carried no overlay token');
 
+        // The parameters as the API will read them: off this link, decoded
+        // once. This read a hand-written constraint instead -- the encoded one
+        // the token was minted over -- so it passed while every real request,
+        // which arrives decoded, was refused.
+        $this->assertSame('pagePath==/pricing', $q['owa_constraints'] ?? ($q['constraints'] ?? null));
+
         $permitted = \OWA\Core\OverlayToken::permits(
             $token,
             'reports',
-            static fn($name) => $name === 'constraints'
-                ? 'pagePath==' . urlencode('/pricing')
-                : ''
+            static fn($name) => (string) ($q['owa_' . $name] ?? ($q[$name] ?? ''))
         );
 
         $this->assertTrue($permitted, 'the minted token does not permit its own link');
