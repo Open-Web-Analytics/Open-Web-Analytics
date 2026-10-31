@@ -503,6 +503,45 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     }
 
     /**
+     * A trend's query for the period being reported on.
+     *
+     * Over one day a trend by `date` is a single point, so it is charted by
+     * hour: `date` becomes `dateHour` as the x dimension and in a sort that
+     * names it. A breakdown after the x dimension, and a trend over anything
+     * but `date`, are left as they are.
+     *
+     * @param  array       $query  a trend widget's query
+     * @param  object|null $period the report's TimePeriod
+     * @return array
+     */
+    public static function trendQuery( array $query, $period ) {
+
+        if ( ! $period
+             || $period->getStartDate()->getYyyymmdd() !== $period->getEndDate()->getYyyymmdd() ) {
+
+            return $query;
+        }
+
+        $dims = array_map( 'trim', explode( ',', (string) ( $query['dimensions'] ?? '' ) ) );
+
+        if ( $dims[0] !== 'date' ) {
+
+            return $query;
+        }
+
+        $dims[0] = 'dateHour';
+
+        $query['dimensions'] = implode( ',', $dims );
+
+        if ( isset( $query['sort'] ) && preg_match( '/^date(-?)$/', trim( (string) $query['sort'] ), $m ) ) {
+
+            $query['sort'] = 'dateHour' . $m[1];
+        }
+
+        return $query;
+    }
+
+    /**
      * Each report-links widget's links, through the report_links filter.
      *
      * The filter gets the links, the report id and the widget id, so a module

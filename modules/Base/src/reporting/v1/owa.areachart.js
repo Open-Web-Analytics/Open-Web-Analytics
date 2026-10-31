@@ -69,10 +69,21 @@ OWA.areaChart = function( options ) {
          * so a monthly trend grouped by it merged January of one year with
          * January of the next.
          */
+        /*
+         * Hours up to eight days: Last Seven Days starts at the end of the day
+         * a week ago, so it covers eight dates.
+         */
         granularities: [
+            { dimension: 'dateHour',  label: 'Hour', maxDays: 8 },
             { dimension: 'date',      label: 'Day' },
             { dimension: 'yearMonth', label: 'Month' }
         ],
+
+        /*
+         * The narrowest an hour label is given. "12pm" and "10/30" are about
+         * forty pixels in the axis font, so this leaves a gap between them.
+         */
+        hourTickWidth: 56,
 
         monthFormat: "%b %Y"
     };
@@ -166,6 +177,16 @@ OWA.areaChart.prototype = {
                 value = Date.UTC( m_year, m_month, 1, 0, 0, 0, 0 );
                 break;
 
+            // 2026103014 -> 2pm on 10/30. The hour is the install's wall clock,
+            // stored as if it were UTC, as a yyyymmdd day already is.
+            case 'yyyymmddhh':
+
+                var h_text = String( value );
+
+                value = Date.UTC( h_text.substring( 0, 4 ) * 1, ( h_text.substring( 4, 6 ) * 1 ) - 1,
+                    h_text.substring( 6, 8 ) * 1, h_text.substring( 8, 10 ) * 1, 0, 0, 0 );
+                break;
+
             case 'currency':
                 value = value/100;
         }
@@ -182,7 +203,70 @@ OWA.areaChart.prototype = {
         //alert(d+' date: '+curr_month);
         var date =  curr_month + "/" + curr_date + "/" + curr_year;
         //var date =  curr_month + "/" + curr_date;
+
+        if ( this.xType === 'yyyymmddhh' ) {
+
+            date += ' ' + this.hourLabel( timestamp, false );
+        }
+
         return date;
+    },
+
+    /**
+     * An hour on a 12-hour clock, "12am" to "11pm" -- or the date, "10/30",
+     * at a midnight when the chart spans more than a day.
+     */
+    hourLabel : function ( timestamp, dateAtMidnight ) {
+
+        var d = new Date( timestamp * 1 );
+        var h = d.getUTCHours();
+
+        if ( dateAtMidnight && h === 0 ) {
+
+            return ( d.getUTCMonth() + 1 ) + '/' + d.getUTCDate();
+        }
+
+        return ( h % 12 || 12 ) + ( h < 12 ? 'am' : 'pm' );
+    },
+
+    /**
+     * Ticks on whole hours, as many as the width has room for.
+     *
+     * The step is the smallest of 1, 2, 3, 4, 6, 12, 24 and 48 hours that fits,
+     * so a full-width chart of a day is labelled every two hours and a card
+     * every six. Ticks sit on hours the step divides, so a midnight is always
+     * one of them.
+     */
+    hourTicks : function ( min, max, width ) {
+
+        var HOUR  = 3600000;
+        var room  = Math.max( 2, Math.floor( width / this.options.hourTickWidth ) );
+        var span  = Math.max( 0, Math.round( ( max - min ) / HOUR ) );
+        var steps = [ 1, 2, 3, 4, 6, 12, 24, 48 ];
+        var step  = steps[ steps.length - 1 ];
+
+        for ( var i = 0; i < steps.length; i++ ) {
+
+            if ( Math.floor( span / steps[i] ) + 1 <= room ) {
+
+                step = steps[i];
+                break;
+            }
+        }
+
+        var ticks = [];
+
+        for ( var t = min; t <= max; t += HOUR ) {
+
+            // From the epoch, not the hour of the day, so a 48-hour step still
+            // lands on alternate midnights.
+            if ( Math.round( t / HOUR ) % step === 0 ) {
+
+                ticks.push( t );
+            }
+        }
+
+        return ticks;
     },
     
     /**
@@ -298,6 +382,13 @@ OWA.areaChart.prototype = {
                 }
             };
 
+            this.xType = built.x_type;
+
+            if ( built.x_type === 'yyyymmddhh' ) {
+
+                this.hourAxis( this.flotOptions.xaxis );
+            }
+
             if ( built.x_type === 'yyyymmdd' || built.x_type === 'yyyymm' ) {
 
                 this.flotOptions.xaxis.mode = "time";
@@ -368,6 +459,7 @@ OWA.areaChart.prototype = {
             var zero  = this.zeroFilled( resultSet, zeroX );
 
             this.xDimension = zeroX;
+            this.xType      = zero ? zero.x_type : '';
             this.selected   = null;
 
             this.setupAreaChart( this.options.series, dom_id );
@@ -401,6 +493,11 @@ OWA.areaChart.prototype = {
                     },
                     legend: { show: false }
                 };
+
+                if ( zero.x_type === 'yyyymmddhh' ) {
+
+                    this.hourAxis( this.flotOptions.xaxis );
+                }
 
                 this.dataseries[0].color = this.options.totalColor;
 
@@ -445,8 +542,8 @@ OWA.areaChart.prototype = {
      * timePeriod it was queried for, and that is the question the empty answer
      * belongs to.
      *
-     * Days or months, matching whatever the chart is drawn over, so the
-     * granularity control still means something on an empty report.
+     * Hours, days or months, matching whatever the chart is drawn over, so
+     * the granularity control still means something on an empty report.
      *
      * @return {points, x_type} or null when there is no period to draw against
      */
@@ -478,6 +575,29 @@ OWA.areaChart.prototype = {
         }
 
         var points = [];
+
+        if ( x_name === 'dateHour' ) {
+
+            /*
+             * Every hour of every day, up to the hour it is now: today's
+             * remaining hours have not happened, so they are not zeroes.
+             * currentHour is the server's, in the zone the hours are read in.
+             */
+            var now  = period.currentHour ? String( period.currentHour ) : '';
+            var last = now ? Date.UTC( now.substring( 0, 4 ) * 1, ( now.substring( 4, 6 ) * 1 ) - 1,
+                now.substring( 6, 8 ) * 1, now.substring( 8, 10 ) * 1 ) : Infinity;
+
+            var hour = new Date( start.getTime() );
+            var stop = Math.min( end.getTime() + 23 * 3600000, last );
+
+            while ( hour.getTime() <= stop && points.length < 24 * 31 ) {
+
+                points.push( [ hour.getTime(), 0 ] );
+                hour.setUTCHours( hour.getUTCHours() + 1 );
+            }
+
+            return { points: points, x_type: 'yyyymmddhh' };
+        }
 
         if ( x_name === 'yearMonth' ) {
 
@@ -895,6 +1015,43 @@ OWA.areaChart.prototype = {
     },
 
     /**
+     * An x axis of hours: time mode, labelled by hourLabel(). The ticks are
+     * placed in draw(), where the width is known.
+     */
+    hourAxis : function ( xaxis ) {
+
+        var that = this;
+
+        xaxis.mode        = 'time';
+        xaxis.minTickSize = [ 1, 'hour' ];
+
+        xaxis.tickFormatter = function ( value, axis ) {
+
+            return that.hourLabel( value, ( axis.max - axis.min ) >= 86400000 );
+        };
+    },
+
+    /** How many days the result set's period covers, or null when it has none. */
+    periodDays : function ( resultSet ) {
+
+        var period = resultSet && resultSet.timePeriod;
+
+        if ( ! period || ! period.startDate || ! period.endDate ) {
+
+            return null;
+        }
+
+        var day = function ( yyyymmdd ) {
+
+            var t = String( yyyymmdd );
+
+            return Date.UTC( t.substring( 0, 4 ) * 1, ( t.substring( 4, 6 ) * 1 ) - 1, t.substring( 6, 8 ) * 1 );
+        };
+
+        return Math.round( ( day( period.endDate ) - day( period.startDate ) ) / 86400000 ) + 1;
+    },
+
+    /**
      * Every interval of the period, in order, as x values -- or null when the
      * period cannot be read or is not what the chart is drawn over.
      */
@@ -1006,10 +1163,18 @@ OWA.areaChart.prototype = {
             return;
         }
 
+        var days = this.periodDays( this.explorer.resultSet );
+
         var $select = jQuery( '<select class="owa_chartGranularity">' )
-            .attr( 'title', 'Show this trend by day or by month' );
+            .attr( 'title', 'Show this trend by hour, day or month' );
 
         this.options.granularities.forEach( function ( g ) {
+
+            // Hours over a long period are more points than a chart can show.
+            if ( g.maxDays && days !== null && days > g.maxDays && g.dimension !== current ) {
+
+                return;
+            }
 
             $select.append( jQuery( '<option>' ).attr( 'value', g.dimension )
                 .prop( 'selected', g.dimension === current ).text( g.label ) );
@@ -1214,6 +1379,17 @@ OWA.areaChart.prototype = {
 
             return copy;
         } );
+
+        if ( this.xType === 'yyyymmddhh' && this.flotOptions.xaxis ) {
+
+            var xs = ( this.dataseries[0] && this.dataseries[0].data || [] ).map( function ( p ) { return p[0]; } );
+
+            if ( xs.length ) {
+
+                this.flotOptions.xaxis.ticks = this.hourTicks(
+                    xs[0], xs[ xs.length - 1 ], jQuery( this.domSelector ).width() || 600 );
+            }
+        }
 
         jQuery.plot( jQuery( this.domSelector ), plotted, this.flotOptions );
 

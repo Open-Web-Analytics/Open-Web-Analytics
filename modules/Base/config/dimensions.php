@@ -101,8 +101,10 @@ return array(
         'minute' => array( 'datePart' => 'minute', 'column' => 'ts', 'label' => 'Minute',
             'family' => 'time', 'data_type' => 'integer',
             'description' => 'The minute of the hour, 0 to 59, in the configured timezone.' ),
+        // Its own type, as yearMonth has, so a chart reads it as a time and a
+        // grid does not print it as 2,026,092,518.
         'dateHour' => array( 'datePart' => 'dateHour', 'column' => 'ts', 'label' => 'Date + Hour',
-            'family' => 'time', 'data_type' => 'integer',
+            'family' => 'time', 'data_type' => 'yyyymmddhh',
             'description' => 'The day and hour together, as 2026092518 -- one value that sorts chronologically.' ),
         'siteId' => array( 'column' => 'site_id', 'label' => 'Profile ID',
             'family' => 'site', 'description' => 'The tracking id of the Observation Profile the event was collected for. Reports cover every Profile of a Property; this breaks them out.' ),

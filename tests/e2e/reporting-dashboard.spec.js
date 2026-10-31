@@ -595,6 +595,49 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(dims.h).toBeGreaterThan(0);
     });
 
+    /**
+     * A trend of one day is drawn by hour, on a 12-hour clock, and today's
+     * stops at the hour it is now. Today because the seeded visits are on
+     * other days: an empty day is still drawn over its hours, as zeroes.
+     */
+    test('a one-day trend is drawn by hour', async ({ page }) => {
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}&owa_period=today`,
+            { waitUntil: 'networkidle' });
+
+        await expect.poll(async () => page.evaluate(
+            () => !!(window.siteTrend && window.siteTrend.areaChart && window.siteTrend.areaChart.dataseries)),
+            { timeout: 20_000 }).toBe(true);
+
+        const drawn = await page.evaluate(() => {
+            const chart = window.siteTrend.areaChart;
+            const xs = chart.dataseries[0].data.map((p) => p[0]);
+            return {
+                url: decodeURIComponent(window.siteTrend.resultSet.self),
+                x: chart.xDimension,
+                hours: xs.map((t) => new Date(t).getUTCHours()),
+                now: String(window.siteTrend.resultSet.timePeriod.currentHour),
+                labels: Array.from(document.querySelectorAll('#trend-chart .flot-x-axis .flot-tick-label'))
+                    .map((l) => l.textContent.trim()),
+                options: Array.from(document.querySelectorAll('#trend-chart .owa_chartGranularity option'))
+                    .map((o) => o.value),
+            };
+        });
+
+        expect(drawn.x).toBe('dateHour');
+        expect(drawn.url).toContain('dimensions=dateHour');
+        expect(drawn.url).toContain('sort=dateHour');
+
+        // Midnight to the hour it is now, one point each.
+        const nowHour = Number(drawn.now.substring(8, 10));
+        expect(drawn.hours).toEqual(Array.from({ length: nowHour + 1 }, (_, h) => h));
+
+        expect(drawn.labels[0]).toBe('12am');
+        expect(drawn.labels.every((l) => /^\d{1,2}(am|pm)$/.test(l))).toBe(true);
+
+        expect(drawn.options).toEqual(['dateHour', 'date', 'yearMonth']);
+    });
+
     test('sparkline paints kpi-box canvases', async ({ page }) => {
         // OWA renders each sparkline into <p class="sparkline">; jquery-sparkline
         // 2.4.0 (the jQuery-3.x-clean replacement for the vendored 1.2.1) draws a

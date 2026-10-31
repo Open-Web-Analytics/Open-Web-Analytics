@@ -1069,6 +1069,78 @@ final class ReportDefinitionFormatTest extends TestCase
             'a trend that names no chartMetric must still draw no chart' );
     }
 
+    /**
+     * A trend of one day is charted by hour.
+     *
+     * By `date` it is a single point. `date` becomes `dateHour` as the x
+     * dimension and in a sort naming it; a breakdown stays, and a period of
+     * more than a day keeps days.
+     */
+    public function testATrendOfOneDayIsByHour(): void
+    {
+        $day  = self::period( '20261030', '20261030' );
+        $week = self::period( '20261024', '20261030' );
+
+        $trend = array( 'metrics' => 'sessions', 'dimensions' => 'date', 'sort' => 'date' );
+
+        $this->assertSame(
+            array( 'metrics' => 'sessions', 'dimensions' => 'dateHour', 'sort' => 'dateHour' ),
+            \OWA\Core\ConfiguredReport::trendQuery( $trend, $day ) );
+
+        $this->assertSame( $trend, \OWA\Core\ConfiguredReport::trendQuery( $trend, $week ) );
+        $this->assertSame( $trend, \OWA\Core\ConfiguredReport::trendQuery( $trend, null ) );
+
+        $broken = \OWA\Core\ConfiguredReport::trendQuery(
+            array( 'dimensions' => 'date, medium', 'sort' => 'date-' ), $day );
+
+        $this->assertSame( 'dateHour,medium', $broken['dimensions'] );
+        $this->assertSame( 'dateHour-', $broken['sort'] );
+
+        // A trend over something other than days is the author's choice.
+        $months = array( 'dimensions' => 'yearMonth', 'sort' => 'yearMonth' );
+
+        $this->assertSame( $months, \OWA\Core\ConfiguredReport::trendQuery( $months, $day ) );
+    }
+
+    /**
+     * ...and that is the query a rendered trend issues, and the axis its chart
+     * is drawn over.
+     */
+    public function testARenderedTrendOfOneDayQueriesByHour(): void
+    {
+        $this->requireDbAsAdmin();
+
+        foreach ( array( 'yesterday' => 'dateHour', 'last_seven_days' => 'date' ) as $period => $x ) {
+
+            $html = $this->renderedWith( self::trendCard(), array(), array( 'period' => $period ) );
+
+            $query = $this->queryFor( $html, 'cardurl' );
+
+            $this->assertSame( $x, $query['dimensions'], $period );
+            $this->assertSame( $x, $query['sort'], $period );
+
+            $this->assertMatchesRegularExpression( '/\'makeAreaChart\', \[\{"x":"' . $x . '"/', $html,
+                "the $period chart is not drawn over $x" );
+        }
+    }
+
+    /** A stand-in for a TimePeriod: only its two dates are read. */
+    private static function period( string $start, string $end ): object
+    {
+        $date = function ( string $yyyymmdd ) {
+            return new class( $yyyymmdd ) {
+                public function __construct( private string $d ) {}
+                public function getYyyymmdd() { return $this->d; }
+            };
+        };
+
+        return new class( $date( $start ), $date( $end ) ) {
+            public function __construct( private object $s, private object $e ) {}
+            public function getStartDate() { return $this->s; }
+            public function getEndDate() { return $this->e; }
+        };
+    }
+
     /** Render a definition against a given set of metric sets. */
     private function renderedWith( array $definition, array $metricSets, array $params = array() ): string
     {
