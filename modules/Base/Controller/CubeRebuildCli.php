@@ -586,8 +586,16 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * every few minutes: a quiet Property costs one scan per partition
              * and no swap. A routine run only -- a range an operator names is
              * built as named, which is how a build is forced.
+             *
+             * Unless a build now would SETTLE it. A day whose last beacon came
+             * in the evening is current from about then, and a run that kept
+             * skipping it would never build it after midnight: it stayed
+             * unsettled, catchUpFrom() walked back to it on every run, and the
+             * Reporting Cubes screen showed the cube behind from that day.
              */
-            if ( ! $dry_run && $routine && $builder->isCurrent( $span ) ) {
+            if ( ! $dry_run && $routine && $builder->isCurrent( $span )
+                 && ( $builder->isSettled( $span, $builder->builtAt( $span ) )
+                      || ! $builder->isSettled( $span, (int) round( microtime( true ) * 1000000 ) ) ) ) {
 
                 $outcome['skipped']++;
 
