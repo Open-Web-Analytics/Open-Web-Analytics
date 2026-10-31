@@ -172,6 +172,17 @@ return array(
             'landingPageTitle' => array( 'column' => 'landing_page_title', 'label' => 'Landing Page Title',
                 'family' => 'content', 'description' => "The title of the session's first page." ),
 
+            // ---- the page's place in the session --------------------------
+            'pageDepth' => array( 'column' => 'page_depth', 'label' => 'Page Depth',
+                'family' => 'content', 'data_type' => 'integer',
+                'description' => 'Which page of the session the event happened on: 1 for the landing page, 2 for the next, and so on.' ),
+            'previousPagePath' => array( 'column' => 'previous_page_path', 'label' => 'Previous Page Path',
+                'family' => 'content',
+                'description' => 'On a page view, the path of the page viewed before it in the session, or (entrance) on the first.' ),
+            'nextPagePath' => array( 'column' => 'next_page_path', 'label' => 'Next Page Path',
+                'family' => 'content',
+                'description' => 'On a page view, the path of the page viewed after it in the session, or (exit) on the last. Empty on the newest page of a session that is still open.' ),
+
             // ---- traffic source, at session scope -------------------------
             'sessionSource' => array( 'column' => 'source', 'label' => 'Source',
                 'family' => 'traffic source', 'description' => 'Where this session came from -- the tag if there was one, otherwise the referring host without a leading www.' ),

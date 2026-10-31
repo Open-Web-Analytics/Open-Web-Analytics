@@ -127,6 +127,96 @@ trait CubeColumn {
     }
 
     /**
+     * Add several columns to every cube, in ONE rebuild per cube.
+     *
+     * The rebuild is the cost, not the clause count (Db::alterColumnsRebuilding),
+     * so three columns added one at a time cost three full copies of every cube.
+     * Only the columns a cube lacks are added, so a second run adds nothing.
+     * Where the server will not take the combined ALTER, each column goes the
+     * way addCubeColumn() takes it.
+     *
+     * @param string[] $columns in the entity's order
+     * @return bool
+     */
+    protected function addCubeColumns( array $columns ) {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
+
+            $add = array();
+
+            foreach ( $columns as $column ) {
+
+                if ( ! $db->get_results( sprintf( "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) ) ) {
+
+                    $add[ $column ] = $entity->getColumnDefinition( $column );
+                }
+            }
+
+            if ( ! $add || $db->alterColumnsRebuilding( $table, $add ) ) {
+
+                continue;
+            }
+
+            foreach ( array_keys( $add ) as $column ) {
+
+                if ( $this->addColumnIfMissing( $this->cubeEntity( $table ), $column ) === false ) {
+
+                    $this->e->notice( sprintf( 'Adding %s.%s failed', $table, $column ) );
+
+                    return false;
+                }
+            }
+        }
+
+        return $this->clearCubeInstantColumns();
+    }
+
+    /**
+     * Drop several columns from every cube, in ONE rebuild per cube: the
+     * inverse of addCubeColumns().
+     *
+     * @param string[] $columns
+     * @return bool
+     */
+    protected function dropCubeColumns( array $columns ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
+
+            $drop = array();
+
+            foreach ( $columns as $column ) {
+
+                if ( $db->get_results( sprintf( "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) ) ) {
+
+                    $drop[] = $column;
+                }
+            }
+
+            if ( ! $drop || $db->alterColumnsRebuilding( $table, array(), $drop ) ) {
+
+                continue;
+            }
+
+            foreach ( $drop as $column ) {
+
+                if ( $this->dropColumnIfPresent( $this->cubeEntity( $table ), $column ) === false ) {
+
+                    $this->e->notice( sprintf( 'Dropping %s.%s failed', $table, $column ) );
+
+                    return false;
+                }
+            }
+        }
+
+        return $this->clearCubeInstantColumns();
+    }
+
+    /**
      * The cube shape, bound to one existing cube table.
      *
      * @param string $table

@@ -1035,6 +1035,13 @@ class Builder {
                 Context::SESSION, Context::RAW, Context::SESSION, Context::RAW );
         }
 
+        if ( isset( $required[ Context::PAGES ] ) ) {
+
+            $joins .= sprintf( ' %s (%s) %s ON %s.pg_id = %s.id AND %s.pg_yyyymmdd = %s.yyyymmdd',
+                OWA_SQL_JOIN_LEFT_OUTER, $this->pagesRaw( $lookback, $end ), Context::PAGES,
+                Context::PAGES, Context::RAW, Context::PAGES, Context::RAW );
+        }
+
         if ( isset( $required[ Context::VISITOR ] ) ) {
 
             $joins .= sprintf( ' %s %s %s ON %s.visitor_id = %s.visitor_id',
@@ -1153,6 +1160,16 @@ class Builder {
             ' AND ' . $not_materialized );
 
         /*
+         * How many page views the session has had up to and including this
+         * row: a page view's own position, and for any other event the page it
+         * happened on (PageDepthStep). A running count over the same partition
+         * and order, so it shares session_w's sort; it needs its own window
+         * only because its frame ends at the current row.
+         */
+        $columns[] = "SUM(CASE WHEN w.event_type = 'page_view' THEN 1 ELSE 0 END) OVER session_to_row"
+                   . ' AS session_page_depth';
+
+        /*
          * DEVICE ORDER FIRST, arrival order second.
          *
          * `ts` is stamped at edge receipt, so sorting a session on it orders
@@ -1186,12 +1203,50 @@ class Builder {
             'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d%s '
           . 'WINDOW session_w AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
           . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, w.id '
-          . 'ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)',
+          . 'ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING), '
+          . 'session_to_row AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
+          . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, w.id '
+          . 'ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)',
             implode( ', ', $columns ),
             $this->tables['raw'],
             (int) $from,
             (int) $to,
             $this->siteFilter( 'w' )
+        );
+    }
+
+    /**
+     * Each page view's neighbours: the page viewed before it and after it in
+     * its session, keyed back to the row like windowedRaw().
+     *
+     * LAG and LEAD over the page views alone, in the session window's order.
+     * Measured on MySQL 8.4, a MIN or MAX over a frame running to either end of
+     * the session was recomputed for every row -- 3.5s for one session of 5,000
+     * events -- where this is a sort of the page views: 0.16s for 50,000.
+     *
+     * has_prev and has_next say whether there IS a neighbour, apart from what
+     * its path is: a page view with no path is still a page view, and must not
+     * read as the session's entrance or exit.
+     *
+     * Joined only when a step requires Context::PAGES.
+     *
+     * @param int $from yyyymmdd, inclusive
+     * @param int $to   yyyymmdd, exclusive
+     * @return string
+     */
+    protected function pagesRaw( $from, $to ) {
+
+        return sprintf(
+            'SELECT p.id AS pg_id, p.yyyymmdd AS pg_yyyymmdd, '
+          . 'LAG(p.page_path) OVER pages_w AS prev_path, LAG(1) OVER pages_w AS has_prev, '
+          . 'LEAD(p.page_path) OVER pages_w AS next_path, LEAD(1) OVER pages_w AS has_next '
+          . "FROM %s p WHERE p.event_type = 'page_view' AND p.yyyymmdd >= %d AND p.yyyymmdd < %d%s "
+          . 'WINDOW pages_w AS (PARTITION BY p.site_id, p.visitor_id, p.session_id '
+          . 'ORDER BY COALESCE(p.event_seq, 0), p.ts, p.id)',
+            $this->tables['raw'],
+            (int) $from,
+            (int) $to,
+            $this->siteFilter( 'p' )
         );
     }
 

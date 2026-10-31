@@ -510,3 +510,28 @@ describe('popovers', () => {
         expect($root.find('thead th.is-sorted').attr('data-column')).toBe('bounceRate');
     });
 });
+
+/**
+ * A linked column whose FIRST row has no link.
+ *
+ * A link's except leaves some values unlinked, and on Page Detail's Next Pages
+ * card (exit) is usually the top row. Whether the column links was read off the
+ * first row alone, so no row linked; and a row without a link drew an empty
+ * cell once the column did.
+ */
+describe('a link column with an unlinked first row', () => {
+
+    test('links the rows that have a link and prints the rest', () => {
+        const rows = [
+            { browserType: cell('browserType', 'dimension', '(exit)'), sessions: cell('sessions', 'metric', 2), bounceRate: cell('bounceRate', 'metric', 0, '0.00%') },
+            { browserType: cell('browserType', 'dimension', '/docs', '/docs', { link: '?pagePath=%2Fdocs' }), sessions: cell('sessions', 'metric', 1), bounceRate: cell('bounceRate', 'metric', 0, '0.00%') },
+        ];
+
+        const { $root } = draw(resultSet({ rows }));
+        const $cells = $root.find('tbody tr.owa_gridRow td[data-column="browserType"]');
+
+        expect(texts($cells)).toEqual(['(exit)', '/docs']);
+        expect($cells.eq(0).find('a')).toHaveLength(0);
+        expect($cells.eq(1).find('a').attr('href')).toBe('?pagePath=%2Fdocs');
+    });
+});
