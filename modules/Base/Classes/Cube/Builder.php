@@ -49,11 +49,24 @@ class Builder {
     /**
      * Days of raw read before the partition starts.
      *
-     * Covers a session straddling the boundary. A session is bounded by the
-     * idle timeout and split at midnight, so one day is more slack than it
-     * needs; the cost is one extra partition read.
+     * Covers a session that began the day before: its first event is the
+     * landing page and the source of everything stamped from it. Sessions are
+     * NOT split at midnight -- the tracker ends one only after the idle
+     * timeout -- so a session can run across the boundary.
      */
     const LOOKBACK_DAYS = 1;
+
+    /**
+     * Days of raw read after the partition ends.
+     *
+     * The other side of a session that runs across midnight: without them a
+     * day's build saw the session end at midnight, stamped is_exit on its last
+     * page before midnight and the next day's build stamped another, and the
+     * session aggregates (page views, engagement) counted half the session.
+     * isCurrent() looks at the same rows, so a continuation arriving the next
+     * day rebuilds this one.
+     */
+    const LOOKAHEAD_DAYS = 1;
 
     /** Suffix of the staging table, built and dropped around each swap. */
     const STAGING_SUFFIX = '_rebuild';
@@ -348,8 +361,42 @@ class Builder {
             return false;
         }
 
+        /*
+         * ...and the rows after it that continue its sessions: the build reads
+         * them (LOOKAHEAD_DAYS), so one arriving later changes this partition.
+         * Only those -- the next day's other traffic changes nothing here, and
+         * counting it would rebuild yesterday every time today got a row.
+         */
+        $row = $this->db->get_row( sprintf(
+            'SELECT MAX(n.created_at) AS newest FROM %1$s n WHERE n.yyyymmdd >= %3$d AND n.yyyymmdd < %4$d%5$s'
+          . ' AND (n.site_id, n.visitor_id, n.session_id) IN (SELECT r.site_id, r.visitor_id, r.session_id'
+          . ' FROM %1$s r WHERE r.yyyymmdd >= %2$d AND r.yyyymmdd < %3$d%6$s)',
+            $this->tables['raw'], (int) $span['start'], (int) $span['less_than'],
+            $this->lookahead( (int) $span['less_than'] ), $this->siteFilter( 'n' ), $this->siteFilter( 'r' ) ) );
+
+        if ( is_array( $row ) && ! empty( $row['newest'] ) ) {
+
+            $newest = max( $newest, (int) $row['newest'] );
+        }
+
         // closedBefore() is "now minus a session length", so this is newest plus one.
         return $built_at >= $newest + ( $newest - $this->closedBefore( $newest ) );
+    }
+
+    /**
+     * The end, exclusive, of the raw a build of a partition ending at $end
+     * reads: LOOKAHEAD_DAYS past it.
+     *
+     * date(), not gmdate(): strtotime() reads the day in the configured zone,
+     * and east of UTC its midnight is the day before in UTC, so gmdate() would
+     * hand back $end itself and read nothing ahead.
+     *
+     * @param int $end yyyymmdd, the partition's less_than
+     * @return int yyyymmdd
+     */
+    protected function lookahead( $end ) {
+
+        return (int) date( 'Ymd', strtotime( $end . ' +' . self::LOOKAHEAD_DAYS . ' day' ) );
     }
 
     /**
@@ -1004,6 +1051,7 @@ class Builder {
         $end      = (int) $span['less_than'];
         $lookback = (int) gmdate( 'Ymd',
             strtotime( $start . ' -' . self::LOOKBACK_DAYS . ' day' ) );
+        $ahead    = $this->lookahead( $end );
 
         $select = array();
 
@@ -1031,14 +1079,14 @@ class Builder {
         if ( isset( $required[ Context::SESSION ] ) ) {
 
             $joins .= sprintf( ' JOIN (%s) %s ON %s.w_id = %s.id AND %s.w_yyyymmdd = %s.yyyymmdd',
-                $this->windowedRaw( $lookback, $end ), Context::SESSION,
+                $this->windowedRaw( $lookback, $ahead ), Context::SESSION,
                 Context::SESSION, Context::RAW, Context::SESSION, Context::RAW );
         }
 
         if ( isset( $required[ Context::PAGES ] ) ) {
 
             $joins .= sprintf( ' %s (%s) %s ON %s.pg_id = %s.id AND %s.pg_yyyymmdd = %s.yyyymmdd',
-                OWA_SQL_JOIN_LEFT_OUTER, $this->pagesRaw( $lookback, $end ), Context::PAGES,
+                OWA_SQL_JOIN_LEFT_OUTER, $this->pagesRaw( $lookback, $ahead ), Context::PAGES,
                 Context::PAGES, Context::RAW, Context::PAGES, Context::RAW );
         }
 

@@ -334,6 +334,79 @@ final class CubeCatchUpTest extends TestCase
         $this->assertSame(1, $this->cubeRowsOn($a));
     }
 
+    /**
+     * A day is current only while the sessions it holds have not gone on
+     * into the next day since it was built.
+     *
+     * The build reads a day ahead (Builder::LOOKAHEAD_DAYS), so a session
+     * continuing past midnight changes the earlier day's rows -- its exit, its
+     * next page -- and has to rebuild it. Only those sessions: the next day's
+     * other traffic changes nothing there.
+     */
+    public function testAContinuationIntoTheNextDayMakesADayStale(): void
+    {
+        $day  = self::day(6);
+        $next = self::day(5);
+
+        $session = 8893000000099001;
+        $t1 = strtotime(date('Y-m-d', strtotime('-6 days')) . ' 23:50:00') * 1000000;
+
+        $this->seedRow($day, $session, $t1);
+        $this->buildDay($day);
+
+        $span   = $this->spanFor($day);
+        $before = (int) round(microtime(true) * 1000000) - 3 * 3600 * 1000000;
+
+        // Its rows arrived three hours ago, and it was built an hour after.
+        $this->setCreatedAt($day, $before);
+        $this->setBuiltAt($span, $before + 3600 * 1000000);
+
+        $builder = new Builder(self::PROPERTY);
+
+        $this->assertTrue($builder->isCurrent($span), 'built after its rows and their sessions closed');
+
+        // Another session the next day, arriving after the build.
+        $this->seedRow($next, 8893000000099002, $t1 + 3600 * 1000000);
+        $this->setCreatedAt($next, $before + 2 * 3600 * 1000000);
+
+        $this->assertTrue($builder->isCurrent($span), 'the next day\'s other sessions do not touch this day');
+
+        // The same session, continuing after midnight.
+        $this->seedRow($next, $session, $t1 + 20 * 60 * 1000000);
+        $this->setCreatedAt($next, $before + 2 * 3600 * 1000000);
+
+        $this->assertFalse($builder->isCurrent($span), 'its session went on after it was built');
+    }
+
+    /** One page view, in a session of the caller's choosing. */
+    private function seedRow(int $yyyymmdd, int $session, int $ts): void
+    {
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
+        $entity->setProperties([
+            'id'            => \OWA\Module\Base\Classes\V2Event::id(
+                                   self::SITE, self::VISITOR, $session, $ts, 'page_view'),
+            'event_type'    => 'page_view',
+            'site_id'       => self::SITE,
+            'visitor_id'    => self::VISITOR,
+            'session_id'    => $session,
+            'ts'            => $ts,
+            'yyyymmdd'      => $yyyymmdd,
+            'page_location' => 'https://example.test/',
+            'page_path'     => '/',
+            'is_goal_event' => 0,
+        ]);
+
+        $this->assertTrue($entity->create(), 'seeding owa_event_raw');
+    }
+
+    /** Pretend a day's raw rows reached raw at a given moment. */
+    private function setCreatedAt(int $yyyymmdd, int $usec): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
+            "UPDATE %s SET created_at = %d WHERE site_id = '%s' AND yyyymmdd = %d",
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), $usec, self::SITE, $yyyymmdd));
+    }
+
     /** A named range is built as named, with no catch-up. */
     public function testANamedRangeDoesNotCatchUp(): void
     {
