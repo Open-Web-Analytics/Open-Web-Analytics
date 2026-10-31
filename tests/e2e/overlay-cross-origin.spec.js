@@ -35,6 +35,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { test, expect } = require('@playwright/test');
+const { FIXTURE, login } = require('./fixtures');
 
 const HELPER = path.join(__dirname, 'overlay_e2e_helper.php');
 const HARNESS_HTML = fs.readFileSync(path.join(__dirname, 'overlay_harness.html'), 'utf8');
@@ -277,5 +278,60 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         const call = fetches[0];
         expect(call, 'no request was issued').toBeDefined();
         expect(call.status, 'a token must not work for a page it does not name').toBe(401);
+    });
+    /**
+     * THE WHOLE CHAIN, from the link a reader clicks to the dots on the page.
+     *
+     * The tests above mint their own token over a plain page path. Page
+     * Detail's link minted it over the ENCODED path while the request arrived
+     * decoded, so no real heatmap ever got its data -- a 401, an overlay with
+     * nothing on it -- and they passed. This one takes the overlay parameters
+     * out of the link Page Detail renders and hands them to the overlay
+     * unchanged, so it tests what a reader gets.
+     */
+    test('the heatmap from Page Detail\'s link draws its clicks', async ({ page }, testInfo) => {
+        await login(page);
+        await page.goto(`?owa_do=base.report&owa_reportId=document&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days&owa_pagePath=%2Fpricing', { waitUntil: 'networkidle' });
+
+        const href   = await page.locator('a', { hasText: 'Heatmap Overlay' }).getAttribute('href');
+        const params = JSON.parse(Buffer.from(
+            decodeURIComponent(new URL(href).searchParams.get('overlay_params')), 'base64').toString());
+
+        const pageRoot = crossOrigin(installRoot(testInfo.project.use.baseURL));
+
+        await page.route('**/tests/e2e/overlay_harness.html*', (route) =>
+            route.fulfill({ status: 200, contentType: 'text/html', body: HARNESS_HTML })
+        );
+
+        await page.goto(pageRoot + 'tests/e2e/overlay_harness.html'
+            + '?base=' + encodeURIComponent(pageRoot)
+            + '&action=' + encodeURIComponent(params.action)
+            + '&api=' + encodeURIComponent(params.api_url), { waitUntil: 'load' });
+
+        await page.waitForFunction(
+            () => (window.owaOverlayFetches || []).some((f) => f.url.indexOf('api/index.php') !== -1),
+            null, { timeout: 15000 });
+
+        const call = await page.evaluate(() =>
+            (window.owaOverlayFetches || []).find((f) => f.url.indexOf('api/index.php') !== -1));
+
+        expect(call.status, 'the overlay\'s data request was refused').toBeGreaterThanOrEqual(200);
+        expect(call.status).toBeLessThan(300);
+
+        // The fixture's clicks on /pricing, at (300, 400). The harness keeps the
+        // first 4,000 characters of a response, so this reads the excerpt.
+        expect(call.body).toMatch(/"clickX":\{[^}]*"value":"?300"?/);
+        expect(call.body).toMatch(/"clickY":\{[^}]*"value":"?400"?/);
+
+        // ...and they are drawn: the heatmap canvas is no longer blank.
+        await expect.poll(() => page.evaluate(() => {
+            const c = document.querySelector('#owa_heatmap');
+            if (!c || !c.width || !c.height) return 0;
+            const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+            let painted = 0;
+            for (let k = 3; k < d.length; k += 4) if (d[k] > 0) painted++;
+            return painted;
+        }), { timeout: 15000, message: 'the heatmap canvas stayed blank' }).toBeGreaterThan(0);
     });
 });

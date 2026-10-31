@@ -684,6 +684,13 @@ class Template extends TemplateEngine {
      * single-box install and fails silently on exactly the deployments that
      * most need it right, by fetching from a host that never answers.
      *
+     * **The token holds the resource as the API will READ it back**, which is
+     * the parameter decoded once: the link carries the value as given, and PHP
+     * decodes the query string. The heatmap encodes its page path into
+     * `constraints` (pagePath==%2Fpricing), the request arrived as
+     * pagePath==/pricing, and no token ever matched -- every heatmap's data
+     * was refused with a 401 and the overlay drew nothing.
+     *
      * @param    array    $params        the API request params
      * @param    string    $resourceKey    which param names the resource
      * @return    string
@@ -692,11 +699,13 @@ class Template extends TemplateEngine {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
 
+        parse_str( 'resource=' . (string) $params[ $resourceKey ], $as_read );
+
         $params['overlayToken'] = \OWA\Core\OverlayToken::mint(
             $cu->getUserData('user_id'),
             $params['do'],
             $resourceKey,
-            $params[ $resourceKey ]
+            (string) ( $as_read['resource'] ?? '' )
         );
 
         // add_state MUST be true. It is what carries siteId and the reporting

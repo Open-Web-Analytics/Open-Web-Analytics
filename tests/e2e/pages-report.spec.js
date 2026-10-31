@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test, expect, request } = require('@playwright/test');
 const { FIXTURE, login, openReportNoTabs } = require('./fixtures');
 
 /**
@@ -85,5 +85,35 @@ test.describe('page detail', () => {
 
         expect(response.status()).toBe(302);
         expect(response.headers()['location']).toMatch(/^https:\/\/owa-e2e\.example\.test\/pricing#owa_overlay\./);
+    });
+
+    /**
+     * ...and the overlay's data request, as the tracked page makes it, is
+     * answered with the page's clicks.
+     *
+     * From another origin with no session: the token in the url is the only
+     * credential. It was minted over the encoded page path while the request
+     * arrived decoded, so it never matched and every heatmap drew nothing. The
+     * cross-origin spec mints its own token over a plain path, so it passed.
+     */
+    test('the heatmap data is answered for the token the link carries', async ({ page }) => {
+        await page.goto(`?owa_do=base.report&owa_reportId=document&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days&owa_pagePath=%2Fpricing', { waitUntil: 'networkidle' });
+
+        const href   = await page.locator('a', { hasText: 'Heatmap Overlay' }).getAttribute('href');
+        const params = JSON.parse(Buffer.from(
+            decodeURIComponent(new URL(href).searchParams.get('overlay_params')), 'base64').toString());
+
+        const site     = await request.newContext();
+        const response = await site.get(params.api_url, { headers: { Origin: 'https://owa-e2e.example.test' } });
+
+        // The reporting API answers a report with 201.
+        expect(response.ok(), `status ${response.status()}`).toBe(true);
+
+        const rows = (await response.json()).data.resultsRows;
+
+        // The fixture's two clicks on /pricing, both at (300, 400).
+        expect(rows.map((r) => [r.clickX.value, r.clickY.value, r.eventCount.value].map(Number)))
+            .toEqual([[300, 400, 2]]);
     });
 });
