@@ -591,9 +591,13 @@ OWA.resultSetExplorer.prototype = {
 
     /**
      * Adds a link template to a column
+     *
+     * `except` lists values that are not linked: a Next Page Path of (exit) is
+     * not a page, so there is no Page Detail for it to open.
+     *
      * @public
      */
-    addLinkToColumn : function(col_name, link_template, sub_params) {
+    addLinkToColumn : function(col_name, link_template, sub_params, except) {
 
         this.columnLinks = {};
         if (col_name) {
@@ -601,6 +605,7 @@ OWA.resultSetExplorer.prototype = {
             item.name = col_name;
             item.template = link_template;
             item.params = sub_params;
+            item.except = Array.isArray( except ) ? except : [];
 
             this.columnLinks[col_name] = item;
             item = '';
@@ -645,6 +650,10 @@ OWA.resultSetExplorer.prototype = {
                              * ...[y].name on undefined only in theory.
                              */
                             if ( ! this.resultSet.resultsRows[i][y] ) {
+                                continue;
+                            }
+
+                            if ( this.columnLinks[y].except.indexOf( this.resultSet.resultsRows[i][y].value ) !== -1 ) {
                                 continue;
                             }
 
@@ -1435,6 +1444,9 @@ OWA.dataGrid.formatters = {
                  + OWA.util.escapeHtml( cellvalue.formatted_value )
                  + '</a>';
         }
+
+        // A row its link's except left out: the value, unlinked.
+        return OWA.util.escapeHtml( cellvalue.formatted_value );
     },
 
     useServerFormatter : function(cellvalue, options, rowdata) {
@@ -1608,7 +1620,8 @@ OWA.dataGrid.prototype = {
      */
     columns : function ( rs ) {
 
-        var first    = ( rs.resultsRows || [] )[ 0 ] || {};
+        var rows     = rs.resultsRows || [];
+        var first    = rows[ 0 ] || {};
         var excluded = this.options.excludeColumns || [];
         var dims     = [];
         var metrics  = [];
@@ -1624,7 +1637,10 @@ OWA.dataGrid.prototype = {
                 name:  name,
                 label: cell.label || name,
                 kind:  cell.result_type === 'dimension' ? 'dimension' : 'metric',
-                link:  !! cell.link
+
+                // Linked if ANY row is: a link's except leaves some rows without
+                // one, and the first may be among them -- (exit) leads Next Pages.
+                link:  rows.some( function ( r ) { return !! ( r[ name ] && r[ name ].link ); } )
             };
 
             ( col.kind === 'dimension' ? dims : metrics ).push( col );

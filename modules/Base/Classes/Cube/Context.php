@@ -25,6 +25,9 @@ class Context {
     /** Alias of the windowed session subquery. */
     const SESSION = 's';
 
+    /** Alias of the page views subquery: each page view's previous and next. */
+    const PAGES = 'pg';
+
     /** Alias of the visitor store. */
     const VISITOR = 'v';
 

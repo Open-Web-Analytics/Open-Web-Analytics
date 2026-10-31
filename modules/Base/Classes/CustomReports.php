@@ -1399,6 +1399,18 @@ class CustomReports {
                 \OWA\Core\CoreAPI::t( '%s has a link parameter "%s"; it must be %%s.' ), $where, $value );
         }
 
+        // The values not linked: a list of strings, or absent.
+        if ( array_key_exists( 'except', $link ) ) {
+
+            $except = $link['except'];
+
+            if ( ! is_array( $except ) || $except !== array_values( $except )
+                 || array_filter( $except, function ( $v ) { return ! is_string( $v ); } ) ) {
+
+                return sprintf( \OWA\Core\CoreAPI::t( '%s has a link whose except is not a list of values.' ), $where );
+            }
+        }
+
         return '';
     }
 

@@ -44,7 +44,7 @@ final class EventEntityTest extends TestCase
           . 'EXCHANGE PARTITION compares the two tables column by column.');
     }
 
-    public function testTheTwentySixDerivedColumns(): void
+    public function testTheThirtyDerivedColumns(): void
     {
         // By difference, not by skipping raw's column count: the cube does not
         // carry every raw column (created_at), so the count would be off.
@@ -62,6 +62,7 @@ final class EventEntityTest extends TestCase
             'channel', 'acq_channel',
             'attributed_source', 'attributed_medium', 'attributed_campaign', 'attributed_channel',
             'attributed_ad', 'profile_name',
+            'page_depth', 'previous_page_path', 'next_page_path',
         ], $derived);
     }
 

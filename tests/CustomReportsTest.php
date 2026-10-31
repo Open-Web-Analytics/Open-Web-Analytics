@@ -791,6 +791,16 @@ final class CustomReportsTest extends TestCase
                       'template' => array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '/admin')),
                 'it must be %s',
             ),
+            'except as one value rather than a list' => array(
+                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath', 'template' => $good,
+                      'except' => '(exit)'),
+                'except is not a list',
+            ),
+            'except holding something other than text' => array(
+                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath', 'template' => $good,
+                      'except' => array('(exit)', array('nested'))),
+                'except is not a list',
+            ),
         );
     }
 
@@ -804,6 +814,11 @@ final class CustomReportsTest extends TestCase
             'valueColumns' => 'pagePath',
             'template'     => array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s'),
         );
+
+        $this->assertSame('', CustomReports::validate($definition));
+
+        // ...and with values it does not link.
+        $definition['widgets'][1]['link']['except'] = array('(exit)', '(entrance)');
 
         $this->assertSame('', CustomReports::validate($definition));
     }

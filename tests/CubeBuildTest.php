@@ -983,6 +983,67 @@ final class CubeBuildTest extends TestCase
           . 'would close it early');
     }
 
+    /**
+     * A page view knows its place in the session and the pages either side.
+     *
+     * /landing then /two, then a click on /two, in a session that has closed:
+     * the landing page came from (entrance), the last page went to (exit), and
+     * the click is on page 2 with no neighbours of its own -- previous and next
+     * are about page views.
+     */
+    public function testAPageViewKnowsItsDepthAndItsNeighbours(): void
+    {
+        $t = $this->t0;
+
+        $landing = $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t);
+        $two     = $this->built('page_view', self::VISITOR_TAGGED, 8881000000000001, $t + 60000000);
+        $click   = $this->built('click', self::VISITOR_TAGGED, 8881000000000001, $t + 120000000);
+
+        $this->assertSame([1, '(entrance)', '/two'],
+            [(int) $landing['page_depth'], $landing['previous_page_path'], $landing['next_page_path']]);
+        $this->assertSame([2, '/landing', '(exit)'],
+            [(int) $two['page_depth'], $two['previous_page_path'], $two['next_page_path']]);
+        $this->assertSame([2, null, null],
+            [(int) $click['page_depth'], $click['previous_page_path'], $click['next_page_path']]);
+
+        // A one-page session is its own entrance and exit.
+        $only = $this->built('page_view', self::VISITOR_DIRECT, 8881000000000003, $t);
+
+        $this->assertSame([1, '(entrance)', '(exit)'],
+            [(int) $only['page_depth'], $only['previous_page_path'], $only['next_page_path']]);
+    }
+
+    /**
+     * The order is the DEVICE's, as for is_exit: /second's beacon arrived
+     * first, but event_seq says /first came before it.
+     */
+    public function testNeighboursFollowDeviceOrderRatherThanArrivalOrder(): void
+    {
+        $t = $this->t0;
+
+        $second = $this->built('page_view', self::VISITOR_LATE_BEACON, 8881000000000014, $t);
+        $first  = $this->built('page_view', self::VISITOR_LATE_BEACON, 8881000000000014, $t + 30000000);
+
+        $this->assertSame([1, '(entrance)', '/second'],
+            [(int) $first['page_depth'], $first['previous_page_path'], $first['next_page_path']]);
+        $this->assertSame([2, '/first', '(exit)'],
+            [(int) $second['page_depth'], $second['previous_page_path'], $second['next_page_path']]);
+    }
+
+    /**
+     * An open session's newest page has no next page yet -- not (exit), which
+     * would be a claim the next beacon could contradict. Its other pages do.
+     */
+    public function testTheLastPageOfAnOpenSessionHasNoNextPageYet(): void
+    {
+        $end   = $this->built('page_view', self::VISITOR_OPEN_LATE, 8881000000000016, $this->t0);
+        $start = $this->built('page_view', self::VISITOR_OPEN_LATE, 8881000000000016, $this->t_open);
+
+        $this->assertNull($end['next_page_path']);
+        $this->assertSame('/open-late-end', $start['next_page_path']);
+        $this->assertSame('/open-late-start', $end['previous_page_path']);
+    }
+
     public function testTheSessionsTagsAreStampedOnEveryRowOfIt(): void
     {
         $t = $this->t0;
