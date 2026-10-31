@@ -119,6 +119,14 @@ class OverlayLauncher extends \OWA\Core\Controller {
             return '';
         }
 
+        /*
+         * BEFORE the query is built. Loading the site can be a query of its own
+         * on the same Db, which clears a select half assembled -- and then
+         * getAllRows() dies in generateSelectQuerySql(). A web request had the
+         * site cached already, so only a cold cache showed it.
+         */
+        $domains = self::domainOf( $siteId );
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $db->selectFrom( 'owa_click', 'click' );
@@ -141,8 +149,6 @@ class OverlayLauncher extends \OWA\Core\Controller {
         $db->groupBy( 'document.url' );
         $db->orderBy( 'clicks', 'DESC' );
         $db->limit( self::CANDIDATES );
-
-        $domains = self::domainOf( $siteId );
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
