@@ -165,6 +165,45 @@ final class NavShellTest extends TestCase
         $this->assertStringContainsString( 'prop-42', $rail[1]['items'][1]['href'] );
     }
 
+    /**
+     * Switching the Property and then opening Settings showed the first
+     * Property instead. The gear takes the Property from the link state, and
+     * only that: the period means nothing on a settings screen.
+     */
+    public function testTheSettingsGearNamesTheProperty(): void
+    {
+        $t = $this->template();
+        $t->caller_params['link_state'] = array( 'propertyId' => 'prop-42', 'period' => 'last_seven_days' );
+
+        $rail = $t->navRail( $this->nav(), 'prop-42', array( 'do' => 'base.report', 'reportId' => 'pages' ) );
+
+        $this->assertSame( 'settings', $rail[3]['id'] );
+        $this->assertStringContainsString( 'propertyId=prop-42', $rail[3]['href'] );
+        $this->assertStringNotContainsString( 'period', $rail[3]['href'] );
+
+        $rail = $this->template()->navRail( $this->nav(), '', array( 'do' => 'base.report' ) );
+
+        $this->assertStringNotContainsString( 'propertyId', $rail[3]['href'] );
+    }
+
+    /** add_state takes the keys of the link state to add, as well as true for all of it. */
+    public function testMakeLinkAddsOnlyTheStateKeysAskedFor(): void
+    {
+        $t = $this->template();
+        $t->caller_params['link_state'] = array( 'propertyId' => 'p1', 'period' => 'today' );
+
+        $link = $t->makeLink( array( 'do' => 'base.users' ), array( 'propertyId' ) );
+
+        $this->assertStringContainsString( 'propertyId=p1', $link );
+        $this->assertStringNotContainsString( 'period', $link );
+
+        $this->assertStringContainsString( 'period=today', $t->makeLink( array( 'do' => 'base.users' ), true ) );
+        $this->assertStringNotContainsString( 'propertyId', $t->makeLink( array( 'do' => 'base.users' ) ) );
+        $this->assertStringContainsString( 'propertyId=p9',
+            $t->makeLink( array( 'do' => 'base.users', 'propertyId' => 'p9' ), array( 'propertyId' ) ),
+            'the link\'s own params win over the state' );
+    }
+
     public function testOnASettingsScreenOnlySettingsIsCurrent(): void
     {
         $rail = $this->template()->navRail( $this->nav(), 'p1', array( 'do' => 'base.customReports' ), '', true );
@@ -208,6 +247,25 @@ final class NavShellTest extends TestCase
             array_column( $groups, 'heading' ) );
         $this->assertSame( array( 'Main profile', 'Add profile' ), $this->labels( $groups[3]['items'] ) );
         $this->assertTrue( $groups[0]['items'][0]['current'] );
+    }
+
+    /** The column's entries carry the Property in the link state; one naming its own keeps it. */
+    public function testSettingsEntriesCarryThePropertyInTheLinkState(): void
+    {
+        $t = $this->template();
+        $t->caller_params['link_state'] = array( 'propertyId' => 'p7' );
+
+        $groups = $t->settingsColumn( $this->hierarchyNav(), array( 'do' => 'base.myProfile' ) );
+        $hrefs  = array_column( array_merge( ...array_column( $groups, 'items' ) ), 'href', 'label' );
+
+        $this->assertStringContainsString( 'propertyId=p7', $hrefs['User profile'] );
+        $this->assertStringContainsString( 'propertyId=p7', $hrefs['General'] );
+        $this->assertStringContainsString( 'propertyId=p1', $hrefs['Details'] );
+        $this->assertTrue( $groups[0]['items'][0]['current'], 'the extra param does not change which entry is current' );
+
+        $groups = $this->template()->settingsColumn( $this->hierarchyNav(), array( 'do' => 'base.myProfile' ) );
+
+        $this->assertStringNotContainsString( 'propertyId', $groups[0]['items'][0]['href'] );
     }
 
     /** A Profile's entry is current on each of its tabs, a module's included. */
