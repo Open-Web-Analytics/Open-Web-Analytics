@@ -225,6 +225,15 @@ return array(
     'profile_name' => array( 'kind' => 'copy', 'from' => 'profile.name', 'text' => true,
         'description' => 'The name of the Observation Profile the event was collected for, as it was when its day was last built.' ),
 
+    // Where a page view sits in its session, and the pages either side of it;
+    // see Classes\Cube\PageDepthStep, PreviousPageStep and NextPageStep.
+    'page_depth' => array( 'kind' => 'page_depth',
+        'description' => 'Which page of its session the event happened on: 1 for the landing page.' ),
+    'previous_page_path' => array( 'kind' => 'previous_page',
+        'description' => 'On a page view, the path of the page viewed before it in the session, or (entrance) on the first.' ),
+    'next_page_path' => array( 'kind' => 'next_page',
+        'description' => 'On a page view, the path of the page viewed after it in the session, or (exit) on the last once the session has closed.' ),
+
     // When the build wrote this partition, in microseconds. Constant within
     // one, which is what lets a report say how fresh its answer is.
     'built_at' => array( 'kind' => 'literal', 'value' => 'built_at',

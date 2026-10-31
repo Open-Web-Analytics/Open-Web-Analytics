@@ -68,7 +68,8 @@ abstract class Step {
      * Which joins the assembler has to emit for this step's SQL to resolve.
      *
      * Demand-driven: a join nothing asks for is not in the statement. Values
-     * are Context::SESSION, Context::VISITOR and Context::COMPUTED.
+     * are Context::SESSION, Context::PAGES, Context::VISITOR and
+     * Context::COMPUTED.
      *
      * @return string[]
      */

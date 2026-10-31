@@ -223,6 +223,15 @@ class Columns {
             case 'new_vs_returning':
                 return new NewVsReturningStep( $column );
 
+            case 'page_depth':
+                return new PageDepthStep( $column );
+
+            case 'previous_page':
+                return new PreviousPageStep( $column );
+
+            case 'next_page':
+                return new NextPageStep( $column );
+
             case 'is_engaged_session':
                 return new IsEngagedSessionStep( $column );
 

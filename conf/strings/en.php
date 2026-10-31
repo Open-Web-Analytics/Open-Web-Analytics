@@ -31,6 +31,7 @@ return array(
     '%s has a link parameter "%s"; it must be %%s.' => '%s has a link parameter "%s"; it must be %%s.',
     '%s has a link that is not an object.' => '%s has a link that is not an object.',
     '%s has a link to something other than a report.' => '%s has a link to something other than a report.',
+    '%s has a link whose except is not a list of values.' => '%s has a link whose except is not a list of values.',
     '%s has a link with %d parameters; it takes exactly one.' => '%s has a link with %d parameters; it takes exactly one.',
     '%s has a link with no %s.' => '%s has a link with no %s.',
     '%s has an unknown widget type "%s". Types: %s.' => '%s has an unknown widget type "%s". Types: %s.',

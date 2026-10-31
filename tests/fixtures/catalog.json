@@ -4,9 +4,9 @@
         "metricImplementations": 41,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 88,
-        "dimensionEntriesDenormalized": 88,
-        "accessorDimensionNames": 88
+        "dimensionNamesDenormalized": 91,
+        "dimensionEntriesDenormalized": 91,
+        "accessorDimensionNames": 91
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -1838,6 +1838,19 @@
                 "denormalized": true
             }
         },
+        "nextPagePath": {
+            "base.event": {
+                "name": "nextPagePath",
+                "entity": "base.event",
+                "column": "next_page_path",
+                "family": "content",
+                "label": "Next Page Path",
+                "description": "On a page view, the path of the page viewed after it in the session, or (exit) on the last. Empty on the newest page of a session that is still open.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
         "operatingSystemWithVersion": {
             "base.event": {
                 "name": "operatingSystemWithVersion",
@@ -1879,6 +1892,19 @@
                 "description": "The version of that operating system.",
                 "foreign_key_name": "",
                 "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "pageDepth": {
+            "base.event": {
+                "name": "pageDepth",
+                "entity": "base.event",
+                "column": "page_depth",
+                "family": "content",
+                "label": "Page Depth",
+                "description": "Which page of the session the event happened on: 1 for the landing page, 2 for the next, and so on.",
+                "foreign_key_name": "",
+                "data_type": "integer",
                 "denormalized": true
             }
         },
@@ -1960,6 +1986,19 @@
                 "family": "content",
                 "label": "Page Title",
                 "description": "The title of the page as it was at the time of the event.",
+                "foreign_key_name": "",
+                "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "previousPagePath": {
+            "base.event": {
+                "name": "previousPagePath",
+                "entity": "base.event",
+                "column": "previous_page_path",
+                "family": "content",
+                "label": "Previous Page Path",
+                "description": "On a page view, the path of the page viewed before it in the session, or (entrance) on the first.",
                 "foreign_key_name": "",
                 "data_type": "string",
                 "denormalized": true
@@ -2930,6 +2969,17 @@
             "data_type": "string",
             "denormalized": true
         },
+        "nextPagePath": {
+            "name": "nextPagePath",
+            "entity": "base.event",
+            "column": "next_page_path",
+            "family": "content",
+            "label": "Next Page Path",
+            "description": "On a page view, the path of the page viewed after it in the session, or (exit) on the last. Empty on the newest page of a session that is still open.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
         "operatingSystemWithVersion": {
             "name": "operatingSystemWithVersion",
             "entity": "base.event",
@@ -2966,6 +3016,17 @@
             "description": "The version of that operating system.",
             "foreign_key_name": "",
             "data_type": "string",
+            "denormalized": true
+        },
+        "pageDepth": {
+            "name": "pageDepth",
+            "entity": "base.event",
+            "column": "page_depth",
+            "family": "content",
+            "label": "Page Depth",
+            "description": "Which page of the session the event happened on: 1 for the landing page, 2 for the next, and so on.",
+            "foreign_key_name": "",
+            "data_type": "integer",
             "denormalized": true
         },
         "pageLocation": {
@@ -3035,6 +3096,17 @@
             "family": "content",
             "label": "Page Title",
             "description": "The title of the page as it was at the time of the event.",
+            "foreign_key_name": "",
+            "data_type": "string",
+            "denormalized": true
+        },
+        "previousPagePath": {
+            "name": "previousPagePath",
+            "entity": "base.event",
+            "column": "previous_page_path",
+            "family": "content",
+            "label": "Previous Page Path",
+            "description": "On a page view, the path of the page viewed before it in the session, or (entrance) on the first.",
             "foreign_key_name": "",
             "data_type": "string",
             "denormalized": true
@@ -3330,12 +3402,15 @@
                 "landingPagePlusQuery",
                 "landingPageQuery",
                 "landingPageTitle",
+                "nextPagePath",
+                "pageDepth",
                 "pageLocation",
                 "pagePath",
                 "pagePathPlusQuery",
                 "pageQuery",
                 "pageReferrer",
-                "pageTitle"
+                "pageTitle",
+                "previousPagePath"
             ],
             "device": [
                 "browserType",

@@ -297,6 +297,22 @@ class Event extends EventRaw {
          * ADDs it.
          */
         $this->setProperty( $this->column( 'profile_name', OWA_DTD_VARCHAR255 ) );
+
+        /*
+         * WHERE A PAGE VIEW SITS IN ITS SESSION, and the pages either side of
+         * it: the Page Depth, Previous Page Path and Next Page Path dimensions.
+         * Nullable: an event before the first page view has no depth, and only
+         * page views have neighbours. LAST: Update072 ADDs them.
+         *
+         * The paths are TEXT, not page_path's VARCHAR(1024). MySQL counts a
+         * VARCHAR's full declared width -- 4KB in utf8mb4 -- against its 65,535
+         * byte row limit and a TEXT's as a few bytes, and as VARCHARs these two
+         * left a cube room for 6 custom dimensions rather than 10 or more
+         * (CubeHasRoomForItsDimensionsTest).
+         */
+        $this->setProperty( $this->column( 'page_depth', OWA_DTD_INT ) );
+        $this->setProperty( $this->column( 'previous_page_path', OWA_DTD_TEXT ) );
+        $this->setProperty( $this->column( 'next_page_path', OWA_DTD_TEXT ) );
     }
 
     /**

@@ -727,7 +727,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['link'] ) ): ?>
         var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
-        <?php echo $owa_id; ?>.addLinkToColumn('<?php $view->out( $owa_w['link']['linkColumn'], false ); ?>', <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>);
+        <?php echo $owa_id; ?>.addLinkToColumn('<?php $view->out( $owa_w['link']['linkColumn'], false ); ?>', <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>, <?php
+            // A list, so not makeJson(), which always writes an object.
+            echo json_encode( array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? array() ) ) ),
+                JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>);
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['excludeColumns'] ) ): ?>
         <?php

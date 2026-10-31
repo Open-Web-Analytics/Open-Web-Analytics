@@ -1,6 +1,6 @@
 {
     "title": "Page Detail: ",
-    "description": "Page views and sessions for one page over the period, with links to its heatmap and its element clicks.",
+    "description": "Page views and sessions for one page over the period, the pages viewed before and after it, and links to its heatmap and its element clicks.",
     "titleSuffix": "{pagePath}",
     "params": {
         "pagePath": {}
@@ -22,6 +22,74 @@
                     "fromParam": "pagePath"
                 }
             ]
+        },
+        {
+            "type": "grid-card",
+            "id": "previousPages",
+            "container": "previous-pages",
+            "title": "Previous Pages",
+            "colspan": 6,
+            "query": {
+                "metrics": "pageViews",
+                "dimensions": "previousPagePath",
+                "sort": "pageViews-"
+            },
+            "constraints": [
+                {
+                    "dimension": "pagePath",
+                    "fromParam": "pagePath"
+                },
+                {
+                    "dimension": "eventName",
+                    "value": "page_view"
+                }
+            ],
+            "link": {
+                "linkColumn": "previousPagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "previousPagePath",
+                "except": [
+                    "(entrance)"
+                ]
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "nextPages",
+            "container": "next-pages",
+            "title": "Next Pages",
+            "colspan": 6,
+            "query": {
+                "metrics": "pageViews",
+                "dimensions": "nextPagePath",
+                "sort": "pageViews-"
+            },
+            "constraints": [
+                {
+                    "dimension": "pagePath",
+                    "fromParam": "pagePath"
+                },
+                {
+                    "dimension": "eventName",
+                    "value": "page_view"
+                }
+            ],
+            "link": {
+                "linkColumn": "nextPagePath",
+                "template": {
+                    "do": "base.report",
+                    "reportId": "document",
+                    "pagePath": "%s"
+                },
+                "valueColumns": "nextPagePath",
+                "except": [
+                    "(exit)"
+                ]
+            }
         },
         {
             "type": "heatmap-link",
