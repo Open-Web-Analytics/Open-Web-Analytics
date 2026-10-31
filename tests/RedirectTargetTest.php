@@ -100,12 +100,27 @@ final class RedirectTargetTest extends TestCase
      * to something that is not in the file, and the assertion would pass whatever
      * the source said.
      */
+    /**
+     * A caller may vouch for another host it has checked -- the overlay
+     * launcher, for the tracked site's -- and for that host only.
+     */
+    public function testAHostTheCallerVouchesForIsKept()
+    {
+        $this->assertSame('https://www.example.test/p',
+            \OWA\Core\Lib::resolveRedirectUrl('https://www.example.test/p', ['www.example.test']));
+
+        $this->assertSame(self::BASE,
+            \OWA\Core\Lib::resolveRedirectUrl('https://evil.test/p', ['www.example.test']));
+    }
+
     public function testRedirectBrowserResolvesItsTarget()
     {
         $source = (string) file_get_contents(__DIR__ . '/../Core/Lib.php');
 
         $this->assertMatchesRegularExpression(
-            '/function redirectBrowser\s*\([^)]*\)\s*\{[^}]*resolveRedirectUrl/s',
+            // Up to the body's brace, not the first ')': a default of array()
+            // in the signature has one of its own.
+            '/function redirectBrowser\s*\([^{]*\{[^}]*resolveRedirectUrl/s',
             $source,
             'redirectBrowser() must resolve its target before emitting the Location header'
         );

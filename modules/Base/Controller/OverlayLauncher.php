@@ -41,9 +41,11 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $url = '';
 
+        $siteId = (string) $this->get('siteId');
+
         if ( $this->get('pagePath') ) {
 
-            $url = $this->urlForPath( (string) $this->get('pagePath'), (string) $this->get('siteId') );
+            $url = $this->urlForPath( (string) $this->get('pagePath'), $siteId );
 
         } elseif ($this->get('document_id')) {
 
@@ -56,6 +58,17 @@ class OverlayLauncher extends \OWA\Core\Controller {
 			$d->load( $id );
 
 	        $url = trim( (string) $d->get( $url_param ) );
+
+	        // A document is shared across sites, so its url is opened only on
+	        // this site's own domain, like urlForPath()'s.
+	        if ( ! self::isOnDomain( (string) parse_url( $url, PHP_URL_HOST ), self::domainOf( $siteId ) ) ) {
+	            $url = '';
+	        }
+        }
+
+        // Only on a site this user may see.
+        if ( $url !== '' && ! \OWA\Core\CoreAPI::getCurrentUser()->isCapable( 'view_reports', $siteId ) ) {
+            $url = '';
         }
 
         if ( $url !== '' ) {
@@ -67,7 +80,9 @@ class OverlayLauncher extends \OWA\Core\Controller {
 	
 	        $url = $url.'#owa_overlay.' . trim( (string) $this->getParam( 'overlay_params' ), '\u0000' );
 			
-			$this->redirectBrowserToUrl($url);
+			// The tracked site is another host, which a redirect refuses unless
+			// vouched for; only a host of the site's own domain gets here.
+			$this->redirectBrowserToUrl( $url, array( (string) parse_url( $url, PHP_URL_HOST ) ) );
 			$this->set('url', $url);
 		}
     }
@@ -87,6 +102,11 @@ class OverlayLauncher extends \OWA\Core\Controller {
      *
      * Scoped by site: documents are content-hashed and shared across sites, so
      * without it this could open a page belonging to somebody else's site.
+     *
+     * And only a url on the site's own domain -- a host it names or a subdomain
+     * of one. Anyone can send a beacon naming any page, and the overlay's data
+     * link, token and all, travels in the fragment of the url opened: a click
+     * forged onto another host would hand it to that host.
      *
      * @param string $path
      * @param string $siteId
@@ -120,10 +140,71 @@ class OverlayLauncher extends \OWA\Core\Controller {
         $db->where( 'click.site_id', $siteId );
         $db->groupBy( 'document.url' );
         $db->orderBy( 'clicks', 'DESC' );
+        $db->limit( self::CANDIDATES );
 
-        $row = $db->getOneRow();
+        $domains = self::domainOf( $siteId );
 
-        return is_array( $row ) ? trim( (string) $row['url'] ) : '';
+        foreach ( (array) $db->getAllRows() as $row ) {
+
+            $url = trim( (string) $row['url'] );
+
+            if ( self::isOnDomain( (string) parse_url( $url, PHP_URL_HOST ), $domains ) ) {
+
+                return $url;
+            }
+        }
+
+        return '';
+    }
+
+    /** How many of the most-clicked urls are tried for one on the site's domain. */
+    const CANDIDATES = 25;
+
+    /**
+     * The site's domain as a bare host, without a leading www.: it is stored
+     * as entered, scheme and all ("http://www.example.com").
+     *
+     * @param string $siteId
+     * @return string[] none when the site has no domain
+     */
+    private static function domainOf( $siteId ) {
+
+        if ( $siteId === '' ) {
+
+            return array();
+        }
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+        $site->getByColumn( 'site_id', $siteId );
+
+        $domain = strtolower( trim( (string) $site->get( 'domain' ) ) );
+        $host   = (string) parse_url( strpos( $domain, '//' ) === false ? '//' . $domain : $domain, PHP_URL_HOST );
+        $host   = preg_replace( '/^www\./', '', $host );
+
+        return $host !== '' ? array( $host ) : array();
+    }
+
+    /**
+     * Whether a host is one of the domains or a subdomain of one: www. and
+     * the other hosts a site serves under.
+     *
+     * @param string   $host
+     * @param string[] $domains from domainOf()
+     * @return bool
+     */
+    private static function isOnDomain( $host, array $domains ) {
+
+        $host = strtolower( $host );
+
+        foreach ( $domains as $domain ) {
+
+            if ( $host === $domain || substr( $host, -strlen( '.' . $domain ) ) === '.' . $domain ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

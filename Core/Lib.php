@@ -753,10 +753,10 @@ class Lib {
      *
      * @param string $url
      */
-    public static function redirectBrowser($url) {
+    public static function redirectBrowser($url, array $also_hosts = array()) {
 
         // 302 redirect to URL
-        header ('Location: '.\OWA\Core\Lib::resolveRedirectUrl( $url ));
+        header ('Location: '.\OWA\Core\Lib::resolveRedirectUrl( $url, $also_hosts ));
         header ('HTTP/1.0 302 Found');
     }
 
@@ -771,10 +771,15 @@ class Lib {
      *
      * Applied here rather than at each call site so every redirect is covered.
      *
-     * @param  string $url
+     * $also_hosts are other hosts the CALLER vouches for, from data it holds
+     * rather than from the request: the overlay launcher opens a page on the
+     * tracked site, whose host it has checked against the Profile's domain.
+     *
+     * @param  string   $url
+     * @param  string[] $also_hosts
      * @return string
      */
-    public static function resolveRedirectUrl( $url ) {
+    public static function resolveRedirectUrl( $url, array $also_hosts = array() ) {
 
         $base = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
         $url  = trim( (string) $url );
@@ -815,6 +820,14 @@ class Lib {
         if ( empty( $parts['host'] ) ) {
 
             return $url;
+        }
+
+        foreach ( $also_hosts as $host ) {
+
+            if ( strcasecmp( $parts['host'], (string) $host ) === 0 ) {
+
+                return $url;
+            }
         }
 
         $base_parts = parse_url( $base );
