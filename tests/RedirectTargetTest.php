@@ -105,7 +105,9 @@ final class RedirectTargetTest extends TestCase
         $source = (string) file_get_contents(__DIR__ . '/../Core/Lib.php');
 
         $this->assertMatchesRegularExpression(
-            '/function redirectBrowser\s*\([^)]*\)\s*\{[^}]*resolveRedirectUrl/s',
+            // Up to the body's brace, not the first ')': a default of array()
+            // in the signature has one of its own.
+            '/function redirectBrowser\s*\([^{]*\{[^}]*resolveRedirectUrl/s',
             $source,
             'redirectBrowser() must resolve its target before emitting the Location header'
         );

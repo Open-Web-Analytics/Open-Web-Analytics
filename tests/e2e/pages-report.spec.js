@@ -64,4 +64,26 @@ test.describe('page detail', () => {
             { cells: ['/docs', '1'], linked: true },
         ]);
     });
+
+    /**
+     * The Heatmap Overlay link opens the page, with the overlay anchor on it.
+     *
+     * Page Detail's link went through the launcher with the report's link
+     * state, which is its Property and no siteId since reports became a
+     * Property's; the launcher read siteId alone, found no page and redirected
+     * nowhere. The other heatmap specs build the anchor or pass siteId by hand,
+     * so none of them followed this link. The site is not real, so the
+     * launcher's redirect is read rather than followed.
+     */
+    test('the heatmap link opens the page with the overlay', async ({ page }) => {
+        await page.goto(`?owa_do=base.report&owa_reportId=document&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days&owa_pagePath=%2Fpricing', { waitUntil: 'networkidle' });
+
+        const href = await page.locator('a', { hasText: 'Heatmap Overlay' }).getAttribute('href');
+
+        const response = await page.request.get(href, { maxRedirects: 0 });
+
+        expect(response.status()).toBe(302);
+        expect(response.headers()['location']).toMatch(/^https:\/\/owa-e2e\.example\.test\/pricing#owa_overlay\./);
+    });
 });
