@@ -1044,6 +1044,54 @@ final class CubeBuildTest extends TestCase
         $this->assertSame('/open-late-start', $end['previous_page_path']);
     }
 
+    /**
+     * A session that runs across midnight is one session on both days.
+     *
+     * /before at 23:50, /after at 00:10 the next day. A day's build read a day
+     * back and none forward, so the first day saw the session end at midnight:
+     * /before was an exit there, /after was one on the next day -- two exits
+     * for one session -- and /before had no next page. Each day is built on its
+     * own, as the scheduler builds them.
+     */
+    public function testASessionAcrossMidnightIsOneSessionOnBothDays(): void
+    {
+        $day1 = (int) date('Ymd', strtotime('-3 days'));
+        $day2 = (int) date('Ymd', strtotime('-2 days'));
+        $t1   = strtotime(date('Y-m-d', strtotime('-3 days')) . ' 23:50:00') * 1000000;
+        $t2   = strtotime(date('Y-m-d', strtotime('-2 days')) . ' 00:10:00') * 1000000;
+
+        $session = 8881000000000099;
+        $today   = $this->yyyymmdd;
+
+        $this->yyyymmdd = $day1;
+        $this->seed('page_view', self::VISITOR_DIRECT, $session, $t1, ['page_path' => '/before', 'event_seq' => 1]);
+
+        $this->yyyymmdd = $day2;
+        $this->seed('page_view', self::VISITOR_DIRECT, $session, $t2, ['page_path' => '/after', 'event_seq' => 2]);
+
+        $this->yyyymmdd = $today;
+
+        $builder = new \OWA\Module\Base\Classes\Cube\Builder(self::PROPERTY);
+
+        foreach ([$day1, $day2] as $day) {
+            foreach ($builder->partitions($day, $day) as $span) {
+                $this->assertTrue($builder->rebuild($span)['ok'], 'rebuilding ' . $span['name']);
+            }
+        }
+
+        $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
+            'SELECT page_path, is_entrance, is_exit, is_engaged_session, page_depth, previous_page_path, next_page_path'
+          . ' FROM %s WHERE session_id = %d ORDER BY ts', $this->cube(), $session));
+
+        $this->assertSame([
+            ['/before', 1, 0, 1, 1, '(entrance)', '/after'],
+            ['/after', 0, 1, 1, 2, '/before', '(exit)'],
+        ], array_map(function ($r) {
+            return [$r['page_path'], (int) $r['is_entrance'], (int) $r['is_exit'], (int) $r['is_engaged_session'],
+                (int) $r['page_depth'], $r['previous_page_path'], $r['next_page_path']];
+        }, $rows), 'one entrance, one exit, and two page views make it engaged on both days');
+    }
+
     public function testTheSessionsTagsAreStampedOnEveryRowOfIt(): void
     {
         $t = $this->t0;
