@@ -466,6 +466,10 @@ class TimePeriod {
         $info['endTime'] = $this->endDate->getTimestamp();
         $info['label'] = $this->getLabel();
 
+        // The hour it is now, as dateHour spells it and in the zone it reads
+        // in, so a trend by hour of today stops at the hour it has reached.
+        $info['currentHour'] = (int) date( 'YmdH' );
+
         return $info;
     }
 

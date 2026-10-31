@@ -1349,7 +1349,7 @@
                 "label": "Date + Hour",
                 "description": "The day and hour together, as 2026092518 -- one value that sorts chronologically.",
                 "foreign_key_name": "",
-                "data_type": "integer",
+                "data_type": "yyyymmddhh",
                 "denormalized": true,
                 "expression": true,
                 "datePart": "dateHour"
@@ -2512,7 +2512,7 @@
             "label": "Date + Hour",
             "description": "The day and hour together, as 2026092518 -- one value that sorts chronologically.",
             "foreign_key_name": "",
-            "data_type": "integer",
+            "data_type": "yyyymmddhh",
             "denormalized": true,
             "expression": true,
             "datePart": "dateHour"

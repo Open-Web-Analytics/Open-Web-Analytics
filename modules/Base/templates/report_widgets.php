@@ -207,6 +207,11 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * Built HERE, while $owa_query is still being assembled, because a
      * broken-out trend has to change it -- see resultsPerPage below.
      */
+    if ( in_array( ( $owa_w['type'] ?? '' ), array( 'trend', 'trend-card' ), true ) ) {
+
+        $owa_query = \OWA\Core\ConfiguredReport::trendQuery( $owa_query, $view->period_obj ?? null );
+    }
+
     $owa_trendDims = array_values( array_filter( array_map( 'trim',
         explode( ',', (string) ( $owa_query['dimensions'] ?? '' ) ) ) ) );
 
