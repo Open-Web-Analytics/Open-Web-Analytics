@@ -298,6 +298,42 @@ final class CubeCatchUpTest extends TestCase
             'A is settled, so the walk stops there');
     }
 
+    /**
+     * A QUIET EVENING. Day A's last beacon came at 23:00 and A was built a
+     * session length later, before midnight: current, so a routine run would
+     * skip it, and never settled. A routine run rebuilds it once, since a
+     * build now settles it, and the walk then has nothing to find.
+     */
+    public function testACurrentButUnsettledPartitionIsBuiltOnceItCanSettle(): void
+    {
+        $a = self::day(6);
+
+        $this->requireOutsideTheWindow($a);
+
+        self::seedRaw($a);
+        $this->buildDay($a);
+
+        $session = ((int) \OWA\Core\CoreAPI::getSetting('base', 'session_length') ?: 1800) * 1000000;
+        $arrived = strtotime("$a 23:00:00") * 1000000;
+        $built   = $arrived + $session;
+
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("UPDATE %s SET created_at = %d WHERE site_id = '%s'",
+            \OWA\Core\CoreAPI::entityFactory('base.event_raw')->getTableName(), $arrived, self::SITE));
+        $this->setBuiltAt($this->spanFor($a), $built);
+
+        $builder = new Builder(self::PROPERTY);
+
+        $this->assertTrue($builder->isCurrent($this->spanFor($a)), 'nothing arrived after the build');
+        $this->assertSame((int) $this->spanFor($a)['start'], $builder->catchUpFrom(self::day(1)),
+            'not settled, so the cube reads as behind from A');
+
+        $this->routine();
+
+        $this->assertNotSame($built, $builder->builtAt($this->spanFor($a)), 'the routine run rebuilt A');
+        $this->assertNull($builder->catchUpFrom(self::day(1)), 'and the cube is no longer behind');
+        $this->assertSame(1, $this->cubeRowsOn($a));
+    }
+
     /** A named range is built as named, with no catch-up. */
     public function testANamedRangeDoesNotCatchUp(): void
     {
