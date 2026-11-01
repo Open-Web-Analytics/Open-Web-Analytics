@@ -1437,6 +1437,12 @@ abstract class Module {
                 $column = $d['column'];
             }
 
+            // Resolved by the reports API, left out of the pickers.
+            if ( ! empty( $d['internal'] ) ) {
+
+                $options['internal'] = true;
+            }
+
             $this->registerDimension(
                 $name,
                 isset( $d['entity'] ) ? $d['entity'] : $declaration['entity'],

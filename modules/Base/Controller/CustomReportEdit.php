@@ -228,10 +228,17 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         return self::choices( \OWA\Core\CoreAPI::getAllMetrics() );
     }
 
-    /** @return array */
+    /**
+     * The dimensions a person may pick: every registered one except those
+     * declared internal, which a feature queries and nobody groups by (the
+     * heatmap's coordinates and element anchor).
+     *
+     * @return array
+     */
     public static function dimensionChoices() {
 
-        return self::choices( \OWA\Core\CoreAPI::getAllDimensions() );
+        return self::choices( array_filter( (array) \OWA\Core\CoreAPI::getAllDimensions(),
+            static fn( $dim ) => empty( $dim['internal'] ) ) );
     }
 
     /**
