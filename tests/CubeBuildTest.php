@@ -237,6 +237,10 @@ final class CubeBuildTest extends TestCase
         if (!\OWA\Module\Base\Classes\Cube\Cubes::create(self::PROPERTY)) {
             throw new \RuntimeException('creating the fixture Property\'s cube failed');
         }
+
+        // Day partitions for the days counted back from today, on any date.
+        owa_test_daily_partitions(\OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY),
+            (int) date('Ymd', strtotime('-7 days')));
     }
 
     private function table(string $entity): string

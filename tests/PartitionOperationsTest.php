@@ -1553,7 +1553,8 @@ final class PartitionOperationsTest extends TestCase
         $n = 0;
 
         foreach (\OWA\Core\CoreAPI::dbSingleton()->getPartitionSpans($table) as $span) {
-            if ((strtotime($span['less_than']) - strtotime($span['start'])) / 86400 <= 1) { $n++; }
+            // By date, not seconds: the day the clocks go back is 25 hours.
+            if (date('Ymd', strtotime($span['start'] . ' +1 day')) === (string) $span['less_than']) { $n++; }
         }
 
         return $n;

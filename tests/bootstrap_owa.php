@@ -147,6 +147,50 @@ function owa_test_db_available(): bool
 }
 
 /**
+ * One partition per day of a fixture cube, from $from to today.
+ *
+ * A new cube's partitions are daily from the 1st of this month, and
+ * extendPartitionsBack() adds earlier months whole. So a test using days
+ * counted back from today has them in a month-wide partition early in a month
+ * and in day partitions later -- built together or apart, settled at a
+ * different moment -- and passes or fails by the date. This makes the days it
+ * uses day partitions on any date.
+ *
+ * @param string $table cube table
+ * @param int    $from  yyyymmdd, the first day the test uses
+ */
+function owa_test_daily_partitions(string $table, int $from): void
+{
+    $db = \OWA\Core\CoreAPI::dbSingleton();
+
+    $db->extendPartitionsBack($table, (string) $from);
+
+    $to    = (int) date('Ymd', strtotime('+1 day'));
+    $names = [];
+    $start = null;
+    $end   = null;
+
+    foreach ($db->getPartitionSpans($table) as $span) {
+
+        if ((int) $span['less_than'] > $from && (int) $span['start'] < $to) {
+
+            $names[] = $span['name'];
+            $start   = $start ?? (string) $span['start'];
+            $end     = (string) $span['less_than'];
+        }
+    }
+
+    $ranges = \OWA\Core\Db::makePartitionRangesForSpan($start, $end, 'daily');
+
+    if (count($ranges) !== count($names)
+        && !$db->reshapePartitions($table, $names, $ranges)) {
+
+        throw new \RuntimeException('splitting ' . $table . ' into day partitions failed: '
+            . $db->lastQueryError());
+    }
+}
+
+/**
  * A module's settings-page fieldsets, whether or not the module is switched on.
  *
  * registerAdminPanels() runs only for an ACTIVE module, and is_active lives in

@@ -70,6 +70,10 @@ final class OverlayLauncherTest extends TestCase
         // Profile's domain, which is the forged case.
         $day = (int) date('Ymd', strtotime('-1 day'));
 
+        // A new cube's partitions start on the 1st of this month, so on the
+        // 1st yesterday has none and the build below writes nothing.
+        \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(Cubes::tableFor(self::PROPERTY), (string) $day);
+
         self::clicks($day, self::SITE, 'https://evil.test/pricing', 5);
         self::clicks($day, self::SITE, 'https://www.example.test/pricing', 2);
         self::clicks($day, self::OTHER, 'https://shop.example.org/pricing?ref=a', 3);

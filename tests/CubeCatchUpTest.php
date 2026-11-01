@@ -67,9 +67,8 @@ final class CubeCatchUpTest extends TestCase
             throw new \RuntimeException('creating the fixture cube failed');
         }
 
-        // Dated partitions reaching back past every day these tests use.
-        \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(
-            Cubes::tableFor(self::PROPERTY), self::day(20));
+        // A day partition for every day these tests use, on any date.
+        owa_test_daily_partitions(Cubes::tableFor(self::PROPERTY), self::day(20));
     }
 
     public static function tearDownAfterClass(): void
@@ -197,12 +196,15 @@ final class CubeCatchUpTest extends TestCase
         return (int) ($row['n'] ?? 0);
     }
 
-    /** Skip when the routine window would build the day anyway, proving nothing. */
+    /**
+     * The day is outside the routine window, or the window would build it
+     * anyway and the test would prove nothing. Day partitions make it so on
+     * any date; this fails if the fixture stops providing them.
+     */
     private function requireOutsideTheWindow(int $yyyymmdd): void
     {
-        if ((int) $this->spanFor($yyyymmdd)['less_than'] > self::day(1)) {
-            $this->markTestSkipped("$yyyymmdd shares a partition with yesterday on this date");
-        }
+        $this->assertLessThanOrEqual(self::day(1), (int) $this->spanFor($yyyymmdd)['less_than'],
+            "$yyyymmdd shares a partition with yesterday");
     }
 
     public function testAPartitionIsSettledOnlyOnceBuiltAfterItsPeriodAndItsSessionsEnded(): void
@@ -284,9 +286,8 @@ final class CubeCatchUpTest extends TestCase
 
         $this->requireOutsideTheWindow($a);
 
-        if ($this->spanFor($old)['name'] === $this->spanFor($a)['name']) {
-            $this->markTestSkipped('both days share one partition on this date');
-        }
+        $this->assertNotSame($this->spanFor($old)['name'], $this->spanFor($a)['name'],
+            'both days share one partition');
 
         self::seedRaw($old);
         self::seedRaw($a);
@@ -458,9 +459,8 @@ final class CubeCatchUpTest extends TestCase
 
         $this->requireOutsideTheWindow($b);
 
-        if ($this->spanFor($a)['name'] === $this->spanFor($b)['name']) {
-            $this->markTestSkipped('both days share one partition on this date');
-        }
+        $this->assertNotSame($this->spanFor($a)['name'], $this->spanFor($b)['name'],
+            'both days share one partition');
 
         self::seedRaw($a);
         self::seedRaw($b);

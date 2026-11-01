@@ -42,6 +42,9 @@ class TimePeriod {
     var $diff_days;
     var $is_default_period = false;
 
+    /** The timestamp a relative period is counted from; null is the clock. */
+    var $now = null;
+
     function __construct() {
 
         //parent::__construct();
@@ -297,18 +300,32 @@ class TimePeriod {
         // set() reaches here without going through setFromMap, so normalize again.
         $map = self::normalizeMap( $map );
 
-        $time_now = \OWA\Core\Lib::time_now();
+        $time_now = \OWA\Core\Lib::time_now( $this->now );
         $nowDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
-        $nowDate->set(time(), 'timestamp');
+        $nowDate->set($time_now['timestamp'], 'timestamp');
         $start = '';
         $end = '';
+
+        /*
+         * The start (00:00:00) or end (23:59:59) of the day $offset days from
+         * today, $years from this year. Counted in calendar days by mktime(),
+         * never in seconds: a day is 23 or 25 hours long when the clocks
+         * change, and 7 x 86400 seconds back from the end of today is a
+         * different date on those nights.
+         */
+        $day = function ( $offset, $end = false, $years = 0 ) use ( $time_now ) {
+
+            return $end
+                ? mktime( 23, 59, 59, $time_now['month'], $time_now['day'] + $offset, $time_now['year'] + $years )
+                : mktime( 0, 0, 0, $time_now['month'], $time_now['day'] + $offset, $time_now['year'] + $years );
+        };
 
         switch ($this->period) {
 
             case "today":
 
-                $start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']);
-                $end = $start + 3600 * 24 -1;
+                $start = $day( 0 );
+                $end = $day( 0, true );
                 break;
 
             case "last_24_hours":
@@ -327,16 +344,13 @@ class TimePeriod {
                 break;
 
             case "last_seven_days":
-                //$end = mktime(0, 0, 0, $time_now['month'], $time_now['day']+1, $time_now['year']);
-                $end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']);
-                $start = $end - 3600*24*7;
+                $start = $day( -6 );
+                $end = $day( 0, true );
                 break;
 
             case "this_week":
-                $end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']) +
-                ((6 - $nowDate->get('day_of_week')) * 3600 * 24);
-                $start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']) -
-                ($nowDate->get('day_of_week') * 3600 * 24);
+                $start = $day( - $time_now['dayofweek'] );
+                $end = $day( 6 - $time_now['dayofweek'], true );
                 break;
 
             case "this_month":
@@ -350,15 +364,13 @@ class TimePeriod {
                 break;
 
             case "yesterday":
-                $end = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']);
-                $start = $end - 3600*24;
-                $end = $end - 1;
+                $start = $day( -1 );
+                $end = $day( -1, true );
                 break;
 
             case "last_week":
-                $day = ($time_now['day'] - $time_now['dayofweek']) - 7;
-                $start = mktime(0, 0, 0, $time_now['month'], $day, $time_now['year']);
-                $end = $start + 3600*24*7;
+                $start = $day( - $time_now['dayofweek'] - 7 );
+                $end = $day( - $time_now['dayofweek'] - 1, true );
                 break;
 
             case "last_month":
@@ -376,8 +388,8 @@ class TimePeriod {
                 break;
 
             case "same_day_last_week":
-                $start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']) - 3600*24*7;
-                $end = $start + (3600*24) - 1;
+                $start = $day( -7 );
+                $end = $day( -7, true );
                 break;
             ///
             case "same_month_last_year":
@@ -390,10 +402,8 @@ class TimePeriod {
                 break;
             
             case "same_week_last_year":
-		$end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']-1) +
-                ((6 - $nowDate->get('day_of_week')) * 3600 * 24);
-                $start = mktime(0, 0, 0, $time_now['month'], $time_now['day'], $time_now['year']-1) -
-                ($nowDate->get('day_of_week') * 3600 * 24);
+                $start = $day( - $time_now['dayofweek'], false, -1 );
+                $end = $day( 6 - $time_now['dayofweek'], true, -1 );
                 break;
 
             /*
@@ -416,8 +426,8 @@ class TimePeriod {
              */
 
             case "last_thirty_days":
-                $end = mktime(23, 59, 59, $time_now['month'], $time_now['day'], $time_now['year']);
-                $start = ($end + 1) - (30 * 3600 * 24);
+                $start = $day( -29 );
+                $end = $day( 0, true );
                 break;
 
             case "date_range":
