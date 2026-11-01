@@ -413,6 +413,27 @@ return array(
             'clickY' => array( 'column' => 'click_y', 'label' => 'Click Y',
                 'family' => 'event', 'data_type' => 'integer',
                 'description' => 'How far down the page the click landed, in pixels.' ),
+
+            /*
+             * WHERE ON THE ELEMENT, which is what the heatmap draws a click by:
+             * a page coordinate places a click only in a window as wide as the
+             * one it was recorded in. The anchor is a hash the overlay matches
+             * against the page in front of it (ElementAnchor.js), not something
+             * a person reads. viewportWidth is how the overlay tells whether a
+             * click with no anchor was recorded in a window like the reader's.
+             */
+            'elementAnchor' => array( 'column' => 'element_anchor', 'label' => 'Element Anchor',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'The clicked element, as a hash of its place in the page. The heatmap finds the element by it.' ),
+            'anchorX' => array( 'column' => 'anchor_x', 'label' => 'Anchor X',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'How far across the clicked element the click landed, in thousandths of its width.' ),
+            'anchorY' => array( 'column' => 'anchor_y', 'label' => 'Anchor Y',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'How far down the clicked element the click landed, in thousandths of its height.' ),
+            'viewportWidth' => array( 'column' => 'page_width', 'label' => 'Viewport Width',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'The width of the browser window when the click happened, in pixels.' ),
             'clickTarget' => array( 'column' => 'target_url', 'label' => 'Click Target',
                 'family' => 'event', 'description' => 'Where the click led.' ),
             'linkDomain' => array( 'column' => 'target_host', 'label' => 'Link Domain',

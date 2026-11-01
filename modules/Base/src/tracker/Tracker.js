@@ -11,6 +11,7 @@ import { Util } from '../common/Util.js';
 import { OwaEvent } from './OwaEvent.js';
 import { Uri } from './Uri.js';
 import { toWire } from './WireNames.js';
+import { ElementAnchor } from './ElementAnchor.js';
 import DEFAULTS from './defaults.json';
  
 class OWATracker  {
@@ -2155,7 +2156,8 @@ class OWATracker  {
      * ancestors with :nth-of-type() indexes. Nothing on the server ever read the
      * column it fed -- no report, widget or overlay -- and a template edit
      * renumbers every path at once, so it was neither aggregable nor stable across
-     * a deploy. The heatmap places clicks by coordinate.
+     * a deploy. ElementAnchor's path starts from the nearest id instead, and
+     * travels as a hash the heatmap matches.
      */
 
     /**
@@ -2407,14 +2409,30 @@ class OWATracker  {
 
         // set coordinates
         /*
-         * The ELEMENT's position is not collected either. The heatmap is an
-         * ordinary dimensional query over click_x and click_y -- the CLICK's
-         * coordinates, set below -- and the element's own offsets reached only
-         * v1's owa_click columns, which v2 ingest does not write.
+         * The ELEMENT's page offsets are not collected: they reached only v1's
+         * owa_click columns, which v2 ingest does not write. The heatmap places a
+         * click by the anchor below, and by click_x and click_y for a click that
+         * has none.
          */
         var coords = this.getCoords(e);
         click.set('click_x', coords.x);
         click.set('click_y', coords.y);
+
+        /*
+         * WHERE ON THE ELEMENT, for the heatmap (ElementAnchor). The element is
+         * the one hit, not the link around it: its box holds the point by
+         * definition, where an inline link around a block image can have a box
+         * that holds none of it. Not for a click with no pointer behind it
+         * (detail 0: the keyboard, or a script's el.click()), whose coordinates
+         * are 0,0 wherever the element is.
+         */
+        var anchor = e.detail === 0 ? null : ElementAnchor.of( clicked, e.clientX, e.clientY );
+
+        if ( anchor ) {
+            click.set( 'element_anchor', anchor.anchor );
+            click.set( 'anchor_x', anchor.x );
+            click.set( 'anchor_y', anchor.y );
+        }
 
         // Anything compiled in that wants every click hears it here, before
         // it is sent or classified.

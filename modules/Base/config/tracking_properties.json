@@ -555,6 +555,57 @@
         "callbacks": [],
         "note": "The viewport at the moment of the CLICK, which is what makes click_x and click_y mean anything -- a coordinate without the frame it was measured in cannot be placed on a heatmap of a different window size. Scoped to click like click_x and click_y.\nIT READ events: [\"*\"], which claimed every event carries it. Neither beacon contract has ever shown it on anything but a click, so the row builder was reading a property no page_view sends and the column was NULL on every non-click row -- the honest record either way, but the registry was describing a wire that does not exist. `events` says which EVENT TYPES carry a property, and is read by paramsForEvent() and propertiesForEvent(); it is not a gate in setTrackerProperties(), which walks the whole map."
     },
+    "anchor_x": {
+        "description": "Where across the clicked element the click landed, in thousandths of its width.",
+        "set_by": "client",
+        "from": [
+            "el_ax"
+        ],
+        "column": "anchor_x",
+        "events": [
+            "click"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::anchorX"
+        ],
+        "note": "A fraction rather than pixels, so a click keeps its spot on an element that is wider or narrower where the heatmap is read. Before element_anchor in this file: element_anchor is kept only when both points are."
+    },
+    "anchor_y": {
+        "description": "Where down the clicked element the click landed, in thousandths of its height.",
+        "set_by": "client",
+        "from": [
+            "el_ay"
+        ],
+        "column": "anchor_y",
+        "events": [
+            "click"
+        ],
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::anchorY"
+        ],
+        "note": "As anchor_x."
+    },
+    "element_anchor": {
+        "description": "The element the click landed on, as a hash of its path from the nearest ancestor with an id. The heatmap finds the element by it.",
+        "set_by": "client",
+        "from": [
+            "el_a"
+        ],
+        "column": "element_anchor",
+        "events": [
+            "click"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::elementAnchor"
+        ],
+        "note": "Computed by the tracker's ElementAnchor and matched by the heatmap's: neither side stores or reads the path, only its 53-bit hash, so the column is a BIGINT rather than a hundred characters. The element is the one hit, not the link around it. Absent for a click with no pointer behind it (keyboard, el.click()) and for one outside the element's box. AFTER anchor_x and anchor_y, whose resolved values it reads: kept only when both are, so a row with an anchor always has its point."
+    },
     "dom_element_class": {
         "description": "The class attribute of the clicked element. Absent when it has none.",
         "set_by": "client",

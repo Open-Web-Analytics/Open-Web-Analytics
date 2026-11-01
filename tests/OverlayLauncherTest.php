@@ -162,6 +162,8 @@ final class OverlayLauncherTest extends TestCase
         parse_str((string) parse_url($params['api_url'], PHP_URL_QUERY), $q);
 
         $this->assertSame('pagePathPlusQuery==/pricing,eventName==click', $q['constraints'] ?? null);
+        $this->assertSame('elementAnchor,anchorX,anchorY,clickX,clickY,viewportWidth', $q['dimensions'] ?? null,
+            'the overlay draws a click on its element, and needs the window width for one with no anchor');
         $this->assertSame((string) self::PROPERTY, $q['propertyId'] ?? null);
         $this->assertSame('last_thirty_days', $q['period'] ?? null);
 

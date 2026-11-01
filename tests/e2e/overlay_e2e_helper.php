@@ -51,6 +51,13 @@ const OVERLAY_DOMAIN      = 'http://localhost';
 const OVERLAY_PAGE_PATH  = '/overlay-e2e-page';
 
 /**
+ * ElementAnchor.hash('#overlay-anchor'): the harness element's anchor. Pinned in
+ * tests/js/ElementAnchor.test.js, so a change to the hash fails there, by name,
+ * rather than here as a blank canvas.
+ */
+const OVERLAY_ANCHOR = '8991926351447641';
+
+/**
  * Where the fixture's clicks landed: x, y, and how many at that point.
  *
  * SOME OF THEM SHARE A COORDINATE, and that is the whole point of the shape.
@@ -67,6 +74,10 @@ const OVERLAY_CLICK_POINTS = [
     ['x' => 100, 'y' => 200, 'n' => 3],
     ['x' => 110, 'y' => 210, 'n' => 1],
     ['x' => 120, 'y' => 220, 'n' => 1],
+    // On the harness's #overlay-anchor, at the middle of its box. The page
+    // coordinate is where the element was in the window these were recorded
+    // in; the heatmap must ignore it and draw them on the element.
+    ['x' => 900, 'y' => 900, 'n' => 2, 'anchor' => OVERLAY_ANCHOR, 'ax' => 500, 'ay' => 500],
 ];
 /*
  * The heatmap's query, and what its token is bound to.
@@ -213,6 +224,10 @@ function provision(): array
         // themselves, which is what lets the spec assert they were weighted
         // rather than merely returned.
         'click_points'   => count(OVERLAY_CLICK_POINTS),
+        // Clicks on the harness's #overlay-anchor, which the heatmap draws on the
+        // element; the rest have no anchor and were recorded at 1200px.
+        'anchored_clicks' => array_sum(array_map(fn($p) => isset($p['anchor']) ? $p['n'] : 0, OVERLAY_CLICK_POINTS)),
+        'anchor'          => OVERLAY_ANCHOR,
         'domstream_module_activated' => !$domstream_was_active,
         // Scoped tokens: one action, one resource, minutes. Minted here because
         // only the server can sign them.
@@ -280,7 +295,11 @@ function seedClicks(string $site_id): void
                 'page_height'     => 800,
                 'dom_element_id'  => 'overlay-target',
                 'dom_element_tag' => 'a',
-            ]);
+            ] + (isset($point['anchor']) ? [
+                'element_anchor'  => $point['anchor'],
+                'anchor_x'        => $point['ax'],
+                'anchor_y'        => $point['ay'],
+            ] : []));
 
             \OWA\Core\CoreAPI::logEvent('dom.click', $event);
 

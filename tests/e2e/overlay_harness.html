@@ -44,6 +44,15 @@
         <a id="a-link" href="#">a link</a>
     </div>
 
+    <!--
+      The element the fixture's anchored clicks landed on, in a CENTRED column,
+      so it sits further right the wider the window is. The heatmap must draw
+      those clicks on it at whatever width the spec opens the page.
+    -->
+    <div style="width: 600px; margin: 40px auto 0; position: relative; height: 200px;">
+        <a id="overlay-anchor" href="#" style="position: absolute; left: 400px; top: 80px; width: 160px; height: 40px; display: block;">anchored</a>
+    </div>
+
     <script>
         // Resolve the OWA install base URL from ?base=... (test injects it).
         (function () {

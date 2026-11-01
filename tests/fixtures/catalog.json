@@ -4,9 +4,9 @@
         "metricImplementations": 41,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 91,
-        "dimensionEntriesDenormalized": 91,
-        "accessorDimensionNames": 91
+        "dimensionNamesDenormalized": 95,
+        "dimensionEntriesDenormalized": 95,
+        "accessorDimensionNames": 95
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -1088,6 +1088,32 @@
     },
     "dimensionsNormalized": [],
     "dimensionsDenormalized": {
+        "anchorX": {
+            "base.event": {
+                "name": "anchorX",
+                "entity": "base.event",
+                "column": "anchor_x",
+                "family": "event",
+                "label": "Anchor X",
+                "description": "How far across the clicked element the click landed, in thousandths of its width.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true
+            }
+        },
+        "anchorY": {
+            "base.event": {
+                "name": "anchorY",
+                "entity": "base.event",
+                "column": "anchor_y",
+                "family": "event",
+                "label": "Anchor Y",
+                "description": "How far down the clicked element the click landed, in thousandths of its height.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true
+            }
+        },
         "attributedAd": {
             "base.event": {
                 "name": "attributedAd",
@@ -1462,6 +1488,19 @@
                 "description": "The tag name of the element that was clicked.",
                 "foreign_key_name": "",
                 "data_type": "string",
+                "denormalized": true
+            }
+        },
+        "elementAnchor": {
+            "base.event": {
+                "name": "elementAnchor",
+                "entity": "base.event",
+                "column": "element_anchor",
+                "family": "event",
+                "label": "Element Anchor",
+                "description": "The clicked element, as a hash of its place in the page. The heatmap finds the element by it.",
+                "foreign_key_name": "",
+                "data_type": "integer",
                 "denormalized": true
             }
         },
@@ -2282,6 +2321,19 @@
                 "denormalized": true
             }
         },
+        "viewportWidth": {
+            "base.event": {
+                "name": "viewportWidth",
+                "entity": "base.event",
+                "column": "page_width",
+                "family": "event",
+                "label": "Viewport Width",
+                "description": "The width of the browser window when the click happened, in pixels.",
+                "foreign_key_name": "",
+                "data_type": "integer",
+                "denormalized": true
+            }
+        },
         "weekOfYear": {
             "base.event": {
                 "name": "weekOfYear",
@@ -2329,6 +2381,28 @@
         }
     },
     "accessorGetAllDimensions": {
+        "anchorX": {
+            "name": "anchorX",
+            "entity": "base.event",
+            "column": "anchor_x",
+            "family": "event",
+            "label": "Anchor X",
+            "description": "How far across the clicked element the click landed, in thousandths of its width.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true
+        },
+        "anchorY": {
+            "name": "anchorY",
+            "entity": "base.event",
+            "column": "anchor_y",
+            "family": "event",
+            "label": "Anchor Y",
+            "description": "How far down the clicked element the click landed, in thousandths of its height.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true
+        },
         "attributedAd": {
             "name": "attributedAd",
             "entity": "base.event",
@@ -2648,6 +2722,17 @@
             "description": "The tag name of the element that was clicked.",
             "foreign_key_name": "",
             "data_type": "string",
+            "denormalized": true
+        },
+        "elementAnchor": {
+            "name": "elementAnchor",
+            "entity": "base.event",
+            "column": "element_anchor",
+            "family": "event",
+            "label": "Element Anchor",
+            "description": "The clicked element, as a hash of its place in the page. The heatmap finds the element by it.",
+            "foreign_key_name": "",
+            "data_type": "integer",
             "denormalized": true
         },
         "eventName": {
@@ -3347,6 +3432,17 @@
             "data_type": "string",
             "denormalized": true
         },
+        "viewportWidth": {
+            "name": "viewportWidth",
+            "entity": "base.event",
+            "column": "page_width",
+            "family": "event",
+            "label": "Viewport Width",
+            "description": "The width of the browser window when the click happened, in pixels.",
+            "foreign_key_name": "",
+            "data_type": "integer",
+            "denormalized": true
+        },
         "weekOfYear": {
             "name": "weekOfYear",
             "entity": "base.event",
@@ -3427,11 +3523,14 @@
                 "screenResolution"
             ],
             "event": [
+                "anchorX",
+                "anchorY",
                 "clickTarget",
                 "clickX",
                 "clickY",
                 "domElementId",
                 "domElementTag",
+                "elementAnchor",
                 "eventName",
                 "fileExtension",
                 "fileName",
@@ -3439,7 +3538,8 @@
                 "isOutbound",
                 "linkDomain",
                 "scrollDepth",
-                "searchTerm"
+                "searchTerm",
+                "viewportWidth"
             ],
             "geography": [
                 "city",

@@ -384,6 +384,7 @@ class Entity {
         foreach ( array(
             'OWA_DTD_BIGINT',
             'OWA_DTD_INT',
+            'OWA_DTD_SMALLINT',
             'OWA_DTD_TINYINT',
             'OWA_DTD_TINYINT2',
             'OWA_DTD_TINYINT4',

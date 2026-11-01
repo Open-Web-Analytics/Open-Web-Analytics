@@ -63,7 +63,7 @@ final class BeaconWireNamesTest extends TestCase
     {
         $table = $this->trackerTable();
 
-        $this->assertCount( 54, $table, 'the parse found a different number of entries than WireNames.js holds' );
+        $this->assertCount( 57, $table, 'the parse found a different number of entries than WireNames.js holds' );
 
         $expected = array();
 

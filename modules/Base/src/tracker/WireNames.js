@@ -70,6 +70,9 @@ export const WIRE_NAMES = {
     dom_element_text:       'el_tx',
     target_url:             'el_lu',
     is_outbound:            'el_lo',
+    element_anchor:         'el_a',
+    anchor_x:               'el_ax',
+    anchor_y:               'el_ay',
 
     // one kind of event
     click_x:                'c_x',

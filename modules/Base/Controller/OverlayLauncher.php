@@ -33,6 +33,16 @@ namespace OWA\Module\Base\Controller;
 
 class OverlayLauncher extends \OWA\Core\Controller {
 
+    /**
+     * What a heatmap's data request groups clicks by.
+     *
+     * The element anchor and the point inside it are what the overlay draws a
+     * click by. A click with no anchor is drawn by its page coordinate, and only
+     * when viewportWidth says its window was as wide as the reader's. Shared
+     * with the report widget's heatmap link, which builds the same request.
+     */
+    const HEATMAP_DIMENSIONS = 'elementAnchor,anchorX,anchorY,clickX,clickY,viewportWidth';
+
     function action() {
 
         $url = '';
@@ -123,7 +133,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
             'version'        => 'v1',
             'propertyId'     => $propertyId,
             'metrics'        => 'eventCount',
-            'dimensions'     => 'clickX,clickY',
+            'dimensions'     => self::HEATMAP_DIMENSIONS,
             'constraints'    => 'pagePathPlusQuery==' . urlencode( $value ) . ',eventName==click',
             'resultsPerPage' => 1000,
             'format'         => 'json',

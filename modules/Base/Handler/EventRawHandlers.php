@@ -287,6 +287,10 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'page_width'  => $this->number( $event->get( 'page_width' ) ),
             'page_height' => $this->number( $event->get( 'page_height' ) ),
 
+            'element_anchor' => $this->number( $event->get( 'element_anchor' ) ),
+            'anchor_x'       => $this->number( $event->get( 'anchor_x' ) ),
+            'anchor_y'       => $this->number( $event->get( 'anchor_y' ) ),
+
             'tagged_source'       => $this->text( $event->get( 'tagged_source' ) ),
             'tagged_medium'       => $this->text( $event->get( 'tagged_medium' ) ),
             'tagged_campaign'     => $this->text( $event->get( 'tagged_campaign' ) ),
