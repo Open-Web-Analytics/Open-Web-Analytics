@@ -1267,23 +1267,38 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /**
-     * The rows a query by time can return over the period when it names no
-     * page size: one per day with both ends counted, or one per hour when it
-     * is by dateHour. The day the clocks go back is still 24 values of
-     * dateHour: its repeated hour groups as one.
+     * The rows a query can return over the period when it names no page size.
      *
-     * The day difference alone is one short -- a week of days is seven apart
-     * and eight long -- and sorted by date the row it cut was today's.
+     * By date, one per day with both ends counted; by dateHour, 24 per day.
+     * The day the clocks go back is still 24 values of dateHour: its repeated
+     * hour groups as one. The day difference alone is one short -- a week of
+     * days is seven apart and eight long -- and sorted by date the row it cut
+     * was today's.
      *
-     * @return int
+     * Any other query keeps the day difference, which over one day is 0 and
+     * so no limit at all.
+     *
+     * @return int|float
      */
     function timePeriodRows() {
 
+        $difference = $this->timePeriod->getDaysDifference();
+
         // Fractional across a daylight-saving change: a midnight-to-midnight
         // difference, in seconds, over 86400.
-        $days = (int) round( $this->timePeriod->getDaysDifference() ) + 1;
+        $days = (int) round( $difference ) + 1;
 
-        return in_array( 'dateHour', $this->dimensions, true ) ? $days * 24 : $days;
+        if ( in_array( 'dateHour', $this->dimensions, true ) ) {
+
+            return $days * 24;
+        }
+
+        if ( in_array( 'date', $this->dimensions, true ) ) {
+
+            return $days;
+        }
+
+        return $difference;
     }
 
     function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {

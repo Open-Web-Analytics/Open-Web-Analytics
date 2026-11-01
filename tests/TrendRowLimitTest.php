@@ -194,6 +194,26 @@ final class TrendRowLimitTest extends TestCase
             $this->trend('dateHour', '20260601', '20260610'));
     }
 
+    /**
+     * A query by anything but time is not a trend: over one day it has no
+     * limit, so a breakdown pages at the result set's default rather than
+     * being cut to one row per day.
+     */
+    public function testABreakdownOfOneDayPagesRatherThanStoppingAtOneRow(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray('pageViews');
+        $rsm->setDimensions(['pagePath']);
+        $rsm->setTimePeriod('date_range', '20260610', '20260610');
+        $rsm->setSiteId(self::SITE);
+
+        $rs = $rsm->getResults();
+
+        $this->assertCount(10, $rs->getResultsRows());
+        $this->assertTrue((bool) $rs->more, 'fourteen paths, so there is a next page');
+    }
+
     /** The day difference is 1.96 across the change, not 2. */
     public function testADailyTrendAcrossTheClockChangeKeepsEveryDay(): void
     {
