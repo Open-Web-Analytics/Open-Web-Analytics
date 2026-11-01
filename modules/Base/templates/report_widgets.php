@@ -765,6 +765,40 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php if ( ! empty( $owa_w['ownConstraints'] ) ): ?>
         <?php echo $owa_id; ?>.options.grid.ownConstraints = <?php echo json_encode( (string) $owa_w['ownConstraints'], JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
 <?php endif; ?>
+<?php
+    /*
+     * The row actions, each as a link built here -- so it carries the report's
+     * Property and period like every other link on the page -- with a
+     * placeholder per parameter the grid fills from the row. See
+     * ConfiguredReport::ROW_ACTIONS for what may be named.
+     */
+    $owa_rowActions = array();
+
+    foreach ( \OWA\Core\ConfiguredReport::resolveRowActions( $owa_w ) as $owa_ra ) {
+
+        $owa_ra_params = isset( $owa_ra['reportId'] )
+            ? array( 'do' => 'base.report', 'reportId' => $owa_ra['reportId'] )
+            : array( 'do' => (string) $owa_ra['action'] );
+
+        foreach ( array_keys( (array) $owa_ra['params'] ) as $owa_ra_param ) {
+
+            $owa_ra_params[ $owa_ra_param ] = '__OWA_ROW_' . $owa_ra_param . '__';
+        }
+
+        $owa_rowActions[] = array(
+            'id'        => $owa_ra['id'],
+            // Translated where it is drawn (OWA.l), like the grid's other labels.
+            'label'     => (string) $owa_ra['label'],
+            'href'      => $view->makeLink( $owa_ra_params, true ),
+            'params'    => (object) $owa_ra['params'],
+            'first'     => (string) ( $owa_ra['first'] ?? '' ),
+            'newWindow' => ! empty( $owa_ra['newWindow'] ),
+        );
+    }
+?>
+<?php if ( $owa_rowActions ): ?>
+        <?php echo $owa_id; ?>.options.grid.rowActions = <?php echo json_encode( $owa_rowActions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
+<?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 
 <?php if ( ! $owa_multiSet ): ?>

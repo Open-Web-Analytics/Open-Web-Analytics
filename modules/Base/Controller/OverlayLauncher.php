@@ -37,6 +37,14 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $url = '';
 
+        // A Pages row's heatmap: one exact page. See openPage().
+        if ( (string) $this->get('pagePathPlusQuery') !== '' ) {
+
+            $this->openPage( (string) $this->get('pagePathPlusQuery') );
+
+            return;
+        }
+
         if ( $this->get('pagePath') ) {
 
             $url = $this->urlForPath( (string) $this->get('pagePath'), (string) $this->get('siteId'),
@@ -58,6 +66,148 @@ class OverlayLauncher extends \OWA\Core\Controller {
 			$this->redirectBrowserToUrl( $url, array( (string) parse_url( $url, PHP_URL_HOST ) ) );
 			$this->set('url', $url);
 		}
+    }
+
+    /**
+     * The heatmap of one page -- a path and its query string, as a Pages row
+     * groups them -- opened on the page itself.
+     *
+     * NOTHING TO LOOK UP. The url is the Profile's domain with the path and the
+     * query string; the clicks drawn are constrained to that same
+     * pagePathPlusQuery for the report's period. Choosing "the url with the
+     * most clicks for a path" scanned every click the Property ever had and
+     * then drew every variant's clicks over whichever one it opened.
+     *
+     * The data link is minted here, at the click, because a row only exists in
+     * the browser: the report could not have minted one per row.
+     *
+     * Not for a value carrying a comma, which the constraint list would split;
+     * and only for a Property the user can see.
+     *
+     * @param string $value pagePathPlusQuery
+     */
+    private function openPage( $value ) {
+
+        $propertyId = (string) $this->get('propertyId');
+
+        if ( $propertyId === ''
+             || \OWA\Core\CoreAPI::getCurrentUser()->siteIdForProperty( $propertyId ) === '' ) {
+
+            return;
+        }
+
+        $mark  = strpos( $value, '?' );
+        $path  = $mark === false ? $value : substr( $value, 0, $mark );
+        $query = $mark === false ? '' : substr( $value, $mark + 1 );
+
+        if ( $path === '' || $path[0] !== '/' || strpos( $value, ',' ) !== false ) {
+
+            return;
+        }
+
+        $period = $this->periodParams();
+        $base   = $this->baseUrlFor( $propertyId, $path, $query, $period );
+
+        if ( $base === '' ) {
+
+            return;
+        }
+
+        $url = $base . $path . ( $query !== '' ? '?' . $query : '' );
+
+        $template = new \OWA\Core\Template();
+
+        $api = $template->makeOverlayApiLink( array(
+            'do'             => 'reports',
+            'module'         => 'base',
+            'version'        => 'v1',
+            'propertyId'     => $propertyId,
+            'metrics'        => 'eventCount',
+            'dimensions'     => 'clickX,clickY',
+            'constraints'    => 'pagePathPlusQuery==' . urlencode( $value ) . ',eventName==click',
+            'resultsPerPage' => 1000,
+            'format'         => 'json',
+        ) + $period, 'constraints' );
+
+        $overlay = base64_encode( $template->makeParamString(
+            array( 'action' => 'loadHeatmap', 'api_url' => $api ), false, 'json' ) );
+
+        $url .= '#owa_overlay.' . rawurlencode( $overlay );
+
+        // The tracked site is another host, vouched for: it is the Profile's own.
+        $this->redirectBrowserToUrl( $url, array( (string) parse_url( $url, PHP_URL_HOST ) ) );
+        $this->set( 'url', $url );
+    }
+
+    /** The report's period as the request carries it: a named period or a range. */
+    private function periodParams() {
+
+        if ( $this->get('startDate') && $this->get('endDate') ) {
+
+            return array( 'startDate' => (string) $this->get('startDate'), 'endDate' => (string) $this->get('endDate') );
+        }
+
+        return array( 'period' => (string) ( $this->get('period') ?: 'last_thirty_days' ) );
+    }
+
+    /**
+     * scheme://host of the Profile the page belongs to: the Property's only
+     * Profile, or the one with the most clicks on it in the period -- over
+     * the Profiles and the dates, which the cube indexes. A domain stored with
+     * no scheme is https.
+     *
+     * @return string '' when no Profile has a domain
+     */
+    private function baseUrlFor( $propertyId, $path, $query, array $period ) {
+
+        $site_ids = \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $propertyId );
+
+        if ( count( $site_ids ) > 1 ) {
+
+            $tp = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+            $tp->set( isset( $period['period'] ) ? $period['period'] : 'date_range',
+                isset( $period['period'] ) ? array() : $period );
+
+            $db    = \OWA\Core\CoreAPI::dbSingleton();
+            $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $propertyId );
+
+            if ( $db->tableExists( $table ) ) {
+
+                $quoted = array_map( function ( $s ) use ( $db ) { return "'" . $db->prepare( $s ) . "'"; }, $site_ids );
+
+                $row = $db->get_row( sprintf(
+                    "SELECT site_id FROM %s WHERE site_id IN (%s) AND event_type = 'click'"
+                  . " AND yyyymmdd BETWEEN %d AND %d AND page_path = '%s' AND %s"
+                  . ' GROUP BY site_id ORDER BY COUNT(*) DESC LIMIT 1',
+                    $table, implode( ', ', $quoted ),
+                    (int) $tp->startDate->get( 'yyyymmdd' ), (int) $tp->endDate->get( 'yyyymmdd' ),
+                    $db->prepare( $path ),
+                    $query === '' ? "(page_query IS NULL OR page_query = '')"
+                                  : sprintf( "page_query = '%s'", $db->prepare( $query ) ) ) );
+
+                if ( is_array( $row ) && ! empty( $row['site_id'] ) ) {
+
+                    array_unshift( $site_ids, (string) $row['site_id'] );
+                }
+            }
+        }
+
+        foreach ( $site_ids as $site_id ) {
+
+            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+            $site->getByColumn( 'site_id', $site_id );
+
+            $domain = trim( (string) $site->get( 'domain' ) );
+            $parts  = parse_url( strpos( $domain, '//' ) === false ? 'https://' . $domain : $domain );
+
+            if ( ! empty( $parts['host'] ) ) {
+
+                return ( $parts['scheme'] ?? 'https' ) . '://' . $parts['host']
+                    . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
+            }
+        }
+
+        return '';
     }
 
     /**

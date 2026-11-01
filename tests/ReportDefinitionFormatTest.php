@@ -1141,6 +1141,58 @@ final class ReportDefinitionFormatTest extends TestCase
         };
     }
 
+    /**
+     * Row actions are named, never spelled out: a definition lists names, and
+     * a name nothing registers -- a module's, with the module off -- is left
+     * out rather than drawn.
+     */
+    public function testRowActionsAreAListOfNames(): void
+    {
+        $grid = array('type' => 'grid', 'query' => array('dimensions' => 'pagePathPlusQuery'));
+
+        $this->assertSame('', \OWA\Core\ConfiguredReport::getDefinitionError(
+            array('title' => 'T', 'widgets' => array($grid + array('rowActions' => array('heatmap', 'clicks'))))));
+
+        foreach (array('heatmap', array('do' => 'base.optionsGeneral'), array('javascript:alert(1)')) as $bad) {
+            $this->assertStringContainsString('rowActions', \OWA\Core\ConfiguredReport::getDefinitionError(
+                array('title' => 'T', 'widgets' => array($grid + array('rowActions' => $bad)))));
+        }
+
+        $ids = array_column(\OWA\Core\ConfiguredReport::resolveRowActions(
+            array('rowActions' => array('heatmap', 'noSuchAction', 'paths'))), 'id');
+
+        $this->assertSame(array('heatmap', 'paths'), $ids);
+    }
+
+    /**
+     * The Pages grid hands each action to the page as a link carrying the
+     * report's Property and period, with a placeholder per row value; the
+     * heatmap only for a grid grouped by pagePathPlusQuery first.
+     */
+    public function testThePagesGridEmitsItsRowActions(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $definition = json_decode((string) file_get_contents(__DIR__ . '/../modules/Base/reports/pages.json'), true);
+
+        $html = $this->renderedWith($definition, array());
+
+        $this->assertMatchesRegularExpression('/dim\.options\.grid\.rowActions = (\[.*?\]);/', $html);
+        preg_match('/dim\.options\.grid\.rowActions = (\[.*?\]);\n/', $html, $m);
+
+        $actions = array_column((array) json_decode($m[1], true), null, 'id');
+
+        $this->assertSame('pagePathPlusQuery', $actions['heatmap']['first']);
+        $this->assertStringContainsString('do=base.overlayLauncher', $actions['heatmap']['href']);
+        $this->assertStringContainsString('pagePathPlusQuery=__OWA_ROW_pagePathPlusQuery__', $actions['heatmap']['href']);
+        $this->assertStringContainsString('period=last_thirty_days', $actions['heatmap']['href']);
+        $this->assertTrue($actions['heatmap']['newWindow']);
+
+        $this->assertSame('', $actions['clicks']['first']);
+        $this->assertStringContainsString('reportId=dom-clicks', $actions['clicks']['href']);
+        $this->assertStringContainsString('pagePath=__OWA_ROW_pagePath__', $actions['clicks']['href']);
+    }
+
     /** Render a definition against a given set of metric sets. */
     private function renderedWith( array $definition, array $metricSets, array $params = array() ): string
     {

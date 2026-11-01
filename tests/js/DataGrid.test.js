@@ -535,3 +535,61 @@ describe('a link column with an unlinked first row', () => {
         expect($cells.eq(1).find('a').attr('href')).toBe('?pagePath=%2Fdocs');
     });
 });
+
+/**
+ * A row's actions: "Actions" and a chevron beside its first value, opening a
+ * menu of links. An action needing the grid grouped by a dimension first --
+ * the heatmap, of one exact page -- is left off when it is not.
+ */
+describe('row actions', () => {
+
+    const ACTIONS = [
+        { id: 'heatmap', label: 'Heatmap', href: '?do=base.overlayLauncher&pagePathPlusQuery=__OWA_ROW_pagePathPlusQuery__',
+          params: { pagePathPlusQuery: 'pagePathPlusQuery' }, first: 'pagePathPlusQuery', newWindow: true },
+        { id: 'clicks', label: 'Element clicks', href: '?do=base.report&reportId=dom-clicks&pagePath=__OWA_ROW_pagePath__',
+          params: { pagePath: 'pagePath' }, first: '', newWindow: false },
+    ];
+
+    function pages(dim, values) {
+        return resultSet({
+            dimensions: dim,
+            rows: values.map((v) => ({
+                [dim]: cell(dim, 'dimension', v),
+                sessions: cell('sessions', 'metric', 1),
+                bounceRate: cell('bounceRate', 'metric', 0, '0.00%'),
+            })),
+        });
+    }
+
+    function menuOf($root, i) {
+        $root.find('tbody tr.owa_gridRow').eq(i).find('.owa_gridRowActions').trigger('click');
+        return $('.owa_gridRowActionsMenu a').map((k, a) => ({
+            id: $(a).attr('data-action'), href: $(a).attr('href'), target: $(a).attr('target') || '',
+        })).get();
+    }
+
+    test('a page and its query string offers its heatmap, and its path to the rest', () => {
+        const { $root } = draw(pages('pagePathPlusQuery', ['/?s=a b&c=1']), { rowActions: ACTIONS });
+
+        const $button = $root.find('tbody tr.owa_gridRow').eq(0).find('td.owa_gridDim').first().find('.owa_gridRowActions');
+        expect($button.text().trim()).toBe('Actions');
+        expect($button.find('.fa-chevron-down')).toHaveLength(1);
+
+        expect(menuOf($root, 0)).toEqual([
+            { id: 'heatmap', href: '?do=base.overlayLauncher&pagePathPlusQuery=' + encodeURIComponent('/?s=a b&c=1'), target: '_blank' },
+            { id: 'clicks', href: '?do=base.report&reportId=dom-clicks&pagePath=%2F', target: '' },
+        ]);
+    });
+
+    test('a path alone offers no heatmap: it would pool every query string', () => {
+        const { $root } = draw(pages('pagePath', ['/pricing']), { rowActions: ACTIONS });
+
+        expect(menuOf($root, 0).map((a) => a.id)).toEqual(['clicks']);
+    });
+
+    test('a grid with no actions draws no button', () => {
+        const { $root } = draw(pages('pagePathPlusQuery', ['/']));
+
+        expect($root.find('.owa_gridRowActions')).toHaveLength(0);
+    });
+});

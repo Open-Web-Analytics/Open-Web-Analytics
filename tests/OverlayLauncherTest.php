@@ -138,6 +138,63 @@ final class OverlayLauncherTest extends TestCase
             \OWA\Core\Lib::resolveRedirectUrl('https://evil.test/p', ['www.example.test']));
     }
 
+    /**
+     * A Pages row's heatmap: one exact page, path and query string.
+     *
+     * Opened on the Profile's own domain -- the Profile with the page's clicks
+     * in the period -- whatever host the clicks' page_location names, so a
+     * forged one cannot choose where the reader goes; and the token the
+     * launcher mints accepts the data request it builds.
+     */
+    public function testAPagesRowOpensThatExactPageWithItsOwnData(): void
+    {
+        $url = $this->launchPage('/pricing');
+
+        $this->assertStringStartsWith('http://www.example.test/pricing#owa_overlay.', $url);
+
+        $params = json_decode(base64_decode(rawurldecode(substr($url, strpos($url, '#owa_overlay.') + 13))), true);
+        $this->assertSame('loadHeatmap', $params['action'] ?? null);
+
+        parse_str((string) parse_url($params['api_url'], PHP_URL_QUERY), $q);
+
+        $this->assertSame('pagePathPlusQuery==/pricing,eventName==click', $q['constraints'] ?? null);
+        $this->assertSame((string) self::PROPERTY, $q['propertyId'] ?? null);
+        $this->assertSame('last_thirty_days', $q['period'] ?? null);
+
+        $this->assertTrue(\OWA\Core\OverlayToken::permits($q['overlayToken'] ?? '', 'reports',
+            static fn($name) => (string) ($q[$name] ?? '')), 'the token does not accept its own data request');
+
+        // The query string travels to the page and into the constraint.
+        $withQuery = $this->launchPage('/pricing?ref=a');
+        $this->assertStringStartsWith('http://www.example.test/pricing?ref=a#owa_overlay.', $withQuery);
+    }
+
+    public function testAPageTheConstraintCannotCarryOpensNothing(): void
+    {
+        $this->assertSame('', $this->launchPage('/pricing?a=1,2'));
+        $this->assertSame('', $this->launchPage('pricing'));
+    }
+
+    public function testAPagesRowOpensNothingForAUserWhoCannotSeeTheProperty(): void
+    {
+        $this->asRole('viewer');
+
+        $this->assertSame('', $this->launchPage('/pricing'));
+    }
+
+    private function launchPage(string $value): string
+    {
+        $launcher = new \OWA\Module\Base\Controller\OverlayLauncher(array(
+            'propertyId'        => (string) self::PROPERTY,
+            'period'            => 'last_thirty_days',
+            'pagePathPlusQuery' => $value,
+        ));
+
+        $launcher->action();
+
+        return (string) ($launcher->data['url'] ?? '');
+    }
+
     /** The url the launcher redirects to, or '' when it found none. */
     private function launch(array $params): string
     {

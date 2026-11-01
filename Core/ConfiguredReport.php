@@ -179,6 +179,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
              * here would be interpolated again the moment someone restored
              * that, so the format refuses one outright.
              */
+            // Names, never targets: see ROW_ACTIONS.
+            if ( isset( $widget['rowActions'] ) && ( ! is_array( $widget['rowActions'] )
+                     || array_filter( $widget['rowActions'], function ( $n ) {
+                            return ! is_string( $n ) || ! preg_match( '/^[a-z][a-zA-Z]*$/', $n ); } ) ) ) {
+                return sprintf( 'widget %s: "rowActions" must be a list of action names', $i );
+            }
             if ( isset( $widget['excludeColumns'] ) && ! is_array( $widget['excludeColumns'] ) ) {
 
                 return sprintf( 'widget %s: "excludeColumns" must be a list of column names', $i );
@@ -539,6 +545,72 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         }
 
         return $query;
+    }
+
+    /**
+     * What a grid row can lead to, by name: a definition lists the names
+     * ("rowActions": ["heatmap", "clicks"]) and never a target, so it cannot
+     * point a row anywhere the code does not.
+     *
+     * Each action names where it goes -- a report, or the overlay launcher --
+     * and which of the row's dimensions fill its parameters. `first` is a
+     * dimension the grid must be grouped by FIRST for the action to apply:
+     * a heatmap is of one page, and only a row of pagePathPlusQuery is one
+     * page; a row of pagePath pools every query string's clicks onto one of
+     * them. Modules add theirs through the report_row_actions filter.
+     */
+    const ROW_ACTIONS = array(
+        'heatmap' => array(
+            'label'     => 'Heatmap',
+            'action'    => 'base.overlayLauncher',
+            'params'    => array( 'pagePathPlusQuery' => 'pagePathPlusQuery' ),
+            'first'     => 'pagePathPlusQuery',
+            'newWindow' => true,
+        ),
+        'clicks' => array(
+            'label'    => 'Element clicks',
+            'reportId' => 'dom-clicks',
+            'params'   => array( 'pagePath' => 'pagePath' ),
+        ),
+        'paths' => array(
+            'label'    => 'Previous and next pages',
+            'reportId' => 'document',
+            'params'   => array( 'pagePath' => 'pagePath' ),
+        ),
+    );
+
+    /**
+     * The row actions a report offers, through the report_row_actions filter.
+     *
+     * @return array name => action
+     */
+    public static function rowActions() {
+
+        return array_filter( (array) \OWA\Core\CoreAPI::filter( 'report_row_actions', self::ROW_ACTIONS ),
+            'is_array' );
+    }
+
+    /**
+     * A widget's rowActions names as the actions they name. A name nothing
+     * registers -- a module's, with the module off -- is left out.
+     *
+     * @param  array $widget
+     * @return array of action + 'id'
+     */
+    public static function resolveRowActions( array $widget ) {
+
+        $known = self::rowActions();
+        $out   = array();
+
+        foreach ( (array) ( $widget['rowActions'] ?? array() ) as $name ) {
+
+            if ( is_string( $name ) && isset( $known[ $name ] ) ) {
+
+                $out[] = array( 'id' => $name ) + $known[ $name ];
+            }
+        }
+
+        return $out;
     }
 
     /**

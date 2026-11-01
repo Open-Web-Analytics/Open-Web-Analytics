@@ -40,17 +40,8 @@
             "colspan": 6,
             "query": {
                 "metrics": "pageViews",
-                "dimensions": "pagePath",
+                "dimensions": "pagePathPlusQuery",
                 "sort": "pageViews-"
-            },
-            "link": {
-                "linkColumn": "pagePath",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "pagePath"
             },
             "more": {
                 "reportId": "pages"
@@ -60,6 +51,12 @@
                     "dimension": "eventName",
                     "value": "page_view"
                 }
+            ],
+            "rowActions": [
+                "heatmap",
+                "clicks",
+                "recordings",
+                "paths"
             ]
         },
         {
@@ -108,7 +105,7 @@
             },
             "more": {
                 "reportId": "referring-sites",
-                "label": "View Full Report \u00bb"
+                "label": "View Full Report »"
             }
         },
         {

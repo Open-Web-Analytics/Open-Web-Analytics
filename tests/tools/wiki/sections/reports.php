@@ -34,8 +34,10 @@ return function () {
     }
 
     // Which reports link to which: a widget's link template, its "more" link,
-    // and report-links widgets all name a reportId.
+    // and report-links widgets all name a reportId; a widget's row actions name
+    // actions, each of which may lead to a report (ConfiguredReport::rowActions).
     $linked_from = array();
+    $row_actions = \OWA\Core\ConfiguredReport::rowActions();
 
     foreach ( $definitions as $id => $d ) {
 
@@ -49,6 +51,18 @@ return function () {
                 $linked_from[ $v ][ $id ] = true;
             }
         } );
+
+        foreach ( (array) ( $d['widgets'] ?? array() ) as $widget ) {
+
+            foreach ( (array) ( $widget['rowActions'] ?? array() ) as $name ) {
+
+                $target = $row_actions[ $name ]['reportId'] ?? null;
+
+                if ( is_string( $target ) && $target !== $id ) {
+                    $linked_from[ $target ][ $id ] = true;
+                }
+            }
+        }
     }
 
     $describe = function ( $id ) use ( $registry, $definitions, $csv, $list, $code ) {

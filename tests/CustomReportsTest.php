@@ -841,11 +841,16 @@ final class CustomReportsTest extends TestCase
     {
         $targets = CustomReports::moreTargetsByDimension();
 
-        $this->assertArrayHasKey('pagePath', $targets);
+        // Pages groups by the path AND its query string, so that is the card
+        // it is the full report of -- a card of paths alone counts other rows.
+        $this->assertArrayHasKey('pagePathPlusQuery', $targets);
 
-        $ids = array_column($targets['pagePath'], 'id');
+        $ids = array_column($targets['pagePathPlusQuery'], 'id');
 
-        $this->assertContains('pages', $ids, 'the full report about a page path is Pages');
+        $this->assertContains('pages', $ids, 'the full report about a page and its query string is Pages');
+
+        $this->assertNotContains('pages', array_column($targets['pagePath'] ?? array(), 'id'),
+            'Pages is not the full report of a card of paths alone');
 
         // Reads a pagePath, so it belongs to the ROW link, not this one.
         $this->assertNotContains('document', $ids);
@@ -954,6 +959,7 @@ final class CustomReportsTest extends TestCase
     public function testAFullReportLinkIsStoredAndItsDestinationChecked(): void
     {
         $definition = $this->definition();
+        $definition['widgets'][1]['query']['dimensions'] = 'pagePathPlusQuery';
         $definition['widgets'][1]['more'] = array(
             'reportId' => 'pages',
             'label'    => 'View Full Report »',

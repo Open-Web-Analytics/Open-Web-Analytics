@@ -1548,6 +1548,27 @@ OWA.dataGrid.formatters = {
     }
 };
 
+/**
+ * A row's value for a dimension, as a row action passes it on.
+ *
+ * pagePath is read off pagePathPlusQuery when that is what the row has: the
+ * path is the part before its first '?'. Everything else is the row's own.
+ */
+OWA.dataGrid.rowValue = function ( row, name ) {
+
+    var cell = row[ name ];
+
+    if ( cell && cell.value !== null && cell.value !== undefined && cell.value !== '' ) {
+        return String( cell.value );
+    }
+
+    if ( name === 'pagePath' && row.pagePathPlusQuery && row.pagePathPlusQuery.value ) {
+        return String( row.pagePathPlusQuery.value ).split( '?' )[ 0 ];
+    }
+
+    return '';
+};
+
 OWA.dataGrid.prototype = {
 
     generate : function( resultSet ) {
@@ -2081,6 +2102,23 @@ OWA.dataGrid.prototype = {
 
                 $td.html( that.cellHtml( c, cell, row, i, formatters ) );
 
+                // The row's actions, behind "Actions" and a chevron beside its first value.
+                if ( c.kind === 'dimension' && ci === 0 ) {
+
+                    var actions = that.rowActionsFor( rs, row );
+
+                    if ( actions.length ) {
+
+                        $td.append( jQuery( '<button type="button" class="owa_gridRowActions" aria-haspopup="menu" aria-expanded="false"></button>' )
+                            .attr( 'aria-label', OWA.l( 'Actions for' ) + ' ' + ( cell.formatted_value || cell.value || '' ) )
+                            .append( jQuery( '<span class="owa_gridRowActionsLabel"></span>' ).text( OWA.l( 'Actions' ) ) )
+                            .append( '<i class="fas fa-chevron-down" aria-hidden="true"></i>' )
+                            .on( 'click', function () {
+                                that.openRowActions( jQuery( this ), actions );
+                            } ) );
+                    }
+                }
+
                 var meta = info[ c.name ];
                 var agg  = aggs[ c.name ];
 
@@ -2112,6 +2150,81 @@ OWA.dataGrid.prototype = {
         } );
 
         return $tbody;
+    },
+
+    /**
+     * The actions a row offers, as links -- options.rowActions, built by the
+     * report from ConfiguredReport::ROW_ACTIONS, each a link with a
+     * placeholder per parameter.
+     *
+     * An action is left off a row it cannot be about: one whose `first` names
+     * a dimension the grid is not grouped by first -- a heatmap is of one page,
+     * and only a row of pagePathPlusQuery is one -- or one a parameter of which
+     * the row has no value for.
+     */
+    rowActionsFor : function ( rs, row ) {
+
+        var that    = this;
+        var actions = this.options.rowActions || [];
+
+        if ( ! actions.length ) {
+            return [];
+        }
+
+        var first = ( this.columns( rs ).filter( function ( c ) { return c.kind === 'dimension'; } )[ 0 ] || {} ).name;
+        var out   = [];
+
+        actions.forEach( function ( a ) {
+
+            if ( a.first && a.first !== first ) {
+                return;
+            }
+
+            var href = String( a.href || '' );
+            var ok   = true;
+
+            Object.keys( a.params || {} ).forEach( function ( param ) {
+
+                var value = OWA.dataGrid.rowValue( row, a.params[ param ] );
+
+                if ( value === '' ) {
+                    ok = false;
+                    return;
+                }
+
+                href = href.split( '__OWA_ROW_' + param + '__' ).join( encodeURIComponent( value ) );
+            } );
+
+            if ( ok ) {
+                out.push( { id: a.id, label: a.label, href: href, newWindow: !! a.newWindow } );
+            }
+        } );
+
+        return out;
+    },
+
+    /** The row's actions, in the grid's popover, under its chevron. */
+    openRowActions : function ( $trigger, actions ) {
+
+        var $menu = jQuery( '<div class="owa_gridRowActionsMenu" role="menu"></div>' );
+
+        actions.forEach( function ( a ) {
+
+            var $a = jQuery( '<a class="owa_gridPopOption" role="menuitem"></a>' )
+                .attr( 'href', a.href ).attr( 'data-action', a.id ).text( OWA.l( a.label ) );
+
+            if ( a.newWindow ) {
+                $a.attr( { target: '_blank', rel: 'noopener' } );
+            }
+
+            $menu.append( $a );
+        } );
+
+        var $pop = this.openPopover( $trigger, OWA.l( 'Actions' ), $menu );
+
+        if ( $pop ) {
+            $pop.addClass( 'is-menu' ).find( 'a' ).first().trigger( 'focus' );
+        }
     },
 
     /** A cell's HTML, through the formatter its column names or its kind implies. */

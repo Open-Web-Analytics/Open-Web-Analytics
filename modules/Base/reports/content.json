@@ -22,13 +22,19 @@
             "colspan": 6,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "pagePath",
+                "dimensions": "pagePathPlusQuery",
                 "sort": "sessions-"
             },
             "more": {
                 "reportId": "pages",
                 "label": "View Full Report »"
-            }
+            },
+            "rowActions": [
+                "heatmap",
+                "clicks",
+                "recordings",
+                "paths"
+            ]
         },
         {
             "type": "grid-card",

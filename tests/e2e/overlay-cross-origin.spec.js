@@ -334,4 +334,56 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
             return painted;
         }), { timeout: 15000, message: 'the heatmap canvas stayed blank' }).toBeGreaterThan(0);
     });
+
+    /**
+     * THE WHOLE CHAIN FROM A PAGES ROW: its Heatmap action, the launcher's
+     * redirect to that exact page, and the overlay it opens there fetching that
+     * page's clicks and painting them.
+     */
+    test('a Pages row\'s heatmap draws that page\'s clicks', async ({ page }, testInfo) => {
+        await login(page);
+        await page.goto(`?owa_do=base.report&owa_reportId=pages&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days', { waitUntil: 'networkidle' });
+
+        const row = page.locator('.owa_gridTable tbody tr.owa_gridRow', { hasText: '/pricing' }).first();
+        await row.locator('.owa_gridRowActions').click();
+        const href = await page.locator('.owa_gridRowActionsMenu a[data-action="heatmap"]').getAttribute('href');
+
+        const location = (await page.request.get(href, { maxRedirects: 0 })).headers()['location'];
+        expect(location).toMatch(/^https:\/\/owa-e2e\.example\.test\/pricing#owa_overlay\./);
+
+        const params = JSON.parse(Buffer.from(
+            decodeURIComponent(location.split('#owa_overlay.')[1]), 'base64').toString());
+
+        const pageRoot = crossOrigin(installRoot(testInfo.project.use.baseURL));
+
+        await page.route('**/tests/e2e/overlay_harness.html*', (route) =>
+            route.fulfill({ status: 200, contentType: 'text/html', body: HARNESS_HTML })
+        );
+
+        await page.goto(pageRoot + 'tests/e2e/overlay_harness.html'
+            + '?base=' + encodeURIComponent(pageRoot)
+            + '&action=' + encodeURIComponent(params.action)
+            + '&api=' + encodeURIComponent(params.api_url), { waitUntil: 'load' });
+
+        await page.waitForFunction(
+            () => (window.owaOverlayFetches || []).some((f) => f.url.indexOf('api/index.php') !== -1),
+            null, { timeout: 15000 });
+
+        const call = await page.evaluate(() =>
+            (window.owaOverlayFetches || []).find((f) => f.url.indexOf('api/index.php') !== -1));
+
+        expect(call.status, 'the overlay\'s data request was refused').toBeGreaterThanOrEqual(200);
+        expect(call.status).toBeLessThan(300);
+        expect(call.body).toMatch(/"clickX":\{[^}]*"value":"?300"?/);
+
+        await expect.poll(() => page.evaluate(() => {
+            const c = document.querySelector('#owa_heatmap');
+            if (!c || !c.width || !c.height) return 0;
+            const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+            let painted = 0;
+            for (let k = 3; k < d.length; k += 4) if (d[k] > 0) painted++;
+            return painted;
+        }), { timeout: 15000, message: 'the heatmap canvas stayed blank' }).toBeGreaterThan(0);
+    });
 });

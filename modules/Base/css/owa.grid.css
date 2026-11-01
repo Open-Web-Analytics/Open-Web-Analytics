@@ -605,3 +605,45 @@
         gap: 8px 12px;
     }
 }
+
+/* ---- a row's actions: "Actions" and a chevron beside its first value --- */
+
+.owa_grid .owa_gridRowActions {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 6px;
+    padding: 2px 6px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #6b7280;
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.2;
+    vertical-align: middle;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.owa_grid .owa_gridRowActions .fas {
+    font-size: 9px;
+}
+
+.owa_grid .owa_gridRowActions:hover,
+.owa_grid .owa_gridRowActions:focus-visible,
+.owa_grid .owa_gridRowActions[aria-expanded="true"] {
+    background: #eef4fb;
+    color: #1874CD;
+    outline: none;
+}
+
+.owa_gridPop.is-menu {
+    width: auto;
+    min-width: 200px;
+    padding: 6px;
+}
+
+.owa_grid .owa_gridRowActionsMenu a.owa_gridPopOption {
+    text-decoration: none;
+}

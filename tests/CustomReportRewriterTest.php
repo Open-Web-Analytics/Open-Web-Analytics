@@ -113,13 +113,17 @@ final class CustomReportRewriterTest extends TestCase
         $this->assertStringContainsString('is not read by pagePathPlusQuery', implode("\n", $out['changes']));
     }
 
-    /** A full-report link to Pages fits pagePath, not the pagePathPlusQuery it becomes. */
-    public function testAMoreLinkThatNoLongerFitsTheRenamedDimensionIsRemoved(): void
+    /**
+     * A full-report link to Pages survives the rename: v1's pagePath carried
+     * the query string, it becomes pagePathPlusQuery, and Pages groups by
+     * pagePathPlusQuery -- as v1's Pages did.
+     */
+    public function testAMoreLinkToPagesFitsTheRenamedDimension(): void
     {
         $out = $this->rewrite([['type' => 'grid', 'query' => ['metrics' => 'visits', 'dimensions' => 'pagePath'],
             'more' => ['reportId' => 'pages']]]);
 
-        $this->assertArrayNotHasKey('more', $out['definition']['widgets'][0]);
+        $this->assertSame(['reportId' => 'pages'], $out['definition']['widgets'][0]['more'] ?? null);
         $this->assertSame('', \OWA\Module\Base\Classes\CustomReports::validate($out['definition']), 'it renders');
     }
 
