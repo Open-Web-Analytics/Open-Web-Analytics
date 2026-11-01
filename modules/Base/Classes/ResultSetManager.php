@@ -1182,6 +1182,32 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
       return $this->resolution;
     }
 
+    /**
+     * The rows a query can return over the period when it names no page size.
+     *
+     * By date, one per day with both ends counted. The day difference alone
+     * is one short -- a week of days is seven apart and eight long -- and
+     * sorted by date the row it cut was today's.
+     *
+     * Any other query keeps the day difference, which over one day is 0 and
+     * so no limit at all.
+     *
+     * @return int|float
+     */
+    function timePeriodRows() {
+
+        $difference = $this->timePeriod->getDaysDifference();
+
+        if ( in_array( 'date', $this->dimensions, true ) ) {
+
+            // Fractional across a daylight-saving change: a midnight-to-midnight
+            // difference, in seconds, over 86400.
+            return (int) round( $difference ) + 1;
+        }
+
+        return $difference;
+    }
+
     function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
       
       $map = false;
@@ -1943,7 +1969,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
           switch ( $this->getTimeResolution() ) {
             
             case "day":
-              $this->setLimit( $this->timePeriod->getDaysDifference() );
+              $this->setLimit( $this->timePeriodRows() );
               break;
               
             case "month":
