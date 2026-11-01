@@ -18,8 +18,8 @@
  * createCanvas() appends #owa_heatmap -- all through jQuery 3.x.
  *
  * WHAT IT ASSERTS (and what it deliberately does not)
- * Only the synchronous, deterministic jQuery-built DOM: the control panel, its
- * three controls, the toggled "active" class, and the canvas element. The
+ * Only the synchronous, deterministic jQuery-built DOM: the panel, which
+ * carries the OWA logo and no controls, and the canvas element. The
  * subsequent click-data fetch is an async call against live data; it is not
  * part of the "does jQuery 3.x still build the overlay" contract and is not
  * asserted here. It is covered on its own, cross-origin and against a real API,
@@ -83,22 +83,19 @@ test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => 
         await page.goto(harness, { waitUntil: 'load' });
     });
 
-    test('the tracker builds the overlay control panel from the URL anchor', async ({ page }) => {
-        // showControlPanel() appends #owa_overlay and its controls via jQuery.
-        // The dynamic import of Heatmap.js + its jQuery work is async, so wait
-        // on the element rather than asserting synchronously.
+    /**
+     * The panel carries the OWA logo and no controls. Start and Stop paused
+     * fetching pages of clicks that now come in one request, and X threw
+     * rather than closing anything; the reader closes the window.
+     */
+    test('the tracker builds the overlay panel from the URL anchor: the logo, no controls', async ({ page }) => {
+        // showControlPanel() appends #owa_overlay via jQuery. The dynamic import
+        // of Heatmap.js + its jQuery work is async, so wait on the element
+        // rather than asserting synchronously.
         await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });
 
-        // The three controls showControlPanel() builds.
-        await expect(page.locator('#owa_overlay_start')).toHaveCount(1);
-        await expect(page.locator('#owa_overlay_stop')).toHaveCount(1);
-        await expect(page.locator('#owa_overlay_end')).toHaveCount(1);
         await expect(page.locator('#owa_overlay_logo')).toHaveCount(1);
-    });
-
-    test('the start control is toggled active (jQuery toggleClass ran)', async ({ page }) => {
-        // showControlPanel() calls jQuery('#owa_overlay_start').toggleClass('active').
-        await expect(page.locator('#owa_overlay_start')).toHaveClass(/active/, { timeout: 20_000 });
+        await expect(page.locator('#owa_overlay .owa_overlay_control')).toHaveCount(0);
     });
 
     test('the heatmap canvas element is created', async ({ page }) => {
@@ -112,16 +109,6 @@ test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => 
             (el) => !!(el instanceof HTMLCanvasElement && el.getContext('2d'))
         );
         expect(has2dContext).toBe(true);
-    });
-
-    test('the overlay control click handlers are wired (jQuery events)', async ({ page }) => {
-        // .bind('click', ...) on .owa_overlay_control moves the "active" class to
-        // the clicked control. Clicking Stop should activate it and de-activate
-        // Start -- proving jQuery 3.x event binding on the overlay works.
-        await expect(page.locator('#owa_overlay_stop')).toBeVisible({ timeout: 20_000 });
-        await page.locator('#owa_overlay_stop').click();
-        await expect(page.locator('#owa_overlay_stop')).toHaveClass(/active/);
-        await expect(page.locator('#owa_overlay_start')).not.toHaveClass(/active/);
     });
 
     test('the overlay renders without uncaught page errors', async ({ page }) => {

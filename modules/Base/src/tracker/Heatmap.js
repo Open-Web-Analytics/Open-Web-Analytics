@@ -81,21 +81,18 @@ class Heatmap {
 	}
 	
 
+    /**
+     * The panel says whose overlay this is, and nothing more.
+     *
+     * It had Start, Stop and X. Start and Stop paused fetching the next page
+     * of clicks -- from when clicks came a hundred at a time; one request now
+     * brings them all, so the fetching is over before either could be
+     * pressed. X called a cookie helper this file never imported, so it threw
+     * and closed nothing; the reader closes the window.
+     */
     showControlPanel() {
-        var that = this;
         jQuery('body').append('<div id="owa_overlay"></div>');
         jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
-        jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_start">Start</div>');
-        jQuery('#owa_overlay_start').toggleClass('active');
-        jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_stop">Stop</div>');
-        jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_end">X</div>');
-        jQuery('#owa_overlay_start').click(function(){that.startTimer()});
-        jQuery('#owa_overlay_stop').click(function(){that.stopTimer()});
-        jQuery('.owa_overlay_control').bind('click', function(){
-            jQuery(".owa_overlay_control").removeClass('active');
-            jQuery(this).addClass('active');
-        });
-        jQuery('#owa_overlay_end').click(function(){that.endSession()});
         //eliminate session cookie when window closes.
         //jQuery(window).unload(function() {OWA_instance.endOverlaySession()});
         jQuery(window).on('unload', function() {OWA_instance.endOverlaySession()});
@@ -119,12 +116,6 @@ class Heatmap {
         }
 
 
-    }
-
-    endSession() {
-
-        Util.eraseCookie(OWA_instance.getSetting('ns') + 'overlay', document.domain);
-        window.close();
     }
 
     startTimer() {

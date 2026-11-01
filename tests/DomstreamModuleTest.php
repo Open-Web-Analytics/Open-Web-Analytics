@@ -132,15 +132,6 @@ final class DomstreamModuleTest extends TestCase
         }
     }
 
-    public function testPageDetailLinksToThisPagesRecordings(): void
-    {
-        $links = $this->module()->addReportLinks([['reportId' => 'pages']], 'document', 'moreAnalytics');
-
-        $this->assertSame('domstreams', $links[0]['reportId']);
-        $this->assertSame(['pagePath' => '{pagePath}'], $links[0]['params']);
-        $this->assertSame('pages', $links[1]['reportId'], 'what was there stays');
-    }
-
     public function testContentsRelatedReportsLinkToRecordings(): void
     {
         $links = $this->module()->addReportLinks([], 'content', 'related');
@@ -152,7 +143,9 @@ final class DomstreamModuleTest extends TestCase
     {
         $module = $this->module();
 
-        foreach ([['document', 'related'], ['content', 'moreAnalytics'], ['pages', 'related'], ['', '']] as [$report, $widget]) {
+        // Page Detail's "more analytics" list included: it is gone, and a
+        // page's recordings are a row action on Pages.
+        foreach ([['document', 'moreAnalytics'], ['document', 'related'], ['content', 'moreAnalytics'], ['pages', 'related'], ['', '']] as [$report, $widget]) {
             $this->assertSame([['reportId' => 'x']], $module->addReportLinks([['reportId' => 'x']], $report, $widget),
                 "$report/$widget");
         }

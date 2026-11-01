@@ -1,6 +1,6 @@
 {
     "title": "Page Detail: ",
-    "description": "Page views and sessions for one page over the period, the pages viewed before and after it, and links to its heatmap and its element clicks.",
+    "description": "Page views and sessions for one page over the period, and the pages viewed before and after it.",
     "titleSuffix": "{pagePath}",
     "params": {
         "pagePath": {}
@@ -90,31 +90,6 @@
                     "(exit)"
                 ]
             }
-        },
-        {
-            "type": "heatmap-link",
-            "id": "heatmap",
-            "container": "heatmap-link",
-            "title": "More analytics for this Page:",
-            "showTitle": true,
-            "pagePath": "{pagePath}",
-            "colspan": 3
-        },
-        {
-            "type": "report-links",
-            "id": "moreAnalytics",
-            "container": "more-analytics",
-            "links": [
-                {
-                    "reportId": "dom-clicks",
-                    "label": "Dom Clicks",
-                    "description": "analysis of dom clicks.",
-                    "params": {
-                        "pagePath": "{pagePath}"
-                    }
-                }
-            ],
-            "colspan": 3
         }
     ]
 }
