@@ -108,9 +108,9 @@ class Lib {
      * @return array
      * @access public
      */
-    public static function time_now() {
+    public static function time_now( $timestamp = null ) {
 
-        $timestamp = time();
+        $timestamp = $timestamp ?? time();
 
         return array(
 
