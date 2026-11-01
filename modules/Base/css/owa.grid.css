@@ -617,7 +617,7 @@
     border: 0;
     border-radius: 4px;
     background: transparent;
-    color: #6b7280;
+    color: #9ca3af;
     font: inherit;
     font-size: 12px;
     line-height: 1.2;
@@ -628,6 +628,12 @@
 
 .owa_grid .owa_gridRowActions .fas {
     font-size: 9px;
+}
+
+/* The dotted rule the grid draws under a heading with more to show. */
+.owa_grid .owa_gridRowActions .owa_gridRowActionsLabel {
+    padding-bottom: 1px;
+    border-bottom: 1px dotted #9ca3af;
 }
 
 .owa_grid .owa_gridRowActions:hover,

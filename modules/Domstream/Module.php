@@ -163,20 +163,10 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Recordings from the reports that lead to them: Page Detail's "more
-     * analytics" (this page's recordings) and Content's related reports.
+     * Recordings among Content's related reports. A page's own recordings are
+     * a row action on Pages (addRowActions).
      */
     function addReportLinks( $links, $reportId = '', $widgetId = '' ) {
-
-        if ( $reportId === 'document' && $widgetId === 'moreAnalytics' ) {
-
-            array_unshift( $links, array(
-                'reportId'    => 'domstreams',
-                'label'       => 'Recordings',
-                'description' => 'pointer, scroll and click recordings of this page.',
-                'params'      => array( 'pagePath' => '{pagePath}' ),
-            ) );
-        }
 
         if ( $reportId === 'content' && $widgetId === 'related' ) {
 
