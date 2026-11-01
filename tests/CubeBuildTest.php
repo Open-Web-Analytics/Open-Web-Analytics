@@ -824,6 +824,93 @@ final class CubeBuildTest extends TestCase
     }
 
     /**
+     * A builder that writes a raw row after its build statement has read raw
+     * and before it checks staging against it -- where log.php's writes land
+     * while a real build runs.
+     */
+    private function builderWithArrival(callable $arrive): \OWA\Module\Base\Classes\Cube\Builder
+    {
+        return new class(self::PROPERTY, $arrive) extends \OWA\Module\Base\Classes\Cube\Builder {
+
+            private $arrive;
+
+            public function __construct($property_id, callable $arrive)
+            {
+                parent::__construct($property_id);
+                $this->arrive = $arrive;
+            }
+
+            protected function countRaw(array $span)
+            {
+                if ($this->arrive) {
+                    ($this->arrive)();
+                    $this->arrive = null;
+                }
+
+                return parent::countRaw($span);
+            }
+        };
+    }
+
+    private function today(\OWA\Module\Base\Classes\Cube\Builder $builder): array
+    {
+        $spans = $builder->partitions($this->yyyymmdd, $this->yyyymmdd);
+        $this->assertCount(1, $spans);
+
+        return $builder->rebuild($spans[0]);
+    }
+
+    private function inCube(int $id): bool
+    {
+        return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_row(sprintf(
+            'SELECT id FROM %s WHERE id = %d AND yyyymmdd = %d', $this->cube(), $id, $this->yyyymmdd));
+    }
+
+    /**
+     * Measured on app: four refused builds in 8,025 runs, each missing exactly
+     * the rows a visitor sent during it (a first visit's three rows, once).
+     */
+    public function testARowArrivingDuringTheBuildDoesNotStopTheSwap(): void
+    {
+        $ts = $this->t0 + 300000000;
+        $id = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::VISITOR_DIRECT, 8881000000000003, $ts, 'click');
+
+        $result = $this->today($this->builderWithArrival(function () use ($ts) {
+            $this->seed('click', self::VISITOR_DIRECT, 8881000000000003, $ts, ['page_path' => '/direct']);
+        }));
+
+        $this->assertTrue($result['ok'], 'refused: ' . $result['error']);
+        $this->assertTrue($this->inCube(\OWA\Module\Base\Classes\V2Event::id(
+            self::SITE, self::VISITOR_DIRECT, 8881000000000003, $this->t0, 'page_view')), 'the build was swapped in');
+        $this->assertFalse($this->inCube($id), 'the arrival came after the build read raw');
+
+        $this->rebuild();
+
+        $this->assertTrue($this->inCube($id), 'the next run builds it in');
+    }
+
+    /**
+     * A row that was in raw before the build began and is not in staging is
+     * what a predicate excluding rows looks like.
+     */
+    public function testARowThereBeforeTheBuildButNotBuiltStopsTheSwap(): void
+    {
+        $ts = $this->t0 + 300000000;
+        $id = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::VISITOR_DIRECT, 8881000000000003, $ts, 'click');
+
+        $result = $this->today($this->builderWithArrival(function () use ($ts) {
+            $this->seed('click', self::VISITOR_DIRECT, 8881000000000003, $ts,
+                ['page_path' => '/direct', 'created_at' => $this->t0]);
+        }));
+
+        $this->assertFalse($result['ok']);
+        $this->assertMatchesRegularExpression('/^built (\d+) rows from (\d+) raw rows$/', $result['error']);
+        preg_match('/^built (\d+) rows from (\d+) raw rows$/', $result['error'], $n);
+        $this->assertSame((int) $n[1] + 1, (int) $n[2], 'one row short');
+        $this->assertFalse($this->inCube($id));
+    }
+
+    /**
      * new_vs_returning is stamped as the LABEL a report groups by.
      *
      * Asserted on the stored strings rather than on a flag, because the label

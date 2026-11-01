@@ -85,6 +85,18 @@ class Builder {
      */
     const CANDIDATE_PAGE = 50000;
 
+    /**
+     * How long before a build began a row's created_at can be and the row
+     * still arrive after the build read raw, in microseconds.
+     *
+     * EventRaw::create() stamps created_at just before the insert commits, so
+     * a row stamped a moment before built_at can commit after the build
+     * statement's read. A writer that stamps a whole batch at once (the v1
+     * migration) can exceed this; that build is refused as before, and the
+     * next run builds the rows in.
+     */
+    const ARRIVAL_MARGIN = 5000000;
+
     /** @var int rows per candidate page; a test sets it small to cross pages */
     public $candidate_page = self::CANDIDATE_PAGE;
 
@@ -653,21 +665,14 @@ class Builder {
             }
         }
 
-        $expected = $this->countRaw( $span );
-        $built    = $this->count( $this->tables['staging'], '' );
+        $built   = $this->count( $this->tables['staging'], '' );
+        $refused = $this->refusal( $span, $built, $built_at );
 
-        /*
-         * A build enriches; it does not create or drop. A mismatch means the
-         * statement is wrong -- a join multiplying rows, a predicate excluding
-         * them -- and swapping it in would publish that.
-         */
-        if ( $built !== $expected ) {
+        if ( $refused !== null ) {
 
-            \OWA\Core\CoreAPI::error( sprintf(
-                'Cube build: %s built %d rows from %d raw rows. Not swapped.',
-                $span['name'], $built, $expected ) );
+            \OWA\Core\CoreAPI::error( sprintf( 'Cube build: %s %s. Not swapped.', $span['name'], $refused ) );
 
-            $result['error'] = sprintf( 'built %d rows from %d raw rows', $built, $expected );
+            $result['error'] = $refused;
 
             $this->dropWorkingTables();
 
@@ -1461,6 +1466,62 @@ class Builder {
         return array_values( array_diff(
             \OWA\Core\CoreAPI::entityFactory( 'base.event' )->getColumns(),
             $this->rawColumns() ) );
+    }
+
+    /**
+     * Why staging must not be swapped in, or null when it may be.
+     *
+     * A build enriches; it does not create or drop. A raw row missing from
+     * staging means a predicate excluded it, and swapping that in would
+     * publish it. (A join multiplying a row fails the build statement itself,
+     * on staging's primary key.)
+     *
+     * Except a row that reached raw during the build. log.php writes while a
+     * build runs, so a row committed after the build statement read raw is
+     * counted here and rightly absent from staging. That is not a fault: the
+     * next run builds it in, because isCurrent() sees its created_at. A raw
+     * row missing that was stamped before the build began is one.
+     *
+     * @param array $span
+     * @param int   $built    rows in staging
+     * @param int   $built_at microseconds, when this build began
+     * @return string|null
+     */
+    protected function refusal( array $span, $built, $built_at ) {
+
+        if ( $built === $this->countRaw( $span ) ) {
+
+            return null;
+        }
+
+        /*
+         * One statement, so what it says of raw is one moment of it: raw's
+         * rows, those not in staging, and those of them that were there
+         * before the build began.
+         */
+        $raw = $this->db->get_row( sprintf(
+            'SELECT COUNT(*) AS n, COALESCE(SUM(s.id IS NULL), 0) AS missing,'
+          . ' COALESCE(SUM(s.id IS NULL AND (r.created_at IS NULL OR r.created_at < %d)), 0) AS missed'
+          . ' FROM %s r LEFT JOIN %s s ON s.id = r.id AND s.yyyymmdd = r.yyyymmdd'
+          . ' WHERE r.yyyymmdd >= %d AND r.yyyymmdd < %d%s',
+            (int) $built_at - self::ARRIVAL_MARGIN, $this->tables['raw'], $this->tables['staging'],
+            (int) $span['start'], (int) $span['less_than'], $this->siteFilter( 'r' ) ) );
+
+        $expected = is_array( $raw ) ? (int) $raw['n'] : 0;
+        $missing  = is_array( $raw ) ? (int) $raw['missing'] : 0;
+        $missed   = is_array( $raw ) ? (int) $raw['missed'] : 0;
+
+        // Staging holding a row raw does not, or one there before the build left out.
+        if ( $built !== $expected - $missing || $missed > 0 ) {
+
+            return sprintf( 'built %d rows from %d raw rows', $built, $expected );
+        }
+
+        \OWA\Core\CoreAPI::notice( sprintf(
+            'Cube build: %s: %d row(s) reached raw during the build; the next run builds them in.',
+            $span['name'], $missing ) );
+
+        return null;
     }
 
     /** @return int raw rows the partition should hold */
