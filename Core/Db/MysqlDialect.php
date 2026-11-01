@@ -35,6 +35,7 @@ namespace OWA\Core\Db;
 
 if ( ! defined( 'OWA_DTD_BIGINT' ) ) { define('OWA_DTD_BIGINT', 'BIGINT'); }
 if ( ! defined( 'OWA_DTD_INT' ) ) { define('OWA_DTD_INT', 'INT'); }
+if ( ! defined( 'OWA_DTD_SMALLINT' ) ) { define('OWA_DTD_SMALLINT', 'SMALLINT'); }
 if ( ! defined( 'OWA_DTD_TINYINT' ) ) { define('OWA_DTD_TINYINT', 'TINYINT(1)'); }
 if ( ! defined( 'OWA_DTD_TINYINT2' ) ) { define('OWA_DTD_TINYINT2', 'TINYINT(2)'); }
 if ( ! defined( 'OWA_DTD_TINYINT4' ) ) { define('OWA_DTD_TINYINT4', 'TINYINT(4)'); }

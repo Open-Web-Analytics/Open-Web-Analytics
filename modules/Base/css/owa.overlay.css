@@ -89,3 +89,11 @@ body > div.jGrowl.center {
     border: 2px solid var(--owa-accent, #f47a17);
     border-right:0px;
 }
+
+/* The heatmap's Stats panel, opened from the control beside the logo. */
+#owa_overlay_stats {clear:both; padding:6px 4px 2px; font-size:13px; color:#303030;}
+#owa_overlay_stats[hidden] {display:none;}
+#owa_overlay_stats table {border-collapse:collapse;}
+#owa_overlay_stats th {font-weight:normal; text-align:left; padding:1px 12px 1px 0;}
+#owa_overlay_stats td {text-align:right; font-variant-numeric:tabular-nums; padding:1px 0;}
+#owa_overlay_stats_toggle {cursor:pointer; line-height:35px;}

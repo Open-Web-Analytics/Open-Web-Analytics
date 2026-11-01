@@ -81,7 +81,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test.skip(!SELFHOST,
         'Provisions a site, clicks and a recording; runs only under the self-host e2e runner.');
 
-    /** @type {{site_id:string, page_path:string, constraints:string, recording_id:string, heatmap_token:string, player_token:string, clicks:number, domstream_module_activated:boolean}} */
+    /** @type {{site_id:string, page_path:string, constraints:string, recording_id:string, heatmap_token:string, player_token:string, clicks:number, anchored_clicks:number, anchor:string, domstream_module_activated:boolean}} */
     let fx;
 
     test.beforeAll(() => {
@@ -236,6 +236,60 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         const corsBlocked = consoleErrors.filter((e) => /CORS|Access-Control/i.test(e));
         expect(corsBlocked, 'the browser reported a CORS failure').toEqual([]);
     });
+
+    /**
+     * AN ANCHORED CLICK IS DRAWN ON ITS ELEMENT, at whatever width the page is
+     * read. The harness's #overlay-anchor sits in a centred column, so it is
+     * 200px further right at 1400 than at 1000. The fixture's two clicks on it
+     * carry a page coordinate of 900,900 from the window they were recorded in;
+     * nothing may be drawn there. The fixture's other clicks have no anchor and
+     * were recorded at 1200px, so at neither width are they drawn.
+     */
+    for (const width of [1000, 1400]) {
+        test(`an anchored click is drawn on its element in a ${width}px window`, async ({ page }, testInfo) => {
+            await page.setViewportSize({ width, height: 900 });
+
+            const { fetches } = await runOverlay(page, testInfo, {
+                action: 'loadHeatmap',
+                apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
+                    + '&owa_metrics=eventCount'
+                    + '&owa_dimensions=' + encodeURIComponent(
+                        'elementAnchor,anchorX,anchorY,clickX,clickY,viewportWidth')
+                    + '&owa_siteId=' + encodeURIComponent(fx.site_id)
+                    + '&owa_constraints=' + encodeURIComponent(fx.constraints)
+                    + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
+            });
+
+            expect(fetches[0] && fetches[0].status, 'the heatmap\'s data request failed').toBe(201);
+
+            const painted = (x, y) => page.evaluate(([px, py]) => {
+                const c = document.querySelector('#owa_heatmap');
+                if (!c || !c.width) return 0;
+                return c.getContext('2d').getImageData(px, py, 1, 1).data[3];
+            }, [x, y]);
+
+            const centre = await page.evaluate(() => {
+                const r = document.getElementById('overlay-anchor').getBoundingClientRect();
+                return { x: Math.round(r.left + scrollX + r.width / 2), y: Math.round(r.top + scrollY + r.height / 2) };
+            });
+
+            await expect.poll(() => painted(centre.x, centre.y), {
+                timeout: 15000, message: `nothing drawn on the element at ${centre.x},${centre.y}`,
+            }).toBeGreaterThan(0);
+
+            expect(await painted(900, 900), 'drawn at the coordinate the click was recorded at').toBe(0);
+
+            await page.click('#owa_overlay_stats_toggle');
+            const stats = Object.fromEntries(await page.$$eval('#owa_overlay_stats tr',
+                (rows) => rows.map((r) => [r.querySelector('th').textContent, Number(r.querySelector('td').textContent.replace(/,/g, ''))])));
+
+            expect(stats['Clicks']).toBe(fx.clicks);
+            expect(stats['Drawn']).toBe(fx.anchored_clicks);
+            expect(stats['Elements clicked']).toBe(1);
+            expect(stats['Elements found on this page']).toBe(1);
+            expect(stats['Not drawn: recorded at another window width']).toBe(fx.clicks - fx.anchored_clicks);
+        });
+    }
 
     test('the player fetches its recording from another origin', async ({ page }, testInfo) => {
         const { fetches, consoleErrors } = await runOverlay(page, testInfo, {

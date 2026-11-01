@@ -42,7 +42,10 @@ final class EventRawEntityTest extends TestCase
          * every event. 67 with created_at (Update063), when a row reached raw --
          * raw only: the cube entity drops it, so it costs the custom-dimension
          * ceiling nothing. 73 with the six prior_touch_* columns (Update066), raw
-         * only for the same reason: the cube's attributed_* is their reading.
+         * only for the same reason: the cube's attributed_* is their reading. 76
+         * with element_anchor, anchor_x and anchor_y (Update073), where on the
+         * clicked element the heatmap draws a click: a BIGINT and two SMALLINTs,
+         * which left the measured ceiling on MySQL 8.4 at 36.
          *
          * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
          * param-bound first-class properties were deliberately left in the bag --
@@ -52,7 +55,7 @@ final class EventRawEntityTest extends TestCase
          * MySQL 8.4. This number moving is how that decision gets noticed being
          * reversed one column at a time.
          */
-        $this->assertCount(73, $columns);
+        $this->assertCount(76, $columns);
 
         // browser_type, and NOT `browser`. Both columns existed and both were
         // written from the one property -- config/dimensions.php declares
@@ -71,6 +74,8 @@ final class EventRawEntityTest extends TestCase
             'engagement_msec', 'scroll_depth', 'is_outbound', 'consent_state',
             // Promoted out of params; the element and form params were not.
             'file_name', 'file_extension', 'search_term',
+            // Where on the clicked element, which the heatmap draws by.
+            'element_anchor', 'anchor_x', 'anchor_y',
             'user_id', 'content_group', 'currency', 'session_start_ts',
             'device_type', 'device_brand', 'device_model', 'raw_ua', 'params',
             'referer_host', 'referer_query', 'prior_session_start_ts',

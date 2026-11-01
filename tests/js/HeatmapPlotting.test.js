@@ -26,7 +26,23 @@
  * weight a point is drawn with, so the metric's NAME is load-bearing: a reader
  * looking for a key the request never asked for silently weighs every point 1
  * and flattens the map.
+ *
+ * WHERE A CLICK IS DRAWN
+ *
+ * A click with an element anchor is drawn on that element, wherever this page
+ * lays it out (ElementAnchor.js). One without is drawn by its page coordinate,
+ * and only when its window was about as wide as this one: a coordinate from a
+ * different width lands somewhere else on the page.
  */
+
+// Heatmap does `import * as jQuery from 'jquery'` and calls jQuery(...). Webpack
+// makes that namespace callable; babel-jest's interop does not unless jQuery is
+// marked an ES module (as DomstreamPlayer.test.js does).
+jest.mock('jquery', () => {
+    const jq = jest.requireActual('jquery');
+    jq.__esModule = true;
+    return jq;
+});
 
 // jsdom gives us no canvas, and none is needed: these tests are about which
 // coordinates and weights reach the drawing calls, so the 2d context is a
@@ -44,6 +60,7 @@ function makeContext(recorder) {
             return { data: recorder.pixels, width: w, height: h };
         },
         putImageData(image, x, y) { recorder.writes.push({ x, y }); },
+        clearRect(x, y, w, h) { recorder.clears.push({ x, y, w, h }); },
         set fillStyle(v) { recorder.fillStyles.push(v); },
         get fillStyle() { return null; },
     };
@@ -54,33 +71,57 @@ function makeHeatmap(Heatmap, recorder, docDimensions) {
     const hm = Object.create(Heatmap.prototype);
 
     hm.docDimensions = docDimensions || { w: 1000, h: 2000 };
-    hm.options = { dotSize: 12, dotAlpha: 0.08 };
+    hm.options = { dotSize: 12, dotAlpha: 0.08, widthTolerance: 24 };
     hm.context = makeContext(recorder);
     hm.shadowContext = makeContext(recorder);
     hm.shadowCanvas = { width: hm.docDimensions.w, height: hm.docDimensions.h };
     hm.clicks = '';
+    hm.rows = [];
+    hm.stats = Heatmap.emptyStats();
 
     return hm;
 }
 
-/** One row as the reports API returns it. */
-function row(x, y, clicks) {
+/** One row with no element anchor, as the reports API returns it: recorded in a window this wide. */
+function row(x, y, clicks, width = window.innerWidth) {
     return {
         clickX: { result_type: 'dimension', name: 'clickX', value: String(x) },
         clickY: { result_type: 'dimension', name: 'clickY', value: String(y) },
+        viewportWidth: { result_type: 'dimension', name: 'viewportWidth', value: String(width) },
         eventCount: { result_type: 'metric', name: 'eventCount', value: String(clicks) },
     };
 }
 
+/** A row anchored to an element: the point in thousandths of its box. */
+function anchored(anchor, ax, ay, clicks, x = 5, y = 5, width = 3000) {
+    return {
+        elementAnchor: { result_type: 'dimension', name: 'elementAnchor', value: anchor },
+        anchorX: { result_type: 'dimension', name: 'anchorX', value: String(ax) },
+        anchorY: { result_type: 'dimension', name: 'anchorY', value: String(ay) },
+        ...row(x, y, clicks, width),
+    };
+}
+
+function box(el, left, top, width, height) {
+    el.getBoundingClientRect = () => ({ left, top, width, height });
+    return el;
+}
+
 let Heatmap;
+let ElementAnchor;
 
 beforeAll(async () => {
     global.OWA_instance = { debug() {} };
     ({ Heatmap } = await import('../../modules/Base/src/tracker/Heatmap.js'));
+    ({ ElementAnchor } = await import('../../modules/Base/src/tracker/ElementAnchor.js'));
+});
+
+afterEach(() => {
+    document.body.innerHTML = '';
 });
 
 function freshRecorder() {
-    return { gradients: [], fills: [], reads: [], writes: [], fillStyles: [], pixels: new Uint8ClampedArray(0) };
+    return { gradients: [], fills: [], reads: [], writes: [], clears: [], fillStyles: [], pixels: new Uint8ClampedArray(0) };
 }
 
 describe('reading the dimensional result set', () => {
@@ -119,6 +160,7 @@ describe('reading the dimensional result set', () => {
         hm.clicks = { resultsRows: [{
             clickX: { value: '100' },
             clickY: { value: '200' },
+            viewportWidth: { value: String(window.innerWidth) },
             domClicks: { value: '9' },
         }] };
 
@@ -250,5 +292,138 @@ describe('colourising', () => {
         hm.colorize();
 
         expect(Array.from(rec.pixels)).toEqual([10, 20, 30, 128]);
+    });
+});
+
+describe('placing a click on its element', () => {
+
+    function page() {
+        document.body.innerHTML = '<div id="main"><a href="/a">a</a><a href="/b">b</a></div>';
+        const [a, b] = document.querySelectorAll('#main a');
+        return { a, b, anchorA: ElementAnchor.hash('#main>a:1'), anchorB: ElementAnchor.hash('#main>a:2') };
+    }
+
+    test('an anchored click is drawn on its element here, not at the coordinate it was recorded at', () => {
+        const { a, anchorA } = page();
+        box(a, 400, 100, 200, 40);
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+
+        const points = hm.pointsFor([anchored(anchorA, 250, 500, 3, 90, 90)], Heatmap.emptyStats());
+
+        expect(points).toEqual([{ x: 450, y: 120, weight: 3 }]);
+    });
+
+    test('a click whose element is not on this page, or has no box here, is not drawn', () => {
+        const { b, anchorB } = page();
+        box(b, 0, 0, 0, 0);
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+        const stats = Heatmap.emptyStats();
+
+        const points = hm.pointsFor([anchored(anchorB, 500, 500, 2), anchored('123456', 500, 500, 4)], stats);
+
+        expect(points).toEqual([]);
+        expect(stats.notOnPage).toBe(6);
+    });
+
+    test('a click with no anchor is drawn by its coordinate only when its window was this wide', () => {
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+        const stats = Heatmap.emptyStats();
+        const w = window.innerWidth;
+
+        const points = hm.pointsFor([
+            row(10, 20, 1, w + 24),
+            row(30, 40, 1, w - 300),
+            row(50, 60, 1, ''),
+        ], stats);
+
+        expect(points).toEqual([{ x: 10, y: 20, weight: 1 }]);
+        expect(stats.otherWidth).toBe(2);
+    });
+
+    test('a resize places every click again, from every page fetched', () => {
+        const { a, anchorA } = page();
+        box(a, 400, 100, 200, 40);
+        const rec = freshRecorder();
+        const hm = makeHeatmap(Heatmap, rec);
+        hm.rows = [anchored(anchorA, 500, 500, 1)];
+
+        hm.redraw();
+        box(a, 100, 300, 200, 40);
+        hm.redraw();
+
+        expect(rec.gradients.map((g) => [g.x, g.y])).toEqual([[500, 120], [200, 320]]);
+        expect(rec.clears.length).toBeGreaterThan(0);
+    });
+});
+
+describe('the stats', () => {
+
+    test('every click is either drawn or counted under the reason it is not', () => {
+        document.body.innerHTML = '<div id="main"><a href="/a">a</a><a href="/b">b</a></div>';
+        const [a, b] = document.querySelectorAll('#main a');
+        box(a, 100, 100, 100, 20);
+        box(b, 0, 0, 0, 0);
+        const rec = freshRecorder();
+        const hm = makeHeatmap(Heatmap, rec, { w: 1000, h: 2000 });
+        hm.rows = [
+            anchored(ElementAnchor.hash('#main>a:1'), 500, 500, 5),
+            anchored(ElementAnchor.hash('#main>a:1'), 100, 100, 1),
+            anchored(ElementAnchor.hash('#main>a:2'), 500, 500, 2),
+            row(10, 10, 3),
+            row(10, 10, 4, 99999),
+            row(5000, 10, 6),
+            { eventCount: { value: '7' } },
+        ];
+        hm.canvas = undefined;
+
+        hm.redraw();
+
+        const s = hm.stats;
+        expect(s.clicks).toBe(28);
+        expect(s.drawn).toBe(9);
+        expect(s.notOnPage).toBe(2);
+        expect(s.otherWidth).toBe(4);
+        expect(s.offPage).toBe(6);
+        expect(s.noPosition).toBe(7);
+        expect(s.drawn + s.notOnPage + s.otherWidth + s.offPage + s.noPosition).toBe(s.clicks);
+        expect(s.elements.size).toBe(2);
+        expect(s.elementsFound.size).toBe(1);
+    });
+
+    test('the panel lists the counts, and only the reasons something fell under', () => {
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+        hm.stats = Object.assign(Heatmap.emptyStats(), { clicks: 12, drawn: 10, notOnPage: 2 });
+        hm.stats.elements = new Set(['1', '2', '3']);
+        hm.stats.elementsFound = new Set(['1', '2']);
+
+        expect(hm.statsLines()).toEqual([
+            ['Clicks', 12],
+            ['Drawn', 10],
+            ['Elements clicked', 3],
+            ['Elements found on this page', 2],
+            ['Not drawn: element not on this page', 2],
+        ]);
+    });
+
+    test('the toggle beside the logo opens and closes the panel', () => {
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+        hm.stats = Object.assign(Heatmap.emptyStats(), { clicks: 1234, drawn: 1234 });
+
+        hm.showControlPanel();
+
+        const toggle = document.getElementById('owa_overlay_stats_toggle');
+        const panel = document.getElementById('owa_overlay_stats');
+
+        expect(toggle.previousElementSibling.id).toBe('owa_overlay_logo');
+        expect(panel.hidden).toBe(true);
+        expect(panel.textContent).toContain('1,234');
+
+        toggle.click();
+        expect(panel.hidden).toBe(false);
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+
+        toggle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(panel.hidden).toBe(true);
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
     });
 });

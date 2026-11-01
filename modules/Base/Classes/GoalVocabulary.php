@@ -132,6 +132,12 @@ class GoalVocabulary {
                          . 'tracker keeps for the build -- not something a visitor did',
         'remote_host' => 'a reverse-DNS lookup of the visitor\'s address, where one '
                          . 'resolves: network plumbing, and absent for most visitors',
+
+        'element_anchor' => 'a hash of the clicked element\'s place in the page, which '
+                            . 'the heatmap matches; element_id is the readable way to '
+                            . 'name an element',
+        'anchor_x'       => 'where inside the element the click landed, for drawing it',
+        'anchor_y'       => 'where inside the element the click landed, for drawing it',
     );
 
     /**
@@ -143,8 +149,8 @@ class GoalVocabulary {
                                   . 'Browser, operating system and device are its readings.',
         'engagement_msec'      => 'How long the page was in the foreground before this event, '
                                   . 'in milliseconds.',
-        'page_width'           => 'The width of the page, in pixels, when the click happened.',
-        'page_height'          => 'The height of the page, in pixels, when the click happened.',
+        'page_width'           => 'The width of the browser window, in pixels, when the click happened.',
+        'page_height'          => 'The height of the browser window, in pixels, when the click happened.',
         'referer_query'        => 'The query string of the referring URL, without the host or path.',
         'tagged_ad'            => 'The ad or link the landing URL was tagged with '
                                   . '(owa_ad or utm_content).',

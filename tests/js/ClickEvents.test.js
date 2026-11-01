@@ -1,5 +1,6 @@
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
+import { ElementAnchor } from '../../modules/Base/src/tracker/ElementAnchor.js';
 
 /**
  * DOM-click tracking.
@@ -204,6 +205,55 @@ describe('clickEventHandler builds the click event', () => {
         t.clickEventHandler(clickOn(document.getElementById('t').firstChild));
 
         expect(t.click.getProperties().dom_element_id).toBe('t');
+    });
+
+    /*
+     * WHERE ON THE ELEMENT, which the heatmap draws the click by. The element
+     * is the one hit, not the link around it, whose box need not hold the
+     * point; and a click with no pointer behind it has none.
+     */
+    test('records where on the clicked element the click landed', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<div id="nav"><a id="out" href="/p"><span>Go</span></a></div>';
+        const span = document.querySelector('span');
+        span.getBoundingClientRect = () => ({ left: 100, top: 20, width: 50, height: 10 });
+
+        t.clickEventHandler({ target: span, pageX: 125, pageY: 1025, clientX: 125, clientY: 25, detail: 1 });
+
+        const c = t.click.getProperties();
+        expect(c.dom_element_id).toBe('out');
+        expect(c.element_anchor).toBe(ElementAnchor.hash('#out>span:1'));
+        expect(c.anchor_x).toBe(500);
+        expect(c.anchor_y).toBe(500);
+    });
+
+    test('a click from the keyboard or a script carries no anchor', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<a id="k" href="/k">k</a>';
+        const a = document.getElementById('k');
+        a.getBoundingClientRect = () => ({ left: 0, top: 0, width: 50, height: 10 });
+
+        t.clickEventHandler({ target: a, pageX: 0, pageY: 0, clientX: 0, clientY: 0, detail: 0 });
+
+        expect(t.click.getProperties()).not.toHaveProperty('element_anchor');
+        expect(t.click.getProperties()).not.toHaveProperty('anchor_x');
+    });
+
+    test('the anchor travels under the element\'s wire names', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', true);
+        document.body.innerHTML = '<button id="w">x</button>';
+        const b = document.getElementById('w');
+        b.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 });
+
+        t.clickEventHandler({ target: b, pageX: 25, pageY: 75, clientX: 25, clientY: 75, detail: 1 });
+
+        const q = new URLSearchParams(beacons[0].split('?')[1]);
+        expect(q.get('el_a')).toBe(ElementAnchor.hash('#w'));
+        expect(q.get('el_ax')).toBe('250');
+        expect(q.get('el_ay')).toBe('750');
     });
 
     test('fires a click beacon when logClicksAsTheyHappen is on', () => {

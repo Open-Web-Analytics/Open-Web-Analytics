@@ -23,6 +23,11 @@
  * reporting path survives it, so there is no v1 registry to keep working
  * (PLAN 2.23).
  *
+ * `internal` => true KEEPS A DIMENSION OUT OF THE PICKERS -- the custom report
+ * and visualization editors -- while the reports API still resolves it. For
+ * the ones a feature queries and a person would not group by: the heatmap's
+ * coordinates and element anchor.
+ *
  * A COLUMN THAT IS NOT THERE FAILS SILENTLY. Measured: the result set carries
  * no error, the aggregate is still right, and the breakdown comes back empty --
  * MySQL refuses the dimensional query with "Unknown column" and that refusal is
@@ -408,11 +413,33 @@ return array(
              * in, which is why page_width and page_height ride the same click row.
              */
             'clickX' => array( 'column' => 'click_x', 'label' => 'Click X',
-                'family' => 'event', 'data_type' => 'integer',
+                'family' => 'event', 'data_type' => 'integer', 'internal' => true,
                 'description' => 'How far across the page the click landed, in pixels.' ),
             'clickY' => array( 'column' => 'click_y', 'label' => 'Click Y',
-                'family' => 'event', 'data_type' => 'integer',
+                'family' => 'event', 'data_type' => 'integer', 'internal' => true,
                 'description' => 'How far down the page the click landed, in pixels.' ),
+
+            /*
+             * WHERE ON THE ELEMENT, which is what the heatmap draws a click by:
+             * a page coordinate places a click only in a window as wide as the
+             * one it was recorded in. The anchor is a hash the overlay matches
+             * against the page in front of it (ElementAnchor.js), not something
+             * a person reads, so the three are internal. viewportWidth is how the
+             * overlay tells whether a click with no anchor was recorded in a
+             * window like the reader's, and is a fair thing to group by.
+             */
+            'elementAnchor' => array( 'column' => 'element_anchor', 'label' => 'Element Anchor',
+                'family' => 'event', 'data_type' => 'integer', 'internal' => true,
+                'description' => 'The clicked element, as a hash of its place in the page. The heatmap finds the element by it.' ),
+            'anchorX' => array( 'column' => 'anchor_x', 'label' => 'Anchor X',
+                'family' => 'event', 'data_type' => 'integer', 'internal' => true,
+                'description' => 'How far across the clicked element the click landed, in thousandths of its width.' ),
+            'anchorY' => array( 'column' => 'anchor_y', 'label' => 'Anchor Y',
+                'family' => 'event', 'data_type' => 'integer', 'internal' => true,
+                'description' => 'How far down the clicked element the click landed, in thousandths of its height.' ),
+            'viewportWidth' => array( 'column' => 'page_width', 'label' => 'Viewport Width',
+                'family' => 'event', 'data_type' => 'integer',
+                'description' => 'The width of the browser window when the click happened, in pixels.' ),
             'clickTarget' => array( 'column' => 'target_url', 'label' => 'Click Target',
                 'family' => 'event', 'description' => 'Where the click led.' ),
             'linkDomain' => array( 'column' => 'target_host', 'label' => 'Link Domain',

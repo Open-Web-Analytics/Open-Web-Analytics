@@ -633,11 +633,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * reads the fragment and fetches the clicks.
      *
      * The api_url is an ORDINARY dimensional query now -- eventCount grouped by
-     * clickX and clickY, constrained on the page and to clicks -- so the token binds
-     * to `constraints`, a normal request parameter, rather than to a bespoke
-     * report's document_id. Identical coordinates group, so a page with
-     * hundreds of thousands of clicks answers with the few thousand distinct
-     * points that actually get drawn.
+     * where on the element and where on the page each click landed
+     * (OverlayLauncher::HEATMAP_DIMENSIONS), constrained on the page and to
+     * clicks -- so the token binds to `constraints`, a normal request
+     * parameter, rather than to a bespoke report's document_id.
      */
     $owa_hm_path = (string) ( $owa_w['pagePath'] ?? '' );
 
@@ -663,7 +662,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
             'module'         => 'base',
             'version'        => 'v1',
             'metrics'        => 'eventCount',
-            'dimensions'     => 'clickX,clickY',
+            'dimensions'     => \OWA\Module\Base\Controller\OverlayLauncher::HEATMAP_DIMENSIONS,
             'constraints'    => $owa_hm_constraints,
             'resultsPerPage' => 1000,
             'format'         => 'json',

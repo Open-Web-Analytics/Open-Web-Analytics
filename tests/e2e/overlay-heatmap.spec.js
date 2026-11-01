@@ -19,7 +19,7 @@
  *
  * WHAT IT ASSERTS (and what it deliberately does not)
  * Only the synchronous, deterministic jQuery-built DOM: the panel, which
- * carries the OWA logo and no controls, and the canvas element. The
+ * carries the OWA logo and the Stats toggle, and the canvas element. The
  * subsequent click-data fetch is an async call against live data; it is not
  * part of the "does jQuery 3.x still build the overlay" contract and is not
  * asserted here. It is covered on its own, cross-origin and against a real API,
@@ -84,18 +84,26 @@ test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => 
     });
 
     /**
-     * The panel carries the OWA logo and no controls. Start and Stop paused
-     * fetching pages of clicks that now come in one request, and X threw
-     * rather than closing anything; the reader closes the window.
+     * The panel carries the OWA logo and one control, Stats, which opens the
+     * counts of what was and was not drawn. Start and Stop are gone -- they
+     * paused fetching pages of clicks that now come in one request -- and so
+     * is X, which threw rather than closing anything; the reader closes the
+     * window.
      */
-    test('the tracker builds the overlay panel from the URL anchor: the logo, no controls', async ({ page }) => {
+    test('the tracker builds the overlay panel from the URL anchor: the logo and Stats', async ({ page }) => {
         // showControlPanel() appends #owa_overlay via jQuery. The dynamic import
         // of Heatmap.js + its jQuery work is async, so wait on the element
         // rather than asserting synchronously.
         await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });
 
         await expect(page.locator('#owa_overlay_logo')).toHaveCount(1);
-        await expect(page.locator('#owa_overlay .owa_overlay_control')).toHaveCount(0);
+        await expect(page.locator('#owa_overlay .owa_overlay_control')).toHaveCount(1);
+        await expect(page.locator('#owa_overlay_stats_toggle')).toHaveText('Stats');
+        await expect(page.locator('#owa_overlay_stats')).toBeHidden();
+
+        await page.click('#owa_overlay_stats_toggle');
+        await expect(page.locator('#owa_overlay_stats')).toBeVisible();
+        await expect(page.locator('#owa_overlay_stats th').first()).toHaveText('Clicks');
     });
 
     test('the heatmap canvas element is created', async ({ page }) => {

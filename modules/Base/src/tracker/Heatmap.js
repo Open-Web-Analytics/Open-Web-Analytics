@@ -9,6 +9,7 @@
  
 import { OWA_instance } from '../common/owa.js'; 
 import * as jQuery from 'jquery';
+import { ElementAnchor } from './ElementAnchor.js';
 
 class Heatmap {
 	
@@ -61,6 +62,13 @@ class Heatmap {
 	        mapInterval: 1000,
 	        randomDataCount: 200,
 	        rowsPerFetch: 100,
+	        /*
+	         * How much narrower or wider than the reader's window a click with
+	         * no element anchor may have been recorded in and still be drawn by
+	         * its page coordinate. A centred layout moves by half the
+	         * difference, so 24px keeps the error inside one dot.
+	         */
+	        widthTolerance: 24,
 	        strokeRegions: false,
 	        baseUrl: '',
 	        apiUrl: ''
@@ -78,7 +86,30 @@ class Heatmap {
 	    this.nextPage = 1;
 	    this.more = true;
 	    this.lock = false;
+
+	    // Every row fetched so far: a resize redraws them all.
+	    this.rows = [];
+	    this.stats = Heatmap.emptyStats();
 	}
+
+    /**
+     * What the Stats panel shows, all in clicks except the two element counts.
+     *
+     * clicks = drawn + notOnPage + otherWidth + noPosition + offPage, always.
+     */
+    static emptyStats() {
+
+        return {
+            clicks: 0,
+            drawn: 0,
+            elements: new Set(),
+            elementsFound: new Set(),
+            notOnPage: 0,
+            otherWidth: 0,
+            noPosition: 0,
+            offPage: 0
+        };
+    }
 	
 
     /**
@@ -91,8 +122,22 @@ class Heatmap {
      * and closed nothing; the reader closes the window.
      */
     showControlPanel() {
+        var that = this;
         jQuery('body').append('<div id="owa_overlay"></div>');
         jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
+
+        // Stats: how many clicks there are, how many are drawn, and why the
+        // rest are not.
+        jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_stats_toggle" '
+            + 'role="button" tabindex="0" aria-expanded="false" aria-controls="owa_overlay_stats">Stats</div>');
+        jQuery('#owa_overlay').append('<div id="owa_overlay_stats" hidden></div>');
+        jQuery('#owa_overlay_stats_toggle').on('click keydown', function(e) {
+            if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            that.toggleStats();
+        });
+        this.renderStats();
+
         //eliminate session cookie when window closes.
         //jQuery(window).unload(function() {OWA_instance.endOverlaySession()});
         jQuery(window).on('unload', function() {OWA_instance.endOverlaySession()});
@@ -105,6 +150,19 @@ class Heatmap {
 
         this.showControlPanel();
         this.applyBlur();
+
+        // Elements move when the window changes size, and late images push
+        // them down after the first draw: place every click again.
+        var that = this;
+        var pending = null;
+        var later = function() {
+            clearTimeout(pending);
+            pending = setTimeout(function() { that.redraw(); }, 250);
+        };
+        window.addEventListener('resize', later);
+        if (document.readyState !== 'complete') {
+            window.addEventListener('load', later);
+        }
 
         if (this.options.liveMode === true) {
 
@@ -254,9 +312,8 @@ class Heatmap {
                 this.setMore(false);
             }
 
-            //plot dots
-            //this.plotDots(this.getClicks());
-            this.plotDotsRound(this.getClicks());
+            this.rows = this.rows.concat(this.clicks.resultsRows || []);
+            this.redraw();
             this.lock = false;
             return true;
         } else {
@@ -266,44 +323,175 @@ class Heatmap {
     }
 
     /**
-     * The fetched rows as plottable points.
-     *
-     * A heatmap is now an ordinary dimensional query -- eventCount grouped by
-     * clickX and clickY, constrained to eventName==click -- so a row is
-     * {clickX:{value},clickY:{value},eventCount:{value}} rather than the flat
-     * {x,y} the bespoke clicks report used to alias into being. The count comes
-     * back as the metric, which is the weight each point is drawn with.
-     *
-     * A row that arrives without the metric is drawn at weight 1. That is a
-     * visible loss rather than a silent one: every point weighs the same and
-     * the map flattens, so the name has to match what the request asks for.
+     * The last fetched page of rows as plottable points.
      */
     getClicks() {
 
         var rows = ( this.clicks && this.clicks.resultsRows ) ? this.clicks.resultsRows : [];
+
+        return this.pointsFor( rows, Heatmap.emptyStats() );
+    }
+
+    /**
+     * Rows as points on this page, counting into stats what could not be placed.
+     *
+     * A row is eventCount grouped by OverlayLauncher::HEATMAP_DIMENSIONS, so
+     * the count comes back as the metric and is the weight a point is drawn
+     * with. A row without the metric is drawn at weight 1: every point weighs
+     * the same and the map flattens, so the name has to match the request.
+     *
+     * A row with an element anchor is drawn on that element, wherever it is in
+     * this window. One whose element is not here, or has no box at this width,
+     * is not drawn: its page coordinate was measured against a page that no
+     * longer matches. A row with no anchor -- a click recorded before anchors,
+     * or one with no pointer behind it -- is drawn by its page coordinate when
+     * its window was within widthTolerance of this one, and not otherwise.
+     *
+     * @param {Array}  rows
+     * @param {Object} stats  from Heatmap.emptyStats()
+     * @return {Array} {x, y, weight}
+     */
+    pointsFor( rows, stats ) {
+
         var points = [];
+        var int = function( cell ) {
+            return cell ? parseInt( cell.value, 10 ) : NaN;
+        };
 
         for ( var i = 0; i < rows.length; i++ ) {
 
             var row = rows[i];
 
-            if ( ! row || ! row.clickX || ! row.clickY ) {
-                continue;
-            }
-
-            var x = parseInt( row.clickX.value, 10 );
-            var y = parseInt( row.clickY.value, 10 );
-
-            if ( isNaN( x ) || isNaN( y ) ) {
+            if ( ! row ) {
                 continue;
             }
 
             var weight = row.eventCount ? parseInt( row.eventCount.value, 10 ) : 1;
+            weight = weight > 0 ? weight : 1;
+            stats.clicks += weight;
 
-            points.push( { x: x, y: y, weight: ( weight > 0 ? weight : 1 ) } );
+            var anchor = row.elementAnchor ? String( row.elementAnchor.value ) : '';
+
+            if ( /^[0-9]+$/.test( anchor ) ) {
+
+                stats.elements.add( anchor );
+
+                var el = this.anchorIndex().get( anchor );
+                var at = el ? ElementAnchor.place( el, int( row.anchorX ), int( row.anchorY ), window ) : null;
+
+                if ( ! at || isNaN( at.x ) || isNaN( at.y ) ) {
+                    stats.notOnPage += weight;
+                    continue;
+                }
+
+                stats.elementsFound.add( anchor );
+                points.push( { x: at.x, y: at.y, weight: weight } );
+                continue;
+            }
+
+            var x = int( row.clickX );
+            var y = int( row.clickY );
+
+            if ( isNaN( x ) || isNaN( y ) ) {
+                stats.noPosition += weight;
+                continue;
+            }
+
+            var width = int( row.viewportWidth );
+
+            if ( isNaN( width ) || Math.abs( width - window.innerWidth ) > this.options.widthTolerance ) {
+                stats.otherWidth += weight;
+                continue;
+            }
+
+            points.push( { x: x, y: y, weight: weight } );
         }
 
         return points;
+    }
+
+    /** This page's elements by anchor, as of the last redraw. */
+    anchorIndex() {
+
+        if ( ! this.anchors ) {
+            this.anchors = ElementAnchor.index( document );
+        }
+
+        return this.anchors;
+    }
+
+    /**
+     * Places every fetched row again and repaints: after a fetch, and when the
+     * window changes size.
+     */
+    redraw() {
+
+        // Measured with the canvas out of the way, or it holds the page at the
+        // size it was drawn for.
+        if ( this.canvas && this.canvas.style ) {
+            this.canvas.style.display = 'none';
+            this.docDimensions = this.getDim( document );
+            this.canvas.style.display = '';
+            this.canvas.width = this.shadowCanvas.width = this.docDimensions.w;
+            this.canvas.height = this.shadowCanvas.height = this.docDimensions.h;
+        }
+
+        this.shadowContext.clearRect( 0, 0, this.shadowCanvas.width, this.shadowCanvas.height );
+        this.context.clearRect( 0, 0, this.shadowCanvas.width, this.shadowCanvas.height );
+
+        this.anchors = null;
+        this.stats = Heatmap.emptyStats();
+        this.plotDotsRound( this.pointsFor( this.rows, this.stats ) );
+        this.renderStats();
+    }
+
+    toggleStats() {
+
+        var panel = jQuery('#owa_overlay_stats');
+        var open = panel.prop('hidden');
+
+        panel.prop('hidden', ! open);
+        jQuery('#owa_overlay_stats_toggle').toggleClass('active', open).attr('aria-expanded', open ? 'true' : 'false');
+    }
+
+    /** The Stats panel's lines. A reason nothing fell under is left out. */
+    statsLines() {
+
+        var s = this.stats;
+        var lines = [
+            [ 'Clicks', s.clicks ],
+            [ 'Drawn', s.drawn ],
+            [ 'Elements clicked', s.elements.size ],
+            [ 'Elements found on this page', s.elementsFound.size ]
+        ];
+        var notDrawn = [
+            [ 'Not drawn: element not on this page', s.notOnPage ],
+            [ 'Not drawn: recorded at another window width', s.otherWidth ],
+            [ 'Not drawn: outside the page', s.offPage ],
+            [ 'Not drawn: no position recorded', s.noPosition ]
+        ];
+
+        for ( var i = 0; i < notDrawn.length; i++ ) {
+            if ( notDrawn[i][1] > 0 ) {
+                lines.push( notDrawn[i] );
+            }
+        }
+
+        return lines;
+    }
+
+    renderStats() {
+
+        var lines = this.statsLines();
+        var table = jQuery('<table></table>');
+
+        for ( var i = 0; i < lines.length; i++ ) {
+            table.append( jQuery('<tr></tr>')
+                .append( jQuery('<th scope="row"></th>').text( lines[i][0] ) )
+                .append( jQuery('<td></td>').text( lines[i][1].toLocaleString() ) ) );
+        }
+
+        jQuery('#owa_overlay_stats').empty().append( table );
     }
 
 
@@ -415,13 +603,15 @@ class Heatmap {
             var x = data[i].x;
             var y = data[i].y;
 
-            // Off the page entirely: nothing sensible to draw. Clicks recorded
-            // at a wider viewport than the one being viewed land here.
+            // Off the page entirely: nothing sensible to draw.
             if ( x < 0 || y < 0 || x > w || y > h ) {
 
                 OWA_instance.debug( "skipping click outside the canvas: %s %s", x, y );
+                if ( this.stats ) this.stats.offPage += data[i].weight || 1;
                 continue;
             }
+
+            if ( this.stats ) this.stats.drawn += data[i].weight || 1;
 
             /*
              * Alpha rises with the click count but saturates, so one very hot

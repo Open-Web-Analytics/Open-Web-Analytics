@@ -2484,6 +2484,68 @@ class TrackingEventHelpers {
      * it could: a property whose value is not what its column stores is a
      * property the registry cannot describe.
      */
+    /**
+     * anchor_x: thousandths of the clicked element's width, or nothing.
+     *
+     * Bounded because the column is a SMALLINT and the value comes off the
+     * wire: a beacon carrying 99999 would otherwise be refused by strict mode,
+     * and the whole click with it. Deletes rather than returning null, for the
+     * reason gateUserId() gives.
+     *
+     * @param mixed  $value
+     * @param object $event
+     * @return int|null
+     */
+    static function anchorX( $value, $event ) {
+
+        return self::anchorPoint( 'anchor_x', $value, $event );
+    }
+
+    /** anchor_y: as anchorX(), down the element's height. */
+    static function anchorY( $value, $event ) {
+
+        return self::anchorPoint( 'anchor_y', $value, $event );
+    }
+
+    private static function anchorPoint( $name, $value, $event ) {
+
+        if ( is_numeric( $value ) && $value >= 0 && $value <= 1000 ) {
+
+            return (int) $value;
+        }
+
+        $event->delete( $name );
+
+        return null;
+    }
+
+    /**
+     * element_anchor: the clicked element's 53-bit hash (ElementAnchor.js), kept
+     * only with both of its points.
+     *
+     * Reads anchor_x and anchor_y as their own callbacks left them, which is
+     * why the registry declares it after them. A row with an anchor is one the
+     * heatmap can place; a hash without its point could not be, and a click
+     * with none is drawn by click_x and click_y or not at all. Deletes rather
+     * than returning null, for the reason gateUserId() gives.
+     *
+     * @param mixed  $value
+     * @param object $event
+     * @return int|null
+     */
+    static function elementAnchor( $value, $event ) {
+
+        if ( is_numeric( $event->get( 'anchor_x' ) ) && is_numeric( $event->get( 'anchor_y' ) )
+          && is_numeric( $value ) && $value >= 0 && $value <= 9007199254740991 ) {
+
+            return (int) $value;
+        }
+
+        $event->delete( 'element_anchor' );
+
+        return null;
+    }
+
     static function toMinorUnits( $value, $event ) {
 
         return Currency::toMinorUnits( $value, self::purchaseCurrency( $event ) );

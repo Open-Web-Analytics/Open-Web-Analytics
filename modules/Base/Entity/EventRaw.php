@@ -252,6 +252,18 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'page_width', OWA_DTD_INT ) );
         $this->setProperty( $this->column( 'page_height', OWA_DTD_INT ) );
 
+        /*
+         * Where on the clicked ELEMENT, which is what the heatmap places a click
+         * by (ElementAnchor.js, Update073): the element as a 53-bit hash of its
+         * path from the nearest id, and the point as thousandths of its box. A
+         * page coordinate places a click only in a window as wide as the one it
+         * was recorded in. NULL on a click that has no anchor, which the heatmap
+         * places by click_x and click_y when page_width matches the reader's.
+         */
+        $this->setProperty( $this->column( 'element_anchor', OWA_DTD_BIGINT ) );
+        $this->setProperty( $this->column( 'anchor_x', OWA_DTD_SMALLINT ) );
+        $this->setProperty( $this->column( 'anchor_y', OWA_DTD_SMALLINT ) );
+
         // Where a click or download went. target_host is parsed at ingest beside
         // host, so "which domains do people leave to" is a group-by rather than a
         // parse, and is_outbound below is the comparison of the two.
@@ -278,7 +290,8 @@ class EventRaw extends \OWA\Core\Entity {
          * element_path is GONE -- see Update053. It was a CSS selector built by
          * walking up to eight ancestors with :nth-of-type() indexes, which no
          * report, widget or overlay ever read, and which a template edit
-         * renumbers wholesale. The heatmap places clicks by coordinate.
+         * renumbers wholesale. element_anchor, above, is a path from the
+         * nearest id, kept as a hash.
          */
         $this->setProperty( $this->column( 'element_tag', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'element_id', OWA_DTD_VARCHAR255 ) );

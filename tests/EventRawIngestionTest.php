@@ -831,6 +831,60 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * Where on the clicked element, which the heatmap draws a click by: stored
+     * as sent when it is a whole anchor, and dropped when it would not fit its
+     * columns -- strict mode would otherwise refuse the whole click.
+     *
+     * @dataProvider anchorProvider
+     */
+    public function testAClickStoresWhereOnItsElementItLanded(array $sent, array $stored): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        $this->fireEvent('dom.click', $sent + [
+            'site_id'       => $this->site,
+            'visitor_id'    => $visitor,
+            'session_id'    => $session,
+            'page_url'      => 'https://owa-test-site/v2/a',
+            'page_location' => 'https://owa-test-site/v2/a',
+            'click_x'       => '120',
+            'click_y'       => '340',
+            'fsts'          => time(),
+            'sts'           => time(),
+            'num_prior_sessions' => 0,
+        ]);
+
+        $row = $this->rowsFor($this->site, $visitor, $session)['click'] ?? null;
+
+        $this->assertNotNull($row, 'the click was stored');
+        $this->assertSame($stored, [
+            'element_anchor' => $row['element_anchor'] === null ? null : (string) $row['element_anchor'],
+            'anchor_x'       => $row['anchor_x'] === null ? null : (int) $row['anchor_x'],
+            'anchor_y'       => $row['anchor_y'] === null ? null : (int) $row['anchor_y'],
+        ]);
+        $this->assertSame(120, (int) $row['click_x'], 'and the page coordinate beside it');
+    }
+
+    public static function anchorProvider(): array
+    {
+        return [
+            'a whole anchor' => [
+                ['element_anchor' => '9007199254740991', 'anchor_x' => '250', 'anchor_y' => '1000'],
+                ['element_anchor' => '9007199254740991', 'anchor_x' => 250, 'anchor_y' => 1000],
+            ],
+            'a point past the box' => [
+                ['element_anchor' => '12345', 'anchor_x' => '99999', 'anchor_y' => '5'],
+                ['element_anchor' => null, 'anchor_x' => null, 'anchor_y' => 5],
+            ],
+            'none sent' => [
+                [],
+                ['element_anchor' => null, 'anchor_x' => null, 'anchor_y' => null],
+            ],
+        ];
+    }
+
+    /**
      * The row stores whether the click left the site; THE CLIENT decided it.
      *
      * The comparison was a server derivation, off target_url's host against
