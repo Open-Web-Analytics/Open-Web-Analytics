@@ -517,14 +517,20 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(rows).toHaveCount(FIXTURE.expectedGridRows, { timeout: 20_000 });
 
         /*
-         * By PATH, not by title. Top Content is a grid-card grouped by pagePath
-         * -- one metric against one dimension, which is what a card is -- where
-         * it used to be a grid grouped by pageTitle with the path carried
-         * alongside it and hidden.
+         * By PAGE, not by title. Top Content is a grid-card grouped by
+         * pagePathPlusQuery -- one metric against one dimension, which is what
+         * a card is -- where it used to be a grid grouped by pageTitle with the
+         * path carried alongside it and hidden. The fixture's pages carry no
+         * query string, so each reads as its path. The cell also holds the
+         * row's Actions button, which is not the value.
          */
         const cells = await page.evaluate(() =>
             [...document.querySelectorAll('#top-pages tr.owa_gridRow td:first-child')]
-                .map((c) => c.innerText.trim())
+                .map((c) => {
+                    const v = c.cloneNode(true);
+                    v.querySelectorAll('.owa_gridRowActions').forEach((b) => b.remove());
+                    return v.innerText.trim();
+                })
         );
         for (const path of FIXTURE.pagePaths) {
             expect(cells).toContain(path);

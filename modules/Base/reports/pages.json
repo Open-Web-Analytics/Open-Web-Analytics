@@ -1,6 +1,6 @@
 {
     "title": "Pages",
-    "description": "Page views and sessions by page path.",
+    "description": "Page views and sessions by page: its path and query string. Each page leads to its heatmap, its element clicks, its recordings and the pages before and after it.",
     "metrics": "pageViews,sessions,pageViews",
     "widgets": [
         {
@@ -18,19 +18,16 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "pagePath",
+                "dimensions": "pagePathPlusQuery",
                 "sort": "pageViews-",
                 "resultsPerPage": 30
             },
-            "link": {
-                "linkColumn": "pagePath",
-                "template": {
-                    "do": "base.report",
-                    "reportId": "document",
-                    "pagePath": "%s"
-                },
-                "valueColumns": "pagePath"
-            }
+            "rowActions": [
+                "heatmap",
+                "clicks",
+                "recordings",
+                "paths"
+            ]
         }
     ]
 }

@@ -122,6 +122,7 @@ class Module extends \OWA\Core\Module {
         $this->registerFilter( 'tracker_bundle_config', $this, 'addToBundle', 99 );
         $this->registerFilter( 'tracker_feature_labels', $this, 'labelFeatures', 10 );
         $this->registerFilter( 'report_links', $this, 'addReportLinks', 10 );
+        $this->registerFilter( 'report_row_actions', $this, 'addRowActions', 10 );
     }
 
     /**
@@ -183,6 +184,18 @@ class Module extends \OWA\Core\Module {
         }
 
         return $links;
+    }
+
+    /** A page row's recordings: the Recordings report filtered to its path. */
+    function addRowActions( $actions ) {
+
+        $actions['recordings'] = array(
+            'label'    => 'Recordings',
+            'reportId' => 'domstreams',
+            'params'   => array( 'pagePath' => 'pagePath' ),
+        );
+
+        return $actions;
     }
 
     function registerReports() {

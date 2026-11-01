@@ -2010,13 +2010,15 @@ test.describe('custom reports', () => {
             await expect(page.locator('#dlgMoreField')).toBeHidden();
 
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
+            await chooseInChosen(page, 'dlgDimensions', 'pagePathPlusQuery');
 
             await expect(page.locator('#dlgMoreField')).toBeVisible();
 
             const offered = await page.locator('#dlgMoreReport option')
                 .evaluateAll((opts) => opts.map((o) => o.value).filter(Boolean));
 
+            // Pages groups by the page and its query string: a card of those
+            // rows is what it is the full report of.
             expect(offered).toContain('pages');
 
             // Reads a pagePath: that is the ROW link's business.
@@ -2027,9 +2029,46 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * Both links, end to end: configured in the modal, stored, and rendered.
+         * Each link, end to end: configured in the modal, stored, and rendered.
+         *
+         * Two cards, because no one card can now carry both: the row link into
+         * Page Detail reads a pagePath, and Pages -- grouped by the page and its
+         * query string -- is the full report only of a card grouped that way.
          */
-        test('a card can link its rows and carry a full-report link', async ({ page }) => {
+        test('a card can carry a full-report link', async ({ page }) => {
+            const name = reportName('More');
+
+            await openBuilder(page);
+            await page.fill('#customReportName', name);
+
+            await onlyWidget(page, 'grid-card', {
+                title: 'Top pages',
+                metrics: ['pageViews'],
+                dimensions: ['pagePathPlusQuery'],
+                more: 'pages',
+            });
+
+            await page.click('#customReportSubmit');
+            await page.waitForLoadState('networkidle');
+
+            const url = new URL(page.url());
+            url.searchParams.set('period', 'last_thirty_days');
+            await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+            const card = page.locator('.owa_reportGridItem.owa_span-6').first();
+
+            await expect(card.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+
+            // The link below the widget, with the wording the shipped summary
+            // widgets use.
+            const more = card.locator('.owa_moreLinks a');
+
+            await expect(more).toHaveCount(1);
+            await expect(more).toContainText('View Full Report');
+            expect(await more.getAttribute('href')).toContain('reportId=pages');
+        });
+
+        test('a card can link its rows', async ({ page }) => {
             const name = reportName('Linked');
 
             await openBuilder(page);
@@ -2040,7 +2079,6 @@ test.describe('custom reports', () => {
                 metrics: ['pageViews'],
                 dimensions: ['pagePath'],
                 link: 'document',
-                more: 'pages',
             });
 
             await page.click('#customReportSubmit');
@@ -2068,14 +2106,6 @@ test.describe('custom reports', () => {
 
             // ...and the value is the row's, not the literal %s.
             expect(href).not.toContain('%s');
-
-            // And the link below the widget, with the wording the shipped
-            // summary widgets use.
-            const more = card.locator('.owa_moreLinks a');
-
-            await expect(more).toHaveCount(1);
-            await expect(more).toContainText('View Full Report');
-            expect(await more.getAttribute('href')).toContain('reportId=pages');
         });
 
         /**
