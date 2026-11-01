@@ -75,7 +75,8 @@ final class CubeStatusTest extends TestCase
             throw new \RuntimeException('creating the fixture cube failed');
         }
 
-        \OWA\Core\CoreAPI::dbSingleton()->extendPartitionsBack(Cubes::tableFor(self::PROPERTY), self::day(20));
+        // A day partition for every day these tests use, on any date.
+        owa_test_daily_partitions(Cubes::tableFor(self::PROPERTY), self::day(20));
 
         self::seedRaw(self::UNCUBED_SITE, self::day(5));
     }
@@ -310,9 +311,8 @@ final class CubeStatusTest extends TestCase
 
         $span = (new Builder(self::PROPERTY))->partitions($day, $day)[0];
 
-        if ((int) $span['less_than'] > self::day(1)) {
-            $this->markTestSkipped("$day shares a partition with yesterday on this date");
-        }
+        $this->assertLessThanOrEqual(self::day(1), (int) $span['less_than'],
+            "$day shares a partition with yesterday");
 
         \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
             'UPDATE %s SET built_at = %d WHERE yyyymmdd = %d',
