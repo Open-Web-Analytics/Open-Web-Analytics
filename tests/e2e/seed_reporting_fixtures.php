@@ -222,6 +222,13 @@ const E2E_OTHERS_REPORT_NAME  = 'E2E Owned By Someone Else';
  */
 const E2E_BREAKDOWN_REPORT_NAME = 'E2E Broken Out Trend';
 
+/*
+ * A custom report whose metric boxes have no chart above them, so they draw
+ * sparklines. No shipped report has one: the Goals report's Goal Performance
+ * box was the last.
+ */
+const E2E_BOXES_REPORT_NAME = 'E2E Standalone Boxes';
+
 const E2E_ADMIN_ID    = 'owa-e2e-admin@example.test';
 const E2E_ADMIN_PASS  = 'e2e-Admin-Pass-1!';       // local throwaway fixture creds
 const E2E_ADMIN_ROLE  = 'admin';                   // full edit_* capabilities
@@ -488,6 +495,10 @@ function seed(): array
     // 9. A custom report with a broken-out trend, for the companion-grid specs.
     $out['breakdown_report_seeded'] = seedBreakdownReport();
 
+    // 9b. A custom report of metric boxes with no chart above them, for the
+    //     sparkline specs.
+    $out['boxes_report_seeded'] = seedBoxesReport();
+
     // 10. The funnel visualization. Separate from the goal above and naming
     //     nothing about it -- a funnel is an analysis of a path now, not part
     //     of a goal's configuration.
@@ -679,6 +690,65 @@ function seedBreakdownReport(): array
     ], E2E_ADMIN_ID);
 
     return ['id' => $result['id'] ?? '', 'error' => $result['error'] ?? ''];
+}
+
+/**
+ * One stored custom report of metric boxes with no chart above them, owned by
+ * the reporter fixture user the dashboard specs sign in as. Idempotent by name.
+ */
+function seedBoxesReport(): array
+{
+    $db = \OWA\Core\CoreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_BOXES_REPORT_NAME) {
+
+            return ['id' => $row['id'], 'reused' => true];
+        }
+    }
+
+    $result = \OWA\Module\Base\Classes\CustomReports::save([
+        'name'       => E2E_BOXES_REPORT_NAME,
+        'definition' => [
+            'title'   => E2E_BOXES_REPORT_NAME,
+            'widgets' => [[
+                'type'      => 'metric-boxes',
+                'id'        => 'totals',
+                'container' => 'totals',
+                'title'     => 'Totals',
+                'showTitle' => true,
+                'query'     => [
+                    'metrics' => 'sessions,pageViews',
+                ],
+            ]],
+        ],
+    ], E2E_USER_ID);
+
+    return ['id' => $result['id'] ?? '', 'error' => $result['error'] ?? ''];
+}
+
+/** Remove the standalone-boxes fixture, by name. */
+function unseedBoxesReport(): int
+{
+    $db = \OWA\Core\CoreAPI::dbSingleton();
+    $db->selectFrom('owa_custom_report');
+    $db->selectColumn('*');
+
+    $removed = 0;
+
+    foreach ((array) $db->getAllRows() as $row) {
+
+        if (($row['name'] ?? '') === E2E_BOXES_REPORT_NAME) {
+
+            \OWA\Module\Base\Classes\CustomReports::delete($row['id']);
+            $removed++;
+        }
+    }
+
+    return $removed;
 }
 
 /** Remove the broken-out-trend fixture, by name. */
@@ -1214,7 +1284,7 @@ function teardown(): array
     $removed['owa_referer'] = 'fixture rows cleared';
 
     $removed['owa_notification'] = unseedNotifications() . ' fixture notification(s) removed';
-    $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport()
+    $removed['owa_custom_report'] = ( unseedOthersReport() + unseedBreakdownReport() + unseedBoxesReport()
         + unseedFunnelVisualization() + unseedFixtureUsersReports() ) . ' fixture report(s) removed';
 
     /*
