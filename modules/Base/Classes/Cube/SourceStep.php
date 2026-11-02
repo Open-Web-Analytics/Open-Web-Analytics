@@ -17,6 +17,10 @@ namespace OWA\Module\Base\Classes\Cube;
  * and a tagged source is used as tagged. referer_host in raw keeps the host as
  * it arrived.
  *
+ * An Android app that opens a link sends android-app://<package> as the
+ * referrer, so its host is the package name. One that names a site is that
+ * site's source (APP_SOURCES): the Google app is google.com.
+ *
  * The reading, not the evidence. It lives in the cube rather than in raw
  * because the cube is rebuilt: a corrected classifier is re-applied by
  * rebuilding, where a value written at ingest would stay wrong.
@@ -26,6 +30,11 @@ namespace OWA\Module\Base\Classes\Cube;
  * row" from "a row with nothing in this column", which is an ordinary NULL.
  */
 class SourceStep extends Step {
+
+    /** Android package => the site it is the app of, as a source. Lower case. */
+    const APP_SOURCES = array(
+        'com.google.android.googlequicksearchbox' => 'google.com',
+    );
 
     /** @var string */
     private $tag;
@@ -75,12 +84,18 @@ class SourceStep extends Step {
             $tag, self::hostSource( $host ) );
     }
 
-    /** A referring host as a source: lower case, without a leading www. */
+    /** A referring host as a source: lower case, an app as its site, without a leading www. */
     private static function hostSource( $host ) {
 
         $lower = sprintf( 'LOWER(%s)', $host );
+        $apps  = '';
 
-        return sprintf( "CASE WHEN %1\$s LIKE 'www.%%' THEN SUBSTRING(%1\$s, 5) ELSE %1\$s END", $lower );
+        foreach ( self::APP_SOURCES as $package => $source ) {
+
+            $apps .= sprintf( " WHEN %s = '%s' THEN '%s'", $lower, $package, $source );
+        }
+
+        return sprintf( "CASE%2\$s WHEN %1\$s LIKE 'www.%%' THEN SUBSTRING(%1\$s, 5) ELSE %1\$s END", $lower, $apps );
     }
 
     public function execute( Context $context ) {
