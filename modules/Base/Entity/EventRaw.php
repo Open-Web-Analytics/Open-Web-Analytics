@@ -54,14 +54,14 @@ class EventRaw extends \OWA\Core\Entity {
          * observation, and the id is derived from all of them.
          */
 
-        // wideStringGuid( site_id + visitor_id + session_id + ts + event_name ).
-        // Derived from the event's own content, never minted, so a redelivered
+        // wideStringGuid( site_id + visitor_id + session_id + ts + event_name
+        // [+ '#' + event_seq] ), V2Event::id(). Derived from the event's own content, never minted, so a redelivered
         // beacon derives the same ids and collapses on the primary key.
         $this->setProperty( $this->column( 'id', OWA_DTD_BIGINT, false ) );
         $this->properties['id']->setPrimaryKey();
         $this->properties['id']->setDescription(
-            'The event\'s id, derived from its site, visitor, session, timestamp and event name, '
-          . 'so a beacon delivered twice is stored once.' );
+            'The event\'s id, derived from its site, visitor, session, timestamp, event name and '
+          . 'sequence number, so a beacon delivered twice is stored once.' );
 
         /*
          * Wide enough for any name a site may give a custom event -- 40

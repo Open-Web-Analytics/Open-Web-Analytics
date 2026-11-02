@@ -28,7 +28,7 @@ final class V2EventTest extends TestCase
         ];
 
         return \OWA\Module\Base\Classes\V2Event::id(
-            $a['site'], $a['visitor'], $a['session'], $a['ts'], $a['name']);
+            $a['site'], $a['visitor'], $a['session'], $a['ts'], $a['name'], $a['seq'] ?? null);
     }
 
     public function testTheSameInputsAlwaysDeriveTheSameId(): void
@@ -72,6 +72,36 @@ final class V2EventTest extends TestCase
         ];
 
         $this->assertCount(3, array_unique($ids));
+    }
+
+    /**
+     * Two beacons that reach the server in the same microsecond share every
+     * other input, so the tracker's sequence number is what separates them. A
+     * redelivered beacon carries the same one and still derives the same id.
+     */
+    public function testTheSequenceSeparatesTwoEventsAtOneInstant(): void
+    {
+        $this->assertNotSame($this->id(['name' => 'click', 'seq' => 28]), $this->id(['name' => 'click', 'seq' => 29]));
+        $this->assertSame($this->id(['name' => 'click', 'seq' => 28]), $this->id(['name' => 'click', 'seq' => '28']));
+    }
+
+    /**
+     * An event with no sequence -- an older tracker, a migrated v1 row -- keeps
+     * the id it always had, so ids already stored can still be derived.
+     */
+    public function testNoSequenceIsTheFiveInputFormula(): void
+    {
+        $five = \OWA\Core\Lib::wideStringGuid(self::SITE . self::VISITOR . self::SESSION . self::TS . 'page_view');
+
+        foreach ([null, 0, '', '0', 'x'] as $seq) {
+            $this->assertSame($five, $this->id(['seq' => $seq]), var_export($seq, true));
+        }
+    }
+
+    /** A name ending in digits is not the same event as a name and a sequence. */
+    public function testASequenceCannotPassForPartOfTheName(): void
+    {
+        $this->assertNotSame($this->id(['name' => 'goal_2', 'seq' => 8]), $this->id(['name' => 'goal_28']));
     }
 
     /**

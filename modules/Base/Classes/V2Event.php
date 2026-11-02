@@ -44,25 +44,27 @@ class V2Event {
     /**
      * The id of one v2 event.
      *
-     *     wideStringGuid( site_id + visitor_id + session_id + ts + event_name )
+     *     wideStringGuid( site_id + visitor_id + session_id + ts + event_name [+ '#' + event_seq] )
      *
-     * Derived, never minted, and by ONE formula with no exceptions -- so a
-     * redelivered beacon derives the same ids and collapses on PRIMARY KEY (id,
-     * yyyymmdd) instead of counting twice. That is the whole reason a fact id
-     * is content-derived here, where 1.x mints fact ids randomly: a fact that
-     * arrives twice is the same fact, and two facts differing in any input
-     * differ in their id.
+     * Derived, never minted -- so a redelivered beacon derives the same ids and
+     * collapses on PRIMARY KEY (id, yyyymmdd) instead of counting twice. That
+     * is the whole reason a fact id is content-derived here, where 1.x mints
+     * fact ids randomly: a fact that arrives twice is the same fact, and two
+     * facts differing in any input differ in their id.
      *
-     * NO ORDERING AND NO COUNTER, and it does not need one. A beacon yields at
-     * most one event of any given name -- page_view, session_start, first_visit
-     * -- so the name separates them whatever order they are built in. If a
-     * beacon is ever made to carry two events of one name, the fix is a
-     * per-event ts, not a discriminator bolted onto the key.
+     * A beacon yields at most one event of any given name -- page_view,
+     * session_start, first_visit -- so the name separates the events of one
+     * beacon whatever order they are built in.
      *
-     * THE RESOLUTION OF $ts IS THE UNIQUENESS GUARANTEE. Two events collide
-     * only when one visitor and session produce two of them at the same ts
-     * under the same name. At second resolution that is reachable; at
-     * microsecond resolution it is not. Pass microseconds.
+     * $ts DOES NOT SEPARATE TWO BEACONS. It is the edge receipt, stamped when
+     * each request boots, and beacons that a mobile connection holds back and
+     * then releases together reach two processes in the same microsecond:
+     * measured on app.openwebanalytics.com, two clicks 77ms apart on the device
+     * arrived 1.5ms apart and derived one id, and the second was lost. The
+     * tracker's event_seq, counted per session on the device, is what tells
+     * them apart; a redelivered beacon carries the same one, so it still
+     * collapses. Without one -- an older tracker, a migrated v1 row -- the
+     * formula is the five inputs alone, so those ids derive as they always did.
      *
      * Uniqueness is required within a partition, not globally: the key is (id,
      * yyyymmdd), so two events a week apart may share an id with no effect.
@@ -72,12 +74,17 @@ class V2Event {
      * @param string|int $session_id
      * @param string|int $ts          MICROSECONDS
      * @param string     $event_name  the v2 name, not the v1 type
+     * @param int|null   $event_seq   the tracker's count within the session; null or 0 when it sent none
      * @return int
      */
-    public static function id( $site_id, $visitor_id, $session_id, $ts, $event_name ) {
+    public static function id( $site_id, $visitor_id, $session_id, $ts, $event_name, $event_seq = null ) {
+
+        // '#' cannot occur in an event name, so a name ending in digits cannot
+        // stand in for another name and a sequence.
+        $seq = ( is_numeric( $event_seq ) && (int) $event_seq > 0 ) ? '#' . (int) $event_seq : '';
 
         return \OWA\Core\Lib::wideStringGuid(
-            $site_id . $visitor_id . $session_id . $ts . $event_name );
+            $site_id . $visitor_id . $session_id . $ts . $event_name . $seq );
     }
 
     /**
