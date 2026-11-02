@@ -15,18 +15,6 @@
             "chartMetric": "goalConversions"
         },
         {
-            "type": "metric-boxes",
-            "id": "goalMetrics",
-            "container": "goalMetrics",
-            "title": "Goal Performance",
-            "colspan": 6,
-            "boxWidth": "150px",
-            "query": {
-                "metrics": "goalConversions"
-            },
-            "showTitle": true
-        },
-        {
             "type": "grid",
             "id": "byGoal",
             "container": "goal-events",

@@ -174,38 +174,20 @@ test.describe('every configured report renders in a browser', () => {
                 .toBeVisible({ timeout: 20_000 });
         });
 
-        test('the Goal Performance panel counts the marked conversions', async ({ page }) => {
-            const box = page.locator('#goalMetrics .owa_metricInfobox').first();
-
-            await expect(box).toBeVisible({ timeout: 20_000 });
-
-            // Labelled by the METRIC, not by the panel.
-            await expect(box).toContainText('Goal Conversions');
-            await expect(box).not.toContainText('Goal Performance');
-
-            const count = Number((await box.locator('.owa_metricInfoboxLargeNumber')
-                .innerText()).replace(/[^0-9]/g, ''));
-            expect(count).toBeGreaterThan(0);
-        });
-
         /**
          * Each goal event's conversions are rows named by it, so the grid is the
-         * event name over the conversion rows.
+         * event name over the conversion rows. The total is the trend's; the
+         * report has no separate count box.
          */
         test('the Goal Events grid lists the goal event by name', async ({ page }) => {
+            await expect(page.locator('#goalMetrics')).toHaveCount(0);
+
             const row = page.locator('#goal-events tr', { hasText: 'E2E_Signup_Funnel' });
 
             await expect(row).toHaveCount(1, { timeout: 20_000 });
 
             const cells = await row.locator('td').allInnerTexts();
             expect(Number(cells[1].replace(/[^0-9]/g, ''))).toBeGreaterThan(0);
-        });
-
-        test('the panel keeps its own section header', async ({ page }) => {
-            // The header is the widget's, drawn like any other widget's,
-            // because the boxes no longer borrow the title.
-            await expect(page.locator('.owa_reportSectionHeader', { hasText: 'Goal Performance' }).first())
-                .toBeVisible({ timeout: 20_000 });
         });
 
         /**
