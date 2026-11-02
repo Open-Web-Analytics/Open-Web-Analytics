@@ -1234,6 +1234,9 @@ final class CubeBuildTest extends TestCase
      * Only a leading www. is dropped. Another subdomain names a different part
      * of a site (m.facebook.com, en.wikipedia.org), and a tagged source is
      * what the person tagging wrote.
+     *
+     * An Android app's package is its site where SourceStep::APP_SOURCES names
+     * one, and kept as it is where not.
      */
     public function testOnlyALeadingWwwIsDroppedFromAReferringHost(): void
     {
@@ -1241,6 +1244,8 @@ final class CubeBuildTest extends TestCase
             8881000000000021 => [['acq_referer_host' => 'WWW.Partner.Example'], 'partner.example'],
             8881000000000023 => [['acq_referer_host' => 'm.facebook.com'], 'm.facebook.com'],
             8881000000000025 => [['acq_referer_host' => 'wwwexample.org'], 'wwwexample.org'],
+            8881000000000029 => [['acq_referer_host' => 'com.google.android.googlequicksearchbox'], 'google.com'],
+            8881000000000031 => [['acq_referer_host' => 'com.pinterest'], 'com.pinterest'],
             8881000000000027 => [['acq_source' => 'www.newsletter.example', 'acq_medium' => 'email',
                                   'acq_referer_host' => 'www.mail.example'], 'www.newsletter.example'],
         ];
