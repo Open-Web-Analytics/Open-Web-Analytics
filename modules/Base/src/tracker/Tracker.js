@@ -2139,7 +2139,12 @@ class OWATracker  {
 
         } else if (targ.tagName == "IMG") {
 
-            properties.target_url = targ.parentNode.href;
+            /*
+             * No target_url. An image inside a link arrives here as the link --
+             * clickEventHandler() takes the closest a[href] -- so the parent of
+             * one that does arrive has no href. Reading it sent the string
+             * "undefined" for an image in a <figure>.
+             */
             properties.dom_element_text = text( targ.alt );
 
         } else {
