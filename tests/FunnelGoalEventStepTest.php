@@ -47,7 +47,7 @@ final class FunnelGoalEventStepTest extends TestCase
 
         $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
         $goal->set( 'id', $goal->generateId( 'funnel-goal-label-test' ) );
-        $goal->set( 'name', 'Completed Purchase' );
+        $goal->set( 'name', 'Completed_Purchase' );
         $goal->set( 'is_active', 1 );
         $goal->create();
 
@@ -55,7 +55,7 @@ final class FunnelGoalEventStepTest extends TestCase
             $label = $this->call( $this->controller(), 'goalEventLabel',
                 array( array( 'goal_event_id' => $goal->get( 'id' ) ) ) );
 
-            $this->assertSame( 'Completed Purchase', $label );
+            $this->assertSame( 'Completed_Purchase', $label );
 
         } finally {
             $db = \OWA\Core\CoreAPI::dbSingleton();

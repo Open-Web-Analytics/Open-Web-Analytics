@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 74;
+        $this->required_schema_version = 75;
         return parent::__construct();
     }
 
@@ -266,8 +266,8 @@ class Module extends \OWA\Core\Module {
         /*
          * THE EVENTS A BEACON IS SAVED AS. Callbacks on the one store point, in
          * priority order: the materializers append session_start and
-         * first_visit, then goal marking sets is_goal_event on every event in
-         * the set. See Classes\Ingest.
+         * first_visit, then goal marking appends a row for each goal event an
+         * event in the set met. See Classes\Ingest.
          *
          * Registered here because registerFilters() runs from
          * Service::initializeFramework(), which Caller's constructor calls in
@@ -1206,8 +1206,8 @@ class Module extends \OWA\Core\Module {
          *
          * WHAT GOES WITH IT, and is not replaced:
          *   - v1's GOAL CONVERSIONS. conversionHandlers evaluated them into
-         *     owa_session's goal_N columns. v2 marks is_goal_event at ingest
-         *     instead (Classes\GoalMarking).
+         *     owa_session's goal_N columns. v2 adds a row per conversion at
+         *     ingest instead (Classes\GoalMarking).
          *   - v1's tables stop being WRITTEN. They are not dropped: the
          *     migrator reads them, and their history is the only copy of what
          *     was collected before v2 ingest existed.

@@ -205,9 +205,10 @@ class GoalEvent extends \OWA\Core\Entity {
         $this->setProperty( $property_id );
 
         /*
-         * What the author called it. In v2 this becomes the event_type of the
-         * row the server materialises, which is why it is the name and not a
-         * label -- and why the event_type vocabulary stops being closed.
+         * The event name of the row a conversion adds (Classes\GoalMarking), so
+         * a custom event name (nameProblem()). Fixed once saved: the rows
+         * already stored carry it, and a new one would split the goal's history
+         * in two.
          */
         $name = new \OWA\Module\Base\Classes\DbColumn( 'name', OWA_DTD_VARCHAR255 );
         $this->setProperty( $name );
@@ -281,6 +282,53 @@ class GoalEvent extends \OWA\Core\Entity {
 
         $creation_date = new \OWA\Module\Base\Classes\DbColumn( 'creation_date', OWA_DTD_BIGINT );
         $this->setProperty( $creation_date );
+    }
+
+    /**
+     * A goal event name made from free text: every run of characters an event
+     * name cannot hold turned into one underscore, starting with a letter and
+     * cut to the length one may have. For Update075, which renames the goal
+     * events made before names were event names.
+     *
+     * @param  string $text
+     * @return string
+     */
+    public static function nameFrom( $text ) {
+
+        $out = trim( (string) preg_replace( '/[^A-Za-z0-9_]+/', '_', (string) $text ), '_' );
+
+        if ( ! preg_match( '/^[A-Za-z]/', $out ) ) {
+
+            $out = 'goal_' . $out;
+        }
+
+        return rtrim( substr( $out, 0, 40 ), '_' );
+    }
+
+    /**
+     * Why a name cannot be a goal event's, or '' when it can.
+     *
+     * A name OWA collects itself is refused: a goal row called click would be
+     * counted as a click by every report that counts them.
+     *
+     * @param  string $name
+     * @return string
+     */
+    public static function nameProblem( $name ) {
+
+        $name = (string) $name;
+
+        if ( ! preg_match( \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN, $name ) ) {
+
+            return \OWA\Core\CoreAPI::t( 'A name starts with a letter and has up to 40 letters, digits and underscores.' );
+        }
+
+        if ( in_array( $name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+
+            return sprintf( \OWA\Core\CoreAPI::t( '%s is an event OWA collects.' ), $name );
+        }
+
+        return '';
     }
 
     /** Does this goal event count right now? */

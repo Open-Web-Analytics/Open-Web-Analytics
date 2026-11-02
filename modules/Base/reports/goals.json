@@ -1,6 +1,6 @@
 {
     "title": "Goals",
-    "description": "Goal conversions and the goal conversion rate per session, by day.",
+    "description": "Goal conversions and the goal conversion rate per session, by day, and the conversions of each goal event.",
     "metrics": "sessions,goalConversions,goalConversionRatePerSession",
     "widgets": [
         {
@@ -25,6 +25,24 @@
                 "metrics": "goalConversions"
             },
             "showTitle": true
+        },
+        {
+            "type": "grid",
+            "id": "byGoal",
+            "container": "goal-events",
+            "title": "Goal Events",
+            "colspan": 12,
+            "query": {
+                "metrics": "goalConversions,totalUsers",
+                "dimensions": "eventName",
+                "sort": "goalConversions-"
+            },
+            "constraints": [
+                {
+                    "dimension": "isGoalEvent",
+                    "value": "1"
+                }
+            ]
         }
     ]
 }

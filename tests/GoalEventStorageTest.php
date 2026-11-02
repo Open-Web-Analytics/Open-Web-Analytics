@@ -229,13 +229,100 @@ final class GoalEventStorageTest extends TestCase
         $this->assertContains( 'The regular expression is not valid.', $this->saveErrors( '(' ) );
     }
 
+    /* ---------------- the name is an event name ---------------- */
+
+    /** Update075's renaming: other characters to one underscore, a letter first, 40 at most. */
+    public function testANameIsMadeFromFreeText(): void
+    {
+        $from = array( \OWA\Module\Base\Entity\GoalEvent::class, 'nameFrom' );
+
+        $this->assertSame( 'Bookshop_com_Buy', $from( 'Bookshop.com-Buy' ) );
+        $this->assertSame( 'Signup_Completed', $from( '  Signup  Completed! ' ) );
+        $this->assertSame( 'goal_2024_launch', $from( '2024 launch' ) );
+        $this->assertSame( 40, strlen( $from( str_repeat( 'a', 60 ) ) ) );
+    }
+
+    public function testANameOWACollectsOrThatIsNotAnEventNameIsRefused(): void
+    {
+        $problem = array( \OWA\Module\Base\Entity\GoalEvent::class, 'nameProblem' );
+
+        $this->assertSame( '', $problem( 'Signup_Completed' ) );
+        $this->assertNotSame( '', $problem( 'click' ), 'its rows would count as clicks' );
+        $this->assertNotSame( '', $problem( 'session_start' ) );
+        $this->assertNotSame( '', $problem( 'has-a-hyphen' ) );
+        $this->assertNotSame( '', $problem( 'Signup completed' ) );
+        $this->assertNotSame( '', $problem( str_repeat( 'a', 41 ) ) );
+        $this->assertNotSame( '', $problem( '' ) );
+    }
+
+    public function testTheSaveRefusesANameThatIsNotAnEventNameOrThatOWACollects(): void
+    {
+        $this->assertContains( 'A name starts with a letter and has up to 40 letters, digits and underscores.',
+            $this->saveErrors( 'x', array( 'name' => 'Signup by email' ) ) );
+        $this->assertContains( 'click is an event OWA collects.', $this->saveErrors( 'x', array( 'name' => 'click' ) ) );
+        $this->assertSame( array(), array_filter( $this->saveErrors( 'x', array( 'name' => 'Unused_name_75' ) ),
+            static function ( $m ) { return strpos( $m, 'name' ) !== false; } ) );
+    }
+
+    /** Case-blind, like the column: Taken and taken would group as one event. */
+    public function testTheSaveRefusesANameAnotherGoalEventOfThePropertyHas(): void
+    {
+        $id = $this->storedGoal( 'Taken_name_75' );
+
+        try {
+            $this->assertContains( 'Another goal event is called Taken_name_75.',
+                $this->saveErrors( 'x', array( 'name' => 'Taken_name_75' ) ) );
+            $this->assertContains( 'Another goal event is called taken_NAME_75.',
+                $this->saveErrors( 'x', array( 'name' => 'taken_NAME_75' ) ) );
+            $this->assertNotContains( 'Another goal event is called Taken_name_75.',
+                $this->saveErrors( 'x', array( 'name' => 'Taken_name_75', 'goalEventId' => $id ) ), 'itself' );
+        } finally {
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+        }
+    }
+
+    /** A saved goal event keeps its name: its conversion rows already carry it. */
+    public function testASavedGoalEventKeepsItsName(): void
+    {
+        $id = $this->storedGoal( 'Kept_name_75' );
+
+        try {
+            $save = new \OWA\Module\Base\Controller\GoalEventSave( array(
+                'propertyId' => $this->propertyId, 'goalEventId' => $id, 'name' => 'Ignored_name_75',
+                'value' => '4.00', 'triggerEvent' => 'page_view',
+                'conditionProperty' => array( 'page_path' ), 'conditionOperator' => array( 'exact' ),
+                'conditionValue' => array( '/after' ) ) );
+            $save->action();
+
+            $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+                'SELECT name, value FROM owa_goal_event WHERE id = ?', array( $id ) );
+
+            $this->assertSame( 'Kept_name_75', $row['name'] );
+            $this->assertSame( 400, (int) $row['value'], 'the rest of the save went through' );
+        } finally {
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+        }
+    }
+
+    /** A goal event of the fixture Property, stored directly. */
+    private function storedGoal( string $name ): string
+    {
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $id   = $goal->generateId( 'goal_event:name-probe:' . uniqid( '', true ) );
+        $goal->setProperties( array( 'id' => $id, 'property_id' => $this->propertyId, 'name' => $name,
+            'trigger_event_type' => 'page_view', 'is_active' => 0 ) );
+        $goal->create();
+
+        return $id;
+    }
+
     /** The validation messages GoalEventSave raises for one regex condition. */
-    private function saveErrors( string $pattern ): array
+    private function saveErrors( string $pattern, array $params = array() ): array
     {
         // A real Property and a name, so validation reaches the conditions.
-        $save = new \OWA\Module\Base\Controller\GoalEventSave( array(
+        $save = new \OWA\Module\Base\Controller\GoalEventSave( $params + array(
             'propertyId'        => $this->propertyId,
-            'name'              => 'Signup by email',
+            'name'              => 'Signup_by_email',
             'conditionOperator' => array( 'regex' ),
             'conditionValue'    => array( $pattern ),
         ) );
@@ -418,7 +505,7 @@ final class GoalEventStorageTest extends TestCase
         $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
         $goalEvent->set( 'id', $id );
         $goalEvent->set( 'property_id', $this->propertyId );
-        $goalEvent->set( 'name', 'Condition probe' );
+        $goalEvent->set( 'name', 'Condition_probe' );
         if ( $trigger !== null ) {
             $goalEvent->set( 'trigger_event_type', $trigger );
         }

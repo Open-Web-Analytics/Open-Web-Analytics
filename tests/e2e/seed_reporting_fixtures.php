@@ -173,7 +173,7 @@ const E2E_ACTIONS = [
     ['group' => 'Commerce', 'name' => 'submit', 'label' => 'cart',   'value' => 10, 'n' => 1],
 ];
 
-const E2E_GOAL_NAME   = 'E2E Signup Funnel';
+const E2E_GOAL_NAME   = 'E2E_Signup_Funnel';
 const E2E_GOAL_URL    = '/docs';
 
 // The funnel VISUALIZATION.
@@ -436,8 +436,8 @@ function seed(): array
      *    a previous run died midway, and the fixture should be torn down, not
      *    patched up.
      */
-    // The goal is declared BEFORE the page views: marking happens as each event
-    // is saved, so a goal added afterwards marks nothing already on disk.
+    // The goal is declared BEFORE the page views: conversions are added as each
+    // event is saved, so a goal added afterwards converts nothing already on disk.
     $out['goal_seeded'] = seedGoal();
 
     $existing = countSiteRequests(E2E_SITE_ID);

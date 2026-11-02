@@ -136,7 +136,7 @@ final class FunnelCubeCorrectnessTest extends TestCase
     {
         $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
         $id = (string) (9200000000000003000 + count($this->goals));
-        $goal->setProperties(['id' => $id, 'property_id' => self::PROPERTY, 'name' => 'Correctness goal',
+        $goal->setProperties(['id' => $id, 'property_id' => self::PROPERTY, 'name' => 'Correctness_goal',
             'trigger_event_type' => $trigger, 'condition_match' => \OWA\Module\Base\Entity\GoalEvent::MATCH_ALL,
             'is_active' => 1]);
         $goal->create();

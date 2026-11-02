@@ -153,7 +153,7 @@ final class Update049Test extends TestCase
      * piece is tested on its own, and this is the one that would have caught the
      * whole thing being pointless.
      */
-    public function testAMigratedGoalMarksTheRowItWasAlwaysMeantTo(): void
+    public function testAMigratedGoalConvertsOnTheRowItWasAlwaysMeantTo(): void
     {
         $siteId = $this->siteIdForProperty();
 
@@ -184,7 +184,10 @@ final class Update049Test extends TestCase
             $events = \OWA\Module\Base\Classes\Ingest::at(
                 \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
 
-            return $events[0]->get( 'is_goal_event' );
+            // A conversion is a row of its own, added to the set (GoalMarking).
+            return count( array_filter( $events, static function ( $e ) {
+                return $e->get( 'is_goal_event' ) === 1;
+            } ) );
         };
 
         $this->assertSame( 1, $mark( 'page_view' ) );
@@ -245,7 +248,7 @@ final class Update049Test extends TestCase
 
         $entity->set( 'id', $id );
         $entity->set( 'property_id', $this->propertyId );
-        $entity->set( 'name', 'Migration probe' );
+        $entity->set( 'name', 'Migration_probe' );
         $entity->set( 'trigger_event_type', $trigger );
         $entity->set( 'is_active', 1 );
         $entity->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );

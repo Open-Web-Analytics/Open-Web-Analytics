@@ -157,9 +157,10 @@ test.describe('every configured report renders in a browser', () => {
      * per-widget constraint path end to end.
      */
     /**
-     * The goals report measures goal conversions: events the ingest marked
-     * is_goal_event because they matched an active goal. The seeded goal is
-     * declared before the seeded page views, so the /docs views are marked.
+     * The goals report measures goal conversions: the rows ingest adds, named
+     * by the goal event and flagged is_goal_event, for events that met an
+     * active goal. The seeded goal is declared before the seeded page views, so
+     * the /docs views convert.
      */
     test.describe('the goals report measures the goals this site has', () => {
 
@@ -185,6 +186,19 @@ test.describe('every configured report renders in a browser', () => {
             const count = Number((await box.locator('.owa_metricInfoboxLargeNumber')
                 .innerText()).replace(/[^0-9]/g, ''));
             expect(count).toBeGreaterThan(0);
+        });
+
+        /**
+         * Each goal event's conversions are rows named by it, so the grid is the
+         * event name over the conversion rows.
+         */
+        test('the Goal Events grid lists the goal event by name', async ({ page }) => {
+            const row = page.locator('#goal-events tr', { hasText: 'E2E_Signup_Funnel' });
+
+            await expect(row).toHaveCount(1, { timeout: 20_000 });
+
+            const cells = await row.locator('td').allInnerTexts();
+            expect(Number(cells[1].replace(/[^0-9]/g, ''))).toBeGreaterThan(0);
         });
 
         test('the panel keeps its own section header', async ({ page }) => {

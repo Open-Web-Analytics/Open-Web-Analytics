@@ -248,6 +248,9 @@ return array(
         'feed_subscription_param' => array( 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ),
         'geolocation_lookup' => array( 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ),
         'geolocation_service' => array( 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ),
+        // Set by Update075 when it renamed goal events to event names, so its
+        // down() can give them back the names they had.
+        'goal_event_names_before_075' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'goals' => array( 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ), 'internal' => true ),
         'images_url' => array( 'default' => '', 'internal' => true ),
         'install_complete' => array( 'storable' => true, 'autoload' => true, 'internal' => true ),

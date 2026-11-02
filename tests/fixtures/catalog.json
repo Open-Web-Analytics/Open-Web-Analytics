@@ -1719,7 +1719,7 @@
                 "column": "is_goal_event",
                 "family": "event",
                 "label": "Goal Event",
-                "description": "Whether this event met a goal condition.",
+                "description": "Whether this event is a goal event's conversion.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -2919,7 +2919,7 @@
             "column": "is_goal_event",
             "family": "event",
             "label": "Goal Event",
-            "description": "Whether this event met a goal condition.",
+            "description": "Whether this event is a goal event's conversion.",
             "foreign_key_name": "",
             "data_type": "boolean",
             "denormalized": true

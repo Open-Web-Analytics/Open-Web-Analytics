@@ -69,7 +69,7 @@ abstract class FactMigrator {
     private $batch;
 
     /** @var int|null the oldest day migrated, as yyyymmdd; null migrates all */
-    private $since;
+    protected $since;
 
     /** @var array "table.column" => bool, whether that v1 column is an integer type */
     private $integer_keys = array();

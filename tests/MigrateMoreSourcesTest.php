@@ -483,7 +483,7 @@ final class MigrateMoreSourcesTest extends TestCase
     }
 
     /** v1's record decides which sessions converted; the definition finds the row. */
-    public function testARecordedCompletionMarksTheRowThatMetTheGoal(): void
+    public function testARecordedCompletionIsAConversionRowCopiedFromTheRowThatMetTheGoal(): void
     {
         $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor(self::SITE);
         [$thanks, $gone] = $this->goalIds();
@@ -513,20 +513,34 @@ final class MigrateMoreSourcesTest extends TestCase
         (new RequestMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
         $progress = (new GoalMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
 
-        $marked = array_values(array_filter($this->rows('page_view'), fn ($r) => (int) $r['is_goal_event'] === 1));
+        $conversions = $this->rows('Thanks');
 
-        $this->assertCount(1, $marked, 'only the session v1 counted, and only its /thanks view');
-        $this->assertSame('/thanks', $marked[0]['page_path']);
-        $this->assertSame(self::SESSION, (string) $marked[0]['session_id']);
+        $this->assertCount(1, $conversions, 'only the session v1 counted, and only its /thanks view');
+        $this->assertSame(1, (int) $conversions[0]['is_goal_event']);
+        $this->assertSame('/thanks', $conversions[0]['page_path']);
+        $this->assertSame(self::SESSION, (string) $conversions[0]['session_id']);
         $this->assertSame(1, $progress['rows_written']);
         $this->assertEquals(['goal_not_located' => 1], $progress['refusals'], 'goal 2 no longer exists');
 
-        // A re-run marks nothing new and does not call the marked row unlocated.
+        $this->assertSame([], array_values(array_filter($this->rows('page_view'), fn ($r) => (int) $r['is_goal_event'] === 1)),
+            'the page view that met the goal stays an ordinary event');
+
+        $thanks_view = array_values(array_filter($this->rows('page_view'), fn ($r) => $r['page_path'] === '/thanks'
+            && (string) $r['session_id'] === self::SESSION))[0];
+        $this->assertSame($thanks_view['ts'], $conversions[0]['ts'], 'copied from the row that met it');
+
+        // A re-run stores nothing new and does not call the converted session unlocated.
         \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_migration_progress WHERE site_id = ? AND source = ?',
             [self::SITE, 'session_goals']);
         $again = (new GoalMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
 
         $this->assertSame(0, $again['rows_written']);
         $this->assertEquals(['goal_not_located' => 1], $again['refusals']);
+        $this->assertCount(1, $this->rows('Thanks'));
+
+        // Reverting the pass deletes the conversion and leaves the page views to theirs.
+        $this->assertSame(1, (new GoalMigrator(V1Schema::PREFIX))->revertSite(self::SITE));
+        $this->assertSame([], $this->rows('Thanks'));
+        $this->assertCount(3, $this->rows('page_view'));
     }
 }

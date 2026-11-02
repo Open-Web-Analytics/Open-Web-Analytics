@@ -87,7 +87,7 @@ const FIXTURE = {
     // a funnel is not part of a goal any more, it is a visualization.
     goal: {
         number: 1,
-        name: 'E2E Signup Funnel',
+        name: 'E2E_Signup_Funnel',
         destination: '/docs',
     },
     /*

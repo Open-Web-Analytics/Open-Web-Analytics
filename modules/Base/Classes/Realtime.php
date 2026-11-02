@@ -171,47 +171,21 @@ class Realtime {
     }
 
     /**
-     * Goal completions: the flagged events, and which goal each was.
+     * Goal completions: the conversion rows, by goal event.
      *
-     * is_goal_event is one flag per event (Classes\GoalMarking), so which
-     * goal converted is each goal's predicate run against the flagged rows
-     * (Classes\GoalEventPredicate). Goals are matched at ingest on the raw
-     * row, so their vocabulary is raw's and every one that compiles runs here;
-     * one that does not compile is left out of the breakdown, its completions
-     * still in the total.
+     * Each conversion is a row named by its goal event (Classes\GoalMarking),
+     * so the breakdown is a GROUP BY.
      */
     private function goals() {
 
-        $total = $this->rows( 'SELECT COUNT(*) AS n FROM {raw} r WHERE {window} AND r.is_goal_event = 1' );
-        $out   = array( 'total' => (int) ( $total[0]['n'] ?? 0 ), 'byGoal' => array() );
+        $out = array( 'total' => 0, 'byGoal' => array() );
 
-        if ( ! $out['total'] ) {
+        foreach ( $this->rows( 'SELECT r.event_type, COUNT(*) AS n FROM {raw} r WHERE {window} AND r.is_goal_event = 1'
+                . ' GROUP BY r.event_type ORDER BY n DESC, r.event_type' ) as $r ) {
 
-            return $out;
+            $out['total']   += (int) $r['n'];
+            $out['byGoal'][] = array( 'name' => (string) $r['event_type'], 'count' => (int) $r['n'] );
         }
-
-        $predicate = new GoalEventPredicate();
-
-        foreach ( $this->activeGoals() as $goal ) {
-
-            $compiled = $predicate->compile( $goal, 'r' );
-
-            if ( ! $compiled ) {
-
-                continue;
-            }
-
-            $row = $this->rows(
-                'SELECT COUNT(*) AS n FROM {raw} r WHERE {window} AND r.is_goal_event = 1 AND ' . $compiled['sql'],
-                null, $compiled['params'] );
-
-            if ( ! empty( $row[0]['n'] ) ) {
-
-                $out['byGoal'][] = array( 'name' => (string) $goal->get( 'name' ), 'count' => (int) $row[0]['n'] );
-            }
-        }
-
-        usort( $out['byGoal'], function ( $a, $b ) { return $b['count'] <=> $a['count']; } );
 
         return $out;
     }
@@ -301,51 +275,16 @@ class Realtime {
         );
     }
 
-    /** The Property's active goal events, the way GoalMarking loads them. */
-    private function activeGoals() {
-
-        $property_id = $this->property_id;
-
-        // No Property is no goals. An unguarded where() on an empty value would
-        // hand this one every Property's goal events.
-        if ( ! $property_id ) {
-
-            return array();
-        }
-
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-
-        $db->selectFrom( $entity->getTableName() );
-        $db->selectColumn( '*' );
-        $db->where( 'property_id', $property_id );
-        $db->where( 'is_active', 1 );
-
-        $goals = array();
-
-        foreach ( (array) $db->getAllRows() as $row ) {
-
-            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-            $goal->setProperties( $row );
-            $goals[] = $goal;
-        }
-
-        return $goals;
-    }
-
     /**
      * Run one card's statement over the window.
      *
      * {raw} is raw's table and {window} the Profiles, day and time bounds.
-     * Substituted by name rather than by sprintf, because a compiled goal
-     * predicate can carry a LIKE pattern and its % would be read as a format.
      *
      * @param  string   $sql
      * @param  int|null $from   window start, microseconds; the window's own by default
-     * @param  array    $params bound after the Profiles
      * @return array[]
      */
-    private function rows( $sql, $from = null, array $params = array() ) {
+    private function rows( $sql, $from = null ) {
 
         /*
          * No Profiles is no rows, not no restriction: an empty IN list is a
@@ -364,7 +303,7 @@ class Realtime {
         $this->statements[] = $sql;
 
         return array_map( function ( $r ) { return (array) $r; },
-            (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, array_merge( $this->site_ids, $params ) ) );
+            (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $this->site_ids ) );
     }
 }
 

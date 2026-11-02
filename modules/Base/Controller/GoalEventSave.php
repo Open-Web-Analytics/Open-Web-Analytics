@@ -27,8 +27,25 @@ class GoalEventSave extends \OWA\Core\AdminController {
             'errorMsg' => $this->getMsg( 3218 ),
         ) );
 
-        $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
+        $name = $this->name();
+
+        $this->addValidation( 'name', $name, 'required',
             array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
+
+        if ( $name !== '' ) {
+
+            $problem = \OWA\Module\Base\Entity\GoalEvent::nameProblem( $name );
+
+            if ( $problem === '' && $this->nameTaken( $name ) ) {
+
+                $problem = sprintf( \OWA\Core\CoreAPI::t( 'Another goal event is called %s.' ), $name );
+            }
+
+            if ( $problem !== '' ) {
+
+                $this->addValidation( 'name', '', 'required', array( 'errorMsg' => $problem ) );
+            }
+        }
 
         /*
          * A condition with no value counts nothing, and says nothing about it.
@@ -146,7 +163,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $this->getParam( 'value' ) );
 
         $goalEvent->set( 'property_id', $propertyId );
-        $goalEvent->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
+        $goalEvent->set( 'name', $this->name() );
         /*
          * ALWAYS once per session, whatever was submitted.
          *
@@ -206,6 +223,45 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.goalEvents' );
         $this->set( 'status_code', 3219 );
     }
+    /**
+     * The goal event's name: what was typed for a new one, the stored one for a
+     * saved one. Its conversions are stored under it, so a later save cannot
+     * change it.
+     *
+     * @return string
+     */
+    private function name() {
+
+        $id = $this->getParam( 'goalEventId' );
+
+        if ( $id ) {
+
+            $existing = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $existing->load( $id );
+
+            if ( $existing->wasPersisted() && (string) $existing->get( 'name' ) !== '' ) {
+
+                return (string) $existing->get( 'name' );
+            }
+        }
+
+        return trim( (string) $this->getParam( 'name' ) );
+    }
+
+    /** Whether another goal event of this Property has the name. */
+    private function nameTaken( $name ) {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
+            'SELECT id FROM %s WHERE property_id = ? AND name = ? AND id <> ? LIMIT 1',
+            $entity->getTableName() ),
+            array( (string) $this->getParam( 'propertyId' ), $name,
+                (string) ( $this->getParam( 'goalEventId' ) ?: '0' ) ) );
+
+        return ! empty( $row['id'] );
+    }
+
     private function saveConditions( $goalEventId ) {
 
         if ( ! $goalEventId ) {
@@ -276,7 +332,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         /* Re-render the form with what was typed, rather than losing it. */
         $this->set( 'goalEvent', array(
             'id'              => $this->getParam( 'goalEventId' ),
-            'name'            => $this->getParam( 'name' ),
+            'name'            => $this->name(),
             'condition_match' => $this->getParam( 'conditionMatch' ),
             'count_mode'      => $this->getParam( 'countMode' ),
             'value'           => \OWA\Module\Base\Entity\GoalEvent::decimalToCents(

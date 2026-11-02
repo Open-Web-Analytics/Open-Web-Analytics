@@ -11,7 +11,9 @@ use OWA\Module\Base\Classes\Ingest;
  * Goal marking is a callback on the set of events a beacon is saved as.
  *
  * It runs after the materializers, so it is handed session_start and first_visit
- * too, and marks each event on its own values against the row it will become.
+ * too, judges each event on its own values against the row it will become, and
+ * appends a conversion row -- named by the goal event, is_goal_event = 1 -- for
+ * each goal event met. Every other row, the one that met it included, is 0.
  *
  * These tests go through Ingest::TRACKING_EVENTS_PRE_SAVE rather than calling
  * mark() directly, because the wiring is half of what is being claimed. A
@@ -77,16 +79,32 @@ final class GoalMarkingTest extends TestCase
 
     /* ---------------- the wiring ---------------- */
 
-    /** A goal matching the event marks it, through the registered callback. */
-    public function testTheCallbackIsRegisteredAndMarksAMatchingEvent(): void
+    /**
+     * A goal matching the event adds its conversion row, through the registered
+     * callback: the event under the goal event's name, flagged, while the event
+     * itself stays 0 so the conversion is counted once.
+     */
+    public function testTheCallbackIsRegisteredAndAddsAConversionRow(): void
     {
         $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/thanks/you' ) ) );
+        $events = $this->filter( $this->event( array( 'page_path' => '/thanks/you', 'engagement_msec' => 4000 ) ) );
 
-        $this->assertSame( 1, $events[0]->get( 'is_goal_event' ),
-            'Nothing marked the event. Either the callback is not registered at '
+        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ), $this->flags( $events ),
+            'No conversion row. Either the callback is not registered at '
             . Ingest::TRACKING_EVENTS_PRE_SAVE . ' or it did not match.' );
+
+        $conversion = $events[1];
+
+        foreach ( array( 'site_id', 'visitor_id', 'session_id', 'ts', 'page_path' ) as $copied ) {
+            $this->assertSame( $events[0]->get( $copied ), $conversion->get( $copied ), $copied );
+        }
+
+        $this->assertArrayNotHasKey( 'engagement_msec', $conversion->getProperties(),
+            'copied, the page view\'s engagement time would count twice in the session' );
+
+        $rows = array_map( array( \OWA\Module\Base\Handler\EventRawHandlers::class, 'rowFor' ), $events );
+        $this->assertNotSame( $rows[0]['id'], $rows[1]['id'], 'one beacon, two rows, two ids' );
     }
 
     /** ...and an event that matches nothing comes back 0, not absent. */
@@ -138,9 +156,10 @@ final class GoalMarkingTest extends TestCase
         }
 
         $this->assertSame( array(
-            'page_view'     => 1,
+            'page_view'     => 0,
             'session_start' => 0,
             'first_visit'   => 0,
+            'Marking_probe' => 1,
         ), $marked, 'marking has to run after the materializers and judge each event' );
     }
 
@@ -164,7 +183,7 @@ final class GoalMarkingTest extends TestCase
             $marked[ $event->getEventType() ] = $event->get( 'is_goal_event' );
         }
 
-        $this->assertSame( array( 'page_view' => 0, 'first_visit' => 1 ), $marked );
+        $this->assertSame( array( 'page_view' => 0, 'first_visit' => 0, 'Marking_probe' => 1 ), $marked );
     }
 
     /**
@@ -207,8 +226,8 @@ final class GoalMarkingTest extends TestCase
 
         $events = $this->filter( $this->event( array( 'page_path' => '/slotless' ) ) );
 
-        $this->assertSame( 1, $events[0]->get( 'is_goal_event' ),
-            'A goal event with no slot number marked nothing -- which is every goal '
+        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ), $this->flags( $events ),
+            'A goal event with no slot number converted nothing -- which is every goal '
             . 'the current screen creates.' );
     }
 
@@ -220,16 +239,31 @@ final class GoalMarkingTest extends TestCase
 
         $events = $this->filter( $this->event( array( 'page_path' => '/off' ) ) );
 
-        $this->assertSame( 0, $events[0]->get( 'is_goal_event' ),
+        $this->assertSame( array( 'page_view' => 0 ), $this->flags( $events ),
             'A goal event switched off still counted conversions.' );
     }
 
+    /** An event meeting two goal events adds a conversion row for each. */
+    public function testTwoMatchingGoalsAddTwoRows(): void
+    {
+        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ), array( 'name' => 'Thanks_page' ) );
+        $this->makeGoal( array( array( 'host', 'exact', 'example.com' ) ), array( 'name' => 'Example_host' ) );
+
+        $events = $this->filter( $this->event( array(
+            'page_path' => '/thanks', 'host' => 'example.com' ) ) );
+
+        $flags = $this->flags( $events );
+        ksort( $flags );
+
+        $this->assertSame( array( 'Example_host' => 1, 'Thanks_page' => 1, 'page_view' => 0 ), $flags );
+    }
+
     /**
-     * ONE FLAG. An event meeting two goals is still one event, and
-     * goalConversions counts events -- so two matching goals must not produce a
-     * 2, and must not be counted twice.
+     * Two goal events with ONE name add one row. The save refuses a second
+     * one, but a beacon must not depend on that: every row of a beacon shares
+     * its ts, so two would derive one id and its insert would fail on its own key.
      */
-    public function testTwoMatchingGoalsSetOneFlag(): void
+    public function testTwoGoalsWithOneNameAddOneRow(): void
     {
         $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
         $this->makeGoal( array( array( 'host', 'exact', 'example.com' ) ) );
@@ -237,7 +271,8 @@ final class GoalMarkingTest extends TestCase
         $events = $this->filter( $this->event( array(
             'page_path' => '/thanks', 'host' => 'example.com' ) ) );
 
-        $this->assertSame( 1, $events[0]->get( 'is_goal_event' ) );
+        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ), $this->flags( $events ) );
+        $this->assertCount( 2, $events );
     }
 
     /**
@@ -260,6 +295,18 @@ final class GoalMarkingTest extends TestCase
     }
 
     /* ---------------- helpers ---------------- */
+
+    /** event name => is_goal_event, in the order the set holds them. */
+    private function flags( array $events ): array
+    {
+        $out = array();
+
+        foreach ( $events as $event ) {
+            $out[ $event->getEventType() ] = $event->get( 'is_goal_event' );
+        }
+
+        return $out;
+    }
 
     /** Run one incoming event through the real store point. */
     private function filter( $event ): array
@@ -298,7 +345,7 @@ final class GoalMarkingTest extends TestCase
 
         $entity->set( 'id', $id );
         $entity->set( 'property_id', $this->propertyId );
-        $entity->set( 'name', 'Marking probe' );
+        $entity->set( 'name', $overrides['name'] ?? 'Marking_probe' );
         $entity->set( 'trigger_event_type', array_key_exists( 'trigger_event_type', $overrides )
             ? $overrides['trigger_event_type'] : 'page_view' );
         $entity->set( 'is_active', array_key_exists( 'is_active', $overrides )

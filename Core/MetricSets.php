@@ -84,7 +84,7 @@ class MetricSets {
         /*
          * Goal conversions, when the Property has an active goal event to
          * convert on. v2's goalConversions counts the is_goal_event rows the
-         * marking wrote, one flag per event however many goals it met.
+         * marking added, one per goal event an event met.
          */
         if ( self::hasActiveGoalEvent( $propertyId ) ) {
 
