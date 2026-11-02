@@ -2,6 +2,25 @@ const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
 
 /**
+ * The seeded custom report of metric boxes with no chart above them, found by
+ * name on the roster: its id is minted at seed time.
+ */
+async function boxesReport(page) {
+
+    await page.goto('?owa_do=base.customReports', { waitUntil: 'networkidle' });
+
+    const href = await page
+        .locator(`table.owa_customReportRoster a:text-is("${FIXTURE.boxesReportName}")`)
+        .first().getAttribute('href');
+
+    const id = ((href || '').match(/reportId=(custom-[0-9]+)/) || [])[1];
+
+    expect(id, 'the standalone-boxes fixture is missing -- re-run the seeder').toBeTruthy();
+
+    return `?owa_do=base.report&owa_reportId=${id}&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`;
+}
+
+/**
  * Real-browser characterization of the reporting UI.
  *
  * jsdom (tests/js/reporting/*) proves the bundle loads and OWA objects
@@ -288,17 +307,10 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(underTrend.sparklines).toBe(0);
 
         /*
-         * ...and a widget of boxes with no chart above them is untouched.
-         *
-         * `goals`, not `traffic`: traffic used to carry three standalone
-         * metric-boxes widgets counting visits per medium, and it has three
-         * PIES of the same splits now -- the number stated beside the shape of
-         * it was the same fact twice. The goals report's Goal Performance
-         * panel is the remaining standalone one.
+         * ...and a widget of boxes with no chart above them is untouched. No
+         * shipped report has one any more, so it is the seeded custom report's.
          */
-        await page.goto(
-            `?owa_do=base.report&owa_reportId=goals&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
-            { waitUntil: 'networkidle' });
+        await page.goto(await boxesReport(page), { waitUntil: 'networkidle' });
 
         await expect(page.locator('.owa_metricInfobox').first()).toBeVisible({ timeout: 20_000 });
 
@@ -651,13 +663,10 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         //
         // NOT on the dashboard any more. Its only boxes are the ones under the
         // trend, and those deliberately draw no sparkline -- the chart above
-        // them already shows the shape over time. `goals` has a metric-boxes
-        // widget with no chart above it, which is where sparklines still
-        // belong and so where the library can still be pinned. (It was
-        // `traffic`; that report's standalone boxes became share charts.)
-        await page.goto(
-            `?owa_do=base.report&owa_reportId=goals&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`,
-            { waitUntil: 'networkidle' });
+        // them already shows the shape over time. No shipped report has boxes
+        // without a chart, so the library is pinned on the seeded custom
+        // report's.
+        await page.goto(await boxesReport(page), { waitUntil: 'networkidle' });
 
         const sparkCanvases = page.locator('p.sparkline canvas');
 

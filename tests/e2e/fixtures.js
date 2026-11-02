@@ -40,6 +40,9 @@ const FIXTURE = {
     // companion-grid specs drive an authored report instead of a shipped shape
     // nobody asked for.
     breakdownReportName: 'E2E Broken Out Trend',
+    // Metric boxes with no chart above them (E2E_BOXES_REPORT_NAME), which
+    // draw sparklines. No shipped report has such a widget.
+    boxesReportName: 'E2E Standalone Boxes',
     othersReportOwner: 'owa-e2e-someone-else@example.test',
 
     // The password-CHANGE fixture user (E2E_PWUSER_* in the seeder). OWA has no
