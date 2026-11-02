@@ -441,6 +441,47 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * TWO CLICKS THAT ARRIVE IN THE SAME MICROSECOND ARE TWO ROWS. ts is the
+     * edge receipt, and this process stamps every event it fires with one, so
+     * the two clicks below share every input of the id but the sequence number
+     * the tracker counted them by. Before the sequence was part of the id the
+     * second derived the first one's id and was lost.
+     *
+     * The same click sent again, sequence and all, is still stored once.
+     */
+    public function testTwoClicksAtOneInstantAreTwoRowsAndARedeliveryIsNot(): void
+    {
+        $visitor = $this->uniqueGuid();
+        $session = $this->uniqueSessionId();
+
+        foreach ([28, 29, 29] as $seq) {
+            $this->fireEvent('dom.click', [
+                'site_id'       => $this->site,
+                'visitor_id'    => $visitor,
+                'session_id'    => $session,
+                'page_url'      => 'https://owa-test-site/v2/a',
+                'page_location' => 'https://owa-test-site/v2/a',
+                'event_seq'     => $seq,
+                'fsts'          => time(),
+                'sts'           => time(),
+                'num_prior_sessions' => 0,
+            ]);
+        }
+
+        $rows = array_map(fn ($r) => (array) $r, (array) \OWA\Core\CoreAPI::dbSingleton()->get_results(
+            "SELECT id, ts, event_seq FROM owa_event_raw WHERE visitor_id = ? AND session_id = ? AND event_type = 'click' ORDER BY event_seq",
+            [$visitor, $session]));
+
+        foreach ($rows as $row) {
+            $this->trackForCleanup('base.event_raw', (string) $row['id'], 'id');
+        }
+        $this->trackForCleanup('base.visitor_acquisition', $visitor, 'visitor_id');
+
+        $this->assertSame(['28', '29'], array_map('strval', array_column($rows, 'event_seq')));
+        $this->assertSame($rows[0]['ts'], $rows[1]['ts'], 'the two clicks share one ts, which is the case under test');
+    }
+
+    /**
      * An EMPTY transaction id is not a duplicate of another empty one: treating
      * it as one would keep only the first id-less purchase a site ever made.
      */

@@ -236,7 +236,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
         $row = array(
 
             'id' => \OWA\Module\Base\Classes\V2Event::id(
-                $site_id, $visitor_id, $session_id, $ts, $name ),
+                $site_id, $visitor_id, $session_id, $ts, $name, $this->number( $event->get( 'event_seq' ) ) ),
 
             'event_type' => $name,
             'site_id'    => $site_id,
