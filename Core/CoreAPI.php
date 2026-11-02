@@ -990,17 +990,6 @@ class CoreAPI {
         self::$registered_sites = array();
     }
 
-    public static function getRegisteredDomain( $full_domain ) {
-
-        static $psl;
-
-        if ( ! $psl ) {
-            $psl = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'pslReader' );
-        }
-
-        return $psl->getRegisteredDomain( $full_domain );
-    }
-
     /**
      * Store one setting on a Profile.
      *

@@ -25,7 +25,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  * silent: reorder two entries and the dependant derives from a value that has
  * not been computed yet, giving a wrong answer rather than an error. There are
  * 30 such pairs -- the date parts reading timestamp, the geo callbacks reading
- * ip_address, location_id reading city/country/state, host reading full_host.
+ * ip_address, location_id reading city/country/state.
  *
  * The graph is derived from the callback bodies rather than hand-listed, so a
  * dependency written tomorrow is covered without anyone remembering this file.

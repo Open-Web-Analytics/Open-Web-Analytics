@@ -54,10 +54,6 @@ class GoalVocabulary {
         // The click target.
         'target_host' => 'target_url',
 
-        // The visitor's NETWORK host, reverse DNS of their address -- a third
-        // host, and neither the page's nor this server's.
-        'remote_host' => 'REMOTE_HOST',
-
         // The one user-agent parse, which is also why device_type is available
         // on every event type: the request carries the agent, not the beacon.
         'raw_ua'          => 'HTTP_USER_AGENT',
@@ -130,8 +126,6 @@ class GoalVocabulary {
 
         'event_seq'   => 'the event\'s position in its page load, an ordering the '
                          . 'tracker keeps for the build -- not something a visitor did',
-        'remote_host' => 'a reverse-DNS lookup of the visitor\'s address, where one '
-                         . 'resolves: network plumbing, and absent for most visitors',
 
         'element_anchor' => 'a hash of the clicked element\'s place in the page, which '
                             . 'the heatmap matches; element_id is the readable way to '

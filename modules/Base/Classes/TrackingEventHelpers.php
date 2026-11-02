@@ -1179,11 +1179,6 @@ class TrackingEventHelpers {
         }
     }
 
-    static function remoteHostDefault() {
-
-        return \OWA\Core\CoreAPI::getServerParam('REMOTE_HOST');
-    }
-
     static function userAgentDefault( $ua = '') {
 		
 		if (! $ua ) {
@@ -1198,10 +1193,9 @@ class TrackingEventHelpers {
      *
      * It returned the Host header of the BEACON request -- this OWA instance's
      * own hostname, the same value on every event of every site an install
-     * tracks. There are three hosts on a tracking event and only two say
-     * anything about the visit: the PAGE's (`host`, cut from page_location) and
-     * the VISITOR's network (`remote_host`, reverse DNS). This was the third, it
-     * never had a column, and no dimension or metric named it.
+     * tracks. The host that says something about the visit is the PAGE's
+     * (`host`, cut from page_location). This one never had a column, and no
+     * dimension or metric named it.
      *
      * Where the install's own hostname is genuinely wanted it is a SETTING
      * rather than an observation -- Lib and Settings read $_SERVER['HTTP_HOST']
@@ -1592,28 +1586,6 @@ class TrackingEventHelpers {
         return \OWA\Core\Lib::utf8Encode( trim( $string ) );
     }
 
-
-    static function getHostDomain( $host, $event ) {
-
-        $fullhost = $event->get( 'full_host' );
-
-        if ( $fullhost ) {
-
-            // Sometimes gethostbyaddr returns 'unknown' or the IP address if it can't resolve the host
-            if ($fullhost === 'localhost') {
-
-                $host = 'localhost';
-
-            } else {
-
-                // lookup the registered domain using the Public Suffix List.
-                $host = \OWA\Core\CoreAPI::getRegisteredDomain( $fullhost );
-                \OWA\Core\CoreAPI::debug("Registered domain is: $host");
-            }
-
-            return $host;
-        }
-    }
 
     /**
      * THE ONE PARSE, asked for by agent.
@@ -2286,8 +2258,7 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The page's own host -- not this server's (HTTP_HOST) and not the visitor's
-     * network (REMOTE_HOST).
+     * The page's own host, not this server's (HTTP_HOST).
      *
      * Falls back to whatever the property already held, which is what the row
      * builder's `?:` did. Nothing on the v2 path sets it: host is set_by event,

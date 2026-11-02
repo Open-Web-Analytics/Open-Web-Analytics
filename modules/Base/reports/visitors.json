@@ -1,6 +1,6 @@
 {
     "title": "Visitors",
-    "description": "Users, new users and sessions, by browser, host and number of prior sessions.",
+    "description": "Users, new users and sessions, by browser and number of prior sessions.",
     "metrics": "totalUsers,newUsers,sessions",
     "widgets": [
         {
@@ -25,21 +25,6 @@
                 "metrics": "sessions",
                 "dimensions": "browserType",
                 "sort": "sessions-"
-            }
-        },
-        {
-            "type": "grid-card",
-            "id": "domains",
-            "container": "visitor-domains",
-            "title": "Domains",
-            "query": {
-                "metrics": "totalUsers",
-                "dimensions": "hostName",
-                "sort": "totalUsers-"
-            },
-            "more": {
-                "reportId": "hosts",
-                "label": "View Full Report \u00bb"
             }
         },
         {

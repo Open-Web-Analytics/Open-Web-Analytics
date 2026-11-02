@@ -24,6 +24,9 @@ namespace OWA\Module\Base\Update;
  * a lookup".
  *
  * NOT CLI-ONLY. One column on raw and the cube.
+ *
+ * Update074 drops the column again, so the entity no longer declares it and
+ * both directions here spell the type out (see CubeColumn::restoreColumn()).
  */
 class Update051 extends \OWA\Core\Update {
 
@@ -35,27 +38,12 @@ class Update051 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        return $this->addRawColumn( 'remote_host' );
+        return $this->restoreColumn( 'remote_host', OWA_DTD_VARCHAR255 );
     }
 
     function down() {
 
-        if ( $this->dropCubeColumn( 'remote_host' ) === false ) {
-
-            return false;
-        }
-
-        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
-
-        if ( $this->dropColumnIfPresent( $raw, 'remote_host' ) === false ) {
-
-            $this->e->notice( sprintf(
-                'Dropping %s.remote_host failed', $raw->getTableName() ) );
-
-            return false;
-        }
-
-        return true;
+        return $this->dropColumns( array( 'remote_host' ) );
     }
 }
 

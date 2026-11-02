@@ -67,11 +67,11 @@ final class TrackingPropertyConfigTest extends TestCase
          * declaring it request-set made an environmental property of it, so
          * admitRequestParams() refused the value the beacon carried.
          *
-         * Five is what is left, and every one is a genuine reading of the
-         * REQUEST: the agent, the address, the language, the visitor's network
-         * host and the edge clock.
+         * Four is what is left, and every one is a genuine reading of the
+         * REQUEST: the agent, the address, the language and the edge clock.
+         * REMOTE_HOST, the visitor's network host, went in Update074.
          */
-        $floors = array( 'client' => 30, 'event' => 15, 'request' => 5 );
+        $floors = array( 'client' => 30, 'event' => 15, 'request' => 4 );
 
         foreach ( $floors as $set_by => $least ) {
 

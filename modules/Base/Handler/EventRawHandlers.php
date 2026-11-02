@@ -361,7 +361,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'prior_touch_ts'           => $this->number( $event->get( 'prior_touch_ts' ) ),
 
             'raw_ua'      => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
-            'remote_host' => $this->text( $event->get( 'REMOTE_HOST' ) ),
             'params' => $this->params( $event ),
         );
 

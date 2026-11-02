@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 73;
+        $this->required_schema_version = 74;
         return parent::__construct();
     }
 
@@ -816,7 +816,6 @@ class Module extends \OWA\Core\Module {
             'id'       => 'base.tracking',
             'legend'   => 'Tracking Request Processing',
             'settings' => array(
-                'resolve_hosts',
                 'log_robots',
                 'log_named_users',
                 'excluded_ips',
@@ -1031,7 +1030,6 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'exit-pages', 'reports/exit-pages.json' );
         $this->registerReport( 'geolocation', 'reports/geolocation.json' );
         $this->registerReport( 'goals', 'reports/goals.json' );
-        $this->registerReport( 'hosts', 'reports/hosts.json' );
         $this->registerReport( 'keywords', 'reports/keywords.json' );
         $this->registerReport( 'latest-visits', 'reports/latest-visits.json' );
         $this->registerReport( 'os', 'reports/os.json' );
@@ -1145,7 +1143,6 @@ class Module extends \OWA\Core\Module {
         //Visitors
         $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 4, 'view_reports', 'Reports','fa fa-user-friends');
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'hosts' ), 'Domains', 2);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);

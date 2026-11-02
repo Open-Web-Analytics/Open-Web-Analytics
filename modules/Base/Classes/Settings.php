@@ -2763,7 +2763,6 @@ namespace OWA\Module\Base\Classes;
                 'db_password'                        => '',
                 'db_force_new_connections'            => true,
                 'db_make_persistant_connections'    => false,
-                'resolve_hosts'                        => true,
                 'log_robots'                        => false,
                 'clean_query_string'                => true,
                 'query_string_filters'                => '', // move to site settings
