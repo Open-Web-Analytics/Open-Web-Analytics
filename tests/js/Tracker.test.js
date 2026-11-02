@@ -139,6 +139,45 @@ describe('OWATracker event assembly', () => {
 
         document.body.removeChild(link);
     });
+
+    test('a click on an image outside a link has no target_url', () => {
+        tracker.setOption('logClicksAsTheyHappen', true);
+
+        const figure = document.createElement('figure');
+        const img = document.createElement('img');
+        img.alt = 'A rocket';
+        figure.appendChild(img);
+        document.body.appendChild(figure);
+
+        tracker.clickEventHandler({ target: img, pageX: 1, pageY: 2 });
+
+        const e = captured[0];
+        expect(e.get('dom_element_tag')).toBe('img');
+        expect(e.get('dom_element_text')).toBe('A rocket');
+        // Not on the wire at all: a key holding undefined went out as the
+        // string "undefined".
+        expect(e.getProperties()).not.toHaveProperty('target_url');
+
+        document.body.removeChild(figure);
+    });
+
+    test('a click on an image inside a link is the link, with its href', () => {
+        tracker.setOption('logClicksAsTheyHappen', true);
+
+        const link = document.createElement('a');
+        link.href = 'https://example.com/full-size';
+        const img = document.createElement('img');
+        link.appendChild(img);
+        document.body.appendChild(link);
+
+        tracker.clickEventHandler({ target: img, pageX: 1, pageY: 2 });
+
+        const e = captured[0];
+        expect(e.get('dom_element_tag')).toBe('a');
+        expect(e.get('target_url')).toBe('https://example.com/full-size');
+
+        document.body.removeChild(link);
+    });
 });
 
 /**
