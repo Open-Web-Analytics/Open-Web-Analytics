@@ -290,25 +290,25 @@ final class RealtimeTest extends TestCase
         $this->assertSame(2, $by['NULL']['users'], 'the property-only row and the visitor with none');
     }
 
-    public function testGoalCompletionsAreBrokenDownByGoalWhereRawCanSay(): void
+    /**
+     * Goal completions are the conversion rows, by goal event: labelled with the
+     * goal event's name, or with the event name where no goal event of the
+     * Property is stored under it any more.
+     */
+    public function testGoalCompletionsAreTheConversionRowsByGoalEvent(): void
     {
         $this->goals[] = $this->goal('Pricing visit', [['page_path', 'begins', '/pricing']]);
-        // A goal naming a column only the build derives does not compile:
-        // counted in the total only.
-        $this->goals[] = $this->goal('Organic arrival', [['medium', 'equals', 'organic']]);
 
-        $this->event(1, 2, ['page_path' => '/pricing', 'is_goal_event' => 1]);
-        $this->event(2, 1, ['page_path' => '/pricing/team', 'is_goal_event' => 1]);
-        $this->event(3, 1, ['page_path' => '/home', 'is_goal_event' => 1]);
-        $this->event(4, 1, ['page_path' => '/pricing']);
+        $this->event(1, 2, ['page_path' => '/pricing']);
+        $this->event(1, 2, ['event_type' => 'Pricing_visit', 'page_path' => '/pricing', 'is_goal_event' => 1]);
+        $this->event(2, 1, ['event_type' => 'Pricing_visit', 'page_path' => '/pricing/team', 'is_goal_event' => 1]);
+        $this->event(3, 1, ['event_type' => 'Gone_goal', 'is_goal_event' => 1]);
 
-        $before = \OWA\Core\CoreAPI::dbSingleton()->lastQueryError();
-        $goals  = $this->realtime()->summary()['goals'];
+        $goals = $this->realtime()->summary()['goals'];
 
-        $this->assertSame($before, \OWA\Core\CoreAPI::dbSingleton()->lastQueryError(),
-            'a goal raw cannot express is skipped, not sent to the server to be refused');
         $this->assertSame(3, $goals['total']);
-        $this->assertSame([['name' => 'Pricing visit', 'count' => 2]], $goals['byGoal']);
+        $this->assertSame([['name' => 'Pricing visit', 'count' => 2], ['name' => 'Gone_goal', 'count' => 1]],
+            $goals['byGoal']);
     }
 
     /** One visitor's window, newest first. */

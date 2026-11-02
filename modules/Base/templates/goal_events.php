@@ -43,6 +43,7 @@
         <thead>
             <tr>
                 <th>Name</th>
+                <th>Event name</th>
                 <th>Counts</th>
                 <th>Value</th>
                 <th>Status</th>
@@ -53,6 +54,7 @@
         <?php foreach ( $view->goalEvents as $owa_ke ):?>
             <tr>
                 <td><?php $view->out( $owa_ke['name'] );?></td>
+                <td><code><?php $view->out( $owa_ke['event_name'] ?? '' );?></code></td>
                 <td class="owa_goalEventCondition">
                     <?php if ( ! empty( $owa_ke['conditions'] ) ):?>
                     <?php foreach ( $owa_ke['conditions'] as $owa_i => $owa_cond ):?>

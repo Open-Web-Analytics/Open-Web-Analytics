@@ -332,7 +332,7 @@ return array(
              * problem.
              */
             'isGoalEvent' => array( 'column' => 'is_goal_event', 'label' => 'Goal Event',
-                'family' => 'event', 'description' => 'Whether this event met a goal condition.',
+                'family' => 'event', 'description' => 'Whether this event is a goal event\'s conversion.',
                 'data_type' => 'boolean' ),
             'domElementId' => array( 'column' => 'element_id', 'label' => 'Element ID',
                 'family' => 'event', 'description' => 'The id attribute of the element that was clicked.' ),

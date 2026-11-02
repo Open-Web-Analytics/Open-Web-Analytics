@@ -171,47 +171,33 @@ class Realtime {
     }
 
     /**
-     * Goal completions: the flagged events, and which goal each was.
+     * Goal completions: the conversion rows, by goal event.
      *
-     * is_goal_event is one flag per event (Classes\GoalMarking), so which
-     * goal converted is each goal's predicate run against the flagged rows
-     * (Classes\GoalEventPredicate). Goals are matched at ingest on the raw
-     * row, so their vocabulary is raw's and every one that compiles runs here;
-     * one that does not compile is left out of the breakdown, its completions
-     * still in the total.
+     * Each conversion is a row named by its goal event's event_name
+     * (Classes\GoalMarking), so the breakdown is a GROUP BY. A row is labelled
+     * with the goal event's name where one of the Property's goal events, active
+     * or not, is stored under it, and with the event name otherwise.
      */
     private function goals() {
 
-        $total = $this->rows( 'SELECT COUNT(*) AS n FROM {raw} r WHERE {window} AND r.is_goal_event = 1' );
-        $out   = array( 'total' => (int) ( $total[0]['n'] ?? 0 ), 'byGoal' => array() );
+        $by = $this->rows( 'SELECT r.event_type, COUNT(*) AS n FROM {raw} r WHERE {window} AND r.is_goal_event = 1'
+          . ' GROUP BY r.event_type ORDER BY n DESC, r.event_type' );
 
-        if ( ! $out['total'] ) {
+        $labels = array();
 
-            return $out;
+        foreach ( $this->goalEvents() as $goal ) {
+
+            $labels[ $goal->eventName() ] = (string) $goal->get( 'name' );
         }
 
-        $predicate = new GoalEventPredicate();
+        $out = array( 'total' => 0, 'byGoal' => array() );
 
-        foreach ( $this->activeGoals() as $goal ) {
+        foreach ( $by as $r ) {
 
-            $compiled = $predicate->compile( $goal, 'r' );
-
-            if ( ! $compiled ) {
-
-                continue;
-            }
-
-            $row = $this->rows(
-                'SELECT COUNT(*) AS n FROM {raw} r WHERE {window} AND r.is_goal_event = 1 AND ' . $compiled['sql'],
-                null, $compiled['params'] );
-
-            if ( ! empty( $row[0]['n'] ) ) {
-
-                $out['byGoal'][] = array( 'name' => (string) $goal->get( 'name' ), 'count' => (int) $row[0]['n'] );
-            }
+            $out['total']   += (int) $r['n'];
+            $out['byGoal'][] = array( 'name' => $labels[ $r['event_type'] ] ?? (string) $r['event_type'],
+                'count' => (int) $r['n'] );
         }
-
-        usort( $out['byGoal'], function ( $a, $b ) { return $b['count'] <=> $a['count']; } );
 
         return $out;
     }
@@ -301,8 +287,8 @@ class Realtime {
         );
     }
 
-    /** The Property's active goal events, the way GoalMarking loads them. */
-    private function activeGoals() {
+    /** The Property's goal events, active or not: a conversion stays labelled after its goal event is switched off. */
+    private function goalEvents() {
 
         $property_id = $this->property_id;
 
@@ -319,7 +305,6 @@ class Realtime {
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( '*' );
         $db->where( 'property_id', $property_id );
-        $db->where( 'is_active', 1 );
 
         $goals = array();
 

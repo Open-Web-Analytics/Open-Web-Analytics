@@ -229,11 +229,87 @@ final class GoalEventStorageTest extends TestCase
         $this->assertContains( 'The regular expression is not valid.', $this->saveErrors( '(' ) );
     }
 
+    /* ---------------- the event name ---------------- */
+
+    /** A name becomes an event name: other characters to one underscore, a letter first, 40 at most. */
+    public function testAnEventNameIsMadeFromTheName(): void
+    {
+        $from = array( \OWA\Module\Base\Entity\GoalEvent::class, 'eventNameFrom' );
+
+        $this->assertSame( 'Bookshop_com_Buy', $from( 'Bookshop.com-Buy' ) );
+        $this->assertSame( 'Signup_Completed', $from( '  Signup  Completed! ' ) );
+        $this->assertSame( 'goal_2024_launch', $from( '2024 launch' ) );
+        $this->assertSame( 40, strlen( $from( str_repeat( 'a', 60 ) ) ) );
+    }
+
+    public function testAnEventNameOWACollectsOrThatIsNotOneIsRefused(): void
+    {
+        $problem = array( \OWA\Module\Base\Entity\GoalEvent::class, 'eventNameProblem' );
+
+        $this->assertSame( '', $problem( 'Signup_Completed' ) );
+        $this->assertNotSame( '', $problem( 'click' ), 'its rows would count as clicks' );
+        $this->assertNotSame( '', $problem( 'session_start' ) );
+        $this->assertNotSame( '', $problem( 'has-a-hyphen' ) );
+        $this->assertNotSame( '', $problem( '' ) );
+    }
+
+    public function testTheSaveRefusesANameLongerThanItsColumn(): void
+    {
+        $this->assertContains( 'A name has at most 255 characters.', $this->saveErrors( 'x', array( 'name' => str_repeat( 'a', 256 ) ) ) );
+        $this->assertNotContains( 'A name has at most 255 characters.', $this->saveErrors( 'x', array( 'name' => str_repeat( 'a', 255 ) ) ) );
+    }
+
+    public function testTheSaveRefusesAnEventNameOWACollectsOrAnotherGoalEventHas(): void
+    {
+        $this->assertContains( 'click is an event OWA collects.', $this->saveErrors( 'x', array( 'eventName' => 'click' ) ) );
+        $this->assertSame( array(), array_filter( $this->saveErrors( 'x', array( 'eventName' => 'Unused_name_75' ) ),
+            static function ( $m ) { return strpos( $m, 'event' ) !== false; } ) );
+
+        $other = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $id    = $other->generateId( 'goal_event:event-name-probe:' . uniqid( '', true ) );
+        $other->setProperties( array( 'id' => $id, 'property_id' => $this->propertyId, 'name' => 'Taken',
+            'event_name' => 'Taken_name_75', 'trigger_event_type' => 'page_view', 'is_active' => 0 ) );
+        $other->create();
+
+        try {
+            $this->assertContains( 'Another goal event is stored as Taken_name_75.',
+                $this->saveErrors( 'x', array( 'eventName' => 'Taken_name_75' ) ) );
+        } finally {
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+        }
+    }
+
+    /** A saved goal event keeps its event name: its conversion rows already carry it. */
+    public function testASavedGoalEventKeepsItsEventName(): void
+    {
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $id   = $goal->generateId( 'goal_event:event-name-keep:' . uniqid( '', true ) );
+        $goal->setProperties( array( 'id' => $id, 'property_id' => $this->propertyId, 'name' => 'Before',
+            'event_name' => 'Kept_name_75', 'trigger_event_type' => 'page_view', 'is_active' => 0 ) );
+        $goal->create();
+
+        try {
+            $save = new \OWA\Module\Base\Controller\GoalEventSave( array(
+                'propertyId' => $this->propertyId, 'goalEventId' => $id, 'name' => 'After',
+                'eventName' => 'Ignored_name_75', 'triggerEvent' => 'page_view',
+                'conditionProperty' => array( 'page_path' ), 'conditionOperator' => array( 'exact' ),
+                'conditionValue' => array( '/after' ) ) );
+            $save->action();
+
+            $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+                'SELECT name, event_name FROM owa_goal_event WHERE id = ?', array( $id ) );
+
+            $this->assertSame( array( 'name' => 'After', 'event_name' => 'Kept_name_75' ), $row );
+        } finally {
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+        }
+    }
+
     /** The validation messages GoalEventSave raises for one regex condition. */
-    private function saveErrors( string $pattern ): array
+    private function saveErrors( string $pattern, array $params = array() ): array
     {
         // A real Property and a name, so validation reaches the conditions.
-        $save = new \OWA\Module\Base\Controller\GoalEventSave( array(
+        $save = new \OWA\Module\Base\Controller\GoalEventSave( $params + array(
             'propertyId'        => $this->propertyId,
             'name'              => 'Signup by email',
             'conditionOperator' => array( 'regex' ),

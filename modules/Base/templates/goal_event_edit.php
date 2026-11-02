@@ -42,6 +42,24 @@ the event, how to compare it, and what to compare it to.</div>
     </div>
 
     <div class="setting">
+        <div class="title">Event name</div>
+        <?php if ( ! empty( $owa_ke['event_name'] ) && ! empty( $view->goalEventId ) ):?>
+        <div class="description">Each conversion is stored as an event with this name, which reports group by. It stays the same when the goal event is renamed.</div>
+        <div class="field">
+            <code><?php $view->out( $owa_ke['event_name'] );?></code>
+        </div>
+        <?php else:?>
+        <div class="description">Each conversion is stored as an event with this name, which reports group by: a letter, then up to 39 letters, digits and underscores. Left empty, it is made from the name. It cannot be changed once the goal event is saved.</div>
+        <div class="field">
+            <input class="owa_largeFormField" type="text" maxlength="40"
+                   name="<?php echo $view->getNs();?>eventName"
+                   value="<?php $view->out( $view->params['eventName'] ?? '' );?>">
+            <span class="validation_error"><?php $view->out( $view->validation_errors['eventName'] ?? '' );?></span>
+        </div>
+        <?php endif;?>
+    </div>
+
+    <div class="setting">
         <div class="title">Counts when</div>
         <div class="description">Which event counts as this goal, and the values it must carry. Only properties the chosen event carries are offered: a page view has no click target, for example. A goal event with no conditions matches nothing.</div>
         <div class="field">

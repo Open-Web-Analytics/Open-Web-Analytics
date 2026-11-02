@@ -646,7 +646,7 @@ class TrackingEventHelpers {
 
         $carried = $carrier->getProperties();
 
-        foreach ( self::propertiesForEvent( $name ) as $property ) {
+        foreach ( self::materializedProperties( $name ) as $property ) {
 
             if ( array_key_exists( $property, $carried ) ) {
 
@@ -657,6 +657,30 @@ class TrackingEventHelpers {
         $event->set( 'event_type', $name );
 
         return $event;
+    }
+
+    /**
+     * The properties a materialized event of this name copies from its carrier.
+     *
+     * propertiesForEvent() less any declared `"materialize": false`, whatever
+     * the name: a goal event's row (Classes\GoalMarking) has a name the site
+     * chose, which isMaterialized() does not know, and copying the carrier's
+     * engagement time to it would count that time twice in the session.
+     *
+     * @param  string $name
+     * @return string[]
+     */
+    public static function materializedProperties( $name ) {
+
+        $all = self::allProperties();
+
+        return array_values( array_filter( self::propertiesForEvent( $name ),
+            static function ( $property ) use ( $all ) {
+
+                return ! ( isset( $all[ $property ] )
+                    && array_key_exists( 'materialize', $all[ $property ] )
+                    && ! $all[ $property ]['materialize'] );
+            } ) );
     }
 
     /**

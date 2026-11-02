@@ -30,6 +30,30 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
             array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
 
+        // The column's width: strict mode refuses a longer one, and the save with it.
+        $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'stringLength', array(
+            'operator' => '<=',
+            'length'   => 255,
+            'errorMsg' => \OWA\Core\CoreAPI::t( 'A name has at most 255 characters.' ),
+        ) );
+
+        $event_name = $this->eventName();
+
+        if ( $event_name !== null ) {
+
+            $problem = \OWA\Module\Base\Entity\GoalEvent::eventNameProblem( $event_name );
+
+            if ( $problem === '' && $this->eventNameTaken( $event_name ) ) {
+
+                $problem = sprintf( \OWA\Core\CoreAPI::t( 'Another goal event is stored as %s.' ), $event_name );
+            }
+
+            if ( $problem !== '' ) {
+
+                $this->addValidation( 'eventName', '', 'required', array( 'errorMsg' => $problem ) );
+            }
+        }
+
         /*
          * A condition with no value counts nothing, and says nothing about it.
          * This install had a goal in exactly that state -- a type the evaluator
@@ -147,6 +171,13 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         $goalEvent->set( 'property_id', $propertyId );
         $goalEvent->set( 'name', trim( (string) $this->getParam( 'name' ) ) );
+
+        $event_name = $this->eventName();
+
+        if ( $event_name !== null ) {
+
+            $goalEvent->set( 'event_name', $event_name );
+        }
         /*
          * ALWAYS once per session, whatever was submitted.
          *
@@ -206,6 +237,51 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.goalEvents' );
         $this->set( 'status_code', 3219 );
     }
+    /**
+     * The event name this save gives the goal event, or null when it keeps the
+     * one it has.
+     *
+     * Set once, when the goal event is created: what was typed, else one made
+     * from the name. A saved goal event's conversions are already stored under
+     * its event name, so a later save cannot change it.
+     *
+     * @return string|null
+     */
+    private function eventName() {
+
+        $id = $this->getParam( 'goalEventId' );
+
+        if ( $id ) {
+
+            $existing = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $existing->load( $id );
+
+            if ( $existing->wasPersisted() && $existing->get( 'event_name' ) ) {
+
+                return null;
+            }
+        }
+
+        $typed = trim( (string) $this->getParam( 'eventName' ) );
+
+        return $typed !== '' ? $typed
+            : \OWA\Module\Base\Entity\GoalEvent::eventNameFrom( trim( (string) $this->getParam( 'name' ) ) );
+    }
+
+    /** Whether another goal event of this Property is stored under the event name. */
+    private function eventNameTaken( $event_name ) {
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
+            'SELECT id FROM %s WHERE property_id = ? AND event_name = ? AND id <> ? LIMIT 1',
+            $entity->getTableName() ),
+            array( (string) $this->getParam( 'propertyId' ), $event_name,
+                (string) ( $this->getParam( 'goalEventId' ) ?: '0' ) ) );
+
+        return ! empty( $row['id'] );
+    }
+
     private function saveConditions( $goalEventId ) {
 
         if ( ! $goalEventId ) {

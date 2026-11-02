@@ -97,10 +97,11 @@ class Ingest {
      *   50   PurchaseDeduplication::drop -- removes a purchase whose
      *        transaction id its site already has, keeping any event
      *        materialized beside it.
-     *   100  GoalMarking::mark -- sets is_goal_event on EVERY event in the set,
-     *        each on its own values. Last, so it sees whatever was appended.
-     *        A callback appending at a priority above 100 appends an event
-     *        that is never marked.
+     *   100  GoalMarking::mark -- judges EVERY event in the set, each on its
+     *        own values, and appends a row named by the goal event for each
+     *        goal event met. Last, so it sees whatever was appended. A
+     *        callback appending at a priority above 100 appends an event that
+     *        is never judged.
      *
      * A CALLBACK DECIDES FROM THE SET AND SITE CONFIGURATION ONLY. A failed
      * write is retried from the queue with the incoming event and this runs

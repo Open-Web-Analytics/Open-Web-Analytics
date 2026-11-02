@@ -108,6 +108,10 @@ test.describe('goal events', () => {
         await expect(row).toContainText('2.50');
         await expect(row).toContainText('Active');
 
+        // Left empty, the event name is made from the name.
+        const eventName = name.replace(/ /g, '_');
+        await expect(row).toContainText(eventName);
+
         // --- EDIT --------------------------------------------------------------
         const editHref = await row.locator('a[href*="base.goalEventEdit"]').first()
             .getAttribute('href');
@@ -123,6 +127,11 @@ test.describe('goal events', () => {
         await expect(page.locator('input[name="name"]')).toHaveValue(name);
         await expect(page.locator('input[name="conditionValue[]"]')).toHaveValue('/thanks');
 
+        // A saved goal event's event name is shown, not offered: its conversions
+        // are already stored under it.
+        await expect(page.locator('input[name="eventName"]')).toHaveCount(0);
+        await expect(page.locator('form[name="owa_goalEvent"] code', { hasText: eventName })).toHaveCount(1);
+
         await page.fill('input[name="name"]', renamed);
 
         await Promise.all([
@@ -133,6 +142,11 @@ test.describe('goal events', () => {
         await expect(
             page.locator('table.management tbody tr', { hasText: renamed })
         ).toHaveCount(1);
+
+        // Renamed, it keeps its event name.
+        await expect(
+            page.locator('table.management tbody tr', { hasText: renamed })
+        ).toContainText(eventName);
 
         // Edited, not duplicated: the id is carried through the form, so saving
         // twice has to update one row rather than leave two behind.

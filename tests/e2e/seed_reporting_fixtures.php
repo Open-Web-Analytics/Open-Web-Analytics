@@ -436,8 +436,8 @@ function seed(): array
      *    a previous run died midway, and the fixture should be torn down, not
      *    patched up.
      */
-    // The goal is declared BEFORE the page views: marking happens as each event
-    // is saved, so a goal added afterwards marks nothing already on disk.
+    // The goal is declared BEFORE the page views: conversions are added as each
+    // event is saved, so a goal added afterwards converts nothing already on disk.
     $out['goal_seeded'] = seedGoal();
 
     $existing = countSiteRequests(E2E_SITE_ID);
@@ -1129,6 +1129,7 @@ function seedGoal(): array
 
     $goalEvent->set('property_id', \OWA\Module\Base\Entity\GoalEvent::propertyFor(E2E_SITE_ID));
     $goalEvent->set('name', E2E_GOAL_NAME);
+    $goalEvent->set('event_name', \OWA\Module\Base\Entity\GoalEvent::eventNameFrom(E2E_GOAL_NAME));
     $goalEvent->set('is_active', 1);
     $goalEvent->set('trigger_event_type', 'page_view');
 
