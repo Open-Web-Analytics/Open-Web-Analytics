@@ -115,7 +115,7 @@
             "title": "Latest Visits",
             "query": {
                 "metrics": "pageViewsPerSession",
-                "dimensions": "ipAddress,hostName,landingPage,sessionSourceMedium,city,country,priorSessionCount",
+                "dimensions": "ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
                 "sort": "sessions-",
                 "resultsPerPage": 10
             },

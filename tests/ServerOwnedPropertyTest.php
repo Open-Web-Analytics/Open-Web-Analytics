@@ -80,10 +80,9 @@ final class ServerOwnedPropertyTest extends TestCase
          *     country as an ecommerce BILLING address -- which is a different
          *     fact that happens to share these names;
          *
-         *   - host is not the site's host. getHostDomain() derives it from a
-         *     reverse-DNS lookup of the visitor's IP through the Public Suffix
-         *     List, so accepting one lets a request forge the visitor's
-         *     resolved hostname.
+         *   - host is the page's host, cut from page_location by deriveHost(),
+         *     so accepting one lets a request report a page under a host it
+         *     was not served from.
          */
         $kept = Helpers::admitRequestParams( array(
             'country' => 'India',
@@ -177,8 +176,8 @@ final class ServerOwnedPropertyTest extends TestCase
             $this->assertArrayHasKey(
                 $name, $serverOwned,
                 "'$name' must be server-owned. Location comes from the visitor's IP and host "
-                . 'from a reverse-DNS lookup of it; neither may be supplied by the request '
-                . 'whose location is being determined.' );
+                . 'from the page URL; neither may be supplied by the request as a value of '
+                . 'its own.' );
         }
     }
 

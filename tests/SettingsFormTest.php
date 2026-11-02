@@ -80,7 +80,7 @@ final class SettingsFormTest extends TestCase
         $html = $this->generalPage();
 
         foreach (array(
-            'resolve_hosts', 'log_robots', 'log_named_users', 'excluded_ips',
+            'log_robots', 'log_named_users', 'excluded_ips',
             'anonymize_ips', 'query_string_filters', 'announce_visitors',
             'notice_email', 'timezone',
         ) as $key) {

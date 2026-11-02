@@ -45,7 +45,8 @@ final class EventRawEntityTest extends TestCase
          * only for the same reason: the cube's attributed_* is their reading. 76
          * with element_anchor, anchor_x and anchor_y (Update073), where on the
          * clicked element the heatmap draws a click: a BIGINT and two SMALLINTs,
-         * which left the measured ceiling on MySQL 8.4 at 36.
+         * which left the measured ceiling on MySQL 8.4 at 36. 75 without
+         * remote_host (Update074), a VARCHAR(255) that no dimension read.
          *
          * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
          * param-bound first-class properties were deliberately left in the bag --
@@ -55,7 +56,7 @@ final class EventRawEntityTest extends TestCase
          * MySQL 8.4. This number moving is how that decision gets noticed being
          * reversed one column at a time.
          */
-        $this->assertCount(76, $columns);
+        $this->assertCount(75, $columns);
 
         // browser_type, and NOT `browser`. Both columns existed and both were
         // written from the one property -- config/dimensions.php declares
@@ -92,13 +93,6 @@ final class EventRawEntityTest extends TestCase
              * are params, because nothing adds them up.
              */
             'transaction_id', 'tax', 'shipping',
-            /*
-             * The VISITOR's network host, reverse DNS of their address. Three
-             * hosts reach an event -- the page's (host), this server's
-             * (HTTP_HOST) and the visitor's -- and v1 reported the third as its
-             * `host` dimension, a name v2 gave to the first.
-             */
-            'remote_host',
         ] as $name) {
             $this->assertContains($name, $columns, "owa_event_raw must declare $name");
         }
@@ -118,6 +112,12 @@ final class EventRawEntityTest extends TestCase
              * column here, and now not on the wire either.
              */
             'timestamp',
+            /*
+             * The visitor's network host. Filled only from REMOTE_HOST, which
+             * the web server sets only with host name lookups on, and read by no
+             * dimension. Update074 dropped it.
+             */
+            'remote_host',
         ] as $name) {
             $this->assertNotContains($name, $columns,
                 "$name is deliberately not a raw column -- it is a derivation, a dimension "

@@ -265,6 +265,114 @@ trait CubeColumn {
 
         return true;
     }
+
+    /**
+     * Add a column back to raw and to every cube, by an EXPLICIT definition.
+     *
+     * Empty, and that is the contract: the values were derived from a beacon
+     * at ingest and nothing stored can reproduce them. A rollback lands on the
+     * schema it left, not on the data.
+     *
+     * @param string $column
+     * @param string $type   an OWA_DTD_* value
+     * @return bool
+     */
+    protected function restoreColumn( $column, $type ) {
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+
+        foreach ( array_merge( array( $raw ),
+                  \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) as $table ) {
+
+            $existing = (array) $db->get_results( sprintf(
+                "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
+
+            if ( $existing ) {
+
+                continue;
+            }
+
+            /*
+             * A cube is rebuilt rather than taking the column instantly: an
+             * instant column leaves row-format metadata that makes EXCHANGE
+             * PARTITION refuse the swap on the NEXT build. Raw is never a swap
+             * target, so an ordinary add is right for it -- and harmless if the
+             * rebuilding form is used instead, which is why one loop covers
+             * both.
+             */
+            if ( ! $db->addColumnRebuilding( $table, $column, $type )
+              && ! $db->query( sprintf( OWA_SQL_ADD_COLUMN, $table, $column, $type ) ) ) {
+
+                return false;
+            }
+        }
+
+        return $this->clearCubeInstantColumns();
+    }
+
+    /**
+     * Drop a column from the cube and from raw, in that order.
+     *
+     * The cube first: it inherits raw's columns, so taking it off raw while the
+     * cube still has it leaves the two disagreeing, and the next build fails on
+     * a column the SELECT no longer produces.
+     *
+     * @param string[] $columns
+     * @return bool
+     */
+    protected function dropColumns( array $columns ) {
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+
+        foreach ( $columns as $column ) {
+
+            /*
+             * BY NAME, not through the entity -- the same reason restoreColumn()
+             * spells its types out.
+             *
+             * dropColumnIfPresent() and the methods above both ask the entity
+             * for the column, and the release dropping it has removed its
+             * declaration. Before
+             * Entity::getColumn() refused an undeclared name this returned null
+             * with a warning and the DDL happened to work anyway, so it passed
+             * on a database where the column was already gone and failed on one
+             * where it was not -- which is to say, on every real upgrade and no
+             * fresh install. The schema upgrade cycle is the only job that runs
+             * it.
+             */
+            foreach ( array_merge( \OWA\Module\Base\Classes\Cube\Cubes::allTables(),
+                      array( $raw ) ) as $table ) {
+
+                $existing = (array) $db->get_results( sprintf(
+                    "SHOW COLUMNS FROM %s LIKE '%s'", $table, $column ) );
+
+                if ( ! $existing ) {
+
+                    continue;
+                }
+
+                // A cube is dropped from by a rebuild: a plain DROP is instant
+                // on MySQL 8.0.29+ and the row version it leaves is 1731 at the
+                // next swap. Raw is never swapped, so it takes the plain drop.
+                if ( $table !== $raw
+                  && $db->alterColumnsRebuilding( $table, array(), array( $column ) ) ) {
+
+                    continue;
+                }
+
+                if ( ! $db->query( sprintf( OWA_SQL_DROP_COLUMN, $table, $column ) ) ) {
+
+                    $this->e->notice( sprintf( 'Dropping %s.%s failed', $table, $column ) );
+
+                    return false;
+                }
+            }
+        }
+
+        return $this->clearCubeInstantColumns();
+    }
 }
 
 ?>

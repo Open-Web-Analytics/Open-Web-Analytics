@@ -1,22 +1,4 @@
 {
-    "REMOTE_HOST": {
-        "description": "The visitor's network host name, from a reverse DNS lookup of their address. Usually empty: the web server fills it only when host name lookups are turned on.",
-        "set_by": "request",
-        "from": [
-            "REMOTE_HOST"
-        ],
-        "column": "remote_host",
-        "events": [
-            "*"
-        ],
-        "data_type": "string",
-        "required": true,
-        "filter": true,
-        "callbacks": [
-            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::remoteHostDefault"
-        ],
-        "note": "The visitor’s NETWORK host, reverse DNS of their address — not the page’s host and not this server’s. v1 reduced it to a registered domain through the Public Suffix List and reported it as the `host` dimension (\"the visitor came from some host\"); v2 gave that name to the page’s host, so this needs a column of its own. Usually empty in practice: Apache only fills REMOTE_HOST with HostnameLookups On, which is off by default."
-    },
     "HTTP_USER_AGENT": {
         "description": "The browser's User-Agent header, as received. Browser, operating system and device are derived from it.",
         "set_by": "request",
@@ -1224,7 +1206,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveHost"
         ],
-        "note": "The PAGE’s host. Not HTTP_HOST, which is this server’s, and not REMOTE_HOST, which is the visitor’s network. Falls back to whatever the property already held; nothing on the wire can set it, since set_by event means admitRequestParams() refuses a beacon that names it."
+        "note": "The PAGE’s host, not HTTP_HOST, which is this server’s. Falls back to whatever the property already held; nothing on the wire can set it, since set_by event means admitRequestParams() refuses a beacon that names it."
     },
     "browser_type": {
         "description": "The browser's name, from the user agent.",
