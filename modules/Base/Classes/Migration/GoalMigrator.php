@@ -142,7 +142,7 @@ class GoalMigrator extends FactMigrator {
      *
      * @param  array  $trigger  the stored row's id, yyyymmdd, site_id, visitor_id,
      *                          session_id and ts
-     * @param  string $name     the goal event's event_name
+     * @param  string $name     the goal event's name
      * @return bool   false when the write failed
      */
     public static function storeConversion( array $trigger, $name ) {
@@ -231,7 +231,7 @@ class GoalMigrator extends FactMigrator {
                 ? ( new \OWA\Module\Base\Classes\GoalEventPredicate() )->compile( $goal, 'e' )
                 : false;
 
-            $this->compiled[ $id ] = $compiled ? $compiled + array( 'name' => $goal->eventName() ) : false;
+            $this->compiled[ $id ] = $compiled ? $compiled + array( 'name' => (string) $goal->get( 'name' ) ) : false;
         }
 
         return $this->compiled[ $id ] ?: null;

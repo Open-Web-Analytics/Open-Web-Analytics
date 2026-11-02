@@ -18,7 +18,7 @@ namespace OWA\Module\Base\Entity;
  * §7.14). The columns here are exactly what that needs, so the v2 migration is
  * a read of this table and not a reinterpretation of it:
  *
- *   event_name           becomes the materialised row's event_type
+ *   name                 becomes the materialised row's event_type
  *   trigger_event_type   the event type the condition is evaluated against
  *   condition_property   which property of that event to test
  *   condition_operator   how to compare it
@@ -205,22 +205,13 @@ class GoalEvent extends \OWA\Core\Entity {
         $this->setProperty( $property_id );
 
         /*
-         * What the author called it, free text. The row a conversion adds is
-         * named by event_name below.
+         * The event name of the row a conversion adds (Classes\GoalMarking), so
+         * a custom event name (nameProblem()). Fixed once saved: the rows
+         * already stored carry it, and a new one would split the goal's history
+         * in two.
          */
         $name = new \OWA\Module\Base\Classes\DbColumn( 'name', OWA_DTD_VARCHAR255 );
         $this->setProperty( $name );
-
-        /*
-         * The event name of the row a conversion adds (Classes\GoalMarking): one
-         * the eventName dimension groups by, so it has to be a custom event
-         * name (TrackingEventHelpers::CUSTOM_NAME_PATTERN), which `name` need
-         * not be. Set when the goal event is created and kept when it is
-         * renamed: the rows already stored carry it, and a new one would split
-         * the goal's history in two.
-         */
-        $event_name = new \OWA\Module\Base\Classes\DbColumn( 'event_name', OWA_DTD_VARCHAR64 );
-        $this->setProperty( $event_name );
 
         /* Which event type the condition is evaluated against. */
         $trigger = new \OWA\Module\Base\Classes\DbColumn( 'trigger_event_type', OWA_DTD_VARCHAR255 );
@@ -294,16 +285,17 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * The event name a goal event called this would get: `name` with every
-     * run of characters an event name cannot hold turned into one underscore,
-     * starting with a letter and cut to the length one may have.
+     * A goal event name made from free text: every run of characters an event
+     * name cannot hold turned into one underscore, starting with a letter and
+     * cut to the length one may have. For Update075, which renames the goal
+     * events made before names were event names.
      *
-     * @param  string $name
+     * @param  string $text
      * @return string
      */
-    public static function eventNameFrom( $name ) {
+    public static function nameFrom( $text ) {
 
-        $out = trim( (string) preg_replace( '/[^A-Za-z0-9_]+/', '_', (string) $name ), '_' );
+        $out = trim( (string) preg_replace( '/[^A-Za-z0-9_]+/', '_', (string) $text ), '_' );
 
         if ( ! preg_match( '/^[A-Za-z]/', $out ) ) {
 
@@ -314,42 +306,29 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * Why an event name cannot be a goal event's, or '' when it can.
+     * Why a name cannot be a goal event's, or '' when it can.
      *
      * A name OWA collects itself is refused: a goal row called click would be
      * counted as a click by every report that counts them.
      *
-     * @param  string $event_name
+     * @param  string $name
      * @return string
      */
-    public static function eventNameProblem( $event_name ) {
+    public static function nameProblem( $name ) {
 
-        $event_name = (string) $event_name;
+        $name = (string) $name;
 
-        if ( ! preg_match( \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN, $event_name ) ) {
+        if ( ! preg_match( \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN, $name ) ) {
 
-            return \OWA\Core\CoreAPI::t( 'An event name starts with a letter and has up to 40 letters, digits and underscores.' );
+            return \OWA\Core\CoreAPI::t( 'A name starts with a letter and has up to 40 letters, digits and underscores.' );
         }
 
-        if ( in_array( $event_name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+        if ( in_array( $name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
 
-            return sprintf( \OWA\Core\CoreAPI::t( '%s is an event OWA collects.' ), $event_name );
+            return sprintf( \OWA\Core\CoreAPI::t( '%s is an event OWA collects.' ), $name );
         }
 
         return '';
-    }
-
-    /**
-     * The event name this goal event's conversions are stored under.
-     *
-     * The stored one; derived from the name only for a row that has none,
-     * which Update075 leaves no goal event without.
-     *
-     * @return string
-     */
-    public function eventName() {
-
-        return (string) ( $this->get( 'event_name' ) ?: self::eventNameFrom( $this->get( 'name' ) ) );
     }
 
     /** Does this goal event count right now? */

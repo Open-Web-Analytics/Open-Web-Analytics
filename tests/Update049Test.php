@@ -248,7 +248,7 @@ final class Update049Test extends TestCase
 
         $entity->set( 'id', $id );
         $entity->set( 'property_id', $this->propertyId );
-        $entity->set( 'name', 'Migration probe' );
+        $entity->set( 'name', 'Migration_probe' );
         $entity->set( 'trigger_event_type', $trigger );
         $entity->set( 'is_active', 1 );
         $entity->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );

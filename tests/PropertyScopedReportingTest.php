@@ -375,7 +375,7 @@ final class PropertyScopedReportingTest extends TestCase
     private function goalEventSave(array $params): \OWA\Module\Base\Controller\GoalEventSave
     {
         return new \OWA\Module\Base\Controller\GoalEventSave($params + [
-            'name' => 'PSR goal', 'triggerEvent' => 'page_view',
+            'name' => 'PSR_goal', 'triggerEvent' => 'page_view',
             'conditionProperty' => ['page_path'], 'conditionOperator' => ['eq'], 'conditionValue' => ['/thanks'],
         ]);
     }
@@ -409,7 +409,7 @@ final class PropertyScopedReportingTest extends TestCase
         $this->assertSame(3219, $data['status_code'] ?? null);
 
         $listed = \OWA\Module\Base\Controller\GoalEvents::listForProperty((string) self::PROPERTY);
-        $this->assertSame(['PSR goal'], array_column($listed, 'name'));
+        $this->assertSame(['PSR_goal'], array_column($listed, 'name'));
 
         $delete = new \OWA\Module\Base\Controller\GoalEventDelete([
             'goalEventId' => $listed[0]['id'], 'propertyId' => (string) self::PROPERTY]);

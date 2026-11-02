@@ -5,8 +5,8 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Update075: goal events get an event name, and the events flagged before it
- * get conversion rows of their own.
+ * Update075: a goal event's name becomes an event name, and the events flagged
+ * before it get conversion rows of their own.
  *
  * down() is exercised, and up() runs again after it, so the database the suite
  * runs against ends where it started. Both walk every flagged row in raw, which
@@ -46,7 +46,7 @@ final class Update075Test extends TestCase
         }
 
         $this->update = new \OWA\Module\Base\Update\Update075();
-        $this->assertTrue($this->update->up(), 'the column has to be there before a goal event can carry it');
+        $this->assertTrue($this->update->up());
     }
 
     protected function tearDown(): void
@@ -73,31 +73,46 @@ final class Update075Test extends TestCase
             \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
     }
 
-    public function testAGoalEventWithoutAnEventNameGetsOneThatIsUsableAndUnique(): void
+    public function testAGoalEventIsRenamedToAUsableUniqueEventNameAndDownGivesItsNameBack(): void
     {
-        $first  = $this->goal('Bookshop.com-Buy', [['page_path', 'exact', '/a']], null);
-        $second = $this->goal('Bookshop.com Buy', [['page_path', 'exact', '/b']], null);
-        $click  = $this->goal('click', [['page_path', 'exact', '/c']], null);
+        $fine   = $this->goal('Already_fine_75', [['page_path', 'exact', '/z']]);
+        $first  = $this->goal('Bookshop.com-Buy', [['page_path', 'exact', '/a']]);
+        $second = $this->goal('Bookshop.com Buy', [['page_path', 'exact', '/b']]);
+        $click  = $this->goal('click', [['page_path', 'exact', '/c']]);
 
         $this->assertTrue($this->update->up());
+        $this->assertTrue($this->update->up(), 'twice');
 
-        $names = [];
+        $this->assertSame('Already_fine_75', $this->goalName($fine), 'a usable name is left alone');
 
-        foreach ([$first, $second, $click] as $id) {
-            $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row('SELECT event_name FROM owa_goal_event WHERE id = ?', [$id]);
-            $names[] = $row['event_name'];
-            $this->assertSame('', \OWA\Module\Base\Entity\GoalEvent::eventNameProblem($row['event_name']), $row['event_name']);
+        $names = [$this->goalName($first), $this->goalName($second), $this->goalName($click)];
+
+        foreach ($names as $name) {
+            $this->assertSame('', \OWA\Module\Base\Entity\GoalEvent::nameProblem($name), $name);
         }
 
         // The two Bookshop ones are named in id order, which is not creation order.
         sort($names);
         $this->assertSame(['Bookshop_com_Buy', 'Bookshop_com_Buy_2', 'click_2'], $names,
             'a second goal event of the Property cannot share the first one\'s rows, and click is an event OWA collects');
+
+        $before = (array) \OWA\Core\CoreAPI::getSetting('base', 'goal_event_names_before_075');
+        $this->assertSame(['was' => 'click', 'now' => 'click_2'], $before[$click] ?? null);
+        $this->assertArrayNotHasKey($fine, $before);
+
+        $this->assertTrue($this->update->down());
+        $this->assertTrue($this->update->down(), 'twice');
+
+        $this->assertSame('Already_fine_75', $this->goalName($fine));
+        $this->assertSame('Bookshop.com-Buy', $this->goalName($first));
+        $this->assertSame('Bookshop.com Buy', $this->goalName($second));
+        $this->assertSame('click', $this->goalName($click));
+        $this->assertSame([], (array) \OWA\Core\CoreAPI::getSetting('base', 'goal_event_names_before_075'));
     }
 
     public function testAFlaggedEventGetsItsConversionRowAndDownPutsTheFlagBack(): void
     {
-        $this->goal('Contact page', [['page_path', 'exact', '/contact']], 'Contact_page');
+        $this->goal('Contact page', [['page_path', 'exact', '/contact']]);
 
         $met    = $this->event(1, '/contact');
         $missed = $this->event(2, '/pricing');
@@ -119,7 +134,6 @@ final class Update075Test extends TestCase
         $this->assertSame(1, $this->flag($met));
         $this->assertSame(1, $this->flag($missed));
         $this->assertSame([], $this->conversions());
-        $this->assertEmpty((array) \OWA\Core\CoreAPI::dbSingleton()->get_results("SHOW COLUMNS FROM owa_goal_event LIKE 'event_name'"));
     }
 
     /** A flagged page view on this Profile, today. @return array its key */
@@ -158,7 +172,12 @@ final class Update075Test extends TestCase
             "SELECT * FROM owa_event_raw WHERE visitor_id = ? AND event_type <> 'page_view'", [self::VISITOR]));
     }
 
-    private function goal(string $name, array $conditions, ?string $event_name): string
+    private function goalName(string $id): string
+    {
+        return (string) ((array) \OWA\Core\CoreAPI::dbSingleton()->get_row('SELECT name FROM owa_goal_event WHERE id = ?', [$id]))['name'];
+    }
+
+    private function goal(string $name, array $conditions): string
     {
         $entity = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
         $id     = $entity->generateId('goal_event:update075:' . uniqid('', true));
@@ -166,10 +185,6 @@ final class Update075Test extends TestCase
         $entity->setProperties(['id' => $id, 'property_id' => $this->propertyId, 'name' => $name,
             'trigger_event_type' => 'page_view', 'is_active' => 1,
             'creation_date' => \OWA\Core\CoreAPI::getRequestTimestamp()]);
-
-        if ($event_name !== null) {
-            $entity->set('event_name', $event_name);
-        }
 
         $this->assertTrue((bool) $entity->create());
         $this->goals[] = $id;

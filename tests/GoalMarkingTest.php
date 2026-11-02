@@ -246,8 +246,8 @@ final class GoalMarkingTest extends TestCase
     /** An event meeting two goal events adds a conversion row for each. */
     public function testTwoMatchingGoalsAddTwoRows(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ), array( 'name' => 'Thanks page' ) );
-        $this->makeGoal( array( array( 'host', 'exact', 'example.com' ) ), array( 'name' => 'Example host' ) );
+        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ), array( 'name' => 'Thanks_page' ) );
+        $this->makeGoal( array( array( 'host', 'exact', 'example.com' ) ), array( 'name' => 'Example_host' ) );
 
         $events = $this->filter( $this->event( array(
             'page_path' => '/thanks', 'host' => 'example.com' ) ) );
@@ -259,11 +259,11 @@ final class GoalMarkingTest extends TestCase
     }
 
     /**
-     * Two goal events stored under ONE event name add one row. Every row of a
-     * beacon shares its ts, so two would derive one id and the beacon's insert
-     * would fail on its own key.
+     * Two goal events with ONE name add one row. The save refuses a second
+     * one, but a beacon must not depend on that: every row of a beacon shares
+     * its ts, so two would derive one id and its insert would fail on its own key.
      */
-    public function testTwoGoalsUnderOneEventNameAddOneRow(): void
+    public function testTwoGoalsWithOneNameAddOneRow(): void
     {
         $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
         $this->makeGoal( array( array( 'host', 'exact', 'example.com' ) ) );
@@ -345,7 +345,7 @@ final class GoalMarkingTest extends TestCase
 
         $entity->set( 'id', $id );
         $entity->set( 'property_id', $this->propertyId );
-        $entity->set( 'name', $overrides['name'] ?? 'Marking probe' );
+        $entity->set( 'name', $overrides['name'] ?? 'Marking_probe' );
         $entity->set( 'trigger_event_type', array_key_exists( 'trigger_event_type', $overrides )
             ? $overrides['trigger_event_type'] : 'page_view' );
         $entity->set( 'is_active', array_key_exists( 'is_active', $overrides )

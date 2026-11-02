@@ -344,7 +344,7 @@ test.describe('visualizations', () => {
     test('a goal event a funnel cannot count is refused when it is chosen', async ({ page }) => {
         await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
-        const name = 'E2E Unfunnelable ' + Date.now();
+        const name = 'E2E_Unfunnelable_' + Date.now();
 
         await page.fill('input[name="name"]', name);
 

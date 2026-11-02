@@ -290,14 +290,10 @@ final class RealtimeTest extends TestCase
         $this->assertSame(2, $by['NULL']['users'], 'the property-only row and the visitor with none');
     }
 
-    /**
-     * Goal completions are the conversion rows, by goal event: labelled with the
-     * goal event's name, or with the event name where no goal event of the
-     * Property is stored under it any more.
-     */
+    /** Goal completions are the conversion rows, by goal event, including one since deleted. */
     public function testGoalCompletionsAreTheConversionRowsByGoalEvent(): void
     {
-        $this->goals[] = $this->goal('Pricing visit', [['page_path', 'begins', '/pricing']]);
+        $this->goals[] = $this->goal('Pricing_visit', [['page_path', 'begins', '/pricing']]);
 
         $this->event(1, 2, ['page_path' => '/pricing']);
         $this->event(1, 2, ['event_type' => 'Pricing_visit', 'page_path' => '/pricing', 'is_goal_event' => 1]);
@@ -307,7 +303,7 @@ final class RealtimeTest extends TestCase
         $goals = $this->realtime()->summary()['goals'];
 
         $this->assertSame(3, $goals['total']);
-        $this->assertSame([['name' => 'Pricing visit', 'count' => 2], ['name' => 'Gone_goal', 'count' => 1]],
+        $this->assertSame([['name' => 'Pricing_visit', 'count' => 2], ['name' => 'Gone_goal', 'count' => 1]],
             $goals['byGoal']);
     }
 

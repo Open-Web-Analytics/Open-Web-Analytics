@@ -189,10 +189,10 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         /**
-         * Each goal event's conversions are rows named by its event name, so the
-         * grid is the event name over the conversion rows.
+         * Each goal event's conversions are rows named by it, so the grid is the
+         * event name over the conversion rows.
          */
-        test('the Goal Events grid lists the goal event by its event name', async ({ page }) => {
+        test('the Goal Events grid lists the goal event by name', async ({ page }) => {
             const row = page.locator('#goal-events tr', { hasText: 'E2E_Signup_Funnel' });
 
             await expect(row).toHaveCount(1, { timeout: 20_000 });

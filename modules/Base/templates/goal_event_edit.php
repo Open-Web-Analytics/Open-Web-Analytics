@@ -32,29 +32,18 @@ the event, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Name</div>
-        <div class="description">The goal event's name, as reports show it: "Signup Completed" rather than "Goal 3".</div>
+        <?php if ( ! empty( $view->goalEventId ) && ! empty( $owa_ke['name'] ) ):?>
+        <div class="description">Each conversion is stored as an event with this name. It cannot be changed: for another name, create a goal event and switch this one off.</div>
         <div class="field">
-            <input class="owa_largeFormField" type="text" maxlength="255"
+            <code><?php $view->out( $owa_ke['name'] );?></code>
+        </div>
+        <?php else:?>
+        <div class="description">Each conversion is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event is saved.</div>
+        <div class="field">
+            <input class="owa_largeFormField" type="text" maxlength="40"
                    name="<?php echo $view->getNs();?>name"
                    value="<?php $view->out( $owa_ke['name'] ?? '' );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
-        </div>
-    </div>
-
-    <div class="setting">
-        <div class="title">Event name</div>
-        <?php if ( ! empty( $owa_ke['event_name'] ) && ! empty( $view->goalEventId ) ):?>
-        <div class="description">Each conversion is stored as an event with this name, which reports group by. It stays the same when the goal event is renamed.</div>
-        <div class="field">
-            <code><?php $view->out( $owa_ke['event_name'] );?></code>
-        </div>
-        <?php else:?>
-        <div class="description">Each conversion is stored as an event with this name, which reports group by: a letter, then up to 39 letters, digits and underscores. Left empty, it is made from the name. It cannot be changed once the goal event is saved.</div>
-        <div class="field">
-            <input class="owa_largeFormField" type="text" maxlength="40"
-                   name="<?php echo $view->getNs();?>eventName"
-                   value="<?php $view->out( $view->params['eventName'] ?? '' );?>">
-            <span class="validation_error"><?php $view->out( $view->validation_errors['eventName'] ?? '' );?></span>
         </div>
         <?php endif;?>
     </div>

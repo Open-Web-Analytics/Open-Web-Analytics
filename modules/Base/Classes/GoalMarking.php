@@ -17,11 +17,11 @@ namespace OWA\Module\Base\Classes;
  * the page view, even though the materialized events beside it carry the same
  * page.
  *
- * A CONVERSION IS A ROW OF ITS OWN, named by the goal event's event_name and
+ * A CONVERSION IS A ROW OF ITS OWN, named by the goal event's name and
  * flagged is_goal_event = 1, materialized from the event that met it the way
  * session_start is from a page view. The event that met it stays an ordinary
  * event with is_goal_event = 0: flagging both would count the conversion twice.
- * So a goal event's conversions are its event name's rows, and an event meeting
+ * So a goal event's conversions are the rows under its name, and an event meeting
  * two goal events adds two.
  *
  * TESTED AGAINST THE ROW EACH EVENT WILL BECOME (EventRawHandlers::rowFor), not
@@ -98,10 +98,10 @@ class GoalMarking {
                     continue;
                 }
 
-                $name = $goal['event']->eventName();
+                $name = (string) $goal['event']->get( 'name' );
 
                 /*
-                 * One row per event NAME in the set. Every row of one beacon
+                 * One row per NAME in the set. Every row of one beacon
                  * shares its ts, so two of the same name would derive one id and
                  * the set's insert would fail on its own key, losing the beacon.
                  */
@@ -120,7 +120,7 @@ class GoalMarking {
      * goal event's name.
      *
      * @param  object $trigger
-     * @param  string $name     the goal event's event_name
+     * @param  string $name     the goal event's name
      * @return object
      */
     public static function conversion( $trigger, $name ) {

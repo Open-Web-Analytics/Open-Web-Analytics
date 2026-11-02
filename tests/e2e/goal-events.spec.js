@@ -50,8 +50,7 @@ test.describe('goal events', () => {
     });
 
     test('the list, the create, the edit and the delete', async ({ page }) => {
-        const name = 'E2E Signup ' + Date.now();
-        const renamed = name + ' renamed';
+        const name = 'E2E_Signup_' + Date.now();
 
         await gotoAction(page, 'base.goalEvents', `&owa_siteId=${FIXTURE.siteId}`);
 
@@ -108,10 +107,6 @@ test.describe('goal events', () => {
         await expect(row).toContainText('2.50');
         await expect(row).toContainText('Active');
 
-        // Left empty, the event name is made from the name.
-        const eventName = name.replace(/ /g, '_');
-        await expect(row).toContainText(eventName);
-
         // --- EDIT --------------------------------------------------------------
         const editHref = await row.locator('a[href*="base.goalEventEdit"]').first()
             .getAttribute('href');
@@ -123,16 +118,13 @@ test.describe('goal events', () => {
         await gotoAction(page, 'base.goalEventEdit',
             `&owa_siteId=${FIXTURE.siteId}&owa_goalEventId=${id}`);
 
-        // It came back carrying what was saved, not a blank form.
-        await expect(page.locator('input[name="name"]')).toHaveValue(name);
+        // It came back carrying what was saved, not a blank form. The name is
+        // shown, not offered: its conversions are already stored under it.
+        await expect(page.locator('input[name="name"]')).toHaveCount(0);
+        await expect(page.locator('form[name="owa_goalEvent"] code', { hasText: name })).toHaveCount(1);
         await expect(page.locator('input[name="conditionValue[]"]')).toHaveValue('/thanks');
 
-        // A saved goal event's event name is shown, not offered: its conversions
-        // are already stored under it.
-        await expect(page.locator('input[name="eventName"]')).toHaveCount(0);
-        await expect(page.locator('form[name="owa_goalEvent"] code', { hasText: eventName })).toHaveCount(1);
-
-        await page.fill('input[name="name"]', renamed);
+        await page.fill('input[name="value"]', '3.75');
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
@@ -140,13 +132,8 @@ test.describe('goal events', () => {
         ]);
 
         await expect(
-            page.locator('table.management tbody tr', { hasText: renamed })
-        ).toHaveCount(1);
-
-        // Renamed, it keeps its event name.
-        await expect(
-            page.locator('table.management tbody tr', { hasText: renamed })
-        ).toContainText(eventName);
+            page.locator('table.management tbody tr', { hasText: name })
+        ).toContainText('3.75');
 
         // Edited, not duplicated: the id is carried through the form, so saving
         // twice has to update one row rather than leave two behind.
@@ -165,8 +152,24 @@ test.describe('goal events', () => {
         await confirmAndWait(page, page.locator('input[value="Delete Goal Event"]'));
 
         await expect(
-            page.locator('table.management tbody tr', { hasText: renamed })
+            page.locator('table.management tbody tr', { hasText: name })
         ).toHaveCount(0);
+    });
+
+    /** A name is an event name, because each conversion is stored as an event under it. */
+    test('a name that is not an event name is refused', async ({ page }) => {
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        await page.fill('input[name="name"]', 'Signup completed');
+        await page.fill('input[name="conditionValue[]"]', '/thanks');
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        await expect(page.locator('input[name="name"]')).toHaveValue('Signup completed');
+        await expect(page.locator('.validation_error', { hasText: 'A name starts with a letter' })).toHaveCount(1);
     });
 
     /**
@@ -222,7 +225,7 @@ test.describe('goal events', () => {
      * condition to whatever came first in the list.
      */
     test('a saved property the new event does not carry is kept and flagged', async ({ page }) => {
-        const name = 'E2E Tagged ' + Date.now();
+        const name = 'E2E_Tagged_' + Date.now();
 
         await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
         await page.fill('input[name="name"]', name);
@@ -272,7 +275,7 @@ test.describe('goal events', () => {
     test('a refused save does not flag a valid property', async ({ page }) => {
         await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
-        await page.fill('input[name="name"]', 'E2E Refused ' + Date.now());
+        await page.fill('input[name="name"]', 'E2E_Refused_' + Date.now());
         const fresh = page.locator('.owa_goalCondition').first();
         await choose(fresh, 'select.owa_goalProperty', 'Source (from the URL)');
 
@@ -359,7 +362,7 @@ test.describe('goal events', () => {
     test('a condition with no value is refused', async ({ page }) => {
         await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
-        await page.fill('input[name="name"]', 'E2E No Condition');
+        await page.fill('input[name="name"]', 'E2E_No_Condition');
         await page.fill('input[name="conditionValue[]"]', '');
 
         await Promise.all([
@@ -368,7 +371,7 @@ test.describe('goal events', () => {
         ]);
 
         // Still on the form, carrying what was typed rather than a blank one.
-        await expect(page.locator('input[name="name"]')).toHaveValue('E2E No Condition');
+        await expect(page.locator('input[name="name"]')).toHaveValue('E2E_No_Condition');
     });
 
 });

@@ -16,10 +16,11 @@ namespace OWA\Module\Base\Update;
  * the goal event (Classes\GoalMarking), and the event that met it keeps 0.
  *
  * up():
- *   - owa_goal_event gets event_name, the name its conversion rows carry, made
- *     from each goal event's name (GoalEvent::eventNameFrom()). One that is not
- *     a usable event name, or that another goal event of the Property already
- *     has, gets a number on the end.
+ *   - A goal event's name becomes the event name its conversion rows carry, so
+ *     one that is not a custom event name is renamed (GoalEvent::nameFrom()).
+ *     One that another goal event of the Property already has, or that OWA
+ *     collects, gets a number on the end. The names it had are kept in the
+ *     goal_event_names_before_075 setting for down().
  *   - Each flagged row in raw gets a conversion row for every goal event of its
  *     Property it meets, active or not, and its flag goes to 0. A flagged row
  *     that meets none -- its goal event was deleted or changed -- keeps its
@@ -39,18 +40,14 @@ class Update075 extends \OWA\Core\Update {
 
     const BATCH = 500;
 
+    /** The setting that keeps each renamed goal event's name: id => array( 'was', 'now' ). */
+    const BEFORE = 'goal_event_names_before_075';
+
     function up( $force = false ) {
 
-        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $this->goals = array();
 
-        if ( $this->addColumnIfMissing( $goal, 'event_name' ) === false ) {
-
-            $this->e->notice( sprintf( 'Adding %s.event_name failed', $goal->getTableName() ) );
-
-            return false;
-        }
-
-        if ( ! $this->nameGoalEvents() ) {
+        if ( ! $this->renameGoalEvents() ) {
 
             return false;
         }
@@ -58,8 +55,13 @@ class Update075 extends \OWA\Core\Update {
         return $this->convertFlaggedRows();
     }
 
-    /** The exact inverse: each conversion row flags the event it was made from again, and goes. */
+    /**
+     * The exact inverse: each conversion row flags the event it was made from
+     * again, and goes; then the goal events get back the names they had.
+     */
     function down() {
+
+        $this->goals = array();
 
         $db  = \OWA\Core\CoreAPI::dbSingleton();
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
@@ -93,53 +95,76 @@ class Update075 extends \OWA\Core\Update {
             }
         }
 
-        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName();
 
-        if ( $this->dropColumnIfPresent( $goal, 'event_name' ) === false ) {
+        foreach ( (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE ) as $id => $names ) {
 
-            $this->e->notice( sprintf( 'Dropping %s.event_name failed', $goal->getTableName() ) );
+            // Matched on the name it was given, so a goal event made since is left alone.
+            if ( $db->query( sprintf( 'UPDATE %s SET name = ? WHERE id = ? AND name = ?', $table ),
+                    array( $names['was'], $id, $names['now'] ) ) === false ) {
 
-            return false;
+                return false;
+            }
         }
+
+        \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, array() );
+        \OWA\Module\Base\Classes\GoalMarking::forget();
 
         return true;
     }
 
-    /** Give every goal event without one an event name, unique within its Property. */
-    private function nameGoalEvents() {
+    /** Rename every goal event whose name is not a usable event name, unique within its Property. */
+    private function renameGoalEvents() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName();
+        $rows  = (array) $db->get_results( sprintf( 'SELECT id, property_id, name FROM %s ORDER BY id', $table ) );
 
+        // Case-blind, like the column's collation: Contact and contact would group as one event.
         $taken = array();
 
-        foreach ( (array) $db->get_results( sprintf(
-                "SELECT property_id, event_name FROM %s WHERE event_name IS NOT NULL AND event_name <> ''", $table ) ) as $row ) {
+        foreach ( $rows as $row ) {
 
-            $taken[ (string) $row['property_id'] ][ (string) $row['event_name'] ] = true;
+            if ( \OWA\Module\Base\Entity\GoalEvent::nameProblem( $row['name'] ) === '' ) {
+
+                $taken[ (string) $row['property_id'] ][ strtolower( $row['name'] ) ] = (string) $row['id'];
+            }
         }
 
-        foreach ( (array) $db->get_results( sprintf(
-                "SELECT id, property_id, name FROM %s WHERE event_name IS NULL OR event_name = '' ORDER BY id", $table ) ) as $row ) {
+        $before = (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE );
 
+        foreach ( $rows as $row ) {
+
+            $id       = (string) $row['id'];
             $property = (string) $row['property_id'];
-            $base     = \OWA\Module\Base\Entity\GoalEvent::eventNameFrom( $row['name'] );
-            $name     = $base;
 
-            for ( $n = 2; \OWA\Module\Base\Entity\GoalEvent::eventNameProblem( $name ) !== '' || isset( $taken[ $property ][ $name ] ); $n++ ) {
+            if ( ( $taken[ $property ][ strtolower( $row['name'] ) ] ?? null ) === $id ) {
+
+                continue;
+            }
+
+            $base = \OWA\Module\Base\Entity\GoalEvent::nameFrom( $row['name'] );
+            $name = $base;
+
+            for ( $n = 2; \OWA\Module\Base\Entity\GoalEvent::nameProblem( $name ) !== '' || isset( $taken[ $property ][ strtolower( $name ) ] ); $n++ ) {
 
                 $name = substr( $base, 0, 40 - strlen( '_' . $n ) ) . '_' . $n;
             }
 
-            $taken[ $property ][ $name ] = true;
+            $taken[ $property ][ strtolower( $name ) ] = $id;
+            $before[ $id ] = array( 'was' => (string) $row['name'], 'now' => $name );
 
-            if ( $db->query( sprintf( 'UPDATE %s SET event_name = ? WHERE id = ?', $table ),
-                    array( $name, $row['id'] ) ) === false ) {
+            // Kept before the rename, so a run that stops between the two can still be undone.
+            \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, $before );
 
-                $this->e->notice( sprintf( 'Naming goal event %s failed', $row['id'] ) );
+            if ( $db->query( sprintf( 'UPDATE %s SET name = ? WHERE id = ?', $table ), array( $name, $id ) ) === false ) {
+
+                $this->e->notice( sprintf( 'Renaming goal event %s failed', $id ) );
 
                 return false;
             }
+
+            $this->e->notice( sprintf( 'Goal event "%s" is now %s.', $row['name'], $name ) );
         }
 
         // The goal events were read through the entity cache before this.
@@ -170,7 +195,7 @@ class Update075 extends \OWA\Core\Update {
 
                     if ( $goal['event']->matchesRow( $row, $goal['conditions'] ) ) {
 
-                        $names[ $goal['event']->eventName() ] = true;
+                        $names[ (string) $goal['event']->get( 'name' ) ] = true;
                     }
                 }
 
@@ -284,12 +309,12 @@ class Update075 extends \OWA\Core\Update {
         return $this->goals[ $site_id ];
     }
 
-    /** The goal event of a Profile's Property stored under an event name, or null. */
+    /** The goal event of a Profile's Property with a name, or null. */
     private function goalNamed( $site_id, $event_name ) {
 
         foreach ( $this->goalEventsOf( $site_id ) as $goal ) {
 
-            if ( $goal['event']->eventName() === $event_name ) {
+            if ( (string) $goal['event']->get( 'name' ) === $event_name ) {
 
                 return $goal['event'];
             }
