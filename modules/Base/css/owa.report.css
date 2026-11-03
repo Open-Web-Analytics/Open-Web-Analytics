@@ -4860,6 +4860,29 @@ li.constraintRow {
     #owa_reportPeriodFiltersContainer .owa_reportPeriodPresets { order: -1; }
     #owa_reportPeriodFiltersContainer .ui-datepicker { width: 100%; box-sizing: border-box; }
 
+    /* Type a phone can read, and rows a thumb can hit. A form control under
+       16px makes iOS zoom the page when it is tapped. */
+    .owa_reportPeriodLabelText { padding: 10px 4px; font-size: 16px; }
+    #owa_reportPeriodFiltersContainer { font-size: 15px; }
+    #owa_reportPeriodFiltersContainer th { font-size: 16px; text-align: left; }
+    #owa_reportPeriodFiltersContainer input[type="text"],
+    #owa_reportPeriodFiltersContainer select { font-size: 16px; padding: 6px 8px; }
+    #owa_reportPeriodFiltersContainer select { width: 100%; min-height: 44px; }
+    #owa_reportPeriodFilterSubmit { width: 100%; min-height: 44px; font-size: 16px; }
+    #owa_reportPeriodFiltersContainer .ui-datepicker { font-size: 16px; }
+    #owa_reportPeriodFiltersContainer .ui-datepicker td a { padding: 0.5em 0.3em; text-align: center; }
+
+    .owa_siteControl {
+        --owa-text-xs: 13px;
+        --owa-text-sm: 15px;
+        --owa-text-lg: 17px;
+    }
+    .owa_siteControlOrg { font-size: 12px; }
+    .owa_siteControlCaret { font-size: 14px; }
+    .owa_siteControlSummary { padding: 10px 28px 10px 12px; }
+    .owa_siteControlItem { padding: 12px; min-height: 44px; box-sizing: border-box; }
+    .owa_siteControlColumnHead { padding: 10px 12px; }
+
     /* Its 480px floor keeps the measure on a desktop; on a phone it is wider
        than the screen. */
     .owa_hierarchyContent #panel { padding: 14px; min-width: 0; }
