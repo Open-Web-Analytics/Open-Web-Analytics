@@ -128,6 +128,13 @@ if ( ! defined( 'OWA_SQL_REORGANIZE_PARTITION' ) ) { define('OWA_SQL_REORGANIZE_
  */
 if ( ! defined( 'OWA_SQL_EXCHANGE_PARTITION' ) ) { define('OWA_SQL_EXCHANGE_PARTITION', 'ALTER TABLE %s EXCHANGE PARTITION %s WITH TABLE %s'); }
 if ( ! defined( 'OWA_SQL_REMOVE_PARTITIONING' ) ) { define('OWA_SQL_REMOVE_PARTITIONING', 'ALTER TABLE %s REMOVE PARTITIONING'); }
+/*
+ * How long a statement waits for a table's metadata lock: the wait a partition
+ * change is bounded by (Db::changePartitions()). The unit is seconds, and the
+ * server's default is a year.
+ */
+if ( ! defined( 'OWA_SQL_GET_LOCK_WAIT' ) ) { define('OWA_SQL_GET_LOCK_WAIT', 'SELECT @@SESSION.lock_wait_timeout AS seconds'); }
+if ( ! defined( 'OWA_SQL_SET_LOCK_WAIT' ) ) { define('OWA_SQL_SET_LOCK_WAIT', 'SET SESSION lock_wait_timeout = %d'); }
 if ( ! defined( 'OWA_SQL_TRUNCATE_TABLE' ) ) { define('OWA_SQL_TRUNCATE_TABLE', 'TRUNCATE TABLE %s'); }
 if ( ! defined( 'OWA_SQL_SHOW_CREATE_TABLE' ) ) { define('OWA_SQL_SHOW_CREATE_TABLE', 'SHOW CREATE TABLE %s'); }
 if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' ) ) { define('OWA_SQL_CREATE_TABLE_LIKE', 'CREATE TABLE %s LIKE %s'); }

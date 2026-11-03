@@ -993,6 +993,52 @@ final class CubeBuildTest extends TestCase
     }
 
     /**
+     * A report reading the cube holds the swap off for a bounded time only.
+     *
+     * The other connection is a report query still open on the cube. The swap
+     * gives up rather than waiting it out -- every report query arriving while
+     * it waited would queue behind it -- and the cube is left as it was for
+     * the next run. The session limit is cut to a second to keep this quick.
+     */
+    public function testASwapGivesUpWhileAReportReadsTheCube(): void
+    {
+        $other = mysqli_init();
+        if (!@mysqli_real_connect($other, OWA_DB_HOST, OWA_DB_USER, OWA_DB_PASSWORD, OWA_DB_NAME, (int) OWA_DB_PORT)) {
+            $this->markTestSkipped('needs a second connection');
+        }
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $found = (int) $db->get_row('SELECT @@SESSION.lock_wait_timeout AS s')['s'];
+        $ts    = $this->t0 + 300000000;
+        $id    = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::VISITOR_DIRECT, 8881000000000003, $ts, 'click');
+
+        $this->seed('click', self::VISITOR_DIRECT, 8881000000000003, $ts, ['page_path' => '/direct']);
+
+        try {
+            $other->begin_transaction();
+            $other->query(sprintf('SELECT id FROM %s LIMIT 1', $this->cube()));
+
+            $db->query('SET SESSION lock_wait_timeout = 1');
+
+            $result = $this->today(new \OWA\Module\Base\Classes\Cube\Builder(self::PROPERTY));
+
+            $this->assertFalse($result['ok']);
+            $this->assertSame('the cube was in use; the next run swaps it', $result['error']);
+
+        } finally {
+            $other->rollback();
+            $other->close();
+            $db->query(sprintf('SET SESSION lock_wait_timeout = %d', $found));
+        }
+
+        $this->assertFalse($this->inCube($id), 'the cube is as it was');
+
+        $this->rebuild();
+
+        $this->assertTrue($this->inCube($id), 'the next run swaps it');
+    }
+
+    /**
      * new_vs_returning is stamped as the LABEL a report groups by.
      *
      * Asserted on the stored strings rather than on a flag, because the label

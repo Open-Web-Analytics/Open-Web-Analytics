@@ -1928,7 +1928,90 @@ class Db extends \OWA\Core\Base {
             return false;
         }
 
-        return $this->query( sprintf( OWA_SQL_DROP_PARTITION, $table_name, $partition ) );
+        return $this->changePartitions( $table_name, sprintf( OWA_SQL_DROP_PARTITION, $table_name, $partition ) );
+    }
+
+    /**
+     * Seconds a partition change waits for its table before giving up.
+     *
+     * An ALTER TABLE needs the table's exclusive metadata lock, so it waits for
+     * every statement already running on the table -- a report query, a cube
+     * build's read, a dump. While it waits, every statement that arrives after
+     * it queues behind it, and on owa_event_raw that is every beacon. The
+     * server's own limit (lock_wait_timeout) is a year by default.
+     */
+    const PARTITION_CHANGE_WAIT = 5;
+
+    /** @var bool the last partition change gave up waiting for its table */
+    protected $partition_change_busy = false;
+
+    /**
+     * Whether the last partition change was not made because its table was in use.
+     *
+     * Nothing was changed when this is true -- the statement never got the
+     * lock -- so the caller can try again later.
+     *
+     * @return bool
+     */
+    function lastPartitionChangeWasBusy() {
+
+        return $this->partition_change_busy;
+    }
+
+    /**
+     * Run a statement that changes a table's partitions, waiting at most
+     * PARTITION_CHANGE_WAIT seconds for the table.
+     *
+     * The connection is shared -- the scheduler runs ingest and the cube build
+     * on it after the rotate -- so its own limit is put back afterwards. A
+     * limit already shorter is left as it is.
+     *
+     * @param string $table_name  for the message
+     * @param string $sql
+     * @return mixed  query()'s result
+     */
+    protected function changePartitions( $table_name, $sql ) {
+
+        $this->partition_change_busy = false;
+
+        $previous = null;
+
+        if ( defined( 'OWA_SQL_GET_LOCK_WAIT' ) && defined( 'OWA_SQL_SET_LOCK_WAIT' ) ) {
+
+            $row = $this->get_row( OWA_SQL_GET_LOCK_WAIT );
+
+            if ( is_array( $row ) && is_numeric( $row['seconds'] )
+              && (int) $row['seconds'] > self::PARTITION_CHANGE_WAIT
+              && $this->query( sprintf( OWA_SQL_SET_LOCK_WAIT, self::PARTITION_CHANGE_WAIT ) ) !== false ) {
+
+                $previous = (int) $row['seconds'];
+            }
+        }
+
+        try {
+
+            $result = $this->query( $sql );
+
+            // 1205, which MySQL and MariaDB both spell this way, for a
+            // metadata lock as for a row lock.
+            if ( $result === false && stripos( $this->last_query_error, 'Lock wait timeout exceeded' ) !== false ) {
+
+                $this->partition_change_busy = true;
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    '%s was in use for %d second(s), so its partitions were not changed. The next run tries again.',
+                    $table_name, self::PARTITION_CHANGE_WAIT ) );
+            }
+
+            return $result;
+
+        } finally {
+
+            if ( $previous !== null ) {
+
+                $this->query( sprintf( OWA_SQL_SET_LOCK_WAIT, $previous ) );
+            }
+        }
     }
 
     /**
@@ -1965,7 +2048,7 @@ class Db extends \OWA\Core\Base {
             $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
         }
 
-        return $this->query( sprintf(
+        return $this->changePartitions( $table_name, sprintf(
             OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $from ), implode( ', ', $parts )
         ) );
     }
@@ -2243,7 +2326,7 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        return (bool) $this->query( sprintf(
+        return (bool) $this->changePartitions( $table_name, sprintf(
             OWA_SQL_EXCHANGE_PARTITION, $table_name, $partition, $with_table ) );
     }
 
@@ -2719,7 +2802,7 @@ class Db extends \OWA\Core\Base {
 
         $replacement = sprintf( OWA_DTD_PARTITION_LESS_THAN, 'p' . $start, $less_than );
 
-        return (bool) $this->query( sprintf(
+        return (bool) $this->changePartitions( $table_name, sprintf(
             OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $names ), $replacement
         ) );
     }
@@ -2932,7 +3015,7 @@ class Db extends \OWA\Core\Base {
             $parts[] = sprintf( OWA_DTD_PARTITION_LESS_THAN, $name, $less_than );
         }
 
-        return (bool) $this->query( sprintf(
+        return (bool) $this->changePartitions( $table_name, sprintf(
             OWA_SQL_REORGANIZE_PARTITION, $table_name, implode( ',', $names ), implode( ', ', $parts )
         ) );
     }
@@ -3231,7 +3314,7 @@ class Db extends \OWA\Core\Base {
             OWA_SQL_REORGANIZE_PARTITION, $table_name, $catch_all, implode( ', ', $parts )
         );
 
-        if ( $this->query( $sql ) ) {
+        if ( $this->changePartitions( $table_name, $sql ) ) {
 
             $result['added'] = array_keys( $ranges );
         }
