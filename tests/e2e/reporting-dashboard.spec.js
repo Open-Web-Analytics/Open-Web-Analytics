@@ -72,26 +72,41 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * The Events card comes before Top Content and beside it, under a full-width
-     * Site Metrics, counting events by name with a link to the Events report.
-     * Paired on one row so the three small cards after them still fill theirs
-     * at the widths where a 3-column card is widened to 4.
+     * Under a full-width Site Metrics: Events, Visitor Types and Channels a third
+     * each on one row, then Top Content and Top Referrers a half each on the next.
+     * Measured at 1280, wide enough that a third is not promoted to a half.
      */
-    test('the events card sits before top content and links to the events report', async ({ page }) => {
+    test('the dashboard rows are three cards and then two', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 900 });
+        await expect(page.locator('#event-names .owa_gridTable')).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator('#top-pages .owa_gridTable')).toBeVisible();
+
+        const box = async (id) => page.locator(`#${id}`).locator('xpath=..').boundingBox();
+        const rows = [
+            ['event-names', 'visitor-types', 'visitor-mediums'],
+            ['top-pages', 'top-referers'],
+        ];
+        const tops = [];
+        for (const ids of rows) {
+            const boxes = await Promise.all(ids.map(box));
+            for (let i = 1; i < boxes.length; i++) {
+                expect(Math.abs(boxes[i].y - boxes[0].y), `${ids[i]} shares a row with ${ids[0]}`).toBeLessThan(2);
+                expect(boxes[i].x, `${ids[i]} sits right of ${ids[i - 1]}`).toBeGreaterThan(boxes[i - 1].x);
+                expect(Math.abs(boxes[i].width - boxes[0].width), `${ids[i]} is as wide as ${ids[0]}`).toBeLessThan(2);
+            }
+            tops.push(boxes[0]);
+        }
+        expect(tops[1].y, 'Top Content is on the row after Events').toBeGreaterThan(tops[0].y + tops[0].height - 2);
+        expect(tops[1].width, 'a half is wider than a third').toBeGreaterThan(tops[0].width * 1.3);
+    });
+
+    /**
+     * The Events card counts events by name with a link to the Events report.
+     */
+    test('the events card counts events by name and links to the events report', async ({ page }) => {
         const names = page.locator('#event-names');
 
         await expect(names.locator('.owa_gridTable')).toBeVisible({ timeout: 20_000 });
-
-        const before = await names.evaluate((el) => {
-            const other = document.getElementById('top-pages');
-            return !!(el.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING);
-        });
-        expect(before, 'Events is placed before Top Content').toBe(true);
-
-        const a = await names.boundingBox();
-        const b = await page.locator('#top-pages').boundingBox();
-        expect(Math.abs(a.y - b.y), 'Events and Top Content share a row').toBeLessThan(2);
-        expect(a.x).toBeLessThan(b.x);
 
         if (process.env.OWA_DASH_SCREENSHOT) {
             await page.screenshot({ path: process.env.OWA_DASH_SCREENSHOT, fullPage: true });
