@@ -304,6 +304,12 @@
         flex: 1 1 auto;
         width: auto;
     }
+
+    /* Type a phone can read, and links a thumb can hit. */
+    .owa_navShell .owa_railItem { font-size: 12px; }
+    .owa_navColumnTitle { font-size: 19px; }
+    .owa_navColumnHeading { font-size: 13px; }
+    .owa_navShell .owa_navColumnItem { padding: 12px; font-size: 16px; }
 }
 
 /* ---------------------------------------------------------------------------

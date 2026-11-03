@@ -208,6 +208,58 @@ test.describe('on a phone', () => {
         }
     });
 
+    /**
+     * The menu, the Property chooser and the date range panel at phone sizes:
+     * nothing in them below 12px, a menu link or a Property row at least 44px
+     * tall, and every form control in the date panel at 16px, below which iOS
+     * zooms the page when one is tapped.
+     */
+    test('the menu, Property chooser and date range panel are sized for a phone', async ({ page }) => {
+        const px = (loc) => loc.evaluateAll((els) => els
+            .filter((el) => el.offsetParent !== null && el.textContent.trim() !== '')
+            .map((el) => ({
+                text: el.textContent.trim().slice(0, 30),
+                size: parseFloat(getComputedStyle(el).fontSize),
+                height: el.getBoundingClientRect().height,
+            })));
+
+        await page.goto(report('pages'), { waitUntil: 'networkidle' });
+        await page.locator('.owa_reportNavToggle').click();
+        const rail = page.locator('#owa_reportNavRail');
+        await expect.poll(async () => (await rail.boundingBox()).x).toBe(0);
+        await page.locator('#owa_siteControlSummary').click();
+        await expect(page.locator('.owa_siteControlProperties')).toBeVisible();
+
+        const text = await px(rail.locator('.owa_railItem, .owa_navColumnItem, .owa_navColumnTitle, '
+            + '.owa_siteControlOrg, .owa_siteControlProperty, .owa_siteControlDomain, '
+            + '.owa_siteControlColumnHead, .owa_siteControlItemName, .owa_siteControlAdd'));
+        expect(text.length).toBeGreaterThan(10);
+        for (const t of text) {
+            expect(t.size, `"${t.text}" is ${t.size}px`).toBeGreaterThanOrEqual(12);
+        }
+
+        for (const t of await px(rail.locator('.owa_navColumnItem, .owa_siteControlItem'))) {
+            expect(t.height, `"${t.text}" is ${t.height}px tall`).toBeGreaterThanOrEqual(44);
+        }
+
+        await page.goto(report('pages'), { waitUntil: 'networkidle' });
+        await openPicker(page);
+        const panel = page.locator('#owa_reportPeriodFiltersContainer');
+        const controls = await panel.locator('input, select').evaluateAll((els) => els
+            .filter((el) => el.offsetParent !== null)
+            .map((el) => ({ id: el.id, size: parseFloat(getComputedStyle(el).fontSize) })));
+        expect(controls.length).toBe(4);
+        for (const c of controls) {
+            expect(c.size, `#${c.id} is ${c.size}px`).toBeGreaterThanOrEqual(16);
+        }
+
+        const days = await px(panel.locator('.ui-datepicker td a'));
+        expect(days.length).toBeGreaterThan(27);
+        for (const d of days) {
+            expect(d.size, `day ${d.text} is ${d.size}px`).toBeGreaterThanOrEqual(14);
+        }
+    });
+
     test('a form laid out as a table stacks each label above its field', async ({ page }) => {
         await page.goto(`?owa_do=base.sitesProfile&owa_siteId=${S}`, { waitUntil: 'networkidle' });
 
