@@ -791,6 +791,16 @@ class Builder {
         if ( ! $this->db->exchangePartition(
                 $this->tables['target'], $span['name'], $this->tables['staging'] ) ) {
 
+            // A report was reading the cube for longer than the swap may wait.
+            if ( $this->db->lastPartitionChangeWasBusy() ) {
+
+                $result['error'] = 'the cube was in use; the next run swaps it';
+
+                $this->dropWorkingTables();
+
+                return $result;
+            }
+
             /*
              * The likely cause is worth naming, because the message is all
              * anyone gets: a column added to this table instantly -- MySQL 8's

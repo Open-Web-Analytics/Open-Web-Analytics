@@ -2141,4 +2141,116 @@ final class PartitionOperationsTest extends TestCase
             'the lead must survive the sequence'
         );
     }
+
+    /**
+     * A second connection that has read the table and not committed, which
+     * holds its metadata lock the way a running report or cube read does.
+     */
+    private function holdTable(string $table): \mysqli
+    {
+        $other = mysqli_init();
+        if (!@mysqli_real_connect($other, OWA_DB_HOST, OWA_DB_USER, OWA_DB_PASSWORD, OWA_DB_NAME, (int) OWA_DB_PORT)) {
+            $this->markTestSkipped('needs a second connection');
+        }
+
+        $other->begin_transaction();
+        $other->query(sprintf('SELECT * FROM %s LIMIT 1', $table));
+
+        return $other;
+    }
+
+    private function lockWait(): int
+    {
+        return (int) \OWA\Core\CoreAPI::dbSingleton()->get_row('SELECT @@SESSION.lock_wait_timeout AS s')['s'];
+    }
+
+    /**
+     * A partition change waits a few seconds for a table in use, then gives up
+     * and changes nothing.
+     *
+     * Waiting is what stalls ingest: every insert into the table queues behind
+     * an ALTER that is waiting for the lock. The server's limit is a year, so
+     * the session's is set to 30 seconds here -- without the bound this test
+     * fails on the time rather than hanging the suite.
+     */
+    public function testAPartitionChangeGivesUpWhileTheTableIsInUse()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $month = date('Ym') . '01';
+        $start = date('Ymd', strtotime($month . ' -3 months'));
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges($start, $start, 'monthly'));
+        $before = $this->partitionNames($t);
+
+        $found = $this->lockWait();
+        $db->query('SET SESSION lock_wait_timeout = 30');
+        $other = $this->holdTable($t);
+
+        try {
+            $began = microtime(true);
+            $dropped = $db->dropPartition($t, $before[0]);
+            // MySQL gives up after the bound; MariaDB 10.11 after twice it.
+            $this->assertLessThan(20, microtime(true) - $began, 'waited for the table');
+            $this->assertFalse((bool) $dropped);
+            $this->assertTrue($db->lastPartitionChangeWasBusy());
+
+            $extended = $db->extendPartitions($t, 'monthly', \OWA\Core\Db::partitionLeadBoundary());
+            $this->assertSame(array(), $extended['added']);
+            $this->assertTrue($db->lastPartitionChangeWasBusy());
+
+            $this->assertSame($before, $this->partitionNames($t), 'nothing was changed');
+            $this->assertSame(30, $this->lockWait(), 'the session keeps its own limit');
+
+        } finally {
+            $other->rollback();
+            $other->close();
+        }
+
+        try {
+            $extended = $db->extendPartitions($t, 'monthly', \OWA\Core\Db::partitionLeadBoundary());
+            $this->assertNotEmpty($extended['added'], 'free again, the change is made');
+            $this->assertFalse($db->lastPartitionChangeWasBusy());
+            $this->assertSame(30, $this->lockWait());
+        } finally {
+            $db->query(sprintf('SET SESSION lock_wait_timeout = %d', $found));
+        }
+    }
+
+    /**
+     * A session limit already shorter than the bound is the one that applies,
+     * and stays. The swap a cube build makes goes the same way: EXCHANGE
+     * PARTITION is a partition change too, held up by a long report query.
+     */
+    public function testAShorterLimitIsLeftAsItIs()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20260101, 20260315, 'monthly'));
+
+        $staging = $t . '_x';
+        $this->tables[] = $staging;
+        $db->query(sprintf('CREATE TABLE %s LIKE %s', $staging, $t));
+        $db->query(sprintf('ALTER TABLE %s REMOVE PARTITIONING', $staging));
+
+        $found = $this->lockWait();
+        $db->query('SET SESSION lock_wait_timeout = 1');
+        $other = $this->holdTable($t);
+
+        try {
+            $began = microtime(true);
+            $this->assertFalse($db->exchangePartition($t, 'p20260101', $staging));
+            $this->assertLessThan(\OWA\Core\Db::PARTITION_CHANGE_WAIT, microtime(true) - $began, 'the shorter limit applied');
+            $this->assertTrue($db->lastPartitionChangeWasBusy());
+            $this->assertSame(1, $this->lockWait());
+        } finally {
+            $other->rollback();
+            $other->close();
+            $db->query(sprintf('SET SESSION lock_wait_timeout = %d', $found));
+        }
+
+        $this->assertTrue($db->exchangePartition($t, 'p20260101', $staging));
+        $this->assertFalse($db->lastPartitionChangeWasBusy());
+    }
 }
