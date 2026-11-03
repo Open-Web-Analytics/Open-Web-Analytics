@@ -22,7 +22,7 @@
             "id": "eventNames",
             "container": "event-names",
             "title": "Events",
-            "colspan": 6,
+            "colspan": 4,
             "query": {
                 "metrics": "eventCount",
                 "dimensions": "eventName",
@@ -30,6 +30,32 @@
             },
             "more": {
                 "reportId": "events"
+            }
+        },
+        {
+            "type": "pie",
+            "id": "visitorTypes",
+            "container": "visitor-types",
+            "title": "Visitor Types",
+            "colspan": 4,
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "newVsReturning",
+                "sort": "sessions-"
+            },
+            "chartMetric": "sessions"
+        },
+        {
+            "type": "pie",
+            "id": "visitorMediums",
+            "container": "visitor-mediums",
+            "title": "Channels",
+            "colspan": 4,
+            "chartMetric": "sessions",
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "attributedChannel",
+                "sort": "sessions-"
             }
         },
         {
@@ -60,37 +86,11 @@
             ]
         },
         {
-            "type": "pie",
-            "id": "visitorTypes",
-            "container": "visitor-types",
-            "title": "Visitor Types",
-            "colspan": 3,
-            "query": {
-                "metrics": "sessions",
-                "dimensions": "newVsReturning",
-                "sort": "sessions-"
-            },
-            "chartMetric": "sessions"
-        },
-        {
-            "type": "pie",
-            "id": "visitorMediums",
-            "container": "visitor-mediums",
-            "title": "Channels",
-            "colspan": 3,
-            "chartMetric": "sessions",
-            "query": {
-                "metrics": "sessions",
-                "dimensions": "attributedChannel",
-                "sort": "sessions-"
-            }
-        },
-        {
             "type": "grid-card",
             "id": "topReferrers",
             "container": "top-referers",
             "title": "Top Referrers",
-            "colspan": 3,
+            "colspan": 6,
             "constraints": [
                 {
                     "dimension": "sessionMedium",
