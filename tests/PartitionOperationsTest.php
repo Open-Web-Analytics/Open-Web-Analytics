@@ -2190,7 +2190,8 @@ final class PartitionOperationsTest extends TestCase
         try {
             $began = microtime(true);
             $dropped = $db->dropPartition($t, $before[0]);
-            $this->assertLessThan(10, microtime(true) - $began, 'waited for the table');
+            // MySQL gives up after the bound; MariaDB 10.11 after twice it.
+            $this->assertLessThan(20, microtime(true) - $began, 'waited for the table');
             $this->assertFalse((bool) $dropped);
             $this->assertTrue($db->lastPartitionChangeWasBusy());
 
