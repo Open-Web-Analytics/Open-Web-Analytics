@@ -960,8 +960,9 @@ final class CubeBuildTest extends TestCase
     public function testTheBuildLeavesTheConnectionAtTheLevelItFound(): void
     {
         $db    = \OWA\Core\CoreAPI::dbSingleton();
+        // MariaDB before 11.1 has only tx_isolation; MySQL 8 has only transaction_isolation.
         $level = function () use ($db): string {
-            return $db->get_row('SELECT @@SESSION.transaction_isolation AS l')['l'];
+            return $db->get_row("SHOW SESSION VARIABLES WHERE Variable_name IN ('transaction_isolation', 'tx_isolation')")['Value'];
         };
 
         $found = $level();
