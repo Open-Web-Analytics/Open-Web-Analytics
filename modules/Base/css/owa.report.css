@@ -4880,7 +4880,7 @@ li.constraintRow {
     .owa_siteControlOrg { font-size: 12px; }
     .owa_siteControlCaret { font-size: 14px; }
     .owa_siteControlSummary { padding: 10px 28px 10px 12px; }
-    .owa_siteControlItem { padding: 12px; }
+    .owa_siteControlItem { padding: 12px; min-height: 44px; box-sizing: border-box; }
     .owa_siteControlColumnHead { padding: 10px 12px; }
 
     /* Its 480px floor keeps the measure on a desktop; on a phone it is wider
