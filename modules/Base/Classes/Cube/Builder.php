@@ -536,7 +536,116 @@ class Builder {
         return is_numeric( $days ) && (int) $days >= 0 ? (int) $days : Context::DEFAULT_LOOKBACK_DAYS;
     }
 
+    /**
+     * Rebuild one partition, reading raw at READ COMMITTED.
+     *
+     * At REPEATABLE READ, InnoDB's default, the SELECT of an INSERT ... SELECT
+     * and the JOIN of an UPDATE are LOCKING reads: shared next-key locks on
+     * every raw row and gap the build scans, held until the statement ends.
+     * log.php's inserts into that range wait for the build, and a beacon that
+     * writes several rows can deadlock against it. Measured on app: a landing
+     * page's first_visit, rolled back while a build held 1,368 shared locks on
+     * site_type_date. At READ COMMITTED the same reads are a consistent
+     * snapshot and lock nothing. A row that arrives while the build reads is
+     * what refusal() already allows for.
+     *
+     * The connection is shared -- the scheduler drains the ingest queue on it
+     * too -- so the level it had is put back, whatever the build does.
+     *
+     * @param array $span
+     * @param bool  $dry_run
+     * @return array
+     */
     public function rebuild( array $span, $dry_run = false ) {
+
+        $restore = $dry_run ? null : $this->readCommitted();
+
+        try {
+
+            return $this->build( $span, $dry_run );
+
+        } finally {
+
+            if ( $restore !== null ) {
+
+                $this->db->query( 'SET SESSION TRANSACTION ISOLATION LEVEL ' . $restore );
+            }
+        }
+    }
+
+    /**
+     * Put this connection at READ COMMITTED, if that is both a change and allowed.
+     *
+     * @return string|null  the level to put back, or null when nothing was changed
+     */
+    protected function readCommitted() {
+
+        $variables = array();
+
+        foreach ( (array) $this->db->get_results( 'SHOW SESSION VARIABLES WHERE Variable_name IN '
+            . "('transaction_isolation', 'tx_isolation', 'log_bin', 'binlog_format')" ) as $row ) {
+
+            $variables[ strtolower( $row['Variable_name'] ) ] = $row['Value'];
+        }
+
+        $restore = self::levelToRestore( $variables );
+
+        if ( $restore === null ) {
+
+            return null;
+        }
+
+        if ( $this->db->query( 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED' ) === false ) {
+
+            return null;
+        }
+
+        return $restore;
+    }
+
+    /**
+     * Whether a build should change the isolation level, and to come back to what.
+     *
+     * Only from the two levels that lock what they read. And not where the
+     * binary log is statement-based: InnoDB refuses a write at READ COMMITTED
+     * there (1665), so that server keeps the locking read. MIXED logs those
+     * writes by row, which is allowed.
+     *
+     * @param array $variables  the session's, by lowercase name: transaction_isolation
+     *                          (MySQL 8, MariaDB 11.1) or tx_isolation (MariaDB before
+     *                          it), log_bin, binlog_format
+     * @return string|null  the level as SET spells it, or null to leave it alone
+     */
+    public static function levelToRestore( array $variables ) {
+
+        $level = isset( $variables['transaction_isolation'] )
+            ? $variables['transaction_isolation']
+            : ( isset( $variables['tx_isolation'] ) ? $variables['tx_isolation'] : '' );
+
+        $level = strtoupper( (string) $level );
+
+        if ( $level !== 'REPEATABLE-READ' && $level !== 'SERIALIZABLE' ) {
+
+            return null;
+        }
+
+        $logging   = isset( $variables['log_bin'] ) && strtoupper( (string) $variables['log_bin'] ) === 'ON';
+        $statement = isset( $variables['binlog_format'] ) && strtoupper( (string) $variables['binlog_format'] ) === 'STATEMENT';
+
+        if ( $logging && $statement ) {
+
+            return null;
+        }
+
+        return str_replace( '-', ' ', $level );
+    }
+
+    /**
+     * @param array $span
+     * @param bool  $dry_run
+     * @return array
+     */
+    protected function build( array $span, $dry_run ) {
 
         $built_at = (int) round( microtime( true ) * 1000000 );
 

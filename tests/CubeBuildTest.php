@@ -911,6 +911,88 @@ final class CubeBuildTest extends TestCase
     }
 
     /**
+     * A beacon partway through its transaction does not hold the build up.
+     *
+     * The other connection is log.php in the middle of a landing page: a raw
+     * row inserted and not committed. At REPEATABLE READ the build's read of
+     * raw waits for that row's lock, and a beacon that then needs a gap the
+     * build holds is the deadlock measured on app. The lock wait is cut to a
+     * second, so a build that waits fails rather than stalling the suite.
+     */
+    public function testAnUncommittedBeaconDoesNotHoldTheBuildUp(): void
+    {
+        $other = mysqli_init();
+        if (!@mysqli_real_connect($other, OWA_DB_HOST, OWA_DB_USER, OWA_DB_PASSWORD, OWA_DB_NAME, (int) OWA_DB_PORT)) {
+            $this->markTestSkipped('needs a second connection');
+        }
+
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $timeout = (int) $db->get_row('SELECT @@SESSION.innodb_lock_wait_timeout AS t')['t'];
+        $ts      = $this->t0 + 300000000;
+        $id      = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::VISITOR_DIRECT, 8881000000000003, $ts, 'click');
+
+        try {
+            $other->begin_transaction();
+            $this->assertTrue((bool) $other->query(sprintf(
+                "INSERT INTO %s (id, event_type, site_id, visitor_id, session_id, ts, yyyymmdd, is_goal_event, page_path)"
+              . " VALUES (%d, 'click', '%s', %d, %d, %d, %d, 0, '/direct')",
+                $this->table('base.event_raw'), $id, self::SITE, self::VISITOR_DIRECT, 8881000000000003,
+                $ts, $this->yyyymmdd)), 'the open beacon\'s insert');
+
+            $db->query('SET SESSION innodb_lock_wait_timeout = 1');
+
+            $result = $this->today(new \OWA\Module\Base\Classes\Cube\Builder(self::PROPERTY));
+
+            $this->assertTrue($result['ok'], 'the build waited for the beacon: ' . $result['error']);
+            $this->assertFalse($this->inCube($id), 'an uncommitted row is not built in');
+
+        } finally {
+            $other->rollback();
+            $other->close();
+            $db->query(sprintf('SET SESSION innodb_lock_wait_timeout = %d', $timeout));
+        }
+    }
+
+    /**
+     * The scheduler drains the ingest queue on the same connection, so a build
+     * leaves it at the level it found -- after a build that threw, too.
+     */
+    public function testTheBuildLeavesTheConnectionAtTheLevelItFound(): void
+    {
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        // MariaDB before 11.1 has only tx_isolation; MySQL 8 has only transaction_isolation.
+        $level = function () use ($db): string {
+            return $db->get_row("SHOW SESSION VARIABLES WHERE Variable_name IN ('transaction_isolation', 'tx_isolation')")['Value'];
+        };
+
+        $found = $level();
+        $this->assertSame('REPEATABLE-READ', $found, 'the suite runs at the server default');
+
+        $this->rebuild();
+        $this->assertSame($found, $level(), 'after a build');
+
+        try {
+            $this->today($this->builderWithArrival(function () {
+                throw new \LogicException('the build stopped');
+            }));
+            $this->fail('the build should have thrown');
+        } catch (\LogicException $e) {
+            $this->assertSame('the build stopped', $e->getMessage());
+        }
+
+        $this->assertSame($found, $level(), 'after a build that threw');
+
+        $db->query('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
+
+        try {
+            $this->rebuild();
+            $this->assertSame('READ-COMMITTED', $level(), 'a connection already there stays there');
+        } finally {
+            $db->query('SET SESSION TRANSACTION ISOLATION LEVEL ' . str_replace('-', ' ', $found));
+        }
+    }
+
+    /**
      * new_vs_returning is stamped as the LABEL a report groups by.
      *
      * Asserted on the stored strings rather than on a flag, because the label
