@@ -24,7 +24,8 @@
                 "metrics": "pageViews",
                 "dimensions": "pagePath",
                 "sort": "pageViews-"
-            }
+            },
+            "colspan": 6
         }
     ]
 }

@@ -1,6 +1,6 @@
 {
     "title": "Traffic Sources",
-    "description": "Where sessions came from: channels, sources, campaigns, countries and landing pages.",
+    "description": "Where sessions came from: channels, campaigns, sources, referring sites and landing pages.",
     "metrics": "sessions",
     "widgets": [
         {
@@ -27,15 +27,14 @@
                 "sort": "sessions-"
             },
             "more": {
-                "reportId": "entry-pages",
-                "label": "View Full Report \u00bb"
+                "reportId": "entry-pages"
             }
         },
         {
             "type": "pie",
             "id": "attributedChannel",
             "container": "traffic-sources",
-            "colspan": 4,
+            "colspan": 6,
             "chartMetric": "sessions",
             "query": {
                 "dimensions": "attributedChannel",
@@ -45,22 +44,10 @@
         },
         {
             "type": "pie",
-            "id": "attributedSource",
-            "container": "traffic-sources-source",
-            "title": "Sources",
-            "colspan": 4,
-            "chartMetric": "sessions",
-            "query": {
-                "dimensions": "attributedSource",
-                "sort": "sessions-"
-            }
-        },
-        {
-            "type": "pie",
             "id": "attributedCampaign",
             "container": "traffic-sources-campaign",
             "title": "Campaigns",
-            "colspan": 4,
+            "colspan": 6,
             "chartMetric": "sessions",
             "query": {
                 "dimensions": "attributedCampaign",
@@ -70,46 +57,13 @@
                 {
                     "dimension": "attributedCampaign",
                     "operator": "notEmpty"
-                }
-            ]
-        },
-        {
-            "type": "grid-card",
-            "id": "referringSites",
-            "container": "referring-sites",
-            "title": "Referring Web Sites",
-            "colspan": 6,
-            "query": {
-                "metrics": "sessions",
-                "dimensions": "sessionSource",
-                "sort": "sessions-"
-            },
-            "more": {
-                "reportId": "referring-sites",
-                "label": "View Full Report \u00bb"
-            },
-            "constraints": [
+                },
                 {
-                    "dimension": "sessionMedium",
-                    "value": "referral"
+                    "dimension": "attributedCampaign",
+                    "operator": "!~",
+                    "value": "^[(](direct|organic|ai-agent|referral)[)]$"
                 }
             ]
-        },
-        {
-            "type": "grid-card",
-            "id": "countries",
-            "container": "visitor-countries",
-            "title": "Countries",
-            "colspan": 6,
-            "query": {
-                "metrics": "sessions",
-                "dimensions": "country",
-                "sort": "sessions-"
-            },
-            "more": {
-                "reportId": "geolocation",
-                "label": "View Full Report \u00bb"
-            }
         },
         {
             "type": "grid-card",
@@ -124,9 +78,29 @@
                 "resultsPerPage": 25
             },
             "more": {
-                "reportId": "sources",
-                "label": "View Full Report \u00bb"
+                "reportId": "sources"
             }
+        },
+        {
+            "type": "grid-card",
+            "id": "referringSites",
+            "container": "referring-sites",
+            "title": "Referring Web Sites",
+            "colspan": 6,
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "sessionSource",
+                "sort": "sessions-"
+            },
+            "more": {
+                "reportId": "referring-sites"
+            },
+            "constraints": [
+                {
+                    "dimension": "sessionMedium",
+                    "value": "referral"
+                }
+            ]
         }
     ]
 }

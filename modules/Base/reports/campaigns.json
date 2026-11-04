@@ -16,13 +16,23 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "attributedCampaign",
+                "dimensions": "attributedCampaign,attributedSourceMedium",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }
         }
     ],
     "settings": {
-        "constraints": "attributedCampaign!=(not set)"
+        "constraints": [
+            {
+                "dimension": "attributedCampaign",
+                "operator": "notEmpty"
+            },
+            {
+                "dimension": "attributedCampaign",
+                "operator": "!~",
+                "value": "^[(](direct|organic|ai-agent|referral)[)]$"
+            }
+        ]
     }
 }

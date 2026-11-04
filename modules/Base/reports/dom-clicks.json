@@ -30,17 +30,6 @@
         },
         {
             "type": "grid",
-            "id": "domnames",
-            "container": "topDomNames",
-            "title": "Name Attributes",
-            "query": {
-                "dimensions": "domElementId",
-                "sort": "eventCount-",
-                "resultsPerPage": 5
-            }
-        },
-        {
-            "type": "grid",
             "id": "htmltags",
             "container": "topHtmlTags",
             "title": "HTML Tags",

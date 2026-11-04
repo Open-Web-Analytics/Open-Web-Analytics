@@ -1024,6 +1024,7 @@ class Module extends \OWA\Core\Module {
          * registers.
          */
         $this->registerReport( 'forms', 'reports/forms.json' );
+        $this->registerReport( 'devices', 'reports/devices.json' );
         $this->registerReport( 'ecommerce', 'reports/ecommerce.json' );
         $this->registerReport( 'ecommerce-conversion-rate', 'reports/ecommerce-conversion-rate.json' );
         $this->registerReport( 'entry-pages', 'reports/entry-pages.json' );
@@ -1031,12 +1032,14 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'geolocation', 'reports/geolocation.json' );
         $this->registerReport( 'goals', 'reports/goals.json' );
         $this->registerReport( 'keywords', 'reports/keywords.json' );
+        $this->registerReport( 'languages', 'reports/languages.json' );
         $this->registerReport( 'latest-visits', 'reports/latest-visits.json' );
         $this->registerReport( 'os', 'reports/os.json' );
         $this->registerReport( 'page-types', 'reports/page-types.json' );
         $this->registerReport( 'pages', 'reports/pages.json' );
         $this->registerReport( 'referring-sites', 'reports/referring-sites.json' );
         $this->registerReport( 'revenue', 'reports/revenue.json' );
+        $this->registerReport( 'screen-resolutions', 'reports/screen-resolutions.json' );
         $this->registerReport( 'search-engines', 'reports/search-engines.json' );
         $this->registerReport( 'sources', 'reports/sources.json' );
         $this->registerReport( 'traffic', 'reports/traffic.json' );
@@ -1143,7 +1146,10 @@ class Module extends \OWA\Core\Module {
         //Visitors
         $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 4, 'view_reports', 'Reports','fa fa-user-friends');
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'languages' ), 'Languages', 2);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'devices' ), 'Device Types', 4);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'screen-resolutions' ), 'Screen Resolutions', 5);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
         $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);

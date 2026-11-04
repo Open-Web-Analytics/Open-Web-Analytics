@@ -3024,6 +3024,10 @@ li.constraintRow {
        these boxes is exactly what this replaces. */
     flex-wrap: nowrap;
 
+    /* Five boxes of a five-metric report fit a 1280 window with the nav
+       open: at 32px the fifth went behind the arrow by 22px. */
+    gap: 24px;
+
     overflow-x: hidden;
     scroll-behavior: smooth;
 }

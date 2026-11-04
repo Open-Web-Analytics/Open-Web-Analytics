@@ -176,18 +176,29 @@ test.describe('every configured report renders in a browser', () => {
 
         /**
          * Each goal event's conversions are rows named by it, so the grid is the
-         * event name over the conversion rows. The total is the trend's; the
-         * report has no separate count box.
+         * event name over the conversion rows, a row per channel that brought
+         * them. The total is the trend's; the report has no separate count box.
          */
-        test('the Goal Events grid lists the goal event by name', async ({ page }) => {
+        test('the Goal Events grid lists the goal event by name and channel', async ({ page }) => {
             await expect(page.locator('#goalMetrics')).toHaveCount(0);
 
-            const row = page.locator('#goal-events tr', { hasText: 'E2E_Signup_Funnel' });
+            const rows = page.locator('#goal-events tr.owa_gridRow', { hasText: 'E2E_Signup_Funnel' });
 
-            await expect(row).toHaveCount(1, { timeout: 20_000 });
+            await expect(rows.first()).toBeVisible({ timeout: 20_000 });
 
-            const cells = await row.locator('td').allInnerTexts();
-            expect(Number(cells[1].replace(/[^0-9]/g, ''))).toBeGreaterThan(0);
+            const channels = ['Organic Search', 'Referral', 'Direct', '(unknown)'];
+            let conversions = 0;
+
+            // By column, not position: a rank cell leads each row.
+            for (const cells of await rows.evaluateAll((trs) => trs.map((tr) => ({
+                channel: tr.querySelector('td[data-column="attributedChannel"]').innerText.trim(),
+                conversions: tr.querySelector('td[data-column="goalConversions"]').firstChild.textContent,
+            })))) {
+                expect(channels, `a goal row's channel: ${cells.channel}`).toContain(cells.channel);
+                conversions += Number(cells.conversions.replace(/[^0-9]/g, ''));
+            }
+
+            expect(conversions).toBeGreaterThan(0);
         });
 
         /**
@@ -231,20 +242,21 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         /**
-         * THREE share charts, each into its own container.
+         * TWO share charts, each into its own container.
          *
-         * The report splits its visits three ways -- by channel, by source, by
-         * campaign -- and draws each split as its own chart. Three widgets of
-         * one type on one report is the case that catches a template writing
-         * them all into the first container, or into a container it names from
-         * the type rather than from the widget: the traffic report used to
-         * have three metric-boxes widgets and that is exactly the bug they
-         * were guarding, so the guard follows the shape rather than the type.
+         * The report splits its visits by channel and by campaign and draws
+         * each split as its own chart. Two widgets of one type on one report
+         * is the case that catches a template writing them all into the first
+         * container, or into a container it names from the type rather than
+         * from the widget: the traffic report used to have three metric-boxes
+         * widgets and that is exactly the bug they were guarding, so the guard
+         * follows the shape rather than the type.
          */
         test('each share chart draws into its own container', async ({ page }) => {
+            await expect(page.locator('#traffic-sources-source'), 'the Sources chart repeated Top Sources').toHaveCount(0);
+
             for (const [container, title] of [
                 ['traffic-sources',          'Channels'],
-                ['traffic-sources-source',   'Sources'],
                 ['traffic-sources-campaign', 'Campaigns'],
             ]) {
                 const widget = page.locator(`#${container}`).locator('xpath=ancestor::*[contains(@class,"owa_widget-pie")][1]');
@@ -256,11 +268,19 @@ test.describe('every configured report renders in a browser', () => {
                     .toHaveText(title);
             }
 
-            // All three draw rows: an untagged visit's campaign is a placeholder, not empty.
-            for (const container of ['traffic-sources', 'traffic-sources-source', 'traffic-sources-campaign']) {
-                await expect(page.locator(`#${container} .owa_shareRow`).first(),
-                    `${container} drew no rows`).toBeVisible({ timeout: 20_000 });
-            }
+            await expect(page.locator('#traffic-sources .owa_shareRow').first(),
+                'traffic-sources drew no rows').toBeVisible({ timeout: 20_000 });
+
+            /*
+             * No fixture visit is tagged with a campaign, so Campaigns has
+             * nothing to draw. An untagged visit's campaign is a placeholder
+             * named for its medium -- (organic), (direct), (referral) -- and
+             * charting those was the Channels chart a second time.
+             */
+            const campaigns = page.locator('#traffic-sources-campaign');
+
+            await expect(campaigns).toContainText(/no data/i, { timeout: 20_000 });
+            await expect(campaigns.locator('.owa_shareRow')).toHaveCount(0);
         });
 
         /**
@@ -351,15 +371,9 @@ test.describe('every configured report renders in a browser', () => {
             await expect(more).toHaveAttribute( 'href', /reportId=referring-sites/ );
         });
 
-        test('the countries card links to the geolocation report', async ({ page }) => {
-            await expect(page.locator('#visitor-countries tr.owa_gridRow').first(),
-                'visitor-countries drew no rows').toBeVisible({ timeout: 20_000 });
-
-            const more = page.locator('#visitor-countries')
-                .locator('xpath=ancestor::*[contains(@class,"owa_widget-grid-card")][1]')
-                .locator('.owa_moreLinks a');
-
-            await expect(more).toHaveAttribute( 'href', /reportId=geolocation/ );
+        test('countries are on the visitors overview, not here', async ({ page }) => {
+            await expect(page.locator('#entry-pages tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+            await expect(page.locator('#visitor-countries')).toHaveCount(0);
         });
 
         test('the sources grid lists the seeded sources', async ({ page }) => {
@@ -824,8 +838,8 @@ test.describe('the report grid gives every widget a usable width', () => {
     });
 
     /**
-     * A share chart is as wide as its widget, at a quarter of a row on the
-     * dashboard and a third on Traffic, and a long name is cut short with an
+     * A share chart is as wide as its widget, at a third of a row on the
+     * dashboard and a half on Traffic, and a long name is cut short with an
      * ellipsis rather than pushing the percentage out of the widget.
      */
     test('a share chart fills its widget, its percentages inside it', async ({ page }) => {
@@ -845,7 +859,7 @@ test.describe('the report grid gives every widget a usable width', () => {
 
             await page.waitForSelector('.owa_shareChart .owa_shareRow', { timeout: 20_000 });
 
-            return page.evaluate(() => [...document.querySelectorAll('.owa_shareChart')].map((list) => {
+            return page.evaluate(() => [...document.querySelectorAll('.owa_shareChart')].filter((list) => list.querySelector('.owa_shareRow')).map((list) => {
 
                 const item = list.closest('.owa_reportGridItem').getBoundingClientRect();
                 const bar = list.querySelector('.owa_gridBar').getBoundingClientRect();
@@ -865,7 +879,8 @@ test.describe('the report grid gives every widget a usable width', () => {
             seen.push(...await measure(reportId, width));
         }
 
-        expect(seen.length).toBe(2 + 2 + 3);
+        // Traffic's Campaigns chart has nothing to draw for the fixture.
+        expect(seen.length).toBe(2 + 2 + 1);
 
         for (const c of seen) {
             expect(Math.abs(c.bar - c.item), `a bar is ${c.bar}px in a ${c.item}px widget`).toBeLessThanOrEqual(1);
@@ -1051,8 +1066,15 @@ test.describe('the report grid gives every widget a usable width', () => {
             { waitUntil: 'networkidle' }
         );
 
-        const card = page.locator('.owa_reportGridItem.owa_span-3').first();
+        /*
+         * No shipped report has a quarter-width card any more -- every row is
+         * full at twelve columns (ShippedReportLayoutTest) -- but a custom
+         * report can. So a real card is declared a quarter here, and the rule
+         * under test is what it resolves to.
+         */
+        const card = page.locator('.owa_reportGridItem.owa_widget-grid-card').first();
         await expect(card).toBeAttached();
+        await card.evaluate((el) => { el.className = el.className.replace(/owa_span-\d+/, 'owa_span-3'); });
 
         // Declared a quarter...
         await expect(card).toHaveClass(/owa_span-3/);
@@ -1061,4 +1083,121 @@ test.describe('the report grid gives every widget a usable width', () => {
         const span = await card.evaluate(el => getComputedStyle(el).gridColumnStart);
         expect(span).toBe('span 4');
     });
+});
+
+/**
+ * Visitors is six cards, a third each: who (new or returning), on what device,
+ * from where; then browser, operating system and loyalty. Each card that has a
+ * fuller report links to it.
+ */
+test.describe('the visitors overview', () => {
+
+    test.beforeEach(async ({ page }) => {
+        await login(page);
+        await page.setViewportSize({ width: 1440, height: 1000 });
+        await openConfiguredReport(page, { reportId: 'visitors' });
+    });
+
+    test('draws every card, two rows of three, each linking to its report', async ({ page }) => {
+        await expect(page.locator('#visitor-types .owa_shareRow').first()).toBeVisible({ timeout: 20_000 });
+
+        const cards = [
+            ['device-types', 'devices'],
+            ['visitor-countries', 'geolocation'],
+            ['top-browsers', 'browsers'],
+            ['top-operating-systems', 'os'],
+            ['visitor-loyalty', 'visitors-loyalty'],
+        ];
+
+        for (const [container, reportId] of cards) {
+            await expect(page.locator(`#${container} tr.owa_gridRow`).first(), `${container} drew no rows`)
+                .toBeVisible({ timeout: 20_000 });
+
+            const more = page.locator(`#${container}`)
+                .locator('xpath=ancestor::*[contains(@class,"owa_widget-grid-card")][1]')
+                .locator('.owa_moreLinks a');
+
+            await expect(more).toHaveAttribute('href', new RegExp(`reportId=${reportId}(&|$)`));
+        }
+
+        const tops = [];
+        for (const id of ['visitor-types', ...cards.map(([c]) => c)]) {
+            tops.push(Math.round((await page.locator(`#${id}`).locator('xpath=ancestor::*[contains(@class,"owa_reportGridItem")][1]').boundingBox()).y));
+        }
+        expect(new Set(tops.slice(0, 3)).size, 'the first three share a row').toBe(1);
+        expect(new Set(tops.slice(3)).size, 'the last three share a row').toBe(1);
+        expect(tops[3]).toBeGreaterThan(tops[0]);
+    });
+});
+
+/** The three reports a dimension had and no report did. */
+test.describe('device, language and screen reports', () => {
+
+    for (const [reportId, heading] of [['devices', 'Device Type'], ['languages', 'Language'], ['screen-resolutions', 'Screen Resolution']]) {
+        test(`${reportId} groups sessions by ${heading}`, async ({ page }) => {
+            await login(page);
+            await openConfiguredReport(page, { reportId });
+
+            const grid = page.locator('.owa_widget-grid:visible').first();
+            await expect(grid.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+            await expect(grid.locator('thead')).toContainText(heading);
+        });
+    }
+
+    test('are in the Visitors menu', async ({ page }) => {
+        await login(page);
+        await openConfiguredReport(page, { reportId: 'visitors' });
+
+        for (const reportId of ['devices', 'languages', 'screen-resolutions']) {
+            await expect(page.locator(`#owa_reportNavRail a[href*="reportId=${reportId}"]`).first()).toHaveCount(1);
+        }
+    });
+});
+
+/**
+ * Campaigns lists campaigns. An untagged session's campaign is a placeholder
+ * named for its medium, and no fixture visit is tagged, so there is nothing
+ * to list.
+ */
+test('the campaigns report lists no placeholder as a campaign', async ({ page }) => {
+    await login(page);
+    await openConfiguredReport(page, { reportId: 'campaigns' });
+
+    const grid = page.locator('.owa_widget-grid:visible').first();
+    await expect(grid).toContainText(/no data/i, { timeout: 20_000 });
+    await expect(grid).not.toContainText(/\((organic|direct|referral)\)/);
+});
+
+/** The e-commerce overview: revenue by channel and the top orders beside it. */
+test('the ecommerce overview cards show revenue by channel and the seeded orders', async ({ page }) => {
+    await login(page);
+    await openConfiguredReport(page, { reportId: 'ecommerce' });
+
+    await expect(page.locator('#revenue-by-channel tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+
+    for (const orderId of ['e2e-order-1001', 'e2e-order-1002']) {
+        await expect(page.locator('#top-orders')).toContainText(orderId);
+    }
+
+    const a = await page.locator('#revenue-by-channel').boundingBox();
+    const b = await page.locator('#top-orders').boundingBox();
+    expect(Math.abs(a.y - b.y), 'the two cards share a row').toBeLessThan(2);
+});
+
+/**
+ * Model Comparison's two tables are full width: at half a row each clipped
+ * its own Revenue column.
+ */
+test('model comparison shows every column of both tables', async ({ page }) => {
+    await login(page);
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await openConfiguredReport(page, { reportId: 'model-comparison' });
+
+    await expect(page.locator('.owa_gridTable tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+
+    const boxes = await page.locator('.owa_gridScroll').evaluateAll((els) => els.map((el) => ({ sw: el.scrollWidth, cw: el.clientWidth })));
+    expect(boxes.length).toBe(2);
+    for (const b of boxes) {
+        expect(b.sw, 'a table scrolls inside its box').toBeLessThanOrEqual(b.cw + 1);
+    }
 });

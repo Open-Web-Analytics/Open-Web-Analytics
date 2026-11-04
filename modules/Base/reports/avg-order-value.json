@@ -1,6 +1,6 @@
 {
     "title": "Average Order Value",
-    "description": "Average revenue per transaction, by day.",
+    "description": "Average revenue per transaction, by day, and by attributed channel.",
     "metrics": "revenuePerTransaction",
     "widgets": [
         {
@@ -18,8 +18,8 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "date",
-                "sort": "date-",
+                "dimensions": "attributedChannel",
+                "sort": "revenuePerTransaction-",
                 "resultsPerPage": 30
             }
         }

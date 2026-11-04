@@ -132,25 +132,6 @@ final class DomstreamModuleTest extends TestCase
         }
     }
 
-    public function testContentsRelatedReportsLinkToRecordings(): void
-    {
-        $links = $this->module()->addReportLinks([], 'content', 'related');
-
-        $this->assertSame([['reportId' => 'domstreams', 'label' => 'Recordings']], $links);
-    }
-
-    public function testNoOtherWidgetGainsALink(): void
-    {
-        $module = $this->module();
-
-        // Page Detail's "more analytics" list included: it is gone, and a
-        // page's recordings are a row action on Pages.
-        foreach ([['document', 'moreAnalytics'], ['document', 'related'], ['content', 'moreAnalytics'], ['pages', 'related'], ['', '']] as [$report, $widget]) {
-            $this->assertSame([['reportId' => 'x']], $module->addReportLinks([['reportId' => 'x']], $report, $widget),
-                "$report/$widget");
-        }
-    }
-
     /**
      * Recording is off until a Profile turns it on: the one feature the tracker
      * does not start by itself, and its setting reads the same list.

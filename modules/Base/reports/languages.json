@@ -1,0 +1,25 @@
+{
+    "title": "Languages",
+    "description": "Sessions by the browser's language.",
+    "widgets": [
+        {
+            "type": "trend",
+            "id": "trend",
+            "container": "trend-chart",
+            "query": {
+                "dimensions": "date",
+                "sort": "date"
+            }
+        },
+        {
+            "type": "grid",
+            "id": "dim",
+            "container": "dimension-grid",
+            "query": {
+                "dimensions": "language",
+                "sort": "sessions-",
+                "resultsPerPage": 25
+            }
+        }
+    ]
+}
