@@ -156,11 +156,12 @@ class CustomDimension extends \OWA\Core\Entity {
         $this->setProperty( $data_type );
 
         /*
-         * How wide a string column is, and therefore how much of the row's
-         * 65,535-byte allowance it spends. It is the difference between sixteen
-         * dimensions and a hundred, so it is the operator's to choose rather
-         * than a constant here. The build clamps to it, so a longer value is
-         * truncated rather than aborting the partition under STRICT_ALL_TABLES.
+         * How wide the string column is, in characters: registration writes
+         * Cube\Dimensions::DIMENSION_LENGTH for a string and 0 for a number,
+         * and a person does not choose it. Kept on the row because the ALTER
+         * fixed the width the column has. The build clamps to it, so a longer
+         * value is truncated rather than aborting the partition under
+         * STRICT_ALL_TABLES.
          */
         $max_length = new \OWA\Module\Base\Classes\DbColumn( 'max_length', OWA_DTD_INT );
         $this->setProperty( $max_length );
